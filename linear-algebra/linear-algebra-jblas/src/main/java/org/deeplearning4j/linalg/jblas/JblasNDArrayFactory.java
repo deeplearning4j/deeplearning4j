@@ -240,6 +240,11 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
         return new ComplexNDArray(dim);
     }
 
+    @Override
+    public INDArray create(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+        return new NDArray(data,shape,stride,offset,ordering);
+    }
+
     /**
      * @param data
      * @param shape

@@ -387,7 +387,7 @@ public class RNTN implements Serializable {
         INDArray Wt_df = NDArrays.create(new int[]{size*2, size*2, size});
         INDArray fullVector = NDArrays.concatHorizontally(leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
-            Wt_df.putSlice(slice, NDArrays.getBlasWrapper().scal((double) deltaFull.getScalar(slice).element(),fullVector).mmul(fullVector.transpose()));
+            Wt_df.putSlice(slice, NDArrays.getBlasWrapper().scal((float) deltaFull.getScalar(slice).element(),fullVector).mmul(fullVector.transpose()));
         }
         return Wt_df;
     }
@@ -627,7 +627,7 @@ public class RNTN implements Serializable {
         INDArray deltaINDArray = NDArrays.create(size * 2, 1);
         INDArray fullVector = NDArrays.concatHorizontally(leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
-            INDArray scaledFullVector = NDArrays.getBlasWrapper().scal((double) deltaFull.getScalar(slice).element(),fullVector);
+            INDArray scaledFullVector = NDArrays.getBlasWrapper().scal((float) deltaFull.getScalar(slice).element(),fullVector);
             deltaINDArray = deltaINDArray.add(Wt.slice(slice).add(Wt.slice(slice).transpose()).mmul(scaledFullVector));
         }
         return deltaINDArray.add(WTDeltaNoBias);

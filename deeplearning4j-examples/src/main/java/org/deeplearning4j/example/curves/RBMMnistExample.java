@@ -32,7 +32,7 @@ public class RBMMnistExample {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            r.trainTillConvergence(next.getFeatureMatrix(), 1e-2, new Object[]{1, 1e-2, 5000});
+            r.trainTillConvergence(next.getFeatureMatrix(), 1e-2f, new Object[]{1, 1e-2f, 5000});
 
         }
 

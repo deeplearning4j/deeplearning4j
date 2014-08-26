@@ -87,7 +87,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
                 if(binarize)
                     for(int d = 0; d < in.length(); d++) {
                         if(binarize) {
-                            if((double) in.getScalar(d).element() > 30) {
+                            if((float) in.getScalar(d).element() > 30) {
                                 in.putScalar(d,1);
                             }
                             else

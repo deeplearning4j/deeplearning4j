@@ -30,21 +30,21 @@ public class MnistExampleMultiThreaded {
 
 		Conf c = new Conf();
 		c.setFinetuneEpochs(1000);
-		c.setFinetuneLearningRate(1e-1);
-        c.setPretrainLearningRate(1e-2);
+		c.setFinetuneLearningRate(1e-1f);
+        c.setPretrainLearningRate(1e-2f);
         c.setPretrainEpochs(1000);
 		c.setLayerSizes(new int[]{600,400,200});
 		c.setnIn(784);
-        c.setDropOut(5e-1);
-        c.setSparsity(1e-1);
+        c.setDropOut(5e-1f);
+        c.setSparsity(1e-1f);
 		c.setUseAdaGrad(true);
 		c.setnOut(10);
 		c.setSplit(100);
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(true);
-        c.setL2(2e-4);
+        c.setL2(2e-4f);
         c.setRenderEpochsByLayer(Collections.singletonMap(0,10));
-		c.setDeepLearningParams(new Object[]{1,1e-1,1});
+		c.setDeepLearningParams(new Object[]{1,1e-1f,1});
 		ActorNetworkRunner runner = args.length < 1 ?  new ActorNetworkRunner("master",iter) : new ActorNetworkRunner("master",iter,(BaseMultiLayerNetwork) SerializationUtils.readObject(new File(args[0])));
         runner.setModelSaver(new DefaultModelSaver(new File("mnist-example.ser")));
 		runner.setup(c);

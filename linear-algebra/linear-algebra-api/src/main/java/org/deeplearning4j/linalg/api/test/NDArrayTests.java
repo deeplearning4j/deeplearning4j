@@ -397,7 +397,8 @@ public abstract class NDArrayTests {
 
         NDArrays.factory().setOrder('f');
         linspaced = NDArrays.linspace(1,4,4).reshape(2,2);
-        INDArray transposed2 = NDArrays.create(new float[]{1,2,3,4},new int[]{2,2});
+        //fortran ordered
+        INDArray transposed2 = NDArrays.create(new float[]{1,3,2,4},new int[]{2,2});
         transposed = linspaced.transpose();
         assertEquals(transposed,transposed2);
         NDArrays.factory().setOrder('c');
@@ -871,7 +872,7 @@ public abstract class NDArrayTests {
         INDArray row1 = NDArrays.linspace(1,4,4).reshape(2,2);
         NDArrays.factory().setOrder('f');
         INDArray row1Fortran = NDArrays.linspace(1,4,4).reshape(2,2);
-        assertNotEquals(row1.getScalar(0,1),row1Fortran.getScalar(0,1));
+        assertNotEquals(row1.get(0,1),row1Fortran.get(0,1),1e-1);
         NDArrays.factory().setOrder('c');
     }
 
@@ -888,6 +889,9 @@ public abstract class NDArrayTests {
         INDArray putFortran = NDArrays.create(new float[]{5,6});
         row1Fortran.putRow(1,putFortran);
         assertNotEquals(row1,row1Fortran);
+        INDArray row1CTest = row1.getRow(1);
+        INDArray row1FortranTest = row1Fortran.getRow(1);
+        assertEquals(row1CTest,row1FortranTest);
 
         NDArrays.factory().setOrder('c');
 

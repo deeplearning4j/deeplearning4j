@@ -24,6 +24,6 @@ public class Log extends BaseElementWiseOp {
         if(value instanceof IComplexNDArray) {
             return NDArrays.scalar(ComplexUtil.abs((org.deeplearning4j.linalg.api.complex.IComplexNumber) value.element()));
         }
-        return NDArrays.scalar(Math.log((double) value.element()));
+        return NDArrays.scalar(Math.log((float) value.element()));
     }
 }

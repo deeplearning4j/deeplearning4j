@@ -65,12 +65,12 @@ public class MultiThreadedTweetOpinionMining {
         Conf c = new Conf();
         c.setFinetuneEpochs(10000);
         c.setPretrainEpochs(10000);
-        c.setFinetuneLearningRate(1e-1);
+        c.setFinetuneLearningRate(1e-1f);
 
         c.setLayerSizes(new int[]{iter.inputColumns() / 2,iter.inputColumns() / 4, iter.inputColumns() / 3});
         c.setnIn(iter.inputColumns());
         c.setUseAdaGrad(true);
-        c.setMomentum(0.3);
+        c.setMomentum(0.3f);
         c.setNormalizeZeroMeanAndUnitVariance(false);
         //c.setRenderWeightEpochs(1000);
         c.setnOut(2);
@@ -79,8 +79,8 @@ public class MultiThreadedTweetOpinionMining {
         c.setVisibleUnit(RBM.VisibleUnit.BINARY);
         c.setMultiLayerClazz(DBN.class);
         c.setUseRegularization(true);
-        c.setL2(2e-4);
-        c.setDeepLearningParams(new Object[]{1,1e-1,1000});
+        c.setL2(2e-4f);
+        c.setDeepLearningParams(new Object[]{1,1e-1f,1000});
         ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
         runner.setStateTracker(tracker);
         runner.setup(c);
