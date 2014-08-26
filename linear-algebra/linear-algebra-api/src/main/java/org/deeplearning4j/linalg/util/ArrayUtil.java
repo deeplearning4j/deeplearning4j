@@ -547,7 +547,7 @@ public class ArrayUtil {
 
     /**
      * Combines a applyTransformToDestination of int arrays in to one flat int array
-     * @param nums the int arrays to combine
+     * @param nums the int arrays to combineDouble
      * @return one combined int array
      */
     public static float[] combineFloat(List<float[]> nums) {
@@ -566,12 +566,32 @@ public class ArrayUtil {
     }
 
 
+
     /**
      * Combines a applyTransformToDestination of int arrays in to one flat int array
-     * @param nums the int arrays to combine
+     * @param nums the int arrays to combineDouble
      * @return one combined int array
      */
-    public static double[] combine(List<double[]> nums) {
+    public static float[] combine(List<float[]> nums) {
+        int length = 0;
+        for(int i = 0; i < nums.size(); i++)
+            length += nums.get(i).length;
+        float[] ret = new float[length];
+        int count = 0;
+        for(float[] i : nums) {
+            for(int j = 0; j < i.length; j++) {
+                ret[count++] = i[j];
+            }
+        }
+
+        return ret;
+    }
+    /**
+     * Combines a applyTransformToDestination of int arrays in to one flat int array
+     * @param nums the int arrays to combineDouble
+     * @return one combined int array
+     */
+    public static double[] combineDouble(List<double[]> nums) {
         int length = 0;
         for(int i = 0; i < nums.size(); i++)
             length += nums.get(i).length;
@@ -588,16 +608,16 @@ public class ArrayUtil {
 
     /**
      * Combines a applyTransformToDestination of int arrays in to one flat int array
-     * @param ints the int arrays to combine
+     * @param ints the int arrays to combineDouble
      * @return one combined int array
      */
-    public static double[] combine(double[]...ints) {
+    public static double[] combine(float[]...ints) {
         int length = 0;
         for(int i = 0; i < ints.length; i++)
             length += ints[i].length;
         double[] ret = new double[length];
         int count = 0;
-        for(double[] i : ints) {
+        for(float[] i : ints) {
             for(int j = 0; j < i.length; j++) {
                 ret[count++] = i[j];
             }
@@ -608,7 +628,7 @@ public class ArrayUtil {
 
     /**
      * Combines a applyTransformToDestination of int arrays in to one flat int array
-     * @param ints the int arrays to combine
+     * @param ints the int arrays to combineDouble
      * @return one combined int array
      */
     public static int[] combine(int[]...ints) {

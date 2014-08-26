@@ -47,7 +47,7 @@ public abstract class NDArrayTests {
         n.checkDimensions(n.divi(NDArrays.scalar(1.0d)));
 
         n = NDArrays.create(NDArrays.ones(27).data(),new int[]{3,3,3});
-        assertEquals(27,(double) n.sum(Integer.MAX_VALUE).element(),1e-1);
+        assertEquals(27,(float) n.sum(Integer.MAX_VALUE).element(),1e-1);
         INDArray a = n.slice(2);
         assertEquals(true,Arrays.equals(new int[]{3,3},a.shape()));
 
@@ -73,7 +73,7 @@ public abstract class NDArrayTests {
         INDArray a = NDArrays.scalar(1.0);
         assertEquals(true,a.isScalar());
 
-        INDArray n = NDArrays.create(new double[]{1.0},new int[]{1,1});
+        INDArray n = NDArrays.create(new float[]{1.0f},new int[]{1,1});
         assertEquals(n,a);
         assertTrue(n.isScalar());
     }
@@ -89,7 +89,7 @@ public abstract class NDArrayTests {
         INDArray vector = NDArrays.linspace(1,3,3);
         INDArray testVector = vector;
         for(int i = 0; i < vector.length(); i++)
-            assertEquals((double) vector.getScalar(i).element(),(double) testVector.getScalar(i).element(),1e-1);
+            assertEquals((float) vector.getScalar(i).element(),(float) testVector.getScalar(i).element(),1e-1);
         assertEquals(3,testVector.length());
         assertEquals(true,testVector.isVector());
         assertEquals(true,Shape.shapeEquals(new int[]{3},testVector.shape()));
@@ -110,8 +110,8 @@ public abstract class NDArrayTests {
     public void testGetRowFortran() {
         NDArrays.factory().setOrder('f');
         INDArray n = NDArrays.create(NDArrays.linspace(1,4,4).data(),new int[]{2,2});
-        INDArray column = NDArrays.create(new double[]{1,3});
-        INDArray column2 = NDArrays.create(new double[]{2,4});
+        INDArray column = NDArrays.create(new float[]{1,3});
+        INDArray column2 = NDArrays.create(new float[]{2,4});
         INDArray testColumn = n.getRow(0);
         INDArray testColumn1 = n.getRow(1);
         assertEquals(column,testColumn);
@@ -124,8 +124,8 @@ public abstract class NDArrayTests {
     public void testGetColumnFortran() {
         NDArrays.factory().setOrder('f');
         INDArray n = NDArrays.create(NDArrays.linspace(1,4,4).data(),new int[]{2,2});
-        INDArray column = NDArrays.create(new double[]{1,2});
-        INDArray column2 = NDArrays.create(new double[]{3,4});
+        INDArray column = NDArrays.create(new float[]{1,2});
+        INDArray column2 = NDArrays.create(new float[]{3,4});
         INDArray testColumn = n.getColumn(0);
         INDArray testColumn1 = n.getColumn(1);
         assertEquals(column,testColumn);
@@ -137,7 +137,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testVectorInit() {
-        double[] data = NDArrays.linspace(1,4,4).data();
+        float[] data = NDArrays.linspace(1,4,4).data();
         INDArray arr = NDArrays.create(data,new int[]{4});
         assertEquals(true,arr.isRowVector());
         INDArray arr2 = NDArrays.create(data,new int[]{1,4});
@@ -164,7 +164,7 @@ public abstract class NDArrayTests {
         INDArray arr = NDArrays.create(new int[]{3,2});
         INDArray column2 = arr.getColumn(0);
         assertEquals(true,Shape.shapeEquals(new int[]{3}, column2.shape()));
-        INDArray column = NDArrays.create(new double[]{1,2,3},new int[]{3});
+        INDArray column = NDArrays.create(new float[]{1,2,3},new int[]{3});
         arr.putColumn(0,column);
 
         INDArray firstColumn = arr.getColumn(0);
@@ -172,7 +172,7 @@ public abstract class NDArrayTests {
         assertEquals(column,firstColumn);
 
 
-        INDArray column1 = NDArrays.create(new double[]{4,5,6},new int[]{3});
+        INDArray column1 = NDArrays.create(new float[]{4,5,6},new int[]{3});
         arr.putColumn(1,column1);
         assertEquals(true, Shape.shapeEquals(new int[]{3}, arr.getColumn(1).shape()));
         INDArray testRow1 = arr.getColumn(1);
@@ -180,8 +180,8 @@ public abstract class NDArrayTests {
 
 
 
-        INDArray evenArr = NDArrays.create(new double[]{1,2,3,4},new int[]{2,2});
-        INDArray put = NDArrays.create(new double[]{5,6},new int[]{2});
+        INDArray evenArr = NDArrays.create(new float[]{1,2,3,4},new int[]{2,2});
+        INDArray put = NDArrays.create(new float[]{5,6},new int[]{2});
         evenArr.putColumn(1,put);
         INDArray testColumn = evenArr.getColumn(1);
         assertEquals(put,testColumn);
@@ -190,12 +190,12 @@ public abstract class NDArrayTests {
 
         INDArray n = NDArrays.create(NDArrays.linspace(1,4,4).data(),new int[]{2,2});
         INDArray column23 = n.getColumn(0);
-        INDArray column12 = NDArrays.create(new double[]{1,3},new int[]{2});
+        INDArray column12 = NDArrays.create(new float[]{1,3},new int[]{2});
         assertEquals(column23,column12);
 
 
         INDArray column0 = n.getColumn(1);
-        INDArray column01 = NDArrays.create(new double[]{2,4},new int[]{2});
+        INDArray column01 = NDArrays.create(new float[]{2,4},new int[]{2});
         assertEquals(column0,column01);
 
 
@@ -211,8 +211,8 @@ public abstract class NDArrayTests {
         //works fine according to matlab, let's go with it..
         //reproduce with:  A = reshape(linspace(1,4,4),[2 2 ]);
         //A(1,2) % 1 index based
-        double nFirst = 2;
-        double dFirst = (double) d.getScalar(0, 1).element();
+        float nFirst = 2;
+        float dFirst = (float) d.getScalar(0, 1).element();
         assertEquals(nFirst,dFirst,1e-1);
         assertEquals(true,Arrays.equals(d.data(),n.data()));
         assertEquals(true,Arrays.equals(new int[]{2,2},n.shape()));
@@ -231,13 +231,13 @@ public abstract class NDArrayTests {
 
         INDArray nLast = NDArrays.create(NDArrays.linspace(1,4,4).data(),new int[]{2,2});
         INDArray row = nLast.getRow(1);
-        INDArray row1 = NDArrays.create(new double[]{3,4},new int[]{2});
+        INDArray row1 = NDArrays.create(new float[]{3,4},new int[]{2});
         assertEquals(row,row1);
 
 
 
         INDArray arr = NDArrays.create(new int[]{3,2});
-        INDArray evenRow = NDArrays.create(new double[]{1,2},new int[]{2});
+        INDArray evenRow = NDArrays.create(new float[]{1,2},new int[]{2});
         arr.putRow(0,evenRow);
         INDArray firstRow = arr.getRow(0);
         assertEquals(true, Shape.shapeEquals(new int[]{2},firstRow.shape()));
@@ -245,7 +245,7 @@ public abstract class NDArrayTests {
         assertEquals(evenRow,testRowEven);
 
 
-        INDArray row12 = NDArrays.create(new double[]{5,6},new int[]{2});
+        INDArray row12 = NDArrays.create(new float[]{5,6},new int[]{2});
         arr.putRow(1,row12);
         assertEquals(true, Shape.shapeEquals(new int[]{2}, arr.getRow(0).shape()));
         INDArray testRow1 = arr.getRow(1);
@@ -253,8 +253,8 @@ public abstract class NDArrayTests {
 
 
         INDArray multiSliceTest = NDArrays.create(NDArrays.linspace(1,16,16).data(),new int[]{4,2,2});
-        INDArray test = NDArrays.create(new double[]{7,8},new int[]{2});
-        INDArray test2 = NDArrays.create(new double[]{9,10},new int[]{2});
+        INDArray test = NDArrays.create(new float[]{7,8},new int[]{2});
+        INDArray test2 = NDArrays.create(new float[]{9,10},new int[]{2});
 
         assertEquals(test,multiSliceTest.slice(1).getRow(1));
         assertEquals(test2,multiSliceTest.slice(1).getRow(2));
@@ -265,13 +265,13 @@ public abstract class NDArrayTests {
     public void testOrdering() {
         //c ordering first
         NDArrays.factory().setOrder('c');
-        NDArrays.factory().setDType("double");
+        NDArrays.factory().setDType("float");
 
-        INDArray  data = NDArrays.create(new double[]{1,2,3,4},new int[]{2,2});
-        assertEquals(2.0,(double) data.getScalar(0,1).element(),1e-1);
+        INDArray  data = NDArrays.create(new float[]{1,2,3,4},new int[]{2,2});
+        assertEquals(2.0,(float) data.getScalar(0,1).element(),1e-1);
         NDArrays.factory().setOrder('f');
 
-        INDArray data2 = NDArrays.create(new double[]{1,2,3,4},new int[]{2,2});
+        INDArray data2 = NDArrays.create(new float[]{1,2,3,4},new int[]{2,2});
         assertNotEquals(data2.getScalar(0,1),data.getScalar(0,1));
         NDArrays.factory().setOrder('c');
 
@@ -284,7 +284,7 @@ public abstract class NDArrayTests {
     @Test
     public void testSum() {
         INDArray n = NDArrays.create(NDArrays.linspace(1,8,8).data(),new int[]{2,2,2});
-        INDArray test = NDArrays.create(new double[]{3,7,11,15},new int[]{2,2});
+        INDArray test = NDArrays.create(new float[]{3,7,11,15},new int[]{2,2});
         INDArray sum = n.sum(n.shape().length - 1);
         assertEquals(test,sum);
     }
@@ -295,7 +295,7 @@ public abstract class NDArrayTests {
 
         NDArrays.factory().setOrder('c');
 
-        double[] data = NDArrays.linspace(1,10,10).data();
+        float[] data = NDArrays.linspace(1,10,10).data();
         INDArray n = NDArrays.create(data,new int[]{10});
         INDArray transposed = n.transpose();
         assertEquals(true,n.isRowVector());
@@ -326,22 +326,22 @@ public abstract class NDArrayTests {
 
 
 
-        INDArray d3 = NDArrays.create(new double[]{1,2}).reshape(2,1);
-        INDArray d4 = NDArrays.create(new double[]{3,4});
+        INDArray d3 = NDArrays.create(new float[]{1,2}).reshape(2,1);
+        INDArray d4 = NDArrays.create(new float[]{3,4});
         INDArray resultNDArray = d3.mmul(d4);
-        INDArray result = NDArrays.create(new double[][]{{3,4},{6,8}});
+        INDArray result = NDArrays.create(new float[][]{{3,4},{6,8}});
 
         assertEquals(result,resultNDArray);
 
 
 
 
-        INDArray three = NDArrays.create(new double[]{3,4},new int[]{2});
+        INDArray three = NDArrays.create(new float[]{3,4},new int[]{2});
         INDArray test = NDArrays.create(NDArrays.linspace(1,30,30).data(),new int[]{3,5,2});
         INDArray sliceRow = test.slice(0).getRow(1);
         assertEquals(three,sliceRow);
 
-        INDArray twoSix = NDArrays.create(new double[]{2,6},new int[]{2,1});
+        INDArray twoSix = NDArrays.create(new float[]{2,6},new int[]{2,1});
         INDArray threeTwoSix = three.mmul(twoSix);
 
         INDArray sliceRowTwoSix = sliceRow.mmul(twoSix);
@@ -349,7 +349,7 @@ public abstract class NDArrayTests {
         assertEquals(threeTwoSix,sliceRowTwoSix);
 
 
-        INDArray vectorVector = NDArrays.create(new double[]{
+        INDArray vectorVector = NDArrays.create(new float[]{
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91, 98, 105, 0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 0, 9, 18, 27, 36, 45, 54, 63, 72, 81, 90, 99, 108, 117, 126, 135, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 0, 11, 22, 33, 44, 55, 66, 77, 88, 99, 110, 121, 132, 143, 154, 165, 0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168, 180, 0, 13, 26, 39, 52, 65, 78, 91, 104, 117, 130, 143, 156, 169, 182, 195, 0, 14, 28, 42, 56, 70, 84, 98, 112, 126, 140, 154, 168, 182, 196, 210, 0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225
         },new int[]{16,16});
 
@@ -366,7 +366,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testRowsColumns() {
-        double[] data = NDArrays.linspace(1,6,6).data();
+        float[] data = NDArrays.linspace(1,6,6).data();
         INDArray rows = NDArrays.create(data,new int[]{2,3});
         assertEquals(2,rows.rows());
         assertEquals(3,rows.columns());
@@ -394,12 +394,12 @@ public abstract class NDArrayTests {
 
 
         INDArray linspaced = NDArrays.linspace(1,4,4).reshape(2,2);
-        INDArray transposed = NDArrays.create(new double[]{1,3,2,4},new int[]{2,2});
+        INDArray transposed = NDArrays.create(new float[]{1,3,2,4},new int[]{2,2});
         assertEquals(transposed,linspaced.transpose());
 
         NDArrays.factory().setOrder('f');
         linspaced = NDArrays.linspace(1,4,4).reshape(2,2);
-        INDArray transposed2 = NDArrays.create(new double[]{1,2,3,4},new int[]{2,2});
+        INDArray transposed2 = NDArrays.create(new float[]{1,2,3,4},new int[]{2,2});
         transposed = linspaced.transpose();
         assertEquals(transposed,transposed2);
         NDArrays.factory().setOrder('c');
@@ -431,7 +431,7 @@ public abstract class NDArrayTests {
 
         INDArray toPermute = NDArrays.create(NDArrays.linspace(0,7,8).data(),new int[]{2,2,2});
         INDArray permuted = toPermute.permute(new int[]{2,1,0});
-        INDArray assertion = NDArrays.create(new double[]{0,4,2,6,1,5,3,7},new int[]{2,2,2});
+        INDArray assertion = NDArrays.create(new float[]{0,4,2,6,1,5,3,7},new int[]{2,2,2});
         assertEquals(permuted,assertion);
 
     }
@@ -447,8 +447,8 @@ public abstract class NDArrayTests {
         assertNotEquals(slice,slice1);
 
         INDArray arr = NDArrays.create(NDArrays.linspace(1,24,24).data(),new int[]{4,3,2});
-        INDArray slice0 = NDArrays.create(new double[]{1,2,3,4,5,6},new int[]{3,2});
-        INDArray slice2 = NDArrays.create(new double[]{7,8,9,10,11,12},new int[]{3,2});
+        INDArray slice0 = NDArrays.create(new float[]{1,2,3,4,5,6},new int[]{3,2});
+        INDArray slice2 = NDArrays.create(new float[]{7,8,9,10,11,12},new int[]{3,2});
 
         INDArray testSlice0 = arr.slice(0);
         INDArray testSlice1 = arr.slice(1);
@@ -468,8 +468,8 @@ public abstract class NDArrayTests {
     public void testSwapAxes() {
         INDArray n = NDArrays.create(NDArrays.linspace(0,7,8).data(),new int[]{2,2,2});
         INDArray assertion = n.permute(new int[]{2,1,0});
-        double[] data = assertion.data();
-        INDArray validate = NDArrays.create(new double[]{0,4,2,6,1,5,3,7},new int[]{2,2,2});
+        float[] data = assertion.data();
+        INDArray validate = NDArrays.create(new float[]{0,4,2,6,1,5,3,7},new int[]{2,2,2});
         assertEquals(validate,assertion);
 
 
@@ -485,7 +485,7 @@ public abstract class NDArrayTests {
         for(int i = 0; i < n.length(); i++) {
             int linearIndex = n.linearIndex(i);
             assertEquals(i ,linearIndex);
-            double d =  (double) n.getScalar(i).element();
+            float d =  (float) n.getScalar(i).element();
             assertEquals(i + 1,d,1e-1);
         }
     }
@@ -497,7 +497,7 @@ public abstract class NDArrayTests {
             testList.add(NDArrays.scalar(i + 1));
 
         INDArray test = NDArrays.create(testList,new int[]{testList.size()});
-        INDArray expected = NDArrays.create(new double[]{1,2,3,4,5},new int[]{5});
+        INDArray expected = NDArrays.create(new float[]{1,2,3,4,5},new int[]{5});
         assertEquals(expected,test);
     }
 
@@ -516,11 +516,11 @@ public abstract class NDArrayTests {
                 log.info("Operator " + nd);
                 INDArray test = (INDArray) nd.getResult();
                 if(count.get() == 0) {
-                    INDArray firstDimension = NDArrays.create(new double[]{1,2},new int[]{2});
+                    INDArray firstDimension = NDArrays.create(new float[]{1,2},new int[]{2});
                     assertEquals(firstDimension,test);
                 }
                 else {
-                    INDArray firstDimension = NDArrays.create(new double[]{3,4},new int[]{2});
+                    INDArray firstDimension = NDArrays.create(new float[]{3,4},new int[]{2});
                     assertEquals(firstDimension,test);
 
                 }
@@ -538,11 +538,11 @@ public abstract class NDArrayTests {
                 log.info("Operator " + nd);
                 INDArray test = nd;
                 if(count.get() == 0) {
-                    INDArray firstDimension = NDArrays.create(new double[]{1,2},new int[]{2});
+                    INDArray firstDimension = NDArrays.create(new float[]{1,2},new int[]{2});
                     assertEquals(firstDimension,test);
                 }
                 else {
-                    INDArray firstDimension = NDArrays.create(new double[]{3,4},new int[]{2});
+                    INDArray firstDimension = NDArrays.create(new float[]{3,4},new int[]{2});
                     assertEquals(firstDimension,test);
 
                 }
@@ -563,11 +563,11 @@ public abstract class NDArrayTests {
                 log.info("Operator " + nd);
                 INDArray test = (INDArray) nd.getResult();
                 if(count.get() == 0) {
-                    INDArray firstDimension = NDArrays.create(new double[]{1,3},new int[]{2});
+                    INDArray firstDimension = NDArrays.create(new float[]{1,3},new int[]{2});
                     assertEquals(firstDimension,test);
                 }
                 else {
-                    INDArray firstDimension = NDArrays.create(new double[]{2,4},new int[]{2});
+                    INDArray firstDimension = NDArrays.create(new float[]{2,4},new int[]{2});
                     assertEquals(firstDimension,test);
 
                 }
@@ -585,11 +585,11 @@ public abstract class NDArrayTests {
                 log.info("Operator " + nd);
                 INDArray test = nd;
                 if(count.get() == 0) {
-                    INDArray firstDimension = NDArrays.create(new double[]{1,3},new int[]{2});
+                    INDArray firstDimension = NDArrays.create(new float[]{1,3},new int[]{2});
                     assertEquals(firstDimension,test);
                 }
                 else {
-                    INDArray firstDimension = NDArrays.create(new double[]{2,4},new int[]{2});
+                    INDArray firstDimension = NDArrays.create(new float[]{2,4},new int[]{2});
                     assertEquals(firstDimension,test);
 
                 }
@@ -613,14 +613,14 @@ public abstract class NDArrayTests {
         INDArray slice0 = test.slice(0,1);
         INDArray slice02 = test.slice(1,1);
 
-        INDArray assertSlice0 = NDArrays.create(new double[]{1,2});
-        INDArray assertSlice02 = NDArrays.create(new double[]{3,4});
+        INDArray assertSlice0 = NDArrays.create(new float[]{1,2});
+        INDArray assertSlice02 = NDArrays.create(new float[]{3,4});
         assertEquals(assertSlice0,slice0);
         assertEquals(assertSlice02,slice02);
 
         //column
-        INDArray assertSlice1 = NDArrays.create(new double[]{1,3});
-        INDArray assertSlice12 = NDArrays.create(new double[]{2,4});
+        INDArray assertSlice1 = NDArrays.create(new float[]{1,3});
+        INDArray assertSlice12 = NDArrays.create(new float[]{2,4});
 
 
         INDArray slice1 = test.slice(0,0);
@@ -636,7 +636,7 @@ public abstract class NDArrayTests {
         INDArray firstSliceFirstDimension = arr.slice(0,1);
         INDArray secondSliceFirstDimension = arr.slice(1,1);
 
-        INDArray firstSliceFirstDimensionAssert = NDArrays.create(new double[]{1,2,7,8,13,14,19,20});
+        INDArray firstSliceFirstDimensionAssert = NDArrays.create(new float[]{1,2,7,8,13,14,19,20});
         INDArray secondSliceFirstDimension2Test = firstSliceFirstDimensionAssert.add(1);
         assertEquals(secondSliceFirstDimension,secondSliceFirstDimension);
 
@@ -655,7 +655,7 @@ public abstract class NDArrayTests {
         INDArray n2 = NDArrays.create(NDArrays.linspace(1, 30, 30).data(),new int[]{3,5,2});
         INDArray swapped   = n2.swapAxes(n2.shape().length - 1,1);
         INDArray firstSlice2 = swapped.slice(0).slice(0);
-        INDArray oneThreeFiveSevenNine = NDArrays.create(new double[]{1,3,5,7,9});
+        INDArray oneThreeFiveSevenNine = NDArrays.create(new float[]{1,3,5,7,9});
         assertEquals(firstSlice2,oneThreeFiveSevenNine);
         INDArray raveled = oneThreeFiveSevenNine.reshape(5,1);
         INDArray raveledOneThreeFiveSevenNine = oneThreeFiveSevenNine.reshape(5,1);
@@ -664,7 +664,7 @@ public abstract class NDArrayTests {
 
 
         INDArray firstSlice3 = swapped.slice(0).slice(1);
-        INDArray twoFourSixEightTen = NDArrays.create(new double[]{2,4,6,8,10});
+        INDArray twoFourSixEightTen = NDArrays.create(new float[]{2,4,6,8,10});
         assertEquals(firstSlice2,oneThreeFiveSevenNine);
         INDArray raveled2 = twoFourSixEightTen.reshape(5,1);
         INDArray raveled3 = firstSlice3.reshape(5,1);
@@ -689,10 +689,10 @@ public abstract class NDArrayTests {
 
     @Test
     public void testRowVectorOps() {
-        INDArray twoByTwo = NDArrays.create(new double[]{1,2,3,4},new int[]{2,2});
-        INDArray toAdd = NDArrays.create(new double[]{1,2},new int[]{2});
+        INDArray twoByTwo = NDArrays.create(new float[]{1,2,3,4},new int[]{2,2});
+        INDArray toAdd = NDArrays.create(new float[]{1,2},new int[]{2});
         twoByTwo.addiRowVector(toAdd);
-        INDArray assertion = NDArrays.create(new double[]{2,4,4,6},new int[]{2,2});
+        INDArray assertion = NDArrays.create(new float[]{2,4,4,6},new int[]{2,2});
         assertEquals(assertion,twoByTwo);
 
 
@@ -701,10 +701,10 @@ public abstract class NDArrayTests {
 
     @Test
     public void testColumnVectorOps() {
-        INDArray twoByTwo = NDArrays.create(new double[]{1,2,3,4},new int[]{2,2});
-        INDArray toAdd = NDArrays.create(new double[]{1,2},new int[]{2,1});
+        INDArray twoByTwo = NDArrays.create(new float[]{1,2,3,4},new int[]{2,2});
+        INDArray toAdd = NDArrays.create(new float[]{1,2},new int[]{2,1});
         twoByTwo.addiColumnVector(toAdd);
-        INDArray assertion = NDArrays.create(new double[]{2,3,5,6},new int[]{2,2});
+        INDArray assertion = NDArrays.create(new float[]{2,3,5,6},new int[]{2,2});
         assertEquals(assertion,twoByTwo);
 
 
@@ -718,9 +718,9 @@ public abstract class NDArrayTests {
     @Test
     public void testMeans() {
         INDArray a = NDArrays.linspace(1,4,4).reshape(2,2);
-        assertEquals(NDArrays.create(new double[]{2,3}),a.mean(0));
-        assertEquals(NDArrays.create(new double[]{1.5,3.5}),a.mean(1));
-        assertEquals(2.5,(double) a.mean(Integer.MAX_VALUE).element(),1e-1);
+        assertEquals(NDArrays.create(new float[]{2,3}),a.mean(0));
+        assertEquals(NDArrays.create(new float[]{1.5f,3.5f}),a.mean(1));
+        assertEquals(2.5,(float) a.mean(Integer.MAX_VALUE).element(),1e-1);
 
     }
 
@@ -728,9 +728,9 @@ public abstract class NDArrayTests {
     @Test
     public void testSums() {
         INDArray a = NDArrays.linspace(1,4,4).reshape(2,2);
-        assertEquals(NDArrays.create(new double[]{4,6}),a.sum(0));
-        assertEquals(NDArrays.create(new double[]{3,7}),a.sum(1));
-        assertEquals(10,(double) a.sum(Integer.MAX_VALUE).element(),1e-1);
+        assertEquals(NDArrays.create(new float[]{4,6}),a.sum(0));
+        assertEquals(NDArrays.create(new float[]{3,7}),a.sum(1));
+        assertEquals(10,(float) a.sum(Integer.MAX_VALUE).element(),1e-1);
 
 
     }
@@ -738,8 +738,8 @@ public abstract class NDArrayTests {
 
     @Test
     public void testCumSum() {
-        INDArray n = NDArrays.create(new double[]{1,2,3,4}, new int[]{4});
-        INDArray cumSumAnswer = NDArrays.create(new double[]{1,3,6,10}, new int[]{4});
+        INDArray n = NDArrays.create(new float[]{1,2,3,4}, new int[]{4});
+        INDArray cumSumAnswer = NDArrays.create(new float[]{1,3,6,10}, new int[]{4});
         INDArray cumSumTest = n.cumsum(0);
         assertEquals(cumSumAnswer,cumSumTest);
 
@@ -748,7 +748,7 @@ public abstract class NDArrayTests {
         INDArray cumSumTest2 = n2.cumsum(n2.shape().length - 1);
         assertEquals(cumSumCorrect2,cumSumTest2);
 
-        INDArray axis0assertion = NDArrays.create(new double[]{1,2,3,4,5,6,8,10,12,14,16,18,21,24,27,30,33,36,40,44,48,52,56,60},n2.shape());
+        INDArray axis0assertion = NDArrays.create(new float[]{1,2,3,4,5,6,8,10,12,14,16,18,21,24,27,30,33,36,40,44,48,52,56,60},n2.shape());
         INDArray axis0Test = n2.cumsum(0);
         assertEquals(axis0assertion,axis0Test);
 
@@ -775,29 +775,29 @@ public abstract class NDArrayTests {
     @Test
     public void testVectorAlongDimension() {
         INDArray arr = NDArrays.linspace(1,24,24).reshape(new int[]{4,3,2});
-        INDArray assertion = NDArrays.create(new double[]{1,2}, new int[]{2});
-        assertEquals(NDArrays.create(new double[]{3,4},new int[]{2}),arr.vectorAlongDimension(1,2));
+        INDArray assertion = NDArrays.create(new float[]{1,2}, new int[]{2});
+        assertEquals(NDArrays.create(new float[]{3,4},new int[]{2}),arr.vectorAlongDimension(1,2));
         assertEquals(assertion,arr.vectorAlongDimension(0,2));
-        assertEquals(arr.vectorAlongDimension(0,1),NDArrays.create(new double[]{1,3,5}));
+        assertEquals(arr.vectorAlongDimension(0,1),NDArrays.create(new float[]{1,3,5}));
 
-        INDArray testColumn2Assertion = NDArrays.create(new double[]{7,9,11});
+        INDArray testColumn2Assertion = NDArrays.create(new float[]{7,9,11});
         INDArray testColumn2 = arr.vectorAlongDimension(1,1);
 
         assertEquals(testColumn2Assertion,testColumn2);
 
 
-        INDArray testColumn3Assertion = NDArrays.create(new double[]{13,15,17});
+        INDArray testColumn3Assertion = NDArrays.create(new float[]{13,15,17});
         INDArray testColumn3 = arr.vectorAlongDimension(2,1);
         assertEquals(testColumn3Assertion,testColumn3);
 
 
         INDArray v1= NDArrays.linspace(1,4,4).reshape(new int[]{2,2});
         INDArray testColumnV1 = v1.vectorAlongDimension(0,0);
-        INDArray testColumnV1Assertion = NDArrays.create(new double[]{1,3});
+        INDArray testColumnV1Assertion = NDArrays.create(new float[]{1,3});
         assertEquals(testColumnV1Assertion,testColumnV1);
 
         INDArray testRowV1 = v1.vectorAlongDimension(1,0);
-        INDArray testRowV1Assertion = NDArrays.create(new double[]{2,4});
+        INDArray testRowV1Assertion = NDArrays.create(new float[]{2,4});
         assertEquals(testRowV1Assertion,testRowV1);
 
 
@@ -815,11 +815,11 @@ public abstract class NDArrayTests {
     public void testSquareMatrix() {
         INDArray n = NDArrays.create(NDArrays.linspace(1,8,8).data(),new int[]{2,2,2});
         INDArray eightFirstTest = n.vectorAlongDimension(0,2);
-        INDArray eightFirstAssertion = NDArrays.create(new double[]{1,2},new int[]{2});
+        INDArray eightFirstAssertion = NDArrays.create(new float[]{1,2},new int[]{2});
         assertEquals(eightFirstAssertion,eightFirstTest);
 
         INDArray eightFirstTestSecond = n.vectorAlongDimension(1,2);
-        INDArray eightFirstTestSecondAssertion = NDArrays.create(new double[]{3,4});
+        INDArray eightFirstTestSecondAssertion = NDArrays.create(new float[]{3,4});
         assertEquals(eightFirstTestSecondAssertion,eightFirstTestSecond);
 
     }
@@ -833,24 +833,24 @@ public abstract class NDArrayTests {
 
     @Test
     public void testGetScalar() {
-        INDArray n = NDArrays.create(new double[]{1,2,3,4},new int[]{4});
+        INDArray n = NDArrays.create(new float[]{1,2,3,4},new int[]{4});
         assertTrue(n.isVector());
         for(int i = 0; i < n.length(); i++) {
-            INDArray scalar = NDArrays.scalar((double) i + 1);
+            INDArray scalar = NDArrays.scalar((float) i + 1);
             assertEquals(scalar,n.getScalar(i));
         }
 
         NDArrays.factory().setOrder('f');
-        n = NDArrays.create(new double[]{1,2,3,4},new int[]{4});
+        n = NDArrays.create(new float[]{1,2,3,4},new int[]{4});
         for(int i = 0; i < n.length(); i++) {
-            INDArray scalar = NDArrays.scalar((double) i + 1);
+            INDArray scalar = NDArrays.scalar((float) i + 1);
             assertEquals(scalar,n.getScalar(i));
         }
 
 
-        INDArray twoByTwo = NDArrays.create(new double[][]{{1,2},{3,4}});
+        INDArray twoByTwo = NDArrays.create(new float[][]{{1,2},{3,4}});
         INDArray column = twoByTwo.getColumn(0);
-        assertEquals(NDArrays.create(new double[]{1,3}),column);
+        assertEquals(NDArrays.create(new float[]{1,3}),column);
         assertEquals(1,column.get(0),1e-1);
         assertEquals(3,column.get(1),1e-1);
         assertEquals(NDArrays.scalar(1),column.getScalar(0));
@@ -863,7 +863,7 @@ public abstract class NDArrayTests {
     public void testGetMulti() {
         assertEquals(8,n.length());
         assertEquals(true,Arrays.equals(ArrayUtil.of(2, 2, 2),n.shape()));
-        double val = (double) n.getScalar(1,1,1).element();
+        float val = (float) n.getScalar(1,1,1).element();
         assertEquals(8.0,val,1e-6);
     }
 
@@ -881,13 +881,13 @@ public abstract class NDArrayTests {
     @Test
     public void testPutRowGetRowOrdering() {
         INDArray row1 = NDArrays.linspace(1,4,4).reshape(2,2);
-        INDArray put = NDArrays.create(new double[]{5,6});
+        INDArray put = NDArrays.create(new float[]{5,6});
         row1.putRow(1,put);
 
         NDArrays.factory().setOrder('f');
 
         INDArray row1Fortran = NDArrays.linspace(1,4,4).reshape(2,2);
-        INDArray putFortran = NDArrays.create(new double[]{5,6});
+        INDArray putFortran = NDArrays.create(new float[]{5,6});
         row1Fortran.putRow(1,putFortran);
         assertNotEquals(row1,row1Fortran);
 
@@ -901,13 +901,13 @@ public abstract class NDArrayTests {
     @Test
     public void testPutRowFortran() {
         INDArray row1 = NDArrays.linspace(1,4,4).reshape(2,2);
-        INDArray put = NDArrays.create(new double[]{5,6});
+        INDArray put = NDArrays.create(new float[]{5,6});
         row1.putRow(1,put);
 
         NDArrays.factory().setOrder('f');
 
-        INDArray row1Fortran =NDArrays.create(new double[][]{{1,2},{3,4}});
-        INDArray putFortran = NDArrays.create(new double[]{5,6});
+        INDArray row1Fortran =NDArrays.create(new float[][]{{1,2},{3,4}});
+        INDArray putFortran = NDArrays.create(new float[]{5,6});
         row1Fortran.putRow(1,putFortran);
         assertEquals(row1,row1Fortran);
 
@@ -968,7 +968,7 @@ public abstract class NDArrayTests {
         assertEquals(arr.length(),flattened.length());
         assertEquals(true,Shape.shapeEquals(new int[]{1, arr.length()}, flattened.shape()));
         for(int i = 0; i < arr.length(); i++) {
-            assertEquals(i + 1,(double) flattened.getScalar(i).element(),1e-1);
+            assertEquals(i + 1,(float) flattened.getScalar(i).element(),1e-1);
         }
         assertTrue(flattened.isVector());
 
@@ -994,27 +994,27 @@ public abstract class NDArrayTests {
             public void operate(DimensionSlice nd) {
                 INDArray test =(INDArray) nd.getResult();
                 if(count.get() == 0) {
-                    INDArray answer = NDArrays.create(new double[]{1,7,13,19},new int[]{4});
+                    INDArray answer = NDArrays.create(new float[]{1,7,13,19},new int[]{4});
                     assertEquals(answer,test);
                 }
                 else if(count.get() == 1) {
-                    INDArray answer = NDArrays.create(new double[]{2,8,14,20},new int[]{4});
+                    INDArray answer = NDArrays.create(new float[]{2,8,14,20},new int[]{4});
                     assertEquals(answer,test);
                 }
                 else if(count.get() == 2) {
-                    INDArray answer = NDArrays.create(new double[]{3,9,15,21},new int[]{4});
+                    INDArray answer = NDArrays.create(new float[]{3,9,15,21},new int[]{4});
                     assertEquals(answer,test);
                 }
                 else if(count.get() == 3) {
-                    INDArray answer = NDArrays.create(new double[]{4,10,16,22},new int[]{4});
+                    INDArray answer = NDArrays.create(new float[]{4,10,16,22},new int[]{4});
                     assertEquals(answer,test);
                 }
                 else if(count.get() == 4) {
-                    INDArray answer = NDArrays.create(new double[]{5,11,17,23},new int[]{4});
+                    INDArray answer = NDArrays.create(new float[]{5,11,17,23},new int[]{4});
                     assertEquals(answer,test);
                 }
                 else if(count.get() == 5) {
-                    INDArray answer = NDArrays.create(new double[]{6,12,18,24},new int[]{4});
+                    INDArray answer = NDArrays.create(new float[]{6,12,18,24},new int[]{4});
                     assertEquals(answer,test);
                 }
 
@@ -1031,27 +1031,27 @@ public abstract class NDArrayTests {
             public void operate(INDArray nd) {
                 INDArray test =  nd;
                 if(count.get() == 0) {
-                    INDArray answer = NDArrays.create(new double[]{1,2},new int[]{2});
+                    INDArray answer = NDArrays.create(new float[]{1,2},new int[]{2});
                     assertEquals(answer,test);
                 }
                 else if(count.get() == 1) {
-                    INDArray answer = NDArrays.create(new double[]{3,4},new int[]{2});
+                    INDArray answer = NDArrays.create(new float[]{3,4},new int[]{2});
                     assertEquals(answer,test);
                 }
                 else if(count.get() == 2) {
-                    INDArray answer = NDArrays.create(new double[]{5,6},new int[]{2});
+                    INDArray answer = NDArrays.create(new float[]{5,6},new int[]{2});
                     assertEquals(answer,test);
                 }
                 else if(count.get() == 3) {
-                    INDArray answer = NDArrays.create(new double[]{7,8},new int[]{2});
+                    INDArray answer = NDArrays.create(new float[]{7,8},new int[]{2});
                     assertEquals(answer,test);
                 }
                 else if(count.get() == 4) {
-                    INDArray answer = NDArrays.create(new double[]{9,10},new int[]{2});
+                    INDArray answer = NDArrays.create(new float[]{9,10},new int[]{2});
                     assertEquals(answer,test);
                 }
                 else if(count.get() == 5) {
-                    INDArray answer = NDArrays.create(new double[]{11,12},new int[]{2});
+                    INDArray answer = NDArrays.create(new float[]{11,12},new int[]{2});
                     assertEquals(answer,test);
                 }
 

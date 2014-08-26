@@ -31,7 +31,7 @@ public class ConvRBMTest {
         DataSet d = fetcher.next();
         INDArray train = d.getFeatureMatrix().reshape(28,28);
 
-       rbm.trainTillConvergence(train,1e-2,new Object[]{1,1e-2,100});
+       rbm.trainTillConvergence(train,1e-2f,new Object[]{1,1e-2f,100});
 
 
 

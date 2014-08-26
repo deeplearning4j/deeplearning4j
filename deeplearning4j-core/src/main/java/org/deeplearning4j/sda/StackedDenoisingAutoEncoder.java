@@ -46,7 +46,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
     }
 
 
-    public void pretrain( double lr,  double corruptionLevel,  int epochs) {
+    public void pretrain( float lr,  float corruptionLevel,  int epochs) {
         pretrain(this.getInput(),lr,corruptionLevel,epochs);
     }
 
@@ -59,8 +59,8 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
      */
     @Override
     public void pretrain(DataSetIterator iter, Object[] otherParams) {
-        double corruptionLevel = (double) otherParams[0];
-        double lr = (Double) otherParams[1];
+        float corruptionLevel = (float) otherParams[0];
+        float lr = (Float) otherParams[1];
         int epochs = (Integer) otherParams[2];
         int passes = otherParams.length > 3 ? (Integer) otherParams[3] : 1;
         for(int i = 0; i < passes; i++)
@@ -80,7 +80,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
      * @param lr the learning rate to use
      * @param iterations the number of epochs to train
      */
-    public void pretrain(DataSetIterator iter,double corruptionLevel,double lr,int iterations) {
+    public void pretrain(DataSetIterator iter,float corruptionLevel,float lr,int iterations) {
 
         INDArray layerInput;
 
@@ -97,7 +97,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
                     else
                         setInput(input);
                     //override learning rate where present
-                    double realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : lr;
+                    float realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : lr;
                     if (isForceNumEpochs()) {
                         for (int iteration = 0; iteration < iterations; iteration++) {
                             log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
@@ -132,7 +132,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
                     log.info("Training on layer " + (i + 1));
                     //override learning rate where present
-                    double realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : lr;
+                    float realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : lr;
                     if(isForceNumEpochs()) {
                         for(int iteration = 0; iteration < iterations; iteration++) {
                             log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
@@ -160,8 +160,8 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
             otherParams = new Object[]{0.01,0.3,1000};
         }
 
-        Double lr = (Double) otherParams[0];
-        Double corruptionLevel = (Double) otherParams[1];
+        Float lr = (Float) otherParams[0];
+        Float corruptionLevel = (Float) otherParams[1];
         Integer iterations = (Integer) otherParams[2];
 
         pretrain(input, lr, corruptionLevel, iterations);
@@ -177,7 +177,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
      * corruption level should be) the percent of inputs to corrupt
      * @param iterations the number of iterations to run
      */
-    public void pretrain(INDArray input,double lr,  double corruptionLevel,  int iterations) {
+    public void pretrain(INDArray input,float lr,  float corruptionLevel,  int iterations) {
         if(this.getInput() == null)
             initializeLayers(input.dup());
 
@@ -313,7 +313,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
          * @return
          */
         @Override
-        public Builder outputLayerDropout(double outputLayerDropout) {
+        public Builder outputLayerDropout(float outputLayerDropout) {
             super.outputLayerDropout(outputLayerDropout);
             return this;
         }
@@ -344,7 +344,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
         }
 
         @Override
-        public Builder learningRateForLayer(Map<Integer, Double> learningRates) {
+        public Builder learningRateForLayer(Map<Integer, Float> learningRates) {
             super.learningRateForLayer(learningRates);
             return this;
         }
@@ -424,7 +424,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
          * @param dropOut the dropout to use
          * @return builder pattern
          */
-        public Builder withDropOut(double dropOut) {
+        public Builder withDropOut(float dropOut) {
             super.withDropOut(dropOut);
             return this;
         }
@@ -459,7 +459,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
             return this;
         }
 
-        public Builder withSparsity(double sparsity) {
+        public Builder withSparsity(float sparsity) {
             super.withSparsity(sparsity);
             return this;
         }
@@ -531,7 +531,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
          * @param momentum
          * @return
          */
-        public Builder withMomentum(double momentum) {
+        public Builder withMomentum(float momentum) {
             super.withMomentum(momentum);
             return this;
         }
@@ -551,7 +551,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
          * @param l2
          * @return
          */
-        public Builder withL2(double l2) {
+        public Builder withL2(float l2) {
             super.withL2(l2);
             return this;
         }
@@ -641,7 +641,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
          * @return
          */
         @Override
-        public Builder momentumAfterByLayer(Map<Integer, Map<Integer, Double>> momentumAfterByLayer) {
+        public Builder momentumAfterByLayer(Map<Integer, Map<Integer, Float>> momentumAfterByLayer) {
             super.momentumAfterByLayer(momentumAfterByLayer);
             return this;
         }
@@ -653,7 +653,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
          * @return
          */
         @Override
-        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
+        public Builder momentumAfter(Map<Integer, Float> momentumAfter) {
             super.momentumAfter(momentumAfter);
             return this;
         }

@@ -51,7 +51,7 @@ public class BackPropOptimizerTests {
         dbn.setLabels(NDArrays.create(1, nOuts));
 
 
-        BackPropOptimizer op = new BackPropOptimizer(dbn,1e-1,1000);
+        BackPropOptimizer op = new BackPropOptimizer(dbn,1e-1f,1000);
         INDArray layerParams = op.getParameters();
 
         ParamRange r = dbn.startIndexForLayer(0);

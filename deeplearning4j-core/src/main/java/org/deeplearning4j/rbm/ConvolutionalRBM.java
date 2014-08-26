@@ -50,7 +50,7 @@ public class ConvolutionalRBM extends RBM  {
     //cache last propup/propdown
     protected INDArray eVis,eHid;
     protected INDArray wGradient,vBiasGradient,hBiasGradient;
-    protected double sparseGain = 5;
+    protected float sparseGain = 5;
     public int wRows = 0,wCols = 0,wSlices = 0;
     private INDArray featureMap;
     //same size as W
@@ -61,7 +61,7 @@ public class ConvolutionalRBM extends RBM  {
 
 
     protected ConvolutionalRBM(INDArray input, int nVisible, int n_hidden, INDArray W,
-                               INDArray hbias, INDArray vBias, RandomGenerator rng,double fanIn,RealDistribution dist) {
+                               INDArray hbias, INDArray vBias, RandomGenerator rng,float fanIn,RealDistribution dist) {
         super(input, nVisible, n_hidden, W, hbias, vBias, rng,fanIn,dist);
     }
 
@@ -182,7 +182,7 @@ public class ConvolutionalRBM extends RBM  {
      * @param gradient the gradient to modify
      * @param learningRate the learning rate for the current iteratiaon
      */
-    protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,double learningRate) {
+    protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient, float learningRate) {
         INDArray wGradient = gradient.getwGradient();
 
         INDArray hBiasGradient = gradient.gethBiasGradient();
@@ -273,7 +273,7 @@ public class ConvolutionalRBM extends RBM  {
             for(int j = 1; j < endColBlock; j++) {
                 int cols = (j - 1)  * xStride + 1;
                 int colsMax = j  * xStride;
-                double blockVal = (double) input.sum(1).sum(Integer.MAX_VALUE).element();
+                float blockVal = (float) input.sum(1).sum(Integer.MAX_VALUE).element();
                 int rowLength = rowsMax - rowsMin;
                 int colLength = colsMax - cols;
                 INDArray block = NDArrays.create(rowLength,colLength);
@@ -301,10 +301,10 @@ public class ConvolutionalRBM extends RBM  {
      * @return reconstruction error
      */
     @Override
-    public double getReConstructionCrossEntropy() {
+    public float getReConstructionCrossEntropy() {
         if(eVis == null)
             reconstruct(input);
-        double squaredLoss = (double) Transforms.pow(eVis.sub(input), 2).sum(Integer.MAX_VALUE).element();
+        float squaredLoss = (float) Transforms.pow(eVis.sub(input), 2).sum(Integer.MAX_VALUE).element();
         return squaredLoss;
     }
 
@@ -343,10 +343,10 @@ public class ConvolutionalRBM extends RBM  {
      * Backprop with the output being the reconstruction
      */
     @Override
-    public void backProp(double lr,int iterations,Object[] extraParams) {
+    public void backProp(float lr,int iterations,Object[] extraParams) {
         boolean train = false;
 
-        double currRecon = this.getReConstructionCrossEntropy();
+        float currRecon = this.getReConstructionCrossEntropy();
 
         NeuralNetwork revert = clone();
         int numEpochs = 0;
@@ -388,7 +388,7 @@ public class ConvolutionalRBM extends RBM  {
             getW().addi(W.sub(delta));
 
 
-            double newRecon = this.getReConstructionCrossEntropy();
+            float newRecon = this.getReConstructionCrossEntropy();
             //prevent weights from exploding too far in either direction, we want this as close to zero as possible
             if(newRecon > currRecon || currRecon < 0 && newRecon < currRecon) {
                 update((BaseNeuralNetwork) revert);
@@ -421,7 +421,7 @@ public class ConvolutionalRBM extends RBM  {
     @Override
     public NeuralNetworkGradient getGradient(Object[] params) {
         int k = (int) params[0];
-        double learningRate = (double) params[1];
+        float learningRate = (float) params[1];
 
 
         if(wAdaGrad != null)
@@ -472,10 +472,10 @@ public class ConvolutionalRBM extends RBM  {
 
 
 
-        INDArray vBiasGradient = NDArrays.scalar((double) chainStart.sub(hiddenMeans).sum(1).sum(Integer.MAX_VALUE).element());
+        INDArray vBiasGradient = NDArrays.scalar((float) chainStart.sub(hiddenMeans).sum(1).sum(Integer.MAX_VALUE).element());
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
-        INDArray  hBiasGradient = NDArrays.scalar((double) (input.sub(nvSamples)).sum(1).sum(Integer.MAX_VALUE).element());
+        INDArray  hBiasGradient = NDArrays.scalar((float) (input.sub(nvSamples)).sum(1).sum(Integer.MAX_VALUE).element());
         NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 
 
@@ -494,11 +494,11 @@ public class ConvolutionalRBM extends RBM  {
      * @param learningRate  the learning rate used
      */
     @Override
-    protected void applySparsity(INDArray hBiasGradient, double learningRate) {
+    protected void applySparsity(INDArray hBiasGradient, float learningRate) {
         // dcSparse = self.lRate*self.sparseGain*(squeeze(self.sparsity -mean(mean(self.eHid0))));
         //self.c = self.c + dcSparse;
         if(sparsity != 0) {
-            INDArray negMean = NDArrays.scalar(sparseGain * (sparsity -(double) chainStart.mean(1).mean(Integer.MAX_VALUE).element()));
+            INDArray negMean = NDArrays.scalar(sparseGain * (sparsity -(float) chainStart.mean(1).mean(Integer.MAX_VALUE).element()));
             if(useAdaGrad)
                 negMean.muli(hBiasAdaGrad.getLearningRates(hBiasGradient));
             else
@@ -629,11 +629,11 @@ public class ConvolutionalRBM extends RBM  {
         this.hBiasGradient = hBiasGradient;
     }
 
-    public double getSparseGain() {
+    public float getSparseGain() {
         return sparseGain;
     }
 
-    public void setSparseGain(double sparseGain) {
+    public void setSparseGain(float sparseGain) {
         this.sparseGain = sparseGain;
     }
 
@@ -686,7 +686,7 @@ public class ConvolutionalRBM extends RBM  {
         protected int[] visibleSize;
         protected int[] filterSize;
         protected int[] fmSize;
-        protected double sparseGain = 5;
+        protected float sparseGain = 5;
 
         public Builder() {
             this.clazz = ConvolutionalRBM.class;
@@ -705,7 +705,7 @@ public class ConvolutionalRBM extends RBM  {
         }
 
 
-        public Builder withSparseGain(double sparseGain) {
+        public Builder withSparseGain(float sparseGain) {
             this.sparseGain = sparseGain;
             return this;
         }
@@ -741,7 +741,7 @@ public class ConvolutionalRBM extends RBM  {
         }
 
         @Override
-        public Builder withDropOut(double dropOut) {
+        public Builder withDropOut(float dropOut) {
             super.withDropOut(dropOut);
             return this;
         }
@@ -771,13 +771,13 @@ public class ConvolutionalRBM extends RBM  {
         }
 
         @Override
-        public Builder fanIn(double fanIn) {
+        public Builder fanIn(float fanIn) {
             super.fanIn(fanIn);
             return this;
         }
 
         @Override
-        public Builder withL2(double l2) {
+        public Builder withL2(float l2) {
             super.withL2(l2);
             return this;
         }
@@ -800,13 +800,13 @@ public class ConvolutionalRBM extends RBM  {
         }
 
         @Override
-        public Builder withSparsity(double sparsity) {
+        public Builder withSparsity(float sparsity) {
             super.withSparsity(sparsity);
             return this;
         }
 
         @Override
-        public Builder withMomentum(double momentum) {
+        public Builder withMomentum(float momentum) {
             super.withMomentum(momentum);
             return this;
         }

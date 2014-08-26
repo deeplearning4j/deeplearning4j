@@ -5,13 +5,11 @@ import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 
-import cc.mallet.optimize.Optimizable;
-
 /**
  * Output layer optimizer
  * @author Adam Gibson
  */
-public class OutputLayerOptimizer implements Optimizable.ByGradientValue,OptimizableByGradientValueMatrix {
+public class OutputLayerOptimizer implements  OptimizableByGradientValueMatrix {
 
 	private OutputLayer logReg;
 	private double lr;
@@ -36,8 +34,8 @@ public class OutputLayerOptimizer implements Optimizable.ByGradientValue,Optimiz
 		
 	}
 
-	@Override
-	public void getParameters(double[] buffer) {
+
+	public void getParameters(float[] buffer) {
 		for(int i = 0; i < buffer.length; i++) {
 			buffer[i] = getParameter(i);
 		}
@@ -47,42 +45,42 @@ public class OutputLayerOptimizer implements Optimizable.ByGradientValue,Optimiz
 
 	}
 
-	@Override
-	public double getParameter(int index) {
+
+	public float getParameter(int index) {
 		if(index >= logReg.getW().length())
-			return (double) logReg.getB().getScalar(index - logReg.getW().length()).element();
-		return (double) logReg.getW().getScalar(index).element();
+			return (float) logReg.getB().getScalar(index - logReg.getW().length()).element();
+		return (float) logReg.getW().getScalar(index).element();
 	}
 
-	@Override
-	public void setParameters(double[] params) {
+
+	public void setParameters(float[] params) {
 		for(int i = 0; i < params.length; i++) {
 			setParameter(i,params[i]);
 		}
 	}
 
 	@Override
-	public void setParameter(int index, double value) {
+	public void setParameter(int index, float value) {
 		if(index >= logReg.getW().length())
 			logReg.getB().putScalar(index - logReg.getW().length(), value);
 		else
 			logReg.getW().putScalar(index, value);
 	}
 
-	@Override
-	public void getValueGradient(double[] buffer) {
+
+	public void getValueGradient(float[] buffer) {
 		OutputLayerGradient grad = logReg.getGradient(lr);
 		for(int i = 0; i < buffer.length; i++) {
 			if(i < logReg.getW().length())
-				buffer[i] = (double) grad.getwGradient().getScalar(i).element();
+				buffer[i] = (float) grad.getwGradient().getScalar(i).element();
 			else
-				buffer[i] = (double) grad.getbGradient().getScalar(i - logReg.getW().length()).element();
+				buffer[i] = (float) grad.getbGradient().getScalar(i - logReg.getW().length()).element();
 			
 		}
 	}
 
 	@Override
-	public double getValue() {
+	public float getValue() {
 		return -logReg.score();
 	}
 

@@ -1,8 +1,6 @@
 package org.deeplearning4j.optimize;
 
-import cc.mallet.optimize.Optimizable;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 
 import org.deeplearning4j.nn.NeuralNetwork;
@@ -15,16 +13,16 @@ import java.io.Serializable;
  * Optimizes via back prop gradients
  * @author Adam Gibson
  */
-public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializable,OptimizableByGradientValueMatrix {
+public class BackPropOptimizer implements Serializable,OptimizableByGradientValueMatrix {
 
     private BaseMultiLayerNetwork network;
     private int length = -1;
-    private double lr  = 1e-1;
+    private float lr  = 1e-1f;
     private int epochs = 1000;
     private static Logger log = LoggerFactory.getLogger(BackPropOptimizer.class);
     private int currentIteration = -1;
 
-    public BackPropOptimizer(BaseMultiLayerNetwork network,double lr,int epochs) {
+    public BackPropOptimizer(BaseMultiLayerNetwork network,float lr,int epochs) {
         this.network = network;
         this.lr = lr;
         this.epochs = epochs;
@@ -39,7 +37,7 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
         if(!lineSearch) {
             log.info("BEGIN BACKPROP WITH SCORE OF " + network.score());
 
-            Double lastEntropy =  network.score();
+            Float lastEntropy =  network.score();
             //store a copy of the network for when binary cross entropy gets
             //worse after an iteration
             BaseMultiLayerNetwork revert = network.clone();
@@ -59,7 +57,7 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
 
                 boolean train = true;
                 int count = 0;
-                double changeTolerance = 1e-5;
+                float changeTolerance = 1e-5f;
                 int backPropIterations = 0;
                 while(train) {
                     if(backPropIterations >= epochs) {
@@ -72,9 +70,9 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
 
                 /* Trains logistic regression post weight updates */
 
-                    Double entropy = network.score();
+                    Float entropy = network.score();
                     if(lastEntropy == null || entropy < lastEntropy) {
-                        double diff = Math.abs(entropy - lastEntropy);
+                        float diff = Math.abs(entropy - lastEntropy);
                         if(diff < changeTolerance) {
                             log.info("Not enough of a change on back prop...breaking");
                             break;
@@ -138,13 +136,10 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
 
     }
 
-    @Override
-    public void getValueGradient(double[] buffer) {
-       throw new UnsupportedOperationException();
-    }
+
 
     @Override
-    public double getValue() {
+    public float getValue() {
         return - (network.score());
     }
 
@@ -155,29 +150,22 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
         return length;
     }
 
-    @Override
-    public void getParameters(double[] buffer) {
-        System.arraycopy(getParameters().data(),0,buffer,0,buffer.length);
-    }
+
+
 
     @Override
-    public double getParameter(int index) {
-        return 0;
-    }
-
-    @Override
-    public void setParameters(double[] params) {
-        setParameters(NDArrays.create(params).reshape(1,params.length));
-    }
-
-    @Override
-    public void setParameter(int index, double value) {
+    public void setParameter(int index, float value) {
 
     }
 
     @Override
     public INDArray getParameters() {
         return network.params();
+    }
+
+    @Override
+    public float getParameter(int index) {
+        return 0;
     }
 
     @Override

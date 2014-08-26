@@ -10,10 +10,10 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
  */
 public interface LineOptimizerMatrix {
 	/** Returns the last step size used. */
-	public double optimize (INDArray line, int iteration,double initialStep) throws InvalidStepException;
+	public float optimize (INDArray line, int iteration,float initialStep) throws InvalidStepException;
 
 	public interface ByGradient	{
 		/** Returns the last step size used. */
-		public double optimize (INDArray line, int iteration,double initialStep) throws InvalidStepException;
+		public float optimize (INDArray line, int iteration,float initialStep) throws InvalidStepException;
 	}
 }

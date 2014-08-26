@@ -65,9 +65,11 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray,COMPLEX_NDARRAY_TYPE 
     /**
      * Compute x <- alpha * x (scale a matrix)
      */
-    public NDARRAY_TYPE scal(double alpha, NDARRAY_TYPE x);
+    public NDARRAY_TYPE scal(float alpha, NDARRAY_TYPE x);
 
     public COMPLEX_NDARRAY_TYPE scal(NUMBER_TYPE alpha, COMPLEX_NDARRAY_TYPE x);
+
+
 
     /**
      * Compute y <- x (copy a matrix)
@@ -79,14 +81,14 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray,COMPLEX_NDARRAY_TYPE 
     /**
      * Compute y <- alpha * x + y (elementwise addition)
      */
-    public NDARRAY_TYPE axpy(double da, NDARRAY_TYPE dx, NDARRAY_TYPE dy);
+    public NDARRAY_TYPE axpy(float da, NDARRAY_TYPE dx, NDARRAY_TYPE dy);
 
     public COMPLEX_NDARRAY_TYPE axpy(NUMBER_TYPE da, COMPLEX_NDARRAY_TYPE dx, COMPLEX_NDARRAY_TYPE dy);
 
     /**
      * Compute x^T * y (dot product)
      */
-    public double dot(NDARRAY_TYPE x, NDARRAY_TYPE y);
+    public float dot(NDARRAY_TYPE x, NDARRAY_TYPE y);
     /**
      * Compute x^T * y (dot product)
      */
@@ -130,14 +132,15 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray,COMPLEX_NDARRAY_TYPE 
      * Compute y <- alpha*op(a)*x + beta * y (general matrix vector
      * multiplication)
      */
-    public NDARRAY_TYPE gemv(double alpha, NDARRAY_TYPE a,
-                         NDARRAY_TYPE x, double beta, NDARRAY_TYPE y);
+    public NDARRAY_TYPE gemv(float alpha, NDARRAY_TYPE a,
+                         NDARRAY_TYPE x, float beta, NDARRAY_TYPE y);
 
     /**
      * Compute A <- alpha * x * y^T + A (general rank-1 update)
      */
-    public NDARRAY_TYPE ger(double alpha, NDARRAY_TYPE x,
+    public NDARRAY_TYPE ger(float alpha, NDARRAY_TYPE x,
                         NDARRAY_TYPE y, NDARRAY_TYPE a);
+
 
     /**
      * Compute A <- alpha * x * y^T + A (general rank-1 update)
@@ -157,10 +160,12 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray,COMPLEX_NDARRAY_TYPE 
      * Compute c <- a*b + beta * c (general matrix matrix
      * multiplication)
      */
-    public NDARRAY_TYPE gemm(double alpha, NDARRAY_TYPE a,
-                         NDARRAY_TYPE b, double beta, NDARRAY_TYPE c);
+    public NDARRAY_TYPE gemm(float alpha, NDARRAY_TYPE a,
+                         NDARRAY_TYPE b, float beta, NDARRAY_TYPE c);
     public COMPLEX_NDARRAY_TYPE gemm(NUMBER_TYPE alpha, COMPLEX_NDARRAY_TYPE a,
                                 COMPLEX_NDARRAY_TYPE b, NUMBER_TYPE beta, COMPLEX_NDARRAY_TYPE c);
+
+
     /***************************************************************************
      * LAPACK
      */
@@ -178,14 +183,14 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray,COMPLEX_NDARRAY_TYPE 
 
     public int syev(char jobz, char uplo, NDARRAY_TYPE a, NDARRAY_TYPE w);
     public int syevx(char jobz, char range, char uplo, NDARRAY_TYPE a,
-                     double vl, double vu, int il, int iu, double abstol,
+                     float vl, float vu, int il, int iu, float abstol,
                      NDARRAY_TYPE w, NDARRAY_TYPE z);
 
     public int syevd(char jobz, char uplo, NDARRAY_TYPE A,
                      NDARRAY_TYPE w);
 
     public int syevr(char jobz, char range, char uplo, NDARRAY_TYPE a,
-                     double vl, double vu, int il, int iu, double abstol,
+                     float vl, float vu, int il, int iu, float abstol,
                      NDARRAY_TYPE w, NDARRAY_TYPE z, int[] isuppz);
 
     public void posv(char uplo, NDARRAY_TYPE A, NDARRAY_TYPE B);
@@ -216,7 +221,7 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray,COMPLEX_NDARRAY_TYPE 
     public  void ormqr(char side, char trans, NDARRAY_TYPE A, NDARRAY_TYPE tau, NDARRAY_TYPE C);
 
 
-    public  void dcopy(int n, double[] dx, int dxIdx, int incx, double[] dy, int dyIdx, int incy);
+    public  void dcopy(int n, float[] dx, int dxIdx, int incx, float[] dy, int dyIdx, int incy);
 
 
 

@@ -282,7 +282,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
      * Trains the decoder on the given input
      * @param input the given input to train on
      */
-    public void finetune(INDArray input,double lr,int iterations) {
+    public void finetune(INDArray input,float lr,int iterations) {
         this.input = input;
 
 
@@ -485,7 +485,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          * @return
          */
         @Override
-        public Builder outputLayerDropout(double outputLayerDropout) {
+        public Builder outputLayerDropout(float outputLayerDropout) {
             super.outputLayerDropout(outputLayerDropout);
             return this;
         }
@@ -550,7 +550,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          * @return
          */
         @Override
-        public Builder learningRateForLayer(Map<Integer, Double> learningRates) {
+        public Builder learningRateForLayer(Map<Integer, Float> learningRates) {
             super.learningRateForLayer(learningRates);
             return this;
         }
@@ -625,7 +625,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          * @return builder pattern
          */
         @Override
-        public Builder withDropOut(double dropOut) {
+        public Builder withDropOut(float dropOut) {
             super.withDropOut(dropOut);
             return this;
         }
@@ -695,7 +695,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          * @return
          */
         @Override
-        public Builder momentumAfterByLayer(Map<Integer, Map<Integer, Double>> momentumAfterByLayer) {
+        public Builder momentumAfterByLayer(Map<Integer, Map<Integer, Float>> momentumAfterByLayer) {
             super.momentumAfterByLayer(momentumAfterByLayer);
             return this;
         }
@@ -707,13 +707,13 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          * @return
          */
         @Override
-        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
+        public Builder momentumAfter(Map<Integer, Float> momentumAfter) {
             super.momentumAfter(momentumAfter);
             return this;
         }
 
         @Override
-        public Builder withSparsity(double sparsity) {
+        public Builder withSparsity(float sparsity) {
             super.withSparsity(sparsity);
             return this;
         }
@@ -798,7 +798,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          * @return
          */
         @Override
-        public Builder withMomentum(double momentum) {
+        public Builder withMomentum(float momentum) {
             super.withMomentum(momentum);
             return this;
         }
@@ -822,7 +822,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          * @return
          */
         @Override
-        public Builder withL2(double l2) {
+        public Builder withL2(float l2) {
             super.withL2(l2);
             return this;
         }
