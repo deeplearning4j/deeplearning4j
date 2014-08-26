@@ -22,6 +22,6 @@ public class Abs extends BaseElementWiseOp {
        if(value instanceof IComplexNDArray) {
            return NDArrays.scalar(ComplexUtil.abs((org.deeplearning4j.linalg.api.complex.IComplexNumber) value.element()));
        }
-       return NDArrays.scalar(Math.abs((double) value.element()));
+       return NDArrays.scalar(Math.abs((float) value.element()));
     }
 }
