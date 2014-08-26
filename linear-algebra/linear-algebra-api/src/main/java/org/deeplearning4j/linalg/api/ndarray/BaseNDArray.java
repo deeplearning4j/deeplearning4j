@@ -3143,6 +3143,7 @@ public abstract class BaseNDArray  implements INDArray {
                         offset + r * columns(),
                         ordering
                 );
+                ret.toString();
                 return ret;
             }
             else {
@@ -3423,7 +3424,7 @@ public abstract class BaseNDArray  implements INDArray {
             StringBuilder sb = new StringBuilder();
             sb.append("[");
             for(int i = 0; i < length; i++) {
-                sb.append(getScalar(i));
+                sb.append(get(i));
                 if(i < length - 1)
                     sb.append(',');
             }

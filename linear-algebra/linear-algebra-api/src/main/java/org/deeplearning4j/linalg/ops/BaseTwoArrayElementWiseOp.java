@@ -57,6 +57,8 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
                         applyTransformToOrigin(i,scalarValue);
         }
         else {
+            assert from.length() == to.length() : "From and to must be same length";
+
             for(int i = 0; i < to.length(); i++) {
                 applyTransformToDestination(i);
             }
