@@ -7,7 +7,7 @@ layout: default
 
 Where does deep learning fit into machine learning and other optimization algorithms, and what kind of problems can it solve? These are the first questions to answer as you choose the tools to tackle whatever data problem is before you. 
 
-Firstly, deep learning is synonymous with machine learning, and simply an advanced subset of that larger field. Technically speaking, deep learning is simply an umbrella term for a set of neural nets that consist of three or more layers; i.e. at least one hidden layer, and the visible layers of input and output. 
+Deep learning is synonymous with machine learning, and simply an advanced subset of that larger field. Technically speaking, deep learning is simply an umbrella term for a set of neural nets that consist of three or more layers; i.e. at least one hidden layer, and the visible layers of input and output. 
 
 What is deep learning capable and incapable of? 
 
