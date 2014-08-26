@@ -31,7 +31,6 @@ public abstract class ComplexNDArrayTests {
         NDArrays.factory().setOrder('c');
     }
 
-
     @Test
     public void testConstruction() {
 
@@ -63,12 +62,104 @@ public abstract class ComplexNDArrayTests {
 
     }
 
+    @Test
+    public void testPutComplex() {
+        INDArray fourTwoTwo = NDArrays.linspace(1,16,16).reshape(new int[]{4,2,2});
+        IComplexNDArray test = NDArrays.createComplex(new int[]{4,2,2});
+
+
+        for(int i = 0; i < test.vectorsAlongDimension(0); i++) {
+            INDArray vector = fourTwoTwo.vectorAlongDimension(i,0);
+            IComplexNDArray complexVector = test.vectorAlongDimension(i,0);
+            for(int j = 0; j < complexVector.length(); j++) {
+                complexVector.putReal(j,vector.get(j));
+            }
+        }
+
+        for(int i = 0; i < test.vectorsAlongDimension(0); i++) {
+            INDArray vector = fourTwoTwo.vectorAlongDimension(i,0);
+            IComplexNDArray complexVector = test.vectorAlongDimension(i,0);
+            assertEquals(vector,complexVector.real());
+        }
+
+    }
+
+    @Test
+    public void testCreateFromNDArray() {
+        INDArray arr = NDArrays.create(new double[][]{{1,2},{3,4}});
+        IComplexNDArray complex = NDArrays.createComplex(arr);
+        for(int i = 0; i < arr.rows(); i++) {
+            for(int j = 0; j < arr.columns(); j++) {
+                double d = arr.get(i,j);
+                IComplexNumber complexD = complex.getComplex(i,j);
+                assertEquals(NDArrays.createDouble(d,0),complexD);
+            }
+        }
+
+        NDArrays.factory().setOrder('f');
+        INDArray fortran = NDArrays.create(new double[][]{{1,2},{3,4}});
+        assertEquals(arr,fortran);
+
+        IComplexNDArray fortranComplex = NDArrays.createComplex(fortran);
+        for(int i = 0; i < fortran.rows(); i++) {
+            for(int j = 0; j < fortran.columns(); j++) {
+                double d = fortran.get(i,j);
+                IComplexNumber complexD = fortranComplex.getComplex(i,j);
+                assertEquals(NDArrays.createDouble(d,0),complexD);
+            }
+        }
+
+        NDArrays.factory().setOrder('c');
+
+    }
+
+
 
     @Test
     public void testSum() {
         IComplexNDArray n = NDArrays.createComplex(NDArrays.create(NDArrays.linspace(1,8,8).data(),new int[]{2,2,2}));
-        n.toString();
         assertEquals(NDArrays.createDouble(36, 0), n.sum(Integer.MAX_VALUE).element());
+    }
+
+
+    @Test
+    public void testCreateComplexFromReal() {
+        INDArray n = NDArrays.create(new double[]{1,2,3,4,5,6,7,8}, new int[]{2,4});
+        IComplexNDArray nComplex = NDArrays.createComplex(n);
+        for(int i = 0; i < n.vectorsAlongDimension(0); i++) {
+            INDArray vec = n.vectorAlongDimension(i,0);
+            IComplexNDArray vecComplex = nComplex.vectorAlongDimension(i,0);
+            assertEquals(vec.length(),vecComplex.length());
+            for(int j = 0; j < vec.length(); j++) {
+                IComplexNumber currComplex = vecComplex.getComplex(j);
+                double curr = vec.get(j);
+                assertEquals(curr,currComplex.realComponent().doubleValue(),1e-1);
+            }
+            assertEquals(vec,vecComplex.getReal());
+        }
+    }
+
+
+    @Test
+    public void testVectorAlongDimension() {
+        INDArray n = NDArrays.linspace(1,8,8).reshape(2,4);
+        IComplexNDArray nComplex = NDArrays.createComplex(NDArrays.linspace(1,8,8)).reshape(2,4);
+        assertEquals(n.vectorsAlongDimension(0),nComplex.vectorsAlongDimension(0));
+
+        for(int i = 0; i < n.vectorsAlongDimension(0); i++) {
+            INDArray vec = n.vectorAlongDimension(i,0);
+            IComplexNDArray vecComplex = nComplex.vectorAlongDimension(i,0);
+            assertEquals(vec.length(),vecComplex.length());
+            for(int j = 0; j < vec.length(); j++) {
+                IComplexNumber currComplex = vecComplex.getComplex(j);
+                double curr = vec.get(j);
+                assertEquals(curr,currComplex.realComponent().doubleValue(),1e-1);
+            }
+            assertEquals(vec,vecComplex.getReal());
+        }
+
+
+
     }
 
     @Test
@@ -342,6 +433,17 @@ public abstract class ComplexNDArrayTests {
     }
 
 
+    @Test
+    public void testTwoByTwoMmul() {
+        IComplexNDArray oneThroughFour = NDArrays.createComplex(NDArrays.linspace(1,4,4).reshape(2,2));
+        IComplexNDArray fiveThroughEight = NDArrays.createComplex(NDArrays.linspace(5,8,4).reshape(2,2));
+
+        IComplexNDArray solution = NDArrays.createComplex(NDArrays.create(new double[][]{{19,22},{43,50}}));
+        IComplexNDArray test = oneThroughFour.mmul(fiveThroughEight);
+        assertEquals(solution,test);
+
+    }
+
 
 
     @Test
@@ -490,8 +592,10 @@ public abstract class ComplexNDArrayTests {
         IComplexNDArray testRow1 = arr.getRow(1);
         assertEquals(row1,testRow1);
 
-        IComplexNDArray multiRow = NDArrays.createComplex(NDArrays.create(NDArrays.linspace(1,16,16).data(),new int[]{4,2,2}));
-        multiRow.toString();
+
+        INDArray fourTwoTwo = NDArrays.linspace(1,16,16).reshape(new int[]{4,2,2});
+
+        IComplexNDArray multiRow = NDArrays.createComplex(fourTwoTwo);
         IComplexNDArray test = NDArrays.createComplex(NDArrays.create(new double[]{7,8},new int[]{1,2}));
         IComplexNDArray multiRowSlice1 = multiRow.slice(0);
         IComplexNDArray multiRowSlice = multiRow.slice(1);
@@ -502,6 +606,18 @@ public abstract class ComplexNDArrayTests {
 
 
     }
+
+    @Test
+    public void testMultiDimensionalCreation() {
+        INDArray fourTwoTwo = NDArrays.linspace(1,16,16).reshape(new int[]{4,2,2});
+
+        IComplexNDArray multiRow = NDArrays.createComplex(fourTwoTwo);
+        multiRow.toString();
+        assertEquals(fourTwoTwo,multiRow.getReal());
+
+
+    }
+
 
     @Test
     public void testLinearIndex() {
@@ -743,11 +859,12 @@ public abstract class ComplexNDArrayTests {
 
     @Test
     public void testMatrixGet() {
-        IComplexNDArray arr = NDArrays.createComplex(NDArrays.create(NDArrays.linspace(1,4,4).data(),new int[]{2,2}));
-        IComplexNumber n1 = (IComplexNumber) arr.getScalar(0, 0).element();
-        IComplexNumber n2 = (IComplexNumber) arr.getScalar(0, 1).element();
-        IComplexNumber n3 = (IComplexNumber) arr.getScalar(1, 0).element();
-        IComplexNumber n4 = (IComplexNumber) arr.getScalar(1, 1).element();
+
+        IComplexNDArray arr = NDArrays.createComplex((NDArrays.linspace(1,4,4))).reshape(2,2);
+        IComplexNumber n1 =  arr.getComplex(0, 0);
+        IComplexNumber n2 =  arr.getComplex(0, 1);
+        IComplexNumber n3 =  arr.getComplex(1, 0);
+        IComplexNumber n4 =  arr.getComplex(1, 1);
 
         assertEquals(1,n1.realComponent().doubleValue(),1e-1);
         assertEquals(2,n2.realComponent().doubleValue(),1e-1);
