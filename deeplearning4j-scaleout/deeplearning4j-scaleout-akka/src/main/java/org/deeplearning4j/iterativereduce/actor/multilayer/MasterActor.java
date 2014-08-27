@@ -127,11 +127,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-        if(conf.getColumnMeans() != null)
-            network.setColumnMeans(conf.getColumnMeans());
-        if(conf.getColumnStds() != null)
-            network.setColumnStds(conf.getColumnStds());
-
         network.initializeLayers(NDArrays.zeros(1, conf.getnIn()));
 
         UpdateableImpl masterResults = new UpdateableImpl(network);

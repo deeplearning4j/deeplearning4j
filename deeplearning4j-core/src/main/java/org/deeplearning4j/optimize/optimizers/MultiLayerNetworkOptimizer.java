@@ -58,7 +58,7 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
             INDArray train = activations.get(activations.size() - 1);
 
             for(int i = 0; i < epochs; i++) {
-                if(i % network.getResetAdaGradIterations() == 0)
+                if(i % network.getDefaultConfiguration().getResetAdaGradIterations() == 0)
                     network.getOutputLayer().getAdaGrad().historicalGradient = null;
                 network.getOutputLayer().train(train, labels,lr);
 

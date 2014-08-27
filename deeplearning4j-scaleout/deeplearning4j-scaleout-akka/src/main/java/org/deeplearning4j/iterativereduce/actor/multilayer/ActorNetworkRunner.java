@@ -237,8 +237,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
             //ensure network takes on configuration
             if(startingNetwork != null) {
                 startingNetwork.setShouldBackProp(conf.isUseBackProp());
-                startingNetwork.setUseAdaGrad(conf.isUseAdaGrad());
-                startingNetwork.setUseRegularization(conf.isUseRegularization());
+
             }
 
             log.info("Starting Save saver");
