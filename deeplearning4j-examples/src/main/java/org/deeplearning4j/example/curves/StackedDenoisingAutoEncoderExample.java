@@ -8,7 +8,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.sda.StackedDenoisingAutoEncoder;
+import org.deeplearning4j.models.classifiers.sda.StackedDenoisingAutoEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

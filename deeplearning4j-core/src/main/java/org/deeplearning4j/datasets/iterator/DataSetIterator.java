@@ -19,7 +19,7 @@ import java.util.Iterator;
  * 
  * while(iter.hasNext()) {
  *     DataSet d = iter.next();
- *     //train network...
+ *     //iterate network...
  * }
  * 
  * 

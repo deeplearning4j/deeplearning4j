@@ -68,7 +68,7 @@ public class VocabCreator implements Serializable {
 	protected transient TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
 	/**
 	 * Creates a vocab based on tf-idf
-	 * @param rootDir the root directory to train on
+	 * @param rootDir the root directory to iterate on
 	 */
 	public VocabCreator( File rootDir) {
 		this(rootDir,new DefaultTokenizerFactory());
@@ -85,7 +85,7 @@ public class VocabCreator implements Serializable {
 
 	/**
 	 * Creates a vocab based on tf-idf
-	 * @param rootDir the root directory to train on
+	 * @param rootDir the root directory to iterate on
 	 * @param tokenizerFactory the tokenizer factory to use
 	 */
 	public VocabCreator(File rootDir,TokenizerFactory tokenizerFactory) {
@@ -96,7 +96,7 @@ public class VocabCreator implements Serializable {
 		system = ActorSystem.create("WordFrequencySystem");
 	}
 
-	/* initial statistics used for calculating word metadata such as word vectors to train on */
+	/* initial statistics used for calculating word metadata such as word vectors to iterate on */
 	protected void calcWordFrequencies()  {
 		numFiles = countFiles();
 		CountDownLatch latch = new CountDownLatch(numFiles);

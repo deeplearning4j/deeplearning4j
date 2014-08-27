@@ -1,7 +1,7 @@
 package org.deeplearning4j.example.curves;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.deeplearning4j.plot.MultiLayerNetworkReconstructionRender;
 import org.deeplearning4j.util.SerializationUtils;
 import org.slf4j.Logger;

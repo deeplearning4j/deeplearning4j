@@ -19,6 +19,25 @@ public class FeatureUtil {
         return ArrayUtil.toNDArray(nums);
     }
 
+
+
+    /**
+     * Creates an out come vector from the specified inputs
+     * @param index the index of the label
+     * @param numOutcomes the number of possible outcomes
+     * @return a binary label matrix used for supervised learning
+     */
+    public static INDArray toOutcomeMatrix(int[] index,int numOutcomes) {
+        INDArray ret = NDArrays.create(index.length,numOutcomes);
+        for(int i = 0; i < ret.rows(); i++) {
+            int[] nums = new int[numOutcomes];
+            nums[index[i]] = 1;
+            ret.putRow(i, ArrayUtil.toNDArray(nums));
+        }
+
+        return ret;
+    }
+
     public static  void normalizeMatrix(INDArray toNormalize) {
         INDArray columnMeans = toNormalize.mean(1);
         toNormalize.subiRowVector(columnMeans);

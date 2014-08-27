@@ -19,9 +19,9 @@ public interface DeepLearningConfigurable {
 	public final static String LEARNING_RATE = "org.deeplearning4j.learningrate";
 	/* The corruption level: the percent of inputs to be applyTransformToDestination to zero */
 	public final static String CORRUPTION_LEVEL = "org.deeplearning4j.corruptionlevel";
-	/* The number of epochs to train on */
+	/* The number of epochs to iterate on */
 	public final static String FINE_TUNE_EPOCHS = "org.deeplearning4j.epochs";
-	/* The number of epochs to train on */
+	/* The number of epochs to iterate on */
 	public final static String PRE_TRAIN_EPOCHS = "org.deeplearning4j.epochs";
 	/* Input split: integer */
 	public final static String SPLIT = "org.deeplearning4j.split";

@@ -1,10 +1,8 @@
 package org.deeplearning4j.example.word2vec;
 
-import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
@@ -12,7 +10,7 @@ import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.SerializationUtils;
@@ -32,7 +30,6 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Completed textual moving window example
@@ -59,7 +56,7 @@ public class MovingWindowExample {
         File vecModel = new File("tweet-wordvectors.ser");
         Word2Vec vec = vecModel.exists() ? (Word2Vec) SerializationUtils.readObject(vecModel) : new Word2Vec(tokenizerFactory,iterator,5);
         if(!vecModel.exists()) {
-            vec.train();
+            vec.fit();
 
             log.info("Saving word 2 vec model...");
 
@@ -76,7 +73,7 @@ public class MovingWindowExample {
             throw new IllegalStateException("No data found");
 
           /*
-        Note that this is an example of how to train. The parameters are not optimally tuned here, but serve to demonstrate
+        Note that this is an example of how to iterate. The parameters are not optimally tuned here, but serve to demonstrate
         how to use bag of words classification
          */
         HazelCastStateTracker tracker = new HazelCastStateTracker(2200);

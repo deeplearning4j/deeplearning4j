@@ -190,7 +190,7 @@ public class TreeParser {
      * This will also process sentences with the following label format:
      * <YOURLABEL> some text </YOURLABEL>
      *
-     * This will allow you to train on and label sentences and label spans yourself.
+     * This will allow you to iterate on and label sentences and label spans yourself.
      *
      * @param text the text to process
      * @param label the label for the whole sentence
@@ -278,7 +278,7 @@ public class TreeParser {
      * This will also process sentences with the following label format:
      * <YOURLABEL> some text </YOURLABEL>
      *
-     * This will allow you to train on and label sentences and label spans yourself.
+     * This will allow you to iterate on and label sentences and label spans yourself.
      *
      * @param text the text to process
      * @param labels

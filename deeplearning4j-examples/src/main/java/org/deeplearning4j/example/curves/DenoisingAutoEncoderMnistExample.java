@@ -1,16 +1,15 @@
 package org.deeplearning4j.example.curves;
 
 import org.apache.commons.math3.random.MersenneTwister;
-import org.deeplearning4j.da.DenoisingAutoEncoder;
+import org.deeplearning4j.models.featuredetectors.da.DenoisingAutoEncoder;
 import org.deeplearning4j.datasets.iterator.CurvesDataSetIterator;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.linalg.sampling.Sampling;
-import org.deeplearning4j.nn.NeuralNetwork;
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.plot.FilterRenderer;
 
 import org.slf4j.Logger;
@@ -56,7 +55,7 @@ public class DenoisingAutoEncoderMnistExample {
         //Iterate over the data applyTransformToDestination after done training and show the 2 side by side (you have to drag the test image over to the right)
         while(iter.hasNext()) {
             DataSet first = iter.next();
-            INDArray reconstruct = autoEncoder.reconstruct(first.getFeatureMatrix());
+            INDArray reconstruct = autoEncoder.transform(first.getFeatureMatrix());
             for(int j = 0; j < first.numExamples(); j++) {
 
                 INDArray draw1 = first.get(j).getFeatureMatrix().mul(255);

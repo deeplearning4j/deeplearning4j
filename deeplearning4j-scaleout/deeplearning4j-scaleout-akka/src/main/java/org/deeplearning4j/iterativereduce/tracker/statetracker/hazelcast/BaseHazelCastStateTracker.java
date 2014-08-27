@@ -7,9 +7,6 @@ import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.ListConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.*;
-import io.dropwizard.Application;
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
 import org.apache.commons.compress.utils.IOUtils;
 
 import org.deeplearning4j.iterativereduce.actor.core.Job;
@@ -18,17 +15,12 @@ import org.deeplearning4j.iterativereduce.tracker.statetracker.*;
 import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.optimize.OutputLayerTrainingEvaluator;
-import org.deeplearning4j.optimize.TrainingEvaluator;
+import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
-import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-import org.deeplearning4j.util.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -456,7 +448,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
 
     /**
      * Disables the worker with the given id,
-     * this means that it will not train
+     * this means that it will not iterate
      * or take any new jobs until re enabled
      *
      * @param id the id of the worker to disable

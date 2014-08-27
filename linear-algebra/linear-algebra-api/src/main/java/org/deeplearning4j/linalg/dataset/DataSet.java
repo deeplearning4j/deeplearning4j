@@ -32,7 +32,7 @@ import com.google.common.collect.Lists;
  * @author Adam Gibson
  *
  */
-public class DataSet  implements Iterable<DataSet>,Serializable {
+public class DataSet  implements org.deeplearning4j.linalg.dataset.api.DataSet {
 
     private static final long serialVersionUID = 1935520764586513365L;
     private static Logger log = LoggerFactory.getLogger(DataSet.class);
@@ -59,14 +59,17 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
 
 
 
+    @Override
     public INDArray getFeatures() {
         return features;
     }
 
+    @Override
     public void setFeatures(INDArray features) {
         this.features = features;
     }
 
+    @Override
     public void setLabels(INDArray labels) {
         this.labels = labels;
     }
@@ -75,6 +78,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * Clone the dataset
      * @return a clone of the dataset
      */
+    @Override
     public DataSet copy() {
         return new DataSet(getFeatures().dup(),getLabels().dup());
     }
@@ -123,20 +127,24 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param cols the column size
      * @return a copy of this data applyTransformToDestination with the input resized
      */
-    public DataSet reshape(int rows,int cols) {
+    @Override
+    public DataSet reshape(int rows, int cols) {
         DataSet ret = new DataSet(getFeatures().reshape(new int[]{rows,cols}),getLabels());
         return ret;
     }
 
 
+    @Override
     public void multiplyBy(double num) {
         getFeatures().muli(NDArrays.scalar(num));
     }
 
+    @Override
     public void divideBy(int num) {
         getFeatures().divi(NDArrays.scalar(num));
     }
 
+    @Override
     public void shuffle() {
         List<DataSet> list = asList();
         Collections.shuffle(list);
@@ -154,7 +162,8 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param min the min value to occur in the dataset
      * @param max the max value to ccur in the dataset
      */
-    public void squishToRange(double min,double max) {
+    @Override
+    public void squishToRange(double min, double max) {
         for(int i = 0;i  < getFeatures().length(); i++) {
             double curr = (double) getFeatures().getScalar(i).element();
             if(curr < min)
@@ -167,6 +176,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
     /**
      * Divides the input data applyTransformToDestination by the max number in each row
      */
+    @Override
     public void scale() {
         FeatureUtil.scaleByMax(getFeatures());
     }
@@ -175,6 +185,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * Adds a feature for each example on to the current feature vector
      * @param toAdd the feature vector to add
      */
+    @Override
     public void addFeatureVector(INDArray toAdd) {
         setFeatures(NDArrays.concatHorizontally(getFeatures(), toAdd));
     }
@@ -185,10 +196,12 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param feature the feature vector to add
      * @param example the number of the example to append to
      */
+    @Override
     public void addFeatureVector(INDArray feature, int example) {
         getFeatures().putRow(example,NDArrays.concatHorizontally(getFeatures().getRow(example), feature));
     }
 
+    @Override
     public void normalize() {
         FeatureUtil.normalizeMatrix(getFeatures());
     }
@@ -197,6 +210,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
     /**
      * Same as calling binarize(0)
      */
+    @Override
     public void binarize() {
         binarize(0);
     }
@@ -205,6 +219,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * Binarizes the dataset such that any number greater than cutoff is 1 otherwise zero
      * @param cutoff the cutoff point
      */
+    @Override
     public void binarize(double cutoff) {
         for(int i = 0; i < getFeatures().length(); i++) {
             double curr = (double) getFeatures().getScalar(i).element();
@@ -219,6 +234,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
     /**
      * Subtract by the column means and divide by the standard deviation
      */
+    @Override
     public void normalizeZeroMeanZeroUnitVariance() {
         INDArray columnMeans = getFeatures().mean(1);
         INDArray columnStds = getFeatureMatrix().std(1);
@@ -240,15 +256,18 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * The number of inputs in the feature matrix
      * @return
      */
+    @Override
     public int numInputs() {
         return getFeatures().columns();
     }
 
+    @Override
     public void validate() {
         if(getFeatures().rows() != getLabels().rows())
             throw new IllegalStateException("Invalid dataset");
     }
 
+    @Override
     public int outcome() {
         if(this.numExamples() > 1)
             throw new IllegalStateException("Unable to derive outcome for dataset greater than one row");
@@ -261,6 +280,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param labels the number of labels/columns in the outcome matrix
      * Note that this clears the labels for each example
      */
+    @Override
     public void setNewNumberOfLabels(int labels) {
         int examples = numExamples();
         INDArray newOutcomes = NDArrays.create(examples,labels);
@@ -272,7 +292,8 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param example the example to applyTransformToDestination
      * @param label the label of the outcome
      */
-    public void setOutcome(int example,int label) {
+    @Override
+    public void setOutcome(int example, int label) {
         if(example > numExamples())
             throw new IllegalArgumentException("No example at " + example);
         if(label > numOutcomes() || label < 0)
@@ -287,6 +308,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param i the example to getFromOrigin
      * @return the example at i (one example)
      */
+    @Override
     public DataSet get(int i) {
         if(i > numExamples() || i < 0)
             throw new IllegalArgumentException("invalid example number");
@@ -299,6 +321,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param i the example to getFromOrigin
      * @return the example at i (one example)
      */
+    @Override
     public DataSet get(int[] i) {
         return new DataSet(getFeatures().getRows(i),getLabels().getRows(i));
     }
@@ -310,6 +333,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param num the number to split by
      * @return the partitioned datasets
      */
+    @Override
     public List<List<DataSet>> batchBy(int num) {
         return Lists.partition(asList(),num);
     }
@@ -322,6 +346,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param labels strips the data applyTransformToDestination of all but the passed in labels
      * @return the dataset with only the specified labels
      */
+    @Override
     public DataSet filterBy(int[] labels) {
         List<DataSet> list = asList();
         List<DataSet> newList = new ArrayList<>();
@@ -343,6 +368,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * and remaps them
      * @param labels the labels to strip down to
      */
+    @Override
     public void filterAndStrip(int[] labels) {
         DataSet filtered = filterBy(labels);
         List<Integer> newLabels = new ArrayList<>();
@@ -388,6 +414,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param num the number to split by
      * @return the partitioned data applyTransformToDestination
      */
+    @Override
     public List<DataSet> dataSetBatches(int num) {
         List<List<DataSet>> list =  Lists.partition(asList(),num);
         List<DataSet> ret = new ArrayList<>();
@@ -408,16 +435,19 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * x10  y = 10
      * @return a list of data sets partitioned by outcomes
      */
+    @Override
     public List<List<DataSet>> sortAndBatchByNumLabels() {
         sortByLabel();
         return Lists.partition(asList(),numOutcomes());
     }
 
+    @Override
     public List<List<DataSet>> batchByNumLabels() {
         return Lists.partition(asList(),numOutcomes());
     }
 
 
+    @Override
     public List<DataSet> asList() {
         List<DataSet> list = new ArrayList<>(numExamples());
         for(int i = 0; i < numExamples(); i++)  {
@@ -432,6 +462,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param numHoldout the number to hold out for training
      * @return the pair of datasets for the train test split
      */
+    @Override
     public SplitTestAndTrain splitTestAndTrain(int numHoldout) {
 
         if(numHoldout >= numExamples())
@@ -455,6 +486,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * Returns the labels for the dataset
      * @return the labels for the dataset
      */
+    @Override
     public INDArray getLabels() {
         return labels;
     }
@@ -463,6 +495,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * Get the feature matrix (inputs for the data)
      * @return the feature matrix for the dataset
      */
+    @Override
     public INDArray getFeatureMatrix() {
         return getFeatures();
     }
@@ -472,6 +505,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * Organizes the dataset to minimize sampling error
      * while still allowing efficient batching.
      */
+    @Override
     public void sortByLabel() {
         Map<Integer,Queue<DataSet>> map = new HashMap<>();
         List<DataSet> data = asList();
@@ -534,6 +568,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
     }
 
 
+    @Override
     public void addRow(DataSet d, int i) {
         if(i > numExamples() || d == null)
             throw new IllegalArgumentException("Invalid index for adding a row");
@@ -547,14 +582,17 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
     }
 
 
+    @Override
     public INDArray exampleSums() {
         return getFeatures().sum(1);
     }
 
+    @Override
     public INDArray exampleMaxs() {
         return getFeatures().max(1);
     }
 
+    @Override
     public INDArray exampleMeans() {
         return getFeatures().mean(1);
     }
@@ -565,6 +603,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param numSamples the number of samples to getFromOrigin
      * @return a sample data applyTransformToDestination without replacement
      */
+    @Override
     public DataSet sample(int numSamples) {
         return sample(numSamples,new MersenneTwister(System.currentTimeMillis()));
     }
@@ -575,7 +614,8 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param rng the rng to use
      * @return the sampled dataset without replacement
      */
-    public DataSet sample(int numSamples,RandomGenerator rng) {
+    @Override
+    public DataSet sample(int numSamples, RandomGenerator rng) {
         return sample(numSamples,rng,false);
     }
 
@@ -585,7 +625,8 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param withReplacement the rng to use
      * @return the sampled dataset without replacement
      */
-    public DataSet sample(int numSamples,boolean withReplacement) {
+    @Override
+    public DataSet sample(int numSamples, boolean withReplacement) {
         return sample(numSamples,new MersenneTwister(System.currentTimeMillis()),withReplacement);
     }
 
@@ -596,7 +637,8 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @param withReplacement whether to allow duplicates (only tracked by example row number)
      * @return the sample dataset
      */
-    public DataSet sample(int numSamples,RandomGenerator rng,boolean withReplacement) {
+    @Override
+    public DataSet sample(int numSamples, RandomGenerator rng, boolean withReplacement) {
         if(numSamples >= numExamples())
             return this;
         else {
@@ -618,6 +660,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
         }
     }
 
+    @Override
     public void roundToTheNearest(int roundTo) {
         for(int i = 0; i < getFeatures().length(); i++) {
             double curr = (double) getFeatures().getScalar(i).element();
@@ -625,10 +668,12 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
         }
     }
 
+    @Override
     public int numOutcomes() {
         return getLabels().columns();
     }
 
+    @Override
     public int numExamples() {
         return getFeatures().rows();
     }
@@ -653,6 +698,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * Gets the optional label names
      * @return
      */
+    @Override
     public List<String> getLabelNames() {
         return labelNames;
     }
@@ -662,6 +708,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * in label names doesn't equal the number of outcomes
      * @param labelNames the label names to use
      */
+    @Override
     public void setLabelNames(List<String> labelNames) {
         if(labelNames == null || labelNames.size() != numOutcomes())
             throw new IllegalArgumentException("Unable to applyTransformToDestination label names, does not match number of possible outcomes");
@@ -673,6 +720,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * for interpeting what columns are in the dataset
      * @return
      */
+    @Override
     public List<String> getColumnNames() {
         return columnNames;
     }
@@ -682,6 +730,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * don't match the number of columns
      * @param columnNames
      */
+    @Override
     public void setColumnNames(List<String> columnNames) {
         if(columnNames.size() != numInputs())
             throw new IllegalArgumentException("Column names don't match input");

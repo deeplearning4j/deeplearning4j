@@ -2,9 +2,9 @@ package org.deeplearning4j.scaleout.conf;
 
 import static org.junit.Assert.*;
 
-import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.junit.Test;
 
 import org.slf4j.Logger;

@@ -2,7 +2,7 @@ package org.deeplearning4j.example.text;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
-import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;

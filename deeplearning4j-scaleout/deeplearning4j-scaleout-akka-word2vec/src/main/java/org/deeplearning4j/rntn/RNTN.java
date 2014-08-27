@@ -297,7 +297,7 @@ public class RNTN implements Serializable {
 
     /**
      * Trains the network on this mini batch
-     * @param trainingBatch the trees to train on
+     * @param trainingBatch the trees to iterate on
      */
     public void train(List<Tree> trainingBatch) {
         this.trainingTrees = trainingBatch;

@@ -4,12 +4,12 @@ import java.io.File;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
-import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.deeplearning4j.util.SerializationUtils;

@@ -7,7 +7,7 @@ import akka.actor.Props;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.routing.RoundRobinPool;
-import org.deeplearning4j.autoencoder.DeepAutoEncoder;
+import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.iterativereduce.actor.core.*;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;

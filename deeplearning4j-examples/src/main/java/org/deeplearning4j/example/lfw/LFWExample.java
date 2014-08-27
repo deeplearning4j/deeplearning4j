@@ -7,12 +7,12 @@ import java.util.Collections;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.SamplingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
-import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
