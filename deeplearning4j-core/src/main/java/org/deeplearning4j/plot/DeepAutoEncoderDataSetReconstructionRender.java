@@ -1,6 +1,6 @@
 package org.deeplearning4j.plot;
 
-import org.deeplearning4j.autoencoder.DeepAutoEncoder;
+import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;

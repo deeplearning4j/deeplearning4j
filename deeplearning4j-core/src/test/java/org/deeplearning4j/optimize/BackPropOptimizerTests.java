@@ -5,8 +5,9 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork.ParamRange;
 
-import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.models.classifiers.dbn.DBN;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.deeplearning4j.optimize.optimizers.BackPropOptimizer;
 import org.junit.Test;
 
 import org.slf4j.Logger;

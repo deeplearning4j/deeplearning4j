@@ -1,6 +1,6 @@
 package org.deeplearning4j.scaleout.iterativereduce.deepautoencoder;
 
-import org.deeplearning4j.autoencoder.DeepAutoEncoder;
+import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import org.deeplearning4j.util.SerializationUtils;
 

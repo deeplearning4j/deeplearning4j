@@ -9,16 +9,13 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.jblas.NDArray;
-import org.deeplearning4j.linalg.jblas.util.JblasSerde;
-import org.deeplearning4j.nn.NeuralNetwork;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.WeightInit;
-import org.jblas.DoubleMatrix;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
-
-import java.io.DataInputStream;
 
 
 public class RBMTest  {
@@ -57,14 +54,14 @@ public class RBMTest  {
 
 
 
-		r.trainTillConvergence(d,  0.01f,new Object[]{1,0.01f,1000});
+		r.fit(d, 0.01f, new Object[]{1, 0.01f, 1000});
 
         double d5 = r.getReConstructionCrossEntropy();
 
 		INDArray v = new NDArray(new float[]
 				{1, 1, 0, 0, 0, 0,0, 0, 0, 1, 1, 0}, new int[]{2,6});
 
-		log.info("Reconstruction " + r.reconstruct(v).toString());
+		log.info("Reconstruction " + r.transform(v).toString());
 
 		NeuralNetwork r2 = r.clone();
 		assertEquals(r2.getnVisible(),r.getnVisible());
@@ -72,7 +69,7 @@ public class RBMTest  {
 		assertEquals(r2.getW(),r.getW());
 		assertEquals(r2.gethBias(),r.gethBias());
 		assertEquals(r2.getvBias(),r.getvBias());
-		r2.trainTillConvergence(d, 0.01f,new Object[]{1,0.01f,1000});
+		r2.fit(d, 0.01f, new Object[]{1, 0.01f, 1000});
 
 
 	}
@@ -94,7 +91,7 @@ public class RBMTest  {
 		
 
 		
-		r.trainTillConvergence(d.getFeatureMatrix() ,1e-2f,new Object[]{1,1e-1f,100});
+		r.fit(d.getFeatureMatrix(), 1e-2f, new Object[]{1, 1e-1f, 100});
 
 
 

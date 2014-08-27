@@ -23,7 +23,7 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.linalg.util.ArrayUtil;
-import org.deeplearning4j.nn.Persistable;
+import org.deeplearning4j.nn.api.Persistable;
 import org.deeplearning4j.stopwords.StopWords;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.MathUtils;
@@ -48,7 +48,6 @@ import akka.dispatch.Futures;
 import akka.dispatch.OnComplete;
 import akka.routing.RoundRobinPool;
 import scala.concurrent.duration.Duration;
-import weka.core.matrix.DoubleVector;
 
 
 /**
@@ -153,7 +152,7 @@ public class Word2Vec implements Persistable {
      * Same as calling {@link #Word2Vec(Collection, int)}
      * with the second argument being 5
      * @param sentences the sentences to use
-     * to train on
+     * to iterate on
      */
     public Word2Vec(Collection<String> sentences) {
         this(sentences,5);
@@ -327,7 +326,7 @@ public class Word2Vec implements Persistable {
     /**
      * Train the model
      */
-    public void train(){
+    public void fit(){
         if(trainingSystem == null) {
             trainingSystem = ActorSystem.create();
             sentenceReport = trainingSystem.scheduler().schedule(Duration.create(0,TimeUnit.SECONDS),Duration.create(30,TimeUnit.SECONDS),new Runnable() {
@@ -358,7 +357,7 @@ public class Word2Vec implements Persistable {
 
 
         if(syn0.rows() != this.vocab.size())
-            throw new IllegalStateException("We appear to be missing vectors here. Unable to train. Please ensure vectors were loaded properly.");
+            throw new IllegalStateException("We appear to be missing vectors here. Unable to iterate. Please ensure vectors were loaded properly.");
 
 
         int numCores = Runtime.getRuntime().availableProcessors();

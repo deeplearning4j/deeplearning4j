@@ -8,11 +8,11 @@ import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
-import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.NeuralNetwork.LossFunction;
+import org.deeplearning4j.nn.api.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
-import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.util.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +51,7 @@ public class LFWRBMExample {
         while(iter.hasNext()) {
             DataSet curr = iter.next();
             curr.normalizeZeroMeanZeroUnitVariance();
-            r.trainTillConvergence(curr.getFeatureMatrix(),1e-1f,  new Object[]{1,1e-1f,10000});
+            r.fit(curr.getFeatureMatrix(), 1e-1f, new Object[]{1, 1e-1f, 10000});
             if(numIter % 10 == 0) {
                 FilterRenderer render = new FilterRenderer();
                 try {
@@ -77,7 +77,7 @@ public class LFWRBMExample {
         //Iterate over the data applyTransformToDestination after done training and show the 2 side by side (you have to drag the test image over to the right)
         while(iter.hasNext()) {
             DataSet first = iter.next();
-            INDArray reconstruct = r.reconstruct(first.getFeatureMatrix());
+            INDArray reconstruct = r.transform(first.getFeatureMatrix());
             for(int j = 0; j < first.numExamples(); j++) {
 
                 INDArray draw1 = first.get(j).getFeatureMatrix().mul(255);

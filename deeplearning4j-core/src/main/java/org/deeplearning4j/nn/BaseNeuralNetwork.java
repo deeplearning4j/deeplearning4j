@@ -16,13 +16,14 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.lossfunctions.*;
+import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.api.Persistable;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
-import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
+import org.deeplearning4j.optimize.optimizers.NeuralNetworkOptimizer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.Dl4jReflection;
 
@@ -171,6 +172,16 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         initWeights();
 
 
+    }
+
+    /**
+     * Returns the parameters of the neural network
+     *
+     * @return the parameters of the neural network
+     */
+    @Override
+    public INDArray params() {
+        return NDArrays.concatHorizontally(NDArrays.concatHorizontally(W.ravel(),vBias.ravel()),hBias.ravel());
     }
 
     /**
@@ -632,7 +643,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     @Override
     public float mseRecon() {
-        float recon = (float) sqrt(pow(reconstruct(input).subi(input),2)).sum(Integer.MAX_VALUE).element();
+        float recon = (float) sqrt(pow(transform(input).subi(input),2)).sum(Integer.MAX_VALUE).element();
         return recon / input.rows();
 
 
@@ -762,7 +773,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     @Override
     public float negativeLogLikelihood() {
-        INDArray z = this.reconstruct(input);
+        INDArray z = this.transform(input);
         if(this.useRegularization) {
             float reg = (2 / l2) * (float) pow(this.W,2).sum(Integer.MAX_VALUE).element();
 
@@ -795,7 +806,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * given the corruption level
      */
     public float negativeLoglikelihood(INDArray input) {
-        INDArray z = this.reconstruct(input);
+        INDArray z = this.transform(input);
         if(this.useRegularization) {
             float reg = (2 / l2) * (float) pow(this.W,2).sum(Integer.MAX_VALUE).element();
 
@@ -829,7 +840,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         return normalizeByInputRows;
     }
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#getnVisible()
+     * @see org.deeplearning4j.nn.api.NeuralNetwork#getnVisible()
      */
     @Override
     public int getnVisible() {
@@ -837,7 +848,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#setnVisible(int)
+     * @see org.deeplearning4j.nn.api.NeuralNetwork#setnVisible(int)
      */
     @Override
     public void setnVisible(int nVisible) {
@@ -845,7 +856,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#getnHidden()
+     * @see org.deeplearning4j.nn.api.NeuralNetwork#getnHidden()
      */
     @Override
     public int getnHidden() {
@@ -853,7 +864,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#setnHidden(int)
+     * @see org.deeplearning4j.nn.api.NeuralNetwork#setnHidden(int)
      */
     @Override
     public void setnHidden(int nHidden) {
@@ -861,7 +872,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#getW()
+     * @see org.deeplearning4j.nn.api.NeuralNetwork#getW()
      */
     @Override
     public INDArray getW() {
@@ -869,7 +880,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#setW(org.jblas.INDArray)
+     * @see org.deeplearning4j.nn.api.NeuralNetwork#setW(org.jblas.INDArray)
      */
     @Override
     public void setW(INDArray w) {
@@ -877,7 +888,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#gethBias()
+     * @see org.deeplearning4j.nn.api.NeuralNetwork#gethBias()
      */
     @Override
     public INDArray gethBias() {
@@ -885,7 +896,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#sethBias(org.jblas.INDArray)
+     * @see org.deeplearning4j.nn.api.NeuralNetwork#sethBias(org.jblas.INDArray)
      */
     @Override
     public void sethBias(INDArray hBias) {
@@ -893,7 +904,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#getvBias()
+     * @see org.deeplearning4j.nn.api.NeuralNetwork#getvBias()
      */
     @Override
     public INDArray getvBias() {
@@ -901,7 +912,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#setvBias(org.jblas.INDArray)
+     * @see org.deeplearning4j.nn.api.NeuralNetwork#setvBias(org.jblas.INDArray)
      */
     @Override
     public void setvBias(INDArray vBias) {
@@ -909,7 +920,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#getRng()
+     * @see org.deeplearning4j.nn.api.NeuralNetwork#getRng()
      */
     @Override
     public RandomGenerator getRng() {
@@ -917,7 +928,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#setRng(org.apache.commons.math3.random.RandomGenerator)
+     * @see org.deeplearning4j.nn.api.NeuralNetwork#setRng(org.apache.commons.math3.random.RandomGenerator)
      */
     @Override
     public void setRng(RandomGenerator rng) {
@@ -925,7 +936,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#getInput()
+     * @see org.deeplearning4j.nn.api.NeuralNetwork#getInput()
      */
     @Override
     public INDArray getInput() {
@@ -933,7 +944,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#setInput(org.jblas.INDArray)
+     * @see org.deeplearning4j.nn.api.NeuralNetwork#setInput(org.jblas.INDArray)
      */
     @Override
     public void setInput(INDArray input) {
@@ -1002,7 +1013,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     @Override
     public INDArray output(INDArray x) {
-        return reconstruct(x);
+        return transform(x);
     }
 
     /**
@@ -1011,10 +1022,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * Both RBMs and Denoising AutoEncoders
      * have a component for reconstructing, ala different implementations.
      *
-     * @param x the input to reconstruct
+     * @param x the input to transform
      * @return the reconstructed input
      */
-    public abstract INDArray reconstruct(INDArray x);
+    public abstract INDArray transform(INDArray x);
 
     /**
      * The loss function (cross entropy, reconstruction error,...)
@@ -1043,17 +1054,17 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     /**
-     * train one iteration of the network
-     * @param input the input to train on
-     * @param lr the learning rate to train at
+     * iterate one iteration of the network
+     * @param input the input to iterate on
+     * @param lr the learning rate to iterate at
      * @param params the extra params (k, corruption level,...)
      */
     @Override
-    public abstract void train(INDArray input,float lr,Object[] params);
+    public abstract void iterate(INDArray input, float lr, Object[] params);
 
     @Override
     public float squaredLoss() {
-        INDArray squaredDiff = pow(reconstruct(input).sub(input),2);
+        INDArray squaredDiff = pow(transform(input).sub(input),2);
         float loss = (float) squaredDiff.sum(Integer.MAX_VALUE).element() / input.rows();
         if(this.useRegularization) {
             loss += 0.5 * l2 * (float) pow(W,2).sum(Integer.MAX_VALUE).element();
@@ -1065,7 +1076,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     @Override
     public float mse() {
-        INDArray reconstructed = reconstruct(input);
+        INDArray reconstructed = transform(input);
         INDArray diff = reconstructed.sub(input);
         float sum = 0.5f * (float) pow(diff,2).sum(1).sum(Integer.MAX_VALUE).element() / input.rows();
         return sum;

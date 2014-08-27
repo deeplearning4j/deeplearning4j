@@ -223,7 +223,18 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
 
     }
 
+    @Test
+    public void testRowSumCompat() {
+        NDArrays.factory().setOrder('f');
+        DoubleMatrix rowsJblas = DoubleMatrix.linspace(1,8,8).reshape(2,4);
+        INDArray rows = NDArrays.linspace(1,8,8).reshape(2,4);
+        verifyElements(rowsJblas,rows);
 
+        INDArray rowSums = rows.sum(1);
+        DoubleMatrix jblasRowSums = rowsJblas.rowSums();
+        verifyElements(jblasRowSums,rowSums);
+
+    }
 
 
 

@@ -1,16 +1,14 @@
 package org.deeplearning4j.example.word2vec;
 
-import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
-import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.linalg.dataset.SplitTestAndTrain;
-import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.SerializationUtils;
 import org.deeplearning4j.word2vec.Word2Vec;
@@ -57,7 +55,7 @@ public class MovingWindowSingleThreaded {
         File vecModel = new File("tweet-wordvectors.ser");
         Word2Vec vec = vecModel.exists() ? (Word2Vec) SerializationUtils.readObject(vecModel) : new Word2Vec(tokenizerFactory,iterator,5);
         if(!vecModel.exists()) {
-            vec.train();
+            vec.fit();
 
             log.info("Saving word 2 vec model...");
 

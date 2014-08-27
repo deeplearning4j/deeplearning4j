@@ -8,9 +8,9 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.nn.NeuralNetwork;
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.plot.FilterRenderer;
-import org.deeplearning4j.rbm.ConvolutionalRBM;
+import org.deeplearning4j.models.featuredetectors.rbm.ConvolutionalRBM;
 import org.deeplearning4j.util.ImageLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +55,7 @@ public class MnistConvNet {
             INDArray reshape = next.getFeatureMatrix().reshape(rows,cols);
             INDArray W = (INDArray) r.getW();
             log.info("W shape " + W.shape());
-            r.trainTillConvergence(reshape, 5e-2f, new Object[]{1, 5e-2f, 20});
+            r.fit(reshape, 5e-2f, new Object[]{1, 5e-2f, 20});
 
 
         };

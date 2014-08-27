@@ -30,7 +30,7 @@ public class BasicRNTNTest {
        tokenizerFactory = new UimaTokenizerFactory(false);
        sentenceIter = new CollectionSentenceIterator(Arrays.asList(sentence));
        vec = new Word2Vec(sentenceIter);
-       vec.train();
+       vec.fit();
 
    }
 

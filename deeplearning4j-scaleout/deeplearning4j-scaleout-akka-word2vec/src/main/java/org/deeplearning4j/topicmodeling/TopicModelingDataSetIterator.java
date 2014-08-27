@@ -31,7 +31,7 @@ public class TopicModelingDataSetIterator implements DataSetIterator {
 	 * 
 	 * @param rootDir the root directory to getFromOrigin data from
 	 * @param numWords the number of words to applyTransformToDestination as vocab
-	 * @param batchSize the batch size to train on
+	 * @param batchSize the batch size to iterate on
 	 */
 	@SuppressWarnings("unchecked")
 	public TopicModelingDataSetIterator(File rootDir,int numWords,int batchSize) {
@@ -63,7 +63,7 @@ public class TopicModelingDataSetIterator implements DataSetIterator {
 	
 	/**
 	 * This assumes a previously persisted vocab creator was used.
-	 * @param rootDir the root directory to train on
+	 * @param rootDir the root directory to iterate on
 	 * @param batchSize the batch size, or number of rows
 	 * in the data applyTransformToDestination
 	 * @param vocabCreator the vocab creator 

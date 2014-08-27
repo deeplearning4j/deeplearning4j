@@ -1,6 +1,5 @@
 package org.deeplearning4j.example.text;
 
-import net.didion.jwnl.data.Word;
 import org.apache.commons.lang.StringUtils;
 import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.rntn.RNTN;
@@ -12,10 +11,7 @@ import org.deeplearning4j.text.treeparser.TreeVectorizer;
 import org.deeplearning4j.util.SerializationUtils;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
-import org.deeplearning4j.word2vec.sentenceiterator.LineSentenceIterator;
-import org.deeplearning4j.word2vec.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
-import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareListSentenceIterator;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
@@ -57,7 +53,7 @@ public class RNTNTweetClassification {
 
         Word2Vec vec = wordVectors.exists() ? (Word2Vec) SerializationUtils.readObject(wordVectors) : new Word2Vec(tokenizerFactory, lineIter, 5);
         if(!wordVectors.exists()) {
-            vec.train();
+            vec.fit();
             SerializationUtils.saveObject(vec,wordVectors);
         }
 

@@ -7,7 +7,7 @@ import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.linalg.sampling.Sampling;
-import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -33,8 +33,8 @@ public class RawMnistRBMExample {
 			DataSet next = iter.next();
             next.scale();
             log.info("Data " + next);
-			//train with k = 1 0.01 learning rate and 1000 epochs
-			r.trainTillConvergence(next.getFeatureMatrix(),1e-3f, new Object[]{1,1e-3f,1000});
+			//iterate with k = 1 0.01 learning rate and 1000 epochs
+			r.fit(next.getFeatureMatrix(), 1e-3f, new Object[]{1, 1e-3f, 1000});
 
 		}
 
@@ -50,7 +50,7 @@ public class RawMnistRBMExample {
 		//Iterate over the data applyTransformToDestination after done training and show the 2 side by side (you have to drag the test image over to the right)
 		while(iter.hasNext()) {
 			DataSet first = iter.next();
-			INDArray reconstruct = r.reconstruct(first.getFeatureMatrix());
+			INDArray reconstruct = r.transform(first.getFeatureMatrix());
 			for(int j = 0; j < first.numExamples(); j++) {
 
 				INDArray draw1 = first.get(j).getFeatureMatrix().mul(255);

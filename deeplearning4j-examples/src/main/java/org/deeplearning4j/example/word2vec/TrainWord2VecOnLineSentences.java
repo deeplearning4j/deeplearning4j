@@ -35,7 +35,7 @@ public class TrainWord2VecOnLineSentences {
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
 
         Word2Vec vec = new Word2Vec(tokenizerFactory,lineIter,5);
-        vec.train();
+        vec.fit();
 
         SerializationUtils.saveObject(vec,new File(args[1]));
 

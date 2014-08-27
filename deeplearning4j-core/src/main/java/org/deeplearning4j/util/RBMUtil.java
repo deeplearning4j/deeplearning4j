@@ -1,12 +1,8 @@
 package org.deeplearning4j.util;
 
-import org.deeplearning4j.autoencoder.DeepAutoEncoder;
-import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.rbm.RBM;
-
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
+import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
+import org.deeplearning4j.models.classifiers.dbn.DBN;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 
 /**
  * Handles various functions for RBM specific functions
@@ -43,7 +39,7 @@ public class RBMUtil {
         for(int i = 0; i < dbn.getLayers().length; i++) {
             RBM r = (RBM) dbn.getLayers()[i];
             builder.append(architecure(r,i));
-            builder.append(" activation -> " + dbn.getSigmoidLayers()[i].getActivationFunction() + "\n");
+            builder.append(" activation -> " + dbn.getSigmoidHiddeenLayers()[i].getActivationFunction() + "\n");
 
         }
 
@@ -57,7 +53,7 @@ public class RBMUtil {
         for(int i = 0; i < dbn.getLayers().length; i++) {
           RBM r = (RBM) dbn.getLayers()[i];
           builder.append(architecure(r,i));
-          builder.append(" activation -> " + dbn.getSigmoidLayers()[i].getActivationFunction() + "\n");
+          builder.append(" activation -> " + dbn.getSigmoidHiddeenLayers()[i].getActivationFunction() + "\n");
         }
 
         return builder.toString();

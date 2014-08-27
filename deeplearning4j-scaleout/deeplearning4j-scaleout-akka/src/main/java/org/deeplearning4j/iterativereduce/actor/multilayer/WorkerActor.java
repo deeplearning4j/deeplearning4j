@@ -1,32 +1,20 @@
 package org.deeplearning4j.iterativereduce.actor.multilayer;
 
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.deeplearning4j.iterativereduce.actor.core.*;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
-import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.optimize.TrainingEvaluator;
+import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
-import akka.actor.Cancellable;
 import akka.actor.Props;
-import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
-import akka.dispatch.Futures;
 
 /**
  * Iterative reduce actor for handling batch sizes

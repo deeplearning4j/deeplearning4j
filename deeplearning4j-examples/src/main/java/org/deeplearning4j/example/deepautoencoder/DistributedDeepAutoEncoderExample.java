@@ -2,21 +2,18 @@ package org.deeplearning4j.example.deepautoencoder;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.deepautoencoder.DeepAutoEncoderDistributedTrainer;
-import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.deepautoencoder.DeepAutoEncoderHazelCastStateTracker;
 import org.deeplearning4j.linalg.api.activation.Activations;
-import org.deeplearning4j.nn.OutputLayer;
-import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.util.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.Collections;
 
 /**
  * Created by agibsonccc on 5/25/14.

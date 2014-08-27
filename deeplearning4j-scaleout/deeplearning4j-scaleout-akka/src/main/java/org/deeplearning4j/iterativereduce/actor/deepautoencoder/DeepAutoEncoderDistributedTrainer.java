@@ -7,7 +7,7 @@ import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.routing.RoundRobinPool;
-import org.deeplearning4j.autoencoder.DeepAutoEncoder;
+import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.ModelSaver;
@@ -222,7 +222,7 @@ public class DeepAutoEncoderDistributedTrainer implements DeepLearningConfigurab
         if(type.equals("master")) {
 
             if(iter == null)
-                throw new IllegalStateException("Unable to initialize no dataset to train");
+                throw new IllegalStateException("Unable to initialize no dataset to iterate");
 
             log.info("Starting master");
 

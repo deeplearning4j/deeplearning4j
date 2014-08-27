@@ -1,6 +1,6 @@
 package org.deeplearning4j.iterativereduce.akka;
 
-import org.deeplearning4j.autoencoder.DeepAutoEncoder;
+import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
 
 /**
  * Deep AutoEncoder param averaging: over encoder and decoder.
