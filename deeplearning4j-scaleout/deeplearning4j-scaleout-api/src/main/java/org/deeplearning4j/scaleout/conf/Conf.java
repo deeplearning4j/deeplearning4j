@@ -13,9 +13,7 @@ import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.linalg.transformation.MatrixTransform;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork;
-import org.deeplearning4j.nn.api.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.api.NeuralNetwork.OptimizationAlgorithm;
-import org.deeplearning4j.nn.layers.OutputLayer;
 
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 
@@ -61,7 +59,6 @@ public class Conf implements Serializable,Cloneable {
     private boolean useAdaGrad = false;
     private boolean useBackProp = true;
     private float dropOut;
-    private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
     private OptimizationAlgorithm optimizationAlgorithm = OptimizationAlgorithm.CONJUGATE_GRADIENT;
     private boolean normalizeZeroMeanAndUnitVariance;
     private boolean scale;
@@ -71,9 +68,7 @@ public class Conf implements Serializable,Cloneable {
     private Map<Integer,RBM.VisibleUnit> visibleUnitByLayer = new HashMap<>();
     private Map<Integer,RBM.HiddenUnit> hiddenUnitByLayer = new HashMap<>();
     private Map<Integer,Float> learningRateForLayer = new HashMap<>();
-    private Map<Integer,LossFunction> lossFunctionByLayer = new HashMap<>();
     private boolean roundCodeLayer = false;
-    private OutputLayer.LossFunction outputLayerLossFunction = OutputLayer.LossFunction.MCXENT;
     private boolean normalizeCodeLayer = false;
     private boolean lineSearchBackProp = false;
     private boolean sampleHiddenActivations = false;
@@ -138,13 +133,7 @@ public class Conf implements Serializable,Cloneable {
         this.normalizeCodeLayer = normalizeCodeLayer;
     }
 
-    public OutputLayer.LossFunction getOutputLayerLossFunction() {
-        return outputLayerLossFunction;
-    }
 
-    public void setOutputLayerLossFunction(OutputLayer.LossFunction outputLayerLossFunction) {
-        this.outputLayerLossFunction = outputLayerLossFunction;
-    }
 
     public boolean isRoundCodeLayer() {
         return roundCodeLayer;
@@ -158,13 +147,7 @@ public class Conf implements Serializable,Cloneable {
         return learningRateForLayer;
     }
 
-    public Map<Integer, LossFunction> getLossFunctionByLayer() {
-        return lossFunctionByLayer;
-    }
 
-    public void setLossFunctionByLayer(Map<Integer, LossFunction> lossFunctionByLayer) {
-        this.lossFunctionByLayer = lossFunctionByLayer;
-    }
 
     public void setLearningRateForLayer(Map<Integer, Float> learningRateForLayer) {
         this.learningRateForLayer = learningRateForLayer;
@@ -511,15 +494,6 @@ public class Conf implements Serializable,Cloneable {
     }
 
 
-    public LossFunction getLossFunction() {
-        return lossFunction;
-    }
-
-
-    public void setLossFunction(LossFunction lossFunction) {
-        this.lossFunction = lossFunction;
-    }
-
 
     public OptimizationAlgorithm getOptimizationAlgorithm() {
         return optimizationAlgorithm;
@@ -537,17 +511,11 @@ public class Conf implements Serializable,Cloneable {
      */
     public BaseMultiLayerNetwork init() {
         if(getMultiLayerClazz().isAssignableFrom(DBN.class)) {
-            return new DBN.Builder().withHiddenUnits(getHiddenUnit()).withVisibleUnits(getVisibleUnit()).renderByLayer(getRenderEpochsByLayer())
+            return new DBN.Builder().withHiddenUnits(getHiddenUnit()).withVisibleUnits(getVisibleUnit())
                     .withVisibleUnitsByLayer(getVisibleUnitByLayer()).withHiddenUnitsByLayer(getHiddenUnitByLayer())
-                    .activateForLayer(getActivationFunctionForLayer()).activateForLayer(getActivationFunctionForLayer())
             .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz()).lineSearchBackProp(isLineSearchBackProp())
-                    .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).withOutputLossFunction(getOutputLayerLossFunction())
-                    .withOutputActivationFunction(getOutputActivationFunction()).lossFunctionByLayer(getLossFunctionByLayer())
-                    .sampleOrActivateByLayer(getSampleHiddenActivationsByLayer()).outputLayerDropout(getOutputLayerDropOut())
-                    .useDropConnection(isUseDropConnect()).withMomentum(getMomentum())
-                    .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
-                    .learningRateForLayer(getLearningRateForLayer()).sampleFromHiddenActivations(isSampleHiddenActivations())
-                    .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
+                    .hiddenLayerSizes(getLayerSizes())
+                    .useDropConnection(isUseDropConnect())
                     .build();
 
 
@@ -555,15 +523,11 @@ public class Conf implements Serializable,Cloneable {
         }
 
         else {
-            return  new BaseMultiLayerNetwork.Builder<>().learningRateForLayer(getLearningRateForLayer())
-                    .withOutputLossFunction(getOutputLayerLossFunction()).withMomentum(getMomentum())
-                    .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz())
-                    .withOutputActivationFunction(getOutputActivationFunction()).outputLayerDropout(getOutputLayerDropOut())
-                    .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).activateForLayer(getActivationFunctionForLayer())
-                    .renderByLayer(getRenderEpochsByLayer()).lineSearchBackProp(isLineSearchBackProp()).sampleOrActivateByLayer(getSampleHiddenActivationsByLayer())
-                    .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
-                    .lossFunctionByLayer(getLossFunctionByLayer()).useDropConnection(isUseDropConnect())
-                    .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
+            return  new BaseMultiLayerNetwork.Builder<>().withClazz(getMultiLayerClazz())
+                    .hiddenLayerSizes(getLayerSizes())
+                     .lineSearchBackProp(isLineSearchBackProp()) .
+                     useDropConnection(isUseDropConnect())
+
                     .build();
 
         }

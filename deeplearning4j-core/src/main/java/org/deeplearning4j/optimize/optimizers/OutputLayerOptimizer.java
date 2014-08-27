@@ -96,7 +96,7 @@ public class OutputLayerOptimizer implements OptimizableByGradientValueMatrix {
 
 	@Override
 	public void setParameters(INDArray params) {
-        if(logReg.isConstrainGradientToUniNorm())
+        if(logReg.conf().isConstrainGradientToUnitNorm())
               params.divi(params.normmax(Integer.MAX_VALUE));
 		this.setParameters(params.data());
 	}

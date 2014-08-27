@@ -7,8 +7,8 @@ import java.util.List;
 import com.google.common.primitives.Floats;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.nn.api.NeuralNetwork;
-import org.deeplearning4j.nn.api.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.api.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.api.NeuralNetEpochListener;
@@ -43,7 +43,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     protected float minLearningRate = 0.001f;
     protected transient OptimizerMatrix opt;
     protected OptimizationAlgorithm optimizationAlgorithm;
-    protected LossFunction lossFunction;
+    protected LossFunctions.LossFunction lossFunction;
     protected  NeuralNetPlotter plotter = new NeuralNetPlotter();
     protected float maxStep = -1;
     protected int numParams = -1;
@@ -54,7 +54,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
      * @param lr
      * @param trainingParams
      */
-    public NeuralNetworkOptimizer(NeuralNetwork network,float lr,Object[] trainingParams,OptimizationAlgorithm optimizationAlgorithm,LossFunction lossFunction) {
+    public NeuralNetworkOptimizer(NeuralNetwork network,float lr,Object[] trainingParams,OptimizationAlgorithm optimizationAlgorithm,LossFunctions.LossFunction lossFunction) {
         this.network = network;
         this.lr = lr;
         //add current iteration as an extra parameter
@@ -102,7 +102,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
     @Override
     public void iterationDone(int iterationDone) {
-        int plotEpochs = network.getRenderIterations();
+        int plotEpochs = network.conf().getRenderWeightsEveryNumEpochs();
         if(plotEpochs <= 0)
             return;
         if(iterationDone % plotEpochs == 0) {
@@ -149,7 +149,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
     @Override
     public void setParameters(INDArray params) {
-        if(network.isConstrainGradientToUnitNorm())
+        if(network.conf().isConstrainGradientToUnitNorm())
             params.divi(params.normmax(Integer.MAX_VALUE));
         for(int i = 0; i < params.length(); i++)
             setParameter(i, (float) params.getScalar(i).element());
@@ -229,20 +229,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
     @Override
     public float getValue() {
-        if(this.lossFunction == LossFunction.RECONSTRUCTION_CROSSENTROPY)
-            return network.getReConstructionCrossEntropy();
-        else if(this.lossFunction == LossFunction.SQUARED_LOSS)
-            return - network.squaredLoss();
-
-        else if(this.lossFunction == LossFunction.NEGATIVELOGLIKELIHOOD)
-            return -network.negativeLogLikelihood();
-        else if(lossFunction == LossFunction.MSE)
-            return -network.mse();
-        else if(lossFunction == LossFunction.RMSE_XENT)
-            return -network.mseRecon();
-
-
-        return network.getReConstructionCrossEntropy();
+      return - network.score();
 
     }
 

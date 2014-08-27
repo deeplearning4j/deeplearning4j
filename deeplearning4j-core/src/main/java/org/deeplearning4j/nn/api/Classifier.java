@@ -9,7 +9,7 @@ import org.deeplearning4j.linalg.dataset.api.DataSet;
  *
  * @author Adam Gibson
  */
-public interface Classifier {
+public interface Classifier extends Model {
 
 
     /**
@@ -76,6 +76,23 @@ public interface Classifier {
      */
     void fit(DataSet data);
 
+
+    /**
+     * Fit the model
+     * @param examples the examples to classify (one example in each row)
+     * @param labels the example labels(a binary outcome matrix)
+     * @param params extra parameters
+     */
+    void fit(INDArray examples,INDArray labels,Object[] params);
+
+    /**
+     * Fit the model
+     * @param data the data to train on
+     * @param params extra parameters
+     */
+    void fit(DataSet data,Object[] params);
+
+
     /**
      * Fit the model
      * @param examples the examples to classify (one example in each row)
@@ -84,11 +101,25 @@ public interface Classifier {
      */
     void fit(INDArray examples,int[] labels);
 
+
     /**
-     * Returns the coefficients for this classifier as a raveled vector
-     * @return a copy of this classifier's params
+     * Fit the model
+     * @param examples the examples to classify (one example in each row)
+     * @param labels the labels for each example (the number of labels must match
+     *               the number of rows in the example
+     * @param params extra parameters
      */
-    INDArray params();
+    void fit(INDArray examples,int[] labels,Object[] params);
+
+    /**
+     * Iterate once on the model
+     * @param examples the examples to classify (one example in each row)
+     * @param labels the labels for each example (the number of labels must match
+     *               the number of rows in the example
+     * @param params extra parameters
+     */
+    void iterate(INDArray examples,int[] labels,Object[] params);
+
 
 
 }

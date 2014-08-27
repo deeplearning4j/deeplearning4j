@@ -53,7 +53,7 @@ public class BackPropROptimizer implements Serializable,OptimizableByGradientVal
             //sgd style; only iterate a certain number of epochs
             if(network.isForceNumEpochs()) {
                 for(int i = 0; i < epochs; i++) {
-                    if(i % network.getResetAdaGradIterations() == 0)
+                    if(i % network.getDefaultConfiguration().getResetAdaGradIterations() == 0)
                         network.getOutputLayer().getAdaGrad().historicalGradient = null;
                     network.backPropStepR(null);
                     log.info("Iteration " + i + " error " + network.score());
@@ -110,7 +110,7 @@ public class BackPropROptimizer implements Serializable,OptimizableByGradientVal
 
         else {
 
-            NeuralNetwork.OptimizationAlgorithm optimizationAlgorithm = network.getOptimizationAlgorithm();
+            NeuralNetwork.OptimizationAlgorithm optimizationAlgorithm = network.getDefaultConfiguration().getOptimizationAlgo();
             if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT) {
                 VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(this);
                 g.setTrainingEvaluator(eval);

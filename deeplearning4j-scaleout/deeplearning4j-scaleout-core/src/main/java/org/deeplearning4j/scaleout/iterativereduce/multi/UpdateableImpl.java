@@ -26,10 +26,10 @@ public class UpdateableImpl implements Updateable<BaseMultiLayerNetwork> {
 	public UpdateableImpl(BaseMultiLayerNetwork wrapped) {
 		if(wrapped == null)
            throw new IllegalArgumentException("Null argument not allowed");
-       if(wrapped.getLayers() == null || wrapped.getLayers()[0] == null)
-           throw new IllegalArgumentException("No layers found!");
-        if(wrapped.getSigmoidHiddeenLayers() == null || wrapped.getSigmoidHiddeenLayers()[0] == null)
-            throw new IllegalArgumentException("No sigmoid layers found");
+       if(wrapped.getNeuralNets() == null || wrapped.getNeuralNets()[0] == null)
+           throw new IllegalArgumentException("No neuralNets found!");
+        if(wrapped.getNeuralNets() == null || wrapped.getNeuralNets()[0] == null)
+            throw new IllegalArgumentException("No sigmoid neuralNets found");
 
         this.wrapped = wrapped;
 		if(clazz == null)

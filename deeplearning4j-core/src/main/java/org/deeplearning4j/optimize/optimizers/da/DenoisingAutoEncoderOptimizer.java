@@ -2,8 +2,8 @@ package org.deeplearning4j.optimize.optimizers.da;
 
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.nn.api.NeuralNetwork;
-import org.deeplearning4j.nn.api.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.api.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.optimizers.NeuralNetworkOptimizer;
@@ -26,7 +26,7 @@ public class DenoisingAutoEncoderOptimizer extends NeuralNetworkOptimizer {
      * @param optimizationAlgorithm
      * @param lossFunction
      */
-    public DenoisingAutoEncoderOptimizer(NeuralNetwork network, float lr, Object[] trainingParams, OptimizationAlgorithm optimizationAlgorithm, LossFunction lossFunction) {
+    public DenoisingAutoEncoderOptimizer(NeuralNetwork network, float lr, Object[] trainingParams, OptimizationAlgorithm optimizationAlgorithm, LossFunctions.LossFunction lossFunction) {
         super(network, lr, trainingParams, optimizationAlgorithm, lossFunction);
     }
 

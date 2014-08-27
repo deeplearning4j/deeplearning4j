@@ -1,28 +1,23 @@
 package org.deeplearning4j.nn.api;
 
-import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.linalg.api.activation.ActivationFunction;
+
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.nn.layers.HiddenLayer;
-import org.deeplearning4j.nn.WeightInit;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 
 import java.io.Serializable;
 
 /**
- * Created by agibsonccc on 8/26/14.
+ * Interface for a layer of a neural network.
+ * This has an activation function, an input and output size,
+ * weights, and a bias
+ *
+ * @author Adam Gibson
  */
 public interface Layer extends Serializable,Cloneable {
-    WeightInit getWeightInit();
 
-    void setWeightInit(WeightInit weightInit);
 
-    int getnIn();
-
-    void setnIn(int nIn);
-
-    int getnOut();
-
-    void setnOut(int nOut);
+    NeuralNetConfiguration conf();
+    void setConfiguration(NeuralNetConfiguration conf);
 
     INDArray getW();
 
@@ -32,33 +27,12 @@ public interface Layer extends Serializable,Cloneable {
 
     void setB(INDArray b);
 
-    RandomGenerator getRng();
-
-    void setRng(RandomGenerator rng);
-
-    INDArray getInput();
+     INDArray getInput();
 
     void setInput(INDArray input);
 
-    ActivationFunction getActivationFunction();
 
-    void setActivationFunction(
-            ActivationFunction activationFunction);
-
-    boolean isConcatBiases();
-
-    void setConcatBiases(boolean concatBiases);
-
-
-    public Layer clone();
-
-    /**
-     * Returns a transposed version of this hidden layer.
-     * A transpose is just the bias and weights flipped
-     * + number of ins and outs flipped
-     * @return the transposed version of this hidden layer
-     */
-    HiddenLayer transpose();
+    INDArray preOutput(INDArray x);
 
     /**
      * Trigger an activation with the last specified input
@@ -74,4 +48,8 @@ public interface Layer extends Serializable,Cloneable {
      * @return
      */
     INDArray activate(INDArray input);
+
+    Layer transpose();
+
+    Layer clone();
 }
