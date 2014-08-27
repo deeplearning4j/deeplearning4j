@@ -1,9 +1,10 @@
 package org.deeplearning4j.optimize.optimizers.rbm;
 
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
-import org.deeplearning4j.nn.api.NeuralNetwork.LossFunction;
-import org.deeplearning4j.nn.api.NeuralNetwork.OptimizationAlgorithm;
+
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.optimize.optimizers.NeuralNetworkOptimizer;
 
 /**
@@ -23,7 +24,7 @@ public class RBMOptimizer extends NeuralNetworkOptimizer {
 	protected int k = -1;
 	protected int numTimesIterated = 0;
 	
-	public RBMOptimizer(BaseNeuralNetwork network,float lr, Object[] trainingParams,OptimizationAlgorithm optimizationAlgorithm,LossFunction lossFunction) {
+	public RBMOptimizer(BaseNeuralNetwork network,float lr, Object[] trainingParams,NeuralNetwork.OptimizationAlgorithm optimizationAlgorithm,LossFunctions.LossFunction lossFunction) {
 		super(network,lr,trainingParams,optimizationAlgorithm,lossFunction);
 	}
 

@@ -42,7 +42,7 @@ public class BackPropOptimizerTests {
 
         DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED)
                 .withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
-                .numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(Activations.tanh())
+                .numberOfInputs(nIns).numberOfOutPuts(nOuts)
                 .hiddenLayerSizes(hiddenLayerSizes)
                 .build();
 
@@ -57,18 +57,18 @@ public class BackPropOptimizerTests {
 
         ParamRange r = dbn.startIndexForLayer(0);
         double firstWeightForParam = (double) layerParams.getScalar(r.getwStart() + 1).element();
-        double firstWeightInNetwork = (double) dbn.getLayers()[0].getW().getScalar(1).element();
+        double firstWeightInNetwork = (double) dbn.getNeuralNets()[0].getW().getScalar(1).element();
         assertEquals(0,r.getwStart());
-        int len = dbn.getLayers()[0].getW().length();
+        int len = dbn.getNeuralNets()[0].getW().length();
         assertEquals(len,r.getwEnd());
-        assertEquals(dbn.getLayers()[0].gethBias().length(),Math.abs(r.getBiasStart() - r.getBiasEnd()));
+        assertEquals(dbn.getNeuralNets()[0].gethBias().length(),Math.abs(r.getBiasStart() - r.getBiasEnd()));
 
         ParamRange r2 = dbn.startIndexForLayer(1);
-        assertEquals(dbn.getLayers()[0].getW().length() + dbn.getLayers()[0].gethBias().length(),r2.getwStart());
+        assertEquals(dbn.getNeuralNets()[0].getW().length() + dbn.getNeuralNets()[0].gethBias().length(),r2.getwStart());
 
 
         double secondWeightForParam = (double) layerParams.getScalar(r2.getwStart() + 1).element();
-        double secondWeightInNetwork = (double) dbn.getLayers()[1].getW().getScalar(1).element();
+        double secondWeightInNetwork = (double) dbn.getNeuralNets()[1].getW().getScalar(1).element();
 
 
         assertEquals(true,firstWeightForParam == firstWeightInNetwork);
@@ -79,7 +79,7 @@ public class BackPropOptimizerTests {
         assertEquals(op.getParameters().length(),op.getValueGradient(0).length());
 
 
-        assertEquals(dbn.getLayers()[1].gethBias().length(),Math.abs(r2.getBiasStart() - r2.getBiasEnd()));
+        assertEquals(dbn.getNeuralNets()[1].gethBias().length(),Math.abs(r2.getBiasStart() - r2.getBiasEnd()));
 
     }
 

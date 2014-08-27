@@ -10,7 +10,7 @@ public interface DeepLearningConfigurable {
 	/* An integer the number of outputs*/
 	public final static String OUT = "org.deeplearning4j.out";
 
-	/* int: Number of hidden layers */
+	/* int: Number of hidden neuralNets */
 	public final static String N_IN = "org.deeplearning4j.hiddenlayers";
 
 	/* A long */
