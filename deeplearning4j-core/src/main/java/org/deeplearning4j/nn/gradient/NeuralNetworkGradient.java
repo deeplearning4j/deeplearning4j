@@ -9,7 +9,7 @@ import java.io.Serializable;
 
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.nn.Persistable;
+import org.deeplearning4j.nn.api.Persistable;
 
 /**
  * Represents the gradient for changing a neural network

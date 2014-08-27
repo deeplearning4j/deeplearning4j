@@ -2,6 +2,7 @@ package org.deeplearning4j.optimize;
 
 import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

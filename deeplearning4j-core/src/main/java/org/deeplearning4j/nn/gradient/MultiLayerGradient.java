@@ -4,7 +4,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 
-import org.deeplearning4j.nn.Persistable;
+import org.deeplearning4j.nn.api.Persistable;
 import org.deeplearning4j.util.SerializationUtils;
 
 /**

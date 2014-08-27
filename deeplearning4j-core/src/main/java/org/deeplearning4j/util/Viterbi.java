@@ -4,7 +4,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.nn.Persistable;
+import org.deeplearning4j.nn.api.Persistable;
 
 
 import java.io.InputStream;

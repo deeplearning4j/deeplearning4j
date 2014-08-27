@@ -1,31 +1,25 @@
 package org.deeplearning4j.iterativereduce.actor.core.actor;
 
 import java.io.File;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import akka.actor.Cancellable;
-import org.deeplearning4j.autoencoder.DeepAutoEncoder;
+import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.core.ModelSaver;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.nn.Persistable;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.cluster.Cluster;
-import akka.contrib.pattern.ClusterReceptionistExtension;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import org.deeplearning4j.scaleout.iterativereduce.deepautoencoder.UpdateableEncoderImpl;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-import scala.concurrent.duration.Duration;
 
 
 /**
@@ -86,7 +80,7 @@ public class ModelSavingActor extends UntypedActor {
         if(message instanceof MoreWorkMessage) {
             if(stateTracker.getCurrent() != null && stateTracker.getCurrent().getClass().isAssignableFrom(UpdateableImpl.class)) {
                 BaseMultiLayerNetwork current = (BaseMultiLayerNetwork) stateTracker.getCurrent().get();
-                if(current.getLayers() == null || current.getSigmoidLayers() == null)
+                if(current.getLayers() == null || current.getSigmoidHiddeenLayers() == null)
                     throw new IllegalStateException("Invalid model found when prompted to save..");
                 current.clearInput();
                 stateTracker.setCurrent(new UpdateableImpl(current));

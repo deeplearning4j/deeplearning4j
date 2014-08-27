@@ -3,7 +3,7 @@ package org.deeplearning4j.rbm;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
-import org.jblas.DoubleMatrix;
+import org.deeplearning4j.models.featuredetectors.rbm.ConvolutionalRBM;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -31,7 +31,7 @@ public class ConvRBMTest {
         DataSet d = fetcher.next();
         INDArray train = d.getFeatureMatrix().reshape(28,28);
 
-       rbm.trainTillConvergence(train,1e-2f,new Object[]{1,1e-2f,100});
+       rbm.fit(train, 1e-2f, new Object[]{1, 1e-2f, 100});
 
 
 

@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  *          
  *       
  *       Optional:
- *        -fte number of fine tune epochs to train on (default: 100)
+ *        -fte number of fine tune epochs to iterate on (default: 100)
  *        -pte number of epochs for pretraining (default: 100)
  *        -r   seed value for the random number generator (default: 123)
  *        -ftl the starter fine tune learning rate (default: 0.1)
@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  *        -sp   number of inputs to split by default: 10
  *        -adg use adagrad or not: default value: true
  *        
- *        -e   number of examples to train on: if unspecified will just train on everything found
+ *        -e   number of examples to iterate on: if unspecified will just iterate on everything found
  *        DBN/CDBN:
  *        -k the k for rbms (default: 1)
  *        
@@ -71,7 +71,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	protected int inputs;
 	@Option(name="-o",usage="number of outputs for the network",handler=IntOptionHandler.class)
 	protected int outputs;
-	@Option(name="-fte",usage="number of fine tune epochs to train on (default: 100)",handler=IntOptionHandler.class)
+	@Option(name="-fte",usage="number of fine tune epochs to iterate on (default: 100)",handler=IntOptionHandler.class)
 	protected int finetuneEpochs = 100;
 	@Option(name="-pte",usage="number of epochs for pretraining (default: 100)",handler=IntOptionHandler.class)
 	protected int pretrainEpochs = 100;
@@ -100,7 +100,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	protected String dataSet;
 	@Option(name = "-datasetpath",usage="dataset path; eg if you save a dataset you can just point the network runner at a path rather than worrying about a class to instantiate")
 	protected String dataPath;
-	@Option(name="-e",usage="number of examples to train on: if unspecified will just train on everything found")
+	@Option(name="-e",usage="number of examples to iterate on: if unspecified will just iterate on everything found")
 	protected int numExamples = -1;
 	@Option(name="-adg",usage="use adagrad; default true")
 	protected boolean useAdaGrad = true;
@@ -241,12 +241,12 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	protected String getClassForAlgorithm() {
 		switch(algorithm) {
 		case  "sda" :
-			return "org.deeplearning4j.sda.StackedDenoisingAutoEncoder";
+			return "org.deeplearning4j.models.classifiers.sda.StackedDenoisingAutoEncoder";
 
 		case "dbn" : 
-			return "org.deeplearning4j.dbn.DBN";
+			return "org.deeplearning4j.models.classifiers.dbn.DBN";
 		case "cdbn":
-			return "org.deeplearning4j.dbn.CDBN";
+			return "org.deeplearning4j.models.classifiers.dbn.CDBN";
 		}
 		return null;
 	}

@@ -2,7 +2,6 @@ package org.deeplearning4j.word2vec;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +17,7 @@ public class ModelReader {
 	 */
 	public static void main(String[] args) throws Exception {
 		Word2Vec vec = Word2VecLoader.loadModel(new File(args[0]));
-		vec.train();
+		vec.fit();
 		BufferedReader br = 
 				new BufferedReader(new InputStreamReader(System.in));
 

@@ -55,6 +55,7 @@ public class NDArrays  {
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype,ORDER);
             blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(props.get(BLAS_OPS).toString());
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
+
         }catch(Exception e) {
             throw new RuntimeException(e);
         }

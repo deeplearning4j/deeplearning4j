@@ -19,7 +19,7 @@ import org.deeplearning4j.word2vec.util.Util;
  * The cut off number is going to be low.
  * Experimentation is usually going to be required
  * to find the right cut off point for whether an article is "similar" or not
- * The more data you train on for word2vec the more accurate the classifier is.
+ * The more data you iterate on for word2vec the more accurate the classifier is.
  * for whether 2 articles are similar.
  * 
  * This is based on a few factors: one is 

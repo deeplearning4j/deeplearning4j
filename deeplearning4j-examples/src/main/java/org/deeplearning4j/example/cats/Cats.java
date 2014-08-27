@@ -1,17 +1,15 @@
 package org.deeplearning4j.example.cats;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.plot.FilterRenderer;
-import org.deeplearning4j.plot.MultiLayerNetworkReconstructionRender;
-import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.Collections;
 
 /**
  * Created by agibsonccc on 6/3/14.

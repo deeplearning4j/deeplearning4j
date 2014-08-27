@@ -7,7 +7,7 @@ import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.linalg.sampling.Sampling;
-import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ public class RBMMnistExample {
         while(iter.hasNext()) {
             DataSet next = iter.next();
             //log.info(String.valueOf(next.labelDistribution()));
-            r.trainTillConvergence(next.getFeatureMatrix(), 1e-1f, new Object[]{1, 1e-1f, 5000});
+            r.fit(next.getFeatureMatrix(), 1e-1f, new Object[]{1, 1e-1f, 5000});
 
         }
 
@@ -40,7 +40,7 @@ public class RBMMnistExample {
         //Iterate over the dataset after you're done training and show the two side by side (you have to drag the test image to the right)
         while(iter.hasNext()) {
             DataSet first = iter.next();
-            INDArray reconstruct = r.reconstruct(first.getFeatureMatrix());
+            INDArray reconstruct = r.transform(first.getFeatureMatrix());
             for(int j = 0; j < first.numExamples(); j++) {
 
                 INDArray draw1 = first.get(j).getFeatureMatrix().mul(255);
