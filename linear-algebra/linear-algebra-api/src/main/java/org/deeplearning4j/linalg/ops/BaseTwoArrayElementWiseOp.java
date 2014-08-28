@@ -4,6 +4,8 @@ package org.deeplearning4j.linalg.ops;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.util.Shape;
 
+import java.util.concurrent.CountDownLatch;
+
 /**
  * Apply an operation and save it to a resulting matrix
  *
