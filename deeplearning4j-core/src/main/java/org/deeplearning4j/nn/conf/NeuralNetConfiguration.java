@@ -26,6 +26,9 @@ public class NeuralNetConfiguration implements Serializable {
     private float sparsity = 0f;
     private boolean useAdaGrad = true;
     private float lr = 1e-1f;
+    protected int k = 1;
+    protected float corruptionLevel = 0.3f;
+    protected int numIterations = 1000;
     /* momentum for learning */
     protected float momentum = 0.5f;
     /* L2 Regularization constant */
@@ -92,6 +95,30 @@ public class NeuralNetConfiguration implements Serializable {
             this.dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
         this.hiddenUnit = hiddenUnit;
+    }
+
+    public int getNumIterations() {
+        return numIterations;
+    }
+
+    public void setNumIterations(int numIterations) {
+        this.numIterations = numIterations;
+    }
+
+    public int getK() {
+        return k;
+    }
+
+    public void setK(int k) {
+        this.k = k;
+    }
+
+    public float getCorruptionLevel() {
+        return corruptionLevel;
+    }
+
+    public void setCorruptionLevel(float corruptionLevel) {
+        this.corruptionLevel = corruptionLevel;
     }
 
     public RBM.HiddenUnit getHiddenUnit() {
