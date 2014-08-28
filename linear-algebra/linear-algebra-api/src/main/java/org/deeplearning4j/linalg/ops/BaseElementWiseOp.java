@@ -3,6 +3,7 @@ package org.deeplearning4j.linalg.ops;
 
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 
+
 /**
  * Baseline element wise operation so only applyTransformToOrigin has to be implemented.
  * This also handles the ability to perform scalar wise operations vs just
@@ -62,12 +63,15 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
     @Override
     public void exec() {
         for(int i = 0; i < from.vectorsAlongDimension(0); i++) {
+
             INDArray vectorAlongDim = from.vectorAlongDimension(i,0);
             currVector = vectorAlongDim;
+
             for(int j = 0; j < vectorAlongDim.length(); j++) {
                  vectorAlongDim.put(j,apply(vectorAlongDim.getScalar(j),j));
             }
         }
+
 
 
 
