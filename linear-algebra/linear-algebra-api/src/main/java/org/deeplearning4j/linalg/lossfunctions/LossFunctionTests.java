@@ -37,4 +37,12 @@ public abstract class LossFunctionTests {
     }
 
 
+    @Test
+    public void testRMseXent() {
+        INDArray in = NDArrays.create(new float[][]{{1,2},{3,4}});
+        INDArray out = NDArrays.create(new float[][]{{5,6},{7,8}});
+        float diff = LossFunctions.score(in, LossFunctions.LossFunction.RMSE_XENT,out,0,false);
+        assertEquals(8,diff,1e-1);
+    }
+
 }

@@ -2,8 +2,10 @@ package org.deeplearning4j.nn.conf;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.linalg.api.activation.ActivationFunction;
+import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.WeightInit;
@@ -21,13 +23,13 @@ import java.util.Map;
  */
 public class NeuralNetConfiguration implements Serializable {
 
-    private float sparsity;
+    private float sparsity = 0f;
     private boolean useAdaGrad = true;
     private float lr = 1e-1f;
     /* momentum for learning */
     protected float momentum = 0.5f;
     /* L2 Regularization constant */
-    protected float l2 = 0.1f;
+    protected float l2 = 0f;
     protected boolean useRegularization = false;
     //momentum after n iterations
     protected Map<Integer,Float> momentumAfter = new HashMap<>();
@@ -349,5 +351,215 @@ public class NeuralNetConfiguration implements Serializable {
         result = 31 * result + nOut;
         result = 31 * result + activationFunction.hashCode();
         return result;
+    }
+
+    public static class Builder {
+
+        private float sparsity = 0f;
+        private boolean useAdaGrad = true;
+        private float lr = 1e-1f;
+        private float momentum = 0;
+        private float l2 = 0f;
+        private boolean useRegularization = false;
+        private Map<Integer, Float> momentumAfter;
+        private int resetAdaGradIterations = -1;
+        private float dropOut = 0;
+        private boolean applySparsity = false;
+        private WeightInit weightInit = WeightInit.SI;
+        private NeuralNetwork.OptimizationAlgorithm optimizationAlgo = NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT;
+        private int renderWeightsEveryNumEpochs = -1;
+        private boolean concatBiases = false;
+        private boolean constrainGradientToUnitNorm = false;
+        private RandomGenerator rng = new MersenneTwister(123);
+        private long seed = 123;
+        private RealDistribution dist  = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+        private boolean adagrad = true;
+        private LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
+        private int nIn;
+        private int nOut;
+        private ActivationFunction activationFunction = Activations.sigmoid();
+        private boolean useHiddenActivationsForwardProp = true;
+        private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
+        private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
+
+        public Builder dist(RealDistribution dist) {
+            this.dist = dist;
+            return this;
+        }
+
+
+        public Builder sparsity(float sparsity) {
+            this.sparsity = sparsity;
+            return this;
+        }
+
+        public Builder useAdaGrad(boolean useAdaGrad) {
+            this.useAdaGrad = useAdaGrad;
+            return this;
+        }
+
+        public Builder learningRate(float lr) {
+            this.lr = lr;
+            return this;
+        }
+
+        public Builder momentum(float momentum) {
+            this.momentum = momentum;
+            return this;
+        }
+
+        public Builder regularizationCoefficient(float l2) {
+            this.l2 = l2;
+            return this;
+        }
+
+        public Builder regularize(boolean useRegularization) {
+            this.useRegularization = useRegularization;
+            return this;
+        }
+
+        public Builder momentumAfter(Map<Integer, Float> momentumAfter) {
+            this.momentumAfter = momentumAfter;
+            return this;
+        }
+
+        public Builder adagradResetIterations(int resetAdaGradIterations) {
+            this.resetAdaGradIterations = resetAdaGradIterations;
+            return this;
+        }
+
+        public Builder dropOut(float dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
+
+        public Builder applySparsity(boolean applySparsity) {
+            this.applySparsity = applySparsity;
+            return this;
+        }
+
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
+
+        public Builder optimize(NeuralNetwork.OptimizationAlgorithm optimizationAlgo) {
+            this.optimizationAlgo = optimizationAlgo;
+            return this;
+        }
+
+        public Builder render(int renderWeightsEveryNumEpochs) {
+            this.renderWeightsEveryNumEpochs = renderWeightsEveryNumEpochs;
+            return this;
+        }
+
+        public Builder concatBiases(boolean concatBiases) {
+            this.concatBiases = concatBiases;
+            return this;
+        }
+
+        public Builder constrainWeights(boolean constrainGradientToUnitNorm) {
+            this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
+            return this;
+        }
+
+        public Builder rng(RandomGenerator rng) {
+            this.rng = rng;
+            return this;
+        }
+
+        public Builder seed(long seed) {
+            this.seed = seed;
+            return this;
+        }
+
+        public NeuralNetConfiguration build() {
+            return new NeuralNetConfiguration(sparsity,useAdaGrad,lr,momentum,l2,useRegularization,momentumAfter,resetAdaGradIterations,dropOut,applySparsity,weightInit,optimizationAlgo,lossFunction,renderWeightsEveryNumEpochs,concatBiases,constrainGradientToUnitNorm,rng,dist,seed,nIn,nOut,activationFunction,useHiddenActivationsForwardProp,visibleUnit,hiddenUnit);
+
+         }
+
+
+
+
+
+
+        public Builder l2(float l2) {
+            this.l2 = l2;
+            return this;
+        }
+
+        public Builder regularization(boolean useRegularization) {
+            this.useRegularization = useRegularization;
+            return this;
+        }
+
+
+
+        public Builder resetAdaGradIterations(int resetAdaGradIterations) {
+            this.resetAdaGradIterations = resetAdaGradIterations;
+            return this;
+        }
+
+
+
+
+
+
+
+        public Builder optimizationAlgo(NeuralNetwork.OptimizationAlgorithm optimizationAlgo) {
+            this.optimizationAlgo = optimizationAlgo;
+            return this;
+        }
+
+        public Builder lossFunction(LossFunctions.LossFunction lossFunction) {
+            this.lossFunction = lossFunction;
+            return this;
+        }
+
+        public Builder renderWeightsEveryNumEpochs(int renderWeightsEveryNumEpochs) {
+            this.renderWeightsEveryNumEpochs = renderWeightsEveryNumEpochs;
+            return this;
+        }
+
+
+
+        public Builder constrainGradientToUnitNorm(boolean constrainGradientToUnitNorm) {
+            this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
+            return this;
+        }
+
+
+
+
+
+        public Builder nIn(int nIn) {
+            this.nIn = nIn;
+            return this;
+        }
+
+        public Builder nOut(int nOut) {
+            this.nOut = nOut;
+            return this;
+        }
+
+        public Builder activationFunction(ActivationFunction activationFunction) {
+            this.activationFunction = activationFunction;
+            return this;
+        }
+
+        public Builder useHiddenActivationsForwardProp(boolean useHiddenActivationsForwardProp) {
+            this.useHiddenActivationsForwardProp = useHiddenActivationsForwardProp;
+            return this;
+        }
+
+        public Builder visibleUnit(RBM.VisibleUnit visibleUnit) {
+            this.visibleUnit = visibleUnit;
+            return this;
+        }
+
+        public Builder hiddenUnit(RBM.HiddenUnit hiddenUnit) {
+            this.hiddenUnit = hiddenUnit;
+            return this;
+        }
     }
 }

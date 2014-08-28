@@ -24,7 +24,7 @@ public class Negative extends BaseElementWiseOp {
             return NDArrays.scalar(ComplexUtil.neg((org.deeplearning4j.linalg.api.complex.IComplexNumber) value.element()));
         }
         else {
-            double val = (double) value.element();
+            float val = (float) value.element();
             return NDArrays.scalar(-val);
         }
     }

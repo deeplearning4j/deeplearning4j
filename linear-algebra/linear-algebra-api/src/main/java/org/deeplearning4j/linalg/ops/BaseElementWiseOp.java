@@ -16,7 +16,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
     protected INDArray from;
     //this is for operations like adding or multiplying a scalar over the from array
     protected INDArray scalarValue;
-
+    protected INDArray currVector;
 
 
     /**
@@ -26,7 +26,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
      */
     @Override
     public void applyTransformToOrigin(int i) {
-        from.put(i,apply(getFromOrigin(i),i));
+        currVector.put(i,apply(getFromOrigin(i),i));
     }
 
     /**
@@ -37,13 +37,13 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
      */
     @Override
     public void applyTransformToOrigin(int i, INDArray valueToApply) {
-        from.put(i,apply(valueToApply,i));
+        currVector.put(i,apply(valueToApply,i));
 
     }
 
     @Override
     public INDArray getFromOrigin(int i) {
-        return from.getScalar(i);
+        return currVector.getScalar(i);
     }
 
     /**
@@ -61,8 +61,15 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
      */
     @Override
     public void exec() {
-        for(int i = 0; i < from.length(); i++)
-            applyTransformToOrigin(i);
+        for(int i = 0; i < from.vectorsAlongDimension(0); i++) {
+            INDArray vectorAlongDim = from.vectorAlongDimension(i,0);
+            currVector = vectorAlongDim;
+            for(int j = 0; j < vectorAlongDim.length(); j++) {
+                 vectorAlongDim.put(j,apply(vectorAlongDim.getScalar(j),j));
+            }
+        }
+
+
 
     }
 }

@@ -58,8 +58,13 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
         this.network = network;
         this.lr = lr;
         //add current iteration as an extra parameter
-        this.extraParams = new Object[trainingParams.length + 1];
-        System.arraycopy(trainingParams,0,extraParams,0,trainingParams.length);
+        if(trainingParams != null) {
+            this.extraParams = new Object[trainingParams.length + 1];
+            System.arraycopy(trainingParams,0,extraParams,0,trainingParams.length);
+        }
+        else
+            this.extraParams = new Object[1];
+
         this.optimizationAlgorithm = optimizationAlgorithm;
         this.lossFunction = lossFunction;
     }
@@ -229,7 +234,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
     @Override
     public float getValue() {
-      return - network.score();
+        return - network.score();
 
     }
 

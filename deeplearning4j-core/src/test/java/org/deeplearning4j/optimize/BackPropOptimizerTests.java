@@ -40,8 +40,7 @@ public class BackPropOptimizerTests {
         int fineTuneEpochs = 10000;
 
 
-        DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED)
-                .withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
+        DBN dbn = new DBN.Builder()
                 .numberOfInputs(nIns).numberOfOutPuts(nOuts)
                 .hiddenLayerSizes(hiddenLayerSizes)
                 .build();

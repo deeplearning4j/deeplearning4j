@@ -2,8 +2,6 @@ package org.deeplearning4j.nn;
 
 
 
-import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.models.featuredetectors.autoencoder.AutoEncoder;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
@@ -66,8 +64,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     //default training examples and associated neuralNets
     protected INDArray input, labels;
     protected MultiLayerNetworkOptimizer optimizer;
-    //whether to initialize neuralNets
-    protected boolean shouldInit = true;
     //sometimes we may need to applyTransformToOrigin weights; this allows a
     //weight applyTransformToOrigin upon layer setup
     protected Map<Integer, MatrixTransform> weightTransforms = new HashMap<>();
@@ -165,9 +161,30 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         this.layers = new org.deeplearning4j.nn.layers.Layer[nLayers];
 
+        intializeConfigurations();
 
         if (input != null)
             initializeLayers(input);
+    }
+
+
+
+
+    protected void intializeConfigurations() {
+
+        if(layerWiseConfigurations == null)
+            layerWiseConfigurations = new ArrayList<>();
+
+
+        if(defaultConfiguration == null)
+               defaultConfiguration = new NeuralNetConfiguration.Builder()
+                .build();
+
+        //add a default configuration for each hidden layer + output layer
+        for(int i = 0; i < hiddenLayerSizes.length + 1; i++) {
+              layerWiseConfigurations.add(defaultConfiguration);
+        }
+
     }
 
 
@@ -252,7 +269,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             this.neuralNets = new NeuralNetwork[getnLayers()];
             // construct multi-layer
             for (int i = 0; i < this.getnLayers(); i++) {
-                ActivationFunction currLayerActivation = getLayers()[i].conf().getActivationFunction();
 
                 if (i == 0)
                     inputSize = this.nIns;
@@ -2022,7 +2038,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             private boolean lineSearchBackProp = false;
             private boolean useDropConnect = false;
             private boolean useGaussNewtonVectorProductBackProp = false;
+            protected NeuralNetConfiguration conf;
 
+            public Builder<E> configure(NeuralNetConfiguration conf) {
+                this.conf = conf;
+                return this;
+            }
 
             /**
              * Use gauss newton back prop - this is for hessian free
@@ -2199,6 +2220,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                     c.setAccessible(true);
 
                     ret = (E) c.newInstance();
+                    ret.setDefaultConfiguration(conf);
                     ret.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
                     ret.setUseDropConnect(useDropConnect);
                     ret.setInput(this.input);
