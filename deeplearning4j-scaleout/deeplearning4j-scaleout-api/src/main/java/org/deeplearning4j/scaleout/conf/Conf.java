@@ -360,19 +360,7 @@ public class Conf implements Serializable,Cloneable {
 
 
 
-    public synchronized INDArray getColumnMeans() {
-        return columnMeans;
-    }
-    public synchronized void setColumnMeans(INDArray columnMeans) {
-        this.columnMeans = columnMeans;
-    }
-    public synchronized INDArray getColumnStds() {
-        return columnStds;
-    }
-    public synchronized void setColumnStds(INDArray columnStds) {
-        this.columnStds = columnStds;
-    }
-    public void setLayerSizes(Integer[] layerSizes) {
+   public void setLayerSizes(Integer[] layerSizes) {
         this.layerSizes = new int[layerSizes.length];
         for(int i = 0; i < layerSizes.length; i++)
             this.layerSizes[i] = layerSizes[i];
@@ -383,9 +371,6 @@ public class Conf implements Serializable,Cloneable {
     }
     public void setPretrainEpochs(int pretrainEpochs) {
         this.pretrainEpochs = pretrainEpochs;
-    }
-    public float getPretrainLearningRate() {
-        return pretrainLearningRate;
     }
 
     /**

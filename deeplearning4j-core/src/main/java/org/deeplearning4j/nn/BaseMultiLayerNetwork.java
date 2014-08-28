@@ -53,13 +53,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     private static Logger log = LoggerFactory.getLogger(BaseMultiLayerNetwork.class);
     private static final long serialVersionUID = -5029161847383716484L;
-    //number of columns in the input matrix
-    protected int nIns;
-    //the hidden layer sizes at each layer
+     //the hidden layer sizes at each layer
     protected int[] hiddenLayerSizes;
-    //the number of outputs/labels for logistic regression
-    protected int nOuts;
-    //the hidden neuralNets
+     //the hidden neuralNets
     protected Layer[] layers;
     //default training examples and associated neuralNets
     protected INDArray input, labels;
@@ -141,14 +137,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     protected BaseMultiLayerNetwork() {
     }
 
-    protected BaseMultiLayerNetwork(int nIns, int[] hiddenLayerSizes, int nOuts, int nLayers) {
-        this(nIns, hiddenLayerSizes, nOuts, nLayers, null, null);
+    protected BaseMultiLayerNetwork(  int[] hiddenLayerSizes ,int nLayers) {
+        this(hiddenLayerSizes,nLayers, null, null);
     }
 
 
-    protected BaseMultiLayerNetwork(int nIn, int[] hiddenLayerSizes, int nOuts
+    protected BaseMultiLayerNetwork( int[] hiddenLayerSizes
             , int nLayers, INDArray input, INDArray labels) {
-        this.nIns = nIn;
         this.hiddenLayerSizes = hiddenLayerSizes;
         this.input = input.dup();
         this.labels = labels.dup();
@@ -156,7 +151,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         if (hiddenLayerSizes.length != nLayers)
             throw new IllegalArgumentException("The number of hidden layer sizes must be equivalent to the nLayers argument which is a value of " + nLayers);
 
-        this.nOuts = nOuts;
         this.setnLayers(nLayers);
 
         this.layers = new org.deeplearning4j.nn.layers.Layer[nLayers];
@@ -175,6 +169,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         if(layerWiseConfigurations == null)
             layerWiseConfigurations = new ArrayList<>();
 
+        if(layers == null)
+            layers = new Layer[getnLayers()];
 
         if(defaultConfiguration == null)
                defaultConfiguration = new NeuralNetConfiguration.Builder()
@@ -237,8 +233,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         if (input == null)
             throw new IllegalArgumentException("Unable to initialize neuralNets with empty input");
 
-        if (input.columns() != nIns)
-            throw new IllegalArgumentException(String.format("Unable to iterate on number of inputs; columns should be equal to number of inputs. Number of inputs was %d while number of columns was %d", nIns, input.columns()));
+        if (input.columns() != defaultConfiguration.getnIn())
+            throw new IllegalArgumentException(String.format("Unable to iterate on number of inputs; columns should be equal to number of inputs. Number of inputs was %d while number of columns was %d", defaultConfiguration.getnIn(), input.columns()));
 
         if (this.neuralNets == null)
             this.neuralNets = new NeuralNetwork[getnLayers()];
@@ -259,6 +255,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
     public void init() {
+        if(layerWiseConfigurations == null) {
+            intializeConfigurations();
+        }
+
         INDArray layerInput = input;
         int inputSize;
         if (getnLayers() < 1)
@@ -271,7 +271,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             for (int i = 0; i < this.getnLayers(); i++) {
 
                 if (i == 0)
-                    inputSize = this.nIns;
+                    inputSize = defaultConfiguration.getnIn();
                 else
                     inputSize = this.hiddenLayerSizes[i - 1];
 
@@ -376,7 +376,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     public List<INDArray> feedForwardConcat() {
         INDArray currInput = NDArrays.concatHorizontally(this.input, NDArrays.ones(input.rows(), 1));
-        if (this.input.columns() != nIns)
+        if (this.input.columns() != defaultConfiguration.getnIn())
             throw new IllegalStateException("Illegal input length");
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
@@ -416,7 +416,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     public List<INDArray> feedForward() {
         INDArray currInput = this.input;
-        if (this.input.columns() != nIns)
+        if (this.input.columns() != defaultConfiguration.getnIn())
             throw new IllegalStateException("Illegal input length");
 
         List<INDArray> activations = new ArrayList<>();
@@ -1386,6 +1386,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
+        pretrain(examples,new Object[]{defaultConfiguration.getK(), defaultConfiguration.getLr()});
+        finetune(labels,defaultConfiguration.getLr(),defaultConfiguration.getNumIterations());
         List<INDArray> feed = feedForward(examples);
         getOutputLayer().fit(feed.get(feed.size() - 1), labels);
     }
@@ -1504,9 +1506,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         this.hiddenLayerSizes = network.hiddenLayerSizes;
         this.defaultConfiguration = network.defaultConfiguration;
-        this.nIns = network.nIns;
-        this.nOuts = network.nOuts;
-        this.errorTolerance = network.errorTolerance;
+         this.errorTolerance = network.errorTolerance;
         this.forceNumEpochs = network.forceNumEpochs;
         this.input = network.input;
         this.labels = network.labels;
@@ -1776,22 +1776,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     public Map<Integer, MatrixTransform> getVisibleBiasTransforms() {
         return visibleBiasTransforms;
-    }
-
-    public int getnIns() {
-        return nIns;
-    }
-
-    public void setnIns(int nIns) {
-        this.nIns = nIns;
-    }
-
-    public int getnOuts() {
-        return nOuts;
-    }
-
-    public void setnOuts(int nOuts) {
-        this.nOuts = nOuts;
     }
 
     public int getnLayers() {
@@ -2136,19 +2120,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             }
 
 
-            /**
-             * Number of inputs: aka number of columns in your feature matrix
-             *
-             * @param nIns
-             * @return
-             */
-            public Builder<E> numberOfInputs(int nIns) {
-                this.nIns = nIns;
-                return this;
-            }
-
-
-            /**
+           /**
              * Size of the hidden neuralNets
              *
              * @param hiddenLayerSizes
@@ -2168,17 +2140,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                 return this;
             }
 
-            /**
-             * Number of outputs, this can be labels,
-             * or one if you're doing regression.
-             *
-             * @param nOuts
-             * @return
-             */
-            public Builder<E> numberOfOutPuts(int nOuts) {
-                this.nOuts = nOuts;
-                return this;
-            }
 
 
             public Builder<E> withInput(INDArray input) {
@@ -2224,8 +2185,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                     ret.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
                     ret.setUseDropConnect(useDropConnect);
                     ret.setInput(this.input);
-                    ret.setnOuts(this.nOuts);
-                    ret.setnIns(this.nIns);
                     ret.setLabels(this.labels);
                     ret.setHiddenLayerSizes(this.hiddenLayerSizes);
                     ret.setnLayers(this.nLayers);

@@ -41,7 +41,6 @@ public class BackPropOptimizerTests {
 
 
         DBN dbn = new DBN.Builder()
-                .numberOfInputs(nIns).numberOfOutPuts(nOuts)
                 .hiddenLayerSizes(hiddenLayerSizes)
                 .build();
 
