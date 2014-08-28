@@ -11,8 +11,6 @@ import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 
 
-import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
@@ -21,7 +19,7 @@ import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.api.Persistable;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
-import org.deeplearning4j.nn.learning.AdaGrad;
+import org.deeplearning4j.linalg.learning.AdaGrad;
 import org.deeplearning4j.optimize.optimizers.NeuralNetworkOptimizer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.Dl4jReflection;
@@ -42,23 +40,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
     private static final long serialVersionUID = -7074102204433996574L;
-    /* Number of visible inputs */
-    protected int nVisible;
-    /**
-     * Number of hidden units
-     * One tip with this is usually having
-     * more hidden units than inputs (read: input rows here)
-     * will typically cause terrible overfitting.
-     *
-     * Another rule worthy of note: more training data typically results
-     * in more redundant data. It is usually a better idea to use a smaller number
-     * of hidden units.
-     *
-     *
-     *
-     **/
-    protected int nHidden;
-    /* Weight matrix */
+     /* Weight matrix */
     protected INDArray W;
     /* hidden bias */
     protected INDArray hBias;
@@ -83,35 +65,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     protected NeuralNetConfiguration conf;
 
     protected BaseNeuralNetwork() {}
-    /**
-     *
-     * @param nVisible the number of outbound nodes
-     * @param nHidden the number of nodes in the hidden layer
-     * @param W the weights for this vector, maybe null, if so this will
-     * createComplex a matrix with nHidden x nVisible dimensions.
-     * @param rng the rng, if not a seed of 1234 is used.
-     */
-    public BaseNeuralNetwork(int nVisible, int nHidden,
-                             INDArray W, INDArray hbias, INDArray vbias, RandomGenerator rng,RealDistribution dist) {
-        this(null,nVisible,nHidden,W,hbias,vbias,rng,dist);
 
-    }
-
-    /**
-     *
-     * @param input the input examples
-     * @param nVisible the number of outbound nodes
-     * @param nHidden the number of nodes in the hidden layer
-     * @param W the weights for this vector, maybe null, if so this will
-     * createComplex a matrix with nHidden x nVisible dimensions.
-     * @param rng the rng, if not a seed of 1234 is used.
-     */
-    public BaseNeuralNetwork(INDArray input, int nVisible, int nHidden,
-                             INDArray W, INDArray hbias, INDArray vbias, RandomGenerator rng,RealDistribution dist) {
-        this.nVisible = nVisible;
-        this.nHidden = nHidden;
+    public BaseNeuralNetwork(INDArray input, INDArray W, INDArray hbias, INDArray vbias,NeuralNetConfiguration conf) {
         this.input = input;
         this.W = W;
+        this.conf = conf;
         if(this.W != null)
             this.wAdaGrad = new AdaGrad(this.W.rows(),this.W.columns());
 
@@ -127,14 +85,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
         initWeights();
 
-
-    }
-
-    public BaseNeuralNetwork(INDArray input, INDArray w, INDArray hbias, INDArray vbias) {
-        this.input = input;
-        this.W = W;
-        this.hBias = hbias;
-        this.vBias = vbias;
     }
 
     /**
@@ -159,10 +109,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     protected void initWeights()  {
 
-        if(this.nVisible < 1)
+        if(conf.getnIn() < 1)
             throw new IllegalStateException("Number of visible can not be less than 1");
-        if(this.nHidden < 1)
+        if(conf.getnOut() < 1)
             throw new IllegalStateException("Number of hidden can not be less than 1");
+
+        int nVisible = conf.getnIn();
+        int nHidden = conf.getnOut();
 
     	/*
 		 * Initialize based on the number of visible units..
@@ -400,7 +353,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     @Override
     public float score() {
-        return (float) LossFunctions.score(input,conf.getLossFunction(),transform(input),conf.getL2(),conf.isUseRegularization());
+        return  LossFunctions.score(input,conf.getLossFunction(),transform(input),conf.getL2(),conf.isUseRegularization());
     }
 
     /**
@@ -493,8 +446,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         this.conf = n.conf;
         this.hBias = n.hBias;
         this.vBias = n.vBias;
-        this.nHidden = n.nHidden;
-        this.nVisible = n.nVisible;
         this.wAdaGrad = n.wAdaGrad;
         this.hBiasAdaGrad = n.hBiasAdaGrad;
         this.vBiasAdaGrad = n.vBiasAdaGrad;
@@ -836,7 +787,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 //input matrix found
                 if(classes != null && classes.length > 0 && classes[0].isAssignableFrom(INDArray.class)) {
                     try {
-                        ret = (E) curr.newInstance(input,W, hBias,vBias);
+                        ret = (E) curr.newInstance(input,W, hBias,vBias,conf);
                         return ret;
                     }catch(Exception e) {
                         throw new RuntimeException(e);

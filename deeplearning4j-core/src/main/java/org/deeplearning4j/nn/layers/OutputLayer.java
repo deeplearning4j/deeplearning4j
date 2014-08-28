@@ -16,7 +16,7 @@ import org.deeplearning4j.nn.api.NeuralNetwork.OptimizationAlgorithm;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
-import org.deeplearning4j.nn.learning.AdaGrad;
+import org.deeplearning4j.linalg.learning.AdaGrad;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.optimize.optimizers.OutputLayerOptimizer;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;

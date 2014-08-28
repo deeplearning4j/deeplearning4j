@@ -25,7 +25,7 @@ public class Exp extends BaseElementWiseOp {
             return NDArrays.scalar(ComplexUtil.exp(c));
         }
         else {
-            double val = (double) value.element();
+            float val = (float) value.element();
             return NDArrays.scalar(Math.exp(val));
         }
 

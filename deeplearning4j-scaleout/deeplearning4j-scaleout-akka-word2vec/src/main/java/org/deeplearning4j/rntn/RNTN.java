@@ -14,7 +14,7 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.ops.transforms.Transforms;
-import org.deeplearning4j.nn.learning.AdaGrad;
+import org.deeplearning4j.linalg.learning.AdaGrad;
 import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.util.MultiDimensionalMap;
 import org.deeplearning4j.util.MultiDimensionalSet;

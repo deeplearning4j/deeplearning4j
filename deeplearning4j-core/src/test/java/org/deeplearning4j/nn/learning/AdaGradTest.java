@@ -1,11 +1,13 @@
 package org.deeplearning4j.nn.learning;
 
+import static org.junit.Assert.*;
+
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
-import org.jblas.DoubleMatrix;
+import org.deeplearning4j.linalg.learning.AdaGrad;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,9 +25,8 @@ public class AdaGradTest {
 		
 		AdaGrad grad = new AdaGrad(rows,cols,1e-3);
 		INDArray W = NDArrays.ones(rows,cols);
-	
-		log.info("Learning rates for 1 " + grad.getLearningRates(W));
-		
+	    assertEquals(1e-1,grad.getLearningRates(W).get(0),1e-1);
+
 		
 
 	}
@@ -35,7 +36,11 @@ public class AdaGradTest {
 		int rows = 10;
 		int cols = 2;
 		
-		
+		/*
+		Project for tomorrow:
+
+         BaseElementWiseOp is having issues with the reshape (which produces inconsistent results) the test case for this  was adagrad
+		 */
 		AdaGrad grad = new AdaGrad(rows,cols,0.1);
 		INDArray W = NDArrays.zeros(rows, cols);
 		RealDistribution dist = Distributions.normal(new MersenneTwister(123),1);

@@ -62,19 +62,19 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
 
     }
 
-   @Test
-   public void testTransposeCompat() {
-       NDArrays.factory().setOrder('f');
-       DoubleMatrix dReshaped = DoubleMatrix.linspace(1,8,8).reshape(2,4);
-       INDArray nReshaped = NDArrays.linspace(1,8,8).reshape(2,4);
-       verifyElements(dReshaped,nReshaped);
-       DoubleMatrix d = dReshaped.transpose();
-       INDArray n = nReshaped.transpose();
-       verifyElements(d,n);
-       assertTrue(ArrayUtil.equals(n.data(),d.data));
-       NDArrays.factory().setOrder('c');
+    @Test
+    public void testTransposeCompat() {
+        NDArrays.factory().setOrder('f');
+        DoubleMatrix dReshaped = DoubleMatrix.linspace(1,8,8).reshape(2,4);
+        INDArray nReshaped = NDArrays.linspace(1,8,8).reshape(2,4);
+        verifyElements(dReshaped,nReshaped);
+        DoubleMatrix d = dReshaped.transpose();
+        INDArray n = nReshaped.transpose();
+        verifyElements(d,n);
+        assertTrue(ArrayUtil.equals(n.data(),d.data));
+        NDArrays.factory().setOrder('c');
 
-   }
+    }
 
 
     @Test
@@ -234,6 +234,21 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
         DoubleMatrix jblasRowSums = rowsJblas.rowSums();
         verifyElements(jblasRowSums,rowSums);
 
+
+        float[][] data = new float[][]{
+                {1,2},{3,4}
+        };
+
+        INDArray rowSumsData = NDArrays.create(data);
+        NDArrays.factory().setOrder('c');
+        INDArray rowSumsCOrder = NDArrays.create(data);
+        assertEquals(rowSumsData,rowSumsCOrder);
+        INDArray rowSumsDataSum = rowSumsData.sum(1);
+        INDArray rowSumsCOrderSum = rowSumsCOrder.sum(1);
+        assertEquals(rowSumsDataSum,rowSumsCOrderSum);
+        INDArray assertion = NDArrays.create(new float[]{3,7});
+        assertEquals(assertion,rowSumsCOrderSum);
+        assertEquals(assertion,rowSumsDataSum);
     }
 
 
