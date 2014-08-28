@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork.OptimizationAlgorithm;
 
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 
 
 /**
@@ -75,7 +76,15 @@ public class Conf implements Serializable,Cloneable {
     private Map<Integer,Boolean> sampleHiddenActivationsByLayer = new HashMap<>();
     private boolean useDropConnect = false;
     private float outputLayerDropOut = 0.0f;
+    private NeuralNetConfiguration conf;
 
+    public NeuralNetConfiguration getConf() {
+        return conf;
+    }
+
+    public void setConf(NeuralNetConfiguration conf) {
+        this.conf = conf;
+    }
 
     public boolean isUseDropConnect() {
         return useDropConnect;
@@ -511,9 +520,8 @@ public class Conf implements Serializable,Cloneable {
      */
     public BaseMultiLayerNetwork init() {
         if(getMultiLayerClazz().isAssignableFrom(DBN.class)) {
-            return new DBN.Builder().withHiddenUnits(getHiddenUnit()).withVisibleUnits(getVisibleUnit())
-                    .withVisibleUnitsByLayer(getVisibleUnitByLayer()).withHiddenUnitsByLayer(getHiddenUnitByLayer())
-            .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz()).lineSearchBackProp(isLineSearchBackProp())
+            return new DBN.Builder().configure(conf)
+            .withClazz(getMultiLayerClazz()).lineSearchBackProp(isLineSearchBackProp())
                     .hiddenLayerSizes(getLayerSizes())
                     .useDropConnection(isUseDropConnect())
                     .build();
