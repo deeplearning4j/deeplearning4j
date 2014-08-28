@@ -2,6 +2,7 @@ package org.deeplearning4j.linalg.ops;
 
 
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.util.Shape;
 
 /**
  * Apply an operation and save it to a resulting matrix
@@ -12,7 +13,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
 
 
     protected INDArray to,other;
-
+    protected INDArray currTo,currOther;
 
 
     /**
@@ -28,11 +29,11 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
     @Override
     public void applyTransformToDestination(int i) {
         if(scalarValue == null)
-            to.put(i,apply(getFromDestination(i),i));
+            currTo.put(i,apply(getFromDestination(i),i));
 
 
         else {
-            to.put(i,apply(scalarValue,i));
+            currTo.put(i,apply(scalarValue,i));
 
         }
     }
@@ -44,7 +45,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
     @Override
     public void exec() {
         if(from != null && to != null && !from.isScalar() && !to.isScalar())
-            assert from.length() == to.length() : "From and to must be same length";
+            assert Shape.shapeEquals(from.shape(),to.shape()) : "From and to must be same length";
         if(from != null && other != null && !from.isScalar() && !to.isScalar())
             assert from.length() == other.length() : "From and other must be the same length";
 
@@ -59,9 +60,18 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
         else {
             assert from.length() == to.length() : "From and to must be same length";
 
-            for(int i = 0; i < to.length(); i++) {
-                applyTransformToDestination(i);
+            for(int i = 0; i < from.vectorsAlongDimension(0); i++) {
+                INDArray curr = to.vectorAlongDimension(i,0);
+                INDArray currOther = other != null ? other.vectorAlongDimension(i,0) : null;
+                INDArray fromCurr = from != null ? from.vectorAlongDimension(i,00) : null;
+                currTo = curr;
+                this.currOther = currOther;
+                currVector = fromCurr;
+                for(int j = 0; j < fromCurr.length(); j++) {
+                    applyTransformToDestination(j);
+                }
             }
+
         }
 
     }
@@ -75,7 +85,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
      */
     @Override
     public INDArray getFromDestination(int i) {
-        return other.getScalar(i);
+        return currOther.getScalar(i);
     }
 
     /**

@@ -271,18 +271,19 @@ public class Transforms {
     private static INDArray exec(INDArray indArray,Class<? extends BaseElementWiseOp> clazz,Object[] extraArgs) {
 
        ElementWiseOp ops = new ArrayOps().
-                from(indArray)
+                from(indArray.dup())
                 .op(clazz)
                 .extraArgs(extraArgs)
                 .build();
         ops.exec();
+
         return ops.from().reshape(indArray.shape());
     }
 
     private static IComplexNDArray exec(IComplexNDArray indArray,Class<? extends BaseElementWiseOp> clazz,Object[] extraArgs) {
 
         ElementWiseOp ops = new ArrayOps().
-                from(indArray)
+                from(indArray.dup())
                 .op(clazz)
                 .extraArgs(extraArgs)
                 .build();

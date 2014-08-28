@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.learning;
+package org.deeplearning4j.linalg.learning;
 
 
 import static org.deeplearning4j.linalg.ops.transforms.Transforms.*;
@@ -96,13 +96,13 @@ public class AdaGrad implements Serializable {
      */
     public INDArray getLearningRates(INDArray gradient) {
         this.gradient = gradient;
-        INDArray squaredGradient = pow(this.gradient,2);
+        INDArray squaredGradient = pow(this.gradient.dup(),2);
         if(this.historicalGradient == null || this.historicalGradient.length() != this.gradient.length())
             this.historicalGradient = NDArrays.zeros(this.gradient.rows(), this.gradient.columns());
         this.historicalGradient.addi(squaredGradient);
         numIterations++;
-        INDArray sqrtGradient = sqrt(historicalGradient).add(fudgeFactor);
-        INDArray div = abs(gradient).div(sqrtGradient);
+        INDArray sqrtGradient = sqrt(historicalGradient.dup()).add(fudgeFactor);
+        INDArray div = abs(gradient.dup()).div(sqrtGradient);
         this.adjustedGradient = div.mul(masterStepSize);
         //ensure no zeros
         return adjustedGradient;

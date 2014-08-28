@@ -39,7 +39,7 @@ public class ArrayOps {
 
 
     public ArrayOps from(INDArray from) {
-        this.from = from.ravel();
+        this.from = from;
         return this;
     }
 

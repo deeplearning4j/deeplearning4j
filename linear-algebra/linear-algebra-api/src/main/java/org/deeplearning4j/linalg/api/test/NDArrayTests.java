@@ -6,6 +6,7 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.api.ndarray.SliceOp;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.linalg.util.Shape;
 import org.junit.After;
@@ -51,7 +52,37 @@ public abstract class NDArrayTests {
 
     }
 
+    @Test
+    public void testSigmoid() {
+        INDArray n = NDArrays.create(new float[]{1,2,3,4});
+        INDArray assertion = NDArrays.create(new float[]{ 0.73105858f , 0.88079708f , 0.95257413f,  0.98201379f});
+        INDArray sigmoid = Transforms.sigmoid(n);
+        assertEquals(assertion,sigmoid);
+    }
 
+    @Test
+    public void testNeg() {
+        INDArray n = NDArrays.create(new float[]{1,2,3,4});
+        INDArray assertion = NDArrays.create(new float[]{-1,-2,-3,-4});
+        INDArray neg = Transforms.neg(n);
+        assertEquals(assertion,neg);
+
+    }
+
+    @Test
+    public void testNorm2() {
+        INDArray n = NDArrays.create(new float[]{1,2,3,4});
+        float assertion = 5.47722557505f;
+        assertEquals(assertion,n.norm2(Integer.MAX_VALUE).get(0),1e-1);
+    }
+
+    @Test
+    public void testExp() {
+        INDArray n = NDArrays.create(new float[]{1,2,3,4});
+        INDArray assertion = NDArrays.create(new float[]{2.71828183f,   7.3890561f ,  20.08553692f,  54.59815003f});
+        INDArray exped = Transforms.exp(n);
+        assertEquals(assertion,exped);
+    }
 
 
 
