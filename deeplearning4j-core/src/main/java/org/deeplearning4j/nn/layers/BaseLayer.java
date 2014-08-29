@@ -6,6 +6,7 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.transforms.Transforms;
 
+import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 
@@ -20,7 +21,6 @@ public abstract class BaseLayer implements Layer {
     protected INDArray input;
     protected NeuralNetConfiguration conf;
     protected INDArray dropoutMask;
-
 
 
 
@@ -43,6 +43,7 @@ public abstract class BaseLayer implements Layer {
             this.b = NDArrays.zeros(conf.getnOut());
         else
             this.b = b;
+        this.conf = conf;
     }
 
 
@@ -202,5 +203,14 @@ public abstract class BaseLayer implements Layer {
         return layer;
     }
 
-
+    @Override
+    public String toString() {
+        return "BaseLayer{" +
+                "W=" + W +
+                ", b=" + b +
+                ", input=" + input +
+                ", conf=" + conf +
+                ", dropoutMask=" + dropoutMask +
+                '}';
+    }
 }

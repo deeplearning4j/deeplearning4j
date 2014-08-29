@@ -153,7 +153,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         this.setnLayers(nLayers);
 
-        this.layers = new org.deeplearning4j.nn.layers.Layer[nLayers];
+        //+ output layer
+        this.layers = new org.deeplearning4j.nn.layers.Layer[nLayers + 1];
 
         intializeConfigurations();
 
@@ -170,7 +171,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             layerWiseConfigurations = new ArrayList<>();
 
         if(layers == null)
-            layers = new Layer[getnLayers()];
+            layers = new Layer[getnLayers() + 1];
+        if(neuralNets == null)
+            neuralNets = new NeuralNetwork[getnLayers()];
 
         if(defaultConfiguration == null)
                defaultConfiguration = new NeuralNetConfiguration.Builder()
@@ -178,23 +181,25 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         //add a default configuration for each hidden layer + output layer
         for(int i = 0; i < hiddenLayerSizes.length + 1; i++) {
-              layerWiseConfigurations.add(defaultConfiguration);
+              layerWiseConfigurations.add(defaultConfiguration.clone());
         }
+
 
     }
 
 
     /* sanity check for hidden layer and inter layer dimensions */
     public void dimensionCheck() {
+       assert layers.length == neuralNets.length + 1 : "Missing output layer";
 
         for (int i = 0; i < getnLayers(); i++) {
-            org.deeplearning4j.nn.api.Layer h = layers[i];
+            Layer h = layers[i];
             NeuralNetwork network = neuralNets[i];
             LinAlgExceptions.assertSameShape(network.getW(), h.getW());
             LinAlgExceptions.assertSameShape(h.getB(), network.gethBias());
 
             if (i < getnLayers() - 1) {
-                NeuralNetwork h1 = neuralNets[i + 1];
+                Layer h1 = layers[i + 1];
                 NeuralNetwork network1 = neuralNets[i + 1];
                 if (h1.conf().getnIn() != h.conf().getnOut())
                     throw new IllegalStateException("Invalid structure: hidden layer in for " + (i + 1) + " not equal to number of ins " + i);
@@ -297,13 +302,23 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                     layers[i] = createHiddenLayer(i, layerInput);
 
 
+
                 }
 
-                this.neuralNets[i] = createLayer(layerInput, inputSize, this.hiddenLayerSizes[i], this.neuralNets[i].getW(), this.neuralNets[i].gethBias(), null, i);
+                this.neuralNets[i] = createLayer(layerInput,  this.layers[i].getW(), this.layers[i].getB(), null, i);
 
             }
 
         }
+
+
+        NeuralNetConfiguration last = layerWiseConfigurations.get(layerWiseConfigurations.size() - 1);
+        NeuralNetConfiguration secondToLast = layerWiseConfigurations.get(layerWiseConfigurations.size() - 2);
+        last.setnIn(secondToLast.getnOut());
+
+
+        this.layers[layers.length - 1] = new OutputLayer.Builder().configure(last).build();
+
 
 
         dimensionCheck();
@@ -1620,23 +1635,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * where the first layer needs to be an {@link org.deeplearning4j.models.featuredetectors.rbm.RBM} for continuous inputs.
      *
      * @param input    the input to the layer
-     * @param nVisible the number of visible inputs
-     * @param nHidden  the number of hidden units
-     * @param W        the weight vector
+       * @param W        the weight vector
      * @param hbias    the hidden bias
      * @param vBias    the visible bias
      * @param index    the index of the layer
      * @return a neural network layer such as {@link org.deeplearning4j.models.featuredetectors.rbm.RBM}
      */
-    public abstract NeuralNetwork createLayer(INDArray input, int nVisible, int nHidden, INDArray W, INDArray hbias, INDArray vBias, int index);
+    public abstract NeuralNetwork createLayer(INDArray input, INDArray W, INDArray hbias, INDArray vBias, int index);
 
 
     public abstract void pretrain(DataSetIterator iter, Object[] otherParams);
 
     public abstract void pretrain(INDArray input, Object[] otherParams);
 
-    public abstract NeuralNetwork createLayer(INDArray input, INDArray W, INDArray hBias,
-                                              INDArray vBias, int index);
 
     public abstract NeuralNetwork[] createNetworkLayers(int numLayers);
 

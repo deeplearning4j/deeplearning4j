@@ -5,6 +5,7 @@ import org.deeplearning4j.linalg.api.ndarray.DimensionSlice;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.api.ndarray.SliceOp;
 import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 import org.deeplearning4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.linalg.util.ArrayUtil;
@@ -51,6 +52,29 @@ public abstract class NDArrayTests {
         assertEquals(true,Arrays.equals(new int[]{3,3},a.shape()));
 
     }
+
+
+    @Test
+    public void testGetIndices() {
+        /*[[[1.0 ,13.0],[5.0 ,17.0],[9.0 ,21.0]],[[2.0 ,14.0],[6.0 ,18.0],[10.0 ,22.0]],[[3.0 ,15.0],[7.0 ,19.0],[11.0 ,23.0]],[[4.0 ,16.0],[8.0 ,20.0],[12.0 ,24.0]]]*/
+
+        INDArray test = NDArrays.linspace(1,24,24).reshape(new int[]{4,3,2});
+        NDArrayIndex oneTwo = NDArrayIndex.interval(1, 2);
+        NDArrayIndex twoToThree = NDArrayIndex.interval(1,3);
+        INDArray get = test.get(oneTwo,twoToThree);
+        assertTrue(Arrays.equals(new int[]{1,2,2},get.shape()));
+        assertEquals(NDArrays.create(new float[]{6,10,18,22},new int[]{1,2,2}),get);
+
+        INDArray anotherGet = NDArrays.create(new float[]{6,7,10,11,18,19,22,23},new int[]{2,2,2});
+        INDArray test2 = test.get(NDArrayIndex.interval(1,3),NDArrayIndex.interval(1,4));
+        assertEquals(5,test2.offset());
+        //offset is off: should be 5
+        assertTrue(Arrays.equals(new int[]{2,2,2},test2.shape()));
+        assertEquals(test2,anotherGet);
+
+
+    }
+
 
     @Test
     public void testSigmoid() {
