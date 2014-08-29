@@ -189,7 +189,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     @Override
     public  float score() {
         LinAlgExceptions.assertRows(input,labels);
-        return (float) LossFunctions.score(labels,conf.getLossFunction(),preOutput(input),conf.getL2(),conf.isUseRegularization());
+        return  LossFunctions.score(labels,conf.getLossFunction(),preOutput(input),conf.getL2(),conf.isUseRegularization());
 
 
     }
@@ -422,7 +422,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray examples, INDArray labels, Object[] params) {
-
+        fit(examples,labels);
     }
 
     /**
@@ -433,7 +433,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(DataSet data, Object[] params) {
-
+        fit(data);
     }
 
     /**
@@ -459,7 +459,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray examples, int[] labels, Object[] params) {
-
+        INDArray labelMatrix = FeatureUtil.toOutcomeMatrix(labels,labels.length);
+        fit(examples,labelMatrix);
     }
 
     /**
@@ -484,7 +485,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public INDArray transform(INDArray data) {
-        return null;
+        return preOutput(data);
     }
 
     /**
@@ -587,10 +588,10 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         }
 
 
-       public Builder input(INDArray input) {
-           this.input = input;
-           return this;
-       }
+        public Builder input(INDArray input) {
+            this.input = input;
+            return this;
+        }
 
 
         public Builder withLabels(INDArray labels)  {

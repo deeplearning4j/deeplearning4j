@@ -33,25 +33,6 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
     }
 
     /**
-     * Creates a layer depending on the index.
-     * The main reason this matters is for continuous variations such as the {@link org.deeplearning4j.models.classifiers.dbn.DBN}
-     * where the first layer needs to be an {@link org.deeplearning4j.models.featuredetectors.rbm.RBM} for continuous inputs.
-     *
-     * @param input    the input to the layer
-     * @param nVisible the number of visible inputs
-     * @param nHidden  the number of hidden units
-     * @param W        the weight vector
-     * @param hbias    the hidden bias
-     * @param vBias    the visible bias
-     * @param index    the index of the layer
-     * @return a neural network layer such as {@link org.deeplearning4j.models.featuredetectors.rbm.RBM}
-     */
-    @Override
-    public NeuralNetwork createLayer(INDArray input, int nVisible, int nHidden, INDArray W, INDArray hbias, INDArray vBias, int index) {
-        return null;
-    }
-
-    /**
      * Pretrain with a data applyTransformToDestination iterator.
      * This will run through each neural net at a time and iterate on the input.
      *

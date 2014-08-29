@@ -3,6 +3,7 @@ package org.deeplearning4j.linalg.api.ndarray;
 
 import org.deeplearning4j.linalg.factory.NDArrayFactory;
 import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.indexing.Indices;
 import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 
 import org.deeplearning4j.linalg.ops.TwoArrayOps;
@@ -755,9 +756,7 @@ public abstract class BaseNDArray  implements INDArray {
      */
     public boolean isMatrix() {
         return (shape().length == 2
-                && (shape[0] != 1 && shape[1] != 1)) ||
-                shape.length == 3 &&
-                        (shape[0] == 1 || shape[1] == 1 || shape[2] == 1);
+                && (shape[0] != 1 && shape[1] != 1));
     }
 
     /**
@@ -1121,11 +1120,13 @@ public abstract class BaseNDArray  implements INDArray {
             }
         }
 
+        int offset = this.offset + ArrayUtil.dotProduct(offsets, stride);
+
         return NDArrays.create(
                 data
                 , Arrays.copyOf(shape,shape.length)
                 , stride
-                ,offset + ArrayUtil.dotProduct(offsets, stride),ordering
+                ,offset,ordering
         );
     }
 
@@ -2036,11 +2037,15 @@ public abstract class BaseNDArray  implements INDArray {
         }
 
         else {
+            int offset = this.offset + (slice * stride[0]);
             INDArray slice2 = NDArrays.create(data,
                     Arrays.copyOfRange(shape, 1, shape.length),
                     Arrays.copyOfRange(stride, 1, stride.length),
-                    offset + (slice * stride[0]),ordering);
+                    offset,ordering);
             return slice2;
+
+
+
         }
     }
 
@@ -3044,6 +3049,9 @@ public abstract class BaseNDArray  implements INDArray {
             }
 
         }
+        else if(isColumnVector() && c == 0)
+            return this;
+
 
         else
             throw new IllegalArgumentException("Unable to getFromOrigin column of non 2d matrix");
@@ -3073,11 +3081,20 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray get(NDArrayIndex... indexes) {
-        if(indexes.length < shape().length) {
+        //fill in to match the rest of the dimensions: aka grab all the content
+        //in the dimensions not filled in
+        //also prune indices greater than the shape to be the shape instead
+        indexes = Indices.adjustIndices(shape(),indexes);
 
-        }
-        return null;
+        int[] strides = ArrayUtil.copy(stride());
+        int[] offsets = Indices.offsets(indexes);
+        //this is weird: works for some cases not others
+        int[] shape = Indices.shape(shape(),indexes);
+        return subArray(offsets,shape,strides);
     }
+
+
+
 
     /**
      * Get whole columns from the passed indices.
@@ -3125,6 +3142,11 @@ public abstract class BaseNDArray  implements INDArray {
 
 
         }
+
+        else if(isRowVector() && r == 0)
+            return this;
+
+
         else
             throw new IllegalArgumentException("Unable to getFromOrigin row of non 2d matrix");
     }
@@ -3388,14 +3410,14 @@ public abstract class BaseNDArray  implements INDArray {
         else if(isMatrix()) {
             StringBuilder sb = new StringBuilder();
             sb.append('[');
-            for(int i = 0; i < rows; i++) {
+            for(int i = 0; i < rows(); i++) {
                 sb.append('[');
-                for(int j = 0; j < columns; j++) {
+                for(int j = 0; j < columns(); j++) {
                     sb.append(getScalar(i,j));
-                    if(j < columns - 1)
+                    if(j < columns() - 1)
                         sb.append(" ,");
                 }
-                sb.append("],\n");
+                sb.append("]\n");
 
             }
 
