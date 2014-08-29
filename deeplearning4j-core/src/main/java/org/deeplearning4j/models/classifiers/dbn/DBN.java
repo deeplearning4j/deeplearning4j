@@ -91,25 +91,6 @@ public class DBN extends BaseMultiLayerNetwork {
     }
 
     /**
-     * Creates a layer depending on the index.
-     * The main reason this matters is for continuous variations such as the {@link org.deeplearning4j.models.classifiers.dbn.DBN}
-     * where the first layer needs to be an {@link org.deeplearning4j.models.featuredetectors.rbm.RBM} for continuous inputs.
-     *
-     * @param input    the input to the layer
-     * @param nVisible the number of visible inputs
-     * @param nHidden  the number of hidden units
-     * @param W        the weight vector
-     * @param hbias    the hidden bias
-     * @param vBias    the visible bias
-     * @param index    the index of the layer
-     * @return a neural network layer such as {@link org.deeplearning4j.models.featuredetectors.rbm.RBM}
-     */
-    @Override
-    public NeuralNetwork createLayer(INDArray input, int nVisible, int nHidden, INDArray W, INDArray hbias, INDArray vBias, int index) {
-        return null;
-    }
-
-    /**
      * Creates a hidden layer with the given parameters.
      * The default implementation is a binomial sampling
      * hidden layer, but this can be overriden

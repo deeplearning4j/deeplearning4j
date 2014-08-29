@@ -808,7 +808,8 @@ public interface INDArray {
      * @param newShape the new shape of the ndarray
      * @return the reshaped ndarray
      */
-    public INDArray reshape(int[] newShape);
+    public INDArray reshape(int...newShape);
+
 
 
     /**

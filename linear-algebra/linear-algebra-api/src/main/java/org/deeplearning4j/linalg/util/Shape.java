@@ -7,8 +7,23 @@ import java.util.List;
 /**
  * Encapsulates all shape related logic (vector of 0 dimension is a scalar is equivalent to
  *                                       a vector of length 1...)
+ *
+ *  @author Adam Gibson
  */
 public class Shape {
+    /**
+     * Gets rid of any singleton dimensions of the given array
+     * @param shape the shape to squeeze
+     * @return the array with all of the singleton dimensions removed
+     */
+    public static int[] squeeze(int[] shape,int[] stride) {
+        List<Integer> ret = new ArrayList<>();
+
+        for(int i = 0; i < shape.length; i++)
+            if(shape[i] != 1)
+                ret.add(shape[i]);
+        return ArrayUtil.toArray(ret);
+    }
 
 
     /**

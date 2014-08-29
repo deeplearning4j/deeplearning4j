@@ -3084,6 +3084,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
         }
 
+        else if(isColumnVector() && c == 0)
+            return this;
+
         else
             throw new IllegalArgumentException("Unable to getFromOrigin column of non 2d matrix");
 
@@ -3124,6 +3127,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
         }
+
+        else if(isRowVector() && r == 0)
+            return this;
+
+
         else
             throw new IllegalArgumentException("Unable to getFromOrigin row of non 2d matrix");
 

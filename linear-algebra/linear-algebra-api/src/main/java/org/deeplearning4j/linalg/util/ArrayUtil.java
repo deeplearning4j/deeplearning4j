@@ -409,10 +409,26 @@ public class ArrayUtil {
         return stride;
     }
 
+
+    public static int[] plus(int[] ints,int mult) {
+        int[] ret = new int[ints.length];
+        for(int i = 0; i < ints.length; i++)
+            ret[i] = ints[i] + mult;
+        return ret;
+    }
+
     public static int[] times(int[] ints,int mult) {
         int[] ret = new int[ints.length];
         for(int i = 0; i < ints.length; i++)
             ret[i] = ints[i] * mult;
+        return ret;
+    }
+
+    public static int[] times(int[] ints,int[] mult) {
+        assert ints.length == mult.length : "Ints andm ult must be the same length";
+        int[] ret = new int[ints.length];
+        for(int i = 0; i < ints.length; i++)
+            ret[i] = ints[i] * mult[i];
         return ret;
     }
 
