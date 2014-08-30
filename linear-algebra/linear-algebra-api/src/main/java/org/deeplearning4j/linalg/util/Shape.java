@@ -27,6 +27,33 @@ public class Shape {
 
 
     /**
+     * Returns whether the given shape is a vector
+     * @param shape the shape to test
+     * @return whether the given shape is a vector
+     */
+    public static boolean isVector(int[] shape) {
+        if(shape.length > 2)
+            return false;
+        else {
+            int len = ArrayUtil.prod(shape);
+            return shape[0] == len || shape[1] == len;
+        }
+    }
+
+    /**
+     * Returns whether the passed in shape is a matrix
+     * @param shape whether the passed in shape is a matrix
+     * @return true if the shape is a matrix false otherwise
+     */
+    public static boolean isMatrix(int[] shape) {
+        if(shape.length != 2)
+            return false;
+        return !isVector(shape);
+    }
+
+
+
+    /**
      * Gets rid of any singleton dimensions of the given array
      * @param shape the shape to squeeze
      * @return the array with all of the singleton dimensions removed
