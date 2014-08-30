@@ -10,6 +10,8 @@ The following table attempts to show the neural nets most useful for different p
 
 ![Alt text](../img/neural_net_table.png) 
 
+Here you can read about and/or start using our implementations of [deep-belief networks](../deepbeliefnetwork.html), [deep autoencoders](../deepautoencoder.html), [stacked denoising autoencoders](../stackeddenoisingautoencoder.html), [convolutional nets](../convolutionalnets.html) and [recursive neural tensor networks](../recursiveneuraltensornetwork.html). 
+
 ###[further reading](http://deeplearning4j.org/deeplearningpapers.html)
 
 [Natural Language Processing (Almost) from Scratch](https://static.googleusercontent.com/media/research.google.com/en/us/pubs/archive/35671.pdf); Ronan Collobert, Jason Weston, Leon Bottou, Michael Karlen, Koray Kavukcuoglu and Pavel Kuksa; NEC Laboratories America
