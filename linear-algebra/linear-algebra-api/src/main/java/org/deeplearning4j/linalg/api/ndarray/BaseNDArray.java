@@ -1246,7 +1246,12 @@ public abstract class BaseNDArray  implements INDArray {
                 this.shape[0] = shape[1];
                 rows = 1;
                 columns = shape[1];
-
+                //weird case here: when its fortran contiguous, we have scencrios
+                //where we need to retain the non zero stride of the ndarray.
+                //this is in response to a strange scenario that happens in subArray
+                //hopefully we can work out something better eventually
+                if(stride != null && ordering == NDArrayFactory.FORTRAN)
+                    this.stride = new int[]{ArrayUtil.nonOneStride(this.stride)};
 
             }
             else {
@@ -1254,7 +1259,7 @@ public abstract class BaseNDArray  implements INDArray {
                 columns = shape[1];
             }
 
-           this.stride = new int[]{ArrayUtil.nonOneStride(this.stride)};
+
 
 
         }
@@ -2279,6 +2284,8 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public float get(int i) {
         int idx = linearIndex(i);
+        if(idx < 0)
+            throw new IllegalStateException("Illegal index " + i);
         return data[idx];
     }
 

@@ -425,7 +425,7 @@ public class ArrayUtil {
     }
 
     public static int[] times(int[] ints,int[] mult) {
-        assert ints.length == mult.length : "Ints andm ult must be the same length";
+        assert ints.length == mult.length : "Ints and mult must be the same length";
         int[] ret = new int[ints.length];
         for(int i = 0; i < ints.length; i++)
             ret[i] = ints[i] * mult[i];
@@ -433,11 +433,17 @@ public class ArrayUtil {
     }
 
 
+    /**
+     * For use with row vectors to ensure consistent strides
+     * with varying offsets
+     * @param arr the array to get the stride for
+     * @return the stride
+     */
     public static int nonOneStride(int[] arr) {
         for(int i = 0; i < arr.length; i++)
             if(arr[i] != 1)
                 return arr[i];
-      return -1;
+      return 1;
     }
 
 

@@ -250,6 +250,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
         this.input = input.dup();
+        this.input.toString();
         if (!initCalled) {
             init();
             log.info("Initializing neuralNets with input of dims " + input.rows() + " x " + input.columns());
