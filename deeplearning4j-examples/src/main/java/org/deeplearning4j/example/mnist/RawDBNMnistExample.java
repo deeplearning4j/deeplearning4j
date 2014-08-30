@@ -41,9 +41,6 @@ public class RawDBNMnistExample {
 
 		iter.reset();
 
-
-
-
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			next.normalizeZeroMeanZeroUnitVariance();
