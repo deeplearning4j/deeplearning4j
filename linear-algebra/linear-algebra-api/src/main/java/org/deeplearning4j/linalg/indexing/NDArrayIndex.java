@@ -17,6 +17,7 @@ public class NDArrayIndex {
     public NDArrayIndex(int[] indices) {
 
         this.indices = indices;
+
     }
 
 

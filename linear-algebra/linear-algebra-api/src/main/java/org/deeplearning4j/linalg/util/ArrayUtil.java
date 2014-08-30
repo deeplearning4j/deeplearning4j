@@ -433,6 +433,14 @@ public class ArrayUtil {
     }
 
 
+    public static int nonOneStride(int[] arr) {
+        for(int i = 0; i < arr.length; i++)
+            if(arr[i] != 1)
+                return arr[i];
+      return -1;
+    }
+
+
     /**
      * Computes the standard packed array strides for a given shape.
      * @param shape the shape of a matrix:
