@@ -57,7 +57,7 @@ public abstract class NDArrayTests {
     @Test
     public void testGetIndices() {
         /*[[[1.0 ,13.0],[5.0 ,17.0],[9.0 ,21.0]],[[2.0 ,14.0],[6.0 ,18.0],[10.0 ,22.0]],[[3.0 ,15.0],[7.0 ,19.0],[11.0 ,23.0]],[[4.0 ,16.0],[8.0 ,20.0],[12.0 ,24.0]]]*/
-
+        NDArrays.factory().setOrder('f');
         INDArray test = NDArrays.linspace(1,24,24).reshape(new int[]{4,3,2});
         NDArrayIndex oneTwo = NDArrayIndex.interval(1, 2);
         NDArrayIndex twoToThree = NDArrayIndex.interval(1,3);
@@ -74,6 +74,51 @@ public abstract class NDArrayTests {
 
 
     }
+
+
+    @Test
+    public void testGetIndicesVector() {
+        INDArray line = NDArrays.linspace(1,4,4);
+        INDArray test = NDArrays.create(new float[]{2,3});
+        INDArray result = line.get(NDArrayIndex.interval(1,3));
+        assertEquals(test,result);
+    }
+
+    @Test
+    public void testGetIndices2d() {
+        NDArrays.factory().setOrder('f');
+
+        INDArray twoByTwo = NDArrays.linspace(1,6,6).reshape(3,2);
+        INDArray firstRow = twoByTwo.getRow(0);
+        INDArray secondRow = twoByTwo.getRow(1);
+        INDArray firstAndSecondRow = twoByTwo.getRows(new int[]{1,2});
+        INDArray firstRowViaIndexing = twoByTwo.get(NDArrayIndex.interval(0,1));
+        assertEquals(firstRow,firstRowViaIndexing);
+        INDArray secondRowViaIndexing = twoByTwo.get(NDArrayIndex.interval(1,2));
+        assertEquals(secondRow,secondRowViaIndexing);
+        INDArray individualElement = twoByTwo.get(NDArrayIndex.interval(1,2),NDArrayIndex.interval(1,2));
+        assertEquals(NDArrays.create(new float[]{5}),individualElement);
+
+        INDArray firstAndSecondRowTest = twoByTwo.get(NDArrayIndex.interval(1, 3));
+        assertEquals(firstAndSecondRow, firstAndSecondRowTest);
+
+
+    }
+
+    @Test
+    public void testGetVsGetScalar() {
+        INDArray a = NDArrays.linspace(1,4,4).reshape(2,2);
+        float element = a.get(0,1);
+        float element2 = (float) a.getScalar(0,1).element();
+        assertEquals(element,element2,1e-1);
+        NDArrays.factory().setOrder('f');
+        INDArray a2 = NDArrays.linspace(1,4,4).reshape(2,2);
+        float element23 = a2.get(0,1);
+        float element22 = (float) a2.getScalar(0,1).element();
+        assertEquals(element23,element22,1e-1);
+
+    }
+
 
 
     @Test

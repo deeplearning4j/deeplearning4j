@@ -1120,6 +1120,23 @@ public abstract class BaseNDArray  implements INDArray {
             }
         }
 
+
+        if(isVector()) {
+            //offsets should be 1
+            return NDArrays.create(data,shape,stride,offsets[0]);
+        }
+
+        else if(isMatrix() && Shape.isMatrix(shape)) {
+            int startRow = offsets[0];
+            INDArray ret = NDArrays.create(shape);
+            int count = 0;
+            for(int i = startRow; i < shape[0] + 1; i++) {
+                ret.putRow(count++,getRow(i).get(NDArrayIndex.interval(offsets[1],shape[1])));
+            }
+            return ret;
+        }
+
+
         int offset = this.offset + ArrayUtil.dotProduct(offsets, stride);
 
         return NDArrays.create(
@@ -1230,11 +1247,14 @@ public abstract class BaseNDArray  implements INDArray {
                 rows = 1;
                 columns = shape[1];
 
+
             }
             else {
                 rows = shape[0];
                 columns = shape[1];
             }
+
+           this.stride = new int[]{ArrayUtil.nonOneStride(this.stride)};
 
 
         }
@@ -3084,12 +3104,14 @@ public abstract class BaseNDArray  implements INDArray {
         //fill in to match the rest of the dimensions: aka grab all the content
         //in the dimensions not filled in
         //also prune indices greater than the shape to be the shape instead
+
         indexes = Indices.adjustIndices(shape(),indexes);
 
-        int[] strides = ArrayUtil.copy(stride());
-        int[] offsets = Indices.offsets(indexes);
-        //this is weird: works for some cases not others
+
+        int[] offsets =  Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(),indexes);
+        int[] strides =  ArrayUtil.copy(stride());
+
         return subArray(offsets,shape,strides);
     }
 
@@ -3407,23 +3429,6 @@ public abstract class BaseNDArray  implements INDArray {
         if (isScalar()) {
             return element().toString();
         }
-        else if(isMatrix()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append('[');
-            for(int i = 0; i < rows(); i++) {
-                sb.append('[');
-                for(int j = 0; j < columns(); j++) {
-                    sb.append(getScalar(i,j));
-                    if(j < columns() - 1)
-                        sb.append(" ,");
-                }
-                sb.append("]\n");
-
-            }
-
-            sb.append("]\n");
-            return sb.toString();
-        }
 
 
         else if(isVector()) {
@@ -3469,7 +3474,7 @@ public abstract class BaseNDArray  implements INDArray {
     public Object element() {
         if(!isScalar())
             throw new IllegalStateException("Unable to retrieve element from non scalar matrix");
-        return data[0];
+        return data[offset];
     }
 
 
