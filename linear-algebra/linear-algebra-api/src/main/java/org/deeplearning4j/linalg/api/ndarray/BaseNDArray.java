@@ -1319,6 +1319,94 @@ public abstract class BaseNDArray  implements INDArray {
 
 
 
+
+    protected void asserColumnVector(INDArray column) {
+        assert column.isColumnVector() || column.columns() == columns() && column.rows() == 1: "Must only add a row vector";
+        assert column.length() == rows() || column.columns() == columns() && column.rows() == 1: "Illegal row vector must have the same length as the number of rows in this ndarray";
+
+    }
+
+    /**
+     * Do a row wise op (a,s,m,d)
+     * a : add
+     * s : subtract
+     * m : multiply
+     * d : divide
+     * @param columnVector the column  vector
+     * @param operation the operation
+     * @return
+     */
+    protected INDArray doColumnWise(INDArray columnVector,char operation) {
+        asserColumnVector(columnVector);
+        if(columnVector.columns() == columns() && columnVector.rows() == 1) {
+            for(int i = 0; i < columns(); i++) {
+                switch(operation) {
+                    case 'a' : getColumn(i).addi(columnVector.get(i)); break;
+                    case 's' : getColumn(i).subi(columnVector.get(i)); break;
+                    case 'm' : getColumn(i).muli(columnVector.get(i)); break;
+                    case 'd' : getColumn(i).divi(columnVector.get(i)); break;
+                }
+            }
+        }
+        else {
+            for(int j = 0; j< columns(); j++) {
+                switch(operation) {
+                    case 'a' : getColumn(j).addi(columnVector); break;
+                    case 's' : getColumn(j).subi(columnVector); break;
+                    case 'm' : getColumn(j).muli(columnVector); break;
+                    case 'd' : getColumn(j).divi(columnVector); break;
+                }
+            }
+        }
+
+        return this;
+    }
+
+
+    protected void assertRowVector(INDArray rowVector) {
+        assert rowVector.isRowVector() || rowVector.rows() == rows() && rowVector.columns() == 1: "Must only add a row vector";
+        assert rowVector.length() == columns() || rowVector.rows() == rows() && rowVector.columns() == 1: "Illegal row vector must have the same length as the number of rows in this ndarray";
+
+    }
+
+    /**
+     * Do a row wise op (a,s,m,d)
+     * a : add
+     * s : subtract
+     * m : multiply
+     * d : divide
+     * @param rowVector the row vector
+     * @param operation the operation
+     * @return
+     */
+    protected INDArray doRowWise(INDArray rowVector,char operation) {
+        assertRowVector(rowVector);
+        if(rowVector.rows() == rows() && rowVector.columns() == 1) {
+            for(int i = 0; i < rows(); i++) {
+                switch(operation) {
+                    case 'a' : getRow(i).addi(rowVector.get(i)); break;
+                    case 's' : getRow(i).subi(rowVector.get(i)); break;
+                    case 'm' : getRow(i).muli(rowVector.get(i)); break;
+                    case 'd' : getRow(i).divi(rowVector.get(i)); break;
+                }
+
+            }
+        }
+        else {
+            for(int j = 0; j< rows(); j++) {
+                switch(operation) {
+                    case 'a' : getRow(j).addi(rowVector); break;
+                    case 's' : getRow(j).subi(rowVector); break;
+                    case 'm' : getRow(j).muli(rowVector); break;
+                    case 'd' : getRow(j).divi(rowVector); break;
+                }
+            }
+        }
+
+        return this;
+    }
+
+
     /**
      * Inserts the element at the specified index
      *
@@ -1344,13 +1432,7 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray diviColumnVector(INDArray columnVector) {
-        assert columnVector.isColumnVector() : "Must only add a column vector";
-        assert columnVector.length() == rows() : "Illegal column vector must have the same length as the number of column in this ndarray";
-
-        for(int i = 0; i < columns(); i++) {
-            getColumn(i).divi(columnVector);
-        }
-        return this;
+        return doColumnWise(columnVector,'d');
     }
 
     /**
@@ -1372,12 +1454,7 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray diviRowVector(INDArray rowVector) {
-        assert rowVector.isRowVector() : "Must only add a row vector";
-        assert rowVector.length() == columns() : "Illegal row vector must have the same length as the number of rows in this ndarray";
-        for(int j = 0; j< rows(); j++) {
-            getRow(j).divi(rowVector);
-        }
-        return this;
+        return doRowWise(rowVector,'d');
     }
 
     /**
@@ -1399,13 +1476,7 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray muliColumnVector(INDArray columnVector) {
-        assert columnVector.isColumnVector() : "Must only add a column vector";
-        assert columnVector.length() == rows() : "Illegal column vector must have the same length as the number of column in this ndarray";
-
-        for(int i = 0; i < columns(); i++) {
-            getColumn(i).muli(columnVector);
-        }
-        return this;
+        return doColumnWise(columnVector,'m');
     }
 
     /**
@@ -1427,12 +1498,7 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray muliRowVector(INDArray rowVector) {
-        assert rowVector.isRowVector() : "Must only add a row vector";
-        assert rowVector.length() == columns() : "Illegal row vector must have the same length as the number of rows in this ndarray";
-        for(int j = 0; j< rows(); j++) {
-            getRow(j).muli(rowVector);
-        }
-        return this;
+        return doRowWise(rowVector,'m');
     }
 
     /**
@@ -1454,13 +1520,7 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray subiColumnVector(INDArray columnVector) {
-        assert columnVector.isColumnVector() : "Must only add a column vector";
-        assert columnVector.length() == rows() : "Illegal column vector must have the same length as the number of column in this ndarray";
-
-        for(int i = 0; i < columns(); i++) {
-            getColumn(i).subi(columnVector);
-        }
-        return this;
+        return doColumnWise(columnVector,'s');
     }
 
     /**
@@ -1482,12 +1542,7 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray subiRowVector(INDArray rowVector) {
-        assert rowVector.isRowVector() : "Must only add a row vector";
-        assert rowVector.length() == columns() : "Illegal row vector must have the same length as the number of rows in this ndarray";
-        for(int j = 0; j< rows(); j++) {
-            getRow(j).subi(rowVector);
-        }
-        return this;
+        return doRowWise(rowVector,'s');
     }
 
     /**
@@ -1509,16 +1564,7 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray addiColumnVector(INDArray columnVector) {
-        assert columnVector.isColumnVector() : "Must only add a column vector";
-        assert columnVector.length() == rows() : "Illegal column vector must have the same length as the number of column in this ndarray";
-
-        for(int i = 0; i < columns(); i++) {
-            INDArray column = getColumn(i);
-            double d = column.get(0);
-            double d2 = column.get(1);
-            column.addi(columnVector);
-        }
-        return this;
+        return doColumnWise(columnVector,'a');
     }
 
     /**
@@ -1540,13 +1586,7 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray addiRowVector(INDArray rowVector) {
-        assert rowVector.isRowVector() : "Must only add a row vector";
-        assert rowVector.length() == columns() : "Illegal row vector must have the same length as the number of rows in this ndarray";
-        for(int j = 0; j < rows(); j++) {
-            INDArray row = getRow(j);
-            row.addi(rowVector);
-        }
-        return this;
+        return doRowWise(rowVector,'a');
     }
 
     /**

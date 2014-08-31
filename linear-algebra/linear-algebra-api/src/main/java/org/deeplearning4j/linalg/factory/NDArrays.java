@@ -647,6 +647,23 @@ public class NDArrays  {
 
 
     /**
+     * Returns true if the given ndarray has either
+     * an infinite or nan
+     * @param num the ndarray to test
+     * @return true if the given ndarray has either infinite or nan
+     * false otherwise
+     */
+    public static boolean hasInvalidNumber(INDArray num) {
+        INDArray linear = num.linearView();
+        for(int i = 0;i < linear.length(); i++) {
+            if(Float.isInfinite(linear.get(i)) || Float.isNaN(linear.get(i)))
+                return true;
+        }
+        return false;
+    }
+
+
+    /**
      * Creates a row vector with the specified number of columns
      * @param rows the rows of the ndarray
      * @param columns the columns of the ndarray
