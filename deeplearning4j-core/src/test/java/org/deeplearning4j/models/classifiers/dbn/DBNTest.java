@@ -4,6 +4,7 @@ import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.junit.Test;
 
@@ -26,7 +27,8 @@ public class DBNTest {
     @Test
     public void testDbn() throws IOException {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .learningRate(1e-1f).nIn(784).nOut(10).build();
+               .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .learningRate(1e-1f).nIn(784).nOut(2).build();
 
 
 
@@ -34,6 +36,7 @@ public class DBNTest {
                 .hiddenLayerSizes(new int[]{500,250})
                 .build();
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
+        d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         fetcher.fetch(100);
         DataSet d2 = fetcher.next();
