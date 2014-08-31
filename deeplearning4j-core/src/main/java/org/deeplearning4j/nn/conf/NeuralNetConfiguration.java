@@ -102,7 +102,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.useAdaGrad = neuralNetConfiguration.useAdaGrad;
         this.lr = neuralNetConfiguration.lr;
         this.momentum = neuralNetConfiguration.momentum;
-        this.l2 = l2;
+        this.l2 = neuralNetConfiguration.l2;
         this.useRegularization = neuralNetConfiguration.useRegularization;
         this.momentumAfter = neuralNetConfiguration.momentumAfter;
         this.resetAdaGradIterations = neuralNetConfiguration.resetAdaGradIterations;

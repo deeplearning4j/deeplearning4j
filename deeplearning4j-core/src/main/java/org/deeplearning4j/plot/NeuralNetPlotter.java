@@ -162,7 +162,7 @@ public class NeuralNetPlotter implements Serializable {
             INDArray row = matrix.getRow(i);
             StringBuffer sb = new StringBuffer();
             for(int j = 0; j < row.length(); j++) {
-                sb.append(String.format("%.10f", row.getScalar(j)));
+                sb.append(String.format("%.10f", row.get(j)));
                 if(j < row.length() - 1)
                     sb.append(",");
             }

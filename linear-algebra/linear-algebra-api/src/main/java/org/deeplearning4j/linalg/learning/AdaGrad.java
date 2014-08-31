@@ -26,7 +26,7 @@ public class AdaGrad implements Serializable {
      *
      */
     protected static final long serialVersionUID = -4754127927704099888L;
-    protected double masterStepSize = 1e-3; // default for masterStepSize (this is the numerator)
+    protected double masterStepSize = 1e-1; // default for masterStepSize (this is the numerator)
     //protected double squaredGradientSum = 0;
     public INDArray historicalGradient;
     public INDArray adjustedGradient;
@@ -57,7 +57,7 @@ public class AdaGrad implements Serializable {
         this.shape = shape;
         createHistoricalGradient();
         createAdjustedGradient();
-        this.masterStepSize = 1e-2;
+        this.masterStepSize = 1e-1;
         this.decayLr = false;
 
 
@@ -69,7 +69,7 @@ public class AdaGrad implements Serializable {
      * @param cols the number of columns for the gradient
      */
     public AdaGrad( int rows, int cols) {
-        this(rows,cols,0.01);
+        this(rows,cols,0.1);
 
     }
 
@@ -96,14 +96,15 @@ public class AdaGrad implements Serializable {
      */
     public INDArray getLearningRates(INDArray gradient) {
         this.gradient = gradient;
-        INDArray squaredGradient = pow(this.gradient.dup(),2);
+        INDArray squaredGradient = pow(this.gradient,2);
         if(this.historicalGradient == null || this.historicalGradient.length() != this.gradient.length())
             this.historicalGradient = NDArrays.zeros(this.gradient.rows(), this.gradient.columns());
         this.historicalGradient.addi(squaredGradient);
         numIterations++;
         INDArray sqrtGradient = sqrt(historicalGradient.dup()).add(fudgeFactor);
-        INDArray div = abs(gradient.dup()).div(sqrtGradient);
-        this.adjustedGradient = div.mul(masterStepSize);
+        INDArray div = abs(gradient).divi(sqrtGradient);
+        this.adjustedGradient = div.muli(masterStepSize);
+        float sum = this.adjustedGradient.sum(Integer.MAX_VALUE).get(0);
         //ensure no zeros
         return adjustedGradient;
     }

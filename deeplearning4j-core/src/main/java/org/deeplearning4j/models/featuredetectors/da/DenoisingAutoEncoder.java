@@ -202,7 +202,15 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
         optimizer.train(input);
     }
 
-
+    /**
+     * Fit the model to the given data
+     *
+     * @param data the data to fit the model to
+     */
+    @Override
+    public void fit(INDArray data) {
+        fit(data,null);
+    }
 
 
     @Override
@@ -215,7 +223,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
     @Override
     public void iterate(INDArray input , Object[] params) {
-        float corruptionLevel = (float) params[0];
+        float corruptionLevel = conf.getCorruptionLevel();
         if(input != null )
             this.input = preProcessInput(input);
         this.lastMiniBatchSize = input.rows();

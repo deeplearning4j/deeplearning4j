@@ -12,6 +12,17 @@ import java.util.List;
  * @author Adam Gibson
  */
 public interface IComplexNDArray extends INDArray {
+
+
+    /**
+     * Returns a linear view reference of shape
+     * 1,length(ndarray)
+     *
+     * @return the linear view of this ndarray
+     */
+    @Override
+    IComplexNDArray linearView();
+
     /**
      * Reshapes the ndarray (can't change the length of the ndarray)
      *

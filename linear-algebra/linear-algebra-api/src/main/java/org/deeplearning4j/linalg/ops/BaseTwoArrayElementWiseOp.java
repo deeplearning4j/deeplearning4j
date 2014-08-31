@@ -65,7 +65,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
             for(int i = 0; i < from.vectorsAlongDimension(0); i++) {
                 INDArray curr = to.vectorAlongDimension(i,0);
                 INDArray currOther = other != null ? other.vectorAlongDimension(i,0) : null;
-                INDArray fromCurr = from != null ? from.vectorAlongDimension(i,00) : null;
+                INDArray fromCurr = from != null ? from.vectorAlongDimension(i,0) : null;
                 currTo = curr;
                 this.currOther = currOther;
                 currVector = fromCurr;

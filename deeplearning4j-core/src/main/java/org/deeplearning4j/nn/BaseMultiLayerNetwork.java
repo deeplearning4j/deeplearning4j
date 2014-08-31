@@ -53,9 +53,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     private static Logger log = LoggerFactory.getLogger(BaseMultiLayerNetwork.class);
     private static final long serialVersionUID = -5029161847383716484L;
-     //the hidden layer sizes at each layer
+    //the hidden layer sizes at each layer
     protected int[] hiddenLayerSizes;
-     //the hidden neuralNets
+    //the hidden neuralNets
     protected Layer[] layers;
     //default training examples and associated neuralNets
     protected INDArray input, labels;
@@ -176,12 +176,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             neuralNets = new NeuralNetwork[getnLayers()];
 
         if(defaultConfiguration == null)
-               defaultConfiguration = new NeuralNetConfiguration.Builder()
-                .build();
+            defaultConfiguration = new NeuralNetConfiguration.Builder()
+                    .build();
 
         //add a default configuration for each hidden layer + output layer
         for(int i = 0; i < hiddenLayerSizes.length + 1; i++) {
-              layerWiseConfigurations.add(defaultConfiguration.clone());
+            layerWiseConfigurations.add(defaultConfiguration.clone());
         }
 
 
@@ -190,7 +190,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     /* sanity check for hidden layer and inter layer dimensions */
     public void dimensionCheck() {
-       assert layers.length == neuralNets.length + 1 : "Missing output layer";
+        assert layers.length == neuralNets.length + 1 : "Missing output layer";
 
         for (int i = 0; i < getnLayers(); i++) {
             Layer h = layers[i];
@@ -250,7 +250,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
         this.input = input.dup();
-        this.input.toString();
         if (!initCalled) {
             init();
             log.info("Initializing neuralNets with input of dims " + input.rows() + " x " + input.columns());
@@ -667,6 +666,40 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
+    /**
+     * Set the parameters for this model.
+     * This expects a linear ndarray which then be unpacked internally
+     * relative to the expected ordering of the model
+     *
+     * @param params the parameters for the model
+     */
+    @Override
+    public void setParams(INDArray params) {
+        int start = 0;
+        //loop to output layer
+        for(int i = 0; i < neuralNets.length; i++) {
+            int numParams = getNeuralNets()[i].numParams();
+            //set the params for the neural net AND bias, note that these are the same reference, not duplications
+            getNeuralNets()[i].setParams(params.get(NDArrayIndex.interval(start,start + numParams)));
+            getLayers()[i].setW(getNeuralNets()[i].getW());
+            getLayers()[i].setB(getNeuralNets()[i].gethBias());
+            start += numParams;
+        }
+
+        getOutputLayer().setParams(params.get(NDArrayIndex.interval(start, params.length())));
+
+    }
+
+    /**
+     * Fit the model to the given data
+     *
+     * @param data the data to fit the model to
+     */
+    @Override
+    public void fit(INDArray data) {
+        this.pretrain(data,new Object[]{1});
+    }
+
     /* delta computation for back prop */
     protected void computeDeltas(List<INDArray> deltaRet) {
         INDArray[] deltas = new INDArray[getnLayers() + 2];
@@ -956,6 +989,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      *
      * @return the params for this neural net
      */
+    @Override
     public int numParams() {
         int length = 0;
 
@@ -992,7 +1026,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
     /**
-     * Packs a applyTransformToDestination of matrices in to one vector
+     * Packs a set of matrices in to one vector
      *
      * @param layers the neuralNets to pack
      * @return a singular matrix of all of the neuralNets packed in to one matrix
@@ -1001,32 +1035,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         if (layers.size() != this.neuralNets.length + 1)
             throw new IllegalArgumentException("Illegal number of neuralNets passed in. Was " + layers.size() + " when should have been " + (this.neuralNets.length + 1));
 
-
-        float[][] allMatrices = new float[(this.neuralNets.length + 1) * 2][];
-
-        int count = 0;
-        for (int i = 0; i < this.neuralNets.length; i++) {
-            allMatrices[count++] = layers.get(i).getFirst().data();
-            if (allMatrices[count - 1].length != getNeuralNets()[i].getW().length())
-                throw new IllegalArgumentException("Unable to convert the given matrix to the given length. not of same length as W. Length is " + allMatrices[count].length + " when should be " + getNeuralNets()[i].getW().length());
-            allMatrices[count++] = layers.get(i).getSecond().data();
-            if (allMatrices[count - 1].length != getNeuralNets()[i].gethBias().length())
-                throw new IllegalArgumentException("Unable to convert the given matrix to the given length. not of same length as W. Length is " + allMatrices[count].length + " when should be " + getNeuralNets()[i].gethBias().length());
-
+        List<INDArray> list = new ArrayList<>();
+        for(int i = 0; i < layers.size(); i++) {
+            list.add(layers.get(i).getFirst());
+            list.add(layers.get(i).getSecond());
         }
-
-        allMatrices[count++] = layers.get(layers.size() - 1).getFirst().data();
-        allMatrices[count++] = layers.get(layers.size() - 1).getSecond().data();
-
-
-        INDArray ret = NDArrays.create(ArrayUtil.combine(allMatrices));
-        int params = numParams();
-
-        if (ret.length() != params)
-            throw new IllegalStateException("Returning an invalid matrix of length " + ret.length() + " when should have been " + params);
-
-
-        return ret.reshape(1, ret.length());
+        INDArray ret = NDArrays.toFlattened(list);
+        if(ret.length() != numParams())
+            throw new IllegalStateException("Illegal number of parameters found in the layers");
+        return ret;
     }
 
 
@@ -1122,12 +1139,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         int curr = 0;
         for(int i = 0; i < layers.length; i++) {
             int layerLength = layers[i].getW().length() + layers[i].getB().length();
-            INDArray subMatrix = param.get(NDArrayIndex.interval(0,param.rows()),NDArrayIndex.interval(curr,curr + layerLength));
-            INDArray weightPortion = subMatrix.get(NDArrayIndex.interval(0,subMatrix.rows()),NDArrayIndex.interval(0,layers[i].getW().length()));
+            INDArray subMatrix = param.get(NDArrayIndex.interval(curr,curr + layerLength));
+            INDArray weightPortion = subMatrix.get(NDArrayIndex.interval(0,layers[i].getW().length()));
 
             int beginHBias = layers[i].getW().length();
             int endHbias = subMatrix.length();
-            INDArray hBiasPortion = subMatrix.get(NDArrayIndex.interval(0,subMatrix.rows()),NDArrayIndex.interval(beginHBias,endHbias));
+            INDArray hBiasPortion = subMatrix.get(NDArrayIndex.interval(beginHBias,endHbias));
             int layerLengthSum = weightPortion.length() + hBiasPortion.length();
             if(layerLengthSum != layerLength) {
                 if(hBiasPortion.length() != layers[i].getB().length())
@@ -1139,15 +1156,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             ret.add(new Pair<>(weightPortion.reshape(layers[i].getW().rows(),layers[i].getW().columns()),hBiasPortion.reshape(layers[i].getB().rows(),layers[i].getB().columns())));
             curr += layerLength;
         }
-
-        int outputLayerWeightLength = getOutputLayer().getW().length();
-        int biasLength = getOutputLayer().getB().length();
-        int layerLength = outputLayerWeightLength + biasLength;
-
-        INDArray subMatrix = param.get(NDArrayIndex.interval(0,param.rows()),NDArrayIndex.interval(curr,curr + layerLength));
-        INDArray weightPortion = subMatrix.get(NDArrayIndex.interval(0,subMatrix.rows()),NDArrayIndex.interval(0,getOutputLayer().getW().length()));
-        INDArray hBiasPortion = subMatrix.get(NDArrayIndex.interval(0,subMatrix.rows()),NDArrayIndex.interval(weightPortion.length(),subMatrix.length()));
-        ret.add(new Pair<>(weightPortion.reshape(getOutputLayer().getW().rows(),getOutputLayer().getW().columns()),hBiasPortion.reshape(getOutputLayer().getB().rows(),getOutputLayer().getB().columns())));
 
 
         return ret;
@@ -1415,7 +1423,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     @Override
     public void fit(org.deeplearning4j.linalg.dataset.api.DataSet data) {
-        getOutputLayer().fit(data);
+         fit(data.getFeatureMatrix(),data.getLabels());
     }
 
     /**
@@ -1522,7 +1530,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         this.hiddenLayerSizes = network.hiddenLayerSizes;
         this.defaultConfiguration = network.defaultConfiguration;
-         this.errorTolerance = network.errorTolerance;
+        this.errorTolerance = network.errorTolerance;
         this.forceNumEpochs = network.forceNumEpochs;
         this.input = network.input;
         this.labels = network.labels;
@@ -1636,7 +1644,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * where the first layer needs to be an {@link org.deeplearning4j.models.featuredetectors.rbm.RBM} for continuous inputs.
      *
      * @param input    the input to the layer
-       * @param W        the weight vector
+     * @param W        the weight vector
      * @param hbias    the hidden bias
      * @param vBias    the visible bias
      * @param index    the index of the layer
@@ -1666,7 +1674,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         return new org.deeplearning4j.nn.layers.Layer.Builder()
                 .withInput(layerInput).conf(layerWiseConfigurations.get(index))
-              .build();
+                .build();
 
     }
 
@@ -2019,207 +2027,207 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         }
     }
 
-        public static class Builder<E extends BaseMultiLayerNetwork> {
-            protected Class<? extends BaseMultiLayerNetwork> clazz;
-            private int nIns;
-            private int[] hiddenLayerSizes;
-            private int nOuts;
-            private int nLayers;
-            private INDArray input, labels;
-            protected Map<Integer, MatrixTransform> weightTransforms = new HashMap<>();
-            protected boolean backProp = true;
-            protected boolean shouldForceEpochs = false;
-            private Map<Integer, MatrixTransform> hiddenBiasTransforms = new HashMap<>();
-            private Map<Integer, MatrixTransform> visibleBiasTransforms = new HashMap<>();
-            private boolean lineSearchBackProp = false;
-            private boolean useDropConnect = false;
-            private boolean useGaussNewtonVectorProductBackProp = false;
-            protected NeuralNetConfiguration conf;
+    public static class Builder<E extends BaseMultiLayerNetwork> {
+        protected Class<? extends BaseMultiLayerNetwork> clazz;
+        private int nIns;
+        private int[] hiddenLayerSizes;
+        private int nOuts;
+        private int nLayers;
+        private INDArray input, labels;
+        protected Map<Integer, MatrixTransform> weightTransforms = new HashMap<>();
+        protected boolean backProp = true;
+        protected boolean shouldForceEpochs = false;
+        private Map<Integer, MatrixTransform> hiddenBiasTransforms = new HashMap<>();
+        private Map<Integer, MatrixTransform> visibleBiasTransforms = new HashMap<>();
+        private boolean lineSearchBackProp = false;
+        private boolean useDropConnect = false;
+        private boolean useGaussNewtonVectorProductBackProp = false;
+        protected NeuralNetConfiguration conf;
 
-            public Builder<E> configure(NeuralNetConfiguration conf) {
-                this.conf = conf;
-                return this;
-            }
+        public Builder<E> configure(NeuralNetConfiguration conf) {
+            this.conf = conf;
+            return this;
+        }
 
-            /**
-             * Use gauss newton back prop - this is for hessian free
-             *
-             * @param useGaussNewtonVectorProductBackProp whether to use gauss newton vector backprop
-             * @return
-             */
-            public Builder<E> useGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
-                this.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
-                return this;
-            }
-
-
-            /**
-             * Use drop connect on activations or not
-             *
-             * @param useDropConnect use drop connect or not
-             * @return builder pattern
-             */
-            public Builder<E> useDropConnection(boolean useDropConnect) {
-                this.useDropConnect = useDropConnect;
-                return this;
-            }
+        /**
+         * Use gauss newton back prop - this is for hessian free
+         *
+         * @param useGaussNewtonVectorProductBackProp whether to use gauss newton vector backprop
+         * @return
+         */
+        public Builder<E> useGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
+            this.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
+            return this;
+        }
 
 
-            /**
-             * Whether to use line search back prop instead of SGD
-             *
-             * @param lineSearchBackProp
-             * @return
-             */
-            public Builder<E> lineSearchBackProp(boolean lineSearchBackProp) {
-                this.lineSearchBackProp = lineSearchBackProp;
-                return this;
-            }
-
-            public Builder<E> withVisibleBiasTransforms(Map<Integer, MatrixTransform> visibleBiasTransforms) {
-                this.visibleBiasTransforms = visibleBiasTransforms;
-                return this;
-            }
-
-            public Builder<E> withHiddenBiasTransforms(Map<Integer, MatrixTransform> hiddenBiasTransforms) {
-                this.hiddenBiasTransforms = hiddenBiasTransforms;
-                return this;
-            }
-
-            /**
-             * Forces use of number of epochs for training
-             * SGD style rather than conjugate gradient
-             *
-             * @return
-             */
-            public Builder<E> forceEpochs() {
-                shouldForceEpochs = true;
-                return this;
-            }
-
-            /**
-             * Disables back propagation
-             *
-             * @return
-             */
-            public Builder<E> disableBackProp() {
-                backProp = false;
-                return this;
-            }
-
-            /**
-             * Transform the weights at the given layer
-             *
-             * @param layer     the layer to applyTransformToOrigin
-             * @param transform the function used for transformation
-             * @return
-             */
-            public Builder<E> transformWeightsAt(int layer, MatrixTransform transform) {
-                weightTransforms.put(layer, transform);
-                return this;
-            }
-
-            /**
-             * A map of transformations for transforming
-             * the given neuralNets
-             *
-             * @param transforms
-             * @return
-             */
-            public Builder<E> transformWeightsAt(Map<Integer, MatrixTransform> transforms) {
-                weightTransforms.putAll(transforms);
-                return this;
-            }
+        /**
+         * Use drop connect on activations or not
+         *
+         * @param useDropConnect use drop connect or not
+         * @return builder pattern
+         */
+        public Builder<E> useDropConnection(boolean useDropConnect) {
+            this.useDropConnect = useDropConnect;
+            return this;
+        }
 
 
-           /**
-             * Size of the hidden neuralNets
-             *
-             * @param hiddenLayerSizes
-             * @return
-             */
-            public Builder<E> hiddenLayerSizes(Integer[] hiddenLayerSizes) {
-                this.hiddenLayerSizes = new int[hiddenLayerSizes.length];
-                this.nLayers = hiddenLayerSizes.length;
-                for (int i = 0; i < hiddenLayerSizes.length; i++)
-                    this.hiddenLayerSizes[i] = hiddenLayerSizes[i];
-                return this;
-            }
+        /**
+         * Whether to use line search back prop instead of SGD
+         *
+         * @param lineSearchBackProp
+         * @return
+         */
+        public Builder<E> lineSearchBackProp(boolean lineSearchBackProp) {
+            this.lineSearchBackProp = lineSearchBackProp;
+            return this;
+        }
 
-            public Builder<E> hiddenLayerSizes(int[] hiddenLayerSizes) {
-                this.hiddenLayerSizes = hiddenLayerSizes;
-                this.nLayers = hiddenLayerSizes.length;
-                return this;
-            }
+        public Builder<E> withVisibleBiasTransforms(Map<Integer, MatrixTransform> visibleBiasTransforms) {
+            this.visibleBiasTransforms = visibleBiasTransforms;
+            return this;
+        }
+
+        public Builder<E> withHiddenBiasTransforms(Map<Integer, MatrixTransform> hiddenBiasTransforms) {
+            this.hiddenBiasTransforms = hiddenBiasTransforms;
+            return this;
+        }
+
+        /**
+         * Forces use of number of epochs for training
+         * SGD style rather than conjugate gradient
+         *
+         * @return
+         */
+        public Builder<E> forceEpochs() {
+            shouldForceEpochs = true;
+            return this;
+        }
+
+        /**
+         * Disables back propagation
+         *
+         * @return
+         */
+        public Builder<E> disableBackProp() {
+            backProp = false;
+            return this;
+        }
+
+        /**
+         * Transform the weights at the given layer
+         *
+         * @param layer     the layer to applyTransformToOrigin
+         * @param transform the function used for transformation
+         * @return
+         */
+        public Builder<E> transformWeightsAt(int layer, MatrixTransform transform) {
+            weightTransforms.put(layer, transform);
+            return this;
+        }
+
+        /**
+         * A map of transformations for transforming
+         * the given neuralNets
+         *
+         * @param transforms
+         * @return
+         */
+        public Builder<E> transformWeightsAt(Map<Integer, MatrixTransform> transforms) {
+            weightTransforms.putAll(transforms);
+            return this;
+        }
+
+
+        /**
+         * Size of the hidden neuralNets
+         *
+         * @param hiddenLayerSizes
+         * @return
+         */
+        public Builder<E> hiddenLayerSizes(Integer[] hiddenLayerSizes) {
+            this.hiddenLayerSizes = new int[hiddenLayerSizes.length];
+            this.nLayers = hiddenLayerSizes.length;
+            for (int i = 0; i < hiddenLayerSizes.length; i++)
+                this.hiddenLayerSizes[i] = hiddenLayerSizes[i];
+            return this;
+        }
+
+        public Builder<E> hiddenLayerSizes(int[] hiddenLayerSizes) {
+            this.hiddenLayerSizes = hiddenLayerSizes;
+            this.nLayers = hiddenLayerSizes.length;
+            return this;
+        }
 
 
 
-            public Builder<E> withInput(INDArray input) {
-                this.input = input;
-                return this;
-            }
+        public Builder<E> withInput(INDArray input) {
+            this.input = input;
+            return this;
+        }
 
-            public Builder<E> withLabels(INDArray labels) {
-                this.labels = labels;
-                return this;
-            }
+        public Builder<E> withLabels(INDArray labels) {
+            this.labels = labels;
+            return this;
+        }
 
-            public Builder<E> withClazz(Class<? extends BaseMultiLayerNetwork> clazz) {
-                this.clazz = clazz;
-                return this;
-            }
+        public Builder<E> withClazz(Class<? extends BaseMultiLayerNetwork> clazz) {
+            this.clazz = clazz;
+            return this;
+        }
 
 
-            @SuppressWarnings("unchecked")
-            public E buildEmpty() {
-                try {
-                    E ret;
-                    Constructor<?> c = Dl4jReflection.getEmptyConstructor(clazz);
-                    c.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        public E buildEmpty() {
+            try {
+                E ret;
+                Constructor<?> c = Dl4jReflection.getEmptyConstructor(clazz);
+                c.setAccessible(true);
 
-                    ret = (E) c.newInstance();
+                ret = (E) c.newInstance();
 
-                    return ret;
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            @SuppressWarnings("unchecked")
-            public E build() {
-                try {
-                    E ret;
-                    Constructor<?> c = Dl4jReflection.getEmptyConstructor(clazz);
-                    c.setAccessible(true);
-
-                    ret = (E) c.newInstance();
-                    ret.setDefaultConfiguration(conf);
-                    ret.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
-                    ret.setUseDropConnect(useDropConnect);
-                    ret.setInput(this.input);
-                    ret.setLabels(this.labels);
-                    ret.setHiddenLayerSizes(this.hiddenLayerSizes);
-                    ret.setnLayers(this.nLayers);
-                    ret.setShouldBackProp(this.backProp);
-
-                    ret.neuralNets = new NeuralNetwork[nLayers];
-                    ret.setInput(this.input);
-                    ret.setLineSearchBackProp(lineSearchBackProp);
-                    ret.setLabels(labels);
-                    ret.setForceNumEpochs(shouldForceEpochs);
-                    ret.getWeightTransforms().putAll(weightTransforms);
-                    ret.getVisibleBiasTransforms().putAll(visibleBiasTransforms);
-                    ret.getHiddenBiasTransforms().putAll(hiddenBiasTransforms);
-                    if (hiddenLayerSizes == null)
-                        throw new IllegalStateException("Unable to build network, no hidden layer sizes defined");
-                    return ret;
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-
+                return ret;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
+
+        @SuppressWarnings("unchecked")
+        public E build() {
+            try {
+                E ret;
+                Constructor<?> c = Dl4jReflection.getEmptyConstructor(clazz);
+                c.setAccessible(true);
+
+                ret = (E) c.newInstance();
+                ret.setDefaultConfiguration(conf);
+                ret.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
+                ret.setUseDropConnect(useDropConnect);
+                ret.setInput(this.input);
+                ret.setLabels(this.labels);
+                ret.setHiddenLayerSizes(this.hiddenLayerSizes);
+                ret.setnLayers(this.nLayers);
+                ret.setShouldBackProp(this.backProp);
+
+                ret.neuralNets = new NeuralNetwork[nLayers];
+                ret.setInput(this.input);
+                ret.setLineSearchBackProp(lineSearchBackProp);
+                ret.setLabels(labels);
+                ret.setForceNumEpochs(shouldForceEpochs);
+                ret.getWeightTransforms().putAll(weightTransforms);
+                ret.getVisibleBiasTransforms().putAll(visibleBiasTransforms);
+                ret.getHiddenBiasTransforms().putAll(hiddenBiasTransforms);
+                if (hiddenLayerSizes == null)
+                    throw new IllegalStateException("Unable to build network, no hidden layer sizes defined");
+                return ret;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+        }
     }
+}
 
 
 

@@ -29,11 +29,34 @@ public interface Model {
     INDArray params();
 
     /**
+     * The number of parameters for the model
+     * @return the number of parameters for the model
+     * 
+     */
+    int numParams();
+
+    /**
+     * Set the parameters for this model.
+     * This expects a linear ndarray which then be unpacked internally
+     * relative to the expected ordering of the model
+     * @param params the parameters for the model
+     */
+    void setParams(INDArray params);
+
+
+    /**
      * Fit the model to the given data
      * @param data the data to fit the model to
      * @param params the params (mixed values)
      */
     void fit(INDArray data,Object[] params);
+
+    /**
+     * Fit the model to the given data
+     * @param data the data to fit the model to
+     */
+    void fit(INDArray data);
+
 
     /**
      * Run one iteration

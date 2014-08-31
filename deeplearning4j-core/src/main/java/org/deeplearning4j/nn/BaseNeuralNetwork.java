@@ -9,8 +9,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
+import java.util.Arrays;
 
 
+import org.deeplearning4j.linalg.factory.NDArrayFactory;
+import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
@@ -40,7 +43,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
     private static final long serialVersionUID = -7074102204433996574L;
-     /* Weight matrix */
+    /* Weight matrix */
     protected INDArray W;
     /* hidden bias */
     protected INDArray hBias;
@@ -94,7 +97,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     @Override
     public INDArray params() {
-        return NDArrays.concatHorizontally(NDArrays.concatHorizontally(W.ravel(),vBias.ravel()),hBias.ravel());
+        return NDArrays.toFlattened(W,vBias,hBias);
     }
 
 
@@ -172,10 +175,35 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     }
 
+    /**
+     * The number of parameters for the model
+     *
+     * @return the number of parameters for the model
+     */
+    @Override
+    public int numParams() {
+        return conf.getnIn() * conf.getnOut() + conf.getnIn() + conf.getnOut();
+    }
 
+    /**
+     * Set the parameters for this model.
+     * This expects a linear ndarray which then be unpacked internally
+     * relative to the expected ordering of the model
+     *
+     * @param params the parameters for the model
+     */
+    @Override
+    public void setParams(INDArray params) {
+        assert params.length() == numParams() : "Illegal number of parameters passed in, must be of length " + numParams();
+        int weightLength = conf.getnIn() * conf.getnOut();
+        INDArray weights = params.get(NDArrayIndex.interval(0,weightLength));
+        INDArray vBias = params.get(NDArrayIndex.interval(weightLength, weightLength + conf.getnIn()));
+        INDArray hBias = params.get(NDArrayIndex.interval(weightLength + conf.getnIn(), weightLength + conf.getnIn() + conf.getnOut()));
+        setW(weights.reshape(conf.getnIn(),conf.getnOut()));
+        setvBias(vBias.dup());
+        sethBias(hBias.dup());
 
-
-
+    }
 
     /**
      * Backprop with the output being the reconstruction
@@ -227,6 +255,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     }
 
+    /**
+     * Fit the model to the given data
+     *
+     * @param data the data to fit the model to
+     */
+    @Override
+    public void fit(INDArray data) {
+        fit(data,null);
+    }
 
     /**
      * Applies sparsity to the passed in hbias gradient
@@ -292,20 +329,20 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             wGradient.muli(learningRate);
 
         if (conf.isUseAdaGrad())
-            hBiasGradient = hBiasGradient.mul(hBiasAdaGrad.getLearningRates(hBiasGradient));
+            hBiasGradient.muli(hBiasAdaGrad.getLearningRates(hBiasGradient));
         else
-            hBiasGradient = hBiasGradient.mul(learningRate);
+            hBiasGradient.muli(learningRate);
 
 
         if (conf.isUseAdaGrad())
-            vBiasGradient = vBiasGradient.mul(vBiasAdaGrad.getLearningRates(vBiasGradient));
+            vBiasGradient.muli(vBiasAdaGrad.getLearningRates(vBiasGradient));
         else
-            vBiasGradient = vBiasGradient.mul(learningRate);
+            vBiasGradient.muli(learningRate);
 
 
 
         //only do this with binary hidden neuralNets
-        if (this.hBiasGradient != null)
+        if (this.hBiasGradient != null && conf.getSparsity() != 0)
             applySparsity(hBiasGradient);
 
 
@@ -410,13 +447,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             Constructor<?> c =  Dl4jReflection.getEmptyConstructor(getClass());
             c.setAccessible(true);
             NeuralNetwork ret = (NeuralNetwork) c.newInstance();
+            ret.setConf(conf);
             ret.setHbiasAdaGrad(hBiasAdaGrad);
             ret.setVBiasAdaGrad(vBiasAdaGrad);
             ret.sethBias(hBias.dup());
             ret.setvBias(vBias.dup());
             ret.setW(W.dup());
             ret.setAdaGrad(wAdaGrad);
-            ret.setConf(conf);
             return ret;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -545,6 +582,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     @Override
     public void setW(INDArray w) {
+        assert Arrays.equals(w.shape(),new int[]{conf.getnIn(),conf.getnOut()}) : "Invalid shape for w, must be " + Arrays.toString(new int[]{conf.getnIn(),conf.getnOut()});
         W = w;
     }
 
@@ -561,6 +599,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     @Override
     public void sethBias(INDArray hBias) {
+        assert Arrays.equals(hBias.shape(),new int[]{conf.getnOut()}) : "Illegal shape for visible bias, must be of shape " + new int[]{conf.getnOut()};
         this.hBias = hBias;
     }
 
@@ -577,6 +616,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     @Override
     public void setvBias(INDArray vBias) {
+        assert Arrays.equals(vBias.shape(),new int[]{conf.getnIn()}) : "Illegal shape for visible bias, must be of shape " + Arrays.toString(new int[]{conf.getnIn()});
         this.vBias = vBias;
     }
 
