@@ -102,6 +102,7 @@ public  class RBM extends BaseNeuralNetwork {
             this.input = input;
         this.lastMiniBatchSize = input.rows();
         NeuralNetworkGradient gradient = getGradient(new Object[]{k,learningRate,-1});
+        float norm = gradient.getwGradient().norm2(Integer.MAX_VALUE).get(0);
         getW().addi(gradient.getwGradient());
         gethBias().addi(gradient.gethBiasGradient());
         getvBias().addi(gradient.getvBiasGradient());
@@ -141,7 +142,7 @@ public  class RBM extends BaseNeuralNetwork {
 
 
 
-        int k = (int) params[0];
+        int k = conf.getK();
         float learningRate = conf.getLr();
         int iteration = params[params.length - 1] == null ? 0 : (int) params[params.length - 1];
 
@@ -207,6 +208,10 @@ public  class RBM extends BaseNeuralNetwork {
 		/*
 		 * Update gradient parameters
 		 */
+        INDArray transpose = input.transpose();
+        INDArray inputTimesProbHidden = transpose.mmul(probHidden.getSecond());
+        INDArray samplesTimesNhMeans = nvSamples.transpose().mmul(nhMeans);
+        INDArray sub = inputTimesProbHidden.sub(samplesTimesNhMeans);
         INDArray wGradient = input.transpose().mmul(probHidden.getSecond()).sub(
                 nvSamples.transpose().mmul(nhMeans)
         );

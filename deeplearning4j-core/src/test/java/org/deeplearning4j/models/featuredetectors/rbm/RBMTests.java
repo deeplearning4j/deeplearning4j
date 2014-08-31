@@ -61,7 +61,8 @@ public class RBMTests {
 
         INDArray input = d2.getFeatureMatrix();
 
-        Model rbm = new RBM.Builder().configure(conf).withInput(input).build();
+        RBM rbm = new RBM.Builder().configure(conf).withInput(input).build();
+
         rbm.fit(input);
 
     }
@@ -77,6 +78,39 @@ public class RBMTests {
         rbm.setParams(rand2);
         INDArray getParams = rbm.params();
         assertEquals(rand2,getParams);
+    }
+
+
+
+
+
+    @Test
+    public void testCg() {
+        float[][] data = new float[][]
+                {
+                        {1,1,1,0,0,0},
+                        {1,0,1,0,0,0},
+                        {1,1,1,0,0,0},
+                        {0,0,1,1,1,0},
+                        {0,0,1,1,0,0},
+                        {0,0,1,1,1,0},
+                        {0,0,1,1,1,0}
+                };
+
+
+        INDArray input = NDArrays.create(data);
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .learningRate(1e-1f).nIn(6).nOut(4).build();
+        RBM rbm = new RBM.Builder().configure(conf).withInput(input).build();
+        rbm.setInput(input);
+        float value = rbm.score();
+        rbm.contrastiveDivergence(1e-1,1,input);
+        value = rbm.score();
+
+
+
     }
 
     @Test
@@ -102,11 +136,7 @@ public class RBMTests {
         rbm.setInput(input);
         float value = rbm.score();
 
-        for(int i = 0; i < 1000; i++) {
-            rbm.contrastiveDivergence(1e-1f,1,input);
-            value = rbm.score();
 
-        }
         NeuralNetworkGradient grad2 = rbm.getGradient(new Object[]{1});
         rbm.fit(input);
 
