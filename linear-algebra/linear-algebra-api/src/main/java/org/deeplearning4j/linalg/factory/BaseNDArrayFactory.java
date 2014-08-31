@@ -112,9 +112,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray ret = NDArrays.create(length);
         int linearIndex = 0;
         for(INDArray d : matrices) {
-            INDArray flattend = NDArrays.create(d.data(),new int[]{1,d.length()},d.offset());
+            INDArray flattened = d.linearView();
             for(int i = 0; i < d.length(); i++) {
-                ret.putScalar(linearIndex++,flattend.get(i));
+                ret.putScalar(linearIndex++, flattened.get(i));
             }
         }
 

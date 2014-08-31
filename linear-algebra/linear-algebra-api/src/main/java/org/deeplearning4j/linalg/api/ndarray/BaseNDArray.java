@@ -2364,8 +2364,6 @@ public abstract class BaseNDArray  implements INDArray {
             return NDArrays.create(data,new int[]{shape[0],1},offset);
         else if(isColumnVector())
             return NDArrays.create(data,new int[]{shape[0]},offset);
-
-
         return permute(ArrayUtil.range(shape.length -1,-1));
 
     }
