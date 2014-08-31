@@ -22,15 +22,26 @@
   		<artifactId>deeplearning4j-core</artifactId>
   		<version>${project.version}</version>
   	</dependency>
-  	<dependency>
-  		<groupId>nz.ac.waikato.cms.weka</groupId>
-  		<artifactId>weka-dev</artifactId>
-  		<version>3.7.10</version>
-  	</dependency>
+
   	<dependency>
   		<groupId>junit</groupId>
   		<artifactId>junit</artifactId>
   	</dependency>
+      <dependency>
+          <groupId>net.sf.ehcache</groupId>
+          <artifactId>ehcache-core</artifactId>
+          <version>2.7.1</version>
+      </dependency>
+      <dependency>
+          <groupId>net.sf.ehcache</groupId>
+          <artifactId>ehcache</artifactId>
+          <version>2.7.1</version>
+      </dependency>
+      <dependency>
+          <groupId>net.sf.ehcache</groupId>
+          <artifactId>ehcache-terracotta</artifactId>
+          <version>2.7.1</version>
+      </dependency>
   	<dependency>
   		<groupId>org.cleartk</groupId>
   		<artifactId>cleartk-snowball</artifactId>

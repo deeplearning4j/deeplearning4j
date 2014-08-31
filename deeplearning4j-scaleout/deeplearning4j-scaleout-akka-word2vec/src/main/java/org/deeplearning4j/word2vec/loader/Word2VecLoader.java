@@ -34,8 +34,6 @@ public class Word2VecLoader {
 	private static Word2Vec loadGoogleVocab(Word2Vec vec,String path) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(new File(path)));
 		String temp = null;
-		vec.setWordIndex(new Index());
-		vec.getVocab().clear();
 		while((temp = reader.readLine()) != null) {
 			String[] split = temp.split(" ");
 			if(split[0].equals("</s>"))
@@ -43,9 +41,9 @@ public class Word2VecLoader {
 
 			int freq = Integer.parseInt(split[1]);
 			VocabWord realWord = new VocabWord(freq,vec.getLayerSize());
-			realWord.setIndex(vec.getVocab().size());
-			vec.getVocab().put(split[0], realWord);
-			vec.getWordIndex().add(split[0]);
+			//realWord.setIndex(vec.getVocab().size());
+			//vec.getVocab().put(split[0], realWord);
+			//vec.getWordIndex().add(split[0]);
 		}
 		reader.close();
 		return vec;
@@ -66,7 +64,7 @@ public class Word2VecLoader {
 				rows = Integer.parseInt(split[0]);
 				vectorSize = Integer.parseInt(split[1]);
 				ret.setLayerSize(vectorSize);
-				ret.setSyn0(NDArrays.create(rows - 1,vectorSize));
+				//ret.setSyn0(NDArrays.create(rows - 1,vectorSize));
 				first = false;
 			}
 
@@ -81,7 +79,7 @@ public class Word2VecLoader {
 				while(tokenizer.hasMoreTokens()) {
 					vec[count++] = Float.parseFloat(tokenizer.nextToken());
 				}
-				ret.getSyn0().putRow(currRow, NDArrays.create(vec));
+				//ret.getSyn0().putRow(currRow, NDArrays.create(vec));
 				currRow++;
 
 			}
@@ -127,6 +125,7 @@ public class Word2VecLoader {
      *
      * @throws IOException
      */
+    @Deprecated
     public static Word2Vec loadGoogleModel(String path) throws IOException {
         DataInputStream dis = null;
         BufferedInputStream bis = null;
@@ -169,8 +168,8 @@ public class Word2VecLoader {
             dis.close();
         }
 
-        ret.setWordIndex(wordIndex);
-        ret.setSyn0(wordVectors);
+       // ret.setWordIndex(wordIndex);
+        //ret.setSyn0(wordVectors);
 
         return ret;
     }
