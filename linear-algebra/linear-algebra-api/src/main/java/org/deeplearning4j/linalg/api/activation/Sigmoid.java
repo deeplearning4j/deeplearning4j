@@ -37,7 +37,7 @@ public class Sigmoid extends BaseActivationFunction {
 
         }
         else
-            return  NDArrays.scalar(1 / 1 + Math.exp(-(double) input.element()));
+            return  NDArrays.scalar(1 / 1 + Math.exp(-(float) input.element()));
     }
 
     /**
@@ -52,7 +52,7 @@ public class Sigmoid extends BaseActivationFunction {
 
     @Override
     public INDArray applyDerivative(INDArray input) {
-        return input.mul(input.rsubi(NDArrays.ones(input.shape())));
+        return input.mul(input.rsub(NDArrays.ones(input.shape())));
     }
 
 

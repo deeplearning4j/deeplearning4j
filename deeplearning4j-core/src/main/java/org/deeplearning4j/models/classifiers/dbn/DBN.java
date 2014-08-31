@@ -112,21 +112,16 @@ public class DBN extends BaseMultiLayerNetwork {
 
     @Override
     public void pretrain(DataSetIterator iter, Object[] otherParams) {
-        int k = (Integer) otherParams[0];
-        float lr = (Float) otherParams[1];
-        int epochs = (Integer) otherParams[2];
         int passes = otherParams.length > 3 ? (Integer) otherParams[3] : 1;
         for(int i = 0; i < passes; i++)
-            pretrain(iter,k,lr,epochs);
+            pretrain(input, defaultConfiguration.getK(),defaultConfiguration.getLr(),defaultConfiguration.getNumIterations());
+
 
     }
 
     @Override
     public void pretrain(INDArray input, Object[] otherParams) {
-        int k = (Integer) otherParams[0];
-        float lr = (Float) otherParams[1];
-        int epochs = (Integer) otherParams[2];
-        pretrain(input,k,lr,epochs);
+        pretrain(input, defaultConfiguration.getK(),defaultConfiguration.getLr(),defaultConfiguration.getNumIterations());
 
     }
 

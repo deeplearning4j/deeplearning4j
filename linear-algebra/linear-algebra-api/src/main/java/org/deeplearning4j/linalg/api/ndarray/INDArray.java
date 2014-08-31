@@ -12,6 +12,14 @@ import java.util.List;
  */
 public interface INDArray {
 
+
+    /**
+     * Returns a linear view reference of shape
+     * 1,length(ndarray)
+     * @return the linear view of this ndarray
+     */
+    public INDArray linearView();
+
     /**
      * Returns the number of possible vectors for a given dimension
      * @param dimension the dimension to calculate the number of vectors for

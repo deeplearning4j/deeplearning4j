@@ -95,6 +95,12 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
     }
 
 
+    @Test
+    public void testNorm1() {
+        DoubleMatrix norm1 = DoubleMatrix.linspace(1,8,8).reshape(2,4);
+        INDArray norm1NDArray = NDArrays.linspace(1,8,8).reshape(2,4);
+        assertEquals(norm1.norm1(),norm1NDArray.norm1(Integer.MAX_VALUE).get(0),1e-1);
+    }
 
 
 

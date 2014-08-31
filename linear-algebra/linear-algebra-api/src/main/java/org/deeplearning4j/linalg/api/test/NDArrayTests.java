@@ -11,6 +11,7 @@ import org.deeplearning4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.linalg.util.Shape;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,11 @@ public abstract class NDArrayTests {
     private INDArray n = NDArrays.create(NDArrays.linspace(1,8,8).data(),new int[]{2,2,2});
 
 
+
+    @Before
+    public void before() {
+        NDArrays.factory().setOrder('c');
+    }
 
     @After
     public void after() {
@@ -80,7 +86,7 @@ public abstract class NDArrayTests {
     public void testGetIndicesVector() {
         INDArray line = NDArrays.linspace(1,4,4);
         INDArray test = NDArrays.create(new float[]{2,3});
-        INDArray result = line.get(NDArrayIndex.interval(1,3));
+        INDArray result = line.get(NDArrayIndex.interval(1, 3));
         assertEquals(test,result);
     }
 
@@ -119,6 +125,18 @@ public abstract class NDArrayTests {
 
     }
 
+    @Test
+    public void testDivide() {
+        INDArray two = NDArrays.create(new float[]{2,2,2,2});
+        INDArray div = two.div(two);
+        assertEquals(NDArrays.ones(4),div);
+
+        INDArray half = NDArrays.create(new float[]{0.5f,0.5f,0.5f,0.5f},new int[]{2,2});
+        INDArray divi = NDArrays.create(new float[]{0.3f,0.6f,0.9f,0.1f}, new int[]{2,2});
+        INDArray assertion = NDArrays.create(new float[]{1.6666666f,0.8333333f,0.5555556f,5},new int[]{2,2});
+        INDArray result = half.div(divi);
+        assertEquals(assertion,result);
+    }
 
 
     @Test
@@ -310,7 +328,7 @@ public abstract class NDArrayTests {
         //reproduce with:  A = reshape(linspace(1,4,4),[2 2 ]);
         //A(1,2) % 1 index based
         float nFirst = 2;
-        float dFirst = (float) d.getScalar(0, 1).element();
+        float dFirst = d.get(0, 1);
         assertEquals(nFirst,dFirst,1e-1);
         assertEquals(true,Arrays.equals(d.data(),n.data()));
         assertEquals(true,Arrays.equals(new int[]{2,2},n.shape()));
@@ -612,7 +630,6 @@ public abstract class NDArrayTests {
         test.iterateOverDimension(1,new SliceOp() {
             @Override
             public void operate(DimensionSlice nd) {
-                log.info("Operator " + nd);
                 INDArray test = (INDArray) nd.getResult();
                 if(count.get() == 0) {
                     INDArray firstDimension = NDArrays.create(new float[]{1,2},new int[]{2});
@@ -634,7 +651,6 @@ public abstract class NDArrayTests {
              */
             @Override
             public void operate(INDArray nd) {
-                log.info("Operator " + nd);
                 INDArray test = nd;
                 if(count.get() == 0) {
                     INDArray firstDimension = NDArrays.create(new float[]{1,2},new int[]{2});
@@ -1070,7 +1086,7 @@ public abstract class NDArrayTests {
         assertEquals(arr.length(),flattened.length());
         assertEquals(true,Shape.shapeEquals(new int[]{1, arr.length()}, flattened.shape()));
         for(int i = 0; i < arr.length(); i++) {
-            assertEquals(i + 1,(float) flattened.getScalar(i).element(),1e-1);
+            assertEquals(i + 1, flattened.get(i),1e-1);
         }
         assertTrue(flattened.isVector());
 

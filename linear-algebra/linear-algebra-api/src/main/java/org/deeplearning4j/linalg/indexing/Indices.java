@@ -67,6 +67,8 @@ public class Indices {
     public static NDArrayIndex[] adjustIndices(int[] originalShape,NDArrayIndex...indexes) {
         if(indexes.length < originalShape.length)
             indexes = fillIn(originalShape,indexes);
+        if(indexes.length > originalShape.length)
+            return indexes;
         for(int i = 0; i < indexes.length; i++) {
             if(indexes[i].end() >= originalShape[i])
                 indexes[i] = NDArrayIndex.interval(0,originalShape[i] - 1);

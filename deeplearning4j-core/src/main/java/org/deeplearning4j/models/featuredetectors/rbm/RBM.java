@@ -230,10 +230,18 @@ public  class RBM extends BaseNeuralNetwork {
         NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 
         updateGradientAccordingToParams(ret, iteration,learningRate);
-
         return ret;
     }
 
+    /**
+     * Fit the model to the given data
+     *
+     * @param data the data to fit the model to
+     */
+    @Override
+    public void fit(INDArray data) {
+        fit(data,null);
+    }
 
     @Override
     public NeuralNetwork transpose() {

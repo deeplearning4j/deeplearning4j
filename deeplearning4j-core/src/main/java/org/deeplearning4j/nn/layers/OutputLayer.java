@@ -8,6 +8,7 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.api.DataSet;
 import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.linalg.util.LinAlgExceptions;
@@ -499,6 +500,29 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     }
 
     /**
+     * The number of parameters for the model
+     *
+     * @return the number of parameters for the model
+     */
+    @Override
+    public int numParams() {
+        return conf.getnIn() * conf.getnOut() + conf.getnOut();
+    }
+
+    /**
+     * Set the parameters for this model.
+     * This expects a linear ndarray which then be unpacked internally
+     * relative to the expected ordering of the model
+     *
+     * @param params the parameters for the model
+     */
+    @Override
+    public void setParams(INDArray params) {
+        setW(params.get(NDArrayIndex.interval(0, conf.getnIn() * conf.getnOut())).reshape(conf.getnIn(),conf.getnOut()));
+        setB(params.get(NDArrayIndex.interval(conf.getnIn() * conf.getnOut() + 1, params.length())));
+    }
+
+    /**
      * Fit the model to the given data
      *
      * @param data   the data to fit the model to
@@ -506,7 +530,18 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray data, Object[] params) {
+        throw new UnsupportedOperationException();
 
+    }
+
+    /**
+     * Fit the model to the given data
+     *
+     * @param data the data to fit the model to
+     */
+    @Override
+    public void fit(INDArray data) {
+       throw new UnsupportedOperationException();
     }
 
     /**
