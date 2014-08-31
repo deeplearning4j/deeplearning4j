@@ -2,6 +2,7 @@ package org.deeplearning4j.linalg.api.activation;
 
 import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrayFactory;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.ArrayOps;
 import org.deeplearning4j.linalg.ops.ElementWiseOp;
@@ -46,20 +47,54 @@ public class SoftMax extends BaseActivationFunction {
      */
     public static  INDArray softmax(INDArray input,boolean row) {
         if(row) {
-            INDArray max = input.max(1);
-            INDArray diff = input.subColumnVector(max);
-            new ArrayOps().from(diff).op(org.deeplearning4j.linalg.ops.transforms.Exp.class).build().exec();
-            diff.diviColumnVector(diff.sum(1).transpose());
-            return diff;
+           if(input.ordering() == NDArrayFactory.FORTRAN) {
+               INDArray max = input.max(0);
+               INDArray diff = input.subColumnVector(max);
+               new ArrayOps()
+                       .from(diff)
+                       .op(org.deeplearning4j.linalg.ops.transforms.Exp.class)
+                       .build().exec();
+               diff.diviColumnVector(diff.sum(1).transpose());
+               return diff;
+           }
+            else {
+               INDArray max = input.max(0);
+               INDArray diff = input.subColumnVector(max);
+               new ArrayOps()
+                       .from(diff)
+                       .op(org.deeplearning4j.linalg.ops.transforms.Exp.class)
+                       .build().exec();
+               diff.diviColumnVector(diff.sum(1).transpose());
+               return diff;
+           }
+
 
         }
 
         else {
-            INDArray max = input.max(0);
-            INDArray diff =  input.subRowVector(max);
-            new ArrayOps().from(diff).op(org.deeplearning4j.linalg.ops.transforms.Exp.class).build().exec();
-            diff.diviRowVector(diff.sum(0));
-            return diff;
+            if(input.ordering() == NDArrayFactory.FORTRAN) {
+                INDArray max = input.max(1).transpose();
+                INDArray diff =  input.subRowVector(max);
+                new ArrayOps()
+                        .from(diff)
+                        .op(org.deeplearning4j.linalg.ops.transforms.Exp.class)
+                        .build().exec();
+                diff.diviRowVector(diff.sum(1));
+                return diff;
+            }
+            else {
+                INDArray max = input.max(0).transpose();
+                INDArray diff =  input.subRowVector(max);
+                new ArrayOps()
+                        .from(diff)
+                        .op(org.deeplearning4j.linalg.ops.transforms.Exp.class)
+                        .build().exec();
+                diff.diviRowVector(diff.sum(0));
+                return diff;
+            }
+
+
+
 
         }
     }
