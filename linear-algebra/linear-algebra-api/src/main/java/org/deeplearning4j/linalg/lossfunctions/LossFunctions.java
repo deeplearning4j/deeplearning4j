@@ -1,6 +1,7 @@
 package org.deeplearning4j.linalg.lossfunctions;
 
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.transforms.Transforms;
 
 import static org.deeplearning4j.linalg.ops.transforms.Transforms.*;
@@ -42,6 +43,7 @@ public class LossFunctions {
      * @return the score for the given parameters
      */
     public static float score(INDArray labels,LossFunction lossFunction,INDArray output,double l2,boolean useRegularization) {
+        assert !NDArrays.hasInvalidNumber(output) : "Invalid output on labels. Must not contain nan or infiniute numbers.";
         float ret = 0.0f;
         double reg = 0.5 * l2;
         INDArray z = output;
@@ -63,7 +65,10 @@ public class LossFunctions {
                 ret = -labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).mul(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).get(0) / labels.rows();
                 break;
             case RMSE_XENT:
-                ret =   sqrt( pow(labels.sub(z),2)).sum(1).sum(Integer.MAX_VALUE).get(0) / labels.rows();
+                INDArray rmseXentDiff = labels.sub(z);
+                INDArray squaredrmseXentDiff = pow(rmseXentDiff,2);
+                INDArray sqrt = sqrt(squaredrmseXentDiff);
+                ret =   sqrt.sum(1).sum(Integer.MAX_VALUE).get(0) / labels.rows();
                 break;
             case MSE:
                 INDArray mseDelta = labels.sub(z);
