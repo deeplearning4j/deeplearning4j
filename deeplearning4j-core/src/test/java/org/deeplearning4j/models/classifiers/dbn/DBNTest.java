@@ -35,12 +35,13 @@ public class DBNTest {
         DBN d = new DBN.Builder().configure(conf)
                 .hiddenLayerSizes(new int[]{500,250})
                 .build();
-        d.getOutputLayer().conf().setActivationFunction(Activations.softmax());
+        d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
         d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        fetcher.fetch(100);
+        fetcher.fetch(10);
         DataSet d2 = fetcher.next();
         d2.filterAndStrip(new int[]{0, 1});
+        INDArray rowSums = d2.getFeatureMatrix().sum(0);
         d.fit(d2);
         int[] predict = d.predict(d2.getFeatureMatrix());
         log.info("Predict " + Arrays.toString(predict));
