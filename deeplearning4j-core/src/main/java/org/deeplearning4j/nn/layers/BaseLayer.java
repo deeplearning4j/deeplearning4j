@@ -10,6 +10,8 @@ import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 
+import java.util.Arrays;
+
 /**
  * A layer with a bias and activation function
  * @author Adam Gibson
@@ -64,6 +66,8 @@ public abstract class BaseLayer implements Layer {
         this.input = x;
 
         INDArray ret = this.input.mmul(W);
+       if(ret.columns() != b.columns())
+           throw new IllegalStateException("This is weird");
         if(conf.isConcatBiases())
             ret = NDArrays.concatHorizontally(ret,b);
         else
@@ -107,6 +111,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void setW(INDArray W) {
+        assert W.rows() == conf().getnIn() && W.columns() == conf.getnOut() : "Weight matrix must be of shape " + Arrays.toString(new int[]{conf().getnIn(),conf.getnOut()});
         this.W = W;
     }
 
@@ -117,6 +122,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void setB(INDArray b) {
+        assert b.columns() == conf().getnOut() : "The bias must have " + conf().getnOut() + " columns";
         this.b = b;
     }
 

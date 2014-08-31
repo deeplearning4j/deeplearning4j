@@ -45,4 +45,12 @@ public abstract class LossFunctionTests {
         assertEquals(8,diff,1e-1);
     }
 
+    @Test
+    public void testMcXent() {
+        INDArray in = NDArrays.create(new float[][]{{1,2},{3,4}});
+        INDArray out = NDArrays.create(new float[][]{{5,6},{7,8}});
+        LossFunctions.score(in, LossFunctions.LossFunction.MCXENT,out,0,false);
+    }
+
+
 }

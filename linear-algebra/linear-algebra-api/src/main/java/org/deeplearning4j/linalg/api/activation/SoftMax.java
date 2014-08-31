@@ -46,19 +46,19 @@ public class SoftMax extends BaseActivationFunction {
      */
     public static  INDArray softmax(INDArray input,boolean row) {
         if(row) {
-            INDArray max = input.max(0);
+            INDArray max = input.max(1);
             INDArray diff = input.subColumnVector(max);
             new ArrayOps().from(diff).op(org.deeplearning4j.linalg.ops.transforms.Exp.class).build().exec();
-            diff.diviColumnVector(diff.sum(0));
+            diff.diviColumnVector(diff.sum(1).transpose());
             return diff;
 
         }
 
         else {
-            INDArray max = input.max(1);
+            INDArray max = input.max(0);
             INDArray diff =  input.subRowVector(max);
             new ArrayOps().from(diff).op(org.deeplearning4j.linalg.ops.transforms.Exp.class).build().exec();
-            diff.diviRowVector(diff.sum(1));
+            diff.diviRowVector(diff.sum(0));
             return diff;
 
         }
