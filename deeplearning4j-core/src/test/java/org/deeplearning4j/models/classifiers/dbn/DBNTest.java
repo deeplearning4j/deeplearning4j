@@ -35,7 +35,7 @@ public class DBNTest {
         DBN d = new DBN.Builder().configure(conf)
                 .hiddenLayerSizes(new int[]{500,250})
                 .build();
-        d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
+        d.getOutputLayer().conf().setActivationFunction(Activations.softmax());
         d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         fetcher.fetch(100);
