@@ -175,13 +175,13 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             }
 
             dgg = gg = 0.0f;
-            gg = (float) Transforms.pow(g, 2).sum(Integer.MAX_VALUE).element();
-            dgg = (float) xi.mul(xi.sub(g)).sum(Integer.MAX_VALUE).element();
+            gg = Transforms.pow(g, 2).sum(Integer.MAX_VALUE).get(0);
+            dgg =  xi.mul(xi.sub(g)).sum(Integer.MAX_VALUE).get(0);
             gam = dgg / gg;
 
 
             g = xi.dup();
-            h = xi.dup().add(h.mul(gam));
+            h = xi.add(h.mul(gam));
 
 
             LinAlgExceptions.assertValidNum(h);

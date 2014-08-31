@@ -104,7 +104,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
                 INDArray out = createOutputVector(man.readLabel());
                 boolean found = false;
                 for(int col = 0; col < out.length(); col++) {
-                    if((double) out.getScalar(col).element() > 0) {
+                    if(out.get(col) > 0) {
                         found = true;
                         break;
                     }

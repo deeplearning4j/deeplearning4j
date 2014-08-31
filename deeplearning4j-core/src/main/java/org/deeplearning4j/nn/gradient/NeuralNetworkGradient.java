@@ -136,5 +136,12 @@ public class NeuralNetworkGradient implements Serializable,Persistable {
 	}
 
 
-
+    @Override
+    public String toString() {
+        return "NeuralNetworkGradient{" +
+                "wGradient=" + wGradient +
+                ", vBiasGradient=" + vBiasGradient +
+                ", hBiasGradient=" + hBiasGradient +
+                '}';
+    }
 }

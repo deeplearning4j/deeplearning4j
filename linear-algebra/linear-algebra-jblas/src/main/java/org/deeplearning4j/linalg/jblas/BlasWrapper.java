@@ -94,14 +94,14 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     @Override
     public float dot(NDArray x, NDArray y) {
         //return NativeBlas.ddot(x.length(), x.data(), 0, 1, y.data(), 0, 1);
-        return JavaBlas.rdot(x.length(), x.data(), 0, 1, y.data(), 0, 1);
+        return JavaBlas.rdot(x.length(), x.data(), x.offset(), 1, y.data(), y.offset(), 1);
     }
 
     /**
      * Compute x^T * y (dot product)
      */
     public ComplexFloat dotc(ComplexNDArray x, ComplexNDArray y) {
-        return new ComplexFloat(NativeBlas.cdotc(x.length(), x.data(), 0, 1, y.data(), 0, 1));
+        return new ComplexFloat(NativeBlas.cdotc(x.length(), x.data(), x.offset(), 1, y.data(), y.offset(), 1));
     }
 
     /**
@@ -109,7 +109,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      */
     @Override
     public ComplexFloat dotu(ComplexNDArray x, ComplexNDArray y) {
-        return new ComplexFloat(NativeBlas.cdotu(x.length(), x.data(), 0, 1, y.data(), 0, 1));
+        return new ComplexFloat(NativeBlas.cdotu(x.length(), x.data(), x.offset(), 1, y.data(), y.offset(), 1));
     }
 
     /**

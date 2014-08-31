@@ -2,6 +2,7 @@ package org.deeplearning4j.optimize.optimizers;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.primitives.Floats;
@@ -87,7 +88,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
     @Override
     public INDArray getParameters() {
-        return NDArrays.create(Floats.concat(network.getW().data(), network.getvBias().data(), network.gethBias().data()));
+        return network.params();
     }
 
     public void train(INDArray x) {
@@ -120,12 +121,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
     @Override
     public int getNumParameters() {
-        if(numParams < 0) {
-            numParams = network.getW().length() + network.gethBias().length() + network.getvBias().length();
-            return numParams;
-        }
-
-        return numParams;
+        return network.numParams();
     }
 
 
@@ -133,20 +129,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
     @Override
     public float getParameter(int index) {
-        //beyond weight matrix
-        if(index >= network.getW().length()) {
-            int i = getAdjustedIndex(index);
-            //beyond visible bias
-            if(index >= network.getvBias().length() + network.getW().length()) {
-                return (float) network.gethBias().getScalar(i).element();
-            }
-            else
-                return (float) network.getvBias().getScalar(i).element();
-
-        }
-        else
-            return (float) network.getW().getScalar(index).element();
-
+        throw new UnsupportedOperationException();
 
 
     }
@@ -156,29 +139,13 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     public void setParameters(INDArray params) {
         if(network.conf().isConstrainGradientToUnitNorm())
             params.divi(params.normmax(Integer.MAX_VALUE));
-        for(int i = 0; i < params.length(); i++)
-            setParameter(i, (float) params.getScalar(i).element());
+        network.setParams(params);
     }
 
     @Override
     public void setParameter(int index, float value) {
-        //beyond weight matrix
-        if(index >= network.getW().length()) {
-            //beyond visible bias
-            if(index >= network.getvBias().length() + network.getW().length())  {
-                int i = getAdjustedIndex(index);
-                network.gethBias().putScalar(i, value);
-            }
-            else {
-                int i = getAdjustedIndex(index);
-                network.getvBias().putScalar(i, value);
+        throw new UnsupportedOperationException();
 
-            }
-
-        }
-        else {
-            network.getW().ravel().putScalar(index, value);
-        }
     }
 
 
@@ -203,31 +170,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
         if(iteration >= 1)
             extraParams[extraParams.length - 1] = iteration;
         NeuralNetworkGradient g = network.getGradient(extraParams);
-
-        if(NDArrays.dataType().equals("float")) {
-        /*
-		 * Treat params as linear index. Always:
-		 * W
-		 * Visible Bias
-		 * Hidden Bias
-		 */
-
-
-            float[] buffer = Floats.concat(g.getwGradient().data(), g.getvBiasGradient().data(),g.gethBiasGradient().data());
-
-            return NDArrays.create(buffer);
-        }
-        else {
-        /*
-		 * Treat params as linear index. Always:
-		 * W
-		 * Visible Bias
-		 * Hidden Bias
-		 */
-
-            float[] buffer = Floats.concat(g.getwGradient().floatData(),g.getvBiasGradient().floatData(),g.gethBiasGradient().floatData());
-            return NDArrays.create(buffer);
-        }
+        return NDArrays.toFlattened(Arrays.asList(g.getwGradient(),g.getvBiasGradient(),g.gethBiasGradient()));
 
     }
 

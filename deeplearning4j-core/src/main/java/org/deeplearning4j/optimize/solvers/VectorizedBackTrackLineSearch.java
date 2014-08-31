@@ -120,6 +120,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
         }
 
         //dot product
+        float dot = g.mul(line).sum(Integer.MAX_VALUE).get(0);
         slope = NDArrays.getBlasWrapper().dot(g, line);
         logger.debug("slope = " + slope);
 
@@ -135,13 +136,13 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
         //  precomputed and saved in alamin
         INDArray maxOldParams = NDArrays.create(line.length());
         for(int i = 0;i < line.length(); i++) {
-            maxOldParams.putScalar(i,Math.max(Math.abs((float) oldParameters.getScalar(i).element()), 1.0));
+            maxOldParams.putScalar(i,Math.max(Math.abs(oldParameters.get(i)), 1.0));
 
         }
 
         INDArray testMatrix = Transforms.abs(line).div(maxOldParams);
 
-        test = (float) testMatrix.max(Integer.MAX_VALUE).element();
+        test = testMatrix.max(Integer.MAX_VALUE).get(0);
 
 
         alamin = relTolx / test;
@@ -164,7 +165,8 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 
             x.addi(line.mul(alam - oldAlam));  // step
 
-            logger.debug ("after step, x.1norm: " + x.norm1(Integer.MAX_VALUE));
+            float norm1 = x.norm1(Integer.MAX_VALUE).get(0);
+            logger.debug ("after step, x.1norm: " +norm1);
 
             // check for convergence
             //convergence on delta x

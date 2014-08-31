@@ -163,7 +163,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             count ++;
         }
 
-
+        this.linearView = NDArrays.createComplex(data,new int[]{1,length},offset());
 
 
     }
@@ -213,6 +213,16 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     }
 
+    /**
+     * Returns a linear view reference of shape
+     * 1,length(ndarray)
+     *
+     * @return the linear view of this ndarray
+     */
+    @Override
+    public IComplexNDArray linearView() {
+        return (IComplexNDArray) super.linearView();
+    }
 
     /**
      * Create an ndarray from the specified slices

@@ -13,6 +13,17 @@ import java.util.List;
 public class DummyNDArray implements INDArray {
 
     /**
+     * Returns a linear view reference of shape
+     * 1,length(ndarray)
+     *
+     * @return the linear view of this ndarray
+     */
+    @Override
+    public INDArray linearView() {
+        return null;
+    }
+
+    /**
      * Returns the number of possible vectors for a given dimension
      *
      * @param dimension the dimension to calculate the number of vectors for

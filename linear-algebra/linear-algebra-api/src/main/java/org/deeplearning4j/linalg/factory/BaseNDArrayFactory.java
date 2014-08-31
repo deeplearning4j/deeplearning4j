@@ -112,8 +112,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray ret = NDArrays.create(length);
         int linearIndex = 0;
         for(INDArray d : matrices) {
+            INDArray flattend = NDArrays.create(d.data(),new int[]{1,d.length()},d.offset());
             for(int i = 0; i < d.length(); i++) {
-                ret.put(linearIndex++,d.getScalar(i));
+                ret.putScalar(linearIndex++,flattend.get(i));
             }
         }
 
@@ -174,6 +175,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray ret = NDArrays.create(1,length);
         int linearIndex = 0;
         for(INDArray d : matrices) {
+            if(!d.isVector())
+                d = NDArrays.create(d.data(),new int[]{1,d.length()},d.offset());
             for(int i = 0; i < d.length(); i++) {
                 ret.put(linearIndex++,d.getScalar(i));
             }
@@ -485,7 +488,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray rand(int[] shape,RandomGenerator r) {
         INDArray ret = create(new int[]{1,ArrayUtil.prod(shape)});
         for(int i = 0; i < ret.length(); i++)
-            ret.put(i,NDArrays.scalar(r.nextDouble()));
+            ret.putScalar(i,r.nextFloat());
         return ret.reshape(shape);
     }
 
@@ -497,7 +500,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int[] shape,long seed) {
-        return randn(shape, new MersenneTwister(seed));
+        return rand(shape, new MersenneTwister(seed));
     }
 
     /**
@@ -508,7 +511,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int[] shape) {
-        return randn(shape, System.currentTimeMillis());
+        return rand(shape, System.currentTimeMillis());
     }
 
     /**

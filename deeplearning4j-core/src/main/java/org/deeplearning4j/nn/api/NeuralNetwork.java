@@ -42,7 +42,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
     public void backProp(float lr,int epochs,Object[] extraParams);
 
 
-       public INDArray getW();
+    public INDArray getW();
 
     public  void setW(INDArray w);
 
@@ -103,7 +103,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
     void iterationDone(int epoch);
 
 
-   /**
+    /**
      * Performs a network merge in the form of
      * a += b - a / n
      * where a is a matrix here
@@ -120,6 +120,8 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 
 
     NeuralNetConfiguration conf();
+
+
 
 
 
