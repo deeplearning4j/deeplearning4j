@@ -50,7 +50,7 @@ public abstract class BaseActivationFunction implements ActivationFunction {
      */
     @Override
     public INDArray apply(INDArray input) {
-        new ArrayOps().from(input)
+        new ArrayOps().from(input.linearView())
                 .op(transformClazz())
                 .build().exec();
         return input;

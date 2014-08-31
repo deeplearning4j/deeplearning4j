@@ -190,7 +190,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     @Override
     public  float score() {
         LinAlgExceptions.assertRows(input,labels);
-        return  LossFunctions.score(labels,conf.getLossFunction(),preOutput(input),conf.getL2(),conf.isUseRegularization());
+        return  LossFunctions.score(labels,conf.getLossFunction(),output(input),conf.getL2(),conf.isUseRegularization());
 
 
     }
@@ -271,14 +271,14 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             wGradient.muli(lr);
 
         if(conf.isUseAdaGrad())
-            dy.muliRowVector(biasAdaGrad.getLearningRates(dy.mean(1)));
+            dy.muliRowVector(biasAdaGrad.getLearningRates(dy.mean(0)));
         else
             dy.muli(lr);
 
         dy.divi(input.rows());
 
 
-        INDArray bGradient = dy;
+        INDArray bGradient = dy.mean(0);
         if(conf.isConstrainGradientToUnitNorm()) {
             wGradient.divi(wGradient.norm2(Integer.MAX_VALUE));
             bGradient.divi(bGradient.norm2(Integer.MAX_VALUE));
@@ -519,7 +519,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     @Override
     public void setParams(INDArray params) {
         setW(params.get(NDArrayIndex.interval(0, conf.getnIn() * conf.getnOut())).reshape(conf.getnIn(),conf.getnOut()));
-        setB(params.get(NDArrayIndex.interval(conf.getnIn() * conf.getnOut() + 1, params.length())));
+        setB(params.get(NDArrayIndex.interval(conf.getnIn() * conf.getnOut(), params.length())));
     }
 
     /**

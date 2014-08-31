@@ -80,7 +80,7 @@ public class OutputLayerGradient implements Serializable {
 	}
 
     public INDArray getbGradient() {
-		return bGradient.mean(1);
+		return bGradient;
 	}
 
     public void setbGradient(INDArray bGradient) {

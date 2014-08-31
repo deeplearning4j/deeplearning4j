@@ -723,6 +723,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         }
 
 
+        weights.add(getOutputLayer().getW());
+        biases.add(getOutputLayer().getB());
+        activationFunctions.add(getOutputLayer().conf().getActivationFunction());
+
+
         //errors
         for (int i = getnLayers() + 1; i >= 0; i--) {
             //output layer
@@ -958,27 +963,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     @Override
     public INDArray params() {
-        float[][] list = new float[neuralNets.length * 2 + 2][];
-
-        int deltaCount = 0;
-
-        for (int i = 0; i < list.length - 1; i += 2) {
-            if (deltaCount >= neuralNets.length) {
-                list[i] = getOutputLayer().getW().dup().reshape(1, getOutputLayer().getW().length()).data();
-                list[i + 1] = getOutputLayer().getB().dup().reshape(1, getOutputLayer().getB().length()).data();
-                deltaCount++;
-            } else {
-                list[i] = neuralNets[deltaCount].getW().dup().reshape(1, neuralNets[deltaCount].getW().length()).data();
-                list[i + 1] = neuralNets[deltaCount].gethBias().dup().reshape(1, neuralNets[deltaCount].gethBias().length()).data();
-                deltaCount++;
-            }
-
+        List<INDArray> params = new ArrayList<>();
+        for(int i = 0; i < getnLayers(); i++) {
+            params.add(getNeuralNets()[i].getW());
+            params.add(getNeuralNets()[i].gethBias());
         }
-
-
-        INDArray ret = NDArrays.create(ArrayUtil.combine(list));
-        return ret.reshape(1, ret.length());
-
+        params.add(getOutputLayer().params());
+        return NDArrays.toFlattened(params);
     }
 
 
@@ -995,18 +986,17 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
         for (int i = 0; i < neuralNets.length; i++) {
-            length += neuralNets[i].gethBias().length();
-            length += neuralNets[i].getW().length();
+            length += neuralNets[i].numParams() - neuralNets[i].getvBias().length();
         }
-        length += getOutputLayer().getB().length();
-        length += getOutputLayer().getW().length();
+
+        length += getOutputLayer().numParams();
 
         return length;
 
     }
 
     /**
-     * Packs a applyTransformToDestination of matrices in to one vector,
+     * Packs a set of matrices in to one vector,
      * where the matrices in this case are the w,hbias at each layer
      * and the output layer w,bias
      *
@@ -1040,9 +1030,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             list.add(layers.get(i).getFirst());
             list.add(layers.get(i).getSecond());
         }
+
+
+
         INDArray ret = NDArrays.toFlattened(list);
         if(ret.length() != numParams())
-            throw new IllegalStateException("Illegal number of parameters found in the layers");
+            throw new IllegalStateException("Illegal number of parameters found in the layers with a difference of " + Math.abs(ret.length() - numParams()));
         return ret;
     }
 
@@ -1093,7 +1086,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
             //update hidden bias
-            INDArray deltaColumnSums = deltas.get(l).mean(1);
+            INDArray deltaColumnSums = deltas.get(l).mean(0);
 
 
             list.add(new Pair<>(gradientChange, deltaColumnSums));
@@ -1101,8 +1094,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         }
 
-        INDArray logLayerGradient = deltas.get(getnLayers());
-        INDArray biasGradient = deltas.get(getnLayers()).mean(1);
+        INDArray logLayerGradient = deltas.get(deltas.size() - 2);
+        INDArray biasGradient = deltas.get(getnLayers() + 1).mean(0);
 
 
         if (mask == null)
@@ -1110,10 +1103,37 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
         list.add(new Pair<>(logLayerGradient, biasGradient));
+
+        for(int i = 0; i < list.size(); i++) {
+            if(i < getnLayers()) {
+                INDArray weightGradientForLayer = list.get(i).getFirst();
+                INDArray biasGradientForLayer = list.get(i).getSecond();
+                assert Arrays.equals(weightGradientForLayer.shape(),getNeuralNets()[i].getW().shape()) :
+                        "Illegal shape for layer " + i + " weight gradient, should have been " +
+                                Arrays.toString(getNeuralNets()[i].getW().shape()) + " but was " + Arrays.toString(weightGradientForLayer.shape()) ;
+                assert Arrays.equals(biasGradientForLayer.shape(),getNeuralNets()[i].gethBias().shape()) :
+                        "Illegal shape for layer " + i + " bias   gradient, should have been " +
+                                Arrays.toString(getNeuralNets()[i].gethBias().shape()) + " but was " + Arrays.toString(biasGradientForLayer.shape());
+            }
+            else {
+                INDArray weightGradientForLayer = list.get(i).getFirst();
+                INDArray biasGradientForLayer = list.get(i).getSecond();
+                assert Arrays.equals(weightGradientForLayer.shape(),getOutputLayer().getW().shape()) :
+                        "Illegal shape for output  weight gradient, should have been " +
+                                Arrays.toString(getOutputLayer().getW().shape()) + " but was " + Arrays.toString(weightGradientForLayer.shape());
+                ;
+                assert Arrays.equals(biasGradientForLayer.shape(),getOutputLayer().getB().shape()) :
+                        "Illegal shape for output layer  bias   gradient, should have been " +
+                                Arrays.toString(getOutputLayer().getB().shape()) + " but was " + Arrays.toString(biasGradientForLayer.shape());
+                ;
+
+            }
+        }
+
+
         INDArray gradient = pack(list);
-        gradient.addi(mask.mul(params()).mul(defaultConfiguration.getL2()));
-
-
+        INDArray params = params().mul(defaultConfiguration.getL2());
+        gradient.addi(mask.mul(params));
         list = unPack(gradient);
 
         return list;
@@ -1347,8 +1367,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     public void finetune(INDArray labels, float lr, int iterations) {
         this.labels = labels;
+        getOutputLayer().setLabels(labels);
         feedForward();
-        LinAlgExceptions.assertRows(labels, getOutputLayer().getLabels());
         if (labels != null)
             this.labels = labels;
         optimizer = new MultiLayerNetworkOptimizer(this, lr);
@@ -1412,8 +1432,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     public void fit(INDArray examples, INDArray labels) {
         pretrain(examples,new Object[]{defaultConfiguration.getK(), defaultConfiguration.getLr()});
         finetune(labels,defaultConfiguration.getLr(),defaultConfiguration.getNumIterations());
-        List<INDArray> feed = feedForward(examples);
-        getOutputLayer().fit(feed.get(feed.size() - 1), labels);
     }
 
     /**
@@ -1423,7 +1441,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     @Override
     public void fit(org.deeplearning4j.linalg.dataset.api.DataSet data) {
-         fit(data.getFeatureMatrix(),data.getLabels());
+        fit(data.getFeatureMatrix(),data.getLabels());
     }
 
     /**

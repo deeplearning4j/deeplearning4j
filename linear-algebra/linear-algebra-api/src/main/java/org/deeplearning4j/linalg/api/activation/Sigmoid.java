@@ -26,19 +26,7 @@ public class Sigmoid extends BaseActivationFunction {
     private static final long serialVersionUID = -6280602270833101092L;
     private int k = 1;
 
-    @Override
-    public INDArray apply(INDArray input) {
-        if(input instanceof IComplexNDArray) {
-            IComplexNumber number = (IComplexNumber) input.element();
-            double arg = number.complexArgument().doubleValue();
-            double sigArg = 1  / 1 + (Math.exp(-arg)) - k + .5;
-            double ret = Math.exp(sigArg);
-            return NDArrays.scalar(NDArrays.createDouble(ret,0));
 
-        }
-        else
-            return  NDArrays.scalar(1 / 1 + Math.exp(-(float) input.element()));
-    }
 
     /**
      * The class used for transformation
