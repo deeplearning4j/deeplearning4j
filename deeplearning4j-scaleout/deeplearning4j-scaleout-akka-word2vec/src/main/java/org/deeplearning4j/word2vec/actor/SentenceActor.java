@@ -34,7 +34,7 @@ public class SentenceActor extends UntypedActor {
 				@Override
 				public SentenceMessage call() throws Exception {
 					SentenceMessage m2 = (SentenceMessage) message;
-					vec.processSentence(m2.getSentence(), m2.getCounter());
+					vec.processSentence(m2.getSentence());
 					return m2;
 				}
 				
