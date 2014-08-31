@@ -39,6 +39,7 @@ import org.deeplearning4j.word2vec.util.Util;
 import org.deeplearning4j.util.Index;
 
 import org.deeplearning4j.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.word2vec.wordstore.ehcache.EhCacheVocabCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +67,7 @@ public class Word2Vec implements Persistable {
 
     private transient TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
     private transient SentenceIterator sentenceIter;
-    private transient VocabCache cache;
+    private transient VocabCache cache = new EhCacheVocabCache();
     private int topNSize = 40;
     private int sample = 1;
     //learning rate
@@ -651,7 +652,7 @@ public class Word2Vec implements Persistable {
                 continue;
 
             VocabWord word2 = sentence.get(c1);
-            iterate(word,word2);
+            iterate(word);
         }
     }
 
@@ -672,9 +673,8 @@ public class Word2Vec implements Persistable {
      * Train the word vector
      * on the given words
      * @param w1 the first word to train
-     * @param w2 the second word to train
      */
-    public void  iterate(VocabWord w1,VocabWord w2) {
+    public void  iterate(VocabWord w1) {
         INDArray l1 = cache.vector(cache.wordAtIndex(w1.getIndex()));
         INDArray l2a = cache.loadCodes(w1.getCodes());
         INDArray fa = Transforms.sigmoid(l1.mmul(l2a.transpose()));
@@ -683,10 +683,10 @@ public class Word2Vec implements Persistable {
         INDArray outer = ga.mmul(l1);
         for(int i = 0; i < w1.getPoints().length; i++) {
             INDArray toAdd = l2a.getRow(i).addi(outer.getRow(i));
-            cache.putCode(w1.getPoints()[i],toAdd);
+            cache.putCode(w1.getPoints()[i], toAdd);
         }
 
-        cache.putVector(cache.wordAtIndex(w1.getIndex()),l1.addi(ga.mmul(l2a)));
+        cache.putVector(cache.wordAtIndex(w1.getIndex()), l1.addi(ga.mmul(l2a)));
     }
 
 
@@ -768,7 +768,7 @@ public class Word2Vec implements Persistable {
     public INDArray randomVector() {
         INDArray ret = NDArrays.create(layerSize);
         for(int i = 0; i < ret.length(); i++) {
-            ret.putScalar(i,g.nextFloat() - 0.5f / layerSize);
+            ret.putScalar(i, g.nextFloat() - 0.5f / layerSize);
         }
         return ret;
     }
