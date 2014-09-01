@@ -17,7 +17,7 @@ public class Min extends BaseScalarOp {
 
     @Override
     public IComplexNumber accumulate(IComplexNDArray arr, int i, IComplexNumber soFar) {
-        IComplexNumber curr = (IComplexNumber) arr.getScalar(i).element();
+        IComplexNumber curr = arr.getComplex(i);
         return soFar.absoluteValue().doubleValue() < curr.absoluteValue().doubleValue() ? soFar : curr;
     }
 }

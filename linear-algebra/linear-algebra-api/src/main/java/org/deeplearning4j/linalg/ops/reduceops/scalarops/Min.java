@@ -16,7 +16,7 @@ public class Min extends BaseScalarOp {
 
     @Override
     public float accumulate(INDArray arr, int i, float soFar) {
-        float curr = (float) arr.getScalar(i).element();
+        float curr = arr.get(i);
         return soFar < curr ? soFar : curr;
     }
 }

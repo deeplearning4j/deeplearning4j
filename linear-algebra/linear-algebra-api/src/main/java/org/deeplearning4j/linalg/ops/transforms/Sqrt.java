@@ -18,10 +18,10 @@ public class Sqrt extends BaseElementWiseOp {
      * @return the transformed value based on the input
      */
     @Override
-    public INDArray apply(INDArray value, int i) {
+    public Object apply(INDArray from,Object value, int i) {
         if(value instanceof IComplexNDArray) {
-            return NDArrays.scalar(ComplexUtil.sqrt((org.deeplearning4j.linalg.api.complex.IComplexNumber) value.element()));
+            return ComplexUtil.sqrt((org.deeplearning4j.linalg.api.complex.IComplexNumber) value);
         }
-        return NDArrays.scalar(Math.sqrt((float) value.element()));
+        return (float) Math.sqrt((float) value);
     }
 }

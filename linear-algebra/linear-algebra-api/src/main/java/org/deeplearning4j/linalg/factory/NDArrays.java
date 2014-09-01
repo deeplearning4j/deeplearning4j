@@ -1195,22 +1195,6 @@ public class NDArrays  {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /**
      * Create a scalar ndarray with the specified offset
      * @param value the value to initialize the scalar with

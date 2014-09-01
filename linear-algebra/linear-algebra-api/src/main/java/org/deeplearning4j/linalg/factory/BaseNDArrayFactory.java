@@ -178,7 +178,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             if(!d.isVector())
                 d = NDArrays.create(d.data(),new int[]{1,d.length()},d.offset());
             for(int i = 0; i < d.length(); i++) {
-                ret.put(linearIndex++,d.getScalar(i));
+                ret.putScalar(linearIndex++,d.get(i));
             }
         }
 
@@ -244,11 +244,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray reverse(INDArray reverse) {
-        INDArray rev = reverse.ravel();
+        INDArray rev = reverse.linearView();
         INDArray ret = NDArrays.create(rev.shape());
         int count = 0;
         for(int i = rev.length() - 1; i >= 0; i--) {
-            ret.put(count++,rev.getScalar(i));
+            ret.putScalar(count++,rev.get(i));
 
         }
 
@@ -310,12 +310,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int[] shape,float min,float max,RandomGenerator rng) {
-        INDArray ret = NDArrays.create(shape).ravel();
+        INDArray ret = NDArrays.create(shape);
+       INDArray linear = ret.linearView();
         float r = max - min;
         for(int i = 0; i < ret.length(); i++) {
-            ret.putScalar(i, r * rng.nextFloat() + min);
+            linear.putScalar(i, r * rng.nextFloat() + min);
         }
-        return ret.reshape(shape);
+        return ret;
     }
     /**
      * Generates a random matrix between min and max
@@ -328,12 +329,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int rows, int columns,float min,float max,RandomGenerator rng) {
-        INDArray ret = NDArrays.create(rows, columns).ravel();
+        INDArray ret = NDArrays.create(rows, columns);
+        INDArray linear = ret.linearView();
         float r = max - min;
         for(int i = 0; i < ret.length(); i++) {
-            ret.putScalar(i, r * rng.nextFloat() + min);
+            linear.putScalar(i, r * rng.nextFloat() + min);
         }
-        return ret.reshape(rows,columns);
+        return ret;
     }
 
 

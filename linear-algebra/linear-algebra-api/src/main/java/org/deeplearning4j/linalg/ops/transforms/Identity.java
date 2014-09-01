@@ -16,7 +16,7 @@ public class Identity extends BaseElementWiseOp {
      * @return the transformed value based on the input
      */
     @Override
-    public INDArray apply(INDArray value, int i) {
-        return value.dup();
+    public Object apply(INDArray from,Object value, int i) {
+        return value;
     }
 }

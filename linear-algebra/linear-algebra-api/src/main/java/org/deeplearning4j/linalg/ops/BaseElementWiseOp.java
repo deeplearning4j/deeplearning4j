@@ -1,6 +1,8 @@
 package org.deeplearning4j.linalg.ops;
 
 
+import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
+import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 
 
@@ -16,7 +18,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
 
     protected INDArray from;
     //this is for operations like adding or multiplying a scalar over the from array
-    protected INDArray scalarValue;
+    protected Object scalarValue;
     protected INDArray currVector;
 
 
@@ -26,25 +28,53 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
      * @param i the index of the element to applyTransformToOrigin
      */
     @Override
-    public void applyTransformToOrigin(int i) {
-        currVector.put(i,apply(getFromOrigin(i),i));
+    public void applyTransformToOrigin(INDArray origin,int i) {
+        if(origin instanceof IComplexNumber) {
+            IComplexNDArray c2 = (IComplexNDArray) origin;
+            IComplexNumber transformed = (IComplexNumber) apply(origin,getFromOrigin(origin,i),i);
+            c2.putScalar(i,transformed);
+        }
+        else {
+            float f = (float) apply(origin,getFromOrigin(origin,i),i);
+            origin.putScalar(i, f);
+        }
+
     }
 
     /**
      * Apply the transformation at from[i] using the supplied value
-     *
-     * @param i            the index of the element to applyTransformToOrigin
+     * @param origin the origin ndarray
+     *  @param i            the index of the element to applyTransformToOrigin
      * @param valueToApply the value to apply to the given index
      */
     @Override
-    public void applyTransformToOrigin(int i, INDArray valueToApply) {
-        currVector.put(i,apply(valueToApply,i));
+    public void applyTransformToOrigin(INDArray origin,int i, Object valueToApply) {
+        if(valueToApply instanceof IComplexNumber) {
+            if(origin instanceof IComplexNDArray) {
+                IComplexNDArray c2 = (IComplexNDArray) origin;
+                IComplexNumber apply = (IComplexNumber) apply(origin,valueToApply,i);
+                c2.putScalar(i,apply);
+            }
+            else
+                throw new IllegalArgumentException("Unable to apply a non complex number to a real ndarray");
+        }
+        else {
+            float f = (float) apply(origin,valueToApply,i);
+            origin.putScalar(i,f);
+        }
+
+
 
     }
 
     @Override
-    public INDArray getFromOrigin(int i) {
-        return currVector.getScalar(i);
+    public Object getFromOrigin(INDArray origin,int i) {
+        if(origin instanceof IComplexNDArray) {
+            IComplexNDArray c2 = (IComplexNDArray) origin;
+            return c2.getComplex(i);
+        }
+
+        return origin.get(i);
     }
 
     /**
@@ -68,7 +98,17 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
             currVector = vectorAlongDim;
 
             for(int j = 0; j < vectorAlongDim.length(); j++) {
-                 vectorAlongDim.put(j,apply(vectorAlongDim.getScalar(j),j));
+                if(vectorAlongDim instanceof IComplexNDArray) {
+                    IComplexNDArray c = (IComplexNDArray) vectorAlongDim;
+                    IComplexNumber result = (IComplexNumber)  apply(c,c.getComplex(j),j);
+                    c.putScalar(i,result);
+                }
+                else {
+                    Object apply = apply(vectorAlongDim,vectorAlongDim.get(j),j);
+                    float f = (float) apply ;
+                    vectorAlongDim.putScalar(j,f);
+
+                }
             }
         }
 

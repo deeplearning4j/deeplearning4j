@@ -20,25 +20,25 @@ public class GreaterThan extends BaseElementWiseOp {
      * @return the transformed value based on the input
      */
     @Override
-    public INDArray apply(INDArray value, int i) {
-        INDArray curr = getFromOrigin(i);
-        double originValue = (double) (curr instanceof IComplexNDArray ? ((IComplexNumber) curr.element()).absoluteValue() : (double) curr.element());
-        double otherValue = (double) (value instanceof IComplexNDArray ? ((IComplexNumber) value.element()).absoluteValue() : (double) value.element());
+    public Object apply(INDArray from,Object value, int i) {
+        Object curr = getFromOrigin(from,i);
+        float originValue = (float) (curr instanceof IComplexNDArray ? ((IComplexNumber) curr).absoluteValue() : (float) curr);
+        float otherValue = (float) (value instanceof IComplexNDArray ? ((IComplexNumber) value).absoluteValue() : (float) value);
         if(originValue > otherValue) {
-            if(value instanceof IComplexNDArray) {
-                return NDArrays.scalar(NDArrays.createDouble(1, 0));
+            if(value instanceof IComplexNumber) {
+                return  NDArrays.createDouble(1, 0);
             }
             else {
-                return NDArrays.scalar(1);
+                return 1;
             }
 
         }
         else {
-            if(value instanceof IComplexNDArray) {
-                return NDArrays.scalar(NDArrays.createDouble(0,0));
+            if(value instanceof IComplexNumber) {
+                return NDArrays.createDouble(0,0);
             }
             else {
-                return NDArrays.scalar(0);
+                return 0;
             }
 
         }

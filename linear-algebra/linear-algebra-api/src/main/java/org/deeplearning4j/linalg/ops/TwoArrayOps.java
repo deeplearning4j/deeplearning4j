@@ -11,7 +11,8 @@ import org.deeplearning4j.linalg.ops.elementwise.AddOp;
 public class TwoArrayOps  {
 
 
-    private INDArray from,to,scalar,other;
+    private INDArray from,to,other;
+    private Object scalar;
     private Class<? extends BaseTwoArrayElementWiseOp> clazz;
 
 
@@ -39,9 +40,8 @@ public class TwoArrayOps  {
         return this;
     }
 
-    public TwoArrayOps scalar(INDArray scalar) {
+    public TwoArrayOps scalar(Object scalar) {
         this.scalar = scalar;
-        assert scalar.isScalar() : "Input is not a scalar";
         return this;
     }
 
