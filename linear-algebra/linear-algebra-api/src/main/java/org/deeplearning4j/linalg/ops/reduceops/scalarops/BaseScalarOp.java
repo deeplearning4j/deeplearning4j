@@ -20,7 +20,7 @@ public abstract class BaseScalarOp implements ScalarOp {
 
     @Override
     public Float apply(INDArray input) {
-        INDArray doNDArray = input.isVector() ? input : input.ravel();
+        INDArray doNDArray = input.isVector() ? input : input.linearView();
         float start = startingValue;
         for(int i = 0; i < doNDArray.length(); i++)
             start = accumulate(doNDArray,i,start);

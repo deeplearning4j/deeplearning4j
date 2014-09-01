@@ -1,6 +1,5 @@
 package org.deeplearning4j.linalg.ops.transforms;
 
-import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
@@ -25,25 +24,25 @@ public class HardTanh extends BaseElementWiseOp {
      * @return the transformed value based on the input
      */
     @Override
-    public INDArray apply(INDArray value, int i) {
-        if(value instanceof IComplexNDArray) {
-            IComplexNumber element = (IComplexNumber) value.element();
+    public Object apply(INDArray from,Object value, int i) {
+        if(value instanceof IComplexNumber) {
+            IComplexNumber element = (IComplexNumber) value;
             IComplexNumber ret = ComplexUtil.tanh(element);
-            if(ret.realComponent().doubleValue() < -1)
-                ret.set(-1,ret.imaginaryComponent().doubleValue());
-            if(ret.realComponent().doubleValue() > 1)
-                ret.set(1,ret.imaginaryComponent().doubleValue());
+            if(ret.realComponent().floatValue() < -1)
+                ret.set(-1,ret.imaginaryComponent().floatValue());
+            if(ret.realComponent().floatValue() > 1)
+                ret.set(1,ret.imaginaryComponent().floatValue());
             return NDArrays.scalar(ret);
         }
         else  {
-            double d = (double) value.element();
-            double ret = Math.tanh(d);
+            float d = (float) value;
+            float ret = (float) Math.tanh(d);
             if(ret < -1)
-                return NDArrays.scalar(-1);
+                return -1;
             else if(ret > 1)
-                return NDArrays.scalar(1);
+                return 1;
             else
-                return NDArrays.scalar(ret);
+                return ret;
         }
     }
 }

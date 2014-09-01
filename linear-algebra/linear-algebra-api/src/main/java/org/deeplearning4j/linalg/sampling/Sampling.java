@@ -32,7 +32,7 @@ public class Sampling {
         INDArray iter = mean.reshape(new int[]{1,mean.length()}).dup();
         INDArray sigmaLinear = sigma.ravel();
         for(int i = 0; i < iter.length(); i++) {
-            RealDistribution reals = new NormalDistribution(rng,(double) mean.getScalar(i).element(), FastMath.sqrt((double) sigmaLinear.getScalar(i).element()),NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+            RealDistribution reals = new NormalDistribution(rng, mean.get(i), FastMath.sqrt((double) sigmaLinear.get(i)),NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
             iter.putScalar(i,reals.sample());
 
         }

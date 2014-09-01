@@ -35,25 +35,25 @@ public class Stabilize extends BaseElementWiseOp {
      * @return the transformed value based on the input
      */
     @Override
-    public INDArray apply(INDArray value, int i) {
+    public Object apply(INDArray from,Object value, int i) {
         double realMin =  1.1755e-38;
         double cutOff = FastMath.log(realMin);
-        if(value instanceof IComplexNDArray) {
-            IComplexNumber c = (IComplexNumber) value.element();
+        if(value instanceof IComplexNumber) {
+            IComplexNumber c = (IComplexNumber) value;
             float curr = c.realComponent().floatValue();
             if(curr * k > -cutOff)
-                return NDArrays.scalar(NDArrays.createDouble(-cutOff / k,c.imaginaryComponent().floatValue()));
+                return NDArrays.createDouble(-cutOff / k,c.imaginaryComponent().floatValue());
             else if(curr * k < cutOff)
-                return NDArrays.scalar(NDArrays.createDouble(cutOff / k,c.imaginaryComponent().floatValue()));
+                return NDArrays.createDouble(cutOff / k,c.imaginaryComponent().floatValue());
 
 
         }
         else {
-            float curr = (float) value.element();
+            float curr = (float) value;
             if(curr * k > -cutOff)
-                return NDArrays.scalar(-cutOff / k);
+                return -cutOff / k;
             else if(curr * k < cutOff)
-                return NDArrays.scalar(cutOff / k);
+                return cutOff / k;
 
         }
 

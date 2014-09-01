@@ -20,7 +20,7 @@ public abstract class BaseScalarOp implements ScalarOp {
 
     @Override
     public IComplexNumber apply(IComplexNDArray input) {
-        IComplexNDArray doNDArray = input.isVector() ? input : input.ravel();
+        IComplexNDArray doNDArray = input.isVector() ? input : input.linearView();
         IComplexNumber start = startingValue;
         for(int i = 0; i < doNDArray.length(); i++)
             start = accumulate(doNDArray,i,start);

@@ -23,17 +23,23 @@ public interface TwoArrayElementWiseOp extends ElementWiseOp {
     /**
      * Returns the element
      * in destination at index i
+     * @param destination the destination ndarray
      * @param i the index of the element to retrieve
      * @return the element at index i
      */
-    public INDArray getFromDestination(int i);
+    public Object getOther(INDArray destination, int i);
 
 
     /**
-     * Apply the function from to the
-
+     *
+     * Apply a transform
+     * based on the passed in ndarray to other
+     *
+     * @param destination the destination ndarray
+     * @param other the other ndarray
+     * @param i the index of the element to retrieve
      */
-    void applyTransformToDestination(int i);
+    void applyTransformToDestination(INDArray destination,INDArray other,int i);
 
     /**
      * Executes the operation
