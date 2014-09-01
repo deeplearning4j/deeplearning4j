@@ -27,11 +27,7 @@
   		<groupId>junit</groupId>
   		<artifactId>junit</artifactId>
   	</dependency>
-      <dependency>
-          <groupId>net.sf.ehcache</groupId>
-          <artifactId>ehcache-core</artifactId>
-          <version>2.7.1</version>
-      </dependency>
+
       <dependency>
           <groupId>net.sf.ehcache</groupId>
           <artifactId>ehcache</artifactId>
