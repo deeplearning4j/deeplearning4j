@@ -52,9 +52,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     /* input to the network */
     protected INDArray input;
     protected transient NeuralNetworkOptimizer optimizer;
-    //used to track if adagrad needs to be changed
-    protected boolean firstTimeThrough = false;
-    protected INDArray doMask;
+   protected INDArray doMask;
     private static Logger log = LoggerFactory.getLogger(BaseNeuralNetwork.class);
     //previous gradient used for updates
     protected INDArray wGradient,vBiasGradient,hBiasGradient;

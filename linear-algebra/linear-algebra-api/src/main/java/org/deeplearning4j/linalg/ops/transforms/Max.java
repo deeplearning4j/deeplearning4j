@@ -36,7 +36,7 @@ public class Max extends BaseElementWiseOp {
             return NDArrays.scalar(num.set(max,num.imaginaryComponent()));
         }
 
-        double val = (double) value.element();
+        float val = (float) value.element();
         return NDArrays.scalar(Math.max(max,val));
     }
 }
