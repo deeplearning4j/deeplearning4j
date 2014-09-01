@@ -481,7 +481,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private float sparsity = 0f;
         private boolean useAdaGrad = true;
         private float lr = 1e-1f;
-        private float momentum = 0;
+        private float momentum = 0.5f;
         private float l2 = 0f;
         private boolean useRegularization = false;
         private Map<Integer, Float> momentumAfter;

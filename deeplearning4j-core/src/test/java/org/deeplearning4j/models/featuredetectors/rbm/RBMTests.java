@@ -52,7 +52,7 @@ public class RBMTests {
     @Test
     public void testMnist() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.5f)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT).rng(new MersenneTwister(123))
                 .learningRate(1e-1f).nIn(784).nOut(600).build();
 
@@ -61,7 +61,8 @@ public class RBMTests {
 
         INDArray input = d2.getFeatureMatrix();
 
-        RBM rbm = new RBM.Builder().configure(conf).withInput(input).build();
+        RBM rbm = new RBM.Builder()
+                .configure(conf).withInput(input).build();
 
         rbm.fit(input);
 
