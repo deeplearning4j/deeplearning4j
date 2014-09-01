@@ -136,7 +136,7 @@ public class ConvolutionalRBM extends RBM  {
         }
 
         INDArray I = visI.sum(visI.shape().length - 1).add(vBias);
-        if(visibleType == VisibleUnit.BINARY)
+        if(conf.getVisibleUnit() == VisibleUnit.BINARY)
             I = Transforms.sigmoid(I);
 
 

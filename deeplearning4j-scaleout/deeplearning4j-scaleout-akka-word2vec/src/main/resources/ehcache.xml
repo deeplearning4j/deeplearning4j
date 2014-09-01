@@ -683,8 +683,8 @@ Here is an example of CacheManager level resource tuning, which will use up to 4
     -->
 
 
-    <cache name="vocabCache" eternal="true" diskPersistent="true" maxEntriesLocalHeap="100000" overflowToDisk="true"
-           diskSpoolBufferSizeMB="20" timeToIdleSeconds="300" timeToLiveSeconds="600" memoryStoreEvictionPolicy="LFU" transactionalMode="off">
+    <cache name="vocabCache" eternal="true" diskPersistent="true" maxEntriesLocalHeap="1000000" overflowToDisk="true"
+           diskSpoolBufferSizeMB="2000" timeToIdleSeconds="300" timeToLiveSeconds="600" memoryStoreEvictionPolicy="LFU" transactionalMode="off">
     </cache>
 
 

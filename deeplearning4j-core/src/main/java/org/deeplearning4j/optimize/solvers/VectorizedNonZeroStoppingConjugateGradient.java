@@ -131,6 +131,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
         if (xi == null) {
             fp = optimizable.getValue();
             xi = optimizable.getValueGradient(0);
+            float xiNorm2 = xi.norm2(Integer.MAX_VALUE).get(0);
             g = xi.dup();
             h = xi.dup();
             iterations = 0;

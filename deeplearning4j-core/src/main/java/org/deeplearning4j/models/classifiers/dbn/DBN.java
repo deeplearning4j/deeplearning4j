@@ -288,7 +288,7 @@ public class DBN extends BaseMultiLayerNetwork {
     @Override
     public NeuralNetwork createLayer(INDArray input, INDArray W, INDArray hBias,
                                      INDArray vBias, int index) {
-        RBM ret = new RBM.Builder()
+        RBM ret = new RBM.Builder().withInput(input)
                 .withWeights(W).withHBias(hBias).withVisibleBias(vBias)
                 .configure(layerWiseConfigurations.get(index))
                 .build();
