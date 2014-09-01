@@ -61,6 +61,17 @@ public abstract class NDArrayTests {
 
 
     @Test
+    public void testLinearViewGetAndPut() {
+        INDArray test = NDArrays.linspace(1,4,4).reshape(2,2);
+        INDArray linear = test.linearView();
+        linear.putScalar(2,6);
+        linear.putScalar(3,7);
+        assertEquals(6,linear.get(2),1e-1);
+        assertEquals(7,linear.get(3),1e-1);
+    }
+
+
+    @Test
     public void testGetIndices() {
         /*[[[1.0 ,13.0],[5.0 ,17.0],[9.0 ,21.0]],[[2.0 ,14.0],[6.0 ,18.0],[10.0 ,22.0]],[[3.0 ,15.0],[7.0 ,19.0],[11.0 ,23.0]],[[4.0 ,16.0],[8.0 ,20.0],[12.0 ,24.0]]]*/
         NDArrays.factory().setOrder('f');

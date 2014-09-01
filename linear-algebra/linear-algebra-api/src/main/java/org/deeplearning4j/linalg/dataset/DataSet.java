@@ -236,8 +236,8 @@ public class DataSet  implements org.deeplearning4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void normalizeZeroMeanZeroUnitVariance() {
-        INDArray columnMeans = getFeatures().mean(1);
-        INDArray columnStds = getFeatureMatrix().std(1);
+        INDArray columnMeans = getFeatures().mean(0);
+        INDArray columnStds = getFeatureMatrix().std(0);
 
         setFeatures(getFeatures().subiRowVector(columnMeans));
         columnStds.addi(NDArrays.scalar(1e-6));

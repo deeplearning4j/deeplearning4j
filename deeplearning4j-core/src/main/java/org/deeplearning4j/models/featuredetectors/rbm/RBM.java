@@ -68,8 +68,6 @@ public  class RBM extends BaseNeuralNetwork {
      */
     private static final long serialVersionUID = 6189188205731511957L;
     protected NeuralNetworkOptimizer optimizer;
-    protected VisibleUnit visibleType = VisibleUnit.BINARY;
-    protected HiddenUnit  hiddenType = HiddenUnit.BINARY;
     protected INDArray sigma,hiddenSigma;
 
 
@@ -78,6 +76,7 @@ public  class RBM extends BaseNeuralNetwork {
 
     public RBM(INDArray input, INDArray W, INDArray hbias, INDArray vbias,NeuralNetConfiguration conf) {
         super(input, W, hbias, vbias,conf);
+
     }
 
 
@@ -251,15 +250,13 @@ public  class RBM extends BaseNeuralNetwork {
     @Override
     public NeuralNetwork transpose() {
         RBM r = (RBM) super.transpose();
-        HiddenUnit h = RBMUtil.inverse(visibleType);
-        VisibleUnit v = RBMUtil.inverse(hiddenType);
+        HiddenUnit h = RBMUtil.inverse(conf.getVisibleUnit());
+        VisibleUnit v = RBMUtil.inverse(conf.getHiddenUnit());
         if(h == null)
-            h = hiddenType;
+            h = conf.getHiddenUnit();
         if(v == null)
-            v = visibleType;
+            v = conf.getVisibleUnit();
 
-        r.setHiddenType(h);
-        r.setVisibleType(v);
         r.sigma = sigma;
         r.hiddenSigma = hiddenSigma;
         return r;
@@ -268,8 +265,6 @@ public  class RBM extends BaseNeuralNetwork {
     @Override
     public NeuralNetwork clone() {
         RBM r = (RBM) super.clone();
-        r.setHiddenType(hiddenType);
-        r.setVisibleType(visibleType);
         r.sigma = sigma;
         r.hiddenSigma = hiddenSigma;
         return r;
@@ -297,7 +292,7 @@ public  class RBM extends BaseNeuralNetwork {
      */
     @Override
     public Pair<INDArray,INDArray> sampleHiddenGivenVisible(INDArray v) {
-        if(hiddenType == HiddenUnit.RECTIFIED) {
+        if(conf.getHiddenUnit() == HiddenUnit.RECTIFIED) {
             INDArray h1Mean = propUp(v);
             INDArray sigH1Mean = sigmoid(h1Mean);
 		/*
@@ -315,7 +310,7 @@ public  class RBM extends BaseNeuralNetwork {
 
         }
 
-        else if(hiddenType == HiddenUnit.GAUSSIAN) {
+        else if(conf.getHiddenUnit() == HiddenUnit.GAUSSIAN) {
             INDArray h1Mean = propUp(v);
             this.hiddenSigma = h1Mean.var(1);
 
@@ -326,7 +321,7 @@ public  class RBM extends BaseNeuralNetwork {
             return new Pair<>(h1Mean,h1Sample);
         }
 
-        else if(hiddenType == HiddenUnit.SOFTMAX) {
+        else if(conf.getHiddenUnit() == HiddenUnit.SOFTMAX) {
             INDArray h1Mean = propUp(v);
             INDArray h1Sample = Activations.softMaxRows().apply(h1Mean);
             applyDropOutIfNecessary(h1Sample);
@@ -335,7 +330,7 @@ public  class RBM extends BaseNeuralNetwork {
 
 
 
-        else if(hiddenType == HiddenUnit.BINARY) {
+        else if(conf.getHiddenUnit() == HiddenUnit.BINARY) {
             INDArray h1Mean = propUp(v);
             INDArray h1Sample = Sampling.binomial(h1Mean, 1, conf.getRng());
             applyDropOutIfNecessary(h1Sample);
@@ -374,23 +369,23 @@ public  class RBM extends BaseNeuralNetwork {
     public Pair<INDArray,INDArray> sampleVisibleGivenHidden(INDArray h) {
         INDArray v1Mean = propDown(h);
 
-        if(visibleType == VisibleUnit.GAUSSIAN) {
+        if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN) {
             INDArray v1Sample = v1Mean.add(NDArrays.randn(v1Mean.rows(),v1Mean.columns(),conf.getRng()));
             return new Pair<>(v1Mean,v1Sample);
 
         }
 
-        else if(visibleType == VisibleUnit.LINEAR) {
+        else if(conf.getVisibleUnit() == VisibleUnit.LINEAR) {
             INDArray v1Sample = Sampling.normal(conf.getRng(),v1Mean,1);
             return new Pair<>(v1Mean,v1Sample);
         }
 
-        else if(visibleType == VisibleUnit.SOFTMAX) {
+        else if(conf.getVisibleUnit() == VisibleUnit.SOFTMAX) {
             INDArray v1Sample = Activations.softMaxRows().apply(v1Mean);
             return new Pair<>(v1Mean,v1Sample);
         }
 
-        else if(visibleType == VisibleUnit.BINARY) {
+        else if(conf.getVisibleUnit() == VisibleUnit.BINARY) {
             INDArray v1Sample = Sampling.binomial(v1Mean, 1, conf.getRng());
             return new Pair<>(v1Mean,v1Sample);
         }
@@ -407,8 +402,8 @@ public  class RBM extends BaseNeuralNetwork {
      * @return the approximated activations of the visible layer
      */
     public INDArray propUp(INDArray v) {
-        if(visibleType == VisibleUnit.GAUSSIAN)
-            this.sigma = v.var(1).divi(input.rows());
+        if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN)
+            this.sigma = v.var(0).divi(input.rows());
 
         INDArray preSig = v.mmul(W);
         if(conf.isConcatBiases())
@@ -417,22 +412,22 @@ public  class RBM extends BaseNeuralNetwork {
             preSig.addiRowVector(hBias);
 
 
-        if(hiddenType == HiddenUnit.RECTIFIED) {
+        if(conf.getHiddenUnit() == HiddenUnit.RECTIFIED) {
             preSig = Transforms.max(preSig);
             return preSig;
         }
 
-        else if(hiddenType == HiddenUnit.GAUSSIAN) {
+        else if(conf.getHiddenUnit() == HiddenUnit.GAUSSIAN) {
             INDArray add =  preSig.add(NDArrays.randn(preSig.rows(), preSig.columns(),conf.getRng()));
             preSig.addi(add);
             return preSig;
         }
 
-        else if(hiddenType == HiddenUnit.BINARY) {
+        else if(conf.getHiddenUnit() == HiddenUnit.BINARY) {
             return sigmoid(preSig);
         }
 
-        else if(hiddenType == HiddenUnit.SOFTMAX)
+        else if(conf.getHiddenUnit() == HiddenUnit.SOFTMAX)
             return Activations.softMaxRows().apply(preSig);
 
         throw new IllegalStateException("Hidden unit type should either be binary, gaussian, or rectified linear");
@@ -464,20 +459,20 @@ public  class RBM extends BaseNeuralNetwork {
         else
             vMean.addiRowVector(vBias);
 
-        if(visibleType  == VisibleUnit.GAUSSIAN) {
+        if(conf.getVisibleUnit()  == VisibleUnit.GAUSSIAN) {
             vMean.addi(Sampling.normal(conf.getRng(), vMean, 1.0));
             return vMean;
         }
-        else if(visibleType == VisibleUnit.LINEAR) {
+        else if(conf.getVisibleUnit() == VisibleUnit.LINEAR) {
             vMean = Sampling.normal(conf.getRng(),vMean,1);
             return vMean;
         }
 
-        else if(visibleType == VisibleUnit.BINARY) {
+        else if(conf.getVisibleUnit() == VisibleUnit.BINARY) {
             return sigmoid(vMean);
         }
 
-        else if(visibleType == VisibleUnit.SOFTMAX) {
+        else if(conf.getVisibleUnit() == VisibleUnit.SOFTMAX) {
             return Activations.softMaxRows().apply(vMean);
         }
 
@@ -510,8 +505,8 @@ public  class RBM extends BaseNeuralNetwork {
             this.input = Transforms.stabilize(input, 1);
         this.lastMiniBatchSize = input.rows();
 
-        if(visibleType == VisibleUnit.GAUSSIAN) {
-            this.sigma = input.var(1);
+        if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN) {
+            this.sigma = input.var(0);
             this.sigma.divi(input.rows());
         }
 
@@ -524,28 +519,13 @@ public  class RBM extends BaseNeuralNetwork {
     public String toString() {
         return "RBM{" +
                 "optimizer=" + optimizer +
-                ", visibleType=" + visibleType +
-                ", hiddenType=" + hiddenType +
+                ", visibleType=" + conf.getVisibleUnit() +
+                ", hiddenType=" + conf.getVisibleUnit() +
                 ", sigma=" + sigma +
                 ", hiddenSigma=" + hiddenSigma +
                 "} " + super.toString();
     }
 
-    public VisibleUnit getVisibleType() {
-        return visibleType;
-    }
-
-    public void setVisibleType(VisibleUnit visibleType) {
-        this.visibleType = visibleType;
-    }
-
-    public HiddenUnit getHiddenType() {
-        return hiddenType;
-    }
-
-    public void setHiddenType(HiddenUnit hiddenType) {
-        this.hiddenType = hiddenType;
-    }
 
     @Override
     public float lossFunction(Object[] params) {
@@ -554,8 +534,8 @@ public  class RBM extends BaseNeuralNetwork {
 
     @Override
     public void iterate(INDArray input, Object[] params) {
-        if(visibleType == VisibleUnit.GAUSSIAN)
-            this.sigma = input.var(1).divi(input.rows());
+        if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN)
+            this.sigma = input.var(0).divi(input.rows());
 
 
         int k = (int) params[0];
@@ -620,7 +600,6 @@ public  class RBM extends BaseNeuralNetwork {
 
         public RBM build() {
             RBM ret = super.build();
-
             return ret;
         }
 

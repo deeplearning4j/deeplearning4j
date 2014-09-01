@@ -5,6 +5,7 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.util.MathUtils;
 
 /**
@@ -49,13 +50,18 @@ public class Sampling {
      * with numbers between 0 and 1
      */
     public static INDArray  normal(RandomGenerator rng, INDArray mean, double sigma) {
+        INDArray modify = NDArrays.create(mean.shape());
         INDArray iter = mean.linearView();
+        INDArray linearModify = modify.linearView();
+
+        double sqrt = FastMath.sqrt(sigma);
         for(int i = 0; i < iter.length(); i++) {
-            RealDistribution reals = new NormalDistribution(rng,mean.get(i), FastMath.sqrt(sigma),NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
-            iter.putScalar(i,reals.sample());
+            double curr = iter.get(i);
+            RealDistribution reals = new NormalDistribution(rng,curr, sqrt,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+            linearModify.putScalar(i,reals.sample());
 
         }
-        return iter.reshape(mean.shape());
+        return modify;
     }
 
 

@@ -42,7 +42,7 @@ public class IrisUtils {
         }
 
         for(int i = 0; i < ret.rows(); i++)
-            list.add(new DataSet(ret.getRow(i), NDArrays.create(outcomes[i]).transpose()));
+            list.add(new DataSet(ret.getRow(i), NDArrays.create(outcomes[i])));
 
 
 
