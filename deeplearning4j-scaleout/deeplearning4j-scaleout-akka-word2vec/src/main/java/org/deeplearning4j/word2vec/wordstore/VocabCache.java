@@ -13,9 +13,6 @@ import java.util.Collection;
 public interface VocabCache  {
 
 
-
-    void load(String path);
-
     /**
      * Increment the count for the given word
      * @param word the word to increment the count for
