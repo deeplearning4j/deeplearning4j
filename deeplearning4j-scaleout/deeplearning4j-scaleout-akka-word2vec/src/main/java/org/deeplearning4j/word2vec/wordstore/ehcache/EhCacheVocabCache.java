@@ -164,7 +164,10 @@ public class EhCacheVocabCache implements VocabCache {
 
     @Override
     public int numWords() {
-        return retrieve(NUM_WORDS);
+        Integer numWords = retrieve(NUM_WORDS);
+        if(numWords == null)
+            return 0;
+        return numWords;
     }
 
 
