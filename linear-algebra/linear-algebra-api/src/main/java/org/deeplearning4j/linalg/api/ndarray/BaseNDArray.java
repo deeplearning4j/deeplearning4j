@@ -1810,7 +1810,7 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray divi(INDArray other, INDArray result) {
         if(other.isScalar())
-            new TwoArrayOps().from(this).scalar(other).op(DivideOp.class)
+            new TwoArrayOps().from(this).scalar(other.element()).op(DivideOp.class)
                     .to(result).build().exec();
         else
             new TwoArrayOps().from(this).other(other).op(DivideOp.class)
@@ -1839,7 +1839,7 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray muli(INDArray other, INDArray result) {
         if(other.isScalar())
-            new TwoArrayOps().from(this).scalar(other).op(MultiplyOp.class)
+            new TwoArrayOps().from(this).scalar(other.element()).op(MultiplyOp.class)
                     .to(result).build().exec();
         else
             new TwoArrayOps().from(this).other(other).op(MultiplyOp.class)
@@ -1869,7 +1869,7 @@ public abstract class BaseNDArray  implements INDArray {
     public INDArray subi(INDArray other, INDArray result) {
 
         if(other.isScalar())
-            new TwoArrayOps().from(this).scalar(other).op(SubtractOp.class)
+            new TwoArrayOps().from(this).scalar(other.element()).op(SubtractOp.class)
                     .to(result).build().exec();
         else
             new TwoArrayOps().from(this).other(other).op(SubtractOp.class)
@@ -1898,7 +1898,7 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray addi(INDArray other, INDArray result) {
         if(other.isScalar())
-            new TwoArrayOps().from(this).scalar(other).op(AddOp.class)
+            new TwoArrayOps().from(this).scalar(other.element()).op(AddOp.class)
                     .to(result).build().exec();
 
         else

@@ -23,34 +23,38 @@ public interface ElementWiseOp {
 
     /**
      * Apply the transformation at from[i]
+     * @param origin the origin ndarray
      * @param i the index of the element to applyTransformToOrigin
      */
-    void applyTransformToOrigin(int i);
+    void applyTransformToOrigin(INDArray origin,int i);
 
 
     /**
      * Apply the transformation at from[i] using the supplied value (a scalar ndarray)
+     * @param origin the origin ndarray
      * @param i the index of the element to applyTransformToOrigin
      * @param valueToApply the value to apply to the given index
      */
-    void applyTransformToOrigin(int i, INDArray valueToApply);
+    void applyTransformToOrigin(INDArray origin,int i, Object valueToApply);
 
     /**
      * Get the element at from
      * at index i
+     * @param origin the origin ndarray
      * @param i the index of the element to retrieve
      * @return the element at index i
      */
-    INDArray getFromOrigin(int i);
+    Object getFromOrigin(INDArray origin,int i);
 
     /**
-     * The transformation for a given value (a scalar ndarray)
-      * @param value the value to applyTransformToOrigin (a scalar ndarray)
+     * The transformation for a given value (a scalar)
+     * @param origin the origin ndarray
+      * @param value the value to apply (a scalar)
      *  @param i the index of the element being acted upon
      * @return the transformed value based on the input
      */
 
-    INDArray apply(INDArray value, int i);
+    Object apply(INDArray origin,Object value, int i);
 
     /**
      * Apply the transformation

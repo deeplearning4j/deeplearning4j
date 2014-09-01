@@ -1,8 +1,7 @@
 package org.deeplearning4j.linalg.ops.transforms;
 
-import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
+import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.BaseElementWiseOp;
 import org.deeplearning4j.linalg.util.ComplexUtil;
 
@@ -19,13 +18,13 @@ public class Negative extends BaseElementWiseOp {
      * @return the transformed value based on the input
      */
     @Override
-    public INDArray apply(INDArray value, int i) {
-        if(value instanceof IComplexNDArray) {
-            return NDArrays.scalar(ComplexUtil.neg((org.deeplearning4j.linalg.api.complex.IComplexNumber) value.element()));
+    public Object apply(INDArray from,Object value, int i) {
+        if(value instanceof IComplexNumber) {
+            return ComplexUtil.neg((org.deeplearning4j.linalg.api.complex.IComplexNumber) value);
         }
         else {
-            float val = (float) value.element();
-            return NDArrays.scalar(-val);
+            float val = (float) value;
+            return -val;
         }
     }
 }

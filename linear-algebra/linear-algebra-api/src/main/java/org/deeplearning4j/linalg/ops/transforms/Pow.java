@@ -47,12 +47,12 @@ public class Pow extends BaseElementWiseOp {
      * @return the transformed value based on the input
      */
     @Override
-    public INDArray apply(INDArray value, int i) {
-        if(value instanceof IComplexNDArray) {
-            IComplexNumber n = (IComplexNumber) value.element();
-            return NDArrays.scalar(ComplexUtil.pow(n,power));
+    public Object apply(INDArray from,Object value, int i) {
+        if(value instanceof IComplexNumber) {
+            IComplexNumber n = (IComplexNumber) value;
+            return ComplexUtil.pow(n,power);
         }
-        float d = (float) value.element();
-        return NDArrays.scalar(Math.pow(d,power));
+        float d = (float) value;
+        return (float) Math.pow(d,power);
     }
 }

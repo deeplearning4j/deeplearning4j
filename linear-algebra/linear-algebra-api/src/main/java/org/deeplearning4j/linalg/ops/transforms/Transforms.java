@@ -277,7 +277,7 @@ public class Transforms {
                 .build();
         ops.exec();
 
-        return ops.from().reshape(indArray.shape());
+        return ops.from();
     }
 
     private static IComplexNDArray exec(IComplexNDArray indArray,Class<? extends BaseElementWiseOp> clazz,Object[] extraArgs) {
@@ -289,6 +289,6 @@ public class Transforms {
                 .build();
         ops.exec();
         IComplexNDArray n = (IComplexNDArray) ops.from();
-        return n.reshape(indArray.shape());
+        return n;
     }
 }
