@@ -207,11 +207,7 @@ public  class RBM extends BaseNeuralNetwork {
 		/*
 		 * Update gradient parameters
 		 */
-        INDArray transpose = input.transpose();
-        INDArray inputTimesProbHidden = transpose.mmul(probHidden.getSecond());
-        INDArray samplesTimesNhMeans = nvSamples.transpose().mmul(nhMeans);
-        INDArray sub = inputTimesProbHidden.sub(samplesTimesNhMeans);
-        INDArray wGradient = input.transpose().mmul(probHidden.getSecond()).sub(
+         INDArray wGradient = input.transpose().mmul(probHidden.getSecond()).sub(
                 nvSamples.transpose().mmul(nhMeans)
         );
 

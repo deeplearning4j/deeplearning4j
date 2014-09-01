@@ -7,8 +7,7 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.util.Shape;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
 
 /**
  * Apply an operation and save it to a resulting matrix
@@ -20,12 +19,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
 
     protected INDArray to,other;
     protected INDArray currTo,currOther;
-    private static ExecutorService dimensionThreads;
 
-
-    static {
-        dimensionThreads = Executors.newCachedThreadPool();
-    }
 
     /**
      * Apply the function from to the specified index

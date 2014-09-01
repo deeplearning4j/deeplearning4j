@@ -5,6 +5,10 @@ import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 
 /**
  * Baseline element wise operation so only applyTransformToOrigin has to be implemented.
@@ -19,9 +23,20 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
     protected INDArray from;
     //this is for operations like adding or multiplying a scalar over the from array
     protected Object scalarValue;
-    protected INDArray currVector;
+
+    protected static ExecutorService dimensionThreads;
 
 
+    static {
+        dimensionThreads = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if(!dimensionThreads.isShutdown())
+                    dimensionThreads.shutdown();
+            }
+        }));
+    }
     /**
      * Apply the transformation at from[i]
      *
@@ -31,11 +46,11 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
     public void applyTransformToOrigin(INDArray origin,int i) {
         if(origin instanceof IComplexNumber) {
             IComplexNDArray c2 = (IComplexNDArray) origin;
-            IComplexNumber transformed = (IComplexNumber) apply(origin,getFromOrigin(origin,i),i);
+            IComplexNumber transformed = apply(origin,getFromOrigin(origin,i),i);
             c2.putScalar(i,transformed);
         }
         else {
-            float f = (float) apply(origin,getFromOrigin(origin,i),i);
+            float f =  apply(origin,getFromOrigin(origin,i),i);
             origin.putScalar(i, f);
         }
 
@@ -52,14 +67,14 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
         if(valueToApply instanceof IComplexNumber) {
             if(origin instanceof IComplexNDArray) {
                 IComplexNDArray c2 = (IComplexNDArray) origin;
-                IComplexNumber apply = (IComplexNumber) apply(origin,valueToApply,i);
+                IComplexNumber apply =  apply(origin,valueToApply,i);
                 c2.putScalar(i,apply);
             }
             else
                 throw new IllegalArgumentException("Unable to apply a non complex number to a real ndarray");
         }
         else {
-            float f = (float) apply(origin,valueToApply,i);
+            float f = apply(origin,valueToApply,i);
             origin.putScalar(i,f);
         }
 
@@ -92,27 +107,40 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
      */
     @Override
     public void exec() {
+        final CountDownLatch latch = new CountDownLatch(from.vectorsAlongDimension(0));
+
         for(int i = 0; i < from.vectorsAlongDimension(0); i++) {
+            final int dupI = i;
+            dimensionThreads.submit(new Runnable() {
+                @Override
+                public void run() {
+                    INDArray vectorAlongDim = from.vectorAlongDimension(dupI,0);
 
-            INDArray vectorAlongDim = from.vectorAlongDimension(i,0);
-            currVector = vectorAlongDim;
+                    for(int j = 0; j < vectorAlongDim.length(); j++) {
+                        if(vectorAlongDim instanceof IComplexNDArray) {
+                            IComplexNDArray c = (IComplexNDArray) vectorAlongDim;
+                            IComplexNumber result =  apply(c,c.getComplex(j),j);
+                            c.putScalar(j,result);
+                        }
+                        else {
+                            float apply = apply(vectorAlongDim,vectorAlongDim.get(j),j);
+                            float f =  apply ;
+                            vectorAlongDim.putScalar(j,f);
 
-            for(int j = 0; j < vectorAlongDim.length(); j++) {
-                if(vectorAlongDim instanceof IComplexNDArray) {
-                    IComplexNDArray c = (IComplexNDArray) vectorAlongDim;
-                    IComplexNumber result = (IComplexNumber)  apply(c,c.getComplex(j),j);
-                    c.putScalar(i,result);
+                        }
+                    }
+
+                    latch.countDown();
                 }
-                else {
-                    Object apply = apply(vectorAlongDim,vectorAlongDim.get(j),j);
-                    float f = (float) apply ;
-                    vectorAlongDim.putScalar(j,f);
+            });
 
-                }
-            }
         }
 
-
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
 
     }
