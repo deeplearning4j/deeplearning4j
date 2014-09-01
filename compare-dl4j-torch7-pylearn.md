@@ -7,7 +7,7 @@ layout: default
 
 Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a Java-based, industry-focused, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. 
 
-Most academic researchers in deep learning rely on [**Pylearn2**](http://deeplearning.net/software/pylearn2/) and [Theano](http://deeplearning.net/software/theano/), which are written in Python. Pylearn2 is a machine-learning library, while Theano is a library that handles multidimensional arrays. Both are powerful tools widely used for research purposes and serving a large community. They are well suited to data exploration and explicitly state that they are intended for research. 
+Most academic researchers in deep learning rely on [**Pylearn2**](http://deeplearning.net/software/pylearn2/) and [Theano](http://deeplearning.net/software/theano/), which are written in Python. Pylearn2 is a machine-learning library, while Theano is a library that handles multidimensional arrays, like Numpy. Both are powerful tools widely used for research purposes and serving a large community. They are well suited to data exploration and explicitly state that they are intended for research. 
 
 Pylearn2 is a normal (non-distributed) framework that includes everything necessary to conduct experiments with multilayer Perceptrons, RBMs, Stacked Denoising Autoencoders and Convolutional nets. We recommend it for precisely those use cases. In contrast, Deeplearning4j intends to be the equivalent of Scikit-learn in the deep-learning space. It aims to automate as many knobs as possible. 
 
