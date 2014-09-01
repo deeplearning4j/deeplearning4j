@@ -506,6 +506,8 @@ public class Word2Vec implements Persistable {
             if (name.equals(word0) || name.equals(word1) || name.equals(word2)) {
                 continue;
             }
+
+
             tempVector = cache.vector(cache.wordAtIndex(i));
             double dist = NDArrays.getBlasWrapper().dot(wordVector,tempVector);
             insertTopN(name, dist, wordEntrys);
@@ -997,10 +999,6 @@ public class Word2Vec implements Persistable {
 
 
         }
-
-
-
-
     }
 
 
