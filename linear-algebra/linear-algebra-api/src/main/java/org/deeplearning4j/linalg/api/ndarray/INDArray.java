@@ -3,6 +3,7 @@ package org.deeplearning4j.linalg.api.ndarray;
 import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -10,7 +11,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public interface INDArray {
+public interface INDArray extends Serializable {
 
 
     /**

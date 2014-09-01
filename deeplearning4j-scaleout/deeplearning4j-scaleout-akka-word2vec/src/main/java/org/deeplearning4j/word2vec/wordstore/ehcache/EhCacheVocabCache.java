@@ -101,7 +101,7 @@ public class EhCacheVocabCache implements VocabCache {
 
     @Override
     public void putCode(int codeIndex, INDArray code) {
-          store(codeIndex,code);
+        store(codeIndex,code);
     }
 
     @Override
@@ -117,11 +117,20 @@ public class EhCacheVocabCache implements VocabCache {
 
     @Override
     public Collection<VocabWord> vocabWords() {
-        Results r = cache.createQuery().addCriteria(Query.KEY.ilike(VOCAB)).execute();
-        List<Result> results = r.all();
+        List<Object> keys = cache.getKeys();
         List<VocabWord> ret = new ArrayList<>();
-        for(Result r2 : results) {
-            ret.add((VocabWord) r2.getValue());
+        for(Object key  : keys) {
+            if(key.toString().contains("-" + VOCAB)) {
+                Object val = cache.get(key).getObjectValue();
+                if(val instanceof VocabWord) {
+                    VocabWord w = (VocabWord) val;
+                    ret.add(w);
+                }
+                else {
+                    System.out.println("Weirdness");
+                }
+
+            }
         }
 
         return ret;
@@ -134,7 +143,7 @@ public class EhCacheVocabCache implements VocabCache {
 
     @Override
     public void putVector(String word, INDArray vector) {
-         store(word + "-" + VECTOR,vector);
+        store(word + "-" + VECTOR,vector);
     }
 
     @Override
@@ -153,12 +162,11 @@ public class EhCacheVocabCache implements VocabCache {
         store(index,word);
         incrementWordCount(word);
         incrementWordCountBy(1);
-        store(word + "-" +  VOCAB ,word);
     }
 
     @Override
     public void putVocabWord(String word, VocabWord vocabWord) {
-           store(word + "-" + VOCAB,vocabWord);
+        store(word + "-" + VOCAB,vocabWord);
 
     }
 

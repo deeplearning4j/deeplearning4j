@@ -29,6 +29,13 @@
   	</dependency>
 
       <dependency>
+          <groupId>org.deeplearning4j</groupId>
+          <artifactId>linear-algebra-jblas</artifactId>
+          <version>0.0.3.2-SNAPSHOT</version>
+          <scope>test</scope>
+      </dependency>
+
+      <dependency>
           <groupId>net.sf.ehcache</groupId>
           <artifactId>ehcache</artifactId>
           <version>2.7.1</version>
