@@ -44,7 +44,7 @@ public interface ElementWiseOp {
      * @param i the index of the element to retrieve
      * @return the element at index i
      */
-    Object getFromOrigin(INDArray origin,int i);
+    <E> E getFromOrigin(INDArray origin,int i);
 
     /**
      * The transformation for a given value (a scalar)
@@ -54,7 +54,7 @@ public interface ElementWiseOp {
      * @return the transformed value based on the input
      */
 
-    Object apply(INDArray origin,Object value, int i);
+    <E> E apply(INDArray origin,Object value, int i);
 
     /**
      * Apply the transformation

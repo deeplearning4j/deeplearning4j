@@ -27,7 +27,7 @@ public interface TwoArrayElementWiseOp extends ElementWiseOp {
      * @param i the index of the element to retrieve
      * @return the element at index i
      */
-    public Object getOther(INDArray destination, int i);
+    public <E> E getOther(INDArray destination, int i);
 
 
     /**
