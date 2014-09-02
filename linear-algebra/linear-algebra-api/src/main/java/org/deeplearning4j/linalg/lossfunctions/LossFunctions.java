@@ -56,8 +56,7 @@ public class LossFunctions {
                 ret = - labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).mul(xEntOneMinusLogOneMinusZ2).sum(1).sum(Integer.MAX_VALUE).get(0) / labels.rows();
                 break;
             case MCXENT:
-                INDArray softMax = Activations.softMaxRows().apply(z);
-                INDArray columnSums = labels.mul(log(softMax));
+                INDArray columnSums = labels.mul(log(z));
                 ret = - columnSums.sum(1).sum(Integer.MAX_VALUE).get(0) / labels.rows();
                 break;
             case XENT:

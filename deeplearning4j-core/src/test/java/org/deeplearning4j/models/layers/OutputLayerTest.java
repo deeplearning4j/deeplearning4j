@@ -31,7 +31,7 @@ public class OutputLayerTest {
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .lossFunction(LossFunctions.LossFunction.MCXENT)
-                .activationFunction(Activations.softMaxRows()).iterations(10)
+                .activationFunction(Activations.softmax()).iterations(100)
                 .rng(gen)
                 .learningRate(1e-1f).nIn(4).nOut(3).build();
 
