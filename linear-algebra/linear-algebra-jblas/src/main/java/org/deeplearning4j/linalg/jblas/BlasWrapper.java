@@ -1,6 +1,5 @@
 package org.deeplearning4j.linalg.jblas;
 
-import org.deeplearning4j.linalg.api.complex.IComplexFloat;
 import org.deeplearning4j.linalg.jblas.complex.ComplexFloat;
 import org.deeplearning4j.linalg.jblas.complex.ComplexNDArray;
 import org.jblas.JavaBlas;
@@ -143,7 +142,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      */
     @Override
     public int iamax(NDArray x) {
-        return NativeBlas.isamax(x.length(), x.data(), 0, 1) - 1;
+        return NativeBlas.isamax(x.length(), x.data(), x.offset(), x.stride()[0]) - 1;
     }
 
     /**
@@ -154,7 +153,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      */
     @Override
     public int iamax(ComplexNDArray x) {
-        return NativeBlas.icamax(x.length(), x.data(), 0, 1) - 1;
+        return NativeBlas.icamax(x.length(), x.data(), x.offset(), 1) - 1;
     }
 
     /***************************************************************************
