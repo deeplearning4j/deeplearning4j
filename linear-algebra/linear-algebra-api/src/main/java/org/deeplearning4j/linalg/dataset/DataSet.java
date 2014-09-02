@@ -271,8 +271,7 @@ public class DataSet  implements org.deeplearning4j.linalg.dataset.api.DataSet {
     public int outcome() {
         if(this.numExamples() > 1)
             throw new IllegalStateException("Unable to derive outcome for dataset greater than one row");
-        Float f = (Float)  getLabels().max(Integer.MAX_VALUE).element();
-        return  f.intValue();
+       return NDArrays.getBlasWrapper().iamax(getLabels());
     }
 
 
@@ -355,7 +354,8 @@ public class DataSet  implements org.deeplearning4j.linalg.dataset.api.DataSet {
         for(int i : labels)
             labelList.add(i);
         for(DataSet d : list) {
-            if(labelList.contains(d.getLabel(d))) {
+            int outcome = d.outcome();
+            if(labelList.contains(outcome)) {
                 newList.add(d);
             }
         }

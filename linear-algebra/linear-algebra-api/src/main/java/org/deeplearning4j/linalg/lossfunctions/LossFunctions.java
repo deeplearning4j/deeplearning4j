@@ -113,11 +113,11 @@ public class LossFunctions {
 
         INDArray inner =
                 input.mul(log(sigV))
-                        .addi(input.rsub(1)
-                                .muli(log(sigV.rsub(1))));
+                        .add(input.rsub(1)
+                                .mul(log(sigV.rsub(1))));
 
 
-        INDArray rows = inner.sum(0);
+        INDArray rows = inner.sum(1);
         INDArray mean = rows.mean(Integer.MAX_VALUE);
 
         float ret = (float) mean.element();
