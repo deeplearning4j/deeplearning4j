@@ -37,31 +37,28 @@ public class DBNTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-                .activationFunction(Activations.softmax()).iterations(100)
-                .lossFunction(LossFunctions.LossFunction.EXPLL).rng(gen)
-                .learningRate(1e-1f).nIn(4).nOut(3).build();
+                .hiddenUnit(RBM.HiddenUnit.RECTIFIED).regularization(true).useHiddenActivationsForwardProp(false)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).momentum(5e-1f).l2(1e-2f)
+                .activationFunction(Activations.tanh()).iterations(100)
+                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
+                .learningRate(1e-2f).nIn(4).nOut(3).build();
 
 
         DBN d = new DBN.Builder().configure(conf)
-                .hiddenLayerSizes(new int[]{3})
+                .hiddenLayerSizes(new int[]{3,2})
                 .build();
 
-        d.getOutputLayer().conf().setnIn(4);
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
         d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
-        d.getOutputLayer().conf().setnOut(3);
-        OutputLayer l = (OutputLayer) d.getOutputLayer();
+
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
         DataSet next = iter.next(150);
         next.normalizeZeroMeanZeroUnitVariance();
-        l.fit(next);
+        d.fit(next);
 
-        // / d.fit(next);
         Evaluation eval = new Evaluation();
-        INDArray output = l.output(next.getFeatureMatrix());
+        INDArray output = d.output(next.getFeatureMatrix());
         eval.eval(next.getLabels(),output);
         log.info("Score " +eval.stats());
 

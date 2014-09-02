@@ -54,7 +54,7 @@ public abstract class BaseLayer implements Layer {
     protected INDArray createWeightMatrix() {
         INDArray W = NDArrays.zeros(conf.getnIn(), conf.getnOut());
 
-        for(int i = 0; i < this.W.rows(); i++)
+        for(int i = 0; i < W.rows(); i++)
             W.putRow(i,NDArrays.create(conf.getDist().sample(W.columns())));
         return W;
     }

@@ -47,7 +47,7 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
             //worse after an iteration
             BaseMultiLayerNetwork revert = network.clone();
             //sgd style; only iterate a certain number of epochs
-            if(!network.isForceNumEpochs()) {
+            if(network.isForceNumEpochs()) {
                 for(int i = 0; i < epochs; i++) {
                     if(i % network.getDefaultConfiguration().getResetAdaGradIterations() == 0)
                         network.getOutputLayer().getAdaGrad().historicalGradient = null;
@@ -62,7 +62,7 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
 
                 boolean train = true;
                 int count = 0;
-                float changeTolerance = 1e-5f;
+                float changeTolerance = 1e-6f;
                 int backPropIterations = 0;
                 while(train) {
                     if(backPropIterations >= epochs) {

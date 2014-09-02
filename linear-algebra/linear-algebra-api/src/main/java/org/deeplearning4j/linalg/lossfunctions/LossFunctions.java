@@ -1,5 +1,6 @@
 package org.deeplearning4j.linalg.lossfunctions;
 
+import org.deeplearning4j.linalg.api.activation.ActivationFunction;
 import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
@@ -101,13 +102,15 @@ public class LossFunctions {
      * @param W the weight matrix of the neural network
      * @return the reconstruction cross entropy for the given parameters
      */
-    public static float reconEntropy(INDArray input,INDArray hBias,INDArray vBias,INDArray W) {
+    public static float reconEntropy(INDArray input,INDArray hBias,INDArray vBias,INDArray W,ActivationFunction activationFunction) {
         INDArray preSigH = input.mmul(W).addRowVector(hBias);
-        INDArray sigH = sigmoid(preSigH);
-
+        INDArray sigH = activationFunction.apply(preSigH);
+        assert !NDArrays.hasInvalidNumber(sigH);
         //transpose doesn't go in right
         INDArray preSigV = sigH.mmul(W.transpose()).addRowVector(vBias);
-        INDArray sigV = sigmoid(preSigV);
+        INDArray sigV = activationFunction.apply(preSigV);
+        assert !NDArrays.hasInvalidNumber(sigH);
+
         INDArray inner =
                 input.mul(log(sigV))
                         .addi(input.rsub(1)

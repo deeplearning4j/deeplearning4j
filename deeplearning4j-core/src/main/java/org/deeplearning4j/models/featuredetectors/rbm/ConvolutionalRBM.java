@@ -321,7 +321,7 @@ public class ConvolutionalRBM extends RBM  {
     public void backProp(float lr,int iterations,Object[] extraParams) {
         boolean train = false;
 
-        float currRecon = LossFunctions.reconEntropy(input,hBias,vBias,W);
+        float currRecon = LossFunctions.reconEntropy(input,hBias,vBias,W,conf.getActivationFunction());
         ;
 
         NeuralNetwork revert = clone();
@@ -363,7 +363,7 @@ public class ConvolutionalRBM extends RBM  {
             getW().addi(W.sub(delta));
 
 
-            float newRecon = LossFunctions.reconEntropy(input,hBias,vBias,W);
+            float newRecon = LossFunctions.reconEntropy(input,hBias,vBias,W,conf.getActivationFunction());
             //prevent weights from exploding too far in either direction, we want this as close to zero as possible
             if(newRecon > currRecon || currRecon < 0 && newRecon < currRecon) {
                 update((BaseNeuralNetwork) revert);
