@@ -297,7 +297,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         switch (conf.getLossFunction()) {
             case MCXENT:
                 //input activation
-                INDArray p_y_given_x = sigmoid(input.mmul(W).addRowVector(b));
+                INDArray p_y_given_x = conf.getActivationFunction().apply(input.mmul(W).addRowVector(b));
                 //difference of outputs
                 INDArray dy = labels.sub(p_y_given_x);
                 return input.transpose().mmul(dy);
@@ -401,7 +401,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        trainTillConvergence(examples,labels,1e-1,1000);
+        trainTillConvergence(examples,labels,conf.getLr(),conf.getNumIterations());
     }
 
     /**
