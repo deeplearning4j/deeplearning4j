@@ -505,7 +505,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public INDArray params() {
-        return NDArrays.concatHorizontally(W.ravel(),b.ravel());
+        return NDArrays.concatHorizontally(W.linearView(),b.linearView());
     }
 
     /**
@@ -527,7 +527,11 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void setParams(INDArray params) {
-        setW(params.get(NDArrayIndex.interval(0, conf.getnIn() * conf.getnOut())).reshape(conf.getnIn(),conf.getnOut()));
+        INDArray wParams = params.get(NDArrayIndex.interval(0, conf.getnIn() * conf.getnOut()));
+        INDArray wLinear = getW().linearView();
+        for(int i = 0; i < wParams.length(); i++) {
+            wLinear.putScalar(i,wParams.get(i));
+        }
         setB(params.get(NDArrayIndex.interval(conf.getnIn() * conf.getnOut(), params.length())));
     }
 
