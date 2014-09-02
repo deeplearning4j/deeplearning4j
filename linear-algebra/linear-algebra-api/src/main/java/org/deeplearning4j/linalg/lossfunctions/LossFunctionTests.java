@@ -1,5 +1,6 @@
 package org.deeplearning4j.linalg.lossfunctions;
 
+import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.junit.Test;
@@ -31,7 +32,7 @@ public abstract class LossFunctionTests {
                 new double[]{0.0,0.0,0.0,0.0},new int[]{4});
         INDArray transposed = w.transpose();
         INDArray inputTimesWeights = input.mmul(w);
-        double reconEntropy = LossFunctions.reconEntropy(input,hBias,vBias,w);
+        double reconEntropy = LossFunctions.reconEntropy(input,hBias,vBias,w, Activations.sigmoid());
         double assertion = -0.5937198421625942;
         assertEquals(assertion,reconEntropy,1e-1);
     }

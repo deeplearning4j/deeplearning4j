@@ -24,6 +24,9 @@ public class Log extends BaseElementWiseOp {
         if(value instanceof IComplexNumber) {
             return ComplexUtil.abs((org.deeplearning4j.linalg.api.complex.IComplexNumber) value);
         }
-        return (float) Math.log((float) value);
+        float ret = (float) Math.log((float) value);
+        if(Float.isNaN(ret) || Float.isInfinite(ret))
+            return 1e-6f;
+        return ret;
     }
 }
