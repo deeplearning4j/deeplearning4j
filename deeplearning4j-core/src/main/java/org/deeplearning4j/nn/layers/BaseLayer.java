@@ -87,7 +87,7 @@ public abstract class BaseLayer implements Layer {
     @Override
     public  INDArray activate(INDArray input) {
         if(input != null)
-            this.input = Transforms.stabilize(input.dup(), 1);
+            this.input = Transforms.stabilize(input, 1);
         return activate();
     }
 

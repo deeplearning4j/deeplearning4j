@@ -7,6 +7,7 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.convolution.Convolution;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.indexing.NDArrayIndex;
+import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.linalg.sampling.Sampling;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
@@ -281,23 +282,6 @@ public class ConvolutionalRBM extends RBM  {
         return W;
     }
 
-    /**
-     * Reconstruction entropy.
-     * This compares the similarity of two probability
-     * distributions, in this case that would be the input
-     * and the reconstructed input with gaussian noise.
-     * This will account for either regularization or none
-     * depending on the configuration.
-     *
-     * @return reconstruction error
-     */
-    @Override
-    public float getReConstructionCrossEntropy() {
-        if(eVis == null)
-            transform(input);
-        float squaredLoss = (float) Transforms.pow(eVis.sub(input), 2).sum(Integer.MAX_VALUE).element();
-        return squaredLoss;
-    }
 
     /**
      * Guess the visible values given the hidden
@@ -337,7 +321,8 @@ public class ConvolutionalRBM extends RBM  {
     public void backProp(float lr,int iterations,Object[] extraParams) {
         boolean train = false;
 
-        float currRecon = this.getReConstructionCrossEntropy();
+        float currRecon = LossFunctions.reconEntropy(input,hBias,vBias,W);
+        ;
 
         NeuralNetwork revert = clone();
         int numEpochs = 0;
@@ -378,7 +363,7 @@ public class ConvolutionalRBM extends RBM  {
             getW().addi(W.sub(delta));
 
 
-            float newRecon = this.getReConstructionCrossEntropy();
+            float newRecon = LossFunctions.reconEntropy(input,hBias,vBias,W);
             //prevent weights from exploding too far in either direction, we want this as close to zero as possible
             if(newRecon > currRecon || currRecon < 0 && newRecon < currRecon) {
                 update((BaseNeuralNetwork) revert);

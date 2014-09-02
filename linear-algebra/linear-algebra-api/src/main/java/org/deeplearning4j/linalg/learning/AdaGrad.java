@@ -101,10 +101,9 @@ public class AdaGrad implements Serializable {
             this.historicalGradient = NDArrays.zeros(this.gradient.rows(), this.gradient.columns());
         this.historicalGradient.addi(squaredGradient);
         numIterations++;
-        INDArray sqrtGradient = sqrt(historicalGradient.dup()).add(fudgeFactor);
+        INDArray sqrtGradient = sqrt(historicalGradient).addi(fudgeFactor);
         INDArray div = abs(gradient).divi(sqrtGradient);
         this.adjustedGradient = div.muli(masterStepSize);
-        float sum = this.adjustedGradient.sum(Integer.MAX_VALUE).get(0);
         //ensure no zeros
         return adjustedGradient;
     }

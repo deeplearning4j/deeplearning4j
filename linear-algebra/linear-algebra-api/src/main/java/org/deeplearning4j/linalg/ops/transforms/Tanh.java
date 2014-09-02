@@ -27,7 +27,7 @@ public class Tanh extends BaseElementWiseOp {
         }
         else  {
             float d = (float) value;
-            return  Math.tanh(d);
+            return  (float)  Math.tanh(d);
         }
     }
 }

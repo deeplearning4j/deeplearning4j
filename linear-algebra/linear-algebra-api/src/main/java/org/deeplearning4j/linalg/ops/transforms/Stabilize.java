@@ -15,13 +15,13 @@ import org.deeplearning4j.linalg.ops.BaseElementWiseOp;
  * @author Adam Gibson
  */
 public class Stabilize extends BaseElementWiseOp {
-    private double k = 1;
+    private float k = 1;
 
-    public Stabilize(Double k) {
+    public Stabilize(Float k) {
         this.k = k;
     }
 
-    public Stabilize(double k) {
+    public Stabilize(float k) {
         this.k = k;
     }
     public Stabilize() {
@@ -36,8 +36,8 @@ public class Stabilize extends BaseElementWiseOp {
      */
     @Override
     public Object apply(INDArray from,Object value, int i) {
-        double realMin =  1.1755e-38;
-        double cutOff = FastMath.log(realMin);
+        float realMin =  1.1755e-38f;
+        float cutOff = (float) FastMath.log(realMin);
         if(value instanceof IComplexNumber) {
             IComplexNumber c = (IComplexNumber) value;
             float curr = c.realComponent().floatValue();
@@ -51,14 +51,14 @@ public class Stabilize extends BaseElementWiseOp {
         else {
             float curr = (float) value;
             if(curr * k > -cutOff)
-                return -cutOff / k;
+                return (float) -cutOff / k;
             else if(curr * k < cutOff)
-                return cutOff / k;
+                return (float) cutOff / k;
 
         }
 
 
 
-        return value;
+        return  value;
     }
 }

@@ -52,7 +52,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     /* input to the network */
     protected INDArray input;
     protected transient NeuralNetworkOptimizer optimizer;
-   protected INDArray doMask;
+    protected INDArray doMask;
     private static Logger log = LoggerFactory.getLogger(BaseNeuralNetwork.class);
     //previous gradient used for updates
     protected INDArray wGradient,vBiasGradient,hBiasGradient;
@@ -345,14 +345,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
         if (momentum != 0 && this.wGradient != null)
-            wGradient.addi(this.wGradient.mul(momentum).add(wGradient.mul(1 - momentum)));
+            wGradient.addi(this.wGradient.mul(momentum).addi(wGradient.mul(1 - momentum)));
 
 
         if(momentum != 0 && this.vBiasGradient != null)
-            vBiasGradient.addi(this.vBiasGradient.mul(momentum).add(vBiasGradient.mul(1 - momentum)));
+            vBiasGradient.addi(this.vBiasGradient.mul(momentum).addi(vBiasGradient.mul(1 - momentum)));
 
         if(momentum != 0 && this.hBiasGradient != null)
-            hBiasGradient.addi(this.hBiasGradient.mul(momentum).add(hBiasGradient.mul(1 - momentum)));
+            hBiasGradient.addi(this.hBiasGradient.mul(momentum).addi(hBiasGradient.mul(1 - momentum)));
 
 
 
@@ -365,7 +365,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         //simulate post gradient application  and apply the difference to the gradient to decrease the change the gradient has
         if(conf.isUseRegularization() && conf.getL2() > 0) {
             if(conf.isUseAdaGrad())
-                wGradient.subi(W.mul(conf.getL2()).mul(wLearningRates));
+                wGradient.subi(W.mul(conf.getL2()).muli(wLearningRates));
 
             else
                 wGradient.subi(W.mul(conf.getL2() * learningRate));
@@ -464,7 +464,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     @Override
     public void merge(NeuralNetwork network,int batchSize) {
-        W.addi(network.getW().sub(W).div(batchSize));
+        W.addi(network.getW().sub(W).divi(batchSize));
         hBias.addi(network.gethBias().sub(hBias).divi(batchSize));
         vBias.addi(network.getvBias().subi(vBias).divi(batchSize));
 
@@ -502,70 +502,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
 
-    /**
-     * Negative log likelihood of the current input given
-     * the corruption level
-     * @return the negative log likelihood of the auto encoder
-     * given the corruption level
-     */
-
-    public float negativeLogLikelihood() {
-        INDArray z = this.transform(input);
-        if(conf.isUseRegularization()) {
-            float reg = (2 / conf.getL2()) * (float) pow(this.W,2).sum(Integer.MAX_VALUE).element();
-
-            float ret = - (float) input.mul(log(z)).add(
-                    input.rsub(1).muli(log(z.rsub(1)))).
-                    sum(1).mean(Integer.MAX_VALUE).element() + reg;
-
-            return ret;
-        }
 
 
-
-        float likelihood =  - (float) input.mul(log(z)).add(
-                input.rsub(1).muli(log(z.rsub(1)))).
-                sum(1).mean(Integer.MAX_VALUE).element();
-
-
-        return likelihood;
-    }
-
-
-    /**
-     * Negative log likelihood of the current input given
-     * the corruption level
-     * @return the negative log likelihood of the auto encoder
-     * given the corruption level
-     */
-    public float negativeLoglikelihood(INDArray input) {
-        INDArray z = this.transform(input);
-        if(conf.isUseRegularization()) {
-            float reg = (2 / conf.getL2()) * (float) pow(this.W,2).sum(Integer.MAX_VALUE).element();
-
-            return - (float) input.mul(log(z)).add(
-                    input.rsub(1).muli(log(z.rsub(1)))).
-                    sum(1).mean(Integer.MAX_VALUE).element() + reg;
-        }
-
-        return - (float) input.mul(log(z)).add(
-                input.rsub(1).muli(log(z.rsub(1)))).
-                sum(1).mean(Integer.MAX_VALUE).element();
-    }
-
-
-    /**
-     * Reconstruction entropy.
-     * This compares the similarity of two probability
-     * distributions, in this case that would be the input
-     * and the reconstructed input with gaussian noise.
-     * This will account for either regularization or none
-     * depending on the configuration.
-     * @return reconstruction error
-     */
-    public float getReConstructionCrossEntropy() {
-        return org.deeplearning4j.linalg.lossfunctions.LossFunctions.reconEntropy(input,hBias,vBias,W);
-    }
 
     /* (non-Javadoc)
        * @see org.deeplearning4j.nn.api.NeuralNetwork#getW()
@@ -678,17 +616,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     public abstract INDArray transform(INDArray x);
 
-    /**
-     * The loss function (cross entropy, reconstruction error,...)
-     * @return the loss function
-     */
-    public abstract float lossFunction(Object[] params);
-
-
-    public float lossFunction() {
-        return lossFunction(null);
-    }
-
 
 
     protected void applyDropOutIfNecessary(INDArray input) {
@@ -717,12 +644,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
 
-    public float mse() {
-        INDArray reconstructed = transform(input);
-        INDArray diff = reconstructed.sub(input);
-        float sum = 0.5f * (float) pow(diff,2).sum(1).sum(Integer.MAX_VALUE).element() / input.rows();
-        return sum;
-    }
 
     @Override
     public INDArray hBiasMean() {

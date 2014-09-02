@@ -1,5 +1,6 @@
 package org.deeplearning4j.linalg.lossfunctions;
 
+import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.transforms.Transforms;
@@ -43,7 +44,7 @@ public class LossFunctions {
      * @return the score for the given parameters
      */
     public static float score(INDArray labels,LossFunction lossFunction,INDArray output,double l2,boolean useRegularization) {
-        assert !NDArrays.hasInvalidNumber(output) : "Invalid output on labels. Must not contain nan or infiniute numbers.";
+        assert !NDArrays.hasInvalidNumber(output) : "Invalid output on labels. Must not contain nan or infinite numbers.";
         float ret = 0.0f;
         double reg = 0.5 * l2;
         INDArray z = output;
@@ -51,12 +52,13 @@ public class LossFunctions {
             case RECONSTRUCTION_CROSSENTROPY:
                 INDArray xEntLogZ2 = Transforms.log(z.dup());
                 INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
-                INDArray xEntOneMinusLogOneMinusZ2 = Transforms.log(z.dup()).rsubi(1);
+                INDArray xEntOneMinusLogOneMinusZ2 = Transforms.log(z).rsubi(1);
                 ret = - labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).mul(xEntOneMinusLogOneMinusZ2).sum(1).sum(Integer.MAX_VALUE).get(0) / labels.rows();
                 break;
             case MCXENT:
-                INDArray mcXEntLogZ =  log(z);
-                ret = -  labels.mul(mcXEntLogZ).sum(1).sum(Integer.MAX_VALUE).get(0) / labels.rows();
+                INDArray softMax = Activations.softMaxRows().apply(z);
+                INDArray columnSums = labels.mul(log(softMax));
+                ret = - columnSums.sum(1).sum(Integer.MAX_VALUE).get(0) / labels.rows();
                 break;
             case XENT:
                 INDArray xEntLogZ =  log(z);
@@ -101,15 +103,14 @@ public class LossFunctions {
      * @return the reconstruction cross entropy for the given parameters
      */
     public static float reconEntropy(INDArray input,INDArray hBias,INDArray vBias,INDArray W) {
-        INDArray inputTimesW = input.mmul(W);
         INDArray preSigH = input.mmul(W).addRowVector(hBias);
-        INDArray sigH = sigmoid(preSigH.dup());
+        INDArray sigH = sigmoid(preSigH);
 
         //transpose doesn't go in right
         INDArray preSigV = sigH.mmul(W.transpose()).addRowVector(vBias);
-        INDArray sigV = sigmoid(preSigV.dup());
+        INDArray sigV = sigmoid(preSigV);
         INDArray inner =
-                input.mul(log(sigV.dup()))
+                input.mul(log(sigV))
                         .addi(input.rsub(1)
                                 .muli(log(sigV.rsub(1))));
 

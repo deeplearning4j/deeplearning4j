@@ -23,7 +23,6 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
     protected INDArray from;
     //this is for operations like adding or multiplying a scalar over the from array
     protected Object scalarValue;
-
     protected static ExecutorService dimensionThreads;
 
 
@@ -32,11 +31,18 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
-                if(!dimensionThreads.isShutdown())
-                    dimensionThreads.shutdown();
+                if(!getThreads().isShutdown())
+                    getThreads().shutdown();
             }
         }));
     }
+
+    public static  synchronized ExecutorService getThreads() {
+        return dimensionThreads;
+    }
+
+
+
     /**
      * Apply the transformation at from[i]
      *
@@ -111,7 +117,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
 
         for(int i = 0; i < from.vectorsAlongDimension(0); i++) {
             final int dupI = i;
-            dimensionThreads.submit(new Runnable() {
+            getThreads().execute(new Runnable() {
                 @Override
                 public void run() {
                     INDArray vectorAlongDim = from.vectorAlongDimension(dupI,0);
@@ -124,8 +130,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
                         }
                         else {
                             float apply = apply(vectorAlongDim,vectorAlongDim.get(j),j);
-                            float f =  apply ;
-                            vectorAlongDim.putScalar(j,f);
+                            vectorAlongDim.putScalar(j,apply);
 
                         }
                     }
@@ -141,6 +146,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+
 
 
     }
