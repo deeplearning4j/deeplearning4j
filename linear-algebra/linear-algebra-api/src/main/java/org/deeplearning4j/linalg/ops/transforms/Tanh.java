@@ -1,5 +1,6 @@
 package org.deeplearning4j.linalg.ops.transforms;
 
+import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.ops.BaseElementWiseOp;
@@ -27,7 +28,7 @@ public class Tanh extends BaseElementWiseOp {
         }
         else  {
             float d = (float) value;
-            return  (float)  Math.tanh(d);
+            return  (float)  FastMath.tanh(d);
         }
     }
 }

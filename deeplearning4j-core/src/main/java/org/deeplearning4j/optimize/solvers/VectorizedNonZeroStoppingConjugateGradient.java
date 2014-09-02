@@ -130,7 +130,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
         long last = System.currentTimeMillis();
         if (xi == null) {
             fp = optimizable.getValue();
-            assert !Float.isNaN(fp) && !Float.isInfinite(fp);
+            assert !Float.isNaN(fp) && !Float.isInfinite(fp) : "Function appears to be NaN or infinite, please check your parameters.";
             xi = optimizable.getValueGradient(0);
             g = xi.dup();
             h = xi.dup();
