@@ -130,8 +130,8 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
         long last = System.currentTimeMillis();
         if (xi == null) {
             fp = optimizable.getValue();
+            assert !Float.isNaN(fp) && !Float.isInfinite(fp);
             xi = optimizable.getValueGradient(0);
-            float xiNorm2 = xi.norm2(Integer.MAX_VALUE).get(0);
             g = xi.dup();
             h = xi.dup();
             iterations = 0;

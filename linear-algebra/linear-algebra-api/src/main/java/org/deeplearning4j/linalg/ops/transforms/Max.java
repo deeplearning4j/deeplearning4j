@@ -35,6 +35,6 @@ public class Max extends BaseElementWiseOp {
         }
 
         float val = (float) value;
-        return Math.max(max,val);
+        return (float) Math.max(max,val);
     }
 }

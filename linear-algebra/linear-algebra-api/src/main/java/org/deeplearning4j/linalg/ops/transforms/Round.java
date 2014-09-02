@@ -26,7 +26,7 @@ public class Round extends BaseElementWiseOp {
         }
         else {
             float val = (float) value;
-            return Math.round(val);
+            return (float)  Math.round(val);
         }
 
     }

@@ -79,11 +79,13 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
                         applyTransformToOrigin(from,i,scalarValue);
         }
         else {
+
             assert from.length() == to.length() : "From and to must be same length";
-            final CountDownLatch latch = new CountDownLatch(from.vectorsAlongDimension(0));
-            for(int i = 0; i < from.vectorsAlongDimension(0); i++) {
+            int num = from.vectorsAlongDimension(0);
+            final CountDownLatch latch = new CountDownLatch(num);
+            for(int i = 0; i < num; i++) {
                 final int iDup = i;
-                dimensionThreads.submit(new Runnable() {
+                getThreads().execute(new Runnable() {
                     @Override
                     public void run() {
                         INDArray curr = to.vectorAlongDimension(iDup,0);
@@ -99,6 +101,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
                         latch.countDown();
                     }
                 });
+
 
             }
 

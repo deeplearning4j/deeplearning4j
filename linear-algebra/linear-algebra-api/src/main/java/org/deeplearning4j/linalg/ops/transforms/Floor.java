@@ -25,6 +25,6 @@ public class Floor extends BaseElementWiseOp {
             return NDArrays.scalar(ComplexUtil.floor(c));
         }
         float val = (float) value;
-        return Math.floor(val);
+        return (float) Math.floor(val);
     }
 }

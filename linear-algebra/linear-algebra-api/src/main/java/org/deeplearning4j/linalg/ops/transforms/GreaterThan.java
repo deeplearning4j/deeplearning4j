@@ -28,18 +28,18 @@ public class GreaterThan extends BaseElementWiseOp {
             if(value instanceof IComplexNumber) {
                 return  NDArrays.createDouble(1, 0);
             }
-            else {
-                return 1;
-            }
+            else
+                return (float)  1;
+
 
         }
         else {
-            if(value instanceof IComplexNumber) {
+            if(value instanceof IComplexNumber)
                 return NDArrays.createDouble(0,0);
-            }
-            else {
-                return 0;
-            }
+
+            else
+                return (float) 0;
+
 
         }
     }
