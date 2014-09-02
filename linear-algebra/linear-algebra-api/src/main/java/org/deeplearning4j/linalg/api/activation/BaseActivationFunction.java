@@ -3,6 +3,7 @@ package org.deeplearning4j.linalg.api.activation;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.ops.ArrayOps;
 import org.deeplearning4j.linalg.ops.BaseElementWiseOp;
+import org.deeplearning4j.linalg.ops.ElementWiseOp;
 
 /**
  * Base activation function: mainly to give the function a canonical representation
@@ -50,10 +51,11 @@ public abstract class BaseActivationFunction implements ActivationFunction {
      */
     @Override
     public INDArray apply(INDArray input) {
-        new ArrayOps().from(input.linearView())
+        ElementWiseOp op =  new ArrayOps().from(input.dup())
                 .op(transformClazz())
-                .build().exec();
-        return input;
+                .build();
+        op.exec();
+        return op.from();
     }
 
 
