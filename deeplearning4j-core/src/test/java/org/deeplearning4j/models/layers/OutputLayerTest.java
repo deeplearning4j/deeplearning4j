@@ -31,7 +31,7 @@ public class OutputLayerTest {
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .lossFunction(LossFunctions.LossFunction.MCXENT)
-                .activationFunction(Activations.softMaxRows()).iterations(100)
+                .activationFunction(Activations.softMaxRows()).iterations(10)
                 .rng(gen)
                 .learningRate(1e-1f).nIn(4).nOut(3).build();
 
@@ -41,7 +41,7 @@ public class OutputLayerTest {
 
 
         DataSet next = iter.next(150);
-        next.scale();
+        next.normalizeZeroMeanZeroUnitVariance();
         l.fit(next);
 
 

@@ -28,26 +28,36 @@ public abstract class BaseLayer implements Layer {
 
     public BaseLayer(NeuralNetConfiguration conf,INDArray W, INDArray b, INDArray input) {
         this.input = input;
+        this.conf = conf;
 
-        if(W == null) {
+        if(W == null)
+           this.W = createWeightMatrix();
 
-            this.W = NDArrays.zeros(conf.getnIn(), conf.getnOut());
 
-            for(int i = 0; i < this.W.rows(); i++)
-                this.W.putRow(i,NDArrays.create(conf.getDist().sample(this.W.columns())));
-        }
 
         else
             this.W = W;
 
 
         if(b == null)
-            this.b = NDArrays.zeros(conf.getnOut());
+            this.b = createBias();
         else
             this.b = b;
-        this.conf = conf;
     }
 
+
+    protected INDArray createBias() {
+        return NDArrays.zeros(conf.getnOut());
+    }
+
+
+    protected INDArray createWeightMatrix() {
+        INDArray W = NDArrays.zeros(conf.getnIn(), conf.getnOut());
+
+        for(int i = 0; i < this.W.rows(); i++)
+            W.putRow(i,NDArrays.create(conf.getDist().sample(W.columns())));
+        return W;
+    }
 
 
     /**
