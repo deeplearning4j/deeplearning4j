@@ -32,7 +32,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
      * @param i the index to apply to
      */
     @Override
-    public void applyTransformToDestination(INDArray destination,INDArray other,int i) {
+    public void applyTransformToDestination(INDArray from,INDArray destination,INDArray other,int i) {
         if(scalarValue == null) {
             if(currTo instanceof IComplexNDArray) {
                 IComplexNumber number = (IComplexNumber) apply(destination, getOther(other,i), i);
@@ -40,7 +40,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
                 c2.putScalar(i,number);
             }
             else {
-                float f = (float)  apply(destination, getOther(other,i), i);
+                float f = (float)  apply(from, getOther(other,i), i);
                 destination.putScalar(i,f);
             }
 
@@ -53,7 +53,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
                 c2.putScalar(i,n);
             }
 
-            float f = (float) apply(destination,scalarValue,i);
+            float f = (float) apply(from,scalarValue,i);
             destination.putScalar(i,f);
 
         }
@@ -95,7 +95,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
 
 
                         for(int j = 0; j < fromCurr.length(); j++) {
-                            applyTransformToDestination(curr,currOther,j);
+                            applyTransformToDestination(fromCurr,curr,currOther,j);
                         }
 
                         latch.countDown();

@@ -34,12 +34,12 @@ public interface TwoArrayElementWiseOp extends ElementWiseOp {
      *
      * Apply a transform
      * based on the passed in ndarray to other
-     *
+     * @param from the origin ndarray
      * @param destination the destination ndarray
      * @param other the other ndarray
      * @param i the index of the element to retrieve
      */
-    void applyTransformToDestination(INDArray destination,INDArray other,int i);
+    void applyTransformToDestination(INDArray from,INDArray destination,INDArray other,int i);
 
     /**
      * Executes the operation
