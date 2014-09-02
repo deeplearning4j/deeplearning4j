@@ -707,7 +707,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         List<INDArray> activations = feedForward();
 
         //- y - h
-        INDArray ix = activations.get(activations.size() - 1).sub(labels).divi(input.rows());
+        INDArray ix = labels.sub(activations.get(activations.size() - 1)).negi().subi(getOutputLayer().conf().getActivationFunction().applyDerivative(activations.get(activations.size() - 1)));
 
 		/*
 		 * Precompute activations and z's (pre activation network outputs)
@@ -764,16 +764,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     public void backPropStep() {
         List<Pair<INDArray, INDArray>> deltas = backPropGradient();
-        for (int i = 0; i < neuralNets.length; i++) {
-            if (deltas.size() < neuralNets.length) {
-                neuralNets[i].getW().subi(deltas.get(i).getFirst());
-                neuralNets[i].gethBias().subi(deltas.get(i).getSecond());
-                layers[i].setW(neuralNets[i].getW());
-                layers[i].setB(neuralNets[i].gethBias());
+        for (int i = 0; i < layers.length; i++) {
+            layers[i].getW().subi(deltas.get(i).getFirst());
+            layers[i].getB().subi(deltas.get(i).getSecond());
+            if(i < neuralNets.length) {
+                neuralNets[i].setW(layers[i].getW());
+                neuralNets[i].sethBias(layers[i].getB());
             }
-
         }
-
 
     }
 
@@ -1079,9 +1077,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         List<Pair<INDArray, INDArray>> list = new ArrayList<>();
 
-        for (int l = 0; l < getnLayers(); l++) {
+        for (int l = 0; l < getnLayers() + 1; l++) {
             INDArray gradientChange = deltas.get(l);
-            if (gradientChange.length() != getNeuralNets()[l].getW().length())
+            if (gradientChange.length() != getLayers()[l].getW().length())
                 throw new IllegalStateException("Gradient change not equal to weight change");
 
 
@@ -1094,15 +1092,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         }
 
-        INDArray logLayerGradient = deltas.get(deltas.size() - 2);
-        INDArray biasGradient = deltas.get(getnLayers() + 1).mean(0);
-
 
         if (mask == null)
             initMask();
 
 
-        list.add(new Pair<>(logLayerGradient, biasGradient));
 
         for(int i = 0; i < list.size(); i++) {
             if(i < getnLayers()) {
@@ -1132,7 +1126,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
         INDArray gradient = pack(list);
-        INDArray params = params().mul(defaultConfiguration.getL2());
+        INDArray params = params().muli(defaultConfiguration.getL2());
         gradient.addi(mask.mul(params));
         list = unPack(gradient);
 
@@ -1841,13 +1835,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
     }
 
-    public float getDampingFactor() {
-        return dampingFactor;
-    }
-
-    public void setDampingFactor(float dampingFactor) {
-        this.dampingFactor = dampingFactor;
-    }
 
     public INDArray getMask() {
         return mask;

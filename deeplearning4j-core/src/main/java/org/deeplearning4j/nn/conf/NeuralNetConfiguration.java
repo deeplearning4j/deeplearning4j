@@ -504,6 +504,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean useHiddenActivationsForwardProp = true;
         private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
         private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
+        private int numIterations = 1000;
+
+
+        public Builder iterations(int numIterations) {
+            this.numIterations = numIterations;
+            return this;
+        }
+
 
         public Builder dist(RealDistribution dist) {
             this.dist = dist;
@@ -597,8 +605,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         public NeuralNetConfiguration build() {
-            return new NeuralNetConfiguration(sparsity,useAdaGrad,lr,momentum,l2,useRegularization,momentumAfter,resetAdaGradIterations,dropOut,applySparsity,weightInit,optimizationAlgo,lossFunction,renderWeightsEveryNumEpochs,concatBiases,constrainGradientToUnitNorm,rng,dist,seed,nIn,nOut,activationFunction,useHiddenActivationsForwardProp,visibleUnit,hiddenUnit);
-
+            NeuralNetConfiguration ret =  new NeuralNetConfiguration(sparsity,useAdaGrad,lr,momentum,l2,useRegularization,momentumAfter,resetAdaGradIterations,dropOut,applySparsity,weightInit,optimizationAlgo,lossFunction,renderWeightsEveryNumEpochs,concatBiases,constrainGradientToUnitNorm,rng,dist,seed,nIn,nOut,activationFunction,useHiddenActivationsForwardProp,visibleUnit,hiddenUnit);
+            ret.numIterations = numIterations;
+            return ret;
          }
 
 

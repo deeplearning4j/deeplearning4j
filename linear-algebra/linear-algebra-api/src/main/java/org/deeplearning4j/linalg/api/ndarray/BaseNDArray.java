@@ -619,7 +619,11 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public   INDArray dup() {
-        return NDArrays.create(Arrays.copyOf(data,data.length),shape,stride,offset,ordering);
+        return NDArrays.create(
+                Arrays.copyOf(data,data.length),
+                Arrays.copyOf(shape,shape.length),
+                Arrays.copyOf(stride,stride.length)
+                ,offset,ordering);
     }
 
 
@@ -694,6 +698,7 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray put(int i, int j, Number element) {
+
         return put(i,j,NDArrays.scalar(element));
     }
 
@@ -1077,19 +1082,7 @@ public abstract class BaseNDArray  implements INDArray {
         return ret;
     }
 
-    /**
-     * Gives the indices for the beginning of each slice
-     * @return the off sets for the beginning of each slice
-     */
-    public int[] offsetsForSlices() {
-        int[] ret = new int[slices()];
-        int currOffset = offset;
-        for(int i = 0; i < slices(); i++) {
-            ret[i] = currOffset;
-            currOffset += stride[0] + 1;
-        }
-        return ret;
-    }
+
 
 
     @Override

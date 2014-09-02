@@ -21,6 +21,6 @@ public class Abs extends BaseElementWiseOp {
        if(value instanceof IComplexNumber) {
            return  ComplexUtil.abs((org.deeplearning4j.linalg.api.complex.IComplexNumber) value);
        }
-       return  Math.abs((float) value);
+       return   Math.abs((float) value);
     }
 }

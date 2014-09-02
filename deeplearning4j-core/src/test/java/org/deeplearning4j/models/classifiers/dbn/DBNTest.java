@@ -5,6 +5,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
@@ -34,14 +35,16 @@ public class DBNTest {
     public void testIris() {
         RandomGenerator gen = new MersenneTwister(123);
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+                .activationFunction(Activations.tanh()).iterations(100)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT).rng(gen)
-                .learningRate(1e-1f).nIn(4).nOut(3).build();
+                .learningRate(1e-2f).nIn(4).nOut(3).build();
 
 
         DBN d = new DBN.Builder().configure(conf)
-                .hiddenLayerSizes(new int[]{ 4,3,3})
+                .hiddenLayerSizes(new int[]{4,3,3})
                 .build();
 
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
@@ -50,9 +53,11 @@ public class DBNTest {
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
         DataSet next = iter.next(150);
-        next.normalizeZeroMeanZeroUnitVariance();
-
         d.fit(next);
+        Evaluation eval = new Evaluation();
+        INDArray output = d.output(next.getFeatureMatrix());
+        eval.eval(next.getLabels(),output);
+        log.info("Score " +eval.stats());
 
 
     }
@@ -62,7 +67,7 @@ public class DBNTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-               .lossFunction(LossFunctions.LossFunction.RMSE_XENT).rng(gen)
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT).rng(gen)
                 .learningRate(1e-1f).nIn(784).nOut(2).build();
 
 
@@ -73,7 +78,7 @@ public class DBNTest {
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
         d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        fetcher.fetch(2);
+        fetcher.fetch(10);
         DataSet d2 = fetcher.next();
         d2.filterAndStrip(new int[]{0, 1});
         INDArray rowSums = d2.getFeatureMatrix().sum(0);

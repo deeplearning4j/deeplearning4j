@@ -37,16 +37,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
         return conf.getActivationFunction().apply(x.mmul(W).addiRowVector(hBias));
     }
 
-    /**
-     * The loss function (cross entropy, reconstruction error,...)
-     *
-     * @param params
-     * @return the loss function
-     */
-    @Override
-    public float lossFunction(Object[] params) {
-        return squaredLoss();
-    }
+
 
     /**
      * iterate one iteration of the network

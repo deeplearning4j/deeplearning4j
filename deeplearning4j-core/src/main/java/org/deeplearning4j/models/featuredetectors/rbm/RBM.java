@@ -523,10 +523,6 @@ public  class RBM extends BaseNeuralNetwork {
     }
 
 
-    @Override
-    public float lossFunction(Object[] params) {
-        return getReConstructionCrossEntropy();
-    }
 
     @Override
     public void iterate(INDArray input, Object[] params) {

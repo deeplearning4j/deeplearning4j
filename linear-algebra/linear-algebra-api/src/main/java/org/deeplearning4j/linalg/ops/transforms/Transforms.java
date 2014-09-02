@@ -187,10 +187,10 @@ public class Transforms {
         return exec(ndArray,LessThan.class,null);
     }
 
-    public static INDArray stabilize(INDArray ndArray,double k) {
+    public static INDArray stabilize(INDArray ndArray,float k) {
         return exec(ndArray,Stabilize.class,new Object[]{k});
     }
-    public static IComplexNDArray stabilize(IComplexNDArray ndArray,double k) {
+    public static IComplexNDArray stabilize(IComplexNDArray ndArray,float k) {
         return exec(ndArray,Stabilize.class,new Object[]{k});
     }
 

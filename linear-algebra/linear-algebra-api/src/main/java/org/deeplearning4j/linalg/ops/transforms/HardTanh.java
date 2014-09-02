@@ -40,7 +40,7 @@ public class HardTanh extends BaseElementWiseOp {
             if(ret < -1)
                 return -1;
             else if(ret > 1)
-                return 1;
+                return (float)  1;
             else
                 return ret;
         }

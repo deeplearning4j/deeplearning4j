@@ -39,9 +39,9 @@ public class FeatureUtil {
     }
 
     public static  void normalizeMatrix(INDArray toNormalize) {
-        INDArray columnMeans = toNormalize.mean(1);
+        INDArray columnMeans = toNormalize.mean(0);
         toNormalize.subiRowVector(columnMeans);
-        INDArray std = toNormalize.std(1);
+        INDArray std = toNormalize.std(0);
         std.addi(NDArrays.scalar(1e-6));
         toNormalize.diviRowVector(std);
     }
@@ -52,10 +52,10 @@ public class FeatureUtil {
      * @param toScale the matrix to divide by its row maxes
      */
     public static void scaleByMax(INDArray toScale) {
-        INDArray scale = toScale.max(0);
+        INDArray scale = toScale.max(1);
         for (int i = 0; i < toScale.rows(); i++) {
-            double scaleBy = (double) scale.getScalar(i, 0).element();
-            toScale.putRow(i, toScale.getRow(i).divi(NDArrays.scalar(scaleBy)));
+            float scaleBy = scale.get(i);
+            toScale.putRow(i, toScale.getRow(i).divi(scaleBy));
         }
     }
 
