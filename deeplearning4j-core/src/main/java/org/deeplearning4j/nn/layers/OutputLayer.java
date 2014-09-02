@@ -5,6 +5,7 @@ import static org.deeplearning4j.linalg.ops.transforms.Transforms.*;
 import java.io.Serializable;
 
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.api.DataSet;
 import org.deeplearning4j.linalg.factory.NDArrays;
@@ -52,6 +53,11 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         biasAdaGrad = new AdaGrad(b.rows(),b.columns());
     }
 
+
+    protected INDArray createWeightMatrix() {
+        INDArray W = NDArrays.zeros(conf.getnIn(), conf.getnOut());
+        return W;
+    }
 
     /**
      * Train with current input and labels
@@ -190,7 +196,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     @Override
     public  float score() {
         LinAlgExceptions.assertRows(input,labels);
-        return  LossFunctions.score(labels,conf.getLossFunction(),output(input),conf.getL2(),conf.isUseRegularization());
+        INDArray output  = output(input);
+        assert !NDArrays.hasInvalidNumber(output) : "Invalid number on output!";
+        return  LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
 
 
     }
@@ -296,8 +304,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
         switch (conf.getLossFunction()) {
             case MCXENT:
+                INDArray preOut = preOutput(input);
                 //input activation
-                INDArray p_y_given_x = conf.getActivationFunction().apply(input.mmul(W).addRowVector(b));
+                INDArray p_y_given_x = Activations.sigmoid().apply(preOut);
                 //difference of outputs
                 INDArray dy = labels.sub(p_y_given_x);
                 return input.transpose().mmul(dy);
