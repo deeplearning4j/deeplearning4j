@@ -747,10 +747,7 @@ public abstract class BaseNDArray  implements INDArray {
         if(!element.isScalar())
             throw new IllegalArgumentException("Unable to insert anything but a scalar");
         int ix = offset;
-        if (indices.length != shape.length)
-            throw new IllegalArgumentException("Unable to applyTransformToDestination values: number of indices must be equal to the shape");
-
-        for (int i = 0; i< shape.length; i++)
+         for (int i = 0; i< indices.length; i++)
             ix += indices[i] * stride[i];
 
 
@@ -2178,7 +2175,8 @@ public abstract class BaseNDArray  implements INDArray {
     public int linearIndex(int i) {
         int realStride = stride[0];
         int idx = offset + i * realStride;
-        if(idx >= data.length)
+
+        if(data != null && idx >= data.length)
             throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
         return idx;
     }
@@ -2293,7 +2291,7 @@ public abstract class BaseNDArray  implements INDArray {
         int ix = offset;
 
 
-        for (int i = 0; i < shape.length; i++) {
+        for (int i = 0; i < indexes.length; i++) {
             ix += indexes[i] * stride[i];
         }
 
