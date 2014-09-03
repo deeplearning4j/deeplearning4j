@@ -286,15 +286,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                     // construct sigmoid_layer
                     layers[i] = createHiddenLayer(i,layerInput);
                 } else {
-                    if (input != null) {
-                        if (this.sampleFromHiddenActivations)
-                            layerInput = neuralNets[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
-                        else
-                            layerInput = getNeuralNets()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
-
-                    }
-
-
+                    if (input != null)
+                        layerInput = activationFromPrevLayer(i - 1,layerInput);
 
                     layerWiseConfigurations.get(i).setnIn(inputSize);
                     layerWiseConfigurations.get(i).setnOut(this.hiddenLayerSizes[i]);
@@ -396,19 +389,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
         for (int i = 0; i < getnLayers(); i++) {
-            NeuralNetwork layer = getNeuralNets()[i];
-            Layer l = getLayers()[i];
-
-            layer.setInput(currInput);
-            l.setInput(currInput);
-
-
-            if (layer.conf().isUseHiddenActivationsForwardProp())
-                currInput = getLayers()[i].activate(layer.sampleHiddenGivenVisible(currInput).getSecond());
-            else if (sampleFromHiddenActivations)
-                currInput = layer.sampleHiddenGivenVisible(l.conf().getActivationFunction().apply(currInput)).getSecond();
-            else
-                currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
+            currInput = activationFromPrevLayer(i,currInput);
             //applies drop connect to the activation
             applyDropConnectIfNecessary(currInput);
             activations.add(currInput);
@@ -424,6 +405,25 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
+
+
+    public INDArray activationFromPrevLayer(int curr,INDArray input) {
+        //output layer
+        if(curr == neuralNets.length) {
+            return getOutputLayer().labelProbabilities(input);
+        }
+
+        switch(layers[curr].conf().getActivationType()) {
+            case HIDDEN_LAYER_ACTIVATION: return layers[curr].activate(input);
+            case NET_ACTIVATION: return neuralNets[curr].transform(input);
+            case SAMPLE: return neuralNets[curr].sampleHiddenGivenVisible(input).getSecond();
+            default: throw new IllegalStateException("Invalid activation type");
+        }
+    }
+
+
+
+
     /**
      * Compute activations from input to output of the output layer
      *
@@ -437,29 +437,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
 
-        for (int i = 0; i < getnLayers(); i++) {
-            NeuralNetwork layer = getNeuralNets()[i];
-            Layer l = getLayers()[i];
-
-            layer.setInput(currInput);
-            l.setInput(currInput);
-
-            if (l.conf().isUseHiddenActivationsForwardProp())
-                currInput = getLayers()[i].activate(layer.transform(currInput));
-            else if (sampleFromHiddenActivations)
-                currInput = layer.sampleHiddenGivenVisible(l.conf().getActivationFunction().apply(currInput)).getSecond();
-            else
-                currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
+        for (int i = 0; i < layers.length; i++) {
+            currInput = activationFromPrevLayer(i,currInput);
             //applies drop connect to the activation
             applyDropConnectIfNecessary(currInput);
             activations.add(currInput);
         }
 
-        if (getOutputLayer() != null) {
-            getOutputLayer().setInput(activations.get(activations.size() - 1));
-            activations.add(getOutputLayer().output(activations.get(activations.size() - 1)));
 
-        }
         return activations;
     }
 
@@ -854,15 +839,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    public List<INDArray> hiddenBiases() {
-        List<INDArray> ret = new ArrayList<>();
-        for (int i = 0; i < neuralNets.length; i++)
-            ret.add(neuralNets[i].gethBias());
-        ret.add(getOutputLayer().getB());
-        return ret;
-    }
-
-
     public List<INDArray> weightMatrices() {
         List<INDArray> ret = new ArrayList<>();
         for (int i = 0; i < neuralNets.length; i++)
@@ -1067,10 +1043,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         List<INDArray> deltas = new ArrayList<>();
         //compute derivatives and gradients given activations
         computeDeltas(deltas);
+
         List<Pair<INDArray, INDArray>> vWvB = new ArrayList<>();
-        for (int i = 0; i < neuralNets.length; i++) {
+        for (int i = 0; i < neuralNets.length; i++)
             vWvB.add(new Pair<>(neuralNets[i].getW(), neuralNets[i].gethBias()));
-        }
+
 
         vWvB.add(new Pair<>(getOutputLayer().getW(), getOutputLayer().getB()));
 
@@ -1126,7 +1103,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
         INDArray gradient = pack(list);
-        INDArray params = params().muli(defaultConfiguration.getL2());
+        INDArray params = params().mul(defaultConfiguration.getL2());
         gradient.addi(mask.mul(params));
         list = unPack(gradient);
 
@@ -1490,15 +1467,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         return forward.get(layerNum - 1);
     }
 
-    /**
-     * Reconstruct from the final layer
-     *
-     * @param x the input to transform
-     * @return the reconstructed input
-     */
-    public INDArray reconstruct(INDArray x) {
-        return reconstruct(x, neuralNets.length);
-    }
 
 
     @Override
@@ -1612,6 +1580,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      *
      * @return the score of the model (relative to the objective function)
      */
+    @Override
     public float score() {
         feedForward();
         return getOutputLayer().score();

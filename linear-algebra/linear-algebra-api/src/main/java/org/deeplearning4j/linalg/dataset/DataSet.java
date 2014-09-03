@@ -513,7 +513,7 @@ public class DataSet  implements org.deeplearning4j.linalg.dataset.api.DataSet {
         int numLabels = numOutcomes();
         int examples = numExamples();
         for(DataSet d : data) {
-            int label = getLabel(d);
+            int label = d.outcome();
             Queue<DataSet> q = map.get(label);
             if(q == null) {
                 q = new ArrayDeque<>();

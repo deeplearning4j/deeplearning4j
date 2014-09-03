@@ -213,44 +213,6 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         return R;
     }
 
-    /**
-     * Compute activations from input to output of the output layer
-     * @return the list of activations for each layer
-     */
-    @Override
-    public  List<INDArray> feedForward() {
-        INDArray currInput = this.input;
-
-        List<INDArray> activations = new ArrayList<>();
-        activations.add(currInput);
-        NeuralNetwork[] layers = getNeuralNets();
-        for(int i = 0; i < layers.length; i++) {
-            AutoEncoder layer = (AutoEncoder) getNeuralNets()[i];
-            layer.setInput(currInput);
-
-            if(layerWiseConfigurations.get(i).isUseHiddenActivationsForwardProp()) {
-                currInput = layer.transform(currInput);
-            }
-            else  if(sampleFromHiddenActivations)
-                currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
-
-            else
-                currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
-
-
-            activations.add(currInput);
-
-
-        }
-
-
-        if(getOutputLayer() != null) {
-            getOutputLayer().setInput(currInput);
-            activations.add(getOutputLayer().output(currInput));
-
-        }
-        return activations;
-    }
 
     /**
      * Pretrain with a data applyTransformToDestination iterator.

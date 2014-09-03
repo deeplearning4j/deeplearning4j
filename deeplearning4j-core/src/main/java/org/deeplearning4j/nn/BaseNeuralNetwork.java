@@ -391,7 +391,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 return  LossFunctions.score(input,conf.getLossFunction(),transform(input),conf.getL2(),conf.isUseRegularization());
         else {
-            return LossFunctions.reconEntropy(input,hBias,vBias,W,conf.getActivationFunction());
+            return -LossFunctions.reconEntropy(input,hBias,vBias,W,conf.getActivationFunction());
         }
     }
 
