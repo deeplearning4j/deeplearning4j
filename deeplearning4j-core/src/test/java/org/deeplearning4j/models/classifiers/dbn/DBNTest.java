@@ -12,6 +12,7 @@ import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.junit.Test;
@@ -72,8 +73,9 @@ public class DBNTest {
     public void testDbn() throws IOException {
         RandomGenerator gen = new MersenneTwister(123);
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(5e-1f)
-                .withActivationType(NeuralNetConfiguration.ActivationType.NET_ACTIVATION)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .momentum(5e-1f).weightInit(WeightInit.DISTRIBUTION)
+                .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
                 .learningRate(1e-1f).nIn(784).nOut(3).build();
 
