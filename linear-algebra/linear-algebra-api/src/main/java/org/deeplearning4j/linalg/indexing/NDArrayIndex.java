@@ -11,12 +11,14 @@ import java.util.Arrays;
  */
 public class NDArrayIndex {
 
-    private int[] indices;
+    private int[] indices = new int[1];
 
 
     public NDArrayIndex(int[] indices) {
-
-        this.indices = indices;
+        if(indices.length > 0)
+            this.indices = indices;
+        else
+            this.indices = new int[1];
 
     }
 
@@ -27,6 +29,8 @@ public class NDArrayIndex {
     }
 
     public int offset() {
+        if(indices.length < 1)
+            return 0;
         return indices[0];
     }
 

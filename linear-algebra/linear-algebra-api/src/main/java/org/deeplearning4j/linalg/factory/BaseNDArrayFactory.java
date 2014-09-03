@@ -311,7 +311,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray rand(int[] shape,float min,float max,RandomGenerator rng) {
         INDArray ret = NDArrays.create(shape);
-       INDArray linear = ret.linearView();
+        INDArray linear = ret.linearView();
         float r = max - min;
         for(int i = 0; i < ret.length(); i++) {
             linear.putScalar(i, r * rng.nextFloat() + min);
@@ -1147,11 +1147,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(int[] shape,int[] stride,int offset) {
-        if(dtype.equals("double"))
-            return create(new double[ArrayUtil.prod(shape)],shape,stride,offset);
-        if(dtype.equals("float"))
-            return create(new float[ArrayUtil.prod(shape)],shape,stride,offset);
-        throw new IllegalStateException("Illegal data type " + dtype);
+        return create(new float[ArrayUtil.prod(shape)],shape,stride,offset);
 
     }
 

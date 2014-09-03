@@ -5,6 +5,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
@@ -39,21 +40,23 @@ public class DBNTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+                .hiddenUnit(RBM.HiddenUnit.RECTIFIED).momentum(5e-1f)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).regularization(true)
+                .regularizationCoefficient(2e-4f).dist(Distributions.uniform(gen))
                 .activationFunction(Activations.tanh()).iterations(100)
+                .weightInit(WeightInit.DISTRIBUTION)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
-                .learningRate(1e-2f).nIn(4).nOut(3).build();
+                .learningRate(1e-1f).nIn(4).nOut(3).build();
 
 
         DBN d = new DBN.Builder().configure(conf)
-                .hiddenLayerSizes(new int[]{4})
+                .hiddenLayerSizes(new int[]{3})
                 .build();
 
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
         d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
         //note zeros here
-        d.getOutputLayer().setW(NDArrays.zeros(d.getOutputLayer().getW().shape()));
+        //d.getOutputLayer().setW(NDArrays.zeros(d.getOutputLayer().getW().shape()));
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
@@ -74,7 +77,7 @@ public class DBNTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .momentum(5e-1f).weightInit(WeightInit.DISTRIBUTION)
+                .momentum(5e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.uniform(gen,784,10))
                 .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
                 .learningRate(1e-1f).nIn(784).nOut(3).build();

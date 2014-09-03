@@ -32,7 +32,7 @@ public class ArrayUtil {
         int[] result = new int[size];
 
         for (int j = 0; j < size; j++) {
-            result[j] = j;
+            result[j] = j + 1;
         }
 
         for (int j = size - 1; j > 0; j--) {
@@ -64,7 +64,7 @@ public class ArrayUtil {
         n = n.reshape(new int[]{1,n.length()});
         int[] ret = new int[n.length()];
         for(int i = 0; i < n.length(); i++)
-            ret[i] = (int) n.getScalar(i).element();
+            ret[i] = (int) n.get(i);
         return ret;
     }
 
@@ -162,6 +162,8 @@ public class ArrayUtil {
     }
 
     public static float[] floatCopyOf(double[] data) {
+        if(data.length == 0)
+            return new float[1];
         float[] ret = new float[data.length];
         for(int i = 0;i < ret.length; i++)
             ret[i] = (float) data[i];

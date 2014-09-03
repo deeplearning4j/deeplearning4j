@@ -67,7 +67,13 @@ public class Indices {
     public static NDArrayIndex[] adjustIndices(int[] originalShape,NDArrayIndex...indexes) {
         if(indexes.length < originalShape.length)
             indexes = fillIn(originalShape,indexes);
-        if(indexes.length > originalShape.length)
+       if(indexes.length > originalShape.length) {
+           NDArrayIndex[] ret = new NDArrayIndex[originalShape.length];
+           System.arraycopy(indexes,0,ret,0,originalShape.length);
+           return ret;
+       }
+
+        if(indexes.length == originalShape.length)
             return indexes;
         for(int i = 0; i < indexes.length; i++) {
             if(indexes[i].end() >= originalShape[i])
@@ -127,6 +133,9 @@ public class Indices {
      * @return the shape for the given indices
      */
     public static int[] shape(int[] shape,NDArrayIndex...indices) {
+        if(indices.length > shape.length)
+            return shape;
+
         int[] ret = new int[indices.length];
         for(int i = 0; i < ret.length; i++) {
             int[] currIndices = indices[i].indices();
