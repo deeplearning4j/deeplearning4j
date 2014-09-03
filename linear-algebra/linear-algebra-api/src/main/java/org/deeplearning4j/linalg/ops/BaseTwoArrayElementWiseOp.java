@@ -18,7 +18,6 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
 
 
     protected INDArray to,other;
-    protected INDArray currTo,currOther;
 
 
     /**
@@ -33,14 +32,14 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
      */
     @Override
     public void applyTransformToDestination(INDArray from,INDArray destination,INDArray other,int i) {
-        if(scalarValue == null) {
-            if(currTo instanceof IComplexNDArray) {
-                IComplexNumber number = (IComplexNumber) apply(destination, getOther(other,i), i);
+        if(scalarValue != null) {
+            if(destination instanceof IComplexNDArray) {
+                IComplexNumber number = (IComplexNumber) apply(destination, (float) scalarValue, i);
                 IComplexNDArray c2 = (IComplexNDArray) destination;
                 c2.putScalar(i,number);
             }
             else {
-                float f = (float)  apply(from, getOther(other,i), i);
+                float f = (float)  apply(from, (float) scalarValue, i);
                 destination.putScalar(i,f);
             }
 
@@ -49,11 +48,11 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
         else {
             if(destination instanceof  IComplexNDArray) {
                 IComplexNDArray c2 = (IComplexNDArray) destination;
-                IComplexNumber n = (IComplexNumber) apply(destination,scalarValue,i);
+                IComplexNumber n = (IComplexNumber) apply(destination,getOther(other,i),i);
                 c2.putScalar(i,n);
             }
 
-            float f = (float) apply(from,scalarValue,i);
+            float f = (float) apply(from,getOther(other,i),i);
             destination.putScalar(i,f);
 
         }
@@ -74,10 +73,50 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
             if(scalarValue != null)
                 for(int i = 0; i < from.length(); i++)
                     if(scalarValue != null)
-                        applyTransformToOrigin(from,i);
-                    else
                         applyTransformToOrigin(from,i,scalarValue);
+                    else
+                        applyTransformToOrigin(from,i);
         }
+
+
+        else if(other == null && scalarValue != null) {
+            int num = from.vectorsAlongDimension(0);
+            final CountDownLatch latch = new CountDownLatch(num);
+            for(int i = 0; i < num; i++) {
+                final int iDup = i;
+                getThreads().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                         final  INDArray fromCurr = from != null ? from.vectorAlongDimension(iDup,0) : null;
+
+
+                        getThreads().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                for(int j = 0; j < fromCurr.length(); j++) {
+                                   applyTransformToOrigin(fromCurr,j,scalarValue);
+                                }
+
+                                latch.countDown();
+                            }
+                        });
+
+
+
+                    }
+                });
+
+
+            }
+
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+
         else {
 
             assert from.length() == to.length() : "From and to must be same length";
@@ -88,17 +127,24 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
                 getThreads().execute(new Runnable() {
                     @Override
                     public void run() {
-                        INDArray curr = to.vectorAlongDimension(iDup,0);
-                        INDArray currOther = other != null ? other.vectorAlongDimension(iDup,0) : null;
-                        INDArray fromCurr = from != null ? from.vectorAlongDimension(iDup,0) : null;
+                        final INDArray curr = to.vectorAlongDimension(iDup,0);
+                        final INDArray currOther = other != null ? other.vectorAlongDimension(iDup,0) : null;
+                        final  INDArray fromCurr = from != null ? from.vectorAlongDimension(iDup,0) : null;
+
+
+                        getThreads().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                for(int j = 0; j < fromCurr.length(); j++) {
+                                    applyTransformToDestination(fromCurr,curr,currOther,j);
+                                }
+
+                                latch.countDown();
+                            }
+                        });
 
 
 
-                        for(int j = 0; j < fromCurr.length(); j++) {
-                            applyTransformToDestination(fromCurr,curr,currOther,j);
-                        }
-
-                        latch.countDown();
                     }
                 });
 
@@ -124,7 +170,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
      */
     @Override
     public Object getOther(INDArray other, int i) {
-        if(currOther instanceof IComplexNDArray) {
+        if(other instanceof IComplexNDArray) {
             IComplexNDArray c = (IComplexNDArray) other;
             return c.getComplex(i);
         }

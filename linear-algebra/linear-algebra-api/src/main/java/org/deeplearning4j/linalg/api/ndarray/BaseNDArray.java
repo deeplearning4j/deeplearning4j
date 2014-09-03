@@ -2049,7 +2049,7 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public int linearIndex(int i) {
-        int realStride = getRealStrideForLinearIndex();
+        int realStride = stride[0];
         int idx = offset + i * realStride;
         if(idx >= data.length)
             throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
@@ -2204,7 +2204,10 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray divi(Number n) {
-        return divi(NDArrays.scalar(n));
+        new TwoArrayOps().from(this).scalar(n).op(DivideOp.class)
+                .to(this).build().exec();
+
+        return  this;
     }
 
     @Override
@@ -2214,7 +2217,10 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray muli(Number n) {
-        return muli(NDArrays.scalar(n));
+        new TwoArrayOps().from(this).scalar(n).op(MultiplyOp.class)
+                .to(this).build().exec();
+
+        return  this;
     }
 
     @Override
@@ -2224,7 +2230,10 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray subi(Number n) {
-        return subi(NDArrays.scalar(n));
+        new TwoArrayOps().from(this).scalar(n).op(SubtractOp.class)
+                .to(this).build().exec();
+
+        return  this;
     }
 
     @Override
@@ -2234,7 +2243,10 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray addi(Number n) {
-        return addi(NDArrays.scalar(n));
+        new TwoArrayOps().from(this).scalar(n).op(AddOp.class)
+                .to(this).build().exec();
+
+        return  this;
     }
 
 
