@@ -377,34 +377,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    /**
-     * Compute activations from input to output of the output layer
-     *
-     * @return the list of activations for each layer
-     */
-    public List<INDArray> feedForwardConcat() {
-        INDArray currInput = NDArrays.concatHorizontally(this.input, NDArrays.ones(input.rows(), 1));
-        if (this.input.columns() != defaultConfiguration.getnIn())
-            throw new IllegalStateException("Illegal input length");
-        List<INDArray> activations = new ArrayList<>();
-        activations.add(currInput);
-        for (int i = 0; i < getnLayers(); i++) {
-            currInput = activationFromPrevLayer(i,currInput);
-            //applies drop connect to the activation
-            applyDropConnectIfNecessary(currInput);
-            activations.add(currInput);
-        }
-
-        if (getOutputLayer() != null) {
-            getOutputLayer().setInput(activations.get(activations.size() - 1));
-
-            activations.add(getOutputLayer().output(activations.get(activations.size() - 1)));
-
-        }
-        return activations;
-    }
-
-
 
 
     public INDArray activationFromPrevLayer(int curr,INDArray input) {
@@ -415,7 +387,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         switch(layers[curr].conf().getActivationType()) {
             case HIDDEN_LAYER_ACTIVATION: return layers[curr].activate(input);
-            case NET_ACTIVATION: return neuralNets[curr].transform(input);
+            case NET_ACTIVATION: return neuralNets[curr].hiddenActivation(input);
             case SAMPLE: return neuralNets[curr].sampleHiddenGivenVisible(input).getSecond();
             default: throw new IllegalStateException("Invalid activation type");
         }
@@ -529,49 +501,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         return deltaRet;
     }
 
-
-    /**
-     * Unpack in a condensed form (weight,bias as one matrix) with
-     * the param vector as flattened in each element in the list
-     *
-     * @param param the param vector to convert
-     * @return an unpacked list in a condensed form (weight/bias merged)
-     */
-    public List<INDArray> unPackCondensed(INDArray param) {
-        //more sanity checks!
-        int numParams = numParams();
-        if (param.length() != numParams)
-            throw new IllegalArgumentException("Parameter vector not equal of length to " + numParams);
-
-        List<INDArray> ret = new ArrayList<>();
-        int curr = 0;
-        for (int i = 0; i < neuralNets.length; i++) {
-            int layerLength = neuralNets[i].getW().length() + neuralNets[i].gethBias().length();
-            INDArray subMatrix = param.get(NDArrayIndex.interval(0, param.rows()), NDArrayIndex.interval(curr, curr + layerLength));
-            INDArray weightPortion = subMatrix.get(NDArrayIndex.interval(0, subMatrix.rows()), NDArrayIndex.interval(0, neuralNets[i].getW().length()));
-
-            int beginHBias = neuralNets[i].getW().length();
-            int endHbias = subMatrix.length();
-            INDArray hBiasPortion = subMatrix.get(NDArrayIndex.interval(0, subMatrix.rows()), NDArrayIndex.interval(beginHBias, endHbias));
-            int layerLengthSum = weightPortion.length() + hBiasPortion.length();
-            if (layerLengthSum != layerLength) {
-                if (hBiasPortion.length() != neuralNets[i].gethBias().length())
-                    throw new IllegalStateException("Hidden bias on layer " + i + " was off");
-                if (weightPortion.length() != neuralNets[i].getW().length())
-                    throw new IllegalStateException("Weight portion on layer " + i + " was off");
-
-            }
-
-            INDArray d = NDArrays.create(1, weightPortion.length() + hBiasPortion.length());
-            d.put(new NDArrayIndex[]{NDArrayIndex.interval(0, d.rows()), NDArrayIndex.interval(0, weightPortion.length())}, weightPortion);
-            d.put(new NDArrayIndex[]{NDArrayIndex.interval(0, d.rows()), NDArrayIndex.interval(weightPortion.length(), d.length())}, hBiasPortion);
-
-            ret.add(d);
-            curr += layerLength;
-        }
-
-        return ret;
-    }
 
 
     //damping update after line search
@@ -1061,7 +990,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
             //update hidden bias
-            INDArray deltaColumnSums = deltas.get(l).mean(0);
+            INDArray deltaColumnSums = deltas.get(l).sum(0);
 
 
             list.add(new Pair<>(gradientChange, deltaColumnSums));

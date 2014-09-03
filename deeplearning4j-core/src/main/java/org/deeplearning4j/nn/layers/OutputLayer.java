@@ -54,10 +54,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     }
 
 
-    protected INDArray createWeightMatrix() {
-        INDArray W = NDArrays.zeros(conf.getnIn(), conf.getnOut());
-        return W;
-    }
 
     /**
      * Train with current input and labels
