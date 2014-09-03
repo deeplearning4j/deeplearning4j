@@ -72,7 +72,10 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     }
 
 
-
+    @Override
+    public INDArray hiddenActivation(INDArray input) {
+        return getHiddenValues(input);
+    }
 
     // Encode
     public INDArray getHiddenValues(INDArray x) {
@@ -106,20 +109,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     }
 
 
-    /**
-     * Run a network optimizer
-     * @param x the input
-     * @param lr the learning rate
-     * @param corruptionLevel the corruption level
-     * @param iterations to run
-     */
-    public void trainTillConvergence(INDArray x, float lr,float corruptionLevel,int iterations) {
-        if(x != null)
-            input = preProcessInput(x);
-        this.lastMiniBatchSize = x.rows();
-        optimizer = new DenoisingAutoEncoderOptimizer(this,lr,new Object[]{corruptionLevel,lr,iterations}, conf.getOptimizationAlgo(), conf.getLossFunction());
-        optimizer.train(x);
-    }
+
 
     /**
      * Perform one iteration of training

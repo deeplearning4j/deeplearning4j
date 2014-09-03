@@ -430,6 +430,10 @@ public  class RBM extends BaseNeuralNetwork {
 
     }
 
+    @Override
+    public INDArray hiddenActivation(INDArray input) {
+        return propUp(input);
+    }
 
     @Override
     public void iterationDone(int epoch) {
@@ -476,6 +480,8 @@ public  class RBM extends BaseNeuralNetwork {
         throw new IllegalStateException("Visible unit type should either be binary or gaussian");
 
     }
+
+
 
     /**
      * Reconstructs the visible input.

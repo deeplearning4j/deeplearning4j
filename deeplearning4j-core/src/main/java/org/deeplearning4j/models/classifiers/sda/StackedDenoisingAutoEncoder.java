@@ -93,19 +93,12 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
 
                 iter.reset();
             } else {
-                boolean activateOnly = layerWiseConfigurations.get(i).isUseHiddenActivationsForwardProp();
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
                     layerInput = next.getFeatureMatrix();
-                    for (int j = 1; j <= i; j++) {
-                        if (activateOnly)
-                            layerInput = getLayers()[j - 1].activate(layerInput);
-                        else if (isSampleFromHiddenActivations())
-                            layerInput = getNeuralNets()[j - 1].sampleHiddenGivenVisible(getNeuralNets()[j - 1].conf().getActivationFunction().apply(layerInput)).getSecond();
-                        else
-                            layerInput = getNeuralNets()[j - 1].sampleHiddenGivenVisible(layerInput).getSecond();
+                    for (int j = 1; j <= i; j++)
+                           layerInput = activationFromPrevLayer(j,layerInput);
 
-                    }
 
 
                     log.info("Training on layer " + (i + 1));

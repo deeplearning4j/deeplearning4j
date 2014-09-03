@@ -59,6 +59,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
     public  void setInput(INDArray input);
 
 
+    INDArray hiddenActivation(INDArray input);
 
 
     INDArray hBiasMean();

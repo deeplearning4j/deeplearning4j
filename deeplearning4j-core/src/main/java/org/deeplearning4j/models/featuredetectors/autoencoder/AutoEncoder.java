@@ -2,6 +2,7 @@ package org.deeplearning4j.models.featuredetectors.autoencoder;
 
 
 
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.optimize.optimizers.autoencoder.AutoEncoderOptimizer;
 import org.deeplearning4j.berkeley.Pair;
@@ -34,10 +35,15 @@ public class AutoEncoder extends BaseNeuralNetwork {
      */
     @Override
     public INDArray transform(INDArray x) {
-        return conf.getActivationFunction().apply(x.mmul(W).addiRowVector(hBias));
+        return getReconstructedInput(x);
     }
 
 
+    @Override
+    public INDArray hiddenActivation(INDArray input) {
+        return getHiddenValues(input);
+
+    }
 
     /**
      * iterate one iteration of the network
@@ -71,6 +77,39 @@ public class AutoEncoder extends BaseNeuralNetwork {
         NeuralNetworkGradient ret =  new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
         updateGradientAccordingToParams(ret, iterations,lr);
         return ret;
+
+    }
+
+
+
+    // Encode
+    public INDArray getHiddenValues(INDArray x) {
+        INDArray preAct;
+        if(conf.isConcatBiases()) {
+            INDArray concat = NDArrays.concatVertically(W,hBias.transpose());
+            preAct =  x.mmul(concat);
+
+        }
+        else
+            preAct = x.mmul(W).addiRowVector(hBias);
+        INDArray ret = Transforms.sigmoid(preAct);
+        applyDropOutIfNecessary(ret);
+        return ret;
+    }
+
+    // Decode
+    public INDArray getReconstructedInput(INDArray y) {
+        if(conf.isConcatBiases()) {
+            //row already accounted for earlier
+            INDArray preAct = y.mmul(W.transpose());
+            preAct = NDArrays.concatHorizontally(preAct,NDArrays.ones(preAct.rows(),1));
+            return Transforms.sigmoid(preAct);
+        }
+        else {
+            INDArray preAct = y.mmul(W.transpose());
+            preAct.addiRowVector(vBias);
+            return Transforms.sigmoid(preAct);
+        }
 
     }
 
