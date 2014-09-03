@@ -113,41 +113,23 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
      */
     @Override
     public void exec() {
-        final CountDownLatch latch = new CountDownLatch(from.vectorsAlongDimension(0));
 
-        for(int i = 0; i < from.vectorsAlongDimension(0); i++) {
-            final int dupI = i;
-            getThreads().execute(new Runnable() {
-                @Override
-                public void run() {
-                    INDArray vectorAlongDim = from.vectorAlongDimension(dupI,0);
-
-                    for(int j = 0; j < vectorAlongDim.length(); j++) {
-                        if(vectorAlongDim instanceof IComplexNDArray) {
-                            IComplexNDArray c = (IComplexNDArray) vectorAlongDim;
-                            IComplexNumber result =  apply(c,c.getComplex(j),j);
-                            c.putScalar(j,result);
-                        }
-                        else {
-                            float apply = apply(vectorAlongDim,vectorAlongDim.get(j),j);
-                            vectorAlongDim.putScalar(j,apply);
-
-                        }
-                    }
-
-                    latch.countDown();
-                }
-            });
+        INDArray linear = from.linearView();
+        if(linear instanceof IComplexNDArray) {
+            IComplexNDArray cLinear = (IComplexNDArray) linear;
+            for(int i = 0; i < cLinear.length(); i++) {
+                IComplexNumber result =  apply(cLinear,cLinear.getComplex(i),i);
+                cLinear.putScalar(i,result);
+            }
 
         }
 
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        else {
+            for(int i = 0; i < linear.length(); i++) {
+                float apply = apply(linear,linear.get(i),i);
+                from.putScalar(i,apply);
+            }
         }
-
-
 
     }
 }

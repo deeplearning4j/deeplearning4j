@@ -6,11 +6,7 @@ import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.indexing.Indices;
 import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 
-import org.deeplearning4j.linalg.ops.TwoArrayOps;
-import org.deeplearning4j.linalg.ops.elementwise.AddOp;
-import org.deeplearning4j.linalg.ops.elementwise.DivideOp;
-import org.deeplearning4j.linalg.ops.elementwise.MultiplyOp;
-import org.deeplearning4j.linalg.ops.elementwise.SubtractOp;
+
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 import org.deeplearning4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.linalg.util.*;
@@ -582,6 +578,8 @@ public abstract class BaseNDArray  implements INDArray {
         return Transforms.gt(other);
     }
 
+
+
     /**
      * Negate each element.
      */
@@ -599,9 +597,95 @@ public abstract class BaseNDArray  implements INDArray {
     }
 
 
+    @Override
+    public INDArray rdiv(Number n, INDArray result) {
+        return dup().rdivi(n,result);
+    }
 
+    @Override
+    public INDArray rdivi(Number n, INDArray result) {
+        INDArray linear = linearView();
+        INDArray resultLinear = result.linearView();
+        for (int i = 0; i < length; i++) {
+            resultLinear.putScalar(i, n.floatValue() / linear.get(i));
+        }
+        return result;
+    }
 
+    @Override
+    public INDArray rsub(Number n, INDArray result) {
+        return dup().rsubi(n,result);
+    }
 
+    @Override
+    public INDArray rsubi(Number n, INDArray result) {
+        INDArray linear = linearView();
+        INDArray resultLinear = result.linearView();
+        for (int i = 0; i < length; i++) {
+            resultLinear.putScalar(i, n.floatValue() - linear.get(i));
+        }
+        return result;
+    }
+
+    @Override
+    public INDArray div(Number n, INDArray result) {
+        return dup().divi(n,result);
+    }
+
+    @Override
+    public INDArray divi(Number n, INDArray result) {
+        INDArray linear = linearView();
+        INDArray resultLinear = result.linearView();
+        for (int i = 0; i < length; i++) {
+            resultLinear.putScalar(i, linear.get(i) / n.floatValue());
+        }
+        return result;
+    }
+
+    @Override
+    public INDArray mul(Number n, INDArray result) {
+        return dup().muli(n,result);
+    }
+
+    @Override
+    public INDArray muli(Number n, INDArray result) {
+        INDArray linear = linearView();
+        INDArray resultLinear = result.linearView();
+        for (int i = 0; i < length; i++) {
+            resultLinear.putScalar(i, linear.get(i) * n.floatValue());
+        }
+        return result;
+    }
+
+    @Override
+    public INDArray sub(Number n, INDArray result) {
+        return dup().subi(n,result);
+    }
+
+    @Override
+    public INDArray subi(Number n, INDArray result) {
+        INDArray linear = linearView();
+        INDArray resultLinear = result.linearView();
+        for (int i = 0; i < length; i++) {
+            resultLinear.putScalar(i, linear.get(i) - n.floatValue());
+        }
+        return result;
+    }
+
+    @Override
+    public INDArray add(Number n, INDArray result) {
+        return dup().addi(n,result);
+    }
+
+    @Override
+    public INDArray addi(Number n, INDArray result) {
+        INDArray linear = linearView();
+        INDArray resultLinear = result.linearView();
+        for (int i = 0; i < length; i++) {
+            resultLinear.putScalar(i, linear.get(i) + n.floatValue());
+        }
+        return result;
+    }
 
     /**
      * Returns the element at the specified row/column
@@ -1802,13 +1886,21 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray divi(INDArray other, INDArray result) {
-        if(other.isScalar())
-            new TwoArrayOps().from(this).scalar(other.element()).op(DivideOp.class)
-                    .to(result).build().exec();
-        else
-            new TwoArrayOps().from(this).other(other).op(DivideOp.class)
-                    .to(result).build().exec();
-        return  result;
+        if (other.isScalar()) {
+            return divi(other.get(0), result);
+        }
+        if (isScalar()) {
+            return other.divi(get(0), result);
+        }
+
+        INDArray otherLinear = other.linearView();
+        INDArray resultLinear = result.linearView();
+        INDArray linearView = linearView();
+
+        for (int i = 0; i < length; i++) {
+            resultLinear.putScalar(i, linearView.get(i) / otherLinear.get(i));
+        }
+        return result;
     }
 
     /**
@@ -1831,13 +1923,21 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray muli(INDArray other, INDArray result) {
-        if(other.isScalar())
-            new TwoArrayOps().from(this).scalar(other.element()).op(MultiplyOp.class)
-                    .to(result).build().exec();
-        else
-            new TwoArrayOps().from(this).other(other).op(MultiplyOp.class)
-                    .to(result).build().exec();
-        return  result;
+        if (other.isScalar()) {
+            return muli(other.get(0), result);
+        }
+        if (isScalar()) {
+            return other.muli(get(0), result);
+        }
+
+        INDArray otherLinear = other.linearView();
+        INDArray resultLinear = result.linearView();
+        INDArray linearView = linearView();
+
+        for (int i = 0; i < length; i++) {
+            resultLinear.putScalar(i, linearView.get(i) * otherLinear.get(i));
+        }
+        return result;
     }
 
     /**
@@ -1860,14 +1960,24 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray subi(INDArray other, INDArray result) {
+        if (other.isScalar()) {
+            return subi(other.get(0), result);
+        }
+        if (isScalar()) {
+            return other.rsubi(get(0), result);
+        }
 
-        if(other.isScalar())
-            new TwoArrayOps().from(this).scalar(other.element()).op(SubtractOp.class)
-                    .to(result).build().exec();
-        else
-            new TwoArrayOps().from(this).other(other).op(SubtractOp.class)
-                    .to(result).build().exec();
-        return  result;
+
+        if (result == this) {
+            NDArrays.getBlasWrapper().axpy(-1.0f, other, result);
+        } else if (result == other) {
+            NDArrays.getBlasWrapper().scal(-1.0f, result);
+            NDArrays.getBlasWrapper().axpy(1.0f, this, result);
+        } else {
+            NDArrays.getBlasWrapper().copy(this, result);
+            NDArrays.getBlasWrapper().axpy(-1.0f, other, result);
+        }
+        return result;
     }
 
     /**
@@ -1890,14 +2000,31 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray addi(INDArray other, INDArray result) {
-        if(other.isScalar())
-            new TwoArrayOps().from(this).scalar(other.element()).op(AddOp.class)
-                    .to(result).build().exec();
+        if (other.isScalar()) {
+            return result.addi(other.get(0),result);
+        }
+        if (isScalar()) {
+            return other.addi(get(0), result);
+        }
 
-        else
-            new TwoArrayOps().from(this).other(other).op(AddOp.class)
-                    .to(result).build().exec();
-        return  result;
+
+        if (result == this) {
+            NDArrays.getBlasWrapper().axpy(1.0f, other, result);
+        } else if (result == other) {
+            NDArrays.getBlasWrapper().axpy(1.0f, this, result);
+        } else {
+            /*SimpleBlas.copy(this, result);
+            SimpleBlas.axpy(1.0, other, result);*/
+            INDArray resultLinear = result.linearView();
+            INDArray otherLinear = other.linearView();
+            INDArray linear = linearView();
+            for(int i = 0; i < resultLinear.length(); i++) {
+                resultLinear.putScalar(i,otherLinear.get(i) + linear.get(i));
+            }
+
+        }
+
+        return result;
     }
 
     /**
@@ -2204,10 +2331,7 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray divi(Number n) {
-        new TwoArrayOps().from(this).scalar(n).op(DivideOp.class)
-                .to(this).build().exec();
-
-        return  this;
+        return divi(n,this);
     }
 
     @Override
@@ -2217,10 +2341,7 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray muli(Number n) {
-        new TwoArrayOps().from(this).scalar(n).op(MultiplyOp.class)
-                .to(this).build().exec();
-
-        return  this;
+        return muli(n,this);
     }
 
     @Override
@@ -2230,10 +2351,7 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray subi(Number n) {
-        new TwoArrayOps().from(this).scalar(n).op(SubtractOp.class)
-                .to(this).build().exec();
-
-        return  this;
+        return subi(n,this);
     }
 
     @Override
@@ -2243,10 +2361,7 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray addi(Number n) {
-        new TwoArrayOps().from(this).scalar(n).op(AddOp.class)
-                .to(this).build().exec();
-
-        return  this;
+        return addi(n,this);
     }
 
 

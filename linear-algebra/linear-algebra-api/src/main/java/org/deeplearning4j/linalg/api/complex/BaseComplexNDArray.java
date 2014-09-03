@@ -221,7 +221,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray linearView() {
-        return (IComplexNDArray) super.linearView();
+        if(linearView == null)
+            linearView = NDArrays.createComplex(data,new int[]{1,length},offset());
+        return (IComplexNDArray) linearView;
     }
 
     /**
@@ -490,6 +492,69 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
 
+    @Override
+    public IComplexNDArray rdiv(Number n, INDArray result) {
+        return dup().rdivi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray rdivi(Number n, INDArray result) {
+        return rdivi(NDArrays.createFloat(n.floatValue(), 0), result);
+
+    }
+
+    @Override
+    public IComplexNDArray rsub(Number n, INDArray result) {
+        return dup().rsubi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray rsubi(Number n, INDArray result) {
+        return rsubi(NDArrays.createFloat(n.floatValue(), 0), result);
+
+    }
+
+    @Override
+    public IComplexNDArray div(Number n, INDArray result) {
+        return dup().divi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray divi(Number n, INDArray result) {
+        return divi(NDArrays.createFloat(n.floatValue(), 0), result);
+
+    }
+
+    @Override
+    public IComplexNDArray mul(Number n, INDArray result) {
+        return dup().muli(n,result);
+    }
+
+    @Override
+    public IComplexNDArray muli(Number n, INDArray result) {
+        return muli(NDArrays.createFloat(n.floatValue(), 0), result);
+
+    }
+
+    @Override
+    public IComplexNDArray sub(Number n, INDArray result) {
+        return dup().subi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray subi(Number n, INDArray result) {
+        return subi(NDArrays.createFloat(n.floatValue(), 0), result);
+    }
+
+    @Override
+    public IComplexNDArray add(Number n, INDArray result) {
+        return dup().addi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray addi(Number n, INDArray result) {
+        return addi(NDArrays.createFloat(n.floatValue(), 0),result);
+    }
 
     @Override
     public IComplexNDArray dup() {
@@ -1656,7 +1721,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public INDArray assign(INDArray arr) {
-        return null;
+        return assign((IComplexNDArray) arr);
     }
 
     @Override
@@ -1666,7 +1731,21 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public INDArray putScalar(int[] i, Number value) {
-        return null;
+        super.putScalar(i,value);
+        return putScalar(i,NDArrays.createComplexNumber(value.floatValue(), 0));
+    }
+
+    @Override
+    public INDArray putScalar(int[] indexes, IComplexNumber complexNumber) {
+        int ix = offset;
+        for (int i = 0; i < shape.length; i++) {
+            ix += indexes[i] * stride[i];
+        }
+
+        data[ix] = complexNumber.asFloat().realComponent();
+        data[ix + 1] = complexNumber.asFloat().imaginaryComponent();
+
+        return this;
     }
 
     /**
@@ -1687,22 +1766,22 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray rdiv(Number n) {
-        return null;
+        return rdiv(n,this);
     }
 
     @Override
     public IComplexNDArray rdivi(Number n) {
-        return null;
+        return rdivi(n,this);
     }
 
     @Override
     public IComplexNDArray rsub(Number n) {
-        return null;
+        return rsub(n,this);
     }
 
     @Override
     public IComplexNDArray rsubi(Number n) {
-        return null;
+        return rsubi(n,this);
     }
 
 
@@ -1713,7 +1792,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray divi(Number n) {
-        return divi(NDArrays.scalar(n));
+        return divi(NDArrays.complexScalar(n));
     }
 
     @Override
@@ -1723,7 +1802,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray muli(Number n) {
-        return muli(NDArrays.scalar(n));
+        return muli(NDArrays.complexScalar(n));
     }
 
     @Override
@@ -1733,7 +1812,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray subi(Number n) {
-        return subi(NDArrays.scalar(n));
+        return subi(NDArrays.complexScalar(n));
     }
 
     @Override
@@ -1743,7 +1822,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray addi(Number n) {
-        return addi(NDArrays.scalar(n));
+        return addi(NDArrays.complexScalar(n));
     }
 
     /**
@@ -2258,13 +2337,23 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray divi(INDArray other, INDArray result) {
-        if(other.isScalar())
-            new TwoArrayOps().from(this).scalar(other).op(DivideOp.class)
-                    .to(result).build().exec();
-        else
-            new TwoArrayOps().from(this).other(other).op(DivideOp.class)
-                    .to(result).build().exec();
-        return (IComplexNDArray) result;
+        IComplexNDArray cOther = (IComplexNDArray) other;
+        IComplexNDArray cResult = (IComplexNDArray) result;
+
+        IComplexNDArray linear = linearView();
+        IComplexNDArray cOtherLinear = cOther.linearView();
+        IComplexNDArray cResultLinear = cResult.linearView();
+
+        if (other.isScalar())
+            return divi(cOther.getComplex(0), result);
+
+
+        IComplexNumber c = NDArrays.createComplexNumber(0,0);
+        IComplexNumber d =  NDArrays.createComplexNumber(0,0);
+
+        for (int i = 0; i < length; i++)
+            cResultLinear.putScalar(i, linear.getComplex(i, c).divi(cOtherLinear.getComplex(i, d)));
+        return cResult;
     }
 
     /**
@@ -2287,14 +2376,23 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray muli(INDArray other, INDArray result) {
-        if(other.isScalar())
-            new TwoArrayOps().from(this).scalar(other).op(MultiplyOp.class)
-                    .to(result).build().exec();
+        IComplexNDArray cOther = (IComplexNDArray) other;
+        IComplexNDArray cResult = (IComplexNDArray) result;
 
-        else
-            new TwoArrayOps().from(this).other(other).op(MultiplyOp.class)
-                    .to(result).build().exec();
-        return (IComplexNDArray) result;
+        IComplexNDArray linear = linearView();
+        IComplexNDArray cOtherLinear = cOther.linearView();
+        IComplexNDArray cResultLinear = cResult.linearView();
+
+        if (other.isScalar())
+            return muli(cOther.getComplex(0), result);
+
+
+        IComplexNumber c = NDArrays.createComplexNumber(0,0);
+        IComplexNumber d =  NDArrays.createComplexNumber(0,0);
+
+        for (int i = 0; i < length; i++)
+            cResultLinear.putScalar(i, linear.getComplex(i, c).muli(cOtherLinear.getComplex(i, d)));
+        return cResult;
     }
 
     /**
@@ -2317,13 +2415,24 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray subi(INDArray other, INDArray result) {
-        if(other.isScalar())
-            new TwoArrayOps().from(this).scalar(other).op(SubtractOp.class)
-                    .to(result).build().exec();
-        else
-            new TwoArrayOps().from(this).other(other).op(SubtractOp.class)
-                    .to(result).build().exec();
-        return (IComplexNDArray) result;
+        IComplexNDArray cOther = (IComplexNDArray) other;
+        IComplexNDArray cResult = (IComplexNDArray) result;
+
+        if (other.isScalar())
+            return subi(cOther.getComplex(0), result);
+
+
+        if (result == this)
+            NDArrays.getBlasWrapper().axpy(NDArrays.NEG_UNIT, cOther, cResult);
+        else if (result == other) {
+            NDArrays.getBlasWrapper().scal(NDArrays.NEG_UNIT, cResult);
+            NDArrays.getBlasWrapper().axpy(NDArrays.UNIT, this, cResult);
+        }
+        else {
+            NDArrays.getBlasWrapper().copy(this, result);
+            NDArrays.getBlasWrapper().axpy(NDArrays.NEG_UNIT, cOther, cResult);
+        }
+        return cResult;
     }
 
     /**
@@ -2346,16 +2455,185 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray addi(INDArray other, INDArray result) {
-        if(other.isScalar())
-            new TwoArrayOps().from(this).scalar(other).op(AddOp.class)
-                    .to(result).build().exec();
-        else
-            new TwoArrayOps().from(this).other(other).op(AddOp.class)
-                    .to(result).build().exec();
+        IComplexNDArray cOther = (IComplexNDArray) other;
+        IComplexNDArray cResult = (IComplexNDArray) result;
+
+        if (cOther.isScalar()) {
+            return cResult.addi(cOther.getComplex(0),result);
+        }
+        if (isScalar()) {
+            return cOther.addi(getComplex(0), result);
+        }
+
+
+        if (result == this) {
+
+            NDArrays.getBlasWrapper().axpy(NDArrays.UNIT, cOther, cResult);
+        } else if (result == other) {
+            NDArrays.getBlasWrapper().axpy(NDArrays.UNIT, this, cResult);
+        } else {
+            /*SimpleBlas.copy(this, result);
+            SimpleBlas.axpy(1.0, other, result);*/
+            INDArray resultLinear = result.linearView();
+            INDArray otherLinear = other.linearView();
+            INDArray linear = linearView();
+            for(int i = 0; i < resultLinear.length(); i++) {
+                resultLinear.putScalar(i,otherLinear.get(i) + linear.get(i));
+            }
+
+        }
+
         return (IComplexNDArray) result;
     }
 
 
+
+
+    @Override
+    public IComplexNDArray rdiv(IComplexNumber n, INDArray result) {
+        return dup().rdivi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray rdivi(IComplexNumber n, INDArray result) {
+        IComplexNDArray cResult = (IComplexNDArray) result;
+        IComplexNDArray cResultLinear = cResult.linearView();
+        for (int i = 0; i < length; i++)
+            cResultLinear.putScalar(i, n.div(getComplex(i)));
+        return cResult;
+    }
+
+    @Override
+    public IComplexNDArray rsub(IComplexNumber n, INDArray result) {
+        return dup().rsubi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray rsubi(IComplexNumber n, INDArray result) {
+        IComplexNDArray cResult = (IComplexNDArray) result;
+        IComplexNDArray cResultLinear = cResult.linearView();
+        for (int i = 0; i < length; i++)
+            cResultLinear.putScalar(i, n.sub(getComplex(i)));
+        return cResult;
+    }
+
+    @Override
+    public IComplexNDArray div(IComplexNumber n, INDArray result) {
+        return dup().divi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray divi(IComplexNumber n, INDArray result) {
+        IComplexNDArray cResult = (IComplexNDArray) result;
+        IComplexNDArray cResultLinear = cResult.linearView();
+        for (int i = 0; i < length; i++)
+            cResultLinear.putScalar(i, getComplex(i).div(n));
+        return cResult;
+    }
+
+    @Override
+    public IComplexNDArray mul(IComplexNumber n, INDArray result) {
+        return dup().muli(n,result);
+    }
+
+    @Override
+    public IComplexNDArray muli(IComplexNumber n, INDArray result) {
+        IComplexNDArray cResult = (IComplexNDArray) result;
+        IComplexNDArray cResultLinear = cResult.linearView();
+        for (int i = 0; i < length; i++)
+            cResultLinear.putScalar(i, getComplex(i).mul(n));
+        return cResult;
+    }
+
+    @Override
+    public IComplexNDArray sub(IComplexNumber n, INDArray result) {
+        return dup().subi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray subi(IComplexNumber n, INDArray result) {
+        IComplexNDArray cResult = (IComplexNDArray) result;
+        IComplexNDArray cResultLinear = cResult.linearView();
+        for (int i = 0; i < length; i++)
+            cResultLinear.putScalar(i, getComplex(i).sub(n));
+        return cResult;
+    }
+
+    @Override
+    public IComplexNDArray add(IComplexNumber n, INDArray result) {
+        return dup().addi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray addi(IComplexNumber n, INDArray result) {
+        IComplexNDArray linear = linearView();
+        IComplexNDArray cResult = (IComplexNDArray) result.linearView();
+        for(int i = 0; i < length(); i++) {
+            cResult.putScalar(i,linear.getComplex(i).add(n));
+        }
+
+        return (IComplexNDArray) result;
+    }
+
+    @Override
+    public IComplexNDArray rdiv(IComplexNumber n) {
+        return dup().rdivi(n,this);
+    }
+
+    @Override
+    public IComplexNDArray rdivi(IComplexNumber n) {
+        return rdivi(n,this);
+    }
+
+    @Override
+    public IComplexNDArray rsub(IComplexNumber n) {
+        return rsub(n, this);
+    }
+
+    @Override
+    public IComplexNDArray rsubi(IComplexNumber n) {
+        return rsubi(n,this);
+    }
+
+    @Override
+    public IComplexNDArray div(IComplexNumber n) {
+        return div(n,this);
+    }
+
+    @Override
+    public IComplexNDArray divi(IComplexNumber n) {
+        return divi(n,this);
+    }
+
+    @Override
+    public IComplexNDArray mul(IComplexNumber n) {
+        return dup().muli(n);
+    }
+
+    @Override
+    public IComplexNDArray muli(IComplexNumber n) {
+        return muli(n,this);
+    }
+
+    @Override
+    public IComplexNDArray sub(IComplexNumber n) {
+        return dup().subi(n);
+    }
+
+    @Override
+    public IComplexNDArray subi(IComplexNumber n) {
+        return subi(n,this);
+    }
+
+    @Override
+    public IComplexNDArray add(IComplexNumber n) {
+        return addi(n,this);
+    }
+
+    @Override
+    public IComplexNDArray addi(IComplexNumber n) {
+        return addi(n,this);
+    }
 
     @Override
     public IComplexNDArray get(int[] indices) {
@@ -2445,8 +2723,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         else {
             IComplexNDArray create = NDArrays.createComplex(shape,NDArrays.getComplexStrides(shape,ordering));
             final IComplexNDArray flattened = ravel();
-            //individual vector size
-            int vectorSize = create.size(create.shape().length - 1);
             //current position in the vector
             final AtomicInteger vectorCounter = new AtomicInteger(0);
             //row order
