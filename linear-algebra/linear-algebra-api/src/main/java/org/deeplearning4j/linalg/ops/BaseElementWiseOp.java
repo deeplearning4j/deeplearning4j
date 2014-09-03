@@ -27,7 +27,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
 
 
     static {
-        dimensionThreads = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        dimensionThreads = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
@@ -80,7 +80,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
                 throw new IllegalArgumentException("Unable to apply a non complex number to a real ndarray");
         }
         else {
-            float f = apply(origin,valueToApply,i);
+            float f = apply(origin,(float) valueToApply,i);
             origin.putScalar(i,f);
         }
 
