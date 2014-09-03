@@ -5,7 +5,6 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.sampling.Sampling;
 import org.deeplearning4j.linalg.transformation.MatrixTransform;
 import org.deeplearning4j.nn.*;
 
@@ -17,9 +16,6 @@ import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 
@@ -36,7 +32,7 @@ public class DBN extends BaseMultiLayerNetwork {
 
     private static final long serialVersionUID = -9068772752220902983L;
     private static Logger log = LoggerFactory.getLogger(DBN.class);
-    private boolean useRBMPropUpAsActivations = false;
+    private boolean useRBMPropUpAsActivations = true;
 
     public DBN() {}
 
@@ -45,59 +41,15 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
 
-    /**
-     * Compute activations from input to output of the output layer
-     * @return the list of activations for each layer
-     */
-    public List<INDArray> feedForward() {
-        INDArray currInput = this.input;
-        if(this.input.columns() != defaultConfiguration.getnIn())
-
-            throw new IllegalStateException("Illegal input length");
-        List<INDArray> activations = new ArrayList<>();
-        activations.add(currInput);
-        for(int i = 0; i < getnLayers(); i++) {
-            NeuralNetwork layer = getNeuralNets()[i];
-            Layer l = (Layer) getLayers()[i];
-            boolean activateOnly = layerWiseConfigurations.get(i).isUseHiddenActivationsForwardProp();
-
-            layer.setInput(currInput);
-            l.setInput(currInput);
-
-            if(useRBMPropUpAsActivations) {
-                RBM r = (RBM) layer;
-                if(sampleFromHiddenActivations)
-                    currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
-
-                else
-                    currInput = r.propUp(currInput);
-            }
-
-            else if(activateOnly)
-                currInput = l.activate(layer.transform(currInput));
-            else  if(sampleFromHiddenActivations)
-                currInput = layer.sampleHiddenGivenVisible(l.conf().getActivationFunction().apply(currInput)).getSecond();
-            else
-                currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
-            activations.add(currInput);
-        }
-        if(getOutputLayer() != null) {
-            getOutputLayer().setInput(activations.get(activations.size() - 1));
-
-            activations.add(getOutputLayer().output(activations.get(activations.size() - 1)));
-
-        }
-        return activations;
-    }
 
     /**
      * Creates a hidden layer with the given parameters.
      * The default implementation is a binomial sampling
-     * hidden layer, but this can be overriden
+     * hidden layer, but this can be overridden
      * for other kinds of hidden units
      * @param layerInput the layer starting input
      * for generating weights
-     * @return a hidden layer with the given paremters
+     * @return a hidden layer with the given parameters
      */
     public org.deeplearning4j.nn.layers.Layer createHiddenLayer(int index,INDArray layerInput) {
         return (Layer) super.createHiddenLayer(index,layerInput);
@@ -171,23 +123,13 @@ public class DBN extends BaseMultiLayerNetwork {
             }
 
             else {
-                boolean activateOnly = layerWiseConfigurations.get(i).isUseHiddenActivationsForwardProp();
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
                     layerInput = next.getFeatureMatrix();
-                    for(int j = 1; j <= i; j++) {
-                        if(useRBMPropUpAsActivations) {
-                            RBM r = (RBM) neuralNets[i];
-                            layerInput = r.propUp(layerInput);
-                        }
-                        else if(activateOnly)
-                            layerInput = getLayers()[j - 1].activate(layerInput);
-                        else if(isSampleFromHiddenActivations())
-                            layerInput = getNeuralNets()[j - 1].sampleHiddenGivenVisible(getLayers()[j - 1].conf().getActivationFunction().apply(layerInput)).getSecond();
-                        else
-                            layerInput = getNeuralNets()[j - 1].sampleHiddenGivenVisible(layerInput).getSecond();
+                    for(int j = 1; j <= i; j++)
+                        layerInput = activationFromPrevLayer(j,layerInput);
 
-                    }
+
 
 
                     log.info("Training on layer " + (i + 1));
@@ -244,22 +186,10 @@ public class DBN extends BaseMultiLayerNetwork {
         for(int i = 0; i < getnLayers(); i++) {
             if(i == 0)
                 layerInput = getInput();
-            else {
-                boolean activateOnly = layerWiseConfigurations.get(i).isUseHiddenActivationsForwardProp();
-                if(useRBMPropUpAsActivations) {
-                    RBM r = (RBM) neuralNets[i - 1];
-                    layerInput = r.propUp(layerInput);
-                    if(sampleFromHiddenActivations)
-                        layerInput = Sampling.binomial(layerInput, 1, layers[i].conf().getRng());
-                }
-                else if(activateOnly)
-                    layerInput = getLayers()[i - 1].activate(layerInput);
-                else if(isSampleFromHiddenActivations())
-                    layerInput = getNeuralNets()[i - 1].sampleHiddenGivenVisible(getNeuralNets()[i - 1].conf().getActivationFunction().apply(layerInput)).getSecond();
-                else
-                    layerInput = getNeuralNets()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
+            else
+                layerInput = activationFromPrevLayer(i -1,layerInput);
 
-            }
+
             log.info("Training on layer " + (i + 1));
             //override learning rate where present
             float realLearningRate = layers[i].conf().getLr();
@@ -312,7 +242,7 @@ public class DBN extends BaseMultiLayerNetwork {
      */
     @Override
     public INDArray transform(INDArray data) {
-        return null;
+        return output(data);
     }
 
     /**
@@ -323,12 +253,12 @@ public class DBN extends BaseMultiLayerNetwork {
      */
     @Override
     public void fit(INDArray data, Object[] params) {
-         pretrain(data,defaultConfiguration.getK(),defaultConfiguration.getLr(),defaultConfiguration.getNumIterations());
+        pretrain(data,defaultConfiguration.getK(),defaultConfiguration.getLr(),defaultConfiguration.getNumIterations());
     }
 
 
     public static class Builder extends BaseMultiLayerNetwork.Builder<DBN> {
-     private boolean useRBMPropUpAsActivation = false;
+        private boolean useRBMPropUpAsActivation = false;
 
         public Builder() {
             this.clazz = DBN.class;
@@ -337,7 +267,7 @@ public class DBN extends BaseMultiLayerNetwork {
 
         @Override
         public Builder configure(NeuralNetConfiguration conf) {
-             super.configure(conf);
+            super.configure(conf);
             return this;
         }
 
@@ -360,11 +290,6 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
 
-
-        public Builder useRBMPropUpAsActivation(boolean useRBMPropUpAsActivation) {
-            this.useRBMPropUpAsActivation = useRBMPropUpAsActivation;
-            return this;
-        }
 
         @Override
         public Builder lineSearchBackProp(boolean lineSearchBackProp) {

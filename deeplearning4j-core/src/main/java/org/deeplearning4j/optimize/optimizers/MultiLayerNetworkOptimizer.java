@@ -85,7 +85,8 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
         if(!network.isForceNumEpochs()) {
             if(network.isShouldBackProp())
                 network.backProp(lr, iteration);
-          network.getOutputLayer().trainTillConvergence(lr,iteration);
+            network.getOutputLayer().trainTillConvergence(lr,iteration);
+
         }
 
         else {

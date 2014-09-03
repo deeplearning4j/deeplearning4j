@@ -37,15 +37,15 @@ public class DBNTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED).regularization(true).useHiddenActivationsForwardProp(false)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).momentum(5e-1f).l2(1e-2f)
+                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .activationFunction(Activations.tanh()).iterations(100)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
                 .learningRate(1e-2f).nIn(4).nOut(3).build();
 
 
         DBN d = new DBN.Builder().configure(conf)
-                .hiddenLayerSizes(new int[]{3,2})
+                .hiddenLayerSizes(new int[]{4})
                 .build();
 
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
@@ -60,7 +60,7 @@ public class DBNTest {
         Evaluation eval = new Evaluation();
         INDArray output = d.output(next.getFeatureMatrix());
         eval.eval(next.getLabels(),output);
-        log.info("Score " +eval.stats());
+        log.info("Score " + eval.stats());
 
 
     }
@@ -70,24 +70,32 @@ public class DBNTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(5e-1f)
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT).rng(gen)
-                .learningRate(1e-1f).nIn(784).nOut(2).build();
+                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
+                .learningRate(1e-1f).nIn(784).nOut(3).build();
 
 
         DBN d = new DBN.Builder().configure(conf)
-                .hiddenLayerSizes(new int[]{500,250,100})
+                .hiddenLayerSizes(new int[]{500, 250, 200})
                 .build();
 
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
         d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        fetcher.fetch(10);
+        fetcher.fetch(100);
         DataSet d2 = fetcher.next();
-        d2.filterAndStrip(new int[]{0,1});
+        d2.filterAndStrip(new int[]{2,3,4});
 
         d.fit(d2);
+
+
+        INDArray predict2 = d.output(d2.getFeatureMatrix());
+
+        Evaluation eval = new Evaluation();
+        eval.eval(d2.getLabels(),predict2);
+        log.info(eval.stats());
         int[] predict = d.predict(d2.getFeatureMatrix());
         log.info("Predict " + Arrays.toString(predict));
+
 
     }
 

@@ -568,6 +568,14 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     }
 
+    @Override
+    public String toString() {
+        return "OutputLayer{" +
+                "labels=" + labels +
+                ", adaGrad=" + adaGrad +
+                ", biasAdaGrad=" + biasAdaGrad +
+                "} " + super.toString();
+    }
 
     /**
      * Classify input

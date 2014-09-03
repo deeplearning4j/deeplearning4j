@@ -136,7 +136,6 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
 
         }
 
-        network.getOutputLayer().trainTillConvergence(lr,numEpochs,eval);
 
 
     }

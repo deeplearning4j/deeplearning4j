@@ -56,20 +56,28 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected long seed = 123;
     protected int nIn,nOut;
     protected ActivationFunction activationFunction;
-    protected boolean useHiddenActivationsForwardProp = true;
     private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
     private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
+    private ActivationType activationType = ActivationType.HIDDEN_LAYER_ACTIVATION;
+
 
     public NeuralNetConfiguration() {
 
     }
 
 
+    public static enum ActivationType {
+        NET_ACTIVATION,HIDDEN_LAYER_ACTIVATION,SAMPLE
+    }
 
-    public NeuralNetConfiguration(float sparsity, boolean useAdaGrad, float lr, float momentum, float l2, boolean useRegularization, Map<Integer, Float> momentumAfter, int resetAdaGradIterations, float dropOut, boolean applySparsity, WeightInit weightInit, NeuralNetwork.OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, boolean useHiddenActivationsForwardProp, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit) {
+
+    public NeuralNetConfiguration(float sparsity, boolean useAdaGrad, float lr, int k, float corruptionLevel, int numIterations, float momentum, float l2, boolean useRegularization, Map<Integer, Float> momentumAfter, int resetAdaGradIterations, float dropOut, boolean applySparsity, WeightInit weightInit, NeuralNetwork.OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType) {
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
+        this.k = k;
+        this.corruptionLevel = corruptionLevel;
+        this.numIterations = numIterations;
         this.momentum = momentum;
         this.l2 = l2;
         this.useRegularization = useRegularization;
@@ -89,12 +97,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.nIn = nIn;
         this.nOut = nOut;
         this.activationFunction = activationFunction;
-        this.useHiddenActivationsForwardProp = useHiddenActivationsForwardProp;
         this.visibleUnit = visibleUnit;
-        if(dist == null)
-            this.dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
-
         this.hiddenUnit = hiddenUnit;
+        this.activationType = activationType;
     }
 
     public NeuralNetConfiguration(NeuralNetConfiguration neuralNetConfiguration) {
@@ -120,8 +125,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.nIn = neuralNetConfiguration.nIn;
         this.nOut = neuralNetConfiguration.nOut;
         this.activationFunction = neuralNetConfiguration.activationFunction;
-        this.useHiddenActivationsForwardProp = neuralNetConfiguration.useHiddenActivationsForwardProp;
         this.visibleUnit = neuralNetConfiguration.visibleUnit;
+        this.activationType = neuralNetConfiguration.activationType;
         if(dist == null)
             this.dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
@@ -168,13 +173,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.visibleUnit = visibleUnit;
     }
 
-    public boolean isUseHiddenActivationsForwardProp() {
-        return useHiddenActivationsForwardProp;
-    }
-
-    public void setUseHiddenActivationsForwardProp(boolean useHiddenActivationsForwardProp) {
-        this.useHiddenActivationsForwardProp = useHiddenActivationsForwardProp;
-    }
 
     public LossFunctions.LossFunction getLossFunction() {
         return lossFunction;
@@ -352,6 +350,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.dist = dist;
     }
 
+    public ActivationType getActivationType() {
+        return activationType;
+    }
+
+    public void setActivationType(ActivationType activationType) {
+        this.activationType = activationType;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -362,12 +368,15 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         if (applySparsity != that.applySparsity) return false;
         if (concatBiases != that.concatBiases) return false;
         if (constrainGradientToUnitNorm != that.constrainGradientToUnitNorm) return false;
+        if (Float.compare(that.corruptionLevel, corruptionLevel) != 0) return false;
         if (Float.compare(that.dropOut, dropOut) != 0) return false;
+        if (k != that.k) return false;
         if (Float.compare(that.l2, l2) != 0) return false;
         if (Float.compare(that.lr, lr) != 0) return false;
         if (Float.compare(that.momentum, momentum) != 0) return false;
         if (nIn != that.nIn) return false;
         if (nOut != that.nOut) return false;
+        if (numIterations != that.numIterations) return false;
         if (renderWeightsEveryNumEpochs != that.renderWeightsEveryNumEpochs) return false;
         if (resetAdaGradIterations != that.resetAdaGradIterations) return false;
         if (seed != that.seed) return false;
@@ -376,10 +385,13 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         if (useRegularization != that.useRegularization) return false;
         if (!activationFunction.equals(that.activationFunction)) return false;
         if (dist != null ? !dist.equals(that.dist) : that.dist != null) return false;
+        if (hiddenUnit != that.hiddenUnit) return false;
+        if (lossFunction != that.lossFunction) return false;
         if (momentumAfter != null ? !momentumAfter.equals(that.momentumAfter) : that.momentumAfter != null)
             return false;
         if (optimizationAlgo != that.optimizationAlgo) return false;
         if (rng != null ? !rng.equals(that.rng) : that.rng != null) return false;
+        if (visibleUnit != that.visibleUnit) return false;
         if (weightInit != that.weightInit) return false;
 
         return true;
@@ -390,6 +402,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         int result = (sparsity != +0.0f ? Float.floatToIntBits(sparsity) : 0);
         result = 31 * result + (useAdaGrad ? 1 : 0);
         result = 31 * result + (lr != +0.0f ? Float.floatToIntBits(lr) : 0);
+        result = 31 * result + k;
+        result = 31 * result + (corruptionLevel != +0.0f ? Float.floatToIntBits(corruptionLevel) : 0);
+        result = 31 * result + numIterations;
         result = 31 * result + (momentum != +0.0f ? Float.floatToIntBits(momentum) : 0);
         result = 31 * result + (l2 != +0.0f ? Float.floatToIntBits(l2) : 0);
         result = 31 * result + (useRegularization ? 1 : 0);
@@ -399,6 +414,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         result = 31 * result + (applySparsity ? 1 : 0);
         result = 31 * result + weightInit.hashCode();
         result = 31 * result + optimizationAlgo.hashCode();
+        result = 31 * result + lossFunction.hashCode();
         result = 31 * result + renderWeightsEveryNumEpochs;
         result = 31 * result + (concatBiases ? 1 : 0);
         result = 31 * result + (constrainGradientToUnitNorm ? 1 : 0);
@@ -408,6 +424,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         result = 31 * result + nIn;
         result = 31 * result + nOut;
         result = 31 * result + activationFunction.hashCode();
+        result = 31 * result + visibleUnit.hashCode();
+        result = 31 * result + hiddenUnit.hashCode();
         return result;
     }
 
@@ -477,7 +495,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
     public static class Builder {
-
+        private int k = 1;
+        private float corruptionLevel = 3e-1f;
         private float sparsity = 0f;
         private boolean useAdaGrad = true;
         private float lr = 1e-1f;
@@ -501,10 +520,16 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int nIn;
         private int nOut;
         private ActivationFunction activationFunction = Activations.sigmoid();
-        private boolean useHiddenActivationsForwardProp = true;
         private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
         private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
         private int numIterations = 1000;
+        private ActivationType activationType = ActivationType.HIDDEN_LAYER_ACTIVATION;
+
+
+        public Builder withActivationType(ActivationType activationType) {
+            this.activationType = activationType;
+            return this;
+        }
 
 
         public Builder iterations(int numIterations) {
@@ -605,10 +630,13 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         public NeuralNetConfiguration build() {
-            NeuralNetConfiguration ret =  new NeuralNetConfiguration(sparsity,useAdaGrad,lr,momentum,l2,useRegularization,momentumAfter,resetAdaGradIterations,dropOut,applySparsity,weightInit,optimizationAlgo,lossFunction,renderWeightsEveryNumEpochs,concatBiases,constrainGradientToUnitNorm,rng,dist,seed,nIn,nOut,activationFunction,useHiddenActivationsForwardProp,visibleUnit,hiddenUnit);
-            ret.numIterations = numIterations;
+            NeuralNetConfiguration ret = new NeuralNetConfiguration( sparsity,  useAdaGrad,  lr,  k,
+                    corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
+                    resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,  renderWeightsEveryNumEpochs,
+                    concatBiases,  constrainGradientToUnitNorm,  rng,
+                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType);
             return ret;
-         }
+        }
 
 
 
@@ -679,10 +707,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder useHiddenActivationsForwardProp(boolean useHiddenActivationsForwardProp) {
-            this.useHiddenActivationsForwardProp = useHiddenActivationsForwardProp;
-            return this;
-        }
 
         public Builder visibleUnit(RBM.VisibleUnit visibleUnit) {
             this.visibleUnit = visibleUnit;
