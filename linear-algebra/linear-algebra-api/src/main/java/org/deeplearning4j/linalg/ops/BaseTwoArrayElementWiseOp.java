@@ -34,12 +34,12 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
     public void applyTransformToDestination(INDArray from,INDArray destination,INDArray other,int i) {
         if(scalarValue != null) {
             if(destination instanceof IComplexNDArray) {
-                IComplexNumber number = (IComplexNumber) apply(destination, (float) scalarValue, i);
+                IComplexNumber number = (IComplexNumber) apply(destination,  scalarValue, i);
                 IComplexNDArray c2 = (IComplexNDArray) destination;
                 c2.putScalar(i,number);
             }
             else {
-                float f = (float)  apply(from, (float) scalarValue, i);
+                float f = (float)  apply(from,  scalarValue, i);
                 destination.putScalar(i,f);
             }
 

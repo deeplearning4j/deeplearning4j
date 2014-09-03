@@ -1,7 +1,10 @@
 package org.deeplearning4j.linalg.jblas;
 
+import org.deeplearning4j.linalg.api.complex.IComplexFloat;
+import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
+import org.deeplearning4j.linalg.api.complex.IComplexNumber;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.jblas.complex.ComplexFloat;
-import org.deeplearning4j.linalg.jblas.complex.ComplexNDArray;
 import org.jblas.JavaBlas;
 import org.jblas.NativeBlas;
 import org.jblas.exceptions.*;
@@ -17,7 +20,7 @@ import static org.jblas.util.Functions.min;
  * jblas operations
  * @author Adam Gibson
  */
-public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrapper<NDArray,ComplexNDArray,ComplexFloat> {
+public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrapper {
     /***************************************************************************
      * BLAS Level 1
      */
@@ -26,9 +29,9 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute x <-> y (swap two matrices)
      */
     @Override
-    public NDArray swap(NDArray x, NDArray y) {
+    public INDArray swap(INDArray x, INDArray y) {
         //NativeBlas.dswap(x.length(), x.data(), 0, 1, y.data(), 0, 1);
-        JavaBlas.rswap(x.length(), x.data(), 0, 1, y.data(), 0, 1);
+        JavaBlas.rswap(x.length(), x.data(), x.offset(), 1, y.data(), y.offset(), 1);
         return y;
     }
 
@@ -36,15 +39,15 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute x <- alpha * x (scale a matrix)
      */
     @Override
-    public NDArray scal(float alpha, NDArray x) {
-        NativeBlas.sscal(x.length(), alpha, x.data(), 0, 1);
+    public INDArray scal(float alpha, INDArray x) {
+        NativeBlas.sscal(x.length(), alpha, x.data(), x.offset(), 1);
         return x;
     }
 
     @Override
-    public ComplexNDArray scal(ComplexFloat alpha, ComplexNDArray x) {
+    public IComplexNDArray scal(IComplexNumber alpha, IComplexNDArray x) {
         NativeBlas.cscal(x.length(),
-                new ComplexFloat(alpha.realComponent(), alpha.imaginaryComponent()),
+                new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
                 x.data(), x.offset(), 1);
         return x;
     }
@@ -56,15 +59,15 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute y <- x (copy a matrix)
      */
     @Override
-    public NDArray copy(NDArray x, NDArray y) {
+    public INDArray copy(INDArray x, INDArray y) {
         //NativeBlas.dcopy(x.length(), x.data(), 0, 1, y.data(), 0, 1);
-        JavaBlas.rcopy(x.length(), x.data(), 0, 1, y.data(), 0, 1);
+        JavaBlas.rcopy(x.length(), x.data(), x.offset(), 1, y.data(), y.offset(), 1);
         return y;
     }
 
     @Override
-    public ComplexNDArray copy(ComplexNDArray x, ComplexNDArray y) {
-        NativeBlas.scopy(x.length(), x.data(), 0, 1, y.data(), 0, 1);
+    public IComplexNDArray copy(IComplexNDArray x, IComplexNDArray y) {
+        NativeBlas.scopy(x.length(), x.data(), x.offset(), 1, y.data(), y.offset(), 1);
         return y;
     }
 
@@ -72,16 +75,16 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute y <- alpha * x + y (elementwise addition)
      */
     @Override
-    public NDArray axpy(float da, NDArray dx, NDArray dy) {
+    public INDArray axpy(float da, INDArray dx, INDArray dy) {
         //NativeBlas.daxpy(dx.length(), da, dx.data(), 0, 1, dy.data(), 0, 1);
-        JavaBlas.raxpy(dx.length(), da, dx.data(), 0, 1, dy.data(), 0, 1);
+        JavaBlas.raxpy(dx.length(), da, dx.data(), dx.offset(), dx.stride()[0], dy.data(), dy.offset(), dy.stride()[0]);
 
         return dy;
     }
 
     @Override
-    public ComplexNDArray axpy(ComplexFloat da, ComplexNDArray dx, ComplexNDArray dy) {
-        NativeBlas.caxpy(dx.length(), new org.jblas.ComplexFloat(da.realComponent(), da.imaginaryComponent()), dx.data(), 0, 1, dy.data(), 0, 1);
+    public IComplexNDArray axpy(IComplexNumber da, IComplexNDArray dx, IComplexNDArray dy) {
+        NativeBlas.caxpy(dx.length(), new org.jblas.ComplexFloat(da.realComponent().floatValue(), da.imaginaryComponent().floatValue()), dx.data(), dx.offset(), 1, dy.data(), dy.offset(), 1);
         return dy;
     }
 
@@ -91,7 +94,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute x^T * y (dot product)
      */
     @Override
-    public float dot(NDArray x, NDArray y) {
+    public float dot(INDArray x, INDArray y) {
         //return NativeBlas.ddot(x.length(), x.data(), 0, 1, y.data(), 0, 1);
         return JavaBlas.rdot(x.length(), x.data(), x.offset(), 1, y.data(), y.offset(), 1);
     }
@@ -99,7 +102,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     /**
      * Compute x^T * y (dot product)
      */
-    public ComplexFloat dotc(ComplexNDArray x, ComplexNDArray y) {
+    public ComplexFloat dotc(IComplexNDArray x, IComplexNDArray y) {
         return new ComplexFloat(NativeBlas.cdotc(x.length(), x.data(), x.offset(), 1, y.data(), y.offset(), 1));
     }
 
@@ -107,7 +110,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute x^T * y (dot product)
      */
     @Override
-    public ComplexFloat dotu(ComplexNDArray x, ComplexNDArray y) {
+    public ComplexFloat dotu(IComplexNDArray x, IComplexNDArray y) {
         return new ComplexFloat(NativeBlas.cdotu(x.length(), x.data(), x.offset(), 1, y.data(), y.offset(), 1));
     }
 
@@ -115,11 +118,11 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute || x ||_2 (2-norm)
      */
     @Override
-    public double nrm2(NDArray x) {
+    public double nrm2(INDArray x) {
         return NativeBlas.snrm2(x.length(), x.data(), 0, 1);
     }
     @Override
-    public double nrm2(ComplexNDArray x) {
+    public double nrm2(IComplexNDArray x) {
         return NativeBlas.scnrm2(x.length(), x.data(), 0, 1);
     }
 
@@ -127,13 +130,13 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute || x ||_1 (1-norm, sum of absolute values)
      */
     @Override
-    public double asum(NDArray x) {
-        return NativeBlas.sasum(x.length(), x.data(), 0, 1);
+    public double asum(INDArray x) {
+        return NativeBlas.sasum(x.length(), x.data(), x.offset(), 1);
     }
 
     @Override
-    public double asum(ComplexNDArray x) {
-        return NativeBlas.scasum(x.length(), x.data(), 0, 1);
+    public double asum(IComplexNDArray x) {
+        return NativeBlas.scasum(x.length(), x.data(), x.offset(), 1);
     }
 
     /**
@@ -141,7 +144,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * value maximum)
      */
     @Override
-    public int iamax(NDArray x) {
+    public int iamax(INDArray x) {
         return NativeBlas.isamax(x.length(), x.data(), x.offset(), x.stride()[0]) - 1;
     }
 
@@ -152,7 +155,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * @return index of element with largest absolute value.
      */
     @Override
-    public int iamax(ComplexNDArray x) {
+    public int iamax(IComplexNDArray x) {
         return NativeBlas.icamax(x.length(), x.data(), x.offset(), 1) - 1;
     }
 
@@ -165,8 +168,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * multiplication)
      */
     @Override
-    public NDArray gemv(float alpha, NDArray a,
-                        NDArray x, float beta, NDArray y) {
+    public INDArray gemv(float alpha, INDArray a,
+                        INDArray x, float beta, INDArray y) {
         if (false) {
             NativeBlas.sgemv('N', a.rows(), a.columns(), alpha, a.data(), 0, a.rows(), x.data(), 0,
                     1, beta, y.data(), 0, 1);
@@ -197,8 +200,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute A <- alpha * x * y^T + A (general rank-1 update)
      */
     @Override
-    public NDArray ger(float alpha, NDArray x,
-                       NDArray y, NDArray a) {
+    public INDArray ger(float alpha, INDArray x,
+                       INDArray y, INDArray a) {
         NativeBlas.sger(a.rows(), a.columns(), alpha, x.data(), 0, 1, y.data(), 0, 1, a.data(),
                 0, a.rows());
         return a;
@@ -213,9 +216,9 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * @param a
      */
     @Override
-    public ComplexNDArray geru(ComplexFloat alpha, ComplexNDArray x, ComplexNDArray y, ComplexNDArray a) {
+    public IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
         NativeBlas.cgeru(a.rows(), a.columns(),
-                new ComplexFloat(alpha.realComponent(), alpha.imaginaryComponent()),
+                new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
                 x.data(), x.offset(), 1, y.data(), y.offset(), 1, a.data(),
                 a.offset(), a.rows());
         return a;
@@ -229,10 +232,10 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute A <- alpha * x * y^H + A (general rank-1 update)
      */
     @Override
-    public ComplexNDArray gerc(ComplexFloat alpha, ComplexNDArray x,
-                               ComplexNDArray y, ComplexNDArray a) {
-        NativeBlas.cgerc(a.rows(), a.columns(), alpha, x.data(), 0, 1, y.data(), 0, 1, a.data(),
-                0, a.rows());
+    public IComplexNDArray gerc(IComplexNumber alpha, IComplexNDArray x,
+                               IComplexNDArray y, IComplexNDArray a) {
+        NativeBlas.cgerc(a.rows(), a.columns(), (ComplexFloat) alpha, x.data(), x.offset(), 1, y.data(), y.offset(), 1, a.data(),
+                a.offset(), a.rows());
         return a;
     }
 
@@ -245,8 +248,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * multiplication)
      */
     @Override
-    public NDArray gemm(float alpha, NDArray a,
-                        NDArray b, float beta, NDArray c) {
+    public INDArray gemm(float alpha, INDArray a,
+                        INDArray b, float beta, INDArray c) {
         NativeBlas.sgemm('N', 'N', c.rows(), c.columns(), a.columns(), alpha, a.data(), 0,
                 a.rows(), b.data(), 0, b.rows(), beta, c.data(), 0, c.rows());
 
@@ -256,7 +259,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
 
 
     @Override
-    public ComplexNDArray gemm(ComplexFloat alpha, ComplexNDArray a, ComplexNDArray b, ComplexFloat beta, ComplexNDArray c) {
+    public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta, IComplexNDArray c) {
         NativeBlas.cgemm(
                 'N',
                 'N',
@@ -278,10 +281,10 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * LAPACK
      */
 
-    public NDArray gesv(NDArray a, int[] ipiv,
-                        NDArray b) {
-        int info = NativeBlas.sgesv(a.rows(), b.columns(), a.data(), 0, a.rows(), ipiv, 0,
-                b.data(), 0, b.rows());
+    public INDArray gesv(INDArray a, int[] ipiv,
+                        INDArray b) {
+        int info = NativeBlas.sgesv(a.rows(), b.columns(), a.data(), a.offset(), a.rows(), ipiv, 0,
+                b.data(), b.offset(), b.rows());
         checkInfo("DGESV", info);
 
         if (info > 0)
@@ -299,8 +302,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     }
 //START
 
-    public NDArray sysv(char uplo, NDArray a, int[] ipiv,
-                        NDArray b) {
+    public INDArray sysv(char uplo, INDArray a, int[] ipiv,
+                        INDArray b) {
         int info = NativeBlas.ssysv(uplo, a.rows(), b.columns(), a.data(), 0, a.rows(), ipiv, 0,
                 b.data(), 0, b.rows());
         checkInfo("SYSV", info);
@@ -312,7 +315,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
         return b;
     }
 
-    public int syev(char jobz, char uplo, NDArray a, NDArray w) {
+    public int syev(char jobz, char uplo, INDArray a, INDArray w) {
         int info = NativeBlas.ssyev(jobz, uplo, a.rows(), a.data(), 0, a.rows(), w.data(), 0);
 
         if (info > 0)
@@ -324,9 +327,9 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     }
 
     @Override
-    public int syevx(char jobz, char range, char uplo, NDArray a,
+    public int syevx(char jobz, char range, char uplo, INDArray a,
                      float vl, float vu, int il, int iu, float abstol,
-                     NDArray w, NDArray z) {
+                     INDArray w, INDArray z) {
         int n = a.rows();
         int[] iwork = new int[5 * n];
         int[] ifail = new int[n];
@@ -352,8 +355,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
         return info;
     }
 
-    public int syevd(char jobz, char uplo, NDArray A,
-                     NDArray w) {
+    public int syevd(char jobz, char uplo, INDArray A,
+                     INDArray w) {
         int n = A.rows();
 
         int info = NativeBlas.ssyevd(jobz, uplo, n, A.data(), 0, A.rows(), w.data(), 0);
@@ -365,9 +368,9 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     }
 
     @Override
-    public int syevr(char jobz, char range, char uplo, NDArray a,
+    public int syevr(char jobz, char range, char uplo, INDArray a,
                      float vl, float vu, int il, int iu, float abstol,
-                     NDArray w, NDArray z, int[] isuppz) {
+                     INDArray w, INDArray z, int[] isuppz) {
         int n = a.rows();
         int[] m = new int[1];
 
@@ -380,7 +383,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     }
 
     @Override
-    public void posv(char uplo, NDArray A, NDArray B) {
+    public void posv(char uplo, INDArray A, INDArray B) {
         int n = A.rows();
         int nrhs = B.columns();
         int info = NativeBlas.sposv(uplo, n, nrhs, A.data(), 0, A.rows(), B.data(), 0,
@@ -392,8 +395,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     }
 
     @Override
-    public int geev(char jobvl, char jobvr, NDArray A,
-                    NDArray WR, NDArray WI, NDArray VL, NDArray VR) {
+    public int geev(char jobvl, char jobvr, INDArray A,
+                    INDArray WR, INDArray WI, INDArray VL, INDArray VR) {
         int info = NativeBlas.sgeev(jobvl, jobvr, A.rows(), A.data(), 0, A.rows(), WR.data(), 0,
                 WI.data(), 0, VL.data(), 0, VL.rows(), VR.data(), 0, VR.rows());
         if (info > 0)
@@ -402,7 +405,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     }
 
     @Override
-    public int sygvd(int itype, char jobz, char uplo, NDArray A, NDArray B, NDArray W) {
+    public int sygvd(int itype, char jobz, char uplo, INDArray A, INDArray B, INDArray W) {
         int info = NativeBlas.ssygvd(itype, jobz, uplo, A.rows(), A.data(), 0, A.rows(), B.data(), 0, B.rows(), W.data(), 0);
         if (info == 0)
             return 0;
@@ -432,7 +435,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * @param A an (m,n) matrix
      * @param B an (max(m,n), k) matrix (well, at least)
      */
-    public void gelsd(NDArray A, NDArray B) {
+    public void gelsd(INDArray A, INDArray B) {
         int m = A.rows();
         int n = A.columns();
         int nrhs = B.columns();
@@ -465,13 +468,13 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     }
 
     @Override
-    public void geqrf(NDArray A, NDArray tau) {
+    public void geqrf(INDArray A, INDArray tau) {
         int info = NativeBlas.sgeqrf(A.rows(), A.columns(), A.data(), 0, A.rows(), tau.data(), 0);
         checkInfo("GEQRF", info);
     }
 
     @Override
-    public void ormqr(char side, char trans, NDArray A, NDArray tau, NDArray C) {
+    public void ormqr(char side, char trans, INDArray A, INDArray tau, INDArray C) {
         int k = tau.length();
         int info = NativeBlas.sormqr(side, trans, C.rows(), C.columns(), k, A.data(), 0, A.rows(), tau.data(), 0, C.data(), 0, C.rows());
         checkInfo("ORMQR", info);

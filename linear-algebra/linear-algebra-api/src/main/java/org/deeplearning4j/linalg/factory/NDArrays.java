@@ -41,6 +41,9 @@ public class NDArrays  {
     public final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
     private static NDArrayFactory INSTANCE;
     private static Properties props = new Properties();
+    public final static IComplexNumber UNIT;
+    public final static IComplexNumber ZERO;
+    public final static IComplexNumber NEG_UNIT;
 
 
     static {
@@ -55,7 +58,9 @@ public class NDArrays  {
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype,ORDER);
             blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(props.get(BLAS_OPS).toString());
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
-
+            UNIT = NDArrays.createFloat(1,0);
+            ZERO = NDArrays.createFloat(1,0);
+            NEG_UNIT = NDArrays.createFloat(-1,0);
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
@@ -299,7 +304,15 @@ public class NDArrays  {
         return INSTANCE.arange(begin,end);
     }
 
-
+    /**
+     * Create float
+     * @param real real component
+     * @param imag imag component
+     * @return
+     */
+    public static IComplexFloat createComplexNumber(Number real,Number imag) {
+        return INSTANCE.createFloat(real.floatValue(),imag.floatValue());
+    }
     /**
      * Create float
      * @param real real component
