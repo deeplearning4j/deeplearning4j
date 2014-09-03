@@ -41,7 +41,23 @@ public class TwoArrayOps  {
     }
 
     public TwoArrayOps scalar(Object scalar) {
-        this.scalar = scalar;
+        if(scalar instanceof  Number) {
+            Number n = (Number) scalar;
+            this.scalar = n.floatValue();
+        }
+        else if(scalar instanceof INDArray) {
+            INDArray a = (INDArray) scalar;
+            if(!a.isScalar())
+                throw new IllegalArgumentException("Only scalar nd arrays allowed");
+            Number n = a.get(0);
+            this.scalar = n.floatValue();
+        }
+
+        else {
+            throw new IllegalArgumentException("Illegal type passed in: Only ndarrays and scalars allowed");
+        }
+
+
         return this;
     }
 

@@ -51,6 +51,8 @@ public class DBNTest {
 
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
         d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
+        //note zeros here
+        d.getOutputLayer().setW(NDArrays.zeros(d.getOutputLayer().getW().shape()));
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
@@ -72,7 +74,7 @@ public class DBNTest {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(5e-1f)
                 .withActivationType(NeuralNetConfiguration.ActivationType.NET_ACTIVATION)
-                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
+                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
                 .learningRate(1e-1f).nIn(784).nOut(3).build();
 
 
@@ -82,10 +84,8 @@ public class DBNTest {
 
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
         d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
-        //note zeros here
-        d.getOutputLayer().setW(NDArrays.zeros(d.getOutputLayer().getW().shape()));
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        fetcher.fetch(10);
+        fetcher.fetch(20);
         DataSet d2 = fetcher.next();
         d2.filterAndStrip(new int[]{2,3,4});
 
