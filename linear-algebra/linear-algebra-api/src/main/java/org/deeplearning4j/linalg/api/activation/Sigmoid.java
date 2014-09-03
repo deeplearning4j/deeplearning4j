@@ -40,7 +40,8 @@ public class Sigmoid extends BaseActivationFunction {
 
     @Override
     public INDArray applyDerivative(INDArray input) {
-        return input.mul(input.rsub(NDArrays.ones(input.shape())));
+        INDArray rSub = input.rsub(1);
+        return input.mul(rSub);
     }
 
 
