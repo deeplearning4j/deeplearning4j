@@ -9,6 +9,7 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -70,6 +71,7 @@ public class DBNTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(5e-1f)
+                .withActivationType(NeuralNetConfiguration.ActivationType.NET_ACTIVATION)
                  .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
                 .learningRate(1e-1f).nIn(784).nOut(3).build();
 
@@ -80,8 +82,10 @@ public class DBNTest {
 
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
         d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
+        //note zeros here
+        d.getOutputLayer().setW(NDArrays.zeros(d.getOutputLayer().getW().shape()));
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        fetcher.fetch(100);
+        fetcher.fetch(10);
         DataSet d2 = fetcher.next();
         d2.filterAndStrip(new int[]{2,3,4});
 
