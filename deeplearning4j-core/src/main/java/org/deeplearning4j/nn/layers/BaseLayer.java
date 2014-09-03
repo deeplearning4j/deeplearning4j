@@ -7,6 +7,7 @@ import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.transforms.Transforms;
 
 import org.deeplearning4j.nn.WeightInit;
+import org.deeplearning4j.nn.WeightInitUtil;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 
@@ -31,7 +32,7 @@ public abstract class BaseLayer implements Layer {
         this.conf = conf;
 
         if(W == null)
-           this.W = createWeightMatrix();
+            this.W = createWeightMatrix();
 
 
 
@@ -52,10 +53,7 @@ public abstract class BaseLayer implements Layer {
 
 
     protected INDArray createWeightMatrix() {
-        INDArray W = NDArrays.zeros(conf.getnIn(), conf.getnOut());
-
-        for(int i = 0; i < W.rows(); i++)
-            W.putRow(i,NDArrays.create(conf.getDist().sample(W.columns())));
+        INDArray W = WeightInitUtil.initWeights(conf.getnIn(),conf.getnOut(),conf.getWeightInit(),conf.getActivationFunction(),conf.getDist());
         return W;
     }
 
@@ -76,8 +74,8 @@ public abstract class BaseLayer implements Layer {
         this.input = x;
 
         INDArray ret = this.input.mmul(W);
-       if(ret.columns() != b.columns())
-           throw new IllegalStateException("This is weird");
+        if(ret.columns() != b.columns())
+            throw new IllegalStateException("This is weird");
         if(conf.isConcatBiases())
             ret = NDArrays.concatHorizontally(ret,b);
         else
