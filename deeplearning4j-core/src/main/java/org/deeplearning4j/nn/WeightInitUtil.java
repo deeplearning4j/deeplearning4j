@@ -41,7 +41,7 @@ public class WeightInitUtil {
 
                 int fanOut = Math.min(maxNonZeroPerColumn,nOut);
                 for(int i = 0; i < nOut; i++) {
-                    INDArray perm = NDArrays.create(ArrayUtil.randomPermutation(nIn)).reshape(new int[]{nIn,1});
+                    INDArray perm = NDArrays.create(ArrayUtil.randomPermutation(nIn)).reshape(new int[]{nIn});
                     INDArray subIndices = perm.get(NDArrayIndex.interval(fanOut, perm.length()), NDArrayIndex.interval(0, nOut));
                     INDArray indices = perm.get(new NDArrayIndex(ArrayUtil.toInts(subIndices)),new NDArrayIndex(new int[]{i}));
                     INDArray randInit = ret.get(ArrayUtil.toInts(perm.get(ArrayUtil.toInts(indices)).muli(NDArrays.scalar(smallVal))));
