@@ -125,11 +125,122 @@ public interface IComplexNDArray extends INDArray {
     @Override
     IComplexNDArray gti(INDArray other);
 
+    INDArray putScalar(int[] i, IComplexNumber complexNumber);
+
     @Override
     IComplexNDArray neg();
 
     @Override
     IComplexNDArray negi();
+
+
+    IComplexNDArray rdiv(IComplexNumber n, INDArray result);
+
+
+    IComplexNDArray rdivi(IComplexNumber n, INDArray result);
+
+
+    IComplexNDArray rsub(IComplexNumber n, INDArray result);
+
+
+    IComplexNDArray rsubi(IComplexNumber n, INDArray result);
+
+
+    IComplexNDArray div(IComplexNumber n, INDArray result);
+
+
+    IComplexNDArray divi(IComplexNumber n, INDArray result);
+
+
+    IComplexNDArray mul(IComplexNumber n, INDArray result);
+
+
+    IComplexNDArray muli(IComplexNumber n, INDArray result);
+
+
+    IComplexNDArray sub(IComplexNumber n, INDArray result);
+
+
+    IComplexNDArray subi(IComplexNumber n, INDArray result);
+
+
+    IComplexNDArray add(IComplexNumber n, INDArray result);
+
+
+    IComplexNDArray addi(IComplexNumber n, INDArray result);
+
+
+    IComplexNDArray rdiv(IComplexNumber n);
+
+
+    IComplexNDArray rdivi(IComplexNumber n);
+
+
+    IComplexNDArray rsub(IComplexNumber n);
+
+
+    IComplexNDArray rsubi(IComplexNumber n);
+
+
+    IComplexNDArray div(IComplexNumber n);
+
+
+    IComplexNDArray divi(IComplexNumber n);
+
+
+    IComplexNDArray mul(IComplexNumber n);
+
+
+    IComplexNDArray muli(IComplexNumber n);
+
+
+    IComplexNDArray sub(IComplexNumber n);
+
+
+    IComplexNDArray subi(IComplexNumber n);
+
+
+    IComplexNDArray add(IComplexNumber n);
+
+
+    IComplexNDArray addi(IComplexNumber n);
+
+
+    @Override
+    IComplexNDArray rdiv(Number n, INDArray result);
+
+    @Override
+    IComplexNDArray rdivi(Number n, INDArray result);
+
+    @Override
+    IComplexNDArray rsub(Number n, INDArray result);
+
+    @Override
+    IComplexNDArray rsubi(Number n, INDArray result);
+
+    @Override
+    IComplexNDArray div(Number n, INDArray result);
+
+    @Override
+    IComplexNDArray divi(Number n, INDArray result);
+
+    @Override
+    IComplexNDArray mul(Number n, INDArray result);
+
+    @Override
+    IComplexNDArray muli(Number n, INDArray result);
+
+    @Override
+    IComplexNDArray sub(Number n, INDArray result);
+
+    @Override
+    IComplexNDArray subi(Number n, INDArray result);
+
+    @Override
+    IComplexNDArray add(Number n, INDArray result);
+
+    @Override
+    IComplexNDArray addi(Number n, INDArray result);
 
     @Override
     IComplexNDArray rdiv(Number n);

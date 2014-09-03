@@ -687,7 +687,7 @@ public abstract class ComplexNDArrayTests {
         scalar = (IComplexDouble) arr.sum(Integer.MAX_VALUE).element();
         sum = scalar.realComponent();
         assertEquals(10,sum,1e-1);
-        arr.subi(NDArrays.scalar(1));
+        arr.subi(NDArrays.complexScalar(1));
         scalar = (IComplexDouble) arr.sum(Integer.MAX_VALUE).element();
 
         sum = scalar.realComponent();
@@ -719,7 +719,7 @@ public abstract class ComplexNDArrayTests {
         IComplexNDArray multiDimensionElementWise = NDArrays.createComplex(NDArrays.create(NDArrays.linspace(1,24,24).data(),new int[]{4,3,2}));
         IComplexDouble sum2 = (IComplexDouble) multiDimensionElementWise.sum(Integer.MAX_VALUE).element();
         assertEquals(sum2,NDArrays.createDouble(300,0));
-        IComplexNDArray added = multiDimensionElementWise.add(NDArrays.scalar(1));
+        IComplexNDArray added = multiDimensionElementWise.add(NDArrays.complexScalar(1));
         IComplexDouble sum3 = (IComplexDouble) added.sum(Integer.MAX_VALUE).element();
         assertEquals(sum3,NDArrays.createDouble(324,0));
 

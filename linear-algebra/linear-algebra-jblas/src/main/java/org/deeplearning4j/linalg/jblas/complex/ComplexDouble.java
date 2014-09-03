@@ -12,6 +12,10 @@ import org.deeplearning4j.linalg.api.complex.IComplexNumber;
  */
 public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDouble {
 
+    public final static ComplexDouble UNIT = new ComplexDouble(1,0);
+    public final static ComplexDouble NEG = new ComplexDouble(-1,0);
+    public final static ComplexDouble ZERO = new ComplexDouble(0,0);
+
 
     public ComplexDouble(org.jblas.ComplexDouble c) {
         super(c.real(),c.imag());

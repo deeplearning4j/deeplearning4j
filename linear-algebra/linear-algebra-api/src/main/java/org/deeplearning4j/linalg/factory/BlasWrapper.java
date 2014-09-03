@@ -52,7 +52,7 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
  * <p/>
  * Currently, all the general matrix routines are implemented.
  */
-public interface BlasWrapper<NDARRAY_TYPE extends INDArray,COMPLEX_NDARRAY_TYPE extends IComplexNDArray,NUMBER_TYPE extends IComplexNumber> {
+public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
     /***************************************************************************
      * BLAS Level 1
      */
@@ -67,7 +67,7 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray,COMPLEX_NDARRAY_TYPE 
      */
     public NDARRAY_TYPE scal(float alpha, NDARRAY_TYPE x);
 
-    public COMPLEX_NDARRAY_TYPE scal(NUMBER_TYPE alpha, COMPLEX_NDARRAY_TYPE x);
+    public IComplexNDArray scal(IComplexNumber alpha, IComplexNDArray x);
 
 
 
@@ -76,14 +76,14 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray,COMPLEX_NDARRAY_TYPE 
      */
     public NDARRAY_TYPE copy(NDARRAY_TYPE x, NDARRAY_TYPE y);
 
-    public COMPLEX_NDARRAY_TYPE copy(COMPLEX_NDARRAY_TYPE x, COMPLEX_NDARRAY_TYPE y);
+    public IComplexNDArray copy(IComplexNDArray x, IComplexNDArray y);
 
     /**
      * Compute y <- alpha * x + y (elementwise addition)
      */
     public NDARRAY_TYPE axpy(float da, NDARRAY_TYPE dx, NDARRAY_TYPE dy);
 
-    public COMPLEX_NDARRAY_TYPE axpy(NUMBER_TYPE da, COMPLEX_NDARRAY_TYPE dx, COMPLEX_NDARRAY_TYPE dy);
+    public IComplexNDArray axpy(IComplexNumber da, IComplexNDArray dx, IComplexNDArray dy);
 
     /**
      * Compute x^T * y (dot product)
@@ -92,24 +92,24 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray,COMPLEX_NDARRAY_TYPE 
     /**
      * Compute x^T * y (dot product)
      */
-    public NUMBER_TYPE dotc(COMPLEX_NDARRAY_TYPE x, COMPLEX_NDARRAY_TYPE y);
+    public IComplexNumber dotc(IComplexNDArray x, IComplexNDArray y);
     /**
      * Compute x^T * y (dot product)
      */
-    public NUMBER_TYPE dotu(COMPLEX_NDARRAY_TYPE x, COMPLEX_NDARRAY_TYPE y);
+    public IComplexNumber dotu(IComplexNDArray x, IComplexNDArray y);
     /**
      * Compute || x ||_2 (2-norm)
      */
     public double nrm2(NDARRAY_TYPE x);
 
-    public double nrm2(COMPLEX_NDARRAY_TYPE x);
+    public double nrm2(IComplexNDArray x);
 
     /**
      * Compute || x ||_1 (1-norm, sum of absolute values)
      */
     public double asum(NDARRAY_TYPE x);
 
-    public double asum(COMPLEX_NDARRAY_TYPE x);
+    public double asum(IComplexNDArray x);
 
     /**
      * Compute index of element with largest absolute value (index of absolute
@@ -123,7 +123,7 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray,COMPLEX_NDARRAY_TYPE 
      * @param x matrix
      * @return index of element with largest absolute value.
      */
-    public int iamax(COMPLEX_NDARRAY_TYPE x);
+    public int iamax(IComplexNDArray x);
     /***************************************************************************
      * BLAS Level 2
      */
@@ -145,13 +145,13 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray,COMPLEX_NDARRAY_TYPE 
     /**
      * Compute A <- alpha * x * y^T + A (general rank-1 update)
      */
-    public COMPLEX_NDARRAY_TYPE geru(NUMBER_TYPE alpha, COMPLEX_NDARRAY_TYPE x,
-                                COMPLEX_NDARRAY_TYPE y, COMPLEX_NDARRAY_TYPE a);
+    public IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x,
+                                IComplexNDArray y, IComplexNDArray a);
     /**
      * Compute A <- alpha * x * y^H + A (general rank-1 update)
      */
-    public COMPLEX_NDARRAY_TYPE gerc(NUMBER_TYPE alpha, COMPLEX_NDARRAY_TYPE x,
-                                COMPLEX_NDARRAY_TYPE y, COMPLEX_NDARRAY_TYPE a);
+    public IComplexNDArray gerc(IComplexNumber alpha, IComplexNDArray x,
+                                IComplexNDArray y, IComplexNDArray a);
     /***************************************************************************
      * BLAS Level 3
      */
@@ -162,8 +162,8 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray,COMPLEX_NDARRAY_TYPE 
      */
     public NDARRAY_TYPE gemm(float alpha, NDARRAY_TYPE a,
                          NDARRAY_TYPE b, float beta, NDARRAY_TYPE c);
-    public COMPLEX_NDARRAY_TYPE gemm(NUMBER_TYPE alpha, COMPLEX_NDARRAY_TYPE a,
-                                COMPLEX_NDARRAY_TYPE b, NUMBER_TYPE beta, COMPLEX_NDARRAY_TYPE c);
+    public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a,
+                                IComplexNDArray b, IComplexNumber beta, IComplexNDArray c);
 
 
     /***************************************************************************

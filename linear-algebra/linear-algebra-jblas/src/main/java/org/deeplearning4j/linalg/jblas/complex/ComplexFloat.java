@@ -12,6 +12,10 @@ import org.deeplearning4j.linalg.factory.NDArrays;
 public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloat {
 
 
+    public final static ComplexFloat UNIT = new ComplexFloat(1,0);
+    public final static ComplexFloat NEG = new ComplexFloat(-1,0);
+    public final static ComplexFloat ZERO = new ComplexFloat(0,0);
+
     public ComplexFloat(org.jblas.ComplexFloat c) {
         super(c.real(),c.imag());
     }

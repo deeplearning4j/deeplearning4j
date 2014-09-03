@@ -121,6 +121,36 @@ public interface INDArray extends Serializable {
 
 
 
+
+    public INDArray rdiv(Number n,INDArray result);
+
+    public INDArray rdivi(Number n,INDArray result);
+
+    public INDArray rsub(Number n,INDArray result);
+
+    public INDArray rsubi(Number n,INDArray result);
+
+
+    public INDArray div(Number n,INDArray result);
+
+    public INDArray divi(Number n,INDArray result);
+
+
+    public INDArray mul(Number n,INDArray result);
+
+    public INDArray muli(Number n,INDArray result);
+
+
+    public INDArray sub(Number n,INDArray result);
+
+    public INDArray subi(Number n,INDArray result);
+
+    public INDArray add(Number n,INDArray result);
+
+    public INDArray addi(Number n,INDArray result);
+
+
+
     /**
      * Returns a subset of this array based on the specified
      * indexes

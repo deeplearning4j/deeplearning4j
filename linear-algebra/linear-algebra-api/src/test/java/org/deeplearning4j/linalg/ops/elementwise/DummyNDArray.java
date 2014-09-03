@@ -221,6 +221,66 @@ public class DummyNDArray implements INDArray {
     }
 
     @Override
+    public INDArray rdiv(Number n, INDArray result) {
+        return null;
+    }
+
+    @Override
+    public INDArray rdivi(Number n, INDArray result) {
+        return null;
+    }
+
+    @Override
+    public INDArray rsub(Number n, INDArray result) {
+        return null;
+    }
+
+    @Override
+    public INDArray rsubi(Number n, INDArray result) {
+        return null;
+    }
+
+    @Override
+    public INDArray div(Number n, INDArray result) {
+        return null;
+    }
+
+    @Override
+    public INDArray divi(Number n, INDArray result) {
+        return null;
+    }
+
+    @Override
+    public INDArray mul(Number n, INDArray result) {
+        return null;
+    }
+
+    @Override
+    public INDArray muli(Number n, INDArray result) {
+        return null;
+    }
+
+    @Override
+    public INDArray sub(Number n, INDArray result) {
+        return null;
+    }
+
+    @Override
+    public INDArray subi(Number n, INDArray result) {
+        return null;
+    }
+
+    @Override
+    public INDArray add(Number n, INDArray result) {
+        return null;
+    }
+
+    @Override
+    public INDArray addi(Number n, INDArray result) {
+        return null;
+    }
+
+    @Override
     public void sliceVectors(List<INDArray> list) {
 
     }
