@@ -6,6 +6,13 @@ package org.deeplearning4j.linalg.api.complex;
  * @author Adam Gibson
  */
 public interface IComplexFloat extends IComplexNumber {
+    IComplexFloat divi(float v);
+
+    IComplexFloat div(float v);
+
+    @Override
+    Float complexArgument();
+
     @Override
     Float realComponent();
 

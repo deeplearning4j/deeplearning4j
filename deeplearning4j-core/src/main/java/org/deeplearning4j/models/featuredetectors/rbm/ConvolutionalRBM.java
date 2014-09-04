@@ -187,15 +187,15 @@ public class ConvolutionalRBM extends RBM  {
             wGradient.muli(learningRate);
 
         if (conf.isUseAdaGrad())
-            hBiasGradient = hBiasGradient.mul(hBiasAdaGrad.getLearningRates(hBiasGradient)).add(hBiasGradient.mul(conf.getMomentum()));
+            hBiasGradient.muli(hBiasAdaGrad.getLearningRates(hBiasGradient)).add(hBiasGradient.mul(conf.getMomentum()));
         else
-            hBiasGradient = hBiasGradient.mul(learningRate).add(hBiasGradient.mul(conf.getMomentum()));
+            hBiasGradient.muli(learningRate).add(hBiasGradient.mul(conf.getMomentum()));
 
 
         if (conf.isUseAdaGrad())
-            vBiasGradient = vBiasGradient.mul(vBiasAdaGrad.getLearningRates(vBiasGradient)).add(vBiasGradient.mul(conf.getMomentum()));
+            vBiasGradient.muli(vBiasAdaGrad.getLearningRates(vBiasGradient)).add(vBiasGradient.mul(conf.getMomentum()));
         else
-            vBiasGradient = vBiasGradient.mul(learningRate).add(vBiasGradient.mul(conf.getMomentum()));
+             vBiasGradient.muli(learningRate).add(vBiasGradient.mul(conf.getMomentum()));
 
 
 
@@ -363,7 +363,7 @@ public class ConvolutionalRBM extends RBM  {
             getW().addi(W.sub(delta));
 
 
-            float newRecon = LossFunctions.reconEntropy(input,hBias,vBias,W,conf.getActivationFunction());
+            float newRecon = score();
             //prevent weights from exploding too far in either direction, we want this as close to zero as possible
             if(newRecon > currRecon || currRecon < 0 && newRecon < currRecon) {
                 update((BaseNeuralNetwork) revert);
