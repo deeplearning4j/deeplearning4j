@@ -113,7 +113,7 @@ public class SimpleJCublas {
                 d_B,
                 1);
     }
-    private static void TwoPointersV(Pointer d_A, Pointer d_B, INDArray A, INDArray B, int sze) {
+    private static void twoPointers(Pointer d_A, Pointer d_B, INDArray A, INDArray B, int sze) {
 
         JCublas.cublasAlloc(A.length(), sze, d_A);
         JCublas.cublasAlloc(B.length(), sze, d_B);
@@ -135,7 +135,7 @@ public class SimpleJCublas {
                 1);
     }
 
-    private static void TwoPointersVi(Pointer d_A, Pointer d_B, IComplexNDArray A, IComplexNDArray B, int sze) {
+    private static void twoPointersV(Pointer d_A, Pointer d_B, IComplexNDArray A, IComplexNDArray B, int sze) {
 
         JCublas.cublasAlloc(A.length(), sze, d_A);
         JCublas.cublasAlloc(B.length(), sze, d_B);
@@ -363,7 +363,7 @@ public class SimpleJCublas {
 
         ;
 
-        TwoPointersVi(X,Y,x,y, Sizeof.FLOAT);
+        twoPointersV(X, Y, x, y, Sizeof.FLOAT);
 
         JCublas.cublasZcopy(x.length(),
                 X,
@@ -436,7 +436,7 @@ public class SimpleJCublas {
         if (length != length_o)
             return;
 
-        TwoPointersV(X, Y, x, y, Sizeof.FLOAT);
+        twoPointers(X, Y, x, y, Sizeof.FLOAT);
 
         JCublas.cublasDswap(length,
                 X,
@@ -517,7 +517,7 @@ public class SimpleJCublas {
 
         
 
-        TwoPointersV(d_A, d_B, A, B, Sizeof.FLOAT);
+        twoPointers(d_A, d_B, A, B, Sizeof.FLOAT);
 
         JCublas.cublasDaxpy(length, da, d_A, 1, d_B, 1);
 
@@ -541,7 +541,7 @@ public class SimpleJCublas {
 
         
 
-        TwoPointersVi(d_A, d_B, A, B, Sizeof.FLOAT);
+        twoPointersV(d_A, d_B, A, B, Sizeof.FLOAT);
 
 
         JCublas.cublasCaxpy(
@@ -584,12 +584,12 @@ public class SimpleJCublas {
     }
 
     public static void copy(INDArray x, INDArray y) {
-        Pointer X = new Pointer();
-        Pointer Y = new Pointer();
+        Pointer X = pointerFor(x);
+        Pointer Y = pointerFor(y);
 
         
 
-        TwoPointersV(X,Y,x,y, Sizeof.FLOAT);
+        twoPointers(X, Y, x, y, Sizeof.FLOAT);
 
         JCublas.cublasDcopy(x.length(),
                 X,
@@ -612,7 +612,7 @@ public class SimpleJCublas {
 
         
 
-        TwoPointersV(d_A,d_B,x,y, Sizeof.FLOAT);
+        twoPointers(d_A, d_B, x, y, Sizeof.FLOAT);
 
         float dott = 0;
         dott = JCublas.cublasSdot(x.length(), d_A, 1, d_B, 1);
@@ -630,7 +630,7 @@ public class SimpleJCublas {
 
         
 
-        TwoPointersVi(d_A, d_B, x, y, Sizeof.FLOAT);
+        twoPointersV(d_A, d_B, x, y, Sizeof.FLOAT);
 
         jcuda.cuDoubleComplex dott = jcuda.cuDoubleComplex.cuCmplx(0,0);
         dott = JCublas.cublasZdotc(x.length(),d_A,1,d_B,1);
@@ -727,7 +727,7 @@ public class SimpleJCublas {
 
         
 
-        TwoPointersVi(d_A, d_B, x, y, Sizeof.FLOAT);
+        twoPointersV(d_A, d_B, x, y, Sizeof.FLOAT);
 
         jcuda.cuDoubleComplex dott = jcuda.cuDoubleComplex.cuCmplx(0,0);
         dott = JCublas.cublasZdotu(x.length(), d_A, 1, d_B, 1);
@@ -779,32 +779,32 @@ public class SimpleJCublas {
                                              IComplexDouble Alpha) {
         // = alpha * A * tranpose(B) + C
 
-        Pointer d_A = new Pointer();
-        Pointer d_B = new Pointer();
-        Pointer d_C = new Pointer();
+        Pointer dA = new Pointer();
+        Pointer dB = new Pointer();
+        Pointer dC = new Pointer();
         
 
         cuDoubleComplex alpha = cuDoubleComplex.cuCmplx(Alpha.realComponent(),Alpha.imaginaryComponent());
 
-        ThreePointerMi(d_A, d_B, d_C, A, B, C, Sizeof.FLOAT);
+        ThreePointerMi(dA, dB, dC, A, B, C, Sizeof.FLOAT);
 
         JCublas.cublasZgerc(
                 A.rows(),   // m
                 A.columns(),// n
                 alpha,      // alpha
-                d_A,        // d_A or x
+                dA,        // dA or x
                 A.rows(),   // incx
-                d_B,        // d_B or y
+                dB,        // dB or y
                 B.rows(),   // incy
-                d_C,        // d_C or A
+                dC,        // dC or A
                 C.rows()    // lda
         );
 
-        gmi(d_C, C, Sizeof.FLOAT);
+        gmi(dC, C, Sizeof.FLOAT);
 
-        JCublas.cublasFree(d_A);
-        JCublas.cublasFree(d_B);
-        JCublas.cublasFree(d_C);
+        JCublas.cublasFree(dA);
+        JCublas.cublasFree(dB);
+        JCublas.cublasFree(dC);
 
 
 
