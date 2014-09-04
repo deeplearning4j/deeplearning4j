@@ -1,5 +1,8 @@
 package org.deeplearning4j.linalg.jcublas.complex;
 
+import jcuda.Pointer;
+import jcuda.Sizeof;
+import jcuda.jcublas.JCublas;
 import org.deeplearning4j.linalg.api.complex.BaseComplexNDArray;
 import org.deeplearning4j.linalg.api.complex.IComplexDouble;
 import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
@@ -13,7 +16,7 @@ import java.util.List;
  */
 public class JCublasComplexNDArray  extends BaseComplexNDArray {
 
-
+    private Pointer pointer;
 
     public JCublasComplexNDArray(int[] shape, int offset, char ordering) {
         super(shape, offset, ordering);
@@ -273,4 +276,17 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(float[] floats, int[] shape, int offset) {
         super(floats, shape, offset);
     }
+
+
+    public void getData() {
+        JCublas.cublasGetVector(length, Sizeof.FLOAT, pointer, stride[0], Pointer.to(data()), stride[0]);
+
+    }
+
+
+
+    public Pointer pointer() {
+        return pointer;
+    }
+
 }

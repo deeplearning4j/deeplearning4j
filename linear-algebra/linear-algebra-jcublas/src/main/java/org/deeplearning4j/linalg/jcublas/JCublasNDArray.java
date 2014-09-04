@@ -2,10 +2,16 @@ package org.deeplearning4j.linalg.jcublas;
 
 /**
  * Created by mjk on 8/23/14.
+ *
+ * @author mjk
+ * @author Adam Gibson
  */
 
 
 
+import jcuda.Pointer;
+import jcuda.Sizeof;
+import jcuda.jcublas.JCublas;
 import org.deeplearning4j.linalg.api.ndarray.BaseNDArray;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.util.ArrayUtil;
@@ -17,8 +23,12 @@ import java.util.*;
 public class JCublasNDArray extends BaseNDArray {
 
 
+    private Pointer pointer;
+
+
     public JCublasNDArray(double[][] data) {
         super(data);
+
     }
 
     /**
@@ -30,6 +40,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public JCublasNDArray(float[] data, int[] shape, char ordering) {
         super(data, shape, ordering);
+        setupJcuBlas();
+
     }
 
     /**
@@ -40,6 +52,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public JCublasNDArray(float[] data, int[] shape, int offset, char ordering) {
         super(data, shape, offset, ordering);
+        setupJcuBlas();
+
     }
 
     /**
@@ -53,6 +67,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public JCublasNDArray(int[] shape, int[] stride, int offset, char ordering) {
         super(shape, stride, offset, ordering);
+        setupJcuBlas();
     }
 
     /**
@@ -64,15 +79,21 @@ public class JCublasNDArray extends BaseNDArray {
      * @param ordering the ordering of the JCublasNDArray
      */
     public JCublasNDArray(int[] shape, int[] stride, char ordering) {
+
         super(shape, stride, ordering);
+        setupJcuBlas();
     }
 
     public JCublasNDArray(int[] shape, int offset, char ordering) {
+
         super(shape, offset, ordering);
+        setupJcuBlas();
     }
 
     public JCublasNDArray(int[] shape) {
+
         super(shape);
+        setupJcuBlas();
     }
 
     /**
@@ -84,6 +105,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public JCublasNDArray(int newRows, int newColumns, char ordering) {
         super(newRows, newColumns, ordering);
+        setupJcuBlas();
     }
 
     /**
@@ -97,7 +119,9 @@ public class JCublasNDArray extends BaseNDArray {
      * @param ordering
      */
     public JCublasNDArray(List<INDArray> slices, int[] shape, char ordering) {
+
         super(slices, shape, ordering);
+        setupJcuBlas();
     }
 
     /**
@@ -113,14 +137,17 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public JCublasNDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
         super(slices, shape, stride, ordering);
+        setupJcuBlas();
     }
 
     public JCublasNDArray(float[] data, int[] shape, int[] stride, char ordering) {
         super(data, shape, stride, ordering);
+        setupJcuBlas();
     }
 
     public JCublasNDArray(float[] data, int[] shape, int[] stride, int offset, char ordering) {
         super(data, shape, stride, offset, ordering);
+        setupJcuBlas();
     }
 
     /**
@@ -134,7 +161,9 @@ public class JCublasNDArray extends BaseNDArray {
     }
 
     public JCublasNDArray(float[] data, int[] shape, int offset) {
+
         super(data, shape, offset);
+        setupJcuBlas();
     }
 
     /**
@@ -146,7 +175,9 @@ public class JCublasNDArray extends BaseNDArray {
      * @param offset the desired offset
      */
     public JCublasNDArray(int[] shape, int[] stride, int offset) {
+
         super(shape, stride, offset);
+        setupJcuBlas();
     }
 
     /**
@@ -158,14 +189,17 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public JCublasNDArray(int[] shape, int[] stride) {
         super(shape, stride);
+        setupJcuBlas();
     }
 
     public JCublasNDArray(int[] shape, int offset) {
         super(shape, offset);
+        setupJcuBlas();
     }
 
     public JCublasNDArray(int[] shape, char ordering) {
         super(shape, ordering);
+        setupJcuBlas();
     }
 
     /**
@@ -176,6 +210,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public JCublasNDArray(int newRows, int newColumns) {
         super(newRows, newColumns);
+        setupJcuBlas();
     }
 
     /**
@@ -189,6 +224,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public JCublasNDArray(List<INDArray> slices, int[] shape) {
         super(slices, shape);
+        setupJcuBlas();
     }
 
     /**
@@ -203,23 +239,26 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public JCublasNDArray(List<INDArray> slices, int[] shape, int[] stride) {
         super(slices, shape, stride);
+        setupJcuBlas();
     }
 
     public JCublasNDArray(float[] data, int[] shape, int[] stride) {
         super(data, shape, stride);
+        setupJcuBlas();
     }
 
 
 
     public JCublasNDArray(float[] data, int[] shape, int[] stride, int offset) {
         super(data, shape, stride, offset);
+        setupJcuBlas();
     }
 
 
     public JCublasNDArray(JCublasNDArray doubleMatrix) {
         this(new int[]{doubleMatrix.rows,doubleMatrix.columns});
         this.data = dup().data();
-
+        setupJcuBlas();
     }
 
     public JCublasNDArray(double[] data, int[] shape, int[] stride, int offset) {
@@ -227,9 +266,44 @@ public class JCublasNDArray extends BaseNDArray {
         this.stride = stride;
         this.offset = offset;
         initShape(shape);
+        setupJcuBlas();
     }
 
     public JCublasNDArray(float[][] floats) {
         super(floats);
+        setupJcuBlas();
+    }
+
+
+    protected void setupJcuBlas() {
+        if(pointer != null)
+            return;
+        pointer = new Pointer().withByteOffset(offset());
+        JCublas.cublasAlloc(length, Sizeof.FLOAT, pointer);
+        JCublas.cublasSetVector(length, Sizeof.FLOAT, Pointer.to(data()), stride[0], pointer, stride[0]);
+
+    }
+
+    public void getData() {
+        JCublas.cublasGetVector(length, Sizeof.FLOAT, pointer, stride[0], Pointer.to(data()), stride[0]);
+
+    }
+
+
+
+    public Pointer pointer() {
+        return pointer;
+    }
+
+    /**
+     * Perform an copy matrix multiplication
+     *
+     * @param other  the other matrix to perform matrix multiply with
+     * @param result the result ndarray
+     * @return the result of the matrix multiplication
+     */
+    @Override
+    public INDArray mmuli(INDArray other, INDArray result) {
+        return super.mmuli(other, result);
     }
 }
