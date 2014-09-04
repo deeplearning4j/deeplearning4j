@@ -11,4 +11,8 @@ public interface IComplexDouble extends IComplexNumber {
 
     @Override
     Double imaginaryComponent();
+
+    IComplexDouble divi(double v);
+
+    IComplexDouble div(double v);
 }

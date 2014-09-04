@@ -553,7 +553,7 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     }
 
     @Override
-    public ComplexDouble div(double v) {
+    public IComplexDouble div(double v) {
         super.div(v);
         return this;
     }
