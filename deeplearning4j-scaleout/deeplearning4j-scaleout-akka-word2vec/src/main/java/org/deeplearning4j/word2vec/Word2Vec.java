@@ -858,6 +858,14 @@ public class Word2Vec implements Persistable {
         this.tokenizerFactory = tokenizerFactory;
     }
 
+    public VocabCache getCache() {
+        return cache;
+    }
+
+    public void setCache(VocabCache cache) {
+        this.cache = cache;
+    }
+
     /**
      * Note that calling a setter on this
      * means assumes that this is a training continuation

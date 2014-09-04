@@ -4,10 +4,12 @@ import static org.junit.Assert.*;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
+import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
+import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
@@ -52,7 +54,7 @@ public class RBMTests {
     @Test
     public void testMnist() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.5f).render(10)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.5f)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(new MersenneTwister(123))
                 .learningRate(1e-1f).nIn(784).nOut(600).build();
 

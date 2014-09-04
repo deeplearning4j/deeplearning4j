@@ -271,13 +271,23 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
 
 
     protected void verifyElements(DoubleMatrix d,INDArray d2) {
-        for(int i = 0; i < d.rows; i++) {
-            for(int j = 0; j < d.columns; j++) {
-                float test1 = (float) d.get(i,j);
-                float test2 = (float) d2.getScalar(i,j).element();
+        if(d.isVector() && d2.isVector())
+            for(int j = 0; j < d2.length(); j++) {
+                float test1 = (float) d.get(j);
+                float test2 = (float) d2.getScalar(j).element();
                 assertEquals(test1,test2,1e-6);
             }
+
+        else {
+            for(int i = 0; i < d.rows; i++) {
+                for(int j = 0; j < d.columns; j++) {
+                    float test1 = (float) d.get(i,j);
+                    float test2 = (float) d2.getScalar(i,j).element();
+                    assertEquals(test1,test2,1e-6);
+                }
+            }
         }
+
     }
 
 }

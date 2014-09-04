@@ -122,7 +122,7 @@ public abstract class BaseNDArray  implements INDArray {
     }
 
     public BaseNDArray(int[] shape, int offset, char ordering) {
-        this(shape,ordering == NDArrayFactory.C ? calcStrides(shape) : calcStridesFortran(shape),offset,ordering);
+        this(shape,NDArrays.getStrides(shape,ordering),offset,ordering);
     }
 
 
@@ -1692,7 +1692,7 @@ public abstract class BaseNDArray  implements INDArray {
 
         INDArray result = NDArrays.create(shape);
 
-        if(switchedOrder)
+        if(switchedOrder && order != NDArrayFactory.FORTRAN)
             NDArrays.factory().setOrder(NDArrayFactory.C);
 
         return mmuli(other,result);
@@ -3170,8 +3170,8 @@ public abstract class BaseNDArray  implements INDArray {
             if(ordering == NDArrayFactory.C) {
                 INDArray ret = NDArrays.create(
                         data,
-                        new int[]{shape[0]},
-                        new int[]{stride[0]},
+                        new int[]{shape[0],1},
+                        new int[]{stride[0],1},
                         offset + c, ordering
                 );
 
