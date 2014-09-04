@@ -7,8 +7,8 @@ import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.BaseNDArrayFactory;
 import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.jcublas.complex.JCublasComplexDouble;
-import org.deeplearning4j.linalg.jcublas.complex.JCublasComplexFloat;
+import org.deeplearning4j.linalg.jcublas.complex.ComplexDouble;
+import org.deeplearning4j.linalg.jcublas.complex.ComplexFloat;
 import org.deeplearning4j.linalg.jcublas.complex.JCublasComplexNDArray;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 
@@ -32,7 +32,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public IComplexFloat createFloat(float real, float imag) {
-        return new JCublasComplexFloat(real,imag);
+        return new ComplexFloat(real,imag);
     }
 
     /**
@@ -44,7 +44,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public IComplexDouble createDouble(double real, double imag) {
-        return new JCublasComplexDouble(real,imag);
+        return new ComplexDouble(real,imag);
     }
 
     /**
