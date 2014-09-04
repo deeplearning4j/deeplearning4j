@@ -15,7 +15,7 @@
         <github.global.server>github</github.global.server>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Set needed version of JCuda here -->
-        <jcuda.version>0.5.5</jcuda.version>
+        <jcuda.version>0.6.0</jcuda.version>
     </properties>
 
     <build>

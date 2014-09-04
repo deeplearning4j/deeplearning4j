@@ -14,16 +14,18 @@ import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
 import org.deeplearning4j.linalg.api.ndarray.BaseNDArray;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrayFactory;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 
 
+import java.lang.reflect.Method;
 import java.util.*;
 
 
 public class JCublasNDArray extends BaseNDArray {
 
 
-    private Pointer pointer;
+    private Pointer pointer,dataPointer;
 
 
     public JCublasNDArray(double[][] data) {
@@ -278,32 +280,138 @@ public class JCublasNDArray extends BaseNDArray {
     protected void setupJcuBlas() {
         if(pointer != null)
             return;
-        pointer = new Pointer().withByteOffset(offset());
-        JCublas.cublasAlloc(length, Sizeof.FLOAT, pointer);
-        JCublas.cublasSetVector(length, Sizeof.FLOAT, Pointer.to(data()), stride[0], pointer, stride[0]);
+        pointer = new Pointer().withByteOffset(offset() * Sizeof.FLOAT);
+        if(data != null)
+            dataPointer = Pointer.to(data()).withByteOffset(offset() * Sizeof.FLOAT);
 
     }
+
+    private long getPointerOffset() {
+        try {
+            Method m = Pointer.class.getDeclaredMethod("getByteOffset");
+            m.setAccessible(true);
+            long val = (long) m.invoke(pointer);
+            return val;
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to get declared pointer");
+        }
+    }
+
+    public void alloc() {
+
+        if(data != null)
+            dataPointer = Pointer.to(data()).withByteOffset(offset() * Sizeof.FLOAT);
+
+        JCublas.cublasAlloc(length, Sizeof.FLOAT, pointer);
+        if(ordering == NDArrayFactory.FORTRAN) {
+            if(isMatrix() || isColumnVector()) {
+                JCublas.cublasSetMatrix(
+                        rows(),
+                        columns(),
+                        Sizeof.FLOAT,
+                        dataPointer,
+                        rows(),
+                        pointer,
+                        rows());
+            }
+
+            else
+                JCublas.cublasSetVector(
+                        length,
+                        Sizeof.FLOAT,
+                        dataPointer,
+                        stride[0],
+                        pointer,
+                        stride[0]);
+        }
+        else {
+
+                JCublas.cublasSetVector(
+                        length,
+                        Sizeof.FLOAT,
+                        dataPointer,
+                        1,
+                        pointer,
+                        1);
+        }
+
+
+    }
+
+    public void free() {
+        JCublas.cublasFree(pointer);
+    }
+
+    public void getData(float[] data) {
+        alloc();
+        getData(Pointer.to(data).withByteOffset(offset()));
+
+    }
+
+
+
+
+    public void getData(Pointer p) {
+        if(ordering == NDArrayFactory.FORTRAN) {
+            if(isMatrix() || isColumnVector()) {
+                JCublas.cublasGetMatrix(
+                        rows(),
+                        columns(),
+                        Sizeof.FLOAT,
+                        pointer,
+                        rows(),
+                        p,
+                        rows());
+            }
+            else
+                JCublas.cublasGetVector(
+                        length,
+                        Sizeof.FLOAT,
+                        pointer,
+                        1,
+                        p,
+                        stride[0]);
+        }
+        else {
+
+            if(isColumnVector() || isMatrix()) {
+                JCublas.cublasGetMatrix(
+                        rows(),
+                        columns(),
+                        Sizeof.FLOAT,
+                        pointer,
+                        rows(),
+                        p,
+                        rows());
+
+            }
+            else
+                JCublas.cublasGetVector(
+                        length,
+                        Sizeof.FLOAT,
+                        pointer,
+                        stride[0],
+                        p,
+                        stride[0]);
+        }
+
+
+
+    }
+
 
     public void getData() {
-        JCublas.cublasGetVector(length, Sizeof.FLOAT, pointer, stride[0], Pointer.to(data()), stride[0]);
-
+        getData(dataPointer);
     }
 
 
+    public Pointer dataPointer() {
+        return dataPointer;
+    }
 
     public Pointer pointer() {
         return pointer;
     }
 
-    /**
-     * Perform an copy matrix multiplication
-     *
-     * @param other  the other matrix to perform matrix multiply with
-     * @param result the result ndarray
-     * @return the result of the matrix multiplication
-     */
-    @Override
-    public INDArray mmuli(INDArray other, INDArray result) {
-        return super.mmuli(other, result);
-    }
+
 }
