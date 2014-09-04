@@ -6,7 +6,7 @@ layout: default
 
 Deeplearning4j is the first commercial-grade deep-learning library written in Java. It is meant to be used in business environments, rather than as a research tool for extensive data exploration. Deeplearning4j is most helpful in solving distinct problems, like identifying [faces](../facial-reconstruction-tutorial.html), voices, spam or e-commerce fraud. 
 
-Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration. By following its conventions, you get an [infinitely scalable](../scaleout.html) deep-learning architecture suitable for Hadoop and other big-data structures. This Java deep-learning library has a domain-specific language for neural networks that serves to turn their multiple knobs. 
+Deeplearning4j **integrates with GPUs** and includes a versatile **n-dimensional array** class. DL4J aims to be cutting-edge plug and play, more convention than configuration. By following its conventions, you get an [infinitely scalable](../scaleout.html) deep-learning architecture suitable for Hadoop and other big-data structures. This Java deep-learning library has a domain-specific language for neural networks that serves to turn their multiple knobs. 
 
 Deeplearning4j includes a **distributed deep-learning framework** and a normal deep-learning framework; i.e. it runs on a single thread as well. Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via iterative reduce, and they are equally compatible with Java, Scala and Clojure.
 
