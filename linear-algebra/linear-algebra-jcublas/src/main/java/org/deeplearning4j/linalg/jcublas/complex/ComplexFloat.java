@@ -1,4 +1,4 @@
-package org.deeplearning4j.linalg.jblas.complex;
+package org.deeplearning4j.linalg.jcublas.complex;
 
 import org.deeplearning4j.linalg.api.complex.IComplexDouble;
 import org.deeplearning4j.linalg.api.complex.IComplexFloat;
@@ -9,40 +9,25 @@ import org.deeplearning4j.linalg.factory.NDArrays;
  * Complex float
  * @author Adam Gibson
  */
-public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloat {
+public class ComplexFloat implements IComplexFloat {
 
 
     public final static ComplexFloat UNIT = new ComplexFloat(1,0);
     public final static ComplexFloat NEG = new ComplexFloat(-1,0);
     public final static ComplexFloat ZERO = new ComplexFloat(0,0);
-
-    public ComplexFloat(org.jblas.ComplexFloat c) {
-        super(c.real(),c.imag());
-    }
+    private float real,imag;
 
     public ComplexFloat(float real, float imag) {
-        super(real, imag);
+        this.real = real;
+        this.imag = imag;
+
     }
 
     public ComplexFloat(float real) {
-        super(real);
+        this(real,0);
     }
 
-    /**
-     * Returns the argument of a complex number.
-     */
-    @Override
-    public float arg() {
-        return super.arg();
-    }
 
-    /**
-     * Return the absolute value
-     */
-    @Override
-    public float abs() {
-        return super.abs();
-    }
 
     /**
      * Convert to a double
@@ -72,7 +57,7 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
 
     @Override
     public ComplexFloat conji() {
-        super.set(realComponent(), -imaginaryComponent());
+       set(realComponent(), -imaginaryComponent());
         return this;
     }
 
@@ -83,14 +68,14 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
 
     @Override
     public IComplexNumber set(Number real, Number imag) {
-        super.set((float) real,(float) imag);
+        set( real.floatValue(),imag.floatValue());
         return this;
     }
 
     @Override
     public IComplexNumber copy(IComplexNumber other) {
 
-        return null;
+        return NDArrays.createFloat(other.realComponent().floatValue(),other.imaginaryComponent().floatValue());
 
     }
 
@@ -103,7 +88,7 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
     @Override
     public IComplexNumber addi(IComplexNumber c, IComplexNumber result) {
         if (this == result) {
-            set(real() + c.realComponent().floatValue(),imag() + result.imaginaryComponent().floatValue());
+            set(realComponent() + c.realComponent().floatValue(),imaginaryComponent() + result.imaginaryComponent().floatValue());
         } else {
             result.set(result.realComponent().floatValue() + c.realComponent().floatValue(),result.imaginaryComponent().floatValue() + c.imaginaryComponent().floatValue());
 
@@ -140,7 +125,7 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
     @Override
     public IComplexNumber addi(Number a, IComplexNumber result) {
         if (this == result) {
-            set(real() + a.floatValue(),imag());
+            set(realComponent()+ a.floatValue(),imaginaryComponent());
         } else {
             result.set(result.realComponent().floatValue() + a.floatValue(),imaginaryComponent());
 
@@ -178,7 +163,7 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
     @Override
     public IComplexNumber subi(IComplexNumber c, IComplexNumber result) {
         if (this == result) {
-            set(real() - c.realComponent().floatValue(),imag() - result.imaginaryComponent().floatValue());
+            set(realComponent()- c.realComponent().floatValue(),imaginaryComponent() - result.imaginaryComponent().floatValue());
         } else {
             result.set(result.realComponent().floatValue() - c.realComponent().floatValue(),result.imaginaryComponent().floatValue() - c.imaginaryComponent().floatValue());
 
@@ -204,7 +189,7 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
     @Override
     public IComplexNumber subi(Number a, IComplexNumber result) {
         if (this == result) {
-            set(real() - a.floatValue(),imag());
+            set(realComponent()- a.floatValue(),imaginaryComponent());
         } else {
             result.set(result.realComponent().floatValue() - a.floatValue(),imaginaryComponent());
 
@@ -230,8 +215,8 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
      */
     @Override
     public IComplexNumber muli(IComplexNumber c, IComplexNumber result) {
-        float newR = real() * c.realComponent().floatValue() - imag() * c.imaginaryComponent().floatValue();
-        float newI = real() * c.imaginaryComponent().floatValue() + imag() * c.realComponent().floatValue();
+        float newR = realComponent()* c.realComponent().floatValue() - imaginaryComponent() * c.imaginaryComponent().floatValue();
+        float newI = realComponent()* c.imaginaryComponent().floatValue() + imaginaryComponent() * c.realComponent().floatValue();
         result.set(newR,newI);
         return result;
     }
@@ -259,7 +244,7 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
     @Override
     public IComplexNumber muli(Number v, IComplexNumber result) {
         if (this == result) {
-            set(real() + v.floatValue(),imag());
+            set(realComponent()+ v.floatValue(),imaginaryComponent());
         } else {
             result.set(result.realComponent().floatValue() + v.floatValue(),imaginaryComponent());
 
@@ -291,8 +276,8 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
     @Override
     public IComplexNumber divi(IComplexNumber c, IComplexNumber result) {
         float d = c.realComponent().floatValue() * c.realComponent().floatValue() + c.imaginaryComponent().floatValue() * c.imaginaryComponent().floatValue();
-        float newR = (real() * c.realComponent().floatValue() + imag() * c.imaginaryComponent().floatValue()) / d;
-        float newI = (imag() * c.realComponent().floatValue() - real() * c.imaginaryComponent().floatValue()) / d;
+        float newR = (realComponent()* c.realComponent().floatValue() + imaginaryComponent() * c.imaginaryComponent().floatValue()) / d;
+        float newI = (imaginaryComponent() * c.realComponent().floatValue() - realComponent()* c.imaginaryComponent().floatValue()) / d;
         result.set(newR,newI);
         return result;
     }
@@ -305,7 +290,7 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
     @Override
     public IComplexNumber divi(Number v, IComplexNumber result) {
         if (this == result) {
-            set(real() / v.floatValue(),imag());
+            set(realComponent()/ v.floatValue(),imaginaryComponent());
         } else {
             result.set(result.realComponent().floatValue() / v.floatValue(),imaginaryComponent());
 
@@ -338,224 +323,33 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
         return super.toString();
     }
 
-    @Override
-    public org.jblas.ComplexFloat set(float real, float imag) {
-        return super.set(real, imag);
-    }
 
-    @Override
-    public float real() {
-        return super.real();
-    }
-
-    @Override
-    public float imag() {
-        return super.imag();
-    }
 
     @Override
     public Float realComponent() {
-        return super.real();
+        return real;
     }
 
     @Override
     public Float imaginaryComponent() {
-        return super.imag();
+        return imag;
     }
 
-    @Override
-    public org.jblas.ComplexFloat copy(org.jblas.ComplexFloat other) {
-        return super.copy(other);
-    }
 
-    /**
-     * Add two complex numbers in-place
-     *
-     * @param c
-     * @param result
-     */
-    @Override
-    public org.jblas.ComplexFloat addi(org.jblas.ComplexFloat c, org.jblas.ComplexFloat result) {
-        return super.addi(c, result);
-    }
 
-    /**
-     * Add two complex numbers in-place storing the result in this.
-     *
-     * @param c
-     */
-    @Override
-    public org.jblas.ComplexFloat addi(org.jblas.ComplexFloat c) {
-        return super.addi(c);
-    }
 
-    /**
-     * Add two complex numbers.
-     *
-     * @param c
-     */
-    @Override
-    public org.jblas.ComplexFloat add(org.jblas.ComplexFloat c) {
-        return super.add(c);
-    }
 
-    /**
-     * Add a realComponent number to a complex number in-place.
-     *
-     * @param a
-     * @param result
-     */
-    @Override
-    public org.jblas.ComplexFloat addi(float a, org.jblas.ComplexFloat result) {
-        return super.addi(a, result);
-    }
 
-    /**
-     * Add a realComponent number to complex number in-place, storing the result in this.
-     *
-     * @param c
-     */
-    @Override
-    public org.jblas.ComplexFloat addi(float c) {
-        return super.addi(c);
-    }
-
-    /**
-     * Add a realComponent number to a complex number.
-     *
-     * @param c
-     */
-    @Override
-    public org.jblas.ComplexFloat add(float c) {
-        return super.add(c);
-    }
-
-    /**
-     * Subtract two complex numbers, in-place
-     *
-     * @param c
-     * @param result
-     */
-    @Override
-    public org.jblas.ComplexFloat subi(org.jblas.ComplexFloat c, org.jblas.ComplexFloat result) {
-        return super.subi(c, result);
-    }
-
-    @Override
-    public org.jblas.ComplexFloat subi(org.jblas.ComplexFloat c) {
-        return super.subi(c);
-    }
-
-    /**
-     * Subtract two complex numbers
-     *
-     * @param c
-     */
-    @Override
-    public org.jblas.ComplexFloat sub(org.jblas.ComplexFloat c) {
-        return super.sub(c);
-    }
-
-    @Override
-    public org.jblas.ComplexFloat subi(float a, org.jblas.ComplexFloat result) {
-        return super.subi(a, result);
-    }
-
-    @Override
-    public org.jblas.ComplexFloat subi(float a) {
-        return super.subi(a);
-    }
-
-    @Override
-    public org.jblas.ComplexFloat sub(float r) {
-        return super.sub(r);
-    }
-
-    /**
-     * Multiply two complex numbers, inplace
-     *
-     * @param c
-     * @param result
-     */
-    @Override
-    public org.jblas.ComplexFloat muli(org.jblas.ComplexFloat c, org.jblas.ComplexFloat result) {
-        return super.muli(c, result);
-    }
-
-    @Override
-    public org.jblas.ComplexFloat muli(org.jblas.ComplexFloat c) {
-        return super.muli(c);
-    }
-
-    /**
-     * Multiply two complex numbers
-     *
-     * @param c
-     */
-    @Override
-    public org.jblas.ComplexFloat mul(org.jblas.ComplexFloat c) {
-        return super.mul(c);
-    }
-
-    @Override
-    public org.jblas.ComplexFloat mul(float v) {
-        return super.mul(v);
-    }
-
-    @Override
-    public org.jblas.ComplexFloat muli(float v, org.jblas.ComplexFloat result) {
-        return super.muli(v, result);
-    }
-
-    @Override
-    public org.jblas.ComplexFloat muli(float v) {
-        return super.muli(v);
-    }
-
-    /**
-     * Divide two complex numbers
-     *
-     * @param c
-     */
-    @Override
-    public ComplexFloat div(org.jblas.ComplexFloat c) {
-        return dup().divi(c);
-
-    }
-
-    /**
-     * Divide two complex numbers, in-place
-     *
-     * @param c
-     * @param result
-     */
-    @Override
-    public org.jblas.ComplexFloat divi(org.jblas.ComplexFloat c, org.jblas.ComplexFloat result) {
-        return super.divi(c, result);
-    }
-
-    @Override
-    public ComplexFloat divi(org.jblas.ComplexFloat c) {
-        super.divi(c);
-        return this;
-    }
-
-    @Override
-    public ComplexFloat divi(float v, org.jblas.ComplexFloat result) {
-        super.divi(v, result);
-        return this;
-    }
 
     @Override
     public IComplexFloat divi(float v) {
-        super.divi(v);
+        this.real = real / v;
         return this;
     }
 
     @Override
-    public ComplexFloat div(float v) {
-        super.div(v);
-        return this;
+    public IComplexFloat div(float v) {
+       return dup().divi(v);
     }
 
     /**
@@ -563,7 +357,7 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
      */
     @Override
     public Float absoluteValue() {
-        return super.abs();
+        return (float) Math.sqrt(real * real + imag * imag);
     }
 
     /**
@@ -616,32 +410,19 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
         return super.equals(o);
     }
 
-    @Override
-    public boolean eq(org.jblas.ComplexFloat c) {
-        return super.eq(c);
-    }
-
-    @Override
-    public boolean ne(org.jblas.ComplexFloat c) {
-        return super.ne(c);
-    }
-
-    @Override
-    public boolean isZero() {
-        return super.isZero();
+     public boolean isZero() {
+        return real == 0;
     }
 
     @Override
     public boolean isReal() {
-        return imaginaryComponent() == 0.0;
+        return imaginaryComponent() == 0;
     }
 
     @Override
     public boolean isImag() {
-        return realComponent() == 0.0;
+        return realComponent() == 0;
     }
-    
-    
-    
-    
+
+
 }

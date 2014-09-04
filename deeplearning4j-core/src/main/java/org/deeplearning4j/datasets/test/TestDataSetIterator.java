@@ -1,4 +1,4 @@
-package org.deeplearning4j.test;
+package org.deeplearning4j.datasets.test;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.linalg.dataset.DataSet;

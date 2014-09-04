@@ -1,163 +1,142 @@
 package org.deeplearning4j.linalg.jcublas;
 
-import org.deeplearning4j.linalg.api.complex.IComplexDouble;
-import org.deeplearning4j.linalg.jcublas.complex.ComplexDouble;
-import org.deeplearning4j.linalg.jcublas.complex.JCublasComplexNDArray;
+import org.deeplearning4j.linalg.api.complex.IComplexNumber;
+import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+
 
 /**
  * Created by mjk on 8/20/14.
  */
-public class JCublasWrapper implements org.deeplearning4j.linalg.factory.BlasWrapper<JCublasNDArray,JCublasComplexNDArray,IComplexDouble> {
+public class JCublasWrapper implements org.deeplearning4j.linalg.factory.BlasWrapper {
     @Override
-    public JCublasNDArray swap(JCublasNDArray x, JCublasNDArray y) {
+    public INDArray swap(INDArray x, INDArray y) {
         SimpleJCublas.swap(x,y);
         return y;
     }
 
     @Override
-    public JCublasNDArray scal(float alpha, JCublasNDArray x) {
+    public INDArray scal(float alpha, INDArray x) {
         return null;
     }
 
-    //@Override
-    public JCublasNDArray scal(double alpha, JCublasNDArray x) {
-        return SimpleJCublas.scal(alpha,x);
+
+
+    @Override
+    public IComplexNDArray scal(IComplexNumber alpha, IComplexNDArray x) {
+        return SimpleJCublas.zscal(alpha.asDouble(), x);
+
     }
 
     @Override
-    public JCublasComplexNDArray scal(IComplexDouble alpha, JCublasComplexNDArray x) {
-        return SimpleJCublas.zscal(alpha, x);
-
-    }
-
-    @Override
-    public JCublasNDArray copy(JCublasNDArray x, JCublasNDArray y) {
+    public INDArray copy(INDArray x, INDArray y) {
         SimpleJCublas.copy(x,y);
         return y;
     }
 
     @Override
-    public JCublasComplexNDArray copy(JCublasComplexNDArray x, JCublasComplexNDArray y) {
+    public IComplexNDArray copy(IComplexNDArray x, IComplexNDArray y) {
         SimpleJCublas.copy(x,y);
         return y;
     }
 
     @Override
-    public JCublasNDArray axpy(float da, JCublasNDArray dx, JCublasNDArray dy) {
+    public INDArray axpy(float da, INDArray dx, INDArray dy) {
         return null;
     }
 
-    //@Override
-    public JCublasNDArray axpy(double da, JCublasNDArray dx, JCublasNDArray dy) {
 
-        SimpleJCublas.axpy(da, dx, dy);
-
-        return dy;
-    }
 
     @Override
-    public JCublasComplexNDArray axpy(IComplexDouble da, JCublasComplexNDArray dx, JCublasComplexNDArray dy) {
+    public IComplexNDArray axpy(IComplexNumber da, IComplexNDArray dx, IComplexNDArray dy) {
         SimpleJCublas.axpy(da,dx,dy);
         return dy;
     }
 
-    public float dot(JCublasNDArray x, JCublasNDArray y) {
+    public float dot(INDArray x, INDArray y) {
         return 0.0f;
     }
     //@Override
-    public double dotd(JCublasNDArray x, JCublasNDArray y) {
+    public double dotd(INDArray x, INDArray y) {
         return SimpleJCublas.dot(x,y);
     }
 
     @Override
-    public ComplexDouble dotc(JCublasComplexNDArray x, JCublasComplexNDArray y) {
+    public IComplexNumber dotc(IComplexNDArray x, IComplexNDArray y) {
         return SimpleJCublas.dot(x,y);
     }
 
     @Override
-    public IComplexDouble dotu(JCublasComplexNDArray x, JCublasComplexNDArray y) {
+    public IComplexNumber dotu(IComplexNDArray x, IComplexNDArray y) {
         return SimpleJCublas.dotu(x, y);
     }
 
     @Override
-    public double nrm2(JCublasNDArray x) {
+    public double nrm2(INDArray x) {
         return SimpleJCublas.nrm2(x);
     }
 
     @Override
-    public double nrm2(JCublasComplexNDArray x) {
+    public double nrm2(IComplexNDArray x) {
         return SimpleJCublas.nrm2(x);
     }
 
     @Override
-    public double asum(JCublasNDArray x) {
+    public double asum(INDArray x) {
         return SimpleJCublas.asum(x);
 
     }
 
     @Override
-    public double asum(JCublasComplexNDArray x) {
+    public double asum(IComplexNDArray x) {
         return SimpleJCublas.asum(x);
     }
 
     @Override
-    public int iamax(JCublasNDArray x) {
+    public int iamax(INDArray x) {
         return SimpleJCublas.iamax(x);
     }
 
     @Override
-    public int iamax(JCublasComplexNDArray x) {
+    public int iamax(IComplexNDArray x) {
         return SimpleJCublas.iamax(x);
     }
 
     @Override
-    public JCublasNDArray gemv(float alpha, JCublasNDArray a, JCublasNDArray x, float beta, JCublasNDArray y) {
+    public INDArray gemv(float alpha, INDArray a, INDArray x, float beta, INDArray y) {
         return SimpleJCublas.gemv(a,x,y, alpha, beta);
     }
 
     @Override
-    public JCublasNDArray ger(float alpha, JCublasNDArray x, JCublasNDArray y, JCublasNDArray a) {
+    public INDArray ger(float alpha, INDArray x, INDArray y, INDArray a) {
         return null;
     }
 
-    //@Override
-    public JCublasNDArray gemv(double alpha, JCublasNDArray a, JCublasNDArray b, double beta, JCublasNDArray c) {
-        return SimpleJCublas.gemv(a,b,c, alpha, beta);
-    }
 
-    //@Override
-    public JCublasNDArray ger(double alpha, JCublasNDArray x, JCublasNDArray y, JCublasNDArray a) {
-        return SimpleJCublas.ger(x,y, a,alpha);
+    @Override
+    public IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
+        return SimpleJCublas.geru(x, y, a, alpha.asDouble());
     }
 
     @Override
-    public JCublasComplexNDArray geru(IComplexDouble alpha, JCublasComplexNDArray x, JCublasComplexNDArray y, JCublasComplexNDArray a) {
-        return SimpleJCublas.geru(x, y, a, alpha);
+    public IComplexNDArray gerc(IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
+        return SimpleJCublas.gerc(x, y, a, alpha.asDouble());
     }
 
     @Override
-    public JCublasComplexNDArray gerc(IComplexDouble alpha, JCublasComplexNDArray x, JCublasComplexNDArray y, JCublasComplexNDArray a) {
-        return SimpleJCublas.gerc(x, y, a, alpha);
+    public INDArray gemm(float alpha, INDArray a, INDArray b, float beta, INDArray c) {
+        return SimpleJCublas.gemm(a,b,c,alpha,beta);
     }
+
+
 
     @Override
-    public JCublasNDArray gemm(float alpha, JCublasNDArray a, JCublasNDArray b, float beta, JCublasNDArray c) {
-        return null;
-    }
-
-    //@Override
-    public JCublasNDArray gemm(double alpha, JCublasNDArray a, JCublasNDArray b, double beta, JCublasNDArray c) {
-        c = SimpleJCublas.gemm(a,b,c, alpha, beta);
-        return c;
-    }
-
-    @Override
-    public JCublasComplexNDArray gemm(IComplexDouble alpha, JCublasComplexNDArray a, JCublasComplexNDArray b, IComplexDouble beta, JCublasComplexNDArray c) {
+    public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta, IComplexNDArray c) {
         return null;
     }
 
     @Override
-    public JCublasNDArray gesv(JCublasNDArray a, int[] ipiv, JCublasNDArray b) {
+    public INDArray gesv(INDArray a, int[] ipiv, INDArray b) {
         return null;
     }
 
@@ -167,67 +146,67 @@ public class JCublasWrapper implements org.deeplearning4j.linalg.factory.BlasWra
     }
 
     @Override
-    public JCublasNDArray sysv(char uplo, JCublasNDArray a, int[] ipiv, JCublasNDArray b) {
+    public INDArray sysv(char uplo, INDArray a, int[] ipiv, INDArray b) {
         return null;
     }
 
     @Override
-    public int syev(char jobz, char uplo, JCublasNDArray a, JCublasNDArray w) {
+    public int syev(char jobz, char uplo, INDArray a, INDArray w) {
         return 0;
     }
 
     @Override
-    public int syevx(char jobz, char range, char uplo, JCublasNDArray a, float vl, float vu, int il, int iu, float abstol, JCublasNDArray w, JCublasNDArray z) {
-        return 0;
-    }
-
-    //@Override
-    public int syevx(char jobz, char range, char uplo, JCublasNDArray a, double vl, double vu, int il, int iu, double abstol, JCublasNDArray w, JCublasNDArray z) {
-        return 0;
-    }
-
-    @Override
-    public int syevd(char jobz, char uplo, JCublasNDArray A, JCublasNDArray w) {
-        return 0;
-    }
-
-    @Override
-    public int syevr(char jobz, char range, char uplo, JCublasNDArray a, float vl, float vu, int il, int iu, float abstol, JCublasNDArray w, JCublasNDArray z, int[] isuppz) {
+    public int syevx(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, float abstol, INDArray w, INDArray z) {
         return 0;
     }
 
     //@Override
-    public int syevr(char jobz, char range, char uplo, JCublasNDArray a, double vl, double vu, int il, int iu, double abstol, JCublasNDArray w, JCublasNDArray z, int[] isuppz) {
+    public int syevx(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol, INDArray w, INDArray z) {
         return 0;
     }
 
     @Override
-    public void posv(char uplo, JCublasNDArray A, JCublasNDArray B) {
-
-    }
-
-    @Override
-    public int geev(char jobvl, char jobvr, JCublasNDArray A, JCublasNDArray WR, JCublasNDArray WI, JCublasNDArray VL, JCublasNDArray VR) {
+    public int syevd(char jobz, char uplo, INDArray A, INDArray w) {
         return 0;
     }
 
     @Override
-    public int sygvd(int itype, char jobz, char uplo, JCublasNDArray A, JCublasNDArray B, JCublasNDArray W) {
+    public int syevr(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, float abstol, INDArray w, INDArray z, int[] isuppz) {
+        return 0;
+    }
+
+    //@Override
+    public int syevr(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol, INDArray w, INDArray z, int[] isuppz) {
         return 0;
     }
 
     @Override
-    public void gelsd(JCublasNDArray A, JCublasNDArray B) {
+    public void posv(char uplo, INDArray A, INDArray B) {
 
     }
 
     @Override
-    public void geqrf(JCublasNDArray A, JCublasNDArray tau) {
+    public int geev(char jobvl, char jobvr, INDArray A, INDArray WR, INDArray WI, INDArray VL, INDArray VR) {
+        return 0;
+    }
+
+    @Override
+    public int sygvd(int itype, char jobz, char uplo, INDArray A, INDArray B, INDArray W) {
+        return 0;
+    }
+
+    @Override
+    public void gelsd(INDArray A, INDArray B) {
 
     }
 
     @Override
-    public void ormqr(char side, char trans, JCublasNDArray A, JCublasNDArray tau, JCublasNDArray C) {
+    public void geqrf(INDArray A, INDArray tau) {
+
+    }
+
+    @Override
+    public void ormqr(char side, char trans, INDArray A, INDArray tau, INDArray C) {
 
     }
 
@@ -236,10 +215,7 @@ public class JCublasWrapper implements org.deeplearning4j.linalg.factory.BlasWra
 
     }
 
-    //@Override
-    public void dcopy(int n, double[] dx, int dxIdx, int incx, double[] dy, int dyIdx, int incy) {
-        SimpleJCublas.dcopy(n,dx,dxIdx,incx,dy,dyIdx,incy);
-    }
+
     /*
     missing functions
         gesv
