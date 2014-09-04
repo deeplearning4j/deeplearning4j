@@ -547,7 +547,7 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
     }
 
     @Override
-    public IComplexFloat divi(float v) {
+    public ComplexFloat divi(float v) {
         super.divi(v);
         return this;
     }
