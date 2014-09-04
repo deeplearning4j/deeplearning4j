@@ -166,7 +166,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset) {
-        return new JCublasComplexNDArray(data,shape,stride,offset);
+        return new JCublasComplexNDArray(ArrayUtil.floatCopyOf(data),shape,stride,offset);
     }
 
     /**

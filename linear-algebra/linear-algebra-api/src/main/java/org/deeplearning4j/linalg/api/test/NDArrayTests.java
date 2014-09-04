@@ -82,11 +82,11 @@ public abstract class NDArrayTests {
         assertTrue(Arrays.equals(new int[]{1,2,2},get.shape()));
         assertEquals(NDArrays.create(new float[]{6,10,18,22},new int[]{1,2,2}),get);
 
-        INDArray anotherGet = NDArrays.create(new float[]{6,7,10,11,18,19,22,23},new int[]{2,2,2});
+        INDArray anotherGet = NDArrays.create(new float[]{6,7,10,11,18,19,22,23},new int[]{2,1,2});
         INDArray test2 = test.get(NDArrayIndex.interval(1,3),NDArrayIndex.interval(1,4));
         assertEquals(5,test2.offset());
         //offset is off: should be 5
-        assertTrue(Arrays.equals(new int[]{2,2,2},test2.shape()));
+        assertTrue(Arrays.equals(new int[]{2,1,2},test2.shape()));
         assertEquals(test2,anotherGet);
 
 
@@ -414,6 +414,28 @@ public abstract class NDArrayTests {
         INDArray test = NDArrays.create(new float[]{3,7,11,15},new int[]{2,2});
         INDArray sum = n.sum(n.shape().length - 1);
         assertEquals(test,sum);
+    }
+
+
+
+    @Test
+    public void testMmulF() {
+        NDArrays.factory().setOrder('f');
+
+        float[] data = NDArrays.linspace(1,10,10).data();
+        INDArray n = NDArrays.create(data,new int[]{10});
+        INDArray transposed = n.transpose();
+        assertEquals(true,n.isRowVector());
+        assertEquals(true,transposed.isColumnVector());
+
+        INDArray d = NDArrays.create(Arrays.copyOf(n.data(),n.data().length),new int[]{n.rows(),n.columns()});
+
+
+        INDArray innerProduct = n.mmul(transposed);
+
+        INDArray scalar = NDArrays.scalar(385);
+        assertEquals(scalar,innerProduct);
+
     }
 
 
@@ -815,7 +837,8 @@ public abstract class NDArrayTests {
 
     @Test
     public void testRowVectorOps() {
-        INDArray twoByTwo = NDArrays.create(new float[]{1,2,3,4},new int[]{2,2});
+        NDArrays.factory().setOrder('f');
+        INDArray twoByTwo = NDArrays.create(new float[]{1,3,2,4},new int[]{2,2});
         INDArray toAdd = NDArrays.create(new float[]{1,2},new int[]{2});
         twoByTwo.addiRowVector(toAdd);
         INDArray assertion = NDArrays.create(new float[]{2,4,4,6},new int[]{2,2});
@@ -838,7 +861,18 @@ public abstract class NDArrayTests {
     }
 
 
+    @Test
+    public void testColumnVectorOpsFortran() {
+        NDArrays.factory().setOrder('f');
+        INDArray twoByTwo = NDArrays.create(new float[]{1,2,3,4},new int[]{2,2});
+        INDArray toAdd = NDArrays.create(new float[]{1,2},new int[]{2,1});
+        twoByTwo.addiColumnVector(toAdd);
+        INDArray assertion = NDArrays.create(new float[]{2,4,4,6},new int[]{2,2});
+        assertEquals(assertion,twoByTwo);
 
+
+
+    }
 
 
     @Test

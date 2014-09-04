@@ -17,7 +17,8 @@ public class JCublasWrapper implements org.deeplearning4j.linalg.factory.BlasWra
 
     @Override
     public INDArray scal(float alpha, INDArray x) {
-        return null;
+        SimpleJCublas.scal(alpha,x);
+        return x;
     }
 
 
@@ -42,7 +43,8 @@ public class JCublasWrapper implements org.deeplearning4j.linalg.factory.BlasWra
 
     @Override
     public INDArray axpy(float da, INDArray dx, INDArray dy) {
-        return null;
+        SimpleJCublas.axpy(da,dx,dy);
+        return dy;
     }
 
 
