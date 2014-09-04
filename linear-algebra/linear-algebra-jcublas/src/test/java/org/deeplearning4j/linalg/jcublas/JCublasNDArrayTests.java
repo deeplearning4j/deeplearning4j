@@ -15,15 +15,6 @@ import org.slf4j.LoggerFactory;
 public class JCublasNDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTests {
     private static Logger log = LoggerFactory.getLogger(JCublasNDArrayTests.class);
 
-    @Test
-    public void testMmul2() {
 
-        NDArrays.factory().setOrder('c');
-
-        float[] data = NDArrays.linspace(1, 10, 10).data();
-        INDArray n = NDArrays.create(data, new int[]{10});
-        INDArray m = NDArrays.create(data, new int[]{10});
-        INDArray e = n.mmul(n.transpose());
-    }
 
 }
