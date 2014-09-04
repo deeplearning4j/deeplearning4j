@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Why Choose Deep Learning?
+# When and Why to Choose Deep Learning
 
 Where does deep learning fit into machine learning and other optimization algorithms, and what kind of problems can it solve? These are the first questions to answer as you choose the tools to tackle whatever data problem you have. 
 
