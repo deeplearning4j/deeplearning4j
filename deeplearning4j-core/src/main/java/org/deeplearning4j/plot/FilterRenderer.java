@@ -23,7 +23,7 @@ import javax.swing.JLabel;
 import javax.swing.WindowConstants;
 
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

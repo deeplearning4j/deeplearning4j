@@ -3,10 +3,10 @@ package org.deeplearning4j.word2vec.vectorizer;
 import org.apache.commons.io.IOUtils;
 import org.apache.uima.util.FileUtils;
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.util.FeatureUtil;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.stopwords.StopWords;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
@@ -106,7 +106,7 @@ public class BagOfWordsVectorizer implements TextVectorizer {
     public DataSet vectorize(String text, String label) {
         Tokenizer tokenizer = tokenizerFactory.create(text);
         List<String> tokens = tokenizer.getTokens();
-        INDArray input = NDArrays.create(1,vocab.size());
+        INDArray input = Nd4j.create(1,vocab.size());
         for(int i = 0; i < tokens.size(); i++) {
             int idx = vocab.indexOf(tokens.get(i));
             if(vocab.indexOf(tokens.get(i)) >= 0)
@@ -167,7 +167,7 @@ public class BagOfWordsVectorizer implements TextVectorizer {
     public INDArray transform(String text) {
         Tokenizer tokenizer = tokenizerFactory.create(text);
         List<String> tokens = tokenizer.getTokens();
-        INDArray input = NDArrays.create(1, vocab.size());
+        INDArray input = Nd4j.create(1, vocab.size());
         for(int i = 0; i < tokens.size(); i++) {
             int idx = vocab.indexOf(tokens.get(i));
             if(vocab.indexOf(tokens.get(i)) >= 0)

@@ -7,8 +7,8 @@ import java.util.Collections;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.models.classifiers.dbn.DBN;
-import org.deeplearning4j.linalg.transformation.MatrixTransform;
-import org.deeplearning4j.linalg.transformation.MultiplyScalar;
+import org.nd4j.linalg.transformation.MatrixTransform;
+import org.nd4j.linalg.transformation.MultiplyScalar;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.datasets.test.TestDataSetIterator;
 

@@ -1,7 +1,7 @@
 package org.deeplearning4j.rntn;
 
 import org.apache.commons.math3.random.MersenneTwister;
-import org.deeplearning4j.linalg.api.activation.Activations;
+import org.nd4j.linalg.api.activation.Activations;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.text.treeparser.TreeVectorizer;
 import org.deeplearning4j.word2vec.Word2Vec;

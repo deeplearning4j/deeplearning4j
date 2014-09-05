@@ -107,7 +107,6 @@
 		<module>deeplearning4j-hadoop</module>
         <module>deeplearning4j-distribution</module>
 		<module>hadoop-yarn</module>
-        <module>linear-algebra</module>
     </modules>
 
 	<licenses>

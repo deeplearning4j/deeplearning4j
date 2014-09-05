@@ -7,11 +7,11 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.linalg.api.activation.Activations;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.api.activation.Activations;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -56,7 +56,7 @@ public class DBNTest {
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
         d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
         //note zeros here
-        //d.getOutputLayer().setW(NDArrays.zeros(d.getOutputLayer().getW().shape()));
+        //d.getOutputLayer().setW(Nd4j.zeros(d.getOutputLayer().getW().shape()));
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 

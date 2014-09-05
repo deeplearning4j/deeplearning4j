@@ -13,8 +13,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.CounterMap;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.stopwords.StopWords;
 import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
@@ -246,7 +246,7 @@ public class VocabCreator implements Serializable {
 		} catch (IOException e) {
 			throw new IllegalStateException("Unable to read file",e);
 		}
-		INDArray ret = NDArrays.create(1, currVocab.size());
+		INDArray ret = Nd4j.create(1, currVocab.size());
 
 
 		for(int i = 0; i < currVocab.size(); i++) {

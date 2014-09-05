@@ -12,11 +12,11 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.util.ArrayUtil;
-import org.deeplearning4j.linalg.util.FeatureUtil;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.util.ArchiveUtils;
 import org.deeplearning4j.util.ImageLoader;
 
@@ -104,8 +104,8 @@ public class LFWLoader {
 
 
     public DataSet convertListPairs(List<DataSet> images) {
-        INDArray inputs = NDArrays.create(images.size(), numPixelColumns);
-        INDArray outputs = NDArrays.create(images.size(),numNames);
+        INDArray inputs = Nd4j.create(images.size(), numPixelColumns);
+        INDArray outputs = Nd4j.create(images.size(),numNames);
 
         for(int i = 0; i < images.size(); i++) {
             inputs.putRow(i,images.get(i).getFeatureMatrix());

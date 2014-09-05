@@ -2,12 +2,12 @@ package org.deeplearning4j.nn;
 
 
 import org.apache.commons.math3.distribution.RealDistribution;
-import org.deeplearning4j.linalg.api.activation.ActivationFunction;
-import org.deeplearning4j.linalg.api.activation.RectifiedLinear;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.indexing.NDArrayIndex;
-import org.deeplearning4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.api.activation.ActivationFunction;
+import org.nd4j.linalg.api.activation.RectifiedLinear;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.util.ArrayUtil;
 
 
 /**
@@ -28,7 +28,7 @@ public class WeightInitUtil {
      * distribution based on the initialization scheme
      */
     public static INDArray initWeights(int nIn,int nOut,WeightInit initScheme,ActivationFunction act,RealDistribution dist) {
-        INDArray ret = NDArrays.randn(nIn,nOut);
+        INDArray ret = Nd4j.randn(nIn,nOut);
         switch(initScheme) {
             case SI:
                 int maxNonZeroPerColumn = 15;
@@ -41,28 +41,28 @@ public class WeightInitUtil {
 
                 int fanOut = Math.min(maxNonZeroPerColumn,nOut);
                 for(int i = 0; i < nOut; i++) {
-                    INDArray perm = NDArrays.create(ArrayUtil.randomPermutation(nIn)).reshape(new int[]{nIn});
+                    INDArray perm = Nd4j.create(ArrayUtil.randomPermutation(nIn)).reshape(new int[]{nIn});
                     INDArray subIndices = perm.get(NDArrayIndex.interval(fanOut, perm.length()), NDArrayIndex.interval(0, nOut));
                     INDArray indices = perm.get(new NDArrayIndex(ArrayUtil.toInts(subIndices)),new NDArrayIndex(new int[]{i}));
-                    INDArray randInit = ret.get(ArrayUtil.toInts(perm.get(ArrayUtil.toInts(indices)).muli(NDArrays.scalar(smallVal))));
+                    INDArray randInit = ret.get(ArrayUtil.toInts(perm.get(ArrayUtil.toInts(indices)).muli(Nd4j.scalar(smallVal))));
                     if(randInit.length() != 0)
                         ret.put(ArrayUtil.toInts(indices),randInit);
 
                 }
 
-                ret.muli(NDArrays.scalar(initCoeff)).addi(NDArrays.scalar(shift));
+                ret.muli(Nd4j.scalar(initCoeff)).addi(Nd4j.scalar(shift));
                 return ret;
 
 
 
             case  VI:
                 double r = Math.sqrt(6) / Math.sqrt(nIn + nOut + 1);
-                ret.muli(NDArrays.scalar(2)).muli(NDArrays.scalar(r)).subi(NDArrays.scalar(r));
+                ret.muli(Nd4j.scalar(2)).muli(Nd4j.scalar(r)).subi(Nd4j.scalar(r));
                 return ret;
 
             case DISTRIBUTION:
                 for(int i = 0; i < ret.rows(); i++) {
-                    ret.putRow(i,NDArrays.create(dist.sample(ret.columns())));
+                    ret.putRow(i,Nd4j.create(dist.sample(ret.columns())));
                 }
                 return ret;
 

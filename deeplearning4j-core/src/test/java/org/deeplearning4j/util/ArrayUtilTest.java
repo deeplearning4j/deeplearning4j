@@ -1,6 +1,6 @@
 package org.deeplearning4j.util;
 
-import org.deeplearning4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.junit.Test;
 
 import org.slf4j.Logger;

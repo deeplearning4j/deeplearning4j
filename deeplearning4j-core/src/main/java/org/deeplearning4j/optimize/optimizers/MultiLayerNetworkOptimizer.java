@@ -3,8 +3,8 @@ package org.deeplearning4j.optimize.optimizers;
 import java.io.Serializable;
 import java.util.List;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 
@@ -197,7 +197,7 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
     public INDArray getParameters() {
         float[] d = new float[getNumParameters()];
         this.getParameters(d);
-        return NDArrays.create(d);
+        return Nd4j.create(d);
     }
 
 
@@ -214,7 +214,7 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
     public INDArray getValueGradient(int iteration) {
         float[] buffer = new float[getNumParameters()];
         getValueGradient(buffer);
-        return NDArrays.create(buffer);
+        return Nd4j.create(buffer);
     }
 
 

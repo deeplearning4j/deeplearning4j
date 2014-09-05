@@ -1,7 +1,7 @@
 package org.deeplearning4j.rntn;
 
 import org.deeplearning4j.eval.ConfusionMatrix;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +38,7 @@ public class RNTNEval {
         for(Tree t : tree.children())
             count(t);
         int treeGoldLabel = tree.goldLabel();
-        int predictionLabel = NDArrays.getBlasWrapper().iamax(tree.prediction());
+        int predictionLabel = Nd4j.getBlasWrapper().iamax(tree.prediction());
         cf.add(treeGoldLabel,predictionLabel);
     }
 

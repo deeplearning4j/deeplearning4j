@@ -1,8 +1,8 @@
 package org.deeplearning4j.topicmodeling;
 
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.word2vec.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
@@ -44,7 +44,7 @@ public class CountVectorizer {
 
 	
 	public INDArray toVector() {
-		INDArray d = NDArrays.create(1,wordsToCount.size());
+		INDArray d = Nd4j.create(1,wordsToCount.size());
 		Counter<String> wordFrequencies = new Counter<String>();
 		while(iter.hasNext()) {
 			String sentence = iter.nextSentence();
@@ -68,7 +68,7 @@ public class CountVectorizer {
 	}
 	
 	public INDArray toBinaryVector() {
-		INDArray d = NDArrays.create(1, wordsToCount.size());
+		INDArray d = Nd4j.create(1, wordsToCount.size());
 		Counter<String> wordFrequencies = new Counter<String>();
 		while(iter.hasNext()) {
 			String sentence = iter.nextSentence();

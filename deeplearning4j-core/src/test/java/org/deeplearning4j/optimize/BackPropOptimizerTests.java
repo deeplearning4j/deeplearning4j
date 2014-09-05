@@ -1,8 +1,8 @@
 package org.deeplearning4j.optimize;
 
-import org.deeplearning4j.linalg.api.activation.Activations;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.activation.Activations;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork.ParamRange;
 
 import org.deeplearning4j.models.classifiers.dbn.DBN;
@@ -47,7 +47,7 @@ public class BackPropOptimizerTests {
         INDArray params = dbn.params();
         assertEquals(1,params.rows());
         assertEquals(params.columns(),params.length());
-        dbn.setLabels(NDArrays.create(1, nOuts));
+        dbn.setLabels(Nd4j.create(1, nOuts));
 
 
         BackPropOptimizer op = new BackPropOptimizer(dbn,1e-1f,1000);

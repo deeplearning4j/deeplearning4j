@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.zip.GZIPInputStream;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.word2vec.VocabWord;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.util.Index;
@@ -64,7 +64,7 @@ public class Word2VecLoader {
 				rows = Integer.parseInt(split[0]);
 				vectorSize = Integer.parseInt(split[1]);
 				ret.setLayerSize(vectorSize);
-				//ret.setSyn0(NDArrays.create(rows - 1,vectorSize));
+				//ret.setSyn0(Nd4j.create(rows - 1,vectorSize));
 				first = false;
 			}
 
@@ -79,7 +79,7 @@ public class Word2VecLoader {
 				while(tokenizer.hasMoreTokens()) {
 					vec[count++] = Float.parseFloat(tokenizer.nextToken());
 				}
-				//ret.getSyn0().putRow(currRow, NDArrays.create(vec));
+				//ret.getSyn0().putRow(currRow, Nd4j.create(vec));
 				currRow++;
 
 			}
@@ -142,7 +142,7 @@ public class Word2VecLoader {
             int words = Integer.parseInt(readString(dis));
             //word vector size
             int size = Integer.parseInt(readString(dis));
-            wordVectors = NDArrays.create(words,size);
+            wordVectors = Nd4j.create(words,size);
             String word;
             float[] vectors = null;
             for (int i = 0; i < words; i++) {
@@ -161,7 +161,7 @@ public class Word2VecLoader {
                     vectors[j] /= len;
                 }
                 wordIndex.add(word);
-                wordVectors.putRow(i, NDArrays.create(vectors));
+                wordVectors.putRow(i, Nd4j.create(vectors));
             }
         } finally {
             bis.close();

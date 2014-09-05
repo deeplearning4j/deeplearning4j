@@ -4,8 +4,8 @@ import java.io.InputStream;
 import java.io.File;
 
 import org.deeplearning4j.datasets.vectorizer.Vectorizer;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.deeplearning4j.util.Index;
 
 /**

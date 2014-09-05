@@ -1,7 +1,7 @@
 package org.deeplearning4j.rntn;
 
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 import java.util.ArrayList;

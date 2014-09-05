@@ -2,8 +2,8 @@ package org.deeplearning4j.optimize.solvers;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.optimize.api.NeuralNetEpochListener;
 import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
@@ -73,7 +73,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
 
     void setup() {
-        ch = NDArrays.zeros(1,optimizable.getNumParameters());
+        ch = Nd4j.zeros(1,optimizable.getNumParameters());
         xi = network.pack();
     }
 
@@ -120,7 +120,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
             }
 
 
-            Float val = 0.5f * NDArrays.getBlasWrapper().dot(b.neg().add(r).transpose(), x);
+            Float val = 0.5f * Nd4j.getBlasWrapper().dot(b.neg().add(r).transpose(), x);
 
             log.info("Iteration on conjugate gradient " + iterationCount + " with value " + val);
 

@@ -1,7 +1,7 @@
 package org.deeplearning4j.optimize.api;
 
 import org.deeplearning4j.exception.InvalidStepException;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * Line optimizer interface adapted from mallet

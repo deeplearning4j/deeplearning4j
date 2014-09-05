@@ -2,8 +2,8 @@ package org.deeplearning4j.word2vec.util;
 
 import java.util.List;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
 
@@ -58,7 +58,7 @@ public class WindowConverter {
 	
 	
 	public static INDArray asExampleMatrix(Window window,Word2Vec vec) {
-		return NDArrays.create(asExample(window, vec));
+		return Nd4j.create(asExample(window, vec));
 	}
 
 }

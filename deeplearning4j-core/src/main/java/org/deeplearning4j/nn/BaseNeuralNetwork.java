@@ -1,7 +1,7 @@
 package org.deeplearning4j.nn;
 
 
-import static org.deeplearning4j.linalg.ops.transforms.Transforms.*;
+import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,17 +12,17 @@ import java.lang.reflect.Constructor;
 import java.util.Arrays;
 
 
-import org.deeplearning4j.linalg.factory.NDArrayFactory;
-import org.deeplearning4j.linalg.indexing.NDArrayIndex;
-import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.factory.NDArrayFactory;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.models.classifiers.dbn.DBN;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.api.Persistable;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
-import org.deeplearning4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.AdaGrad;
 import org.deeplearning4j.optimize.optimizers.NeuralNetworkOptimizer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.Dl4jReflection;
@@ -95,7 +95,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     @Override
     public INDArray params() {
-        return NDArrays.toFlattened(W,vBias,hBias);
+        return Nd4j.toFlattened(W,vBias,hBias);
     }
 
 
@@ -136,17 +136,17 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		 */
         if(this.W == null) {
 
-            this.W = NDArrays.zeros(nVisible,nHidden);
+            this.W = Nd4j.zeros(nVisible,nHidden);
 
             for(int i = 0; i < this.W.rows(); i++)
-                this.W.putRow(i,NDArrays.create(conf.getDist().sample(this.W.columns())));
+                this.W.putRow(i,Nd4j.create(conf.getDist().sample(this.W.columns())));
 
         }
 
         this.wAdaGrad = new AdaGrad(this.W.rows(),this.W.columns());
 
         if(this.hBias == null) {
-            this.hBias = NDArrays.zeros(nHidden);
+            this.hBias = Nd4j.zeros(nHidden);
 			/*
 			 * Encourage sparsity.
 			 * See Hinton's Practical guide to RBMs
@@ -160,12 +160,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         if(this.vBias == null) {
             if(this.input != null)
 
-                this.vBias = NDArrays.zeros(nVisible);
+                this.vBias = Nd4j.zeros(nVisible);
 
 
 
             else
-                this.vBias = NDArrays.zeros(nVisible);
+                this.vBias = Nd4j.zeros(nVisible);
         }
 
         this.vBiasAdaGrad = new AdaGrad(vBias.rows(),vBias.columns());
@@ -423,7 +423,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             ret.setVBiasAdaGrad(hBiasAdaGrad);
             ret.sethBias(vBias.dup());
             ret.setConf(conf);
-            ret.setvBias(NDArrays.zeros(hBias.rows(),hBias.columns()));
+            ret.setvBias(Nd4j.zeros(hBias.rows(),hBias.columns()));
             ret.setW(W.transpose());
             return ret;
         } catch (Exception e) {
@@ -624,11 +624,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     protected void applyDropOutIfNecessary(INDArray input) {
         if(conf.getDropOut() > 0) {
-            this.doMask = NDArrays.rand(input.rows(), input.columns()).gt(conf.getDropOut());
+            this.doMask = Nd4j.rand(input.rows(), input.columns()).gt(conf.getDropOut());
         }
 
         else
-            this.doMask = NDArrays.ones(input.rows(),input.columns());
+            this.doMask = Nd4j.ones(input.rows(),input.columns());
 
         //actually apply drop out
         input.muli(doMask);
@@ -658,7 +658,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     //align input so it can be used in training
     protected INDArray preProcessInput(INDArray input) {
         if(conf.isConcatBiases())
-            return NDArrays.concatHorizontally(input,NDArrays.ones(input.rows(),1));
+            return Nd4j.concatHorizontally(input,Nd4j.ones(input.rows(),1));
         return input;
     }
 

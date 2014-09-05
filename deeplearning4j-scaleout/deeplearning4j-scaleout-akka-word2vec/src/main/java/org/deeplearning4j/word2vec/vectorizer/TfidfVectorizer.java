@@ -5,10 +5,10 @@ import akka.dispatch.Futures;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.util.FeatureUtil;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.stopwords.StopWords;
 import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.util.SetUtils;
@@ -217,7 +217,7 @@ public class TfidfVectorizer implements TextVectorizer {
     }
 
     private INDArray tfidfForInput(String text) {
-        INDArray ret = NDArrays.create(1, vocab.size());
+        INDArray ret = Nd4j.create(1, vocab.size());
         Tokenizer tokenizer = tokenizerFactory.create(text);
         List<String> tokens = tokenizer.getTokens();
 

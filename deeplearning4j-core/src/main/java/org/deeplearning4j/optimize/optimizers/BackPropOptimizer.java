@@ -1,6 +1,6 @@
 package org.deeplearning4j.optimize.optimizers;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 
 import org.deeplearning4j.nn.api.NeuralNetwork;

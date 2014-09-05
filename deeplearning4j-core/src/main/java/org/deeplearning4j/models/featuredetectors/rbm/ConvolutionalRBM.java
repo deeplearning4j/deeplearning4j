@@ -3,18 +3,18 @@ package org.deeplearning4j.models.featuredetectors.rbm;
 
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.convolution.Convolution;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.indexing.NDArrayIndex;
-import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
-import org.deeplearning4j.linalg.ops.transforms.Transforms;
-import org.deeplearning4j.linalg.sampling.Sampling;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.convolution.Convolution;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.sampling.Sampling;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
-import org.deeplearning4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.AdaGrad;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,26 +65,26 @@ public class ConvolutionalRBM extends RBM  {
     private void convolutionInit() {
         if(convolutionInitCalled)
             return;
-        W = NDArrays.create(new int[]{filterSize[0], filterSize[1], numFilters[0], numFilters[1]});
+        W = Nd4j.create(new int[]{filterSize[0], filterSize[1], numFilters[0], numFilters[1]});
         wRows = W.rows();
         wCols = W.columns();
         wSlices = W.slices();
-        visI = NDArrays.zeros(new int[]{visibleSize[0],visibleSize[1],numFilters[0],numFilters[1]});
-        hidI = NDArrays.zeros(new int[]{fmSize[0],fmSize[1],numFilters[0],numFilters[1]});
+        visI = Nd4j.zeros(new int[]{visibleSize[0],visibleSize[1],numFilters[0],numFilters[1]});
+        hidI = Nd4j.zeros(new int[]{fmSize[0],fmSize[1],numFilters[0],numFilters[1]});
         convolutionInitCalled = true;
-        vBias = NDArrays.zeros(1);
-        hBias = NDArrays.zeros(numFilters[0]);
+        vBias = Nd4j.zeros(1);
+        hBias = Nd4j.zeros(numFilters[0]);
 
 
         for(int i = 0; i < this.W.rows(); i++)
-            W.putRow(i,NDArrays.create(conf.getDist().sample(W.columns())));
+            W.putRow(i,Nd4j.create(conf.getDist().sample(W.columns())));
 
 
         wAdaGrad = new AdaGrad(W.shape());
         vBiasAdaGrad = new AdaGrad(vBias.rows(),vBias.columns());
         hBiasAdaGrad = new AdaGrad(hBias.rows(),hBias.columns());
         convolutionInitCalled = true;
-        dWeights = NDArrays.create(W.shape());
+        dWeights = Nd4j.create(W.shape());
 
     }
 
@@ -101,7 +101,7 @@ public class ConvolutionalRBM extends RBM  {
     public INDArray propUp(INDArray v) {
         for(int i = 0; i < numFilters[0]; i++) {
             for(int j = 0; j < numFilters[1]; j++) {
-                INDArray reversedSlice =  NDArrays.reverse(W.slice(i).slice(j));
+                INDArray reversedSlice =  Nd4j.reverse(W.slice(i).slice(j));
                 //a bias for each hidden unit
                 INDArray slice = Transforms.sigmoid(Convolution.convn(v, reversedSlice, Convolution.Type.VALID).addi(hBias.getScalar(i)));
                 hidI.put(i,j,slice);
@@ -153,15 +153,15 @@ public class ConvolutionalRBM extends RBM  {
      */
     public INDArray poolGivenVis(INDArray input) {
         INDArray eHid = propUp(input);
-        INDArray I = NDArrays.create(eHid.shape());
+        INDArray I = Nd4j.create(eHid.shape());
         for(int i = 0; i < W.slices(); i++) {
             for(int j = 0; j < W.slices(); j++) {
-                I.putSlice(i, Convolution.convn(input, NDArrays.reverse(W.slice(i)), Convolution.Type.VALID).addi(hBias.getScalar(i)));
-                I.put(j,i,Convolution.convn(input, NDArrays.reverse(W.slice(i)), Convolution.Type.VALID).addi(hBias.getScalar(i)));
+                I.putSlice(i, Convolution.convn(input, Nd4j.reverse(W.slice(i)), Convolution.Type.VALID).addi(hBias.getScalar(i)));
+                I.put(j,i,Convolution.convn(input, Nd4j.reverse(W.slice(i)), Convolution.Type.VALID).addi(hBias.getScalar(i)));
             }
         }
 
-        INDArray ret = NDArrays.ones(I.shape());
+        INDArray ret = Nd4j.ones(I.shape());
         //1 / 1 + pool(exp(I))
         INDArray poolExpI = pool(Transforms.exp(I)).add(1);
         INDArray sub = ret.div( poolExpI);
@@ -256,7 +256,7 @@ public class ConvolutionalRBM extends RBM  {
         int yStride = stride[0];
         int xStride = stride[1];
 
-        INDArray ret = NDArrays.create(input.shape());
+        INDArray ret = Nd4j.create(input.shape());
         int endRowBlock =  (int) Math.ceil(nRows / yStride);
         for(int i = 1; i < endRowBlock; i++) {
             int rowsMin = (i -1)  * yStride + 1;
@@ -268,7 +268,7 @@ public class ConvolutionalRBM extends RBM  {
                 float blockVal = (float) input.sum(1).sum(Integer.MAX_VALUE).element();
                 int rowLength = rowsMax - rowsMin;
                 int colLength = colsMax - cols;
-                INDArray block = NDArrays.create(rowLength,colLength);
+                INDArray block = Nd4j.create(rowLength,colLength);
                 block.assign(blockVal);
                 ret.put(new NDArrayIndex[]{NDArrayIndex.interval(rowsMin, rowsMax),NDArrayIndex.interval(cols,colsMax)},block);
             }
@@ -438,19 +438,19 @@ public class ConvolutionalRBM extends RBM  {
 		 * Update gradient parameters
 		 */
 
-        INDArray wGradient = NDArrays.create(W.shape());
+        INDArray wGradient = Nd4j.create(W.shape());
         for(int i = 0; i < numFilters[0]; i++)
             for(int j = 0; j < numFilters[1]; j++) {
-                wGradient.putSlice(j, Convolution.convn(input, NDArrays.reverse(eHid.slice(j)), Convolution.Type.VALID).subi(Convolution.convn(eVis, NDArrays.reverse(eHid.slice(j)), Convolution.Type.VALID)));
+                wGradient.putSlice(j, Convolution.convn(input, Nd4j.reverse(eHid.slice(j)), Convolution.Type.VALID).subi(Convolution.convn(eVis, Nd4j.reverse(eHid.slice(j)), Convolution.Type.VALID)));
             }
 
 
 
 
-        INDArray vBiasGradient = NDArrays.scalar((float) chainStart.sub(hiddenMeans).sum(1).sum(Integer.MAX_VALUE).element());
+        INDArray vBiasGradient = Nd4j.scalar((float) chainStart.sub(hiddenMeans).sum(1).sum(Integer.MAX_VALUE).element());
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
-        INDArray  hBiasGradient = NDArrays.scalar((float) (input.sub(nvSamples)).sum(1).sum(Integer.MAX_VALUE).element());
+        INDArray  hBiasGradient = Nd4j.scalar((float) (input.sub(nvSamples)).sum(1).sum(Integer.MAX_VALUE).element());
         NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 
 
@@ -472,7 +472,7 @@ public class ConvolutionalRBM extends RBM  {
         // dcSparse = self.lRate*self.sparseGain*(squeeze(self.sparsity -mean(mean(self.eHid0))));
         //self.c = self.c + dcSparse;
         if(conf.getSparsity() != 0) {
-            INDArray negMean = NDArrays.scalar(sparseGain * (conf.getSparsity() -(float) chainStart.mean(1).mean(Integer.MAX_VALUE).element()));
+            INDArray negMean = Nd4j.scalar(sparseGain * (conf.getSparsity() -(float) chainStart.mean(1).mean(Integer.MAX_VALUE).element()));
             if(conf.isUseAdaGrad())
                 negMean.muli(hBiasAdaGrad.getLearningRates(hBiasGradient));
             else

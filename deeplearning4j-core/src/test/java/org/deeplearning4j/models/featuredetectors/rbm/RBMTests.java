@@ -5,10 +5,10 @@ import static org.junit.Assert.*;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.distributions.Distributions;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -39,7 +39,7 @@ public class RBMTests {
                 };
 
 
-        INDArray input = NDArrays.create(data);
+        INDArray input = Nd4j.create(data);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
@@ -77,7 +77,7 @@ public class RBMTests {
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-1f).nIn(6).nOut(4).build();
         Model rbm = new RBM.Builder().configure(conf).build();
-        INDArray rand2 = NDArrays.rand(new int[]{1, rbm.numParams()});
+        INDArray rand2 = Nd4j.rand(new int[]{1, rbm.numParams()});
         rbm.setParams(rand2);
         INDArray getParams = rbm.params();
         assertEquals(rand2,getParams);
@@ -101,7 +101,7 @@ public class RBMTests {
                 };
 
 
-        INDArray input = NDArrays.create(data);
+        INDArray input = Nd4j.create(data);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
@@ -130,7 +130,7 @@ public class RBMTests {
                 };
 
 
-        INDArray input = NDArrays.create(data);
+        INDArray input = Nd4j.create(data);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
