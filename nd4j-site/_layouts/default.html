@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+
+  {% include head.html %}
+
+  <body>
+
+    <div class="container content">
+      <div class="masthead">
+        <h3 class="masthead-title">
+          <a href="{{ site.baseurl }}" title="Home">{{ site.title }}</a>
+          <small>{{ site.tagline }}</small>
+        </h3>
+      </div>
+
+      {{ content }}
+
+      <div class="footer">
+        <p>
+          &copy; {{ site.time | date: '%Y' }}. All rights reserved.
+        </p>
+      </div>
+    </div>
+
+  </body>
+</html>
