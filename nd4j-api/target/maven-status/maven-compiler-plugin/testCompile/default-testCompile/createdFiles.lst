@@ -1,0 +1,6 @@
+org/deeplearning4j/linalg/ops/elementwise/DummyNDArray.class
+org/deeplearning4j/linalg/ops/elementwise/CreationTests.class
+org/deeplearning4j/linalg/indexing/NDArrayIndexTests.class
+org/deeplearning4j/linalg/ops/elementwise/org/deeplearning4j/linalg/util/ArrayUtilTests.class
+org/deeplearning4j/linalg/ops/elementwise/org/deeplearning4j/linalg/util/ShapeTests.class
+org/deeplearning4j/linalg/indexing/IndicesTests.class

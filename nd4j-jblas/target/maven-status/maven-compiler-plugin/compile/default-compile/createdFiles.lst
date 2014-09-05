@@ -1,0 +1,10 @@
+org/deeplearning4j/linalg/jblas/util/MatrixUtil.class
+org/deeplearning4j/linalg/jblas/util/JblasSerde.class
+org/deeplearning4j/linalg/jblas/complex/ComplexFloat.class
+org/deeplearning4j/linalg/jblas/JblasNDArrayFactory.class
+org/deeplearning4j/linalg/jblas/benchmark/JblasBenchMark.class
+org/deeplearning4j/linalg/jblas/complex/ComplexDouble.class
+org/deeplearning4j/linalg/jblas/complex/ComplexNDArray.class
+org/deeplearning4j/linalg/jblas/NDArray.class
+org/deeplearning4j/linalg/jblas/io/JblasNDArrayIO.class
+org/deeplearning4j/linalg/jblas/BlasWrapper.class

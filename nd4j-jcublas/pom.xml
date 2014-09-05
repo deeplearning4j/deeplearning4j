@@ -1,0 +1,105 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.nd4j</groupId>
+    <artifactId>nd4j-jcublas</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>nd4j-jcublas</name>
+    <url>http://deeplearning4j.org/</url>
+
+    <properties>
+        <!-- github server corresponds to entry in ~/.m2/settings.xml -->
+        <github.global.server>github</github.global.server>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Set needed version of JCuda here -->
+        <jcuda.version>0.6.0</jcuda.version>
+    </properties>
+
+    <build>
+      <pluginManagement>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>2.3.2</version>
+            <configuration>
+              <source>1.7</source>
+              <target>1.7</target>
+              <compilerArgument></compilerArgument>
+            </configuration>
+          </plugin>
+        </plugins>
+      </pluginManagement>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.mystic</groupId>
+            <artifactId>mavenized-jcuda</artifactId>
+            <version>0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+        </dependency>
+        <dependency>
+            <groupId>jcuda</groupId>
+            <artifactId>jcublas</artifactId>
+            <version>${jcuda.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jcuda</groupId>
+            <artifactId>jcuda</artifactId>
+            <version>${jcuda.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jcuda</groupId>
+            <artifactId>jcufft</artifactId>
+            <version>${jcuda.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jcuda</groupId>
+            <artifactId>jcurand</artifactId>
+            <version>${jcuda.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jcuda</groupId>
+            <artifactId>jcusparse</artifactId>
+            <version>${jcuda.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <id>internal.repo</id>
+            <name>Temporary Staging Repository</name>
+            <url>file://${project.build.directory}/repo</url>
+        </repository>
+        <repository>
+            <id>jcuda.local</id>
+            <name>JCuda</name>
+            <url>file:${project.basedir}/repo</url>
+        </repository>
+
+        <repository>
+            <id>mavenized-jcuda-mvn-repo</id>
+            <url>https://raw.github.com/emmjaykay/mavenized-jcuda/repo/</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </repository>
+
+    </repositories>
+
+</project>
