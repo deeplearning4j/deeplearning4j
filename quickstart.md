@@ -60,8 +60,6 @@ These tools will generate the visualizations that allow you to debug your neural
 
 ![Alt text](../img/two.png)![Alt text](../img/nine.png)![Alt text](../img/three.png)![Alt text](../img/one.png)
 
-After your net has trained, you'll see an F1 score. In machine learning, one metric used to determine how well a classifier performs is called the f1 score. The [f1 score](https://en.wikipedia.org/wiki/F1_score) is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It's basically the probability that your guesses are correct.
-
 By this point, you should have trained your first neural net. Congratulations. (If you haven't, please [let us know](https://groups.google.com/forum/#!forum/deeplearning4j)!)
 
 **NEXT STEP**: Here is a tutorial on [how to run any example on DL4J](../runexample.html). Go [here](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/) to choose the next example to run. (You can choose examples for MNIST, Iris and Labeled Faces in the Wild.)
