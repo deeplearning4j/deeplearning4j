@@ -1,6 +1,6 @@
 package org.deeplearning4j.rntn;
 
-import static org.deeplearning4j.linalg.indexing.NDArrayIndex.interval;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 import akka.actor.ActorSystem;
 import com.google.common.util.concurrent.AtomicDouble;
@@ -8,13 +8,13 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 
-import org.deeplearning4j.linalg.api.activation.ActivationFunction;
-import org.deeplearning4j.linalg.api.activation.Activations;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.indexing.NDArrayIndex;
-import org.deeplearning4j.linalg.ops.transforms.Transforms;
-import org.deeplearning4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.api.activation.ActivationFunction;
+import org.nd4j.linalg.api.activation.Activations;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.learning.AdaGrad;
 import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.util.MultiDimensionalMap;
 import org.deeplearning4j.util.MultiDimensionalSet;
@@ -49,7 +49,7 @@ public class RNTN implements Serializable {
     //must be same size as word vectors
     private int numHidden = 25;
     private RandomGenerator rng;
-    private boolean useINDArrays = true;
+    private boolean useINd4j = true;
     private boolean combineClassification = true;
     private boolean simplifiedModel = true;
     private boolean randomFeatureVectors = true;
@@ -87,7 +87,7 @@ public class RNTN implements Serializable {
     /**
      * 2Nx2NxN, where N is the size of the word vectors
      */
-    private MultiDimensionalMap<String, String, INDArray> binaryINDArrays;
+    private MultiDimensionalMap<String, String, INDArray> binaryINd4j;
 
     /**
      * CxN+1, where N = size of word vectors, C is the number of classes
@@ -110,8 +110,8 @@ public class RNTN implements Serializable {
 
     /** How many elements a transformation matrix has */
     private  int binaryTransformSize;
-    /** How many elements the binary transformation INDArrays have */
-    private  int binaryINDArraySize;
+    /** How many elements the binary transformation INd4j have */
+    private  int binaryINd4jize;
     /** How many elements a classification matrix has */
     private  int binaryClassificationSize;
 
@@ -136,10 +136,10 @@ public class RNTN implements Serializable {
 
     private transient ActorSystem rnTnActorSystem = ActorSystem.create("RNTN");
 
-    private RNTN(int numHidden, RandomGenerator rng, boolean useINDArrays, boolean combineClassification, boolean simplifiedModel, boolean randomFeatureVectors, float scalingForInit, boolean lowerCasefeatureNames, ActivationFunction activationFunction, int adagradResetFrequency, float regTransformINDArray, Map<String, INDArray> featureVectors, int numBinaryMatrices, int binaryTransformSize, int binaryINDArraySize, int binaryClassificationSize, int numUnaryMatrices, int unaryClassificationSize, Map<Integer, Float> classWeights) {
+    private RNTN(int numHidden, RandomGenerator rng, boolean useINd4j, boolean combineClassification, boolean simplifiedModel, boolean randomFeatureVectors, float scalingForInit, boolean lowerCasefeatureNames, ActivationFunction activationFunction, int adagradResetFrequency, float regTransformINDArray, Map<String, INDArray> featureVectors, int numBinaryMatrices, int binaryTransformSize, int binaryINd4jize, int binaryClassificationSize, int numUnaryMatrices, int unaryClassificationSize, Map<Integer, Float> classWeights) {
         this.numHidden = numHidden;
         this.rng = rng;
-        this.useINDArrays = useINDArrays;
+        this.useINd4j = useINd4j;
         this.combineClassification = combineClassification;
         this.simplifiedModel = simplifiedModel;
         this.randomFeatureVectors = randomFeatureVectors;
@@ -151,7 +151,7 @@ public class RNTN implements Serializable {
         this.featureVectors = featureVectors;
         this.numBinaryMatrices = numBinaryMatrices;
         this.binaryTransformSize = binaryTransformSize;
-        this.binaryINDArraySize = binaryINDArraySize;
+        this.binaryINd4jize = binaryINd4jize;
         this.binaryClassificationSize = binaryClassificationSize;
         this.numUnaryMatrices = numUnaryMatrices;
         this.unaryClassificationSize = unaryClassificationSize;
@@ -187,10 +187,10 @@ public class RNTN implements Serializable {
         }
 
 
-        identity = NDArrays.eye(numHidden);
+        identity = Nd4j.eye(numHidden);
 
         binaryTransform = MultiDimensionalMap.newTreeBackedMap();
-        binaryINDArrays = MultiDimensionalMap.newTreeBackedMap();
+        binaryINd4j = MultiDimensionalMap.newTreeBackedMap();
         binaryClassification = MultiDimensionalMap.newTreeBackedMap();
 
         // When making a flat model (no semantic untying) the
@@ -204,8 +204,8 @@ public class RNTN implements Serializable {
             }
 
             binaryTransform.put(left, right, randomTransformMatrix());
-            if (useINDArrays) {
-                binaryINDArrays.put(left, right, randomBinaryINDArray());
+            if (useINd4j) {
+                binaryINd4j.put(left, right, randomBinaryINDArray());
             }
 
             if (!combineClassification) {
@@ -216,10 +216,10 @@ public class RNTN implements Serializable {
         numBinaryMatrices = binaryTransform.size();
         binaryTransformSize = numHidden * (2 * numHidden + 1);
 
-        if (useINDArrays) {
-            binaryINDArraySize = numHidden * numHidden * numHidden * 4;
+        if (useINd4j) {
+            binaryINd4jize = numHidden * numHidden * numHidden * 4;
         } else {
-            binaryINDArraySize = 0;
+            binaryINd4jize = 0;
         }
 
         binaryClassificationSize = (combineClassification) ? 0 : numOuts * (numHidden + 1);
@@ -257,22 +257,22 @@ public class RNTN implements Serializable {
 
     INDArray randomBinaryINDArray() {
         float range = 1.0f / (4.0f * numHidden);
-        INDArray ret = NDArrays.rand(new int[]{numHidden * 2, numHidden * 2, numHidden}, -range, range, rng);
+        INDArray ret = Nd4j.rand(new int[]{numHidden * 2, numHidden * 2, numHidden}, -range, range, rng);
         return ret.muli(scalingForInit);
     }
 
     INDArray randomTransformMatrix() {
-        INDArray binary = NDArrays.create(numHidden, numHidden * 2 + 1);
+        INDArray binary = Nd4j.create(numHidden, numHidden * 2 + 1);
         // bias column values are initialized zero
         INDArray block = randomTransformBlock();
         binary.put(new NDArrayIndex[] {interval(0,block.rows()),interval(0,block.columns())},block);
         binary.put(new NDArrayIndex[]{interval(0,block.rows()),interval(numHidden,numHidden + block.columns())},randomTransformBlock());
-        return NDArrays.getBlasWrapper().scal(scalingForInit,binary);
+        return Nd4j.getBlasWrapper().scal(scalingForInit,binary);
     }
 
     INDArray randomTransformBlock() {
         float range = 1.0f / (float) (Math.sqrt((float) numHidden) * 2.0f);
-        INDArray ret = NDArrays.rand(numHidden,numHidden,-range,range,rng).add(identity);
+        INDArray ret = Nd4j.rand(numHidden,numHidden,-range,range,rng).add(identity);
         return ret;
     }
 
@@ -282,14 +282,14 @@ public class RNTN implements Serializable {
     INDArray randomClassificationMatrix() {
         // Leave the bias column with 0 values
         float range = 1.0f / (float) (Math.sqrt((float) numHidden));
-        INDArray ret = NDArrays.zeros(numOuts,numHidden + 1);
-        INDArray insert = NDArrays.rand(numOuts,numHidden,-range,range,rng);
+        INDArray ret = Nd4j.zeros(numOuts,numHidden + 1);
+        INDArray insert = Nd4j.rand(numOuts,numHidden,-range,range,rng);
         ret.put(new NDArrayIndex[] {interval(0,numOuts),interval(0,numHidden)},insert);
-        return NDArrays.getBlasWrapper().scal(scalingForInit,ret);
+        return Nd4j.getBlasWrapper().scal(scalingForInit,ret);
     }
 
     INDArray randomWordVector() {
-        return NDArrays.rand(numHidden,1, rng);
+        return Nd4j.rand(numHidden,1, rng);
     }
 
 
@@ -346,15 +346,15 @@ public class RNTN implements Serializable {
     }
 
     public INDArray getINDArrayForNode(Tree node) {
-        if (!useINDArrays) {
-            throw new AssertionError("Not using INDArrays");
+        if (!useINd4j) {
+            throw new AssertionError("Not using INd4j");
         }
         if (node.children().size() == 2) {
             String leftLabel = node.children().get(0).value();
             String leftBasic = basicCategory(leftLabel);
             String rightLabel = node.children().get(1).value();
             String rightBasic = basicCategory(rightLabel);
-            return binaryINDArrays.get(leftBasic, rightBasic);
+            return binaryINd4j.get(leftBasic, rightBasic);
         } else if (node.children().size() == 1) {
             throw new AssertionError("No unary applyTransformToOrigin matrices, only unary classification");
         } else {
@@ -384,10 +384,10 @@ public class RNTN implements Serializable {
 
     private INDArray getINDArrayGradient(INDArray deltaFull, INDArray leftVector, INDArray rightVector) {
         int size = deltaFull.length();
-        INDArray Wt_df = NDArrays.create(new int[]{size*2, size*2, size});
-        INDArray fullVector = NDArrays.concatHorizontally(leftVector, rightVector);
+        INDArray Wt_df = Nd4j.create(new int[]{size*2, size*2, size});
+        INDArray fullVector = Nd4j.concatHorizontally(leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
-            Wt_df.putSlice(slice, NDArrays.getBlasWrapper().scal((float) deltaFull.getScalar(slice).element(),fullVector).mmul(fullVector.transpose()));
+            Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal((float) deltaFull.getScalar(slice).element(),fullVector).mmul(fullVector.transpose()));
         }
         return Wt_df;
     }
@@ -441,7 +441,7 @@ public class RNTN implements Serializable {
     public INDArray getBinaryINDArray(String left, String right) {
         left = basicCategory(left);
         right = basicCategory(right);
-        return binaryINDArrays.get(left, right);
+        return binaryINd4j.get(left, right);
     }
 
 
@@ -449,8 +449,8 @@ public class RNTN implements Serializable {
 
     public int getNumParameters() {
         int totalSize;
-        // binaryINDArraySize was applyTransformToDestination to 0 if useINDArrays=false
-        totalSize = numBinaryMatrices * (binaryTransform.size() + binaryClassificationSize) + binaryINDArraySize;
+        // binaryINd4jize was applyTransformToDestination to 0 if useINd4j=false
+        totalSize = numBinaryMatrices * (binaryTransform.size() + binaryClassificationSize) + binaryINd4jize;
         totalSize += numUnaryMatrices * unaryClassification.size();
         totalSize += featureVectors.size() * numHidden;
         return totalSize;
@@ -458,10 +458,10 @@ public class RNTN implements Serializable {
 
 
     public INDArray getParameters() {
-        return NDArrays.toFlattened(getNumParameters(),
+        return Nd4j.toFlattened(getNumParameters(),
                 binaryTransform.values().iterator(),
                 binaryClassification.values().iterator(),
-                binaryINDArrays.values().iterator(),
+                binaryINd4j.values().iterator(),
                 unaryClassification.values().iterator(),
                 featureVectors.values().iterator());
     }
@@ -475,7 +475,7 @@ public class RNTN implements Serializable {
         float cost = 0.0f; // the regularization cost
         for (MultiDimensionalMap.Entry<String, String, INDArray> entry : currentMatrices.entrySet()) {
             INDArray D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
-            D = NDArrays.getBlasWrapper().scal(scale,D).add(NDArrays.getBlasWrapper().scal(regCost,entry.getValue()));
+            D = Nd4j.getBlasWrapper().scal(scale,D).add(Nd4j.getBlasWrapper().scal(regCost,entry.getValue()));
             derivatives.put(entry.getFirstKey(), entry.getSecondKey(), D);
             cost += (double) entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).element() * regCost / 2.0;
         }
@@ -490,7 +490,7 @@ public class RNTN implements Serializable {
         float cost = 0.0f; // the regularization cost
         for (Map.Entry<String, INDArray> entry : currentMatrices.entrySet()) {
             INDArray D = derivatives.get(entry.getKey());
-            D = NDArrays.getBlasWrapper().scal(scale,D).add(NDArrays.getBlasWrapper().scal(regCost,entry.getValue()));
+            D = Nd4j.getBlasWrapper().scal(scale,D).add(Nd4j.getBlasWrapper().scal(regCost,entry.getValue()));
             derivatives.put(entry.getKey(), D);
             cost += (double) entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).element() * regCost / 2.0;
         }
@@ -517,7 +517,7 @@ public class RNTN implements Serializable {
                                              MultiDimensionalMap<String, String, INDArray> binaryINDArrayTD,
                                              Map<String, INDArray> unaryCD,
                                              Map<String, INDArray> wordVectorD) {
-        INDArray delta = NDArrays.create(numHidden, 1);
+        INDArray delta = Nd4j.create(numHidden, 1);
         backpropDerivativesAndError(tree, binaryTD, binaryCD, binaryINDArrayTD, unaryCD, wordVectorD, delta);
     }
 
@@ -537,7 +537,7 @@ public class RNTN implements Serializable {
         category = basicCategory(category);
 
         // Build a vector that looks like 0,0,1,0,0 with an indicator for the correct class
-        INDArray goldLabel = NDArrays.create(numOuts, 1);
+        INDArray goldLabel = Nd4j.create(numOuts, 1);
         int goldClass = tree.goldLabel();
         if (goldClass >= 0) {
             goldLabel.putScalar(goldClass, 1.0f);
@@ -552,8 +552,8 @@ public class RNTN implements Serializable {
         // make this more efficient by eliminating various of the below
         // calculations, but this would be the easiest way to handle the
         // unlabeled class
-        INDArray deltaClass = goldClass >= 0 ? NDArrays.getBlasWrapper().scal(nodeWeight,predictions.sub(goldLabel)) : NDArrays.create(predictions.rows(), predictions.columns());
-        INDArray localCD = deltaClass.mmul(NDArrays.appendBias(currentVector).transpose());
+        INDArray deltaClass = goldClass >= 0 ? Nd4j.getBlasWrapper().scal(nodeWeight,predictions.sub(goldLabel)) : Nd4j.create(predictions.rows(), predictions.columns());
+        INDArray localCD = deltaClass.mmul(Nd4j.appendBias(currentVector).transpose());
 
         float error = -(float) (Transforms.log(predictions).muli(goldLabel).sum(Integer.MAX_VALUE).element());
         error = error * nodeWeight;
@@ -593,7 +593,7 @@ public class RNTN implements Serializable {
             INDArray leftVector =tree.children().get(0).vector();
             INDArray rightVector = tree.children().get(1).vector();
 
-            INDArray childrenVector = NDArrays.appendBias(leftVector,rightVector);
+            INDArray childrenVector = Nd4j.appendBias(leftVector,rightVector);
 
             //deltaFull 50 x 1, childrenVector: 50 x 2
             INDArray add = binaryTD.get(leftCategory, rightCategory);
@@ -602,7 +602,7 @@ public class RNTN implements Serializable {
             binaryTD.put(leftCategory, rightCategory, add.add(W_df));
 
             INDArray deltaDown;
-            if (useINDArrays) {
+            if (useINd4j) {
                 INDArray Wt_df = getINDArrayGradient(deltaFull, leftVector, rightVector);
                 binaryINDArrayTD.put(leftCategory, rightCategory, binaryINDArrayTD.get(leftCategory, rightCategory).add(Wt_df));
                 deltaDown = computeINDArrayDeltaDown(deltaFull, leftVector, rightVector, getBinaryTransform(leftCategory, rightCategory), getBinaryINDArray(leftCategory, rightCategory));
@@ -624,10 +624,10 @@ public class RNTN implements Serializable {
         INDArray WTDelta = W.transpose().mmul(deltaFull);
         INDArray WTDeltaNoBias = WTDelta.get(interval( 0, 1),interval(0, deltaFull.rows() * 2));
         int size = deltaFull.length();
-        INDArray deltaINDArray = NDArrays.create(size * 2, 1);
-        INDArray fullVector = NDArrays.concatHorizontally(leftVector, rightVector);
+        INDArray deltaINDArray = Nd4j.create(size * 2, 1);
+        INDArray fullVector = Nd4j.concatHorizontally(leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
-            INDArray scaledFullVector = NDArrays.getBlasWrapper().scal((float) deltaFull.getScalar(slice).element(),fullVector);
+            INDArray scaledFullVector = Nd4j.getBlasWrapper().scal((float) deltaFull.getScalar(slice).element(),fullVector);
             deltaINDArray = deltaINDArray.add(Wt.slice(slice).add(Wt.slice(slice).transpose()).mmul(scaledFullVector));
         }
         return deltaINDArray.add(WTDeltaNoBias);
@@ -677,13 +677,13 @@ public class RNTN implements Serializable {
             INDArray leftVector = tree.children().get(0).vector();
             INDArray rightVector = tree.children().get(1).vector();
 
-            INDArray childrenVector = NDArrays.appendBias(leftVector,rightVector);
+            INDArray childrenVector = Nd4j.appendBias(leftVector,rightVector);
 
 
-            if (useINDArrays) {
+            if (useINd4j) {
                 INDArray floatT = getBinaryINDArray(leftCategory, rightCategory);
-                INDArray INDArrayIn = NDArrays.concatHorizontally(leftVector, rightVector);
-                INDArray INDArrayOut = NDArrays.bilinearProducts(floatT,INDArrayIn);
+                INDArray INDArrayIn = Nd4j.concatHorizontally(leftVector, rightVector);
+                INDArray INDArrayOut = Nd4j.bilinearProducts(floatT,INDArrayIn);
                 nodeVector = activationFunction.apply(W.mmul(childrenVector).add(INDArrayOut));
             }
 
@@ -694,7 +694,7 @@ public class RNTN implements Serializable {
             throw new AssertionError("Tree not correctly binarized");
         }
 
-        INDArray inputWithBias  = NDArrays.appendBias(nodeVector);
+        INDArray inputWithBias  = Nd4j.appendBias(nodeVector);
         INDArray preAct = classification.mmul(inputWithBias);
         INDArray predictions = outputActivation.apply(preAct);
 
@@ -728,7 +728,7 @@ public class RNTN implements Serializable {
         List<Integer> ret = new ArrayList<>();
         for(Tree t : trees) {
             forwardPropagateTree(t);
-            ret.add(NDArrays.getBlasWrapper().iamax(t.prediction()));
+            ret.add(Nd4j.getBlasWrapper().iamax(t.prediction()));
         }
 
         return ret;
@@ -737,7 +737,7 @@ public class RNTN implements Serializable {
     public void setParameters(INDArray params) {
         setParams(params,binaryTransform.values().iterator(),
                 binaryClassification.values().iterator(),
-                binaryINDArrays.values().iterator(),
+                binaryINd4j.values().iterator(),
                 unaryClassification.values().iterator(),
                 featureVectors.values().iterator());
     }
@@ -753,7 +753,7 @@ public class RNTN implements Serializable {
         // TODO: factor out the initialization routines
         // binaryTD stands for Transform Derivatives
         final MultiDimensionalMap<String, String, INDArray> binaryTD = MultiDimensionalMap.newTreeBackedMap();
-        // the derivatives of the INDArrays for the binary nodes
+        // the derivatives of the INd4j for the binary nodes
         final MultiDimensionalMap<String, String, INDArray> binaryINDArrayTD = MultiDimensionalMap.newTreeBackedMap();
         // binaryCD stands for Classification Derivatives
         final MultiDimensionalMap<String, String, INDArray> binaryCD = MultiDimensionalMap.newTreeBackedMap();
@@ -768,7 +768,7 @@ public class RNTN implements Serializable {
             int numRows = entry.getValue().rows();
             int numCols = entry.getValue().columns();
 
-            binaryTD.put(entry.getFirstKey(), entry.getSecondKey(), NDArrays.create(numRows, numCols));
+            binaryTD.put(entry.getFirstKey(), entry.getSecondKey(), Nd4j.create(numRows, numCols));
         }
 
         if (!combineClassification) {
@@ -776,29 +776,29 @@ public class RNTN implements Serializable {
                 int numRows = entry.getValue().rows();
                 int numCols = entry.getValue().columns();
 
-                binaryCD.put(entry.getFirstKey(), entry.getSecondKey(), NDArrays.create(numRows, numCols));
+                binaryCD.put(entry.getFirstKey(), entry.getSecondKey(), Nd4j.create(numRows, numCols));
             }
         }
 
-        if (useINDArrays) {
-            for (MultiDimensionalMap.Entry<String, String, INDArray> entry : binaryINDArrays.entrySet()) {
+        if (useINd4j) {
+            for (MultiDimensionalMap.Entry<String, String, INDArray> entry : binaryINd4j.entrySet()) {
                 int numRows = entry.getValue().rows();
                 int numCols = entry.getValue().columns();
                 int numSlices = entry.getValue().slices();
 
-                binaryINDArrayTD.put(entry.getFirstKey(), entry.getSecondKey(), NDArrays.create(new int[]{numRows, numCols, numSlices}));
+                binaryINDArrayTD.put(entry.getFirstKey(), entry.getSecondKey(), Nd4j.create(new int[]{numRows, numCols, numSlices}));
             }
         }
 
         for (Map.Entry<String, INDArray> entry : unaryClassification.entrySet()) {
             int numRows = entry.getValue().rows();
             int numCols = entry.getValue().columns();
-            unaryCD.put(entry.getKey(), NDArrays.create(numRows, numCols));
+            unaryCD.put(entry.getKey(), Nd4j.create(numRows, numCols));
         }
         for (Map.Entry<String, INDArray> entry : featureVectors.entrySet()) {
             int numRows = entry.getValue().rows();
             int numCols = entry.getValue().columns();
-            wordVectorD.put(entry.getKey(), NDArrays.create(numRows, numCols));
+            wordVectorD.put(entry.getKey(), Nd4j.create(numRows, numCols));
         }
 
 
@@ -845,11 +845,11 @@ public class RNTN implements Serializable {
 
         value += scaleAndRegularize(binaryTD, binaryTransform, scale, regTransformMatrix);
         value += scaleAndRegularize(binaryCD, binaryClassification, scale, regClassification);
-        value += scaleAndRegularizeINDArray(binaryINDArrayTD, binaryINDArrays, scale, regTransformINDArray);
+        value += scaleAndRegularizeINDArray(binaryINDArrayTD, binaryINd4j, scale, regTransformINDArray);
         value += scaleAndRegularize(unaryCD, unaryClassification, scale, regClassification);
         value += scaleAndRegularize(wordVectorD, featureVectors, scale, regWordVector);
 
-        INDArray derivative = NDArrays.toFlattened(getNumParameters(), binaryTD.values().iterator(), binaryCD.values().iterator(), binaryINDArrayTD.values().iterator()
+        INDArray derivative = Nd4j.toFlattened(getNumParameters(), binaryTD.values().iterator(), binaryCD.values().iterator(), binaryINDArrayTD.values().iterator()
                 , unaryCD.values().iterator(), wordVectorD.values().iterator());
 
         if(paramAdaGrad == null)
@@ -869,7 +869,7 @@ public class RNTN implements Serializable {
         //must be same size as word vectors
         private int numHidden;
         private RandomGenerator rng;
-        private boolean useINDArrays;
+        private boolean useINd4j;
         private boolean combineClassification = true;
         private boolean simplifiedModel = true;
         private boolean randomFeatureVectors;
@@ -882,7 +882,7 @@ public class RNTN implements Serializable {
         private Map<String, INDArray> featureVectors;
         private int numBinaryMatrices;
         private int binaryTransformSize;
-        private int binaryINDArraySize;
+        private int binaryINd4jize;
         private int binaryClassificationSize;
         private int numUnaryMatrices;
         private int unaryClassificationSize;
@@ -909,8 +909,8 @@ public class RNTN implements Serializable {
             return this;
         }
 
-        public Builder setUseTensors(boolean useINDArrays) {
-            this.useINDArrays = useINDArrays;
+        public Builder setUseTensors(boolean useINd4j) {
+            this.useINd4j = useINd4j;
             return this;
         }
 
@@ -971,8 +971,8 @@ public class RNTN implements Serializable {
             return this;
         }
 
-        public Builder setBinaryINDArraySize(int binaryINDArraySize) {
-            this.binaryINDArraySize = binaryINDArraySize;
+        public Builder setBinaryINd4jize(int binaryINd4jize) {
+            this.binaryINd4jize = binaryINd4jize;
             return this;
         }
 
@@ -997,7 +997,7 @@ public class RNTN implements Serializable {
         }
 
         public RNTN build() {
-            return new RNTN(numHidden, rng, useINDArrays, combineClassification, simplifiedModel, randomFeatureVectors, scalingForInit, lowerCasefeatureNames, activationFunction, adagradResetFrequency, regTransformINDArray, featureVectors, numBinaryMatrices, binaryTransformSize, binaryINDArraySize, binaryClassificationSize, numUnaryMatrices, unaryClassificationSize, classWeights);
+            return new RNTN(numHidden, rng, useINd4j, combineClassification, simplifiedModel, randomFeatureVectors, scalingForInit, lowerCasefeatureNames, activationFunction, adagradResetFrequency, regTransformINDArray, featureVectors, numBinaryMatrices, binaryTransformSize, binaryINd4jize, binaryClassificationSize, numUnaryMatrices, unaryClassificationSize, classWeights);
         }
     }
 

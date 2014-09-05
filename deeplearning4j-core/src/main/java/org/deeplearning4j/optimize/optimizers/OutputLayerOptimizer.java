@@ -1,7 +1,7 @@
 package org.deeplearning4j.optimize.optimizers;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
@@ -107,7 +107,7 @@ public class OutputLayerOptimizer implements OptimizableByGradientValueMatrix {
             throw new IllegalStateException("Illegal length for gradient");
 
 
-        return NDArrays.toFlattened(grad.getwGradient(),grad.getbGradient());
+        return Nd4j.toFlattened(grad.getwGradient(),grad.getbGradient());
     }
 
 

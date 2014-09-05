@@ -12,9 +12,9 @@ import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableWorker;
@@ -164,8 +164,8 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
             @Override
             public E call() throws Exception {
 
-                INDArray newInput = NDArrays.create(list.size(), list.get(0).getFeatureMatrix().columns());
-                INDArray newOutput = NDArrays.create(list.size(), list.get(0).getLabels().columns());
+                INDArray newInput = Nd4j.create(list.size(), list.get(0).getFeatureMatrix().columns());
+                INDArray newOutput = Nd4j.create(list.size(), list.get(0).getLabels().columns());
 
 
                 for (int i = 0; i < list.size(); i++) {

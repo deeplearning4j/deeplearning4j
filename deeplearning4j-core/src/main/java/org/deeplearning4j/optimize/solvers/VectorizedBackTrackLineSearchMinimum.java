@@ -29,10 +29,10 @@ information, see the file `LICENSE' included with this distribution. */
  */
 
 import org.apache.commons.math3.util.FastMath;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.ops.transforms.Transforms;
-import org.deeplearning4j.linalg.util.LinAlgExceptions;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.LinAlgExceptions;
 import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,14 +115,14 @@ public class VectorizedBackTrackLineSearchMinimum
 //        }
 
         //dot product
-        slope = NDArrays.getBlasWrapper().dot(g, line);
+        slope = Nd4j.getBlasWrapper().dot(g, line);
         logger.debug("slope = " + slope);
 
         // find maximum lambda
         // converge when (delta x) / x < REL_TOLX for all coordinates.
         //  the largest step size that triggers this threshold is
         //  precomputed and saved in alamin
-        INDArray maxOldParams = NDArrays.create(line.length());
+        INDArray maxOldParams = Nd4j.create(line.length());
         for(int i = 0;i < line.length(); i++) {
             maxOldParams.putScalar(i,Math.max(Math.abs((double) oldParameters.getScalar(i).element()), 1.0));
 

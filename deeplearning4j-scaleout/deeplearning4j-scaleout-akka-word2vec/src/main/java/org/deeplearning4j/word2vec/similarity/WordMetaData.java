@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.word2vec.Word2Vec;
 
 

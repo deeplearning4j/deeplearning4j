@@ -13,10 +13,10 @@ package org.deeplearning4j.optimize.solvers;
 
 
 import org.deeplearning4j.exception.InvalidStepException;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.ops.transforms.Transforms;
-import org.deeplearning4j.linalg.util.LinAlgExceptions;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.LinAlgExceptions;
 import org.deeplearning4j.optimize.api.LineOptimizerMatrix;
 import org.deeplearning4j.optimize.api.NeuralNetEpochListener;
 import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
@@ -196,7 +196,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             // direction suggested by CG was downhill. Consequently, here I am
             // setting the search direction to the gradient if the slope is
             // negative or 0.
-            if (NDArrays.getBlasWrapper().dot(xi, h) > 0) {
+            if (Nd4j.getBlasWrapper().dot(xi, h) > 0) {
                 xi = h.dup();
             } else {
                 logger.warn("Reverting back to GA");

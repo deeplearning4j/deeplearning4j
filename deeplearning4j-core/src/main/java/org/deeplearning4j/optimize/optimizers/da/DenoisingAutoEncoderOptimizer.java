@@ -1,8 +1,8 @@
 package org.deeplearning4j.optimize.optimizers.da;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
@@ -56,7 +56,7 @@ public class DenoisingAutoEncoderOptimizer extends NeuralNetworkOptimizer {
             buffer[idx++] = (float) L_hbias_mean.getScalar(i).element();
         }
 
-        return NDArrays.create(buffer);
+        return Nd4j.create(buffer);
     }
 
 

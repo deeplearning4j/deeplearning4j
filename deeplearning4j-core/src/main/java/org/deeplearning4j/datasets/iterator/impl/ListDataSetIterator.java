@@ -6,7 +6,7 @@ import java.util.List;
 
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 
 /**
  * Wraps a data applyTransformToDestination collection

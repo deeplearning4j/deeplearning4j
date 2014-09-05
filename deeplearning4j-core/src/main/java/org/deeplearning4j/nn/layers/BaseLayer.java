@@ -2,9 +2,9 @@ package org.deeplearning4j.nn.layers;
 
 
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.WeightInitUtil;
@@ -48,7 +48,7 @@ public abstract class BaseLayer implements Layer {
 
 
     protected INDArray createBias() {
-        return NDArrays.zeros(conf.getnOut());
+        return Nd4j.zeros(conf.getnOut());
     }
 
 
@@ -77,7 +77,7 @@ public abstract class BaseLayer implements Layer {
         if(ret.columns() != b.columns())
             throw new IllegalStateException("This is weird");
         if(conf.isConcatBiases())
-            ret = NDArrays.concatHorizontally(ret,b);
+            ret = Nd4j.concatHorizontally(ret,b);
         else
             ret.addiRowVector(b);
         return ret;
@@ -149,11 +149,11 @@ public abstract class BaseLayer implements Layer {
 
     protected void applyDropOutIfNecessary(INDArray input) {
         if(conf.getDropOut() > 0) {
-            this.dropoutMask = NDArrays.rand(input.rows(), conf.getnOut()).gt(conf.getDropOut());
+            this.dropoutMask = Nd4j.rand(input.rows(), conf.getnOut()).gt(conf.getDropOut());
         }
 
         else
-            this.dropoutMask = NDArrays.ones(input.rows(), conf.getnOut());
+            this.dropoutMask = Nd4j.ones(input.rows(), conf.getnOut());
 
         //actually apply drop out
         input.muli(dropoutMask);

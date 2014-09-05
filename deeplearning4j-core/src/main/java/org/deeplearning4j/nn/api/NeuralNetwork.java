@@ -3,10 +3,10 @@ package org.deeplearning4j.nn.api;
 import java.io.Serializable;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
-import org.deeplearning4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.AdaGrad;
 import org.deeplearning4j.optimize.api.NeuralNetEpochListener;
 /**
  * Single layer neural network, this is typically one that has 

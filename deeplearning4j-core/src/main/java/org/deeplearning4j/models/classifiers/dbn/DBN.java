@@ -2,10 +2,10 @@ package org.deeplearning4j.models.classifiers.dbn;
 
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.transformation.MatrixTransform;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.transformation.MatrixTransform;
 import org.deeplearning4j.nn.*;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -389,7 +389,7 @@ public class DBN extends BaseMultiLayerNetwork {
         public DBN build() {
             DBN ret = super.build();
             ret.useRBMPropUpAsActivations = useRBMPropUpAsActivation;
-            ret.initializeLayers(NDArrays.zeros(1, ret.defaultConfiguration.getnIn()));
+            ret.initializeLayers(Nd4j.zeros(1, ret.defaultConfiguration.getnIn()));
             return ret;
         }
     }

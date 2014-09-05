@@ -1,7 +1,7 @@
 package org.deeplearning4j.nn.api;
 
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 
 import java.io.Serializable;

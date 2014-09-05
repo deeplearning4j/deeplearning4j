@@ -1,24 +1,24 @@
 package org.deeplearning4j.nn.layers;
 
-import static org.deeplearning4j.linalg.ops.transforms.Transforms.*;
+import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 import java.io.Serializable;
 
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.linalg.api.activation.Activations;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.api.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.indexing.NDArrayIndex;
-import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
-import org.deeplearning4j.linalg.util.FeatureUtil;
-import org.deeplearning4j.linalg.util.LinAlgExceptions;
+import org.nd4j.linalg.api.activation.Activations;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.util.FeatureUtil;
+import org.nd4j.linalg.util.LinAlgExceptions;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.NeuralNetwork.OptimizationAlgorithm;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
-import org.deeplearning4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.AdaGrad;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.optimize.optimizers.OutputLayerOptimizer;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
@@ -49,7 +49,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         this.labels = labels;
 
         adaGrad = new AdaGrad(conf.getnIn(),conf.getnOut());
-        b = NDArrays.zeros(1,conf.getnOut());
+        b = Nd4j.zeros(1,conf.getnOut());
         biasAdaGrad = new AdaGrad(b.rows(),b.columns());
     }
 
@@ -193,7 +193,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public  float score() {
         LinAlgExceptions.assertRows(input,labels);
         INDArray output  = output(input);
-        assert !NDArrays.hasInvalidNumber(output) : "Invalid number on output!";
+        assert !Nd4j.hasInvalidNumber(output) : "Invalid number on output!";
         return  LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
 
 
@@ -382,7 +382,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         INDArray output = output(d);
         int[] ret = new int[d.rows()];
         for(int i = 0; i < ret.length; i++)
-            ret[i] = NDArrays.getBlasWrapper().iamax(output.getRow(i));
+            ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
         return ret;
     }
 
@@ -501,7 +501,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public INDArray params() {
-        return NDArrays.concatHorizontally(W.linearView(),b.linearView());
+        return Nd4j.concatHorizontally(W.linearView(),b.linearView());
     }
 
     /**

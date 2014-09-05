@@ -3,10 +3,10 @@ package org.deeplearning4j.datasets.fetchers;
 import au.com.bytecode.opencsv.CSV;
 import au.com.bytecode.opencsv.CSVReadProc;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.util.FeatureUtil;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -139,7 +139,7 @@ public class CSVDataFetcher extends BaseDataFetcher {
             }
         }
         
-        INDArray d1 = NDArrays.create(d).reshape(1,d.length);
+        INDArray d1 = Nd4j.create(d).reshape(1,d.length);
         return new Pair<>(d1, labelVal);
     }
 

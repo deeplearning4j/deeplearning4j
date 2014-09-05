@@ -1,7 +1,7 @@
 package org.deeplearning4j.wordstore;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.word2vec.wordstore.ehcache.EhCacheVocabCache;
 import org.junit.Test;

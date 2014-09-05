@@ -1,6 +1,6 @@
 package org.deeplearning4j.nn.api;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * Created by agibsonccc on 8/27/14.

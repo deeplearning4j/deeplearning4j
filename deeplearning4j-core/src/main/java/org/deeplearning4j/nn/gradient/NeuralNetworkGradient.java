@@ -7,8 +7,8 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.api.Persistable;
 
 /**
@@ -77,9 +77,9 @@ public class NeuralNetworkGradient implements Serializable,Persistable {
 	 * @param num the number to divie by
 	 */
 	public void div(int num) {
-		wGradient.divi(NDArrays.scalar(num));
-		vBiasGradient.divi(NDArrays.scalar(num));
-		hBiasGradient.divi(NDArrays.scalar(num));
+		wGradient.divi(Nd4j.scalar(num));
+		vBiasGradient.divi(Nd4j.scalar(num));
+		hBiasGradient.divi(Nd4j.scalar(num));
 	}
 	
 	
