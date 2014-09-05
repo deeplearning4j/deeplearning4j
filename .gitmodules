@@ -1,4 +1,0 @@
-[submodule "mavenized-jcuda"]
-	path = mavenized-jcuda
-	url = git@github.com:SkymindIO/mavenized-jcuda.git
-	branch = master
