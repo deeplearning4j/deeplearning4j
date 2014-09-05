@@ -9,7 +9,7 @@ layout: default
 
 		java -version
 
-* If you don't have Java 7 installed on your machine, download the [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). The download will vary by operating system. For newer Macs, you'll want the file on the first line to mention Mac OS X (the number after jdk-7u increments with each update):
+* If you don't have Java 7 installed on your machine, download the [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). The download will vary by operating system. For newer Macs, you'll want the file on the first line to mention Mac OS X (the number after jdk-7u increments with each update). It will look something like this:
 
 		Mac OS X x64 185.94 MB -  jdk-7u67-macosx-x64.dmg
 
@@ -32,7 +32,9 @@ layout: default
 		import numpy
 		import pylab as pl
 
-These tools will generate the visualizations that allow you to debug your neural nets as they train. (The visualizations occasionally generate a list of errors in Macs -- it does not stop the nets from training.)
+![Alt text](../img/python_shot.png)
+
+These tools will generate the visualizations that allow you to debug your neural nets as they train. (The visualizations occasionally generate a list of errors on Macs -- that does not stop the nets from training.)
 
 * Next, download [DL4J examples here](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/). Just click on the latest tar.gz or .zip file somewhere near the top of the list. It will look something like this:
 
