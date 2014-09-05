@@ -4,6 +4,7 @@ package org.deeplearning4j.linalg.api.test;
 import org.deeplearning4j.linalg.api.ndarray.DimensionSlice;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.api.ndarray.SliceOp;
+import org.deeplearning4j.linalg.factory.NDArrayFactory;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
@@ -290,7 +291,7 @@ public abstract class NDArrayTests {
     public void testColumns() {
         INDArray arr = NDArrays.create(new int[]{3,2});
         INDArray column2 = arr.getColumn(0);
-        assertEquals(true,Shape.shapeEquals(new int[]{3}, column2.shape()));
+        assertEquals(true,Shape.shapeEquals(new int[]{3,1}, column2.shape()));
         INDArray column = NDArrays.create(new float[]{1,2,3},new int[]{3});
         arr.putColumn(0,column);
 
@@ -301,7 +302,7 @@ public abstract class NDArrayTests {
 
         INDArray column1 = NDArrays.create(new float[]{4,5,6},new int[]{3});
         arr.putColumn(1,column1);
-        assertEquals(true, Shape.shapeEquals(new int[]{3}, arr.getColumn(1).shape()));
+        assertEquals(true, Shape.shapeEquals(new int[]{3,1}, arr.getColumn(1).shape()));
         INDArray testRow1 = arr.getColumn(1);
         assertEquals(column1,testRow1);
 
@@ -835,30 +836,7 @@ public abstract class NDArrayTests {
 
     }
 
-    @Test
-    public void testRowVectorOps() {
-        NDArrays.factory().setOrder('f');
-        INDArray twoByTwo = NDArrays.create(new float[]{1,3,2,4},new int[]{2,2});
-        INDArray toAdd = NDArrays.create(new float[]{1,2},new int[]{2});
-        twoByTwo.addiRowVector(toAdd);
-        INDArray assertion = NDArrays.create(new float[]{2,4,4,6},new int[]{2,2});
-        assertEquals(assertion,twoByTwo);
 
-
-
-    }
-
-    @Test
-    public void testColumnVectorOps() {
-        INDArray twoByTwo = NDArrays.create(new float[]{1,2,3,4},new int[]{2,2});
-        INDArray toAdd = NDArrays.create(new float[]{1,2},new int[]{2,1});
-        twoByTwo.addiColumnVector(toAdd);
-        INDArray assertion = NDArrays.create(new float[]{2,3,5,6},new int[]{2,2});
-        assertEquals(assertion,twoByTwo);
-
-
-
-    }
 
 
     @Test
