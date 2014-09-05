@@ -67,10 +67,46 @@ For jcuda, we are still in the process of streamlining the release for this one.
 
 This will install the jcuda jar files.
 
-Ypu need to specify a version of jcuda to use as well. The version will depend on your GPU. Amazon supports 0.5.5.
+You need to specify a version of jcuda to use as well. The version will depend on your GPU. Amazon supports 0.5.5.
 
 
 We will be streamllining this process soon as well. 
+
+
+
+
+Basics:
+
+
+
+In place operations:
+
+
+         INDArray arr = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
+         //scalar operation
+         arr.addi(1);
+
+         //element wise operations
+         INDArray arr2 = ND4j.create(new float[]{5,6,7,8},new int[]{2,2});
+         arr.addi(arr2);
+ 
+       
+         Duplication operations:
+                
+                 //clone then add
+                  arr.add(1);
+                  //clone then add
+                  arr.add(arr2);
+                 
+        
+         Dimension wise operations (column and row order depending on the implementation chosen)
+         
+         arr.sum(0);
+         
+       
+
+
+
 
 
 
