@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.deeplearning4j.base.LFWLoader;
-import org.deeplearning4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 
 
 /**

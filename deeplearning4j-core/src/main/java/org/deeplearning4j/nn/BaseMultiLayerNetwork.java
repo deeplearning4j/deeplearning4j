@@ -6,16 +6,16 @@ import org.deeplearning4j.models.featuredetectors.autoencoder.AutoEncoder;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.linalg.api.activation.ActivationFunction;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.indexing.NDArrayIndex;
-import org.deeplearning4j.linalg.ops.transforms.Transforms;
-import org.deeplearning4j.linalg.sampling.Sampling;
-import org.deeplearning4j.linalg.transformation.MatrixTransform;
-import org.deeplearning4j.linalg.util.ArrayUtil;
-import org.deeplearning4j.linalg.util.LinAlgExceptions;
+import org.nd4j.linalg.api.activation.ActivationFunction;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.sampling.Sampling;
+import org.nd4j.linalg.transformation.MatrixTransform;
+import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.LinAlgExceptions;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.Layer;
 
@@ -443,7 +443,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     protected void applyDropConnectIfNecessary(INDArray input) {
         if (useDropConnect) {
-            INDArray mask = Sampling.binomial(NDArrays.valueArrayOf(input.rows(), input.columns(), 0.5), 1, defaultConfiguration.getRng());
+            INDArray mask = Sampling.binomial(Nd4j.valueArrayOf(input.rows(), input.columns(), 0.5), 1, defaultConfiguration.getRng());
             input.muli(mask);
             //apply l2 for drop connect
             if (defaultConfiguration.getL2() > 0)
@@ -785,7 +785,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     public List<INDArray> feedForwardR(List<INDArray> acts, INDArray v) {
         List<INDArray> R = new ArrayList<>();
-        R.add(NDArrays.zeros(input.rows(), input.columns()));
+        R.add(Nd4j.zeros(input.rows(), input.columns()));
         List<Pair<INDArray, INDArray>> vWvB = unPack(v);
         List<INDArray> W = weightMatrices();
 
@@ -872,7 +872,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             params.add(getNeuralNets()[i].gethBias());
         }
         params.add(getOutputLayer().params());
-        return NDArrays.toFlattened(params);
+        return Nd4j.toFlattened(params);
     }
 
 
@@ -936,7 +936,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
 
-        INDArray ret = NDArrays.toFlattened(list);
+        INDArray ret = Nd4j.toFlattened(list);
         if(ret.length() != numParams())
             throw new IllegalStateException("Illegal number of parameters found in the layers with a difference of " + Math.abs(ret.length() - numParams()));
         return ret;
@@ -951,7 +951,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @return the score for the given input,label pairs
      */
     @Override
-    public float score(org.deeplearning4j.linalg.dataset.api.DataSet data) {
+    public float score(org.nd4j.linalg.dataset.api.DataSet data) {
         return score(data.getFeatureMatrix(), data.getLabels());
     }
 
@@ -1137,7 +1137,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         g.addi(theta.mul(defaultConfiguration.getL2()).muli(mask));
 
-        INDArray conAdd = Transforms.pow(mask.mul(defaultConfiguration.getL2()).add(NDArrays.valueArrayOf(g.rows(), g.columns(), dampingFactor)), 3.0 / 4.0);
+        INDArray conAdd = Transforms.pow(mask.mul(defaultConfiguration.getL2()).add(Nd4j.valueArrayOf(g.rows(), g.columns(), dampingFactor)), 3.0 / 4.0);
 
         con.addi(conAdd);
 
@@ -1305,7 +1305,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         INDArray output = output(d);
         int[] ret = new int[d.rows()];
         for (int i = 0; i < ret.length; i++)
-            ret[i] = NDArrays.getBlasWrapper().iamax(output.getRow(i));
+            ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
         return ret;
     }
 
@@ -1340,7 +1340,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param data the data to train on
      */
     @Override
-    public void fit(org.deeplearning4j.linalg.dataset.api.DataSet data) {
+    public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
         fit(data.getFeatureMatrix(),data.getLabels());
     }
 
@@ -1640,10 +1640,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
     private void initMask() {
-        setMask(NDArrays.ones(1, pack().length()));
+        setMask(Nd4j.ones(1, pack().length()));
         List<Pair<INDArray, INDArray>> mask = unPack(getMask());
         for (int i = 0; i < mask.size(); i++)
-            mask.get(i).setSecond(NDArrays.zeros(mask.get(i).getSecond().rows(), mask.get(i).getSecond().columns()));
+            mask.get(i).setSecond(Nd4j.zeros(mask.get(i).getSecond().rows(), mask.get(i).getSecond().columns()));
         setMask(pack(mask));
 
     }
@@ -1855,7 +1855,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param params extra parameters
      */
     @Override
-    public void fit(org.deeplearning4j.linalg.dataset.api.DataSet data, Object[] params) {
+    public void fit(org.nd4j.linalg.dataset.api.DataSet data, Object[] params) {
 
     }
 

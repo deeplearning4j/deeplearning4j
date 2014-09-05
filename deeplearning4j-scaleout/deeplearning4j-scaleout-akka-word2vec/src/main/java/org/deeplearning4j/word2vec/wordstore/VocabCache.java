@@ -1,6 +1,6 @@
 package org.deeplearning4j.word2vec.wordstore;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.word2vec.VocabWord;
 
 import java.util.Collection;

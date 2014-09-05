@@ -7,13 +7,13 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.linalg.api.activation.ActivationFunction;
-import org.deeplearning4j.linalg.api.activation.Activations;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.api.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.ops.transforms.Transforms;
-import org.deeplearning4j.linalg.transformation.MatrixTransform;
+import org.nd4j.linalg.api.activation.ActivationFunction;
+import org.nd4j.linalg.api.activation.Activations;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.transformation.MatrixTransform;
 import org.deeplearning4j.nn.*;
 
 import org.deeplearning4j.nn.api.NeuralNetwork;
@@ -195,7 +195,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     @Override
     public List<INDArray> feedForwardR(List<INDArray> acts,INDArray v) {
         List<INDArray> R = new ArrayList<>();
-        R.add(NDArrays.zeros(input.rows(), input.columns()));
+        R.add(Nd4j.zeros(input.rows(), input.columns()));
         List<Pair<INDArray,INDArray>> vWvB = unPack(v);
         List<INDArray> W = weightMatrices();
 

@@ -4,8 +4,8 @@ package org.deeplearning4j.eval;
 import java.util.Set;
 
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 
 /**
@@ -37,8 +37,8 @@ public class Evaluation {
 			INDArray currRow = realOutcomes.getRow(i);
 			INDArray guessRow = guesses.getRow(i);
 
-			int currMax = NDArrays.getBlasWrapper().iamax(currRow);
-			int guessMax = NDArrays.getBlasWrapper().iamax(guessRow);
+			int currMax = Nd4j.getBlasWrapper().iamax(currRow);
+			int guessMax = Nd4j.getBlasWrapper().iamax(guessRow);
 
 			addToConfusion(currMax,guessMax);
 

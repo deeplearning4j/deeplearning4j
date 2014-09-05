@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.util.SetUtils;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.word2vec.loader.Word2VecLoader;
@@ -64,22 +64,22 @@ public class Word2VecSimilarityTester {
 
 				List<String> wordList = new ArrayList<>(vocab);
 
-				INDArray a1Matrix = NDArrays.create(wordList.size(), vec.getLayerSize());
-				INDArray a2Matrix = NDArrays.create(wordList.size(), vec.getLayerSize());
+				INDArray a1Matrix = Nd4j.create(wordList.size(), vec.getLayerSize());
+				INDArray a2Matrix = Nd4j.create(wordList.size(), vec.getLayerSize());
 
 				for(int i = 0; i < wordList.size(); i++) {
 					if(d1.getWordCounts().getCount(wordList.get(i)) > 0) {
 						a1Matrix.putRow(i,vec.getWordVectorMatrix(wordList.get(i)));
 					}
 					else 
-						a1Matrix.putRow(i, NDArrays.zeros(vec.getLayerSize()));
+						a1Matrix.putRow(i, Nd4j.zeros(vec.getLayerSize()));
 
 					if(d2.getWordCounts().getCount(wordList.get(i)) > 0) {
 						a2Matrix.putRow(i,vec.getWordVectorMatrix(wordList.get(i)));
 
 					}
 					else 
-						a2Matrix.putRow(i, NDArrays.zeros(vec.getLayerSize()));
+						a2Matrix.putRow(i, Nd4j.zeros(vec.getLayerSize()));
 
 
 

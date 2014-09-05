@@ -10,10 +10,10 @@ import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.datasets.iterator.DataSetFetcher;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.util.FeatureUtil;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.word2vec.util.Window;
 import org.deeplearning4j.word2vec.util.WindowConverter;
@@ -53,10 +53,10 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 	private DataSet fromCache() {
 		INDArray outcomes = null;
 		INDArray input = null;
-		input =  NDArrays.create(batch, vec.getLayerSize() * vec.getWindow());
-		outcomes =NDArrays.create(batch, labels.size());
+		input =  Nd4j.create(batch, vec.getLayerSize() * vec.getWindow());
+		outcomes =Nd4j.create(batch, labels.size());
 		for(int i = 0; i < batch; i++) {
-			input.putRow(i, NDArrays.create(WindowConverter.asExample(cache.get(i), vec)));
+			input.putRow(i, Nd4j.create(WindowConverter.asExample(cache.get(i), vec)));
 			int idx = labels.indexOf(cache.get(i).getLabel());
 			if(idx < 0)
 				idx = 0;
@@ -86,10 +86,10 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 		              continue;
 				
 				if(windows.size() < batch) {
-					input = NDArrays.create(windows.size(),vec.getLayerSize() * vec.getWindow());
-					outcomes = NDArrays.create(batch,labels.size());
+					input = Nd4j.create(windows.size(),vec.getLayerSize() * vec.getWindow());
+					outcomes = Nd4j.create(batch,labels.size());
 					for(int i = 0; i < windows.size(); i++) {
-						input.putRow(i,NDArrays.create(WindowConverter.asExample(windows.get(i), vec)));
+						input.putRow(i,Nd4j.create(WindowConverter.asExample(windows.get(i), vec)));
 						int idx = labels.indexOf(windows.get(i).getLabel());
 						if(idx < 0)
 							idx = 0;
@@ -101,10 +101,10 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 
 				}
 				else {
-					input = NDArrays.create(batch,vec.getLayerSize() * vec.getWindow());
-					outcomes = NDArrays.create(batch,labels.size());
+					input = Nd4j.create(batch,vec.getLayerSize() * vec.getWindow());
+					outcomes = Nd4j.create(batch,labels.size());
 					for(int i = 0; i < batch; i++) {
-						input.putRow(i,NDArrays.create(WindowConverter.asExample(windows.get(i), vec)));
+						input.putRow(i,Nd4j.create(WindowConverter.asExample(windows.get(i), vec)));
 						int idx = labels.indexOf(windows.get(i).getLabel());
 						if(idx < 0)
 							idx = 0;

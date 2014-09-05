@@ -1,7 +1,7 @@
 package org.deeplearning4j.optimize.optimizers;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 
@@ -165,7 +165,7 @@ public class BackPropROptimizer implements Serializable,OptimizableByGradientVal
 
 
     public void setParameters(float[] params) {
-        setParameters(NDArrays.create(params));
+        setParameters(Nd4j.create(params));
     }
 
 

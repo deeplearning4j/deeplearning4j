@@ -19,10 +19,10 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Triple;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.ops.transforms.Transforms;
-import org.deeplearning4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.nn.api.Persistable;
 import org.deeplearning4j.stopwords.StopWords;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
@@ -212,7 +212,7 @@ public class Word2Vec implements Persistable {
             oob = new float[layerSize];
 
         if(i < 0)
-            return NDArrays.create(oob, new int[]{layerSize});
+            return Nd4j.create(oob, new int[]{layerSize});
         return cache.vector(word);
     }
 
@@ -221,9 +221,9 @@ public class Word2Vec implements Persistable {
         if(oob == null)
             oob = new float[layerSize];
         if(i < 0)
-            return NDArrays.zeros(layerSize);
+            return Nd4j.zeros(layerSize);
         INDArray r =  cache.vector(word);
-        return r.div((NDArrays.getBlasWrapper().nrm2(r)));
+        return r.div((Nd4j.getBlasWrapper().nrm2(r)));
     }
 
 
@@ -477,7 +477,7 @@ public class Word2Vec implements Persistable {
             }
 
             tempVector = cache.vector(cache.wordAtIndex(i));
-            insertTopN(name, NDArrays.getBlasWrapper().dot(wordVector,tempVector), wordEntrys);
+            insertTopN(name, Nd4j.getBlasWrapper().dot(wordVector,tempVector), wordEntrys);
         }
         return new TreeSet<>(wordEntrys);
     }
@@ -509,7 +509,7 @@ public class Word2Vec implements Persistable {
 
 
             tempVector = cache.vector(cache.wordAtIndex(i));
-            double dist = NDArrays.getBlasWrapper().dot(wordVector,tempVector);
+            double dist = Nd4j.getBlasWrapper().dot(wordVector,tempVector);
             insertTopN(name, dist, wordEntrys);
         }
         return new TreeSet<>(wordEntrys);
@@ -681,7 +681,7 @@ public class Word2Vec implements Persistable {
         INDArray l2a = cache.loadCodes(w1.getCodes());
         INDArray fa = Transforms.sigmoid(l1.mmul(l2a.transpose()));
         // ga = (1 - word.code - fa) * alpha  # vector of error gradients multiplied by the learning rate
-        INDArray ga = NDArrays.ones(fa.length()).subi(ArrayUtil.toNDArray(w1.getCodes())).subi(fa).muli(alpha.floatValue());
+        INDArray ga = Nd4j.ones(fa.length()).subi(ArrayUtil.toNDArray(w1.getCodes())).subi(fa).muli(alpha.floatValue());
         INDArray outer = ga.mmul(l1);
         for(int i = 0; i < w1.getPoints().length; i++) {
             INDArray toAdd = l2a.getRow(i).addi(outer.getRow(i));
@@ -768,7 +768,7 @@ public class Word2Vec implements Persistable {
     }
 
     public INDArray randomVector() {
-        INDArray ret = NDArrays.create(layerSize);
+        INDArray ret = Nd4j.create(layerSize);
         for(int i = 0; i < ret.length(); i++) {
             ret.putScalar(i, g.nextFloat() - 0.5f / layerSize);
         }
@@ -791,7 +791,7 @@ public class Word2Vec implements Persistable {
             return -1;
         INDArray d1 = Transforms.unitVec(vector);
         INDArray d2 = Transforms.unitVec(vector2);
-        double ret = NDArrays.getBlasWrapper().dot(d1, d2);
+        double ret = Nd4j.getBlasWrapper().dot(d1, d2);
         if(ret <  0)
             return 0;
         return ret;

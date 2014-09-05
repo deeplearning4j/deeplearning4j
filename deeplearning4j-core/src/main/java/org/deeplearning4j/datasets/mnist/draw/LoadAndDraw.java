@@ -5,9 +5,9 @@ import java.io.ObjectInputStream;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.sampling.Sampling;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.sampling.Sampling;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 
 

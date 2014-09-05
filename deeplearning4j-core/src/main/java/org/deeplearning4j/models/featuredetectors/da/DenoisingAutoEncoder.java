@@ -7,9 +7,9 @@ import java.io.Serializable;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -45,7 +45,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
      * @return the binomial sampled corrupted input
      */
     public INDArray getCorruptedInput(INDArray x, float corruptionLevel) {
-        INDArray tilde_x = NDArrays.zeros(x.rows(), x.columns());
+        INDArray tilde_x = Nd4j.zeros(x.rows(), x.columns());
         for(int i = 0; i < x.rows(); i++)
             for(int j = 0; j < x.columns(); j++)
                 tilde_x.put(i,j,binomial(conf.getRng(),1,1 - corruptionLevel));
@@ -81,7 +81,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     public INDArray getHiddenValues(INDArray x) {
         INDArray preAct;
         if(conf.isConcatBiases()) {
-            INDArray concat = NDArrays.concatVertically(W,hBias.transpose());
+            INDArray concat = Nd4j.concatVertically(W,hBias.transpose());
             preAct =  x.mmul(concat);
 
         }
@@ -97,7 +97,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
         if(conf.isConcatBiases()) {
             //row already accounted for earlier
             INDArray preAct = y.mmul(W.transpose());
-            preAct = NDArrays.concatHorizontally(preAct,NDArrays.ones(preAct.rows(),1));
+            preAct = Nd4j.concatHorizontally(preAct,Nd4j.ones(preAct.rows(),1));
             return Transforms.sigmoid(preAct);
         }
         else {

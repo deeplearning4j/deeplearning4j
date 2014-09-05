@@ -2,7 +2,7 @@ package org.deeplearning4j.optimize.solvers;
 
 
 import org.deeplearning4j.exception.InvalidStepException;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.optimize.api.NeuralNetEpochListener;
 import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;

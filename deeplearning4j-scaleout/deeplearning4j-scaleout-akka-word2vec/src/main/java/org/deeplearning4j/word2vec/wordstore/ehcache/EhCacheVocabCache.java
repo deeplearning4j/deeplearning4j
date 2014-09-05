@@ -6,8 +6,8 @@ import net.sf.ehcache.Element;
 import net.sf.ehcache.search.Query;
 import net.sf.ehcache.search.Result;
 import net.sf.ehcache.search.Results;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.word2vec.VocabWord;
 import org.deeplearning4j.word2vec.wordstore.VocabCache;
 import org.springframework.core.io.ClassPathResource;
@@ -112,7 +112,7 @@ public class EhCacheVocabCache implements VocabCache {
             vectors.add(a);
 
         }
-        return NDArrays.create(vectors,new int[]{codes.length,vectors.get(0).columns()});
+        return Nd4j.create(vectors,new int[]{codes.length,vectors.get(0).columns()});
     }
 
     @Override

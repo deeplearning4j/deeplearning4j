@@ -7,8 +7,8 @@ import java.util.StringTokenizer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
 
 
@@ -74,7 +74,7 @@ public class DocumentMatrix {
 	
 	public INDArray toNormalized() {
 		if(initializedWithCounter) {
-			INDArray ret = NDArrays.create(words.size());
+			INDArray ret = Nd4j.create(words.size());
 			int count = 0;
 			for(String s : words.keySet())
 				ret.putScalar(count++,docWords.getProbability(s));
@@ -82,7 +82,7 @@ public class DocumentMatrix {
 
 		}
 		else {
-			INDArray ret = NDArrays.create(words.size());
+			INDArray ret = Nd4j.create(words.size());
 			int count = 0;
 			for(String s : words.keySet())
 				ret.putScalar(count++,words.getProbability(s));
@@ -95,7 +95,7 @@ public class DocumentMatrix {
 
 	public INDArray toMatrix() {
 		if(initializedWithCounter) {
-			INDArray ret = NDArrays.create(words.size());
+			INDArray ret = Nd4j.create(words.size());
 			int count = 0;
 			for(String s : words.keySet())
 				ret.putScalar(count++,docWords.getCount(s));
@@ -103,7 +103,7 @@ public class DocumentMatrix {
 
 		}
 		else {
-			INDArray ret = NDArrays.create(words.size());
+			INDArray ret = Nd4j.create(words.size());
 			int count = 0;
 			for(String s : words.keySet())
 				ret.putScalar(count++,words.getCount(s));

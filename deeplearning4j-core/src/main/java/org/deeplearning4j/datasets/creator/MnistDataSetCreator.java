@@ -5,7 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
-import org.deeplearning4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 import org.deeplearning4j.util.SerializationUtils;
 
 public class MnistDataSetCreator {

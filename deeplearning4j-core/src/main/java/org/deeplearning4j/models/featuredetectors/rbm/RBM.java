@@ -1,15 +1,15 @@
 package org.deeplearning4j.models.featuredetectors.rbm;
 
 
-import static org.deeplearning4j.linalg.ops.transforms.Transforms.*;
+import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.linalg.api.activation.Activations;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.ops.transforms.Transforms;
-import org.deeplearning4j.linalg.sampling.Sampling;
+import org.nd4j.linalg.api.activation.Activations;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.sampling.Sampling;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -275,7 +275,7 @@ public  class RBM extends BaseNeuralNetwork {
      */
     public double freeEnergy(INDArray visibleSample) {
         INDArray wxB = visibleSample.mmul(W).addiRowVector(hBias);
-        double vBiasTerm = NDArrays.getBlasWrapper().dot(visibleSample, vBias);
+        double vBiasTerm = Nd4j.getBlasWrapper().dot(visibleSample, vBias);
         double hBiasTerm = (double) log(exp(wxB).add(1)).sum(Integer.MAX_VALUE).element();
         return -hBiasTerm - vBiasTerm;
     }
@@ -366,7 +366,7 @@ public  class RBM extends BaseNeuralNetwork {
         INDArray v1Mean = propDown(h);
 
         if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN) {
-            INDArray v1Sample = v1Mean.add(NDArrays.randn(v1Mean.rows(),v1Mean.columns(),conf.getRng()));
+            INDArray v1Sample = v1Mean.add(Nd4j.randn(v1Mean.rows(),v1Mean.columns(),conf.getRng()));
             return new Pair<>(v1Mean,v1Sample);
 
         }
@@ -403,7 +403,7 @@ public  class RBM extends BaseNeuralNetwork {
 
         INDArray preSig = v.mmul(W);
         if(conf.isConcatBiases())
-            preSig = NDArrays.concatHorizontally(preSig,hBias);
+            preSig = Nd4j.concatHorizontally(preSig,hBias);
         else
             preSig.addiRowVector(hBias);
 
@@ -414,7 +414,7 @@ public  class RBM extends BaseNeuralNetwork {
         }
 
         else if(conf.getHiddenUnit() == HiddenUnit.GAUSSIAN) {
-            INDArray add =  preSig.add(NDArrays.randn(preSig.rows(), preSig.columns(),conf.getRng()));
+            INDArray add =  preSig.add(Nd4j.randn(preSig.rows(), preSig.columns(),conf.getRng()));
             preSig.addi(add);
             return preSig;
         }
@@ -455,7 +455,7 @@ public  class RBM extends BaseNeuralNetwork {
     public INDArray propDown(INDArray h) {
         INDArray vMean = h.mmul(W.transpose());
         if(conf.isConcatBiases())
-            vMean = NDArrays.concatHorizontally(vMean, vBias);
+            vMean = Nd4j.concatHorizontally(vMean, vBias);
         else
             vMean.addiRowVector(vBias);
 

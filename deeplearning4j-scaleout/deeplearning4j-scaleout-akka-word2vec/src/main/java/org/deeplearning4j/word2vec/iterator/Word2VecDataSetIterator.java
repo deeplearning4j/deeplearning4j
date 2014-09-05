@@ -1,10 +1,10 @@
 package org.deeplearning4j.word2vec.iterator;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.util.FeatureUtil;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
@@ -163,12 +163,12 @@ public class Word2VecDataSetIterator implements DataSetIterator {
         if(windows.isEmpty())
             return null;
 
-        INDArray inputs = NDArrays.create(num, inputColumns());
+        INDArray inputs = Nd4j.create(num, inputColumns());
         for(int i = 0; i < inputs.rows(); i++) {
             inputs.putRow(i, WindowConverter.asExampleMatrix(windows.get(i),vec));
         }
 
-        INDArray labelOutput =  NDArrays.create(num,labels.size());
+        INDArray labelOutput =  Nd4j.create(num,labels.size());
         for(int i = 0; i < labelOutput.rows(); i++) {
             String label = windows.get(i).getLabel();
             labelOutput.putRow(i, FeatureUtil.toOutcomeVector(labels.indexOf(label), labels.size()));

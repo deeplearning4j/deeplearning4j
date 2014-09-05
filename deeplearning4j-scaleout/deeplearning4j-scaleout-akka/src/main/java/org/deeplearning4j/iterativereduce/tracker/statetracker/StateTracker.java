@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.deeplearning4j.iterativereduce.actor.core.Job;
-import org.deeplearning4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;

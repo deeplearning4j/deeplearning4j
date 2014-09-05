@@ -1,7 +1,7 @@
 package org.deeplearning4j.optimize.optimizers.rbm;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 
 import org.deeplearning4j.nn.api.NeuralNetwork;

@@ -1,6 +1,6 @@
 package org.deeplearning4j.optimize.optimizers.autoencoder;
 
-import org.deeplearning4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.optimize.optimizers.NeuralNetworkOptimizer;
 

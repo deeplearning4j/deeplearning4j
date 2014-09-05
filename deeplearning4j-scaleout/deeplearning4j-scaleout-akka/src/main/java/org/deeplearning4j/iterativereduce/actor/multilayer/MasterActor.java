@@ -12,8 +12,8 @@ import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.DeepLearningAccumulatorIterateAndUpdate;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
@@ -127,7 +127,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-        network.initializeLayers(NDArrays.zeros(1, conf.getnIn()));
+        network.initializeLayers(Nd4j.zeros(1, conf.getnIn()));
 
         UpdateableImpl masterResults = new UpdateableImpl(network);
 
