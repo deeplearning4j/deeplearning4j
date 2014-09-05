@@ -16,6 +16,7 @@
         <module>linear-algebra-api</module>
         <module>linear-algebra-jblas</module>
         <module>linear-algebra-jcublas</module>
+        <module>mavenized-jcuda</module>
     </modules>
 
     <properties>
