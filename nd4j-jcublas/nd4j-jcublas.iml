@@ -11,7 +11,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="mavenized-jcuda" />
+    <orderEntry type="library" name="Maven: org.mystic:mavenized-jcuda:0.1" level="project" />
     <orderEntry type="library" name="Maven: jcuda:jcublas:0.6.0" level="project" />
     <orderEntry type="library" name="Maven: jcuda:jcuda:0.6.0" level="project" />
     <orderEntry type="library" name="Maven: jcuda:jcufft:0.6.0" level="project" />
