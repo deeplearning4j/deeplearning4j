@@ -36,6 +36,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.mystic</groupId>
+            <artifactId>mavenized-jcuda</artifactId>
+            <version>0.1</version>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.11</version>
