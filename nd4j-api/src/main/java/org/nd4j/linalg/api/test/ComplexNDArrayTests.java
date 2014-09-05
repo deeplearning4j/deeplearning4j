@@ -687,7 +687,7 @@ public abstract class ComplexNDArrayTests {
         scalar = (IComplexDouble) arr.sum(Integer.MAX_VALUE).element();
         sum = scalar.realComponent();
         assertEquals(10,sum,1e-1);
-        arr.subi(Nd4j.complexScalar(1));
+        arr.subi(Nd4j.createDouble(1,0));
         scalar = (IComplexDouble) arr.sum(Integer.MAX_VALUE).element();
 
         sum = scalar.realComponent();

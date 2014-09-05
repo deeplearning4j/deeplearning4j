@@ -772,7 +772,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public int linearIndex(int i) {
-        int realStride = getRealStrideForLinearIndex();
+        int realStride = stride[0];
         int idx = offset + (i * realStride);
         if(idx >= data.length)
             throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
@@ -2549,8 +2549,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNDArray subi(IComplexNumber n, INDArray result) {
         IComplexNDArray cResult = (IComplexNDArray) result;
         IComplexNDArray cResultLinear = cResult.linearView();
+        IComplexNDArray linear = linearView();
         for (int i = 0; i < length; i++)
-            cResultLinear.putScalar(i, getComplex(i).sub(n));
+            cResultLinear.putScalar(i, linear.getComplex(i).sub(n));
         return cResult;
     }
 

@@ -53,8 +53,11 @@ public class VectorFFT implements Function<IComplexNDArray,IComplexNDArray> {
 
         //column vector
         INDArray k = n.reshape(new int[]{n.length(),1});
-        IComplexNDArray M = Nd4j.createComplex(k.mmul(n).mul(Nd4j.scalar(c2)).divi(Nd4j.scalar(len)));
+        IComplexNDArray M = Nd4j.createComplex(k.mmul(n)
+                .muli(Nd4j.scalar(c2)).divi(Nd4j.scalar(len)));
         new ArrayOps().from(M).op(Exp.class).build().exec();
+
+
 
         IComplexNDArray reshaped = ndArray.reshape(new int[]{ndArray.length()});
         IComplexNDArray matrix = reshaped.mmul(M);
