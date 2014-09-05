@@ -24,13 +24,13 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class NDArrays  {
+public class Nd4j {
 
     private static Class<? extends BlasWrapper> blasWrapperClazz;
     private static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
 
     private static BlasWrapper BLAS_WRAPPER_INSTANCE;
-    public final static String LINALG_PROPS = "/dl4j-linalg.properties";
+    public final static String LINALG_PROPS = "/nd4j.properties";
     public final static String REAL_CLASS_PROP = "real.class";
     public final static String COMPLEX_CLASS_PROP = "complex.class";
     public final static String DTYPE = "dtype";
@@ -58,9 +58,9 @@ public class NDArrays  {
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype,ORDER);
             blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(props.get(BLAS_OPS).toString());
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
-            UNIT = NDArrays.createFloat(1,0);
-            ZERO = NDArrays.createFloat(1,0);
-            NEG_UNIT = NDArrays.createFloat(-1,0);
+            UNIT = Nd4j.createFloat(1, 0);
+            ZERO = Nd4j.createFloat(1, 0);
+            NEG_UNIT = Nd4j.createFloat(-1, 0);
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
@@ -634,7 +634,7 @@ public class NDArrays  {
      * @return ndarray
      */
     public static IComplexNDArray createComplex(double[] data) {
-        return createComplex(data,NDArrays.order());
+        return createComplex(data, Nd4j.order());
 
     }
 
@@ -1022,7 +1022,7 @@ public class NDArrays  {
      * @return the instance
      */
     public static INDArray create(double[] data,int[] shape,int offset) {
-        return create(data,shape,offset,NDArrays.order());
+        return create(data, shape, offset, Nd4j.order());
     }
 
 
@@ -1033,7 +1033,7 @@ public class NDArrays  {
      * @return the instance
      */
     public static INDArray create(double[] data,int[] shape,int offset,char ordering) {
-        return INSTANCE.create(data,shape,NDArrays.getStrides(shape),offset);
+        return INSTANCE.create(data, shape, Nd4j.getStrides(shape), offset);
     }
 
     /**
@@ -1374,7 +1374,7 @@ public class NDArrays  {
      * and order specified by NDArrays.order()
      */
     public static int[] getStrides(int[] shape) {
-        return getStrides(shape,NDArrays.order());
+        return getStrides(shape, Nd4j.order());
     }
 
 
@@ -1400,7 +1400,7 @@ public class NDArrays  {
      * and order specified by NDArrays.order()
      */
     public static int[] getComplexStrides(int[] shape) {
-        return getComplexStrides(shape,NDArrays.order());
+        return getComplexStrides(shape, Nd4j.order());
     }
 
 
@@ -1758,7 +1758,7 @@ public class NDArrays  {
     }
 
     public static IComplexNDArray createComplex(double[] data, int[] shape, int offset) {
-        return createComplex(data,shape,offset,NDArrays.order());
+        return createComplex(data, shape, offset, Nd4j.order());
     }
 
     public static INDArray create(float[] data, int[] shape, int offset) {

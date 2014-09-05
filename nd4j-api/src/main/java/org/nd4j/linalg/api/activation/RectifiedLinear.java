@@ -2,7 +2,7 @@ package org.nd4j.linalg.api.activation;
 
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.ElementWiseOp;
 
 /**
@@ -32,7 +32,7 @@ public class RectifiedLinear extends BaseActivationFunction {
      */
     @Override
     public INDArray applyDerivative(INDArray input) {
-        return NDArrays.ones(input.shape());
+        return Nd4j.ones(input.shape());
     }
 
 

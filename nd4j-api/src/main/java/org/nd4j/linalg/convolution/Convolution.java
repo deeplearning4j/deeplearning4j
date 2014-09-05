@@ -3,7 +3,7 @@ package org.nd4j.linalg.convolution;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.fft.FFT;
 
 import org.nd4j.linalg.util.ArrayUtil;
@@ -52,8 +52,8 @@ public class Convolution {
         int[] intShape = ArrayUtil.toInts(shape);
         int[] axes = ArrayUtil.range(0,intShape.length);
 
-        IComplexNDArray fftedInput = FFT.rawfftn(NDArrays.createComplex(input),intShape,axes);
-        IComplexNDArray fftedKernel = FFT.rawfftn(NDArrays.createComplex(kernel), intShape, axes);
+        IComplexNDArray fftedInput = FFT.rawfftn(Nd4j.createComplex(input),intShape,axes);
+        IComplexNDArray fftedKernel = FFT.rawfftn(Nd4j.createComplex(kernel), intShape, axes);
         IComplexNDArray inputTimesKernel = fftedInput.muli(fftedKernel);
 
         IComplexNDArray convolution = FFT.ifftn(inputTimesKernel);

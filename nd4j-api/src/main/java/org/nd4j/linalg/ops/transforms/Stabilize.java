@@ -3,7 +3,7 @@ package org.nd4j.linalg.ops.transforms;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.BaseElementWiseOp;
 
 /**
@@ -41,9 +41,9 @@ public class Stabilize extends BaseElementWiseOp {
             IComplexNumber c = (IComplexNumber) value;
             float curr = c.realComponent().floatValue();
             if(curr * k > -cutOff)
-                return NDArrays.createDouble(-cutOff / k,c.imaginaryComponent().floatValue());
+                return Nd4j.createDouble(-cutOff / k, c.imaginaryComponent().floatValue());
             else if(curr * k < cutOff)
-                return NDArrays.createDouble(cutOff / k,c.imaginaryComponent().floatValue());
+                return Nd4j.createDouble(cutOff / k, c.imaginaryComponent().floatValue());
 
 
         }

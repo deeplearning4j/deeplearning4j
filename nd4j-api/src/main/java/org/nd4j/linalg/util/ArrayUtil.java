@@ -3,7 +3,7 @@ package org.nd4j.linalg.util;
 import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -46,13 +46,13 @@ public class ArrayUtil {
 
     public static INDArray toNDArray(int[][] nums) {
         double[] doubles = toDoubles(nums);
-        INDArray create = NDArrays.create(doubles,new int[]{1,nums.length});
+        INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
         return create;
     }
 
     public static INDArray toNDArray(int[] nums) {
         double[] doubles = toDoubles(nums);
-        INDArray create = NDArrays.create(doubles,new int[]{1,nums.length});
+        INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
         return create;
     }
 

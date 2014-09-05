@@ -8,7 +8,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDArrayFactory;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
 
 /**
@@ -365,7 +365,7 @@ public class SimpleJCublas {
                 bC.pointer(),
                 1);
 
-        IComplexDouble ret =   NDArrays.createDouble(dott.x,dott.y);
+        IComplexDouble ret =   Nd4j.createDouble(dott.x, dott.y);
         free(aC,bC);
         return ret;
     }
@@ -438,7 +438,7 @@ public class SimpleJCublas {
         jcuda.cuDoubleComplex dott = JCublas.cublasZdotu(x.length(), xC.pointer(), x.stride()[0], yC.pointer(), yC.stride()[0]);
 
 
-        IComplexDouble ret = NDArrays.createDouble(dott.x, dott.y);
+        IComplexDouble ret = Nd4j.createDouble(dott.x, dott.y);
         free(xC,yC);
         return ret;
     }

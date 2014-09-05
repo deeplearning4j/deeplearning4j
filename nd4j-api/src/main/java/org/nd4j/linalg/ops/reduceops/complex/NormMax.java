@@ -2,7 +2,7 @@ package org.nd4j.linalg.ops.reduceops.complex;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
@@ -12,7 +12,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 public class NormMax extends BaseScalarOp {
     public NormMax() {
-        super(NDArrays.createDouble(0,0));
+        super(Nd4j.createDouble(0, 0));
     }
 
     @Override

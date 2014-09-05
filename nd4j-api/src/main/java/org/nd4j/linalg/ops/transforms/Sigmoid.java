@@ -2,7 +2,7 @@ package org.nd4j.linalg.ops.transforms;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.BaseElementWiseOp;
 
 /**
@@ -24,7 +24,7 @@ public class Sigmoid extends BaseElementWiseOp {
             float arg = number.complexArgument().floatValue();
             float sigArg = 1 / 1 + ((float) Math.exp(-arg)) - 1 + .5f;
             float ret = (float) Math.exp(sigArg);
-            return NDArrays.createDouble(ret, 0);
+            return Nd4j.createDouble(ret, 0);
 
         } else {
             float inputf = (float) input;

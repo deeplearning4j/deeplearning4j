@@ -2,7 +2,7 @@ package org.nd4j.linalg.fft;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
 
@@ -22,7 +22,7 @@ public class FFT {
      * @return the ffted output
      */
     public static IComplexNDArray fft(INDArray transform,int numElements) {
-        IComplexNDArray inputC = NDArrays.createComplex(transform);
+        IComplexNDArray inputC = Nd4j.createComplex(transform);
         if(inputC.isVector())
             return  new VectorFFT(inputC.length()).apply(inputC);
         else {
@@ -57,7 +57,7 @@ public class FFT {
      * @return the the discrete fourier applyTransformToOrigin of the passed in input
      */
     public static  IComplexNDArray fft(INDArray input) {
-        IComplexNDArray inputC = NDArrays.createComplex(input);
+        IComplexNDArray inputC = Nd4j.createComplex(input);
         return fft(inputC);
     }
 
@@ -70,7 +70,7 @@ public class FFT {
      * @return the ffted output
      */
     public static IComplexNDArray fft(INDArray transform,int numElements,int dimension) {
-        IComplexNDArray inputC = NDArrays.createComplex(transform);
+        IComplexNDArray inputC = Nd4j.createComplex(transform);
         if(inputC.isVector())
             return  new VectorFFT(numElements).apply(inputC);
         else {
@@ -118,7 +118,7 @@ public class FFT {
      * @return the iffted output
      */
     public static IComplexNDArray ifft(INDArray transform,int numElements,int dimension) {
-        IComplexNDArray inputC = NDArrays.createComplex(transform);
+        IComplexNDArray inputC = Nd4j.createComplex(transform);
         if(inputC.isVector())
             return  new VectorIFFT(numElements).apply(inputC);
         else {
@@ -153,7 +153,7 @@ public class FFT {
      * @return the ffted output
      */
     public static IComplexNDArray ifft(INDArray transform,int numElements) {
-        IComplexNDArray inputC = NDArrays.createComplex(transform);
+        IComplexNDArray inputC = Nd4j.createComplex(transform);
         if(inputC.isVector())
             return  new VectorIFFT(numElements).apply(inputC);
         else {
@@ -192,7 +192,7 @@ public class FFT {
      * @return the reverse ifft of the passed in array
      */
     public static IComplexNDArray ifftn(INDArray transform,int dimension,int numElements) {
-           return ifftn(NDArrays.createComplex(transform),dimension,numElements);
+           return ifftn(Nd4j.createComplex(transform),dimension,numElements);
     }
 
 
@@ -286,7 +286,7 @@ public class FFT {
      * @return the fft of the specified ndarray
      */
     public static IComplexNDArray fftn(INDArray transform,int dimension,int numElements) {
-        return fftn(NDArrays.createComplex(transform),dimension,numElements);
+        return fftn(Nd4j.createComplex(transform),dimension,numElements);
     }
 
     /**

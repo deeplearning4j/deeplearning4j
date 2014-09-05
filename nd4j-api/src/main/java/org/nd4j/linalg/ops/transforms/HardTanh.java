@@ -2,7 +2,7 @@ package org.nd4j.linalg.ops.transforms;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.BaseElementWiseOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
@@ -32,7 +32,7 @@ public class HardTanh extends BaseElementWiseOp {
                 ret.set(-1,ret.imaginaryComponent().floatValue());
             if(ret.realComponent().floatValue() > 1)
                 ret.set(1,ret.imaginaryComponent().floatValue());
-            return NDArrays.scalar(ret);
+            return Nd4j.scalar(ret);
         }
         else  {
             float d = (float) value;

@@ -1,7 +1,7 @@
 package org.nd4j.linalg.util;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 
@@ -67,7 +67,7 @@ public class NDArrayUtil {
     public static INDArray expi(INDArray toExp) {
         INDArray flattened = toExp.ravel();
         for(int i = 0; i < flattened.length(); i++)
-            flattened.put(i, NDArrays.scalar(Math.exp((double) flattened.getScalar(i).element())));
+            flattened.put(i, Nd4j.scalar(Math.exp((double) flattened.getScalar(i).element())));
         return flattened.reshape(toExp.shape());
     }
 
@@ -104,7 +104,7 @@ public class NDArrayUtil {
     public static INDArray truncate(INDArray nd,final int n,int dimension) {
 
         if(nd.isVector()) {
-            INDArray truncated = NDArrays.create(new int[]{n});
+            INDArray truncated = Nd4j.create(new int[]{n});
             for(int i = 0;i  < n; i++)
                 truncated.put(i,nd.getScalar(i));
             return truncated;
@@ -115,7 +115,7 @@ public class NDArrayUtil {
             targetShape[dimension] = n;
             int numRequired = ArrayUtil.prod(targetShape);
             if(nd.isVector()) {
-                INDArray ret = NDArrays.create(targetShape);
+                INDArray ret = Nd4j.create(targetShape);
                 int count = 0;
                 for(int i = 0; i < nd.length(); i+= nd.stride()[dimension]) {
                     ret.put(count++,nd.getScalar(i));
@@ -132,7 +132,7 @@ public class NDArrayUtil {
                         INDArray row = nd.getRow(i);
                         for(int j = 0; j < row.length(); j++) {
                             if(list.size() == numRequired)
-                                return NDArrays.create(ArrayUtil.toArrayDouble(list),targetShape);
+                                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
 
                             list.add((Double) row.getScalar(j).element());
                         }
@@ -143,7 +143,7 @@ public class NDArrayUtil {
                         INDArray row = nd.getColumn(i);
                         for(int j = 0; j < row.length(); j++) {
                             if(list.size() == numRequired)
-                                return NDArrays.create(ArrayUtil.toArrayDouble(list),targetShape);
+                                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
 
                             list.add((Double) row.getScalar(j).element());
                         }
@@ -154,7 +154,7 @@ public class NDArrayUtil {
                     throw new IllegalArgumentException("Illegal dimension for matrix " + dimension);
 
 
-                return NDArrays.create(ArrayUtil.toArrayDouble(list),targetShape);
+                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
 
             }
 
@@ -166,7 +166,7 @@ public class NDArrayUtil {
                     slices.add(slice);
                 }
 
-                return NDArrays.create(slices,targetShape);
+                return Nd4j.create(slices, targetShape);
 
             }
             else {
@@ -180,7 +180,7 @@ public class NDArrayUtil {
 
                 assert list.size() == ArrayUtil.prod(targetShape) : "Illegal shape for length " + list.size();
 
-                return NDArrays.create(ArrayUtil.toArrayDouble(list), targetShape);
+                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
 
             }
 
@@ -205,7 +205,7 @@ public class NDArrayUtil {
         if(ArrayUtil.prod(nd.shape()) >= ArrayUtil.prod(targetShape))
             return nd;
 
-        INDArray ret = NDArrays.create(targetShape);
+        INDArray ret = Nd4j.create(targetShape);
         System.arraycopy(nd.data(),0,ret.data(),0,nd.data().length);
         return ret;
 
@@ -249,20 +249,20 @@ public class NDArrayUtil {
         INDArray cast =   arr;
 
         if(op == ScalarOp.NORM_1) {
-            return NDArrays.scalar(NDArrays.getBlasWrapper().asum(cast));
+            return Nd4j.scalar(Nd4j.getBlasWrapper().asum(cast));
         }
 
         else if(op == ScalarOp.NORM_2) {
-            return NDArrays.scalar(NDArrays.getBlasWrapper().nrm2(cast));
+            return Nd4j.scalar(Nd4j.getBlasWrapper().nrm2(cast));
 
         }
 
         else if(op == ScalarOp.NORM_MAX) {
-            int i = NDArrays.getBlasWrapper().iamax(cast);
+            int i = Nd4j.getBlasWrapper().iamax(cast);
             return arr.getScalar(i);
         }
 
-        INDArray s = NDArrays.scalar(0);
+        INDArray s = Nd4j.scalar(0);
         for (int i = 0; i < arr.length(); i++) {
             switch (op) {
                 case SUM:
@@ -295,7 +295,7 @@ public class NDArrayUtil {
         }
 
         if(op == ScalarOp.MEAN)
-            s.divi(NDArrays.scalar(arr.length()));
+            s.divi(Nd4j.scalar(arr.length()));
 
 
         return s;

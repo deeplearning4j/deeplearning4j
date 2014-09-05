@@ -6,7 +6,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.complex.ComplexDouble;
 import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
@@ -220,7 +220,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public IComplexNDArray createComplex(float[] data, int[] shape, int offset, char ordering) {
-        return new JCublasComplexNDArray(data,shape, NDArrays.getComplexStrides(shape, ordering),offset,ordering);
+        return new JCublasComplexNDArray(data,shape, Nd4j.getComplexStrides(shape, ordering),offset,ordering);
     }
 
     @Override

@@ -1,7 +1,7 @@
 package org.nd4j.linalg.util;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Feature matrix related utils
@@ -28,7 +28,7 @@ public class FeatureUtil {
      * @return a binary label matrix used for supervised learning
      */
     public static INDArray toOutcomeMatrix(int[] index,int numOutcomes) {
-        INDArray ret = NDArrays.create(index.length,numOutcomes);
+        INDArray ret = Nd4j.create(index.length, numOutcomes);
         for(int i = 0; i < ret.rows(); i++) {
             int[] nums = new int[numOutcomes];
             nums[index[i]] = 1;
@@ -42,7 +42,7 @@ public class FeatureUtil {
         INDArray columnMeans = toNormalize.mean(0);
         toNormalize.subiRowVector(columnMeans);
         INDArray std = toNormalize.std(0);
-        std.addi(NDArrays.scalar(1e-6));
+        std.addi(Nd4j.scalar(1e-6));
         toNormalize.diviRowVector(std);
     }
 

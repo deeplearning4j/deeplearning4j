@@ -3,7 +3,7 @@ package org.nd4j.linalg.jblas.complex;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Complex float
@@ -51,7 +51,7 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
      */
     @Override
     public IComplexDouble asDouble() {
-        return NDArrays.createDouble(realComponent(),imaginaryComponent());
+        return Nd4j.createDouble(realComponent(), imaginaryComponent());
     }
 
     /**

@@ -13,15 +13,15 @@ public abstract class BlasWrapperTest {
 
     @Test
     public void testIaMax() {
-         INDArray test = NDArrays.create(new float[]{1,2,3,4});
-         int max = NDArrays.getBlasWrapper().iamax(test);
+         INDArray test = Nd4j.create(new float[]{1, 2, 3, 4});
+         int max = Nd4j.getBlasWrapper().iamax(test);
          assertEquals(3,max);
 
 
-        INDArray rows = NDArrays.create(new float[]{1,3,2,4},new int[]{2,2});
+        INDArray rows = Nd4j.create(new float[]{1, 3, 2, 4}, new int[]{2, 2});
         for(int i = 0; i < rows.rows(); i++) {
             INDArray row = rows.getRow(i);
-            int max2 = NDArrays.getBlasWrapper().iamax(row);
+            int max2 = Nd4j.getBlasWrapper().iamax(row);
             assertEquals(1,max2);
         }
 

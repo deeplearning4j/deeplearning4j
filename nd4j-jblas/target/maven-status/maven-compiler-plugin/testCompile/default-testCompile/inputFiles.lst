@@ -1,9 +1,0 @@
-/home/agibsonccc/git/deeplearning4j/linear-algebra/linear-algebra-jblas/src/test/java/org/deeplearning4j/linalg/jblas/lossfunctions/LossFunctionTests.java
-/home/agibsonccc/git/deeplearning4j/linear-algebra/linear-algebra-jblas/src/test/java/org/deeplearning4j/linalg/jblas/MatrixTests.java
-/home/agibsonccc/git/deeplearning4j/linear-algebra/linear-algebra-jblas/src/test/java/org/deeplearning4j/linalg/jblas/factory/BlasWrapperTest.java
-/home/agibsonccc/git/deeplearning4j/linear-algebra/linear-algebra-jblas/src/test/java/org/deeplearning4j/linalg/jblas/util/JblasSerdeTests.java
-/home/agibsonccc/git/deeplearning4j/linear-algebra/linear-algebra-jblas/src/test/java/org/deeplearning4j/linalg/jblas/ComplexNDArrayTests.java
-/home/agibsonccc/git/deeplearning4j/linear-algebra/linear-algebra-jblas/src/test/java/org/deeplearning4j/linalg/jblas/NDArrayTests.java
-/home/agibsonccc/git/deeplearning4j/linear-algebra/linear-algebra-jblas/src/test/java/org/deeplearning4j/linalg/jblas/TestNDArrayCreation.java
-/home/agibsonccc/git/deeplearning4j/linear-algebra/linear-algebra-jblas/src/test/java/org/deeplearning4j/linalg/jblas/dataset/DataSetTest.java
-/home/agibsonccc/git/deeplearning4j/linear-algebra/linear-algebra-jblas/src/test/java/org/deeplearning4j/linalg/jblas/activations/SoftMaxTests.java

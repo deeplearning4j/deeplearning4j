@@ -1,7 +1,7 @@
 package org.nd4j.linalg.ops.elementwise;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.BaseTwoArrayElementWiseOp;
 
 /**
@@ -19,7 +19,7 @@ public class MultiplyOp extends BaseTwoArrayElementWiseOp {
 
     @Override
     protected IComplexNumber realComplex(float real, IComplexNumber other) {
-        return NDArrays.createDouble(real * other.realComponent().doubleValue(),other.complexArgument().doubleValue());
+        return Nd4j.createDouble(real * other.realComponent().doubleValue(), other.complexArgument().doubleValue());
     }
 
     @Override

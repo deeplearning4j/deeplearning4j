@@ -11,7 +11,7 @@ import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jblas.complex.*;
 import org.nd4j.linalg.jblas.NDArray;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -622,7 +622,7 @@ public class MatrixUtil {
 
 
     public static IComplexNDArray complexPadWithZeros(NDArray toPad,int[] newShape) {
-        IComplexNDArray ret = NDArrays.complexZeros(newShape);
+        IComplexNDArray ret = Nd4j.complexZeros(newShape);
         for(int i = 0; i < toPad.length(); i++)
             ret.put(i,toPad.getScalar(i));
         return ret;
@@ -630,7 +630,7 @@ public class MatrixUtil {
 
 
     public static IComplexNDArray complexPadWithZeros(ComplexNDArray toPad,int[] newShape) {
-        IComplexNDArray ret = NDArrays.complexZeros(newShape);
+        IComplexNDArray ret = Nd4j.complexZeros(newShape);
         for(int i = 0; i < toPad.length(); i++)
             ret.put(i,toPad.getScalar(i));
         return ret;

@@ -3,7 +3,7 @@ package org.nd4j.linalg.benchmark;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +26,7 @@ public class TimeOperations implements Runnable {
 
     public TimeOperations(INDArray n,int numTimesRun) {
         this.testing = n;
-        this.other = NDArrays.ones(n.shape());
+        this.other = Nd4j.ones(n.shape());
         this.numTimesRun = numTimesRun;
     }
 
@@ -83,7 +83,7 @@ public class TimeOperations implements Runnable {
         System.out.println(runNTimes(new Runnable() {
             @Override
             public void run() {
-                NDArrays.create(new double[]{10000},new int[]{2,5000});
+                Nd4j.create(new double[]{10000}, new int[]{2, 5000});
             }
         }).getMean() + " milliseconds");
     }

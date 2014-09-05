@@ -2,7 +2,7 @@ package org.nd4j.linalg.ops.reduceops.complex;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Prod operator
@@ -12,7 +12,7 @@ import org.nd4j.linalg.factory.NDArrays;
 public class Prod extends BaseScalarOp {
 
     public Prod() {
-        super(NDArrays.createDouble(1,1));
+        super(Nd4j.createDouble(1, 1));
     }
 
     @Override

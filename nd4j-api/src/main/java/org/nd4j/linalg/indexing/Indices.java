@@ -1,6 +1,6 @@
 package org.nd4j.linalg.indexing;
 
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Indexing util.
@@ -91,7 +91,7 @@ public class Indices {
      * @return the strides for the given indices
      */
     public static int[] strides(char ordering,NDArrayIndex...indexes) {
-        return NDArrays.getStrides(shape(indexes),ordering);
+        return Nd4j.getStrides(shape(indexes), ordering);
     }
 
     /**

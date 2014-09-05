@@ -3,7 +3,7 @@ package org.nd4j.linalg.api.activation;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDArrayFactory;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.ArrayOps;
 import org.nd4j.linalg.ops.ElementWiseOp;
 
@@ -127,9 +127,9 @@ public class SoftMax extends BaseActivationFunction {
     @Override
     public INDArray applyDerivative(INDArray input) {
         if(input instanceof IComplexNDArray)
-            return softmax(input,rows).mul(NDArrays.complexOnes(input.shape()).subi(softmax(input, rows)));
+            return softmax(input,rows).mul(Nd4j.complexOnes(input.shape()).subi(softmax(input, rows)));
         else
-            return softmax(input,rows).mul(NDArrays.ones(input.shape()).subi(softmax(input, rows)));
+            return softmax(input,rows).mul(Nd4j.ones(input.shape()).subi(softmax(input, rows)));
 
     }
 

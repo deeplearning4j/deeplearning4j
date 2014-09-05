@@ -4,7 +4,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.ArrayOps;
 import org.nd4j.linalg.ops.BaseElementWiseOp;
@@ -35,7 +35,7 @@ public class Transforms {
      * @return
      */
     public static INDArray downSample(INDArray d1,int[] stride) {
-        INDArray d = NDArrays.ones(stride);
+        INDArray d = Nd4j.ones(stride);
         d.divi(ArrayUtil.prod(stride));
         INDArray ret = Convolution.convn(d1, d, Convolution.Type.VALID);
         ret = ret.get(NDArrayIndex.interval(0, stride[0]), NDArrayIndex.interval(0, stride[1]));
@@ -51,11 +51,11 @@ public class Transforms {
      */
     public static INDArray  upSample(INDArray d, INDArray scale) {
 
-        INDArray idx = NDArrays.create(d.shape().length, 1);
+        INDArray idx = Nd4j.create(d.shape().length, 1);
 
 
         for (int i = 0; i < d.shape().length; i++) {
-            INDArray tmp = NDArrays.zeros(d.size(i) * (int) scale.getScalar(i).element(), 1);
+            INDArray tmp = Nd4j.zeros(d.size(i) * (int) scale.getScalar(i).element(), 1);
             int[] indices = ArrayUtil.range(0, (int) scale.getScalar(i).element() * d.size(i),(int) scale.getScalar(i).element());
             tmp.putScalar(indices, 1.0f);
             idx.put(i, tmp.cumsum(Integer.MAX_VALUE).sum(Integer.MAX_VALUE));
@@ -73,7 +73,7 @@ public class Transforms {
     public static  double cosineSim(INDArray d1, INDArray d2) {
         d1 = unitVec(d1);
         d2 = unitVec(d2);
-        double ret = NDArrays.getBlasWrapper().dot(d1,d2);
+        double ret = Nd4j.getBlasWrapper().dot(d1,d2);
         return ret;
     }
 
@@ -96,7 +96,7 @@ public class Transforms {
     public static INDArray unitVec(INDArray toScale) {
         float length = (float) toScale.norm2(Integer.MAX_VALUE).element();
         if (length > 0)
-            return NDArrays.getBlasWrapper().scal(1.0f / length,toScale);
+            return Nd4j.getBlasWrapper().scal(1.0f / length,toScale);
         return toScale;
     }
 

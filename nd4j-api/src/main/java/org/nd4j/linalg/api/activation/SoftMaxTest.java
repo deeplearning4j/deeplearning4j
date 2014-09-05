@@ -3,7 +3,7 @@ package org.nd4j.linalg.api.activation;
 import static org.junit.Assert.*;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,8 +19,8 @@ public abstract class SoftMaxTest {
 
     @Test
     public void testSoftMax() {
-        NDArrays.factory().setOrder('f');
-        INDArray test = NDArrays.linspace(1,6,6).reshape(2,3);
+        Nd4j.factory().setOrder('f');
+        INDArray test = Nd4j.linspace(1, 6, 6).reshape(2,3);
         INDArray softMaxColumns = Activations.softmax().apply(test);
         INDArray softMaxRows = Activations.softMaxRows().apply(test);
         INDArray columns = softMaxColumns.sum(0);
@@ -34,8 +34,8 @@ public abstract class SoftMaxTest {
 
     @Test
     public void testSoftMaxCOrder() {
-        NDArrays.factory().setOrder('c');
-        INDArray test = NDArrays.linspace(1,6,6).reshape(2,3);
+        Nd4j.factory().setOrder('c');
+        INDArray test = Nd4j.linspace(1, 6, 6).reshape(2,3);
         INDArray softMaxColumns = Activations.softmax().apply(test);
         INDArray softMaxRows = Activations.softMaxRows().apply(test);
 

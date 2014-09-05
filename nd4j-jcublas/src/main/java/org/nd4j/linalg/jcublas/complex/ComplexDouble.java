@@ -3,7 +3,7 @@ package org.nd4j.linalg.jcublas.complex;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Double implementation of a complex number.
@@ -76,7 +76,7 @@ public class ComplexDouble implements IComplexDouble {
 
     @Override
     public IComplexNumber copy(IComplexNumber other) {
-       return NDArrays.createDouble(other.realComponent().doubleValue(),other.imaginaryComponent().doubleValue());
+       return Nd4j.createDouble(other.realComponent().doubleValue(), other.imaginaryComponent().doubleValue());
 
     }
 

@@ -3,7 +3,7 @@ package org.nd4j.linalg.jblas;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDArrayFactory;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
@@ -28,16 +28,16 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         };
 
 
-        NDArrays.factory().setOrder('f');
+        Nd4j.factory().setOrder('f');
         double[] mmul = {1,2,3,4};
 
         DoubleMatrix d = new DoubleMatrix(data);
-        INDArray d2 = NDArrays.create(data);
+        INDArray d2 = Nd4j.create(data);
         assertEquals(d.rows,d2.rows());
         assertEquals(d.columns,d2.columns());
         verifyElements(d,d2);
 
-        INDArray toMmulD2 = NDArrays.create(mmul).transpose();
+        INDArray toMmulD2 = Nd4j.create(mmul).transpose();
         DoubleMatrix toMmulD = new DoubleMatrix(mmul);
 
 
@@ -56,22 +56,22 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
 
 
 
-        NDArrays.factory().setOrder('c');
+        Nd4j.factory().setOrder('c');
 
 
     }
 
     @Test
     public void testTransposeCompat() {
-        NDArrays.factory().setOrder('f');
+        Nd4j.factory().setOrder('f');
         DoubleMatrix dReshaped = DoubleMatrix.linspace(1,8,8).reshape(2,4);
-        INDArray nReshaped = NDArrays.linspace(1,8,8).reshape(2,4);
+        INDArray nReshaped = Nd4j.linspace(1, 8, 8).reshape(2,4);
         verifyElements(dReshaped,nReshaped);
         DoubleMatrix d = dReshaped.transpose();
         INDArray n = nReshaped.transpose();
         verifyElements(d,n);
         assertTrue(ArrayUtil.equals(n.data(),d.data));
-        NDArrays.factory().setOrder('c');
+        Nd4j.factory().setOrder('c');
 
     }
 
@@ -83,13 +83,13 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
                 {5,6,7,8}
         };
 
-        INDArray toRavel = NDArrays.create(data);
-        NDArrays.factory().setOrder('f');
-        INDArray toRavelF = NDArrays.create(data);
+        INDArray toRavel = Nd4j.create(data);
+        Nd4j.factory().setOrder('f');
+        INDArray toRavelF = Nd4j.create(data);
         INDArray ravel = toRavel.ravel();
         INDArray ravelF = toRavelF.ravel();
         assertEquals(ravel,ravelF);
-        NDArrays.factory().setOrder('c');
+        Nd4j.factory().setOrder('c');
 
     }
 
@@ -97,7 +97,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
     @Test
     public void testNorm1() {
         DoubleMatrix norm1 = DoubleMatrix.linspace(1,8,8).reshape(2,4);
-        INDArray norm1NDArray = NDArrays.linspace(1,8,8).reshape(2,4);
+        INDArray norm1NDArray = Nd4j.linspace(1, 8, 8).reshape(2,4);
         assertEquals(norm1.norm1(),norm1NDArray.norm1(Integer.MAX_VALUE).get(0),1e-1);
     }
 
@@ -110,10 +110,10 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
                 {5,6,7,8}
         };
 
-        NDArrays.factory().setOrder('f');
+        Nd4j.factory().setOrder('f');
 
         DoubleMatrix d = new DoubleMatrix(data);
-        INDArray d2 = NDArrays.create(data);
+        INDArray d2 = Nd4j.create(data);
         assertEquals(d.rows, d2.rows());
         assertEquals(d.columns, d2.columns());
         verifyElements(d, d2);
@@ -122,7 +122,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         DoubleMatrix reshapedD = d.reshape(4,2);
         INDArray reshapedD2 = d2.reshape(4,2);
         verifyElements(reshapedD,reshapedD2);
-        NDArrays.factory().setOrder('c');
+        Nd4j.factory().setOrder('c');
 
 
     }
@@ -140,10 +140,10 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         };
 
 
-        NDArrays.factory().setOrder('f');
+        Nd4j.factory().setOrder('f');
         float[][] mmul = {{1,2,3,4},{5,6,7,8}};
 
-        INDArray d2 = NDArrays.create(data);
+        INDArray d2 = Nd4j.create(data);
         verifyElements(mmul,d2);
     }
 
@@ -156,16 +156,16 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         };
 
 
-        NDArrays.factory().setOrder('f');
+        Nd4j.factory().setOrder('f');
         double[][] mmul = {{1, 2, 3, 4}, {5, 6, 7, 8}};
 
         DoubleMatrix d = new DoubleMatrix(data).reshape(4, 2);
-        INDArray d2 = NDArrays.create(data).reshape(4, 2);
+        INDArray d2 = Nd4j.create(data).reshape(4, 2);
         assertEquals(d.rows, d2.rows());
         assertEquals(d.columns, d2.columns());
         verifyElements(d, d2);
 
-        INDArray toMmulD2 = NDArrays.create(mmul);
+        INDArray toMmulD2 = Nd4j.create(mmul);
         DoubleMatrix toMmulD = new DoubleMatrix(mmul);
 
         DoubleMatrix mmulResultD = d.mmul(toMmulD);
@@ -173,7 +173,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         verifyElements(mmulResultD, mmulResultD2);
 
 
-        NDArrays.factory().setOrder('c');
+        Nd4j.factory().setOrder('c');
     }
 
     @Test
@@ -183,8 +183,8 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         DoubleMatrix d2 = new DoubleMatrix(1,2);
         d2.data = new double[]{3,4};
 
-        INDArray d3 = NDArrays.create(new double[]{1,2}).reshape(2,1);
-        INDArray d4 = NDArrays.create(new double[]{3,4});
+        INDArray d3 = Nd4j.create(new double[]{1, 2}).reshape(2,1);
+        INDArray d4 = Nd4j.create(new double[]{3, 4});
 
         assertEquals(d.rows,d3.rows());
         assertEquals(d.columns,d3.columns());
@@ -204,22 +204,22 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
 
     @Test
     public void testVector() {
-        NDArrays.factory().setOrder('f');
+        Nd4j.factory().setOrder('f');
 
         DoubleMatrix dJblas = DoubleMatrix.linspace(1,4,4);
-        INDArray d = NDArrays.linspace(1,4,4);
+        INDArray d = Nd4j.linspace(1, 4, 4);
         verifyElements(dJblas,d);
-        NDArrays.factory().setOrder('c');
+        Nd4j.factory().setOrder('c');
 
 
     }
     @Test
     public void testRowVectorOps() {
-        if(NDArrays.factory().order() ==  NDArrayFactory.C) {
-            INDArray twoByTwo = NDArrays.create(new float[]{1,3,2,4},new int[]{2,2});
-            INDArray toAdd = NDArrays.create(new float[]{1,2},new int[]{2});
+        if(Nd4j.factory().order() ==  NDArrayFactory.C) {
+            INDArray twoByTwo = Nd4j.create(new float[]{1, 3, 2, 4}, new int[]{2, 2});
+            INDArray toAdd = Nd4j.create(new float[]{1, 2}, new int[]{2});
             twoByTwo.addiRowVector(toAdd);
-            INDArray assertion = NDArrays.create(new float[]{2,3,5,6},new int[]{2,2});
+            INDArray assertion = Nd4j.create(new float[]{2, 3, 5, 6}, new int[]{2, 2});
             assertEquals(assertion,twoByTwo);
 
         }
@@ -230,11 +230,11 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
 
     @Test
     public void testColumnVectorOps() {
-        if(NDArrays.factory().order() == NDArrayFactory.C) {
-            INDArray twoByTwo = NDArrays.create(new float[]{1,2,3,4},new int[]{2,2});
-            INDArray toAdd = NDArrays.create(new float[]{1,2},new int[]{2,1});
+        if(Nd4j.factory().order() == NDArrayFactory.C) {
+            INDArray twoByTwo = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
+            INDArray toAdd = Nd4j.create(new float[]{1, 2}, new int[]{2, 1});
             twoByTwo.addiColumnVector(toAdd);
-            INDArray assertion = NDArrays.create(new float[]{2,3,5,6},new int[]{2,2});
+            INDArray assertion = Nd4j.create(new float[]{2, 3, 5, 6}, new int[]{2, 2});
             assertEquals(assertion,twoByTwo);
 
 
@@ -245,22 +245,22 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
 
     @Test
     public void testReshapeCompatibility() {
-        NDArrays.factory().setOrder('f');
+        Nd4j.factory().setOrder('f');
         DoubleMatrix oneThroughFourJblas = DoubleMatrix.linspace(1,4,4).reshape(2,2);
         DoubleMatrix fiveThroughEightJblas = DoubleMatrix.linspace(5,8,4).reshape(2,2);
-        INDArray oneThroughFour = NDArrays.linspace(1,4,4).reshape(2,2);
-        INDArray fiveThroughEight = NDArrays.linspace(5,8,4).reshape(2,2);
+        INDArray oneThroughFour = Nd4j.linspace(1, 4, 4).reshape(2,2);
+        INDArray fiveThroughEight = Nd4j.linspace(5, 8, 4).reshape(2,2);
         verifyElements(oneThroughFourJblas,oneThroughFour);
         verifyElements(fiveThroughEightJblas,fiveThroughEight);
-        NDArrays.factory().setOrder('c');
+        Nd4j.factory().setOrder('c');
 
     }
 
     @Test
     public void testRowSumCompat() {
-        NDArrays.factory().setOrder('f');
+        Nd4j.factory().setOrder('f');
         DoubleMatrix rowsJblas = DoubleMatrix.linspace(1,8,8).reshape(2,4);
-        INDArray rows = NDArrays.linspace(1,8,8).reshape(2,4);
+        INDArray rows = Nd4j.linspace(1, 8, 8).reshape(2,4);
         verifyElements(rowsJblas,rows);
 
         INDArray rowSums = rows.sum(1);
@@ -272,14 +272,14 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
                 {1,2},{3,4}
         };
 
-        INDArray rowSumsData = NDArrays.create(data);
-        NDArrays.factory().setOrder('c');
-        INDArray rowSumsCOrder = NDArrays.create(data);
+        INDArray rowSumsData = Nd4j.create(data);
+        Nd4j.factory().setOrder('c');
+        INDArray rowSumsCOrder = Nd4j.create(data);
         assertEquals(rowSumsData,rowSumsCOrder);
         INDArray rowSumsDataSum = rowSumsData.sum(1);
         INDArray rowSumsCOrderSum = rowSumsCOrder.sum(1);
         assertEquals(rowSumsDataSum,rowSumsCOrderSum);
-        INDArray assertion = NDArrays.create(new float[]{3,7});
+        INDArray assertion = Nd4j.create(new float[]{3, 7});
         assertEquals(assertion,rowSumsCOrderSum);
         assertEquals(assertion,rowSumsDataSum);
     }

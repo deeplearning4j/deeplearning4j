@@ -16,7 +16,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.MathUtils;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
     private INDArray features,labels;
 
     public DataSet() {
-        this(NDArrays.zeros(new int[]{1}),NDArrays.zeros(new int[]{1}));
+        this(Nd4j.zeros(new int[]{1}), Nd4j.zeros(new int[]{1}));
     }
 
     /**
@@ -88,7 +88,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
      * @return an empty dataset with 2 1x1 zero matrices
      */
     public static DataSet empty() {
-        return new DataSet(NDArrays.zeros(new int[]{1}),NDArrays.zeros(new int[]{1}));
+        return new DataSet(Nd4j.zeros(new int[]{1}), Nd4j.zeros(new int[]{1}));
     }
 
     /**
@@ -102,8 +102,8 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
             throw new IllegalArgumentException("Unable to merge empty dataset");
         DataSet first = data.get(0);
         int numExamples = totalExamples(data);
-        INDArray in = NDArrays.create(numExamples,first.getFeatures().columns());
-        INDArray out = NDArrays.create(numExamples,first.getLabels().columns());
+        INDArray in = Nd4j.create(numExamples, first.getFeatures().columns());
+        INDArray out = Nd4j.create(numExamples, first.getLabels().columns());
         int count = 0;
 
         for(int i = 0; i < data.size(); i++) {
@@ -135,12 +135,12 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void multiplyBy(double num) {
-        getFeatures().muli(NDArrays.scalar(num));
+        getFeatures().muli(Nd4j.scalar(num));
     }
 
     @Override
     public void divideBy(int num) {
-        getFeatures().divi(NDArrays.scalar(num));
+        getFeatures().divi(Nd4j.scalar(num));
     }
 
     @Override
@@ -166,9 +166,9 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
         for(int i = 0;i  < getFeatures().length(); i++) {
             double curr = (double) getFeatures().getScalar(i).element();
             if(curr < min)
-                getFeatures().put(i,NDArrays.scalar(min));
+                getFeatures().put(i, Nd4j.scalar(min));
             else if(curr> max)
-                getFeatures().put(i,NDArrays.scalar(max));
+                getFeatures().put(i, Nd4j.scalar(max));
         }
     }
 
@@ -186,7 +186,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void addFeatureVector(INDArray toAdd) {
-        setFeatures(NDArrays.concatHorizontally(getFeatures(), toAdd));
+        setFeatures(Nd4j.concatHorizontally(getFeatures(), toAdd));
     }
 
 
@@ -197,7 +197,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void addFeatureVector(INDArray feature, int example) {
-        getFeatures().putRow(example,NDArrays.concatHorizontally(getFeatures().getRow(example), feature));
+        getFeatures().putRow(example, Nd4j.concatHorizontally(getFeatures().getRow(example), feature));
     }
 
     @Override
@@ -223,9 +223,9 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
         for(int i = 0; i < getFeatures().length(); i++) {
             double curr = (double) getFeatures().getScalar(i).element();
             if (curr > cutoff)
-                getFeatures().put(i, NDArrays.scalar(1));
+                getFeatures().put(i, Nd4j.scalar(1));
             else
-                getFeatures().put(i, NDArrays.scalar(0));
+                getFeatures().put(i, Nd4j.scalar(0));
         }
     }
 
@@ -239,7 +239,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
         INDArray columnStds = getFeatureMatrix().std(0);
 
         setFeatures(getFeatures().subiRowVector(columnMeans));
-        columnStds.addi(NDArrays.scalar(1e-6));
+        columnStds.addi(Nd4j.scalar(1e-6));
         setFeatures(getFeatures().diviRowVector(columnStds));
     }
 
@@ -270,7 +270,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
     public int outcome() {
         if(this.numExamples() > 1)
             throw new IllegalStateException("Unable to derive outcome for dataset greater than one row");
-       return NDArrays.getBlasWrapper().iamax(getLabels());
+       return Nd4j.getBlasWrapper().iamax(getLabels());
     }
 
 
@@ -282,7 +282,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public void setNewNumberOfLabels(int labels) {
         int examples = numExamples();
-        INDArray newOutcomes = NDArrays.create(examples,labels);
+        INDArray newOutcomes = Nd4j.create(examples, labels);
         setLabels(newOutcomes);
     }
 
@@ -388,7 +388,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
         }
 
 
-        INDArray newLabelMatrix = NDArrays.create(filtered.numExamples(),labels.length);
+        INDArray newLabelMatrix = Nd4j.create(filtered.numExamples(), labels.length);
 
         if(newLabelMatrix.rows() != newLabels.size())
             throw new IllegalStateException("Inconsistent label sizes");
@@ -643,8 +643,8 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
         if(numSamples >= numExamples())
             return this;
         else {
-            INDArray examples = NDArrays.create(numSamples,getFeatures().columns());
-            INDArray outcomes = NDArrays.create(numSamples,numOutcomes());
+            INDArray examples = Nd4j.create(numSamples, getFeatures().columns());
+            INDArray outcomes = Nd4j.create(numSamples, numOutcomes());
             Set<Integer> added = new HashSet<Integer>();
             for(int i = 0; i < numSamples; i++) {
                 int picked = rng.nextInt(numExamples());
@@ -665,7 +665,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
     public void roundToTheNearest(int roundTo) {
         for(int i = 0; i < getFeatures().length(); i++) {
             double curr = (double) getFeatures().getScalar(i).element();
-            getFeatures().put(i, NDArrays.scalar(MathUtils.roundDouble(curr, roundTo)));
+            getFeatures().put(i, Nd4j.scalar(MathUtils.roundDouble(curr, roundTo)));
         }
     }
 

@@ -5,7 +5,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +78,7 @@ public class ComplexNDArrayUtil {
         IComplexNDArray flattened = toExp.ravel();
         for (int i = 0; i < flattened.length(); i++) {
             IComplexNumber n = (IComplexNumber) flattened.getScalar(i).element();
-            flattened.put(i, NDArrays.scalar(ComplexUtil.exp(n)));
+            flattened.put(i, Nd4j.scalar(ComplexUtil.exp(n)));
         }
         return flattened.reshape(toExp.shape());
     }
@@ -99,14 +99,14 @@ public class ComplexNDArrayUtil {
         INDArray shapeMatrix = ArrayUtil.toNDArray(shape);
         INDArray currShape =  ArrayUtil.toNDArray(arr.shape());
 
-        INDArray startIndex = currShape.sub(shapeMatrix).divi(NDArrays.scalar(2));
+        INDArray startIndex = currShape.sub(shapeMatrix).divi(Nd4j.scalar(2));
         INDArray endIndex = startIndex.add(shapeMatrix);
         if (shapeMatrix.length() > 1) {
             //arr = arr.get(RangeUtils.interval((int) startIndex.getScalar(0).element(), (int) endIndex.getScalar(0).element()), RangeUtils.interval((int) startIndex.getScalar(1).element(), (int) endIndex.getScalar(1).element()));
-            arr = NDArrays.createComplex(arr.get(NDArrayIndex.interval((int) startIndex.getScalar(0).element(), (int) endIndex.getScalar(0).element()),NDArrayIndex.interval((int) startIndex.getScalar(1).element(), (int) endIndex.getScalar(1).element())));
+            arr = Nd4j.createComplex(arr.get(NDArrayIndex.interval((int) startIndex.getScalar(0).element(), (int) endIndex.getScalar(0).element()), NDArrayIndex.interval((int) startIndex.getScalar(1).element(), (int) endIndex.getScalar(1).element())));
         }
         else {
-            IComplexNDArray ret = NDArrays.createComplex(new int[]{(int) shapeMatrix.getScalar(0).element()});
+            IComplexNDArray ret = Nd4j.createComplex(new int[]{(int) shapeMatrix.getScalar(0).element()});
             int start = (int) startIndex.getScalar(0).element();
             int end = (int) endIndex.getScalar(0).element();
             int count = 0;
@@ -133,7 +133,7 @@ public class ComplexNDArrayUtil {
 
 
         if (nd.isVector()) {
-            IComplexNDArray truncated = NDArrays.createComplex(new int[]{n});
+            IComplexNDArray truncated = Nd4j.createComplex(new int[]{n});
             for (int i = 0; i < n; i++)
                 truncated.put(i, nd.getScalar(i));
             return truncated;
@@ -145,7 +145,7 @@ public class ComplexNDArrayUtil {
             targetShape[dimension] = n;
             int numRequired = ArrayUtil.prod(targetShape);
             if (nd.isVector()) {
-                IComplexNDArray ret = NDArrays.createComplex(targetShape);
+                IComplexNDArray ret = Nd4j.createComplex(targetShape);
                 int count = 0;
                 for (int i = 0; i < nd.length(); i += nd.stride()[dimension]) {
                     ret.put(count++, nd.getScalar(i));
@@ -160,7 +160,7 @@ public class ComplexNDArrayUtil {
                         IComplexNDArray row = nd.getRow(i);
                         for (int j = 0; j < row.length(); j++) {
                             if (list.size() == numRequired)
-                                return NDArrays.createComplex(list.toArray(new IComplexDouble[0]), targetShape);
+                                return Nd4j.createComplex(list.toArray(new IComplexDouble[0]), targetShape);
 
                             list.add((IComplexDouble) row.getScalar(j).element());
                         }
@@ -170,7 +170,7 @@ public class ComplexNDArrayUtil {
                         IComplexNDArray row = nd.getColumn(i);
                         for (int j = 0; j < row.length(); j++) {
                             if (list.size() == numRequired)
-                                return NDArrays.createComplex(list.toArray(new IComplexDouble[0]), targetShape);
+                                return Nd4j.createComplex(list.toArray(new IComplexDouble[0]), targetShape);
 
                             list.add((IComplexDouble) row.getScalar(j).element());
                         }
@@ -179,7 +179,7 @@ public class ComplexNDArrayUtil {
                     throw new IllegalArgumentException("Illegal dimension for matrix " + dimension);
 
 
-                return NDArrays.createComplex(list.toArray(new IComplexDouble[0]), targetShape);
+                return Nd4j.createComplex(list.toArray(new IComplexDouble[0]), targetShape);
 
             }
 
@@ -191,7 +191,7 @@ public class ComplexNDArrayUtil {
                     slices.add(slice);
                 }
 
-                return NDArrays.createComplex(slices, targetShape);
+                return Nd4j.createComplex(slices, targetShape);
 
             } else {
                 List<IComplexDouble> list = new ArrayList<>();
@@ -204,7 +204,7 @@ public class ComplexNDArrayUtil {
 
                 assert list.size() == ArrayUtil.prod(targetShape) : "Illegal shape for length " + list.size();
 
-                return NDArrays.createComplex(list.toArray(new IComplexDouble[0]), targetShape);
+                return Nd4j.createComplex(list.toArray(new IComplexDouble[0]), targetShape);
 
             }
 
@@ -230,7 +230,7 @@ public class ComplexNDArrayUtil {
         if (ArrayUtil.prod(nd.shape()) >= ArrayUtil.prod(targetShape))
             return nd;
 
-        IComplexNDArray ret = NDArrays.createComplex(targetShape);
+        IComplexNDArray ret = Nd4j.createComplex(targetShape);
         System.arraycopy(nd.data(), 0, ret.data(), 0, nd.data().length);
         return ret;
 
@@ -270,7 +270,7 @@ public class ComplexNDArrayUtil {
         int columns = isColumnOp(op) ? arr.columns() : arr.rows();
         int[] shape = {arr.slices(), columns};
 
-        IComplexNDArray ret = NDArrays.createComplex(shape);
+        IComplexNDArray ret = Nd4j.createComplex(shape);
 
         for (int i = 0; i < arr.slices(); i++) {
             switch (op) {
@@ -304,20 +304,20 @@ public class ComplexNDArrayUtil {
         arr = arr.reshape(new int[]{1,arr.length()});
 
         if(op == ScalarOp.NORM_1) {
-            return NDArrays.getBlasWrapper().asum(arr);
+            return Nd4j.getBlasWrapper().asum(arr);
         }
 
         else if(op == ScalarOp.NORM_2) {
-            return (NDArrays.getBlasWrapper().nrm2(arr));
+            return (Nd4j.getBlasWrapper().nrm2(arr));
 
         }
 
         else if(op == ScalarOp.NORM_MAX) {
-            int i = NDArrays.getBlasWrapper().iamax(arr);
+            int i = Nd4j.getBlasWrapper().iamax(arr);
             return arr.getScalar(i).element();
         }
 
-        IComplexDouble s = NDArrays.createDouble(0.0,0);
+        IComplexDouble s = Nd4j.createDouble(0.0, 0);
         for (int i = 0; i < arr.length(); i++) {
             IComplexDouble curr = (IComplexDouble) arr.getScalar(i).element();
 

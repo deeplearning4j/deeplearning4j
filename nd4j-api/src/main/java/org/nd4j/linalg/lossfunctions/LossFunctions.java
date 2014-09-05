@@ -2,7 +2,7 @@ package org.nd4j.linalg.lossfunctions;
 
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.*;
@@ -44,7 +44,7 @@ public class LossFunctions {
      * @return the score for the given parameters
      */
     public static float score(INDArray labels,LossFunction lossFunction,INDArray output,double l2,boolean useRegularization) {
-        assert !NDArrays.hasInvalidNumber(output) : "Invalid output on labels. Must not contain nan or infinite numbers.";
+        assert !Nd4j.hasInvalidNumber(output) : "Invalid output on labels. Must not contain nan or infinite numbers.";
         float ret = 0.0f;
         double reg = 0.5 * l2;
         INDArray z = output;
@@ -104,11 +104,11 @@ public class LossFunctions {
     public static float reconEntropy(INDArray input,INDArray hBias,INDArray vBias,INDArray W,ActivationFunction activationFunction) {
         INDArray preSigH = input.mmul(W).addRowVector(hBias);
         INDArray sigH = activationFunction.apply(preSigH);
-        assert !NDArrays.hasInvalidNumber(sigH);
+        assert !Nd4j.hasInvalidNumber(sigH);
         //transpose doesn't go in right
         INDArray preSigV = sigH.mmul(W.transpose()).addRowVector(vBias);
         INDArray sigV = activationFunction.apply(preSigV);
-        assert !NDArrays.hasInvalidNumber(sigH);
+        assert !Nd4j.hasInvalidNumber(sigH);
 
         INDArray inner =
                 input.mul(log(sigV))

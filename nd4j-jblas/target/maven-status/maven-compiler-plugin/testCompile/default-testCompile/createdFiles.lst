@@ -1,9 +1,0 @@
-org/deeplearning4j/linalg/jblas/ComplexNDArrayTests.class
-org/deeplearning4j/linalg/jblas/dataset/DataSetTest.class
-org/deeplearning4j/linalg/jblas/util/JblasSerdeTests.class
-org/deeplearning4j/linalg/jblas/MatrixTests.class
-org/deeplearning4j/linalg/jblas/lossfunctions/LossFunctionTests.class
-org/deeplearning4j/linalg/jblas/TestNDArrayCreation.class
-org/deeplearning4j/linalg/jblas/NDArrayTests.class
-org/deeplearning4j/linalg/jblas/activations/SoftMaxTests.class
-org/deeplearning4j/linalg/jblas/factory/BlasWrapperTest.class

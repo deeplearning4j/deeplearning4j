@@ -5,7 +5,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * @author Adam Gibson
@@ -21,7 +21,7 @@ public class ComplexUtil {
      */
     public static IComplexNumber floor(IComplexNumber num) {
         Complex c = new Complex(Math.floor(num.realComponent().doubleValue()),Math.floor(num.imaginaryComponent().doubleValue()));
-        return NDArrays.createDouble(c.getReal(),c.getImaginary());
+        return Nd4j.createDouble(c.getReal(), c.getImaginary());
     }
 
 
@@ -33,7 +33,7 @@ public class ComplexUtil {
      */
     public static IComplexNumber neg(IComplexNumber num) {
         Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).negate();
-        return NDArrays.createDouble(c.getReal(),c.getImaginary());
+        return Nd4j.createDouble(c.getReal(), c.getImaginary());
     }
 
 
@@ -45,7 +45,7 @@ public class ComplexUtil {
      */
     public static IComplexNumber log(IComplexNumber num) {
         Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).log();
-        return NDArrays.createDouble(c.getReal(),c.getImaginary());
+        return Nd4j.createDouble(c.getReal(), c.getImaginary());
     }
 
 
@@ -56,7 +56,7 @@ public class ComplexUtil {
      */
     public static IComplexNumber sqrt(IComplexNumber num) {
         Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).sqrt();
-        return NDArrays.createDouble(c.getReal(),c.getImaginary());
+        return Nd4j.createDouble(c.getReal(), c.getImaginary());
     }
 
 
@@ -67,12 +67,12 @@ public class ComplexUtil {
      */
     public static IComplexNumber abs(IComplexNumber num) {
         double c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).abs();
-        return NDArrays.createDouble(c,0);
+        return Nd4j.createDouble(c, 0);
     }
 
 
     public static IComplexNumber round(IComplexNumber num) {
-        return NDArrays.createDouble(Math.round(num.realComponent().doubleValue()),Math.round(num.realComponent().doubleValue()));
+        return Nd4j.createDouble(Math.round(num.realComponent().doubleValue()), Math.round(num.realComponent().doubleValue()));
     }
 
     /**
@@ -83,7 +83,7 @@ public class ComplexUtil {
      */
     public static IComplexNumber pow(IComplexNumber num,IComplexNumber power) {
         Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).pow(new Complex(power.realComponent().doubleValue(),power.imaginaryComponent().doubleValue()));
-        return NDArrays.createDouble(c.getReal(),c.getImaginary());
+        return Nd4j.createDouble(c.getReal(), c.getImaginary());
 
     }
 
@@ -95,7 +95,7 @@ public class ComplexUtil {
      */
     public static IComplexNumber pow(IComplexNumber num,double power) {
         Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).pow(power);
-        return NDArrays.createDouble(c.getReal(),c.getImaginary());
+        return Nd4j.createDouble(c.getReal(), c.getImaginary());
 
     }
 
@@ -107,7 +107,7 @@ public class ComplexUtil {
      */
     public static IComplexNumber tanh(IComplexNumber num) {
         Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).tanh();
-        return NDArrays.createDouble(c.getReal(),c.getImaginary());
+        return Nd4j.createDouble(c.getReal(), c.getImaginary());
     }
 
 
@@ -140,7 +140,7 @@ public class ComplexUtil {
      * @return the exponential of this complex number
      */
     public static IComplexDouble exp(IComplexDouble d) {
-        return  NDArrays.createDouble(FastMath.exp(d.realComponent()) * FastMath.cos(d.imaginaryComponent()), FastMath.exp(d.realComponent()) * FastMath.sin(d.imaginaryComponent()));
+        return  Nd4j.createDouble(FastMath.exp(d.realComponent()) * FastMath.cos(d.imaginaryComponent()), FastMath.exp(d.realComponent()) * FastMath.sin(d.imaginaryComponent()));
     }
 
     /**
@@ -154,7 +154,7 @@ public class ComplexUtil {
      * @return the exponential of this complex number
      */
     public static IComplexFloat exp(IComplexFloat d) {
-        return  NDArrays.createFloat((float) FastMath.exp(d.realComponent()) * (float) FastMath.cos(d.imaginaryComponent()),(float) FastMath.exp(d.realComponent()) * (float) FastMath.sin(d.imaginaryComponent()));
+        return  Nd4j.createFloat((float) FastMath.exp(d.realComponent()) * (float) FastMath.cos(d.imaginaryComponent()), (float) FastMath.exp(d.realComponent()) * (float) FastMath.sin(d.imaginaryComponent()));
     }
 
 

@@ -109,7 +109,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray toFlattened(Collection<INDArray> matrices) {
         int length = 0;
         for(INDArray m : matrices)  length += m.length();
-        INDArray ret = NDArrays.create(length);
+        INDArray ret = Nd4j.create(length);
         int linearIndex = 0;
         for(INDArray d : matrices) {
             INDArray flattened = d.linearView();
@@ -137,7 +137,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
 
-        INDArray ret2 = NDArrays.create(ArrayUtil.combine(gradient));
+        INDArray ret2 = Nd4j.create(ArrayUtil.combine(gradient));
         return ret2.reshape(1,ret2.length());
     }
 
@@ -159,7 +159,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         }
 
         INDArray inT = in.transpose();
-        INDArray out = NDArrays.create(curr.slices(), 1);
+        INDArray out = Nd4j.create(curr.slices(), 1);
         for (int slice = 0; slice < curr.slices(); ++slice) {
             float result = (float) inT.mul(curr.slice(slice)).mul(in).getScalar(0).element();
             out.putScalar(slice, result);
@@ -172,11 +172,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray toFlattened(INDArray...matrices) {
         int length = 0;
         for(INDArray m : matrices)  length += m.length();
-        INDArray ret = NDArrays.create(1,length);
+        INDArray ret = Nd4j.create(1, length);
         int linearIndex = 0;
         for(INDArray d : matrices) {
             if(!d.isVector())
-                d = NDArrays.create(d.data(),new int[]{1,d.length()},d.offset());
+                d = Nd4j.create(d.data(), new int[]{1, d.length()}, d.offset());
             for(int i = 0; i < d.length(); i++) {
                 ret.putScalar(linearIndex++,d.get(i));
             }
@@ -193,7 +193,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray eye(int n) {
-        INDArray ret = NDArrays.create((int) Math.pow(n,2));
+        INDArray ret = Nd4j.create((int) Math.pow(n, 2));
 
         for (int i = 0; i < n; i++) {
             ret.put(i, i, 1.0);
@@ -226,7 +226,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rot(INDArray reverse) {
-        INDArray ret = NDArrays.create(reverse.shape());
+        INDArray ret = Nd4j.create(reverse.shape());
         if(reverse.isVector())
             return reverse(reverse);
         else {
@@ -245,7 +245,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray reverse(INDArray reverse) {
         INDArray rev = reverse.linearView();
-        INDArray ret = NDArrays.create(rev.shape());
+        INDArray ret = Nd4j.create(rev.shape());
         int count = 0;
         for(int i = rev.length() - 1; i >= 0; i--) {
             ret.putScalar(count++,rev.get(i));
@@ -264,7 +264,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray arange(double begin, double end) {
-        return NDArrays.create(ArrayUtil.toDoubles(ArrayUtil.range((int) begin,(int)end))).transpose();
+        return Nd4j.create(ArrayUtil.toDoubles(ArrayUtil.range((int) begin, (int) end))).transpose();
     }
 
 
@@ -310,7 +310,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int[] shape,float min,float max,RandomGenerator rng) {
-        INDArray ret = NDArrays.create(shape);
+        INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
         float r = max - min;
         for(int i = 0; i < ret.length(); i++) {
@@ -329,7 +329,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int rows, int columns,float min,float max,RandomGenerator rng) {
-        INDArray ret = NDArrays.create(rows, columns);
+        INDArray ret = Nd4j.create(rows, columns);
         INDArray linear = ret.linearView();
         float r = max - min;
         for(int i = 0; i < ret.length(); i++) {
@@ -353,14 +353,14 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         // one extra for the bias
         size++;
 
-        INDArray result = NDArrays.create(size, 1);
+        INDArray result = Nd4j.create(size, 1);
         int index = 0;
         for (INDArray vector : vectors) {
             result.put(new NDArrayIndex[] {NDArrayIndex.interval(index, index + vector.rows()),NDArrayIndex.interval(0,result.columns())},vector);
             index += vector.rows();
         }
 
-        result.put(new NDArrayIndex[] {NDArrayIndex.interval(index,result.rows()),NDArrayIndex.interval(0,result.columns())},NDArrays.ones(1,result.columns()));
+        result.put(new NDArrayIndex[] {NDArrayIndex.interval(index,result.rows()),NDArrayIndex.interval(0,result.columns())}, Nd4j.ones(1, result.columns()));
         return result;
     }
 
@@ -477,7 +477,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray rand(int[] shape,RealDistribution r) {
         INDArray ret = create(new int[]{1,ArrayUtil.prod(shape)});
         for(int i = 0; i < ret.length(); i++)
-            ret.put(i,NDArrays.scalar(r.sample()));
+            ret.put(i, Nd4j.scalar(r.sample()));
         return ret.reshape(shape);
     }
     /**
@@ -526,7 +526,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray randn(int[] shape,RandomGenerator r) {
         INDArray ret = create(new int[]{1,ArrayUtil.prod(shape)});
         for(int i = 0; i < ret.length(); i++)
-            ret.put(i,NDArrays.scalar(r.nextGaussian()));
+            ret.put(i, Nd4j.scalar(r.nextGaussian()));
         return ret.reshape(shape);
     }
 
@@ -739,7 +739,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             throw new IllegalArgumentException("Matrices don't have same number of rows.");
         }
 
-        INDArray result = NDArrays.create(A.rows(), A.columns() + B.columns());
+        INDArray result = Nd4j.create(A.rows(), A.columns() + B.columns());
         copy(A,result);
 
         int count = 0;
@@ -760,7 +760,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             throw new IllegalArgumentException("Matrices don't have same number of columns (" + A.columns() + " != " + B.columns() + ".");
         }
 
-        INDArray result = NDArrays.create(A.rows() + B.rows(), A.columns());
+        INDArray result = Nd4j.create(A.rows() + B.rows(), A.columns());
         copy(A,result);
 
         int count = 0;
@@ -959,7 +959,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(double[] data,int[] shape) {
-        return create(data,shape,NDArrays.getStrides(shape),0);
+        return create(data,shape, Nd4j.getStrides(shape),0);
     }
 
 
@@ -973,7 +973,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray create(float[] data,int[] shape) {
 
-        return create(data,shape,NDArrays.getStrides(shape),0);
+        return create(data,shape, Nd4j.getStrides(shape),0);
     }
 
     /**
@@ -984,7 +984,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(double[] data,int[] shape) {
-        return createComplex(data,shape,NDArrays.getComplexStrides(shape),0);
+        return createComplex(data,shape, Nd4j.getComplexStrides(shape),0);
     }
 
     /**
@@ -995,7 +995,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(float[] data,int[] shape) {
-        return createComplex(data,shape,NDArrays.getComplexStrides(shape),0);
+        return createComplex(data,shape, Nd4j.getComplexStrides(shape),0);
     }
 
 
@@ -1242,7 +1242,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(int[] shape) {
-        return createComplex(shape, NDArrays.getComplexStrides(shape),0);
+        return createComplex(shape, Nd4j.getComplexStrides(shape),0);
     }
 
 
@@ -1253,7 +1253,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(int[] shape) {
-        return create(shape,NDArrays.getStrides(shape),0);
+        return create(shape, Nd4j.getStrides(shape),0);
     }
 
 

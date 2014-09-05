@@ -3,7 +3,7 @@ package org.nd4j.linalg.ops.reduceops.complex;
 import org.apache.commons.math3.stat.StatUtils;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 /**
@@ -14,7 +14,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 public class Variance extends BaseScalarOp {
 
     public Variance() {
-        super(NDArrays.createDouble(0,0));
+        super(Nd4j.createDouble(0, 0));
     }
 
 
@@ -22,7 +22,7 @@ public class Variance extends BaseScalarOp {
 
     public IComplexNumber var(IComplexNDArray arr) {
         IComplexNumber mean = new Mean().apply(arr);
-        return NDArrays.createDouble(StatUtils.variance(ArrayUtil.doubleCopyOf(arr.data()), mean.absoluteValue().floatValue()),0);
+        return Nd4j.createDouble(StatUtils.variance(ArrayUtil.doubleCopyOf(arr.data()), mean.absoluteValue().floatValue()), 0);
     }
 
 
@@ -34,6 +34,6 @@ public class Variance extends BaseScalarOp {
 
     @Override
     public IComplexNumber accumulate(IComplexNDArray arr, int i, IComplexNumber soFar) {
-        return NDArrays.createDouble(0,0);
+        return Nd4j.createDouble(0, 0);
     }
 }

@@ -5,7 +5,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.DimensionSlice;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Dimension wise IFFT
@@ -40,7 +40,7 @@ public class IFFTSliceOp implements SliceOp {
             INDArray a = (INDArray) nd.getResult();
             int n = this.n < 1 ? a.length() : this.n;
 
-            INDArray result = new VectorIFFT(n).apply(NDArrays.createComplex(a)).getReal();
+            INDArray result = new VectorIFFT(n).apply(Nd4j.createComplex(a)).getReal();
             for(int i = 0; i < result.length(); i++) {
                 a.put(i,result.getScalar(i));
             }
@@ -74,7 +74,7 @@ public class IFFTSliceOp implements SliceOp {
             INDArray a = nd;
             int n = this.n < 1 ? a.length() : this.n;
 
-            INDArray result = new VectorIFFT(n).apply(NDArrays.createComplex(a)).getReal();
+            INDArray result = new VectorIFFT(n).apply(Nd4j.createComplex(a)).getReal();
             for (int i = 0; i < result.length(); i++) {
                 a.put(i, result.getScalar(i));
             }

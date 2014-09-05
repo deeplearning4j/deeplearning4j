@@ -3,7 +3,7 @@ package org.nd4j.linalg.jblas.io;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.io.BaseNDArrayIO;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jblas.util.JblasSerde;
 
 import java.io.*;
@@ -33,7 +33,7 @@ public class JblasNDArrayIO extends BaseNDArrayIO {
      */
     @Override
     public IComplexNDArray readComplex(InputStream is) throws IOException {
-        return NDArrays.createComplex(read(is));
+        return Nd4j.createComplex(read(is));
     }
 
     /**
@@ -44,7 +44,7 @@ public class JblasNDArrayIO extends BaseNDArrayIO {
      */
     @Override
     public void write(INDArray out, OutputStream to) throws IOException {
-          NDArrays.write(out,new DataOutputStream(to));
+          Nd4j.write(out, new DataOutputStream(to));
     }
 
     /**
@@ -55,6 +55,6 @@ public class JblasNDArrayIO extends BaseNDArrayIO {
      */
     @Override
     public void writeComplex(IComplexNDArray out, OutputStream to) throws IOException {
-            NDArrays.writeComplex(out,new DataOutputStream(to));
+            Nd4j.writeComplex(out, new DataOutputStream(to));
     }
 }

@@ -2,7 +2,7 @@ package org.nd4j.linalg.ops.reduceops.complex;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  *
@@ -10,7 +10,7 @@ import org.nd4j.linalg.factory.NDArrays;
  */
 public class Max extends BaseScalarOp {
     public Max() {
-        super(NDArrays.createDouble(Double.MIN_VALUE,0));
+        super(Nd4j.createDouble(Double.MIN_VALUE, 0));
     }
 
     @Override

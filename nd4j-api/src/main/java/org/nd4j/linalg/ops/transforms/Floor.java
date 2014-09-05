@@ -2,7 +2,7 @@ package org.nd4j.linalg.ops.transforms;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.BaseElementWiseOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
@@ -22,7 +22,7 @@ public class Floor extends BaseElementWiseOp {
     public Object apply(INDArray from,Object value, int i) {
         if(value instanceof IComplexNumber) {
             IComplexNumber c = (IComplexNumber) value;
-            return NDArrays.scalar(ComplexUtil.floor(c));
+            return Nd4j.scalar(ComplexUtil.floor(c));
         }
         float val = (float) value;
         return (float) Math.floor(val);

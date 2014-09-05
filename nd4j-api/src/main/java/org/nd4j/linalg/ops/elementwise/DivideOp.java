@@ -3,7 +3,7 @@ package org.nd4j.linalg.ops.elementwise;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.BaseTwoArrayElementWiseOp;
 
 /**
@@ -21,7 +21,7 @@ public class DivideOp extends BaseTwoArrayElementWiseOp {
 
     @Override
     protected IComplexNumber realComplex(float real, IComplexNumber other) {
-        return NDArrays.createDouble(real / other.asFloat().realComponent(),other.asFloat().imaginaryComponent());
+        return Nd4j.createDouble(real / other.asFloat().realComponent(), other.asFloat().imaginaryComponent());
     }
 
     @Override

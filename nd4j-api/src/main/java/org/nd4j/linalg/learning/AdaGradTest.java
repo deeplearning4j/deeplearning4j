@@ -2,7 +2,7 @@ package org.nd4j.linalg.learning;
 
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +19,7 @@ public class AdaGradTest {
 		
 		
 		AdaGrad grad = new AdaGrad(rows,cols,1e-3);
-		INDArray W = NDArrays.ones(rows,cols);
+		INDArray W = Nd4j.ones(rows, cols);
 	
 		log.info("Learning rates for 1 " + grad.getLearningRates(W));
 		
@@ -34,7 +34,7 @@ public class AdaGradTest {
 		
 		
 		AdaGrad grad = new AdaGrad(rows,cols,0.1);
-		INDArray W = NDArrays.zeros(rows, cols);
+		INDArray W = Nd4j.zeros(rows, cols);
 
 	}
 }

@@ -4,7 +4,7 @@ package org.nd4j.linalg.api.activation;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.ElementWiseOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
@@ -53,9 +53,9 @@ public class HardTanh extends BaseActivationFunction {
                 else if(val.realComponent().doubleValue() > 1)
                     val.set(1,val.imaginaryComponent().doubleValue());
                 else
-                    val = NDArrays.createDouble(1,0).subi(ComplexUtil.pow(ComplexUtil.tanh(val), 2));
+                    val = Nd4j.createDouble(1, 0).subi(ComplexUtil.pow(ComplexUtil.tanh(val), 2));
 
-                input.put(i, NDArrays.scalar(val));
+                input.put(i, Nd4j.scalar(val));
             }
         }
         else {
@@ -68,7 +68,7 @@ public class HardTanh extends BaseActivationFunction {
                     val = 1;
                 else
                     val = 1 - Math.pow(Math.tanh(val),2);
-                input.put(i, NDArrays.scalar(val));
+                input.put(i, Nd4j.scalar(val));
             }
         }
 

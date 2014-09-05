@@ -5,7 +5,7 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.MathUtils;
 
 /**
@@ -50,7 +50,7 @@ public class Sampling {
      * with numbers between 0 and 1
      */
     public static INDArray  normal(RandomGenerator rng, INDArray mean, double sigma) {
-        INDArray modify = NDArrays.create(mean.shape());
+        INDArray modify = Nd4j.create(mean.shape());
         INDArray iter = mean.linearView();
         INDArray linearModify = modify.linearView();
 

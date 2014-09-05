@@ -2,7 +2,7 @@ package org.nd4j.linalg.fft;
 
 import com.google.common.base.Function;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
 
 /**
@@ -30,7 +30,7 @@ public class VectorIFFT implements Function<IComplexNDArray,IComplexNDArray> {
     @Override
     public IComplexNDArray apply(IComplexNDArray ndArray) {
         //ifft(x) = conj(fft(conj(x)) / length(x)
-        IComplexNDArray ret = new VectorFFT(n).apply(ndArray.conj()).conj().divi(NDArrays.scalar(n));
+        IComplexNDArray ret = new VectorFFT(n).apply(ndArray.conj()).conj().divi(Nd4j.scalar(n));
         return originalN > 0 ? ComplexNDArrayUtil.truncate(ret, originalN, 0) : ret;
 
     }

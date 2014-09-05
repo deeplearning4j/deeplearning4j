@@ -3,7 +3,7 @@ package org.nd4j.linalg.ops.transforms;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.BaseElementWiseOp;
 
 /**
@@ -26,7 +26,7 @@ public class LessThan extends BaseElementWiseOp {
         float otherValue = (float) (value instanceof IComplexNDArray ? ((IComplexNumber) value).absoluteValue() : (float) value);
         if(originValue < otherValue) {
             if(value instanceof IComplexNumber)
-                return NDArrays.createDouble(1, 0);
+                return Nd4j.createDouble(1, 0);
 
             else
                 return 1;
@@ -35,7 +35,7 @@ public class LessThan extends BaseElementWiseOp {
         }
         else {
             if(value instanceof IComplexNDArray)
-                return NDArrays.createDouble(0,0);
+                return Nd4j.createDouble(0, 0);
 
             else
                 return 0;

@@ -3,11 +3,10 @@ package org.nd4j.linalg.jblas;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.jblas.ComplexDouble;
 import org.jblas.ComplexDoubleMatrix;
 import org.jblas.DoubleMatrix;
-import org.junit.Before;
 import org.junit.Test;
 
 import org.slf4j.Logger;
@@ -30,8 +29,8 @@ public class ComplexNDArrayTests extends org.nd4j.linalg.api.test.ComplexNDArray
         DoubleMatrix linspace = DoubleMatrix.linspace(1,10,10);
         ComplexDoubleMatrix c = new ComplexDoubleMatrix(linspace);
 
-        INDArray linspace2 = NDArrays.linspace(1,10,10).transpose();
-        IComplexNDArray c2 = NDArrays.createComplex(linspace2);
+        INDArray linspace2 = Nd4j.linspace(1, 10, 10).transpose();
+        IComplexNDArray c2 = Nd4j.createComplex(linspace2);
 
         assertEquals(c.rows,c2.rows());
         assertEquals(c.columns,c2.columns());
@@ -62,40 +61,40 @@ public class ComplexNDArrayTests extends org.nd4j.linalg.api.test.ComplexNDArray
 
     @Test
     public void testReshapeCompatibility() {
-        NDArrays.factory().setOrder('f');
+        Nd4j.factory().setOrder('f');
         DoubleMatrix oneThroughFourJblas = DoubleMatrix.linspace(1,4,4).reshape(2,2);
         DoubleMatrix fiveThroughEightJblas = DoubleMatrix.linspace(5,8,4).reshape(2,2);
-        INDArray oneThroughFour = NDArrays.linspace(1,4,4).reshape(2,2);
-        INDArray fiveThroughEight = NDArrays.linspace(5,8,4).reshape(2,2);
+        INDArray oneThroughFour = Nd4j.linspace(1, 4, 4).reshape(2,2);
+        INDArray fiveThroughEight = Nd4j.linspace(5, 8, 4).reshape(2,2);
         verifyElements(oneThroughFourJblas,oneThroughFour);
         verifyElements(fiveThroughEightJblas,fiveThroughEight);
 
         ComplexDoubleMatrix complexOneThroughForJblas = new ComplexDoubleMatrix(oneThroughFourJblas);
         ComplexDoubleMatrix complexFiveThroughEightJblas = new ComplexDoubleMatrix(fiveThroughEightJblas);
 
-        IComplexNDArray complexOneThroughFour = NDArrays.createComplex(oneThroughFour);
-        IComplexNDArray complexFiveThroughEight = NDArrays.createComplex(fiveThroughEight);
+        IComplexNDArray complexOneThroughFour = Nd4j.createComplex(oneThroughFour);
+        IComplexNDArray complexFiveThroughEight = Nd4j.createComplex(fiveThroughEight);
         verifyElements(complexOneThroughForJblas,complexOneThroughFour);
         verifyElements(complexFiveThroughEightJblas,complexFiveThroughEight);
 
-        NDArrays.factory().setOrder('c');
+        Nd4j.factory().setOrder('c');
 
     }
 
 
     @Test
     public void testTwoByTwoMmul() {
-        NDArrays.factory().setOrder('f');
+        Nd4j.factory().setOrder('f');
         ComplexDoubleMatrix oneThroughForJblas = new ComplexDoubleMatrix(DoubleMatrix.linspace(1,4,4).reshape(2,2));
         ComplexDoubleMatrix fiveThroughEightJblas = new ComplexDoubleMatrix(DoubleMatrix.linspace(5,8,4).reshape(2,2));
         ComplexDoubleMatrix jBlasResult = oneThroughForJblas.mmul(fiveThroughEightJblas);
 
 
-        INDArray plainOneThroughFour = NDArrays.linspace(1,4,4).reshape(2,2);
-        INDArray plainFiveThroughEight = NDArrays.linspace(5,8,4).reshape(2,2);
+        INDArray plainOneThroughFour = Nd4j.linspace(1, 4, 4).reshape(2,2);
+        INDArray plainFiveThroughEight = Nd4j.linspace(5, 8, 4).reshape(2,2);
 
-        IComplexNDArray oneThroughFour = NDArrays.createComplex(plainOneThroughFour);
-        IComplexNDArray fiveThroughEight = NDArrays.createComplex(plainFiveThroughEight);
+        IComplexNDArray oneThroughFour = Nd4j.createComplex(plainOneThroughFour);
+        IComplexNDArray fiveThroughEight = Nd4j.createComplex(plainFiveThroughEight);
         verifyElements(oneThroughForJblas,oneThroughFour);
         verifyElements(fiveThroughEightJblas,fiveThroughEight);
 

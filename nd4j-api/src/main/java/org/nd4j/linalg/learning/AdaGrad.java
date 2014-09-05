@@ -4,7 +4,7 @@ package org.nd4j.linalg.learning;
 import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 
@@ -74,11 +74,11 @@ public class AdaGrad implements Serializable {
     }
 
     protected void createHistoricalGradient() {
-        this.historicalGradient = NDArrays.create(shape);
+        this.historicalGradient = Nd4j.create(shape);
 
     }
     protected void createAdjustedGradient() {
-        this.adjustedGradient = NDArrays.create(shape);
+        this.adjustedGradient = Nd4j.create(shape);
     }
 
 
@@ -98,7 +98,7 @@ public class AdaGrad implements Serializable {
         this.gradient = gradient;
         INDArray squaredGradient = pow(this.gradient,2);
         if(this.historicalGradient == null || this.historicalGradient.length() != this.gradient.length())
-            this.historicalGradient = NDArrays.zeros(this.gradient.rows(), this.gradient.columns());
+            this.historicalGradient = Nd4j.zeros(this.gradient.rows(), this.gradient.columns());
         this.historicalGradient.addi(squaredGradient);
         numIterations++;
         INDArray sqrtGradient = sqrt(historicalGradient).addi(fudgeFactor);

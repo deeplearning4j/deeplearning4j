@@ -3,7 +3,7 @@ package org.nd4j.linalg.api.activation;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.ElementWiseOp;
 
 /**
@@ -45,10 +45,10 @@ public class Tanh extends BaseActivationFunction {
     public INDArray applyDerivative(INDArray input) {
         //1 - tanh^2 x
         if(input instanceof IComplexNDArray) {
-            return NDArrays.complexOnes(input.shape()).subi(input);
+            return Nd4j.complexOnes(input.shape()).subi(input);
         }
         else
-            return NDArrays.ones(input.shape()).subi(input);
+            return Nd4j.ones(input.shape()).subi(input);
     }
 
 

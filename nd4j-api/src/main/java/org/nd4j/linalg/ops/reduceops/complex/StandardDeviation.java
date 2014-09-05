@@ -2,7 +2,7 @@ package org.nd4j.linalg.ops.reduceops.complex;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 /**
@@ -12,13 +12,13 @@ import org.nd4j.linalg.util.ArrayUtil;
  */
 public class StandardDeviation extends BaseScalarOp {
     public StandardDeviation() {
-        super(NDArrays.createDouble(0,0));
+        super(Nd4j.createDouble(0, 0));
     }
 
     public IComplexNumber std(IComplexNDArray arr) {
         org.apache.commons.math3.stat.descriptive.moment.StandardDeviation dev = new org.apache.commons.math3.stat.descriptive.moment.StandardDeviation();
         double std = dev.evaluate(ArrayUtil.doubleCopyOf(arr.data()));
-        return NDArrays.createDouble(std,0);
+        return Nd4j.createDouble(std, 0);
     }
 
 
@@ -29,6 +29,6 @@ public class StandardDeviation extends BaseScalarOp {
 
     @Override
     public IComplexNumber accumulate(IComplexNDArray arr, int i, IComplexNumber soFar) {
-        return NDArrays.createDouble(0,0);
+        return Nd4j.createDouble(0, 0);
     }
 }

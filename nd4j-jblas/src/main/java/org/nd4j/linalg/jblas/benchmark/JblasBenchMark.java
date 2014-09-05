@@ -1,9 +1,8 @@
 package org.nd4j.linalg.jblas.benchmark;
 
-import org.apache.commons.lang3.time.StopWatch;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.benchmark.TimeOperations;
-import org.nd4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.factory.Nd4j;
 import org.jblas.DoubleMatrix;
 
 /**
@@ -14,7 +13,7 @@ public class JblasBenchMark {
 
 
     public static void main(String[] args) {
-        INDArray n = NDArrays.linspace(1, 100000, 100000).reshape(50000, 2);
+        INDArray n = Nd4j.linspace(1, 100000, 100000).reshape(50000, 2);
         TimeOperations ops = new TimeOperations(n,1000);
         ops.run();
 
