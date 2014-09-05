@@ -36,9 +36,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.mystic</groupId>
+            <groupId>org.nd4j</groupId>
             <artifactId>mavenized-jcuda</artifactId>
-            <version>0.1</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -79,6 +79,17 @@
 
     </dependencies>
 
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>sonatype-nexus-snapshots</id>
+            <name>Sonatype Nexus snapshot repository</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+
+    </distributionManagement>
+
+
     <repositories>
         <repository>
             <id>internal.repo</id>
@@ -91,14 +102,6 @@
             <url>file:${project.basedir}/repo</url>
         </repository>
 
-        <repository>
-            <id>mavenized-jcuda-mvn-repo</id>
-            <url>https://raw.github.com/emmjaykay/mavenized-jcuda/repo/</url>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </snapshots>
-        </repository>
 
     </repositories>
 
