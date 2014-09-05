@@ -2,6 +2,7 @@ package org.deeplearning4j.linalg.jblas;
 
 
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrayFactory;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.jblas.DoubleMatrix;
@@ -214,7 +215,35 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
 
 
     }
+    @Test
+    public void testRowVectorOps() {
+        if(NDArrays.factory().order() ==  NDArrayFactory.C) {
+            INDArray twoByTwo = NDArrays.create(new float[]{1,3,2,4},new int[]{2,2});
+            INDArray toAdd = NDArrays.create(new float[]{1,2},new int[]{2});
+            twoByTwo.addiRowVector(toAdd);
+            INDArray assertion = NDArrays.create(new float[]{2,3,5,6},new int[]{2,2});
+            assertEquals(assertion,twoByTwo);
 
+        }
+
+
+
+    }
+
+    @Test
+    public void testColumnVectorOps() {
+        if(NDArrays.factory().order() == NDArrayFactory.C) {
+            INDArray twoByTwo = NDArrays.create(new float[]{1,2,3,4},new int[]{2,2});
+            INDArray toAdd = NDArrays.create(new float[]{1,2},new int[]{2,1});
+            twoByTwo.addiColumnVector(toAdd);
+            INDArray assertion = NDArrays.create(new float[]{2,3,5,6},new int[]{2,2});
+            assertEquals(assertion,twoByTwo);
+
+
+        }
+
+
+    }
 
     @Test
     public void testReshapeCompatibility() {

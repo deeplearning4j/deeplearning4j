@@ -320,9 +320,9 @@ public class JCublasNDArray extends BaseNDArray {
                         length,
                         Sizeof.FLOAT,
                         dataPointer,
-                        stride[0],
+                       1,
                         pointer,
-                        stride[0]);
+                        1);
         }
         else {
 

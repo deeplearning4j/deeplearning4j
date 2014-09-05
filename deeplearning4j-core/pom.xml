@@ -105,7 +105,7 @@
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>linear-algebra-jblas</artifactId>
+            <artifactId>linear-algebra-jcublas</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
