@@ -36,7 +36,7 @@ layout: default
 
 These tools will generate the visualizations that allow you to debug your neural nets as they train. (The visualizations occasionally generate a list of errors on Macs -- that does not stop the nets from training.)
 
-* Next, download [DL4J examples here](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/). Just click on the latest tar.gz or .zip file somewhere near the top of the list. It will look something like this:
+* Next, download [DL4J examples here](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/). Just click on the latest [tar.gz](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/deeplearning4j-examples-0.0.3.2-20140811.044400-46-bin.tar.gz) or [.zip](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/deeplearning4j-examples-0.0.3.2-20140811.044400-46-bin.zip) file somewhere near the top of the list. It will look something like this:
 
 		WINDOWS
 		deeplearning4j-examples-0.0.3.2-20140811.044400-46-bin.zip
