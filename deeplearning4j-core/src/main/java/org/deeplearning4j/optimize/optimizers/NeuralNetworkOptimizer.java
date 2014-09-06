@@ -41,13 +41,11 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     protected float tolerance = 0.00001f;
     protected static Logger log = LoggerFactory.getLogger(NeuralNetworkOptimizer.class);
     protected List<Double> errors = new ArrayList<>();
-    protected float minLearningRate = 0.001f;
     protected transient OptimizerMatrix opt;
     protected OptimizationAlgorithm optimizationAlgorithm;
     protected LossFunctions.LossFunction lossFunction;
     protected  NeuralNetPlotter plotter = new NeuralNetPlotter();
     protected float maxStep = -1;
-    protected int numParams = -1;
     protected int currIteration = -1;
     /**
      *
@@ -188,25 +186,6 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
         }
 
         this.currIteration = value;
-    }
-
-    public  float getTolerance() {
-        return tolerance;
-    }
-    public  void setTolerance(float tolerance) {
-        this.tolerance = tolerance;
-    }
-
-    public float getMaxStep() {
-        return maxStep;
-    }
-
-    public void setMaxStep(float maxStep) {
-        this.maxStep = maxStep;
-    }
-
-    public int getCurrIteration() {
-        return currIteration;
     }
 
 
