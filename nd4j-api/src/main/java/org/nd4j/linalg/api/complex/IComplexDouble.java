@@ -14,5 +14,7 @@ public interface IComplexDouble extends IComplexNumber {
 
     IComplexDouble divi(double v);
 
-    IComplexDouble div(double v);
+    IComplexNumber div(double v);
+
+
 }

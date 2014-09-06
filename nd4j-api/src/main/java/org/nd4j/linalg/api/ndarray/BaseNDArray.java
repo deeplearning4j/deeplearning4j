@@ -1,6 +1,8 @@
 package org.nd4j.linalg.api.ndarray;
 
 
+import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.Indices;
@@ -3601,6 +3603,133 @@ public abstract class BaseNDArray  implements INDArray {
 
 
 
+    @Override
+    public IComplexNDArray rdiv(IComplexNumber n) {
+        return dup().rdivi(n);
+    }
 
+    @Override
+    public IComplexNDArray rdivi(IComplexNumber n) {
+        return rdivi(n, Nd4j.createComplex(shape()));
 
+    }
+
+    @Override
+    public IComplexNDArray rsub(IComplexNumber n) {
+        return dup().rsubi(n);
+    }
+
+    @Override
+    public IComplexNDArray rsubi(IComplexNumber n) {
+        return rsubi(n, Nd4j.createComplex(shape()));
+
+    }
+
+    @Override
+    public IComplexNDArray div(IComplexNumber n) {
+        return dup().divi(n);
+    }
+
+    @Override
+    public IComplexNDArray divi(IComplexNumber n) {
+        return divi(n, Nd4j.createComplex(shape()));
+
+    }
+
+    @Override
+    public IComplexNDArray mul(IComplexNumber n) {
+        return dup().muli(n);
+    }
+
+    @Override
+    public IComplexNDArray muli(IComplexNumber n) {
+        return muli(n, Nd4j.createComplex(shape()));
+
+    }
+
+    @Override
+    public IComplexNDArray sub(IComplexNumber n) {
+        return dup().subi(n);
+    }
+
+    @Override
+    public IComplexNDArray subi(IComplexNumber n) {
+        return subi(n,Nd4j.createComplex(shape()));
+    }
+
+    @Override
+    public IComplexNDArray add(IComplexNumber n) {
+        return dup().addi(n);
+    }
+
+    @Override
+    public IComplexNDArray addi(IComplexNumber n) {
+        return addi(n, Nd4j.createComplex(shape()));
+
+    }
+
+    @Override
+    public IComplexNDArray rdiv(IComplexNumber n, IComplexNDArray result) {
+        return dup().rdivi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray rdivi(IComplexNumber n, IComplexNDArray result) {
+        return Nd4j.createComplex(this).rdivi(n,result);
+
+    }
+
+    @Override
+    public IComplexNDArray rsub(IComplexNumber n, IComplexNDArray result) {
+        return dup().rsubi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result) {
+        return Nd4j.createComplex(this).rsubi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray div(IComplexNumber n, IComplexNDArray result) {
+        return dup().divi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray divi(IComplexNumber n, IComplexNDArray result) {
+        return Nd4j.createComplex(this).divi(n,result);
+
+    }
+
+    @Override
+    public IComplexNDArray mul(IComplexNumber n, IComplexNDArray result) {
+        return dup().muli(n,result);
+    }
+
+    @Override
+    public IComplexNDArray muli(IComplexNumber n, IComplexNDArray result) {
+        return Nd4j.createComplex(this).muli(n,result);
+
+    }
+
+    @Override
+    public IComplexNDArray sub(IComplexNumber n, IComplexNDArray result) {
+        return dup().subi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray subi(IComplexNumber n, IComplexNDArray result) {
+        return Nd4j.createComplex(this).subi(n,result);
+
+    }
+
+    @Override
+    public IComplexNDArray add(IComplexNumber n, IComplexNDArray result) {
+        return dup().addi(n,result);
+    }
+
+    @Override
+    public IComplexNDArray addi(IComplexNumber n, IComplexNDArray result) {
+        return Nd4j.createComplex(this).addi(n,result);
+
+    }
 }

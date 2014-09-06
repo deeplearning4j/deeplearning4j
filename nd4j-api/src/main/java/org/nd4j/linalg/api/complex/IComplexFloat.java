@@ -8,7 +8,7 @@ package org.nd4j.linalg.api.complex;
 public interface IComplexFloat extends IComplexNumber {
     IComplexFloat divi(float v);
 
-    IComplexFloat div(float v);
+    IComplexNumber div(float v);
 
     @Override
     Float complexArgument();

@@ -2665,6 +2665,83 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     }
 
+    @Override
+    public IComplexNDArray addi(IComplexNumber n, IComplexNDArray result) {
+        IComplexNDArray linear = linearView();
+        IComplexNDArray cResult =  result.linearView();
+        for(int i = 0; i < length(); i++) {
+            cResult.putScalar(i,linear.getComplex(i).addi(n));
+        }
+
+        return  result;
+
+    }
+
+
+    @Override
+    public IComplexNDArray subi(IComplexNumber n, IComplexNDArray result) {
+        IComplexNDArray linear = linearView();
+        IComplexNDArray cResult = result.linearView();
+        for(int i = 0; i < length(); i++) {
+            cResult.putScalar(i,linear.getComplex(i).subi(n));
+        }
+
+        return  result;
+
+    }
+
+
+    @Override
+    public IComplexNDArray muli(IComplexNumber n, IComplexNDArray result) {
+        IComplexNDArray linear = linearView();
+        IComplexNDArray cResult = result.linearView();
+        for(int i = 0; i < length(); i++) {
+            cResult.putScalar(i,linear.getComplex(i).muli(n));
+        }
+
+        return  result;
+
+    }
+
+
+
+    @Override
+    public IComplexNDArray divi(IComplexNumber n, IComplexNDArray result) {
+        IComplexNDArray linear = linearView();
+        IComplexNDArray cResult = result.linearView();
+        for(int i = 0; i < length(); i++) {
+            cResult.putScalar(i,linear.getComplex(i).divi(n));
+        }
+
+        return result;
+
+    }
+
+
+    @Override
+    public IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result) {
+        IComplexNDArray linear = linearView();
+        IComplexNDArray cResult = result.linearView();
+        for(int i = 0; i < length(); i++) {
+            cResult.putScalar(i,n.sub(linear.getComplex(i)));
+        }
+
+        return  result;
+
+    }
+
+    @Override
+    public IComplexNDArray rdivi(IComplexNumber n, IComplexNDArray result) {
+        IComplexNDArray linear = linearView();
+        IComplexNDArray cResult = result.linearView();
+        for(int i = 0; i < length(); i++) {
+            cResult.putScalar(i,n.div(linear.getComplex(i)));
+        }
+
+        return  result;
+
+    }
+
     /**
      * Reshape the ndarray in to the specified dimensions,
      * possible errors being thrown for invalid shapes

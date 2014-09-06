@@ -264,7 +264,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray arange(double begin, double end) {
-        return Nd4j.create(ArrayUtil.toDoubles(ArrayUtil.range((int) begin, (int) end))).transpose();
+        return Nd4j.create(ArrayUtil.toDoubles(ArrayUtil.range((int) begin, (int) end)));
     }
 
 

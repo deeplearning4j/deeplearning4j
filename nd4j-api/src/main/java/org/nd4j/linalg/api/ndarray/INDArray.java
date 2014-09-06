@@ -1,5 +1,7 @@
 package org.nd4j.linalg.api.ndarray;
 
+import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.reduceops.Ops;
 
@@ -57,42 +59,139 @@ public interface INDArray extends Serializable {
      */
     public INDArray assign(INDArray arr);
 
+    /**
+     * Insert the number linearly in to the ndarray
+     * @param i the index to insert into
+     * @param value the value to insert
+     * @return this
+     */
     public INDArray putScalar(int i,Number value);
 
+    /**
+     * Insert the item at the specified indices
+     * @param i the indices to insert at
+     * @param value the number to insert
+     * @return this
+     */
     public INDArray putScalar(int[] i,Number value);
 
+    /**
+     * Returns an ndarray with 1 if the element is less than
+     * the given element 0 other wise
+     * @param other the number to compare
+     * @return a copied ndarray with the given
+     * binary conditions
+     */
     public INDArray lt(Number other);
 
+    /**
+     * In place less than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     * @param other the number to compare
+     * @return
+     */
     public INDArray lti(Number other);
-
+    /**
+     * Returns an ndarray with 1 if the element is less than
+     * the given element 0 other wise
+     * @param other the number to compare
+     * @return a copied ndarray with the given
+     * binary conditions
+     */
     public INDArray eq(Number other);
-
+    /**
+     * In place less than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     * @param other the number to compare
+     * @return
+     */
     public INDArray eqi(Number other);
 
     public INDArray gt(Number other);
-
+    /**
+     * In place greater than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     * @param other the number to compare
+     * @return
+     */
     public INDArray gti(Number other);
 
-
+    /**
+     *  less than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     * @param other the number to compare
+     * @return the result ndarray
+     */
 
     public INDArray lt(INDArray other);
 
+    /**
+     * In place less than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     * @param other the number to compare
+     * @return
+     */
     public INDArray lti(INDArray other);
 
+
+    /**
+     *  equal than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     * @param other the number to compare
+     * @return
+     */
     public INDArray eq(INDArray other);
-
+    /**
+     * In place equal than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     * @param other the number to compare
+     * @return
+     */
     public INDArray eqi(INDArray other);
-
+    /**
+     * greater than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     * @param other the number to compare
+     * @return
+     */
     public INDArray gt(INDArray other);
-
+    /**
+     * In place greater than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     * @param other the number to compare
+     * @return
+     */
     public INDArray gti(INDArray other);
 
+
+    /**
+     * Returns the ndarray negative (cloned)
+     * @return
+     */
     public INDArray neg();
 
+    /**
+     * In place setting of the negative version of this ndarray
+     * @return
+     */
     public INDArray negi();
 
     public INDArray rdiv(Number n);
 
+    /**
+     * In place reverse divison
+     * @param n
+     * @return
+     */
     public INDArray rdivi(Number n);
 
     public INDArray rsub(Number n);
@@ -102,20 +201,39 @@ public interface INDArray extends Serializable {
 
     public INDArray div(Number n);
 
+    /**
+     * In place scalar division
+     * @param n
+     * @return
+     */
     public INDArray divi(Number n);
 
 
     public INDArray mul(Number n);
 
+    /**
+     * In place scalar multiplication
+     * @param n
+     * @return
+     */
     public INDArray muli(Number n);
 
 
     public INDArray sub(Number n);
-
+    /**
+     * In place scalar subtraction
+     * @param n
+     * @return
+     */
     public INDArray subi(Number n);
 
     public INDArray add(Number n);
 
+    /**
+     * In place scalar addition
+     * @param n
+     * @return
+     */
     public INDArray addi(Number n);
 
 
@@ -124,29 +242,67 @@ public interface INDArray extends Serializable {
 
     public INDArray rdiv(Number n,INDArray result);
 
+
+    /**
+     * Reverse in place division
+     * @param n the number to divide by  by
+     * @param result the result ndarray
+     * @return the result ndarray
+     */
     public INDArray rdivi(Number n,INDArray result);
 
     public INDArray rsub(Number n,INDArray result);
 
+    /**
+     * Reverse in place subtraction
+     * @param n the number to subtract by
+     * @param result the result ndarray
+     * @return the result ndarray
+     */
     public INDArray rsubi(Number n,INDArray result);
 
 
     public INDArray div(Number n,INDArray result);
 
+    /**
+     * In place division of this ndarray
+     * @param n the number to divide by
+     * @param result the result ndarray
+     * @return
+     */
     public INDArray divi(Number n,INDArray result);
 
 
     public INDArray mul(Number n,INDArray result);
 
+
+    /**
+     * In place multiplication of this ndarray
+     * @param n the number to divide by
+     * @param result the result ndarray
+     * @return
+     */
     public INDArray muli(Number n,INDArray result);
 
 
     public INDArray sub(Number n,INDArray result);
 
+    /**
+     * In place subtraction of this ndarray
+     * @param n the number to subtract by
+     * @param result the result ndarray
+     * @return the result ndarray
+     */
     public INDArray subi(Number n,INDArray result);
 
     public INDArray add(Number n,INDArray result);
 
+    /**
+     * In place addition
+     * @param n the number to add
+     * @param result the result ndarray
+     * @return the result ndarray
+     */
     public INDArray addi(Number n,INDArray result);
 
 
@@ -361,6 +517,12 @@ public interface INDArray extends Serializable {
     public INDArray getScalar(int i);
 
 
+    /**
+     * Return the linear index of the specified row and column
+     * @param row the row to get the linear index for
+     * @param column the column to get the linear index for
+     * @return the linear index of the given row and column
+     */
     int index(int row, int column);
 
     /**
@@ -780,6 +942,13 @@ public interface INDArray extends Serializable {
 
     public void setStride(int[] stride);
 
+    /**
+     *
+     * @param offsets
+     * @param shape
+     * @param stride
+     * @return
+     */
     public INDArray subArray(int[] offsets, int[] shape,int[] stride);
 
     /**
@@ -790,9 +959,20 @@ public interface INDArray extends Serializable {
     public INDArray get(int[] indices);
 
 
-
+    /**
+     * Return the item at the linear index i
+     * @param i the index of the item to get
+     * @return the item at index j
+     */
     public float get(int i);
 
+    /**
+     * Return the item at row i column j
+     * Note that this is the same as calling get(new int[]{i,j}
+     * @param i the row to get
+     * @param j the column to get
+     * @return the item at row i column j
+     */
     public float get(int i,int j);
 
 
@@ -1008,6 +1188,68 @@ public interface INDArray extends Serializable {
      */
     public float[] floatData();
 
+
+
+
+
+
+    public IComplexNDArray rdiv(IComplexNumber n);
+
+    public IComplexNDArray rdivi(IComplexNumber n);
+
+    public IComplexNDArray rsub(IComplexNumber n);
+
+    public IComplexNDArray rsubi(IComplexNumber n);
+
+
+    public IComplexNDArray div(IComplexNumber n);
+
+    public IComplexNDArray divi(IComplexNumber n);
+
+
+    public IComplexNDArray mul(IComplexNumber n);
+
+    public IComplexNDArray muli(IComplexNumber n);
+
+
+    public IComplexNDArray sub(IComplexNumber n);
+
+    public IComplexNDArray subi(IComplexNumber n);
+
+    public IComplexNDArray add(IComplexNumber n);
+
+    public IComplexNDArray addi(IComplexNumber n);
+
+
+
+
+
+    public IComplexNDArray rdiv(IComplexNumber n,IComplexNDArray result);
+
+    public IComplexNDArray rdivi(IComplexNumber n,IComplexNDArray result);
+
+    public IComplexNDArray rsub(IComplexNumber n,IComplexNDArray result);
+
+    public IComplexNDArray rsubi(IComplexNumber n,IComplexNDArray result);
+
+
+    public IComplexNDArray div(IComplexNumber n,IComplexNDArray result);
+
+    public IComplexNDArray divi(IComplexNumber n,IComplexNDArray result);
+
+
+    public IComplexNDArray mul(IComplexNumber n,IComplexNDArray result);
+
+    public IComplexNDArray muli(IComplexNumber n,IComplexNDArray result);
+
+
+    public IComplexNDArray sub(IComplexNumber n,IComplexNDArray result);
+
+    public IComplexNDArray subi(IComplexNumber n,IComplexNDArray result);
+
+    public IComplexNDArray add(IComplexNumber n,IComplexNDArray result);
+
+    public IComplexNDArray addi(IComplexNumber n,IComplexNDArray result);
 
 
 

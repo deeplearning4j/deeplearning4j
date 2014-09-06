@@ -141,9 +141,9 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     @Override
     public IComplexNumber addi(Number a, IComplexNumber result) {
         if (this == result) {
-            set(real() + a.doubleValue(),imag());
+            set(real() + a.doubleValue(),imag() + a.doubleValue());
         } else {
-            result.set(result.realComponent().doubleValue() + a.doubleValue(),imaginaryComponent());
+            result.set(result.realComponent().doubleValue() + a.doubleValue(),result.imaginaryComponent().doubleValue() + a.doubleValue());
 
         }
         return result;
@@ -204,9 +204,9 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     @Override
     public IComplexNumber subi(Number a, IComplexNumber result) {
         if (this == result) {
-            set(real() - a.doubleValue(),imag());
+            set(real() - a.doubleValue(),imag() - a.doubleValue());
         } else {
-            result.set(result.realComponent().doubleValue() - a.doubleValue(),imaginaryComponent());
+            result.set(result.realComponent().doubleValue() - a.doubleValue(),imaginaryComponent().doubleValue() - a.doubleValue());
 
         }
         return result;
@@ -259,9 +259,9 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     @Override
     public IComplexNumber muli(Number v, IComplexNumber result) {
         if (this == result) {
-            set(real() * v.doubleValue(),imag());
+            set(real() * v.doubleValue(),imag() * v.doubleValue());
         } else {
-            result.set(result.realComponent().doubleValue() + v.doubleValue(),imaginaryComponent());
+            result.set(result.realComponent().doubleValue() * v.doubleValue(),imaginaryComponent() * v.doubleValue());
 
         }
         return result;

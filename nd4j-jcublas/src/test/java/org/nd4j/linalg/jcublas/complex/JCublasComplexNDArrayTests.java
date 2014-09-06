@@ -1,4 +1,4 @@
-package org.nd4j.linalg.jcublas;
+package org.nd4j.linalg.jcublas.complex;
 
 
 import org.slf4j.Logger;

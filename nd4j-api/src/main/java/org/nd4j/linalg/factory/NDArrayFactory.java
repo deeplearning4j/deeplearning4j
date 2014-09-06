@@ -118,6 +118,7 @@ public interface NDArrayFactory  {
 
     /**
      *  Array of evenly spaced values.
+     *  Returns a row vector
      * @param begin the begin of the range
      * @param end the end of the range
      * @return the range vector

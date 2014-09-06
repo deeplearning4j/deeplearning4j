@@ -132,6 +132,42 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray negi();
 
 
+    @Override
+    IComplexNDArray addi(IComplexNumber n, IComplexNDArray result);
+
+    @Override
+    IComplexNDArray add(IComplexNumber n, IComplexNDArray result);
+
+    @Override
+    IComplexNDArray subi(IComplexNumber n, IComplexNDArray result);
+
+    @Override
+    IComplexNDArray sub(IComplexNumber n, IComplexNDArray result);
+
+    @Override
+    IComplexNDArray muli(IComplexNumber n, IComplexNDArray result);
+
+    @Override
+    IComplexNDArray mul(IComplexNumber n, IComplexNDArray result);
+
+    @Override
+    IComplexNDArray divi(IComplexNumber n, IComplexNDArray result);
+
+    @Override
+    IComplexNDArray div(IComplexNumber n, IComplexNDArray result);
+
+    @Override
+    IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result);
+
+    @Override
+    IComplexNDArray rsub(IComplexNumber n, IComplexNDArray result);
+
+    @Override
+    IComplexNDArray rdivi(IComplexNumber n, IComplexNDArray result);
+
+    @Override
+    IComplexNDArray rdiv(IComplexNumber n, IComplexNDArray result);
+
     IComplexNDArray rdiv(IComplexNumber n, INDArray result);
 
 

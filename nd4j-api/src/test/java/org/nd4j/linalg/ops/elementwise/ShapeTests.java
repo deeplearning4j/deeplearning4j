@@ -1,4 +1,4 @@
-package org.nd4j.linalg.ops.elementwise.org.deeplearning4j.linalg.util;
+package org.nd4j.linalg.ops.elementwise;
 
 import org.nd4j.linalg.util.Shape;
 import org.junit.Test;

@@ -1,5 +1,7 @@
 package org.nd4j.linalg.ops.elementwise;
 
+import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -1530,6 +1532,126 @@ public class DummyNDArray implements INDArray {
     @Override
     public float[] floatData() {
         return new float[0];
+    }
+
+    @Override
+    public IComplexNDArray rdiv(IComplexNumber n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray rdivi(IComplexNumber n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray rsub(IComplexNumber n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray rsubi(IComplexNumber n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray div(IComplexNumber n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray divi(IComplexNumber n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray mul(IComplexNumber n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray muli(IComplexNumber n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray sub(IComplexNumber n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray subi(IComplexNumber n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray add(IComplexNumber n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray addi(IComplexNumber n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray rdiv(IComplexNumber n, IComplexNDArray result) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray rdivi(IComplexNumber n, IComplexNDArray result) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray rsub(IComplexNumber n, IComplexNDArray result) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray div(IComplexNumber n, IComplexNDArray result) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray divi(IComplexNumber n, IComplexNDArray result) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray mul(IComplexNumber n, IComplexNDArray result) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray muli(IComplexNumber n, IComplexNDArray result) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray sub(IComplexNumber n, IComplexNDArray result) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray subi(IComplexNumber n, IComplexNDArray result) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray add(IComplexNumber n, IComplexNDArray result) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray addi(IComplexNumber n, IComplexNDArray result) {
+        return null;
     }
 
     @Override

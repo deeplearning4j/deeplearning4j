@@ -1,4 +1,4 @@
-package org.nd4j.linalg.jblas;
+package org.nd4j.linalg.jblas.complex;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
