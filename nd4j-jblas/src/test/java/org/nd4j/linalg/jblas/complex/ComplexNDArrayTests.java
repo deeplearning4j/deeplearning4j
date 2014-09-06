@@ -24,6 +24,35 @@ public class ComplexNDArrayTests extends org.nd4j.linalg.api.test.ComplexNDArray
 
     private static Logger log = LoggerFactory.getLogger(ComplexNDArrayTests.class);
 
+
+    @Test
+    public void testPut() {
+        Nd4j.factory().setOrder('f');
+        ComplexDoubleMatrix c = new ComplexDoubleMatrix(2,2,new double[]{1,0,2,0,3,0,4,0});
+        IComplexNDArray c2 = Nd4j.createComplex(new float[]{1,0,2,0,3,0,4,0},new int[]{2,2});
+        verifyElements(c,c2);
+
+        c.put(1,1,new ComplexDouble(4,6));
+        c2.putScalar(1,1,Nd4j.createDouble(4,6));
+        verifyElements(c,c2);
+
+
+    }
+
+    @Test
+    public void testComplexMult() {
+        INDArray ones = Nd4j.ones(10);
+        IComplexNDArray complex = Nd4j.complexOnes(10);
+        assertEquals(ones.mul(Nd4j.createDouble(1,0)),complex);
+        INDArray fives = Nd4j.valueArrayOf(new int[]{10},5);
+        IComplexNDArray ten = Nd4j.complexValueOf(10,10);
+        IComplexNDArray tenTest = fives.muli(Nd4j.createDouble(2,0));
+        assertEquals(ten,tenTest);
+
+
+    }
+
+
     @Test
     public void testOrdering() {
         DoubleMatrix linspace = DoubleMatrix.linspace(1,10,10);

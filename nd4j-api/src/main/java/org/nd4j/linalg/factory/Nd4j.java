@@ -716,6 +716,22 @@ public class Nd4j {
     }
 
 
+    public static IComplexNDArray complexValueOf(int num,IComplexNumber value) {
+        return INSTANCE.complexValueOf(num,value);
+    }
+
+    public static IComplexNDArray complexValueOf(int[] shape,IComplexNumber value) {
+        return INSTANCE.complexValueOf(shape,value);
+    }
+
+    public static IComplexNDArray complexValueOf(int num,double value) {
+        return INSTANCE.complexValueOf(num,value);
+    }
+
+    public static IComplexNDArray complexValueOf(int[] shape,double value) {
+        return INSTANCE.complexValueOf(shape,value);
+    }
+
     /**
      * Creates an ndarray with the specified value
      * as the  only value in the ndarray
@@ -725,6 +741,18 @@ public class Nd4j {
      */
     public static INDArray valueArrayOf(int[] shape,double value) {
         return INSTANCE.valueArrayOf(shape,value);
+    }
+
+
+    /**
+     * Creates an ndarray with the specified value
+     * as the  only value in the ndarray
+     * @param num number of columns
+     * @param value the value to assign
+     * @return  the created ndarray
+     */
+    public static INDArray valueArrayOf(int num,double value) {
+        return INSTANCE.valueArrayOf(new int[]{1,num},value);
     }
 
 

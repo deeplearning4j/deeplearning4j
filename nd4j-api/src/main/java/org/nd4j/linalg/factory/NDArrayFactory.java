@@ -25,8 +25,41 @@ public interface NDArrayFactory  {
     public final static char C = 'c';
 
 
+    /**
+     * Creates an 1 x num ndarray with the specified value
+     * @param num the number of columns
+     * @param value the value to assign
+     * @return a complex ndarray of the specified size
+     * and value
+     */
+    public  IComplexNDArray complexValueOf(int num,IComplexNumber value);
 
+    /**
+     * Creates an shape ndarray with the specified value
+     * @param shape the shape of the ndarray
+     * @param value the value to assign
+     * @return a complex ndarray of the specified size
+     * and value
+     */
+    public  IComplexNDArray complexValueOf(int[] shape,IComplexNumber value);
 
+    /**
+     * Creates an 1 x num ndarray with the specified value
+     * @param num the number of columns
+     * @param value the value to assign
+     * @return a complex ndarray of the specified size
+     * and value
+     */
+    public  IComplexNDArray complexValueOf(int num,double value);
+
+    /**
+     * Creates an shape ndarray with the specified value
+     * @param shape the shape of the ndarray
+     * @param value the value to assign
+     * @return a complex ndarray of the specified size
+     * and value
+     */
+    public  IComplexNDArray complexValueOf(int[] shape,double value);
 
     /**
      * Sets the order. Primarily for testing purposes

@@ -187,23 +187,18 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
     protected void copyFromReal(INDArray real) {
-        for(int i = 0; i < vectorsAlongDimension(0); i++) {
-            INDArray vector = real.vectorAlongDimension(i,0);
-            IComplexNDArray complexVector = vectorAlongDimension(i,0);
-            for(int j = 0; j < complexVector.length(); j++) {
-                complexVector.putScalar(j, Nd4j.createDouble(vector.get(j), 0));
-            }
+        INDArray linear = real.linearView();
+        IComplexNDArray thisLinear = linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            thisLinear.putScalar(i, Nd4j.createComplexNumber(linear.get(i),0));
         }
-
     }
 
     protected void copyRealTo(INDArray arr) {
-        for(int i = 0; i < vectorsAlongDimension(0); i++) {
-            INDArray vector = arr.vectorAlongDimension(i,0);
-            IComplexNDArray complexVector = vectorAlongDimension(i,0);
-            for(int j = 0; j < complexVector.length(); j++) {
-                vector.putScalar(j,complexVector.getComplex(j).realComponent());
-            }
+        INDArray linear = arr.linearView();
+        IComplexNDArray thisLinear = linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            arr.putScalar(i, thisLinear.getReal(i));
         }
 
     }
@@ -1558,8 +1553,17 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray assign(IComplexNDArray arr) {
-        LinAlgExceptions.assertSameShape(this, arr);
-        System.arraycopy(arr.data(),arr.offset(),data(),offset(),arr.length());
+        if(!arr.isScalar())
+            LinAlgExceptions.assertSameShape(this, arr);
+        System.arraycopy(arr.data(), arr.offset(), data(), offset(), arr.length());
+
+
+        IComplexNDArray linear = linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            linear.putScalar(i,arr.getComplex(0));
+        }
+
+
         return this;
     }
     /**
@@ -2696,7 +2700,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         IComplexNDArray linear = linearView();
         IComplexNDArray cResult = result.linearView();
         for(int i = 0; i < length(); i++) {
-            cResult.putScalar(i,linear.getComplex(i).muli(n));
+            IComplexNumber n3 = linear.getComplex(i);
+            IComplexNumber num = n3.mul(n);
+            cResult.putScalar(i,linear.getComplex(i).mul(n));
         }
 
         return  result;
@@ -2710,7 +2716,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         IComplexNDArray linear = linearView();
         IComplexNDArray cResult = result.linearView();
         for(int i = 0; i < length(); i++) {
-            cResult.putScalar(i,linear.getComplex(i).divi(n));
+            cResult.putScalar(i,linear.getComplex(i).div(n));
         }
 
         return result;
@@ -3524,7 +3530,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                 float comp = n.getComplex(i).realComponent().floatValue();
                 float currImag = getComplex(i).imaginaryComponent().floatValue();
                 float compImag = n.getComplex(i).imaginaryComponent().floatValue();
-                if(Math.abs(curr - comp) > 1e-6 || Math.abs(currImag - compImag) > 1e-6)
+                if(Math.abs(curr - comp) > 1e-3 || Math.abs(currImag - compImag) > 1e-3)
                     return false;
             }
 

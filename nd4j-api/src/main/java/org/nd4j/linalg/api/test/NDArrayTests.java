@@ -92,6 +92,14 @@ public abstract class NDArrayTests {
 
     }
 
+    @Test
+    public void testSwapAxesFortranOrder() {
+        Nd4j.factory().setOrder('f');
+
+        INDArray n = Nd4j.create(Nd4j.linspace(1, 30, 30).data(),new int[]{3,5,2});
+
+    }
+
 
     @Test
     public void testGetIndicesVector() {

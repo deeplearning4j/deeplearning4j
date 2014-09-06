@@ -193,8 +193,8 @@ public abstract class BaseComplexDouble implements IComplexDouble {
      */
     @Override
     public IComplexNumber muli(IComplexNumber c, IComplexNumber result) {
-        double newR = realComponent() * c.realComponent().doubleValue() - imaginaryComponent() * c.imaginaryComponent().doubleValue();
-        double newI = realComponent() * c.imaginaryComponent().doubleValue() + imaginaryComponent() * c.realComponent().doubleValue();
+        double newR = real * c.realComponent().doubleValue() - imag * c.imaginaryComponent().doubleValue();
+        double newI = real * c.imaginaryComponent().doubleValue() + imag * c.realComponent().doubleValue();
         result.set(newR,newI);
         return result;
     }

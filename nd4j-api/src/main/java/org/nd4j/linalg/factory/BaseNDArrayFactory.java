@@ -650,6 +650,65 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return createComplex(new int[]{columns});
     }
 
+    /**
+     * Creates an shape ndarray with the specified value
+     *
+     * @param shape the shape of the ndarray
+     * @param value the value to assign
+     * @return a complex ndarray of the specified size
+     * and value
+     */
+    @Override
+    public IComplexNDArray complexValueOf(int[] shape, IComplexNumber value) {
+        IComplexNDArray ones = complexOnes(shape);
+        ones.assign(Nd4j.scalar(value));
+        return ones;
+    }
+
+    /**
+     * Creates an 1 x num ndarray with the specified value
+     *
+     * @param num   the number of columns
+     * @param value the value to assign
+     * @return a complex ndarray of the specified size
+     * and value
+     */
+    @Override
+    public IComplexNDArray complexValueOf(int num, double value) {
+        IComplexNDArray ones = complexOnes(num);
+        ones.assign(Nd4j.complexScalar(value));
+        return ones;
+    }
+
+    /**
+     * Creates an shape ndarray with the specified value
+     *
+     * @param shape the shape of the ndarray
+     * @param value the value to assign
+     * @return a complex ndarray of the specified size
+     * and value
+     */
+    @Override
+    public IComplexNDArray complexValueOf(int[] shape, double value) {
+        IComplexNDArray ones = complexOnes(shape);
+        ones.assign(Nd4j.scalar(value));
+        return ones;
+    }
+
+    /**
+     * Creates an 1 x num ndarray with the specified value
+     *
+     * @param num   the number of columns
+     * @param value the value to assign
+     * @return a complex ndarray of the specified size
+     * and value
+     */
+    @Override
+    public IComplexNDArray complexValueOf(int num, IComplexNumber value) {
+        IComplexNDArray ones = complexOnes(num);
+        ones.assign(Nd4j.scalar(value));
+        return ones;
+    }
 
     /**
      * Creates an ndarray with the specified value

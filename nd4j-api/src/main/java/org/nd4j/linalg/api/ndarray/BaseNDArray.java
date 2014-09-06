@@ -3450,26 +3450,17 @@ public abstract class BaseNDArray  implements INDArray {
 
         int[] newShape = doPermuteSwap(shape,rearrange);
         int[] newStride = doPermuteSwap(stride,rearrange);
-        if(ordering == NDArrayFactory.C)
-            return  Nd4j.create(data, newShape, newStride, offset, ordering);
-            //not contiguous need to copy elements
-        else {
-            INDArray shape = Nd4j.create(newShape, ordering);
-            copyRealTo(shape);
-            return shape;
-        }
+        return  Nd4j.create(data, newShape, newStride, offset, ordering);
+
     }
 
 
 
     protected void copyRealTo(INDArray arr) {
-        INDArray flattened = ravel();
-        int count = 0;
-        for(int i = 0; i < arr.vectorsAlongDimension(0); i++) {
-            INDArray vector = arr.vectorAlongDimension(i,0);
-            for(int j = 0; j < vector.length(); j++) {
-                vector.putScalar(j,flattened.get(count++));
-            }
+        INDArray flattened = linearView();
+        INDArray arrLinear = arr.linearView();
+        for(int i = 0; i < flattened.length(); i++) {
+           arrLinear.putScalar(i,flattened.get(i));
         }
 
     }

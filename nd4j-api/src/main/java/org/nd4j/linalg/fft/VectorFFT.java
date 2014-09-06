@@ -56,7 +56,10 @@ public class VectorFFT implements Function<IComplexNDArray,IComplexNDArray> {
         //column vector
         INDArray k = n.reshape(new int[]{n.length(),1});
         INDArray kTimesN = k.mmul(n);
-        IComplexNDArray M = exp(kTimesN.muli(c2).divi(len));
+        //here
+        IComplexNDArray c1 =  kTimesN.muli(c2);
+        c1.divi(len);
+        IComplexNDArray M =  exp(c1);
 
 
 

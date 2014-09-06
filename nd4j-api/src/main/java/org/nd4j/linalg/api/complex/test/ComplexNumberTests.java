@@ -52,4 +52,14 @@ public abstract class ComplexNumberTests {
 
     }
 
+    @Test
+    public void testComplexComplexOperations() {
+        IComplexDouble d =  Nd4j.createDouble(2,3);
+        IComplexDouble d2 = Nd4j.createDouble(4,5);
+        IComplexDouble d3 = d.mul(d2).asDouble();
+
+
+    }
+
+
 }

@@ -230,8 +230,8 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
      */
     @Override
     public IComplexNumber muli(IComplexNumber c, IComplexNumber result) {
-        double newR = real() * c.realComponent().doubleValue() - imag() * c.imaginaryComponent().doubleValue();
-        double newI = real() * c.imaginaryComponent().doubleValue() + imag() * c.realComponent().doubleValue();
+        double newR = (real() * c.realComponent().doubleValue() - imag() * c.imaginaryComponent().doubleValue());
+        double newI = (real()* c.imaginaryComponent().doubleValue() + imag() * c.realComponent().doubleValue());
         result.set(newR,newI);
         return result;
     }
