@@ -113,6 +113,8 @@ public class ComplexNDArrayUtil {
             for (int i = start; i < end; i++) {
                 ret.putScalar(count++, arr.getComplex(i));
             }
+
+            return ret;
         }
 
 

@@ -85,7 +85,7 @@ public class NDArrayUtil {
         INDArray centered =  arr;
         INDArray startIndex = currShape.sub(shapeMatrix).div(2);
         INDArray endIndex = startIndex.add(shapeMatrix);
-        arr = centered.get(NDArrayIndex.interval((int) startIndex.getScalar(0).element(), (int) startIndex.getScalar(0).element()), NDArrayIndex.interval((int) startIndex.getScalar(1).element(), (int) endIndex.getScalar(1).element()));
+        arr = centered.get(NDArrayIndex.interval((int) startIndex.get(0), (int) startIndex.get(0)), NDArrayIndex.interval((int) startIndex.get(1), (int) endIndex.get(1)));
 
 
 

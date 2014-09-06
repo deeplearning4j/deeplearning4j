@@ -67,7 +67,8 @@ public class Convolution {
             case SAME:
                 return ComplexNDArrayUtil.center(convolution, input.shape()).getReal();
             case VALID:
-                return ComplexNDArrayUtil.center(convolution,ArrayUtil.toInts(ArrayUtil.toNDArray(input.shape()).sub(ArrayUtil.toNDArray(kernel.shape())).addi(1))).getReal();
+                int[] shape2 = ArrayUtil.toInts(ArrayUtil.toNDArray(input.shape()).sub(ArrayUtil.toNDArray(kernel.shape())).addi(1));
+                return ComplexNDArrayUtil.center(convolution,shape2).getReal();
 
         }
 
