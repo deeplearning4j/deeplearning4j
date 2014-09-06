@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import org.nd4j.linalg.ops.reduceops.Ops;
@@ -1833,7 +1834,18 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray get(NDArrayIndex... indexes) {
-        return null;
+        //fill in to match the rest of the dimensions: aka grab all the content
+        //in the dimensions not filled in
+        //also prune indices greater than the shape to be the shape instead
+
+        indexes = Indices.adjustIndices(shape(), indexes);
+
+
+        int[] offsets =  Indices.offsets(indexes);
+        int[] shape = Indices.shape(shape(),indexes);
+        int[] strides =  ArrayUtil.copy(stride());
+
+        return subArray(offsets,shape,strides);
     }
 
     /**
@@ -3484,7 +3496,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                         data,
                         new int[]{shape[1]},
                         new int[]{stride[1]},
-                        offset + (r * 2) * columns(),
+                        offset + (r * 2),
                         ordering
                 );
                 return ret;

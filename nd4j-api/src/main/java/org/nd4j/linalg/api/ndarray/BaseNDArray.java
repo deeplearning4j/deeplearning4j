@@ -1121,7 +1121,7 @@ public abstract class BaseNDArray  implements INDArray {
             op.operate(new DimensionSlice(false,this,null));
         else if(isMatrix()) {
             for(int i = 0; i < rows(); i++) {
-                op.operate(new DimensionSlice(false,getRow(i),null));
+                op.operate(getRow(i));
             }
         }
 

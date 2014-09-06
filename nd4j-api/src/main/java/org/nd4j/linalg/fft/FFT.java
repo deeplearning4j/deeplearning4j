@@ -396,6 +396,8 @@ public class FFT {
         if(dimension != result.shape().length - 1)
             result = result.swapAxes(result.shape().length - 1,dimension);
 
+
+
         result.iterateOverAllRows(new FFTSliceOp(result.size(result.shape().length - 1)));
 
         if(dimension != result.shape().length - 1)

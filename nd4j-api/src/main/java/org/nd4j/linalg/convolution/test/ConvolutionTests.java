@@ -33,7 +33,6 @@ public abstract class ConvolutionTests {
         INDArray arr = Nd4j.linspace(1,8,8);
         INDArray kernel = Nd4j.linspace(1,3,3);
         INDArray answer = Nd4j.create(new double[]{1,4,10, 16, 22, 28, 34, 40,37,24}, new int[]{10, 1});
-        answer.toString();
         INDArray test = Convolution.convn(arr, kernel, Convolution.Type.VALID);
         //technically close enough...may look in to this if its a problem later.
         assertEquals(answer,test);
