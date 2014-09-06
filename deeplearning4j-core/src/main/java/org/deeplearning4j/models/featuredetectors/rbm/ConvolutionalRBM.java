@@ -3,6 +3,7 @@ package org.deeplearning4j.models.featuredetectors.rbm;
 
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.WeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -51,13 +52,15 @@ public class ConvolutionalRBM extends RBM  {
     protected INDArray eVis,eHid;
     protected INDArray wGradient,vBiasGradient,hBiasGradient;
     protected float sparseGain = 5;
-    public int wRows = 0,wCols = 0,wSlices = 0;
     private INDArray featureMap;
     //same size as W
     protected INDArray dWeights;
     protected ConvolutionalRBM() {}
 
+    public ConvolutionalRBM(INDArray input, INDArray W, INDArray hbias, INDArray vbias,NeuralNetConfiguration conf) {
+        super(input, W, hbias, vbias,conf);
 
+    }
 
 
 
@@ -65,19 +68,12 @@ public class ConvolutionalRBM extends RBM  {
     private void convolutionInit() {
         if(convolutionInitCalled)
             return;
-        W = Nd4j.create(new int[]{filterSize[0], filterSize[1], numFilters[0], numFilters[1]});
-        wRows = W.rows();
-        wCols = W.columns();
-        wSlices = W.slices();
+        W = Nd4j.rand(new int[]{filterSize[0], filterSize[1], numFilters[0], numFilters[1]});
         visI = Nd4j.zeros(new int[]{visibleSize[0],visibleSize[1],numFilters[0],numFilters[1]});
         hidI = Nd4j.zeros(new int[]{fmSize[0],fmSize[1],numFilters[0],numFilters[1]});
         convolutionInitCalled = true;
         vBias = Nd4j.zeros(1);
         hBias = Nd4j.zeros(numFilters[0]);
-
-
-        for(int i = 0; i < this.W.rows(); i++)
-            W.putRow(i,Nd4j.create(conf.getDist().sample(W.columns())));
 
 
         wAdaGrad = new AdaGrad(W.shape());
@@ -195,7 +191,7 @@ public class ConvolutionalRBM extends RBM  {
         if (conf.isUseAdaGrad())
             vBiasGradient.muli(vBiasAdaGrad.getLearningRates(vBiasGradient)).add(vBiasGradient.mul(conf.getMomentum()));
         else
-             vBiasGradient.muli(learningRate).add(vBiasGradient.mul(conf.getMomentum()));
+            vBiasGradient.muli(learningRate).add(vBiasGradient.mul(conf.getMomentum()));
 
 
 
@@ -609,30 +605,6 @@ public class ConvolutionalRBM extends RBM  {
 
     public void setSparseGain(float sparseGain) {
         this.sparseGain = sparseGain;
-    }
-
-    public int getwRows() {
-        return wRows;
-    }
-
-    public void setwRows(int wRows) {
-        this.wRows = wRows;
-    }
-
-    public int getwCols() {
-        return wCols;
-    }
-
-    public void setwCols(int wCols) {
-        this.wCols = wCols;
-    }
-
-    public int getwSlices() {
-        return wSlices;
-    }
-
-    public void setwSlices(int wSlices) {
-        this.wSlices = wSlices;
     }
 
 
