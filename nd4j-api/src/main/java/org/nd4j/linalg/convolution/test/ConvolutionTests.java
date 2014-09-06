@@ -9,6 +9,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+
 /**
  * Created by agibsonccc on 9/6/14.
  */
@@ -30,7 +32,18 @@ public abstract class ConvolutionTests {
 
 
 
+    @Test
+    public void testConv2d() {
+        INDArray input = Nd4j.create(Nd4j.linspace(1,8,8).data(),new int[]{2,2,2});
+        INDArray kernel = input.dup();
+        INDArray convolution = Convolution.conv2d(input,kernel, Convolution.Type.FULL);
+        assertTrue(Arrays.equals(new int[]{3,3},convolution.shape()));
 
+        INDArray input2 = Nd4j.create(Nd4j.linspace(1,16,16).data(),new int[]{2,4,2});
+        INDArray kernel2 = input2.dup();
+        INDArray convolution2 = Convolution.conv2d(input2,kernel2, Convolution.Type.VALID);
+        assertTrue(Arrays.equals(new int[]{2,4},convolution2.shape()));
+    }
 
 
 

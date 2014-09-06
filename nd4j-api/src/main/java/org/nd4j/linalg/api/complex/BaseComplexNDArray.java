@@ -737,24 +737,24 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public INDArray getReal() {
         INDArray result = Nd4j.create(shape());
-        for(int i = 0; i < vectorsAlongDimension(0); i++) {
-            INDArray vector = result.vectorAlongDimension(i,0);
-            IComplexNDArray complexVector = vectorAlongDimension(i,0);
-            for(int j = 0; j < complexVector.length(); j++) {
-                vector.putScalar(j,complexVector.getComplex(j).realComponent().doubleValue());
-            }
+        IComplexNDArray linearView = linearView();
+        INDArray linearRet = result.linearView();
+        for(int i = 0; i < linearView.length(); i++) {
+            linearRet.putScalar(i,linearView.getImag(i));
         }
         return result;
     }
 
     @Override
     public double getImag(int i) {
-        return data[2 * i + offset + 1];
+        int linear = linearIndex(i);
+        return data[linear + 1];
     }
 
     @Override
     public double getReal(int i) {
-        return data[2 * i  + offset];
+        int linear = linearIndex(i);
+        return data[linear];
     }
 
     @Override

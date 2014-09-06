@@ -26,6 +26,15 @@ public class Shape {
     }
 
 
+    public static int[] sizeForAxes(int[] axes,int[] shape) {
+        int[] ret = new int[axes.length];
+        for(int i = 0; i < axes.length; i++) {
+            ret[i] = shape[axes[i]];
+        }
+        return ret;
+    }
+
+
     /**
      * Returns whether the given shape is a vector
      * @param shape the shape to test
