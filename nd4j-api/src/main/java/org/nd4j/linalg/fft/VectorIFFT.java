@@ -30,7 +30,7 @@ public class VectorIFFT implements Function<IComplexNDArray,IComplexNDArray> {
     @Override
     public IComplexNDArray apply(IComplexNDArray ndArray) {
         //ifft(x) = conj(fft(conj(x)) / length(x)
-        IComplexNDArray ret = new VectorFFT(n).apply(ndArray.conj()).conj().divi(Nd4j.scalar(n));
+        IComplexNDArray ret = new VectorFFT(n).apply(ndArray.conj()).conj().divi(Nd4j.complexScalar(n));
         return originalN > 0 ? ComplexNDArrayUtil.truncate(ret, originalN, 0) : ret;
 
     }
