@@ -83,7 +83,7 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
 
     @Override
     public IComplexNumber set(Number real, Number imag) {
-        super.set((float) real,(float) imag);
+        super.set(real.floatValue(),imag.floatValue());
         return this;
     }
 

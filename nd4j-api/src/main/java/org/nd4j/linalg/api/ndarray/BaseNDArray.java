@@ -3322,7 +3322,7 @@ public abstract class BaseNDArray  implements INDArray {
             for(int i = 0; i < length; i++) {
                 float curr = get(i);
                 float comp = n.get(i);
-                if(Math.abs(curr - comp) > 1e-6)
+                if(Math.abs(curr - comp) > 1e-3)
                     return false;
             }
 

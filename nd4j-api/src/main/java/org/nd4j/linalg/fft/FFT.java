@@ -370,7 +370,6 @@ public class FFT {
         return result;
     }
 
-    //underlying fftn
 
     /**
      * Underlying fft algorithm
