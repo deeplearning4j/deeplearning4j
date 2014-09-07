@@ -1022,6 +1022,13 @@ public abstract class NDArrayTests {
         Nd4j.factory().setOrder('c');
     }
 
+    @Test
+    public void testBroadCast() {
+        INDArray n = Nd4j.linspace(1,4,4);
+        INDArray broadCasted = n.broadcast(new int[]{5,4});
+        
+    }
+
 
     @Test
     public void testPutRowGetRowOrdering() {

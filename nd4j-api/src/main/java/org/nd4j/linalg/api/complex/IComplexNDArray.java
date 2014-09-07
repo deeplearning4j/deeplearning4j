@@ -1093,14 +1093,5 @@ public interface IComplexNDArray extends INDArray {
     @Override
     IComplexNDArray broadcast(int[] shape);
 
-    /**
-     * Broadcasts this ndarray to be the specified shape
-     * @param shape the new shape of this ndarray
-     * @return the broadcasted ndarray
-     */
-    @Override
-    IComplexNDArray broadcasti(int[] shape);
-
-
     IComplexNDArray putScalar(int j, int i, IComplexNumber conji);
 }

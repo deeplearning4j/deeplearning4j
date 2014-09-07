@@ -1493,17 +1493,6 @@ public class DummyNDArray implements INDArray {
     }
 
     /**
-     * Broadcasts this ndarray to be the specified shape
-     *
-     * @param shape the new shape of this ndarray
-     * @return the broadcasted ndarray
-     */
-    @Override
-    public INDArray broadcasti(int[] shape) {
-        return this;
-    }
-
-    /**
      * Returns a scalar (individual element)
      * of a scalar ndarray
      *

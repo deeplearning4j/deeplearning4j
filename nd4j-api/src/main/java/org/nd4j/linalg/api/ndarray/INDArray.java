@@ -1156,13 +1156,6 @@ public interface INDArray extends Serializable {
      */
     INDArray broadcast(int[] shape);
 
-    /**
-     * Broadcasts this ndarray to be the specified shape
-     * @param shape the new shape of this ndarray
-     * @return the broadcasted ndarray
-     */
-    INDArray broadcasti(int[] shape);
-
 
     /**
      * Returns a scalar (individual element)

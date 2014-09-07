@@ -1,5 +1,6 @@
 package org.nd4j.linalg.factory;
 
+import com.google.common.primitives.Ints;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -94,6 +95,34 @@ public class Nd4j {
         return BLAS_WRAPPER_INSTANCE;
     }
 
+
+    /**
+     * Create an n x (shape)
+     * ndarray where the ndarray is repeated num times
+     * @param n the ndarray to replicate
+     * @param num the number of copies to repeat
+     * @return the repeated ndarray
+     */
+    public static IComplexNDArray repeat(IComplexNDArray n,int num) {
+        List<IComplexNDArray> list = new ArrayList<>();
+        for(int i = 0; i < num; i++)
+            list.add(n);
+        return Nd4j.createComplex(list, Ints.concat(new int[]{num},n.shape()));
+    }
+
+    /**
+     * Create an n x (shape)
+     * ndarray where the ndarray is repeated num times
+     * @param n the ndarray to replicate
+     * @param num the number of copies to repeat
+     * @return the repeated ndarray
+     */
+    public static INDArray repeat(INDArray n,int num) {
+        List<INDArray> list = new ArrayList<>();
+        for(int i = 0; i < num; i++)
+            list.add(n);
+        return Nd4j.create(list, Ints.concat(new int[]{num},n.shape()));
+    }
 
     /**
      * Generate a linearly spaced vector

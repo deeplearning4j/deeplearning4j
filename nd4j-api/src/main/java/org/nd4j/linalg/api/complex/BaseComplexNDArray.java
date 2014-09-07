@@ -3583,19 +3583,25 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray broadcast(int[] shape) {
-        return null;
+
+        int dims = this.shape.length;
+        int targetDimensions = shape.length;
+        if (targetDimensions < dims) {
+            throw new IllegalArgumentException("Invalid shape to broad cast " + Arrays.toString(shape));
+        }
+        else if (dims == targetDimensions) {
+            if (Shape.shapeEquals(shape, this.shape()))
+                return this;
+            throw new IllegalArgumentException("Invalid shape to broad cast " + Arrays.toString(shape));
+        }
+        else {
+            int n= shape[0];
+            IComplexNDArray s = broadcast(Arrays.copyOfRange(shape, 1, targetDimensions));
+            return Nd4j.repeat(s,n);
+        }
     }
 
-    /**
-     * Broadcasts this ndarray to be the specified shape
-     *
-     * @param shape the new shape of this ndarray
-     * @return the broadcasted ndarray
-     */
-    @Override
-    public IComplexNDArray broadcasti(int[] shape) {
-        return null;
-    }
+
 
     /**
      * Returns a scalar (individual element)
