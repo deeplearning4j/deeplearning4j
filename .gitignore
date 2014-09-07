@@ -1,4 +1,7 @@
 pom.xml.releaseBackup 
+*.md5
+*.pom
+*.sha1
 target/
 *.ser
 application.home_IS_UNDEFINEiD

@@ -3,6 +3,7 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <groupId>jcuda</groupId>
-  <artifactId>jcublas</artifactId>
+  <artifactId>JCublas</artifactId>
   <version>0.6.0</version>
+  <packaging>dll</packaging>
 </project>
