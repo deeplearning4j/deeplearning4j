@@ -1843,7 +1843,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
         int[] offsets =  Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(),indexes);
-        int[] strides =  ArrayUtil.copy(stride());
+        int[] strides = ordering == 'f' ? ArrayUtil.calcStridesFortran(shape,2) :  ArrayUtil.copy(stride());
 
         return subArray(offsets,shape,strides);
     }
@@ -3629,6 +3629,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray permute(int[] rearrange) {
+        if(rearrange.length < shape.length)
+            return dup();
+
         checkArrangeArray(rearrange);
         int[] newDims = doPermuteSwap(shape,rearrange);
         int[] newStrides = doPermuteSwap(stride,rearrange);

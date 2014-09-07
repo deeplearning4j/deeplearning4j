@@ -34,6 +34,17 @@ public class NDArrayIndex {
         return indices[0];
     }
 
+
+    /**
+     * Returns the length of the indices
+     * @return the length of the range
+     */
+    public int length() {
+        if(indices.length < 1)
+            return 0;
+        return indices[indices.length - 1] - indices[0];
+    }
+
     public int[] indices() {
         return indices;
     }

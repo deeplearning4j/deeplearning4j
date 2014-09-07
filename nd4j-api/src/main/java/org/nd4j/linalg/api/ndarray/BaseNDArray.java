@@ -749,7 +749,7 @@ public abstract class BaseNDArray  implements INDArray {
         if(!element.isScalar())
             throw new IllegalArgumentException("Unable to insert anything but a scalar");
         int ix = offset;
-         for (int i = 0; i< indices.length; i++)
+        for (int i = 0; i< indices.length; i++)
             ix += indices[i] * stride[i];
 
 
@@ -813,14 +813,14 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray view = slice(slice);
 
         if(put.isScalar())
-            put(slice,put.getScalar(0));
+            putScalar(slice, put.get(0));
         else if(put.isVector())
             for(int i = 0; i < put.length(); i++)
-                view.put(i,put.getScalar(i));
+                view.putScalar(i, put.get(i));
         else if(put.shape().length == 2)
             for(int i = 0; i < put.rows(); i++)
                 for(int j = 0; j < put.columns(); j++)
-                    view.put(i,j,(float) put.getScalar(i,j).element());
+                    view.put(i,j,put.get(i, j));
 
         else {
 
@@ -1071,21 +1071,34 @@ public abstract class BaseNDArray  implements INDArray {
      * Returns the (1-norm) distance.
      */
     public double distance1(INDArray other) {
-        double d = 0.0;
-        for (int i = 0; i < length; i++) {
-            d += Math.abs((double) getScalar(i).sub(other.getScalar(i)).element());
-        }
-        return d;
+        return other.sub(this).sum(Integer.MAX_VALUE).get(0);
     }
 
     @Override
     public INDArray put(NDArrayIndex[] indices, INDArray element) {
-        return null;
+        INDArray get = get(indices);
+        INDArray linear = get.linearView();
+        if(element.isScalar()) {
+            for(int i = 0; i < linear.length(); i++) {
+                linear.putScalar(i,element.get(0));
+            }
+        }
+
+        if(Shape.shapeEquals(element.shape(),get.shape())) {
+            INDArray elementLinear = element.linearView();
+
+            for(int i = 0; i < linear.length(); i++) {
+                linear.putScalar(i,elementLinear.get(i));
+            }
+        }
+
+
+        return this;
     }
 
     @Override
     public INDArray put(NDArrayIndex[] indices, Number element) {
-        return null;
+        return put(indices, Nd4j.scalar(element));
     }
 
 
@@ -3232,7 +3245,7 @@ public abstract class BaseNDArray  implements INDArray {
 
         int[] offsets =  Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(),indexes);
-        int[] strides =  ArrayUtil.copy(stride());
+        int[] strides = ordering == 'f' ? ArrayUtil.calcStridesFortran(shape) :  ArrayUtil.copy(stride());
 
         return subArray(offsets,shape,strides);
     }
@@ -3446,6 +3459,9 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray permute(int[] rearrange) {
+        if(rearrange.length != shape.length)
+            return dup();
+
         checkArrangeArray(rearrange);
 
         int[] newShape = doPermuteSwap(shape,rearrange);
@@ -3460,7 +3476,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray flattened = linearView();
         INDArray arrLinear = arr.linearView();
         for(int i = 0; i < flattened.length(); i++) {
-           arrLinear.putScalar(i,flattened.get(i));
+            arrLinear.putScalar(i,flattened.get(i));
         }
 
     }

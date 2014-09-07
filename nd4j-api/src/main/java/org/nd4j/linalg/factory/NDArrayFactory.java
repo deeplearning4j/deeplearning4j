@@ -105,9 +105,23 @@ public interface NDArrayFactory  {
      INDArray linspace(int lower,int upper,int num);
 
 
+    /**
+     * Returns a flattened ndarray with all of the elements in each ndarray
+     * regardless of dimension
+     * @param matrices the ndarrays to use
+     * @return a flattened ndarray of the elements in the order of titerating over the ndarray and the linear view of
+     * each
+     */
      INDArray toFlattened(Collection<INDArray> matrices);
 
 
+    /**
+     * Returns a flattened ndarray with all of the elements in each ndarray
+     * regardless of dimension
+     * @param matrices the ndarrays to use
+     * @return a flattened ndarray of the elements in the order of titerating over the ndarray and the linear view of
+     * each
+     */
      INDArray toFlattened(int length,Iterator<? extends INDArray>...matrices);
 
 
@@ -237,6 +251,9 @@ public interface NDArrayFactory  {
      * real components
      */
      IComplexNDArray createComplex(List<IComplexNDArray> arrs,int[] shape);
+
+
+
 
 
     /**
