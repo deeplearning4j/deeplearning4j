@@ -1008,7 +1008,7 @@ public abstract class NDArrayTests {
     public void testGetMulti() {
         assertEquals(8,n.length());
         assertEquals(true,Arrays.equals(ArrayUtil.of(2, 2, 2),n.shape()));
-        float val = (float) n.getScalar(1,1,1).element();
+        float val = (float) n.getScalar(new int[]{1,1,1}).element();
         assertEquals(8.0,val,1e-6);
     }
 
