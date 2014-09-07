@@ -208,7 +208,8 @@ public class Nd4j {
             float[] data = ArrayUtil.readFloat(ArrayUtil.prod(shape),dis);
             return create(data,shape,stride,0);
         }
-        double[] data = ArrayUtil.read(ArrayUtil.prod(shape),dis);
+
+        float[] data = ArrayUtil.readFloat(ArrayUtil.prod(shape),dis);
         return create(data,shape,stride,0);
     }
 

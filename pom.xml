@@ -100,6 +100,7 @@
         <module>nd4j-jcublas</module>
         <module>mavenized-jcuda</module>
         <module>nd4j-examples</module>
+        <module>nd4j-jdbc</module>
     </modules>
 
     <properties>
