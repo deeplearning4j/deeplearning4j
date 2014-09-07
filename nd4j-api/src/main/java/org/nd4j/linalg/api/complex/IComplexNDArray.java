@@ -54,8 +54,8 @@ public interface IComplexNDArray extends INDArray {
     /**
      * Get the vector along a particular dimension
      *
-     * @param index     the index of the vector to get
-     * @param dimension the dimension to get the vector from
+     * @param index     the index of the vector to getScalar
+     * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
     @Override
@@ -972,15 +972,6 @@ public interface IComplexNDArray extends INDArray {
 
 
 
-
-
-    /**
-     * Returns the elements at the the specified indices
-     * @param indices the indices to getScalar
-     * @return the array with the specified elements
-     */
-    @Override
-    IComplexNDArray get(int[] indices);
 
 
     IComplexNumber getComplex(int i);

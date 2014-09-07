@@ -16,7 +16,7 @@ public class ComplexUtil {
 
     /**
      * Return the  log value of the given complex number
-     * @param num the number to get the absolute value for
+     * @param num the number to getScalar the absolute value for
      * @return the absolute value of this complex number
      */
     public static IComplexNumber floor(IComplexNumber num) {
@@ -28,7 +28,7 @@ public class ComplexUtil {
 
     /**
      * Return the  log value of the given complex number
-     * @param num the number to get the absolute value for
+     * @param num the number to getScalar the absolute value for
      * @return the absolute value of this complex number
      */
     public static IComplexNumber neg(IComplexNumber num) {
@@ -40,7 +40,7 @@ public class ComplexUtil {
 
     /**
      * Return the  log value of the given complex number
-     * @param num the number to get the absolute value for
+     * @param num the number to getScalar the absolute value for
      * @return the absolute value of this complex number
      */
     public static IComplexNumber log(IComplexNumber num) {
@@ -51,7 +51,7 @@ public class ComplexUtil {
 
     /**
      * Return the absolute value of the given complex number
-     * @param num the number to get the absolute value for
+     * @param num the number to getScalar the absolute value for
      * @return the absolute value of this complex number
      */
     public static IComplexNumber sqrt(IComplexNumber num) {
@@ -62,7 +62,7 @@ public class ComplexUtil {
 
     /**
      * Return the absolute value of the given complex number
-     * @param num the number to get the absolute value for
+     * @param num the number to getScalar the absolute value for
      * @return the absolute value of this complex number
      */
     public static IComplexNumber abs(IComplexNumber num) {

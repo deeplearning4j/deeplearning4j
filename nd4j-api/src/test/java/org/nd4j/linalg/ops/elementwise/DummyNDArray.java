@@ -39,8 +39,8 @@ public class DummyNDArray implements INDArray {
     /**
      * Get the vector along a particular dimension
      *
-     * @param index     the index of the vector to get
-     * @param dimension the dimension to get the vector from
+     * @param index     the index of the vector to getScalar
+     * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
     @Override
@@ -412,7 +412,7 @@ public class DummyNDArray implements INDArray {
      * Get the linear index of the data in to
      * the array
      *
-     * @param i the index to get
+     * @param i the index to getScalar
      * @return the linear index in to the data
      */
     @Override
@@ -449,6 +449,17 @@ public class DummyNDArray implements INDArray {
     @Override
     public INDArray getScalar(int... indexes) {
         return null;
+    }
+
+    /**
+     * Returns the elements at the the specified indices
+     *
+     * @param indices the indices to getScalar
+     * @return the array with the specified elements
+     */
+    @Override
+    public float get(int[] indices) {
+        return 0;
     }
 
     /**
@@ -1112,7 +1123,7 @@ public class DummyNDArray implements INDArray {
     /**
      * Standard deviation of an ndarray along a dimension
      *
-     * @param dimension the dimension to get the std along
+     * @param dimension the dimension to getScalar the std along
      * @return the standard deviation along a particular dimension
      */
     @Override
@@ -1198,16 +1209,6 @@ public class DummyNDArray implements INDArray {
     }
 
 
-    /**
-     * Returns the elements at the the specified indices
-     *
-     * @param indices the indices to getScalar
-     * @return the array with the specified elements
-     */
-    @Override
-    public INDArray get(int[] indices) {
-        return this;
-    }
 
     @Override
     public float get(int i) {

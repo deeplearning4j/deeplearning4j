@@ -1613,8 +1613,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     /**
      * Get the vector along a particular dimension
      *
-     * @param index     the index of the vector to get
-     * @param dimension the dimension to get the vector from
+     * @param index     the index of the vector to getScalar
+     * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
     @Override
@@ -2647,16 +2647,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return addi(n,this);
     }
 
-    @Override
-    public IComplexNDArray get(int[] indices) {
-        IComplexNDArray result = Nd4j.createComplex(data, new int[]{1, indices.length}, stride, offset, ordering);
-
-        for (int i = 0; i < indices.length; i++) {
-            result.putScalar(i, get(indices[i]));
-        }
-
-        return result;
-    }
 
 
 
@@ -3005,10 +2995,10 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray assign(Number value) {
-        IComplexNDArray one = reshape(new int[]{1,length});
+        IComplexNDArray one = linearView();
         for(int i = 0; i < one.length(); i++)
             one.putScalar(i, Nd4j.createDouble(value.doubleValue(), 0));
-        return one;
+        return this;
     }
 
 
@@ -3307,7 +3297,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     /**
      * Standard deviation of an ndarray along a dimension
      *
-     * @param dimension the dimension to get the std along
+     * @param dimension the dimension to getScalar the std along
      * @return the standard deviation along a particular dimension
      */
     @Override
@@ -3616,7 +3606,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public Object element() {
         if(!isScalar())
-            throw new IllegalStateException("Unable to get the element of a non scalar");
+            throw new IllegalStateException("Unable to getScalar the element of a non scalar");
         int idx = linearIndex(0);
         return Nd4j.createDouble(data[idx], data[idx + 1]);
     }

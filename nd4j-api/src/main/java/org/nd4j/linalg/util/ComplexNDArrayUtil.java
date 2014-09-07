@@ -102,7 +102,7 @@ public class ComplexNDArrayUtil {
         INDArray startIndex = currShape.sub(shapeMatrix).divi(Nd4j.scalar(2));
         INDArray endIndex = startIndex.add(shapeMatrix);
         if (shapeMatrix.length() > 1) {
-            //arr = arr.get(RangeUtils.interval((int) startIndex.getScalar(0).element(), (int) endIndex.getScalar(0).element()), RangeUtils.interval((int) startIndex.getScalar(1).element(), (int) endIndex.getScalar(1).element()));
+            //arr = arr.getScalar(RangeUtils.interval((int) startIndex.getScalar(0).element(), (int) endIndex.getScalar(0).element()), RangeUtils.interval((int) startIndex.getScalar(1).element(), (int) endIndex.getScalar(1).element()));
             arr = Nd4j.createComplex(arr.get(NDArrayIndex.interval((int) startIndex.get(0),(int) endIndex.get(0)), NDArrayIndex.interval((int) startIndex.get(1), (int) endIndex.get(1))));
         }
         else {

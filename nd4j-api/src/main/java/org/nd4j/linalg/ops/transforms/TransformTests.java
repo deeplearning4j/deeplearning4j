@@ -19,6 +19,13 @@ public abstract class TransformTests {
 
     }
 
+    @Test
+    public void testMaxPooling() {
+        INDArray nd = Nd4j.rand(new int[]{1,2,3,4});
+        INDArray pool = Transforms.maxPool(nd,new int[]{1,2},false);
+        pool = Transforms.maxPool(nd,new int[]{1,2},true);
+    }
+
 
 
 

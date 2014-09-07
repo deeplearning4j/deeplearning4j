@@ -293,7 +293,7 @@ public class JCublasNDArray extends BaseNDArray {
             long val = (long) m.invoke(pointer);
             return val;
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to get declared pointer");
+            throw new IllegalStateException("Unable to getScalar declared pointer");
         }
     }
 

@@ -1385,7 +1385,7 @@ public class Nd4j {
     /**
      * Get the strides for the given order and shape
      * @param shape the shape of the ndarray
-     * @param order the order to get the strides for
+     * @param order the order to getScalar the strides for
      * @return the strides for the given shape and order
      */
     public static int[] getStrides(int[] shape,char order) {
@@ -1411,7 +1411,7 @@ public class Nd4j {
     /**
      * Get the strides for the given order and shape
      * @param shape the shape of the ndarray
-     * @param order the order to get the strides for
+     * @param order the order to getScalar the strides for
      * @return the strides for the given shape and order
      */
     public static int[] getComplexStrides(int[] shape,char order) {

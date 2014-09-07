@@ -32,8 +32,8 @@ public interface INDArray extends Serializable {
 
     /**
      * Get the vector along a particular dimension
-     * @param index the index of the vector to get
-     * @param dimension the dimension to get the vector from
+     * @param index the index of the vector to getScalar
+     * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
     public INDArray vectorAlongDimension(int index,int dimension);
@@ -403,7 +403,7 @@ public interface INDArray extends Serializable {
     /**
      * Get the linear index of the data in to
      * the array
-     * @param i the index to get
+     * @param i the index to getScalar
      * @return the linear index in to the data
      */
     public int linearIndex(int i);
@@ -420,13 +420,6 @@ public interface INDArray extends Serializable {
      */
     public void iterateOverAllColumns(SliceOp op);
 
-
-    /**
-     * Fetch a particular number on a multi dimensional scale.
-     * @param indexes the indexes to getFromOrigin a number from
-     * @return the number at the specified indices
-     */
-    public INDArray getScalar(int... indexes);
 
     /**
      * Validate dimensions are equal
@@ -519,8 +512,8 @@ public interface INDArray extends Serializable {
 
     /**
      * Return the linear index of the specified row and column
-     * @param row the row to get the linear index for
-     * @param column the column to get the linear index for
+     * @param row the row to getScalar the linear index for
+     * @param column the column to getScalar the linear index for
      * @return the linear index of the given row and column
      */
     int index(int row, int column);
@@ -889,7 +882,7 @@ public interface INDArray extends Serializable {
 
     /**
      * Standard deviation of an ndarray along a dimension
-     * @param dimension the dimension to get the std along
+     * @param dimension the dimension to getScalar the std along
      * @return the standard deviation along a particular dimension
      */
     public INDArray std(int dimension);
@@ -956,21 +949,27 @@ public interface INDArray extends Serializable {
      * @param indices the indices to getScalar
      * @return the array with the specified elements
      */
-    public INDArray get(int[] indices);
+    public INDArray getScalar(int[] indices);
 
 
     /**
+     * Returns the elements at the the specified indices
+     * @param indices the indices to getScalar
+     * @return the array with the specified elements
+     */
+    public float get(int[] indices);
+    /**
      * Return the item at the linear index i
-     * @param i the index of the item to get
+     * @param i the index of the item to getScalar
      * @return the item at index j
      */
     public float get(int i);
 
     /**
      * Return the item at row i column j
-     * Note that this is the same as calling get(new int[]{i,j}
-     * @param i the row to get
-     * @param j the column to get
+     * Note that this is the same as calling getScalar(new int[]{i,j}
+     * @param i the row to getScalar
+     * @param j the column to getScalar
      * @return the item at row i column j
      */
     public float get(int i,int j);

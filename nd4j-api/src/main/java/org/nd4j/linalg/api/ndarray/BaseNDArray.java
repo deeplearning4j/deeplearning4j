@@ -380,8 +380,8 @@ public abstract class BaseNDArray  implements INDArray {
     /**
      * Get the vector along a particular dimension
      *
-     * @param index     the index of the vector to get
-     * @param dimension the dimension to get the vector from
+     * @param index     the index of the vector to getScalar
+     * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
     @Override
@@ -712,9 +712,22 @@ public abstract class BaseNDArray  implements INDArray {
                 , offset, ordering);
     }
 
+    /**
+     * Returns the elements at the the specified indices
+     *
+     * @param indices the indices to getScalar
+     * @return the array with the specified elements
+     */
+    @Override
+    public float get(int... indices) {
+        int ix = offset;
+        for (int i = 0; i< indices.length; i++)
+            ix += indices[i] * stride[i];
 
 
+        return data[ix];
 
+    }
 
     /**
      * Test whether a matrix is scalar.
@@ -2180,10 +2193,10 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray assign(Number value) {
-        INDArray one = reshape(new int[]{1,length});
+        INDArray one = linearView();
         for(int i = 0; i < one.length(); i++)
             one.put(i, Nd4j.scalar(value.doubleValue()));
-        return one;
+        return this;
     }
 
     @Override
@@ -2196,18 +2209,6 @@ public abstract class BaseNDArray  implements INDArray {
         return idx;
     }
 
-    protected int getRealStrideForLinearIndex() {
-        assert stride != null && shape != null && stride.length == shape.length : "Illegal state: stride and shape must be same length";
-        if(stride == null || stride().length < 1)
-            return 1;
-        if(stride.length == 2 && shape[0] == 1)
-            return stride[1];
-        if(stride().length == 2 && shape[1] == 1)
-            return stride[0];
-        return stride[0];
-
-
-    }
 
 
 
@@ -2464,11 +2465,6 @@ public abstract class BaseNDArray  implements INDArray {
 
 
     @Override
-    public INDArray get(int[] indices) {
-        return  getScalar(indices);
-    }
-
-    @Override
     public float get(int i) {
         int idx = linearIndex(i);
         if(idx < 0)
@@ -2661,7 +2657,7 @@ public abstract class BaseNDArray  implements INDArray {
     }
 
 
-    //get a 2d array of the non one sizes of the array and their associated strides
+    //getScalar a 2d array of the non one sizes of the array and their associated strides
     protected int[][] getNonOneStridesAndShape() {
         int nonOneDims = 0;
         for(int i = 0; i < shape.length; i++)
@@ -2995,7 +2991,7 @@ public abstract class BaseNDArray  implements INDArray {
     /**
      * Standard deviation of an ndarray along a dimension
      *
-     * @param dimension the dimension to get the std along
+     * @param dimension the dimension to getScalar the std along
      * @return the standard deviation along a particular dimension
      */
     @Override

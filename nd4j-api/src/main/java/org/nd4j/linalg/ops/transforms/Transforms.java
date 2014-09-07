@@ -27,6 +27,41 @@ public class Transforms {
     }
 
 
+    /**
+     * Max pooling
+     * @param input
+     * @param ds the strides with which to pool expectations
+     * @parma ignoreBorder whether to ignore the borders of images
+     * @return
+     */
+    public static INDArray maxPool(INDArray input,int[] ds,boolean ignoreBorder) {
+        assert input.length() >= 2 : "Max pooling requires an ndarray of >= length 2";
+        assert ds.length == 2: "Dowm sampling must be of length 2 (the factors used for each image size";
+        assert input.shape().length == 4 : "Only supports 4 dimensional tensors";
+        int batchSize = ArrayUtil.prod(new int[]{input.size(0) * input.size(1)});
+        //possibly look at a input implementation instead (looping over the outer dimension slice wise with calling input repeatedly)
+        //use the given rows and columns if ignoring borders
+        int rows = ignoreBorder ?  input.size(2) / (int) Math.pow(ds[0],2) : input.size(2);
+        int cols = ignoreBorder ? input.size(3) / ( int)Math.pow(ds[1],2) : input.size(3);
+
+        INDArray signalNDArray = input.reshape(new int[]{batchSize,1,rows,cols});
+        INDArray zz= Nd4j.create(signalNDArray.shape()).assign(Float.MIN_VALUE);
+        for(int i = 0; i < signalNDArray.size(0); i++) {
+            for(int j = 0; j < signalNDArray.size(1); j++) {
+                for(int k = 0; k < rows; k++) {
+                    int zk = k / ds[0];
+                    for(int l = 0; l < cols; l++) {
+                        int zl = l / ds[1];
+                        float num = input.get(new int[]{i, j, k, l});
+                        float zzGet = zz.get(new int[]{i, j, zk, zl});
+                        zz.putScalar(new int[]{i,j,zk,zl},Math.max(num,zzGet));
+                    }
+                }
+            }
+        }
+
+        return zz.reshape(input.shape());
+    }
 
     /**
      * Down sampling a signal (specifically the first 2 dimensions)

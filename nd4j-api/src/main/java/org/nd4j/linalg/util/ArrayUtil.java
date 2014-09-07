@@ -437,7 +437,7 @@ public class ArrayUtil {
     /**
      * For use with row vectors to ensure consistent strides
      * with varying offsets
-     * @param arr the array to get the stride for
+     * @param arr the array to getScalar the stride for
      * @return the stride
      */
     public static int nonOneStride(int[] arr) {
