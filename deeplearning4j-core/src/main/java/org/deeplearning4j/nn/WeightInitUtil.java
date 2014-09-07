@@ -2,6 +2,7 @@ package org.deeplearning4j.nn;
 
 
 import org.apache.commons.math3.distribution.RealDistribution;
+import org.apache.commons.math3.random.MersenneTwister;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.RectifiedLinear;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -17,6 +18,11 @@ import org.nd4j.linalg.util.ArrayUtil;
 public class WeightInitUtil {
 
 
+
+
+    public static INDArray initWeights(int[] shape,float min,float max) {
+         return Nd4j.rand(shape,min,max,new MersenneTwister(123));
+    }
 
 
     /**

@@ -68,9 +68,9 @@ public class ConvolutionalRBM extends RBM  {
     private void convolutionInit() {
         if(convolutionInitCalled)
             return;
-        W = Nd4j.rand(new int[]{filterSize[0], filterSize[1], numFilters[0], numFilters[1]});
-        visI = Nd4j.zeros(new int[]{visibleSize[0],visibleSize[1],numFilters[0],numFilters[1]});
-        hidI = Nd4j.zeros(new int[]{fmSize[0],fmSize[1],numFilters[0],numFilters[1]});
+        W = Nd4j.rand(new int[]{filterSize[0], filterSize[1], numFilters[0]});
+        visI = Nd4j.zeros(new int[]{visibleSize[0],visibleSize[1],numFilters[0]});
+        hidI = Nd4j.zeros(new int[]{fmSize[0],fmSize[1],numFilters[0]});
         convolutionInitCalled = true;
         vBias = Nd4j.zeros(1);
         hBias = Nd4j.zeros(numFilters[0]);
@@ -96,12 +96,13 @@ public class ConvolutionalRBM extends RBM  {
     @Override
     public INDArray propUp(INDArray v) {
         for(int i = 0; i < numFilters[0]; i++) {
-            for(int j = 0; j < numFilters[1]; j++) {
-                INDArray reversedSlice =  Nd4j.reverse(W.slice(i).slice(j));
-                //a bias for each hidden unit
-                INDArray slice = Transforms.sigmoid(Convolution.convn(v, reversedSlice, Convolution.Type.VALID).addi(hBias.getScalar(i)));
-                hidI.put(i,j,slice);
-            }
+            INDArray reversedSlice =  Nd4j.reverse(W.slice(i));
+            //a bias for each hidden unit
+            INDArray slice = Transforms.sigmoid(Convolution.convn(v,
+                    reversedSlice,
+                    Convolution.Type.VALID).addi(hBias.get(i)));
+            hidI.putSlice(i,slice);
+
 
 
         }
