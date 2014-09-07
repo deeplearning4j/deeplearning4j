@@ -99,6 +99,7 @@
         <module>nd4j-jblas</module>
         <module>nd4j-jcublas</module>
         <module>mavenized-jcuda</module>
+        <module>nd4j-examples</module>
     </modules>
 
     <properties>
