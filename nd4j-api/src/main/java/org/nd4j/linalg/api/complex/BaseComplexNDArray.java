@@ -1824,7 +1824,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             }
 
             for(int i = 0; i <  augmentDims.length; i++) {
-                newDims.add(1,augmentDims[i]);
+                newDims.add(augmentDims[i],1);
             }
 
             int[] toReshape = ArrayUtil.toArray(newDims);

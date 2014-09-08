@@ -2251,29 +2251,60 @@ public abstract class BaseNDArray  implements INDArray {
             throw new IllegalArgumentException("Can't slice a 0-d NDArray");
 
             //slice of a vector is a scalar
-        else if (shape.length == 1)
-            return Nd4j.create(data, ArrayUtil.empty(), ArrayUtil.empty(), offset + slice * stride[0]);
+        else if (shape.length == 1) {
+            if(size(0) == 1)
+                return Nd4j.create(data, ArrayUtil.empty(), ArrayUtil.empty(), offset + slice);
+            else
+                return Nd4j.create(data, ArrayUtil.empty(), ArrayUtil.empty(), offset + slice * stride[0]);
+
+
+        }
 
 
             //slice of a matrix is a vector
         else if (shape.length == 2) {
-            INDArray slice2 = Nd4j.create(
-                    data,
-                    ArrayUtil.of(shape[1]),
-                    Arrays.copyOfRange(stride, 1, stride.length),
-                    offset + slice * stride[0], ordering
-            );
-            return slice2;
+            if(size(0) == 1)  {
+                INDArray slice2 = Nd4j.create(
+                        data,
+                        ArrayUtil.of(shape[1]),
+                        Arrays.copyOfRange(stride, 1, stride.length),
+                        offset + slice, ordering
+                );
+                return slice2;
+            }
+            else {
+                INDArray slice2 = Nd4j.create(
+                        data,
+                        ArrayUtil.of(shape[1]),
+                        Arrays.copyOfRange(stride, 1, stride.length),
+                        offset + slice * stride[0], ordering
+                );
+                return slice2;
+            }
+
+
 
         }
 
         else {
             int offset = this.offset + (slice * stride[0]);
-            INDArray slice2 = Nd4j.create(data,
-                    Arrays.copyOfRange(shape, 1, shape.length),
-                    Arrays.copyOfRange(stride, 1, stride.length),
-                    offset, ordering);
-            return slice2;
+            if(size(0) == 1) {
+
+                INDArray slice2 = Nd4j.create(data,
+                        Arrays.copyOfRange(shape, 1, shape.length),
+                        Arrays.copyOfRange(stride, 1, stride.length),
+                        offset, ordering);
+                return slice2;
+            }
+
+            else {
+                INDArray slice2 = Nd4j.create(data,
+                        Arrays.copyOfRange(shape, 1, shape.length),
+                        Arrays.copyOfRange(stride, 1, stride.length),
+                        offset, ordering);
+                return slice2;
+            }
+
 
 
 
@@ -3568,7 +3599,7 @@ public abstract class BaseNDArray  implements INDArray {
             }
 
             for(int i = 0; i <  augmentDims.length; i++) {
-                newDims.add(1,augmentDims[i]);
+                newDims.add(augmentDims[i],1);
             }
 
             int[] toReshape = ArrayUtil.toArray(newDims);
@@ -3583,7 +3614,7 @@ public abstract class BaseNDArray  implements INDArray {
     }
 
     /**
-     * See: http://www.mathworks.com/help/matlab/ref/permute.html
+     * See: http://www.mathworks.com/help/matlab/ref/permute.htsliceml
      * @param rearrange the dimensions to swap to
      * @return the newly permuted array
      */
