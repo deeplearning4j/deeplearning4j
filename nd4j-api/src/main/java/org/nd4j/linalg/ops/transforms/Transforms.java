@@ -41,8 +41,8 @@ public class Transforms {
         int batchSize = ArrayUtil.prod(new int[]{input.size(0) * input.size(1)});
         //possibly look at a input implementation instead (looping over the outer dimension slice wise with calling input repeatedly)
         //use the given rows and columns if ignoring borders
-        int rows = ignoreBorder ?  input.size(2) / (int) Math.pow(ds[0],2) : input.size(2);
-        int cols = ignoreBorder ? input.size(3) / ( int)Math.pow(ds[1],2) : input.size(3);
+        int rows = input.size(2);
+        int cols = input.size(3);
 
         INDArray signalNDArray = input.reshape(new int[]{batchSize,1,rows,cols});
         INDArray zz= Nd4j.create(signalNDArray.shape()).assign(Float.MIN_VALUE);

@@ -2595,6 +2595,7 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray reshape(int[] shape) {
+        assert ArrayUtil.prod(shape) == ArrayUtil.prod(this.shape()) : "Illegal reshape must be of same length as data";
         long ec = 1;
         for (int i = 0; i < shape.length; i++) {
             int si = shape[i];
