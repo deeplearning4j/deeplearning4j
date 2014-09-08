@@ -52,7 +52,7 @@ public class VocabActor extends UntypedActor {
 		if(message  instanceof String) {
 			String sentence = message.toString();
 			Tokenizer t = tokenizer.create(sentence);
-			List<String> tokens = new ArrayList<String>();
+			List<String> tokens = new ArrayList<>();
 			while(t.hasMoreTokens())
 				tokens.add(t.nextToken());
 			getSelf().tell(tokens,getSelf());
@@ -66,6 +66,7 @@ public class VocabActor extends UntypedActor {
                         (token))
 					token = "STOP";
                 cache.incrementWordCount(token);
+                log.info("Incremented token " + token);
 				//note that for purposes of word frequency, the
 				//internal vocab and the final vocab
 				//at the class level contain the same references
