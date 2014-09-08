@@ -7,7 +7,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * Created by cvn on 9/7/14.
  */
 
-public class VectorOperationExample {
+public class MatrixOperationExample {
 
     public static void main(String[] args) {
 
