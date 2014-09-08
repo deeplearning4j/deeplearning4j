@@ -49,8 +49,8 @@ public class WeightInitUtil {
                 for(int i = 0; i < nOut; i++) {
                     INDArray perm = Nd4j.create(ArrayUtil.randomPermutation(nIn)).reshape(new int[]{nIn});
                     INDArray subIndices = perm.get(NDArrayIndex.interval(fanOut, perm.length()), NDArrayIndex.interval(0, nOut));
-                    INDArray indices = perm.get(new NDArrayIndex(ArrayUtil.toInts(subIndices)),new NDArrayIndex(new int[]{i}));
-                    INDArray randInit = ret.get(ArrayUtil.toInts(perm.get(ArrayUtil.toInts(indices)).muli(Nd4j.scalar(smallVal))));
+                    INDArray indices = perm.get(new NDArrayIndex(ArrayUtil.toInts(subIndices)),new NDArrayIndex(new int[]{i})).muli(Nd4j.scalar(smallVal));
+                    INDArray randInit = ret.get(new NDArrayIndex(ArrayUtil.toInts(perm.get(new NDArrayIndex(ArrayUtil.toInts(indices))))));
                     if(randInit.length() != 0)
                         ret.put(ArrayUtil.toInts(indices),randInit);
 
