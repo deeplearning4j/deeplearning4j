@@ -59,8 +59,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
     private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
     private ActivationType activationType = ActivationType.HIDDEN_LAYER_ACTIVATION;
-
-
+    private int[] weightShape;
+    //convolutional nets
+    private int[] filterSize = {2,2};
+    private int numFeatureMaps = 2;
+    private int[] stride = {2,2};
     public NeuralNetConfiguration() {
 
     }
@@ -71,7 +74,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
 
-    public NeuralNetConfiguration(float sparsity, boolean useAdaGrad, float lr, int k, float corruptionLevel, int numIterations, float momentum, float l2, boolean useRegularization, Map<Integer, Float> momentumAfter, int resetAdaGradIterations, float dropOut, boolean applySparsity, WeightInit weightInit, NeuralNetwork.OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType) {
+    public NeuralNetConfiguration(float sparsity, boolean useAdaGrad, float lr, int k, float corruptionLevel, int numIterations, float momentum, float l2, boolean useRegularization, Map<Integer, Float> momentumAfter, int resetAdaGradIterations, float dropOut, boolean applySparsity, WeightInit weightInit, NeuralNetwork.OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride) {
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
@@ -100,6 +103,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.visibleUnit = visibleUnit;
         this.hiddenUnit = hiddenUnit;
         this.activationType = activationType;
+        if(weightShape != null)
+            this.weightShape = weightShape;
+        else
+            this.weightShape = new int[]{nIn,nOut};
+        this.filterSize = filterSize;
+        this.numFeatureMaps = numFeatureMaps;
+        this.stride = stride;
+
     }
 
     public NeuralNetConfiguration(NeuralNetConfiguration neuralNetConfiguration) {
@@ -127,10 +138,24 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.activationFunction = neuralNetConfiguration.activationFunction;
         this.visibleUnit = neuralNetConfiguration.visibleUnit;
         this.activationType = neuralNetConfiguration.activationType;
+        this.weightShape = neuralNetConfiguration.weightShape;
+        this.stride = neuralNetConfiguration.stride;
+        this.numFeatureMaps = neuralNetConfiguration.numFeatureMaps;
+        this.filterSize = neuralNetConfiguration.filterSize;
+
         if(dist == null)
             this.dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
         this.hiddenUnit = neuralNetConfiguration.hiddenUnit;
+    }
+
+
+    public int[] getWeightShape() {
+        return weightShape;
+    }
+
+    public void setWeightShape(int[] weightShape) {
+        this.weightShape = weightShape;
     }
 
     public int getNumIterations() {
@@ -358,6 +383,30 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.activationType = activationType;
     }
 
+    public int[] getFilterSize() {
+        return filterSize;
+    }
+
+    public void setFilterSize(int[] filterSize) {
+        this.filterSize = filterSize;
+    }
+
+    public int getNumFeatureMaps() {
+        return numFeatureMaps;
+    }
+
+    public void setNumFeatureMaps(int numFeatureMaps) {
+        this.numFeatureMaps = numFeatureMaps;
+    }
+
+    public int[] getStride() {
+        return stride;
+    }
+
+    public void setStride(int[] stride) {
+        this.stride = stride;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -524,6 +573,35 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
         private int numIterations = 1000;
         private ActivationType activationType = ActivationType.HIDDEN_LAYER_ACTIVATION;
+        private int[] weightShape;
+        private int[] filterSize;
+        private int numFeatureMaps = 2;
+        //subsampling layers
+        private int[] stride;
+
+        public Builder stride(int[] stride) {
+            this.stride = stride;
+            return this;
+        }
+
+
+
+        public Builder numFeatureMaps(int numFeatureMaps) {
+            this.numFeatureMaps = numFeatureMaps;
+            return this;
+        }
+
+        public Builder filterSize(int[] filterSize) {
+            if(filterSize == null || filterSize.length != 2)
+                throw new IllegalArgumentException("Invalid filter size must be length 2");
+            this.filterSize = filterSize;
+            return this;
+        }
+
+        public Builder weightShape(int[] weightShape) {
+            this.weightShape = weightShape;
+            return this;
+        }
 
 
         public Builder withActivationType(ActivationType activationType) {
@@ -634,7 +712,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,  renderWeightsEveryNumEpochs,
                     concatBiases,  constrainGradientToUnitNorm,  rng,
-                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType);
+                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType,weightShape,filterSize,numFeatureMaps,stride);
             return ret;
         }
 
