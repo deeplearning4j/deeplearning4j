@@ -1058,8 +1058,21 @@ public interface INDArray extends Serializable {
      * @param rearrange the dimensions to swap to
      * @return the newly permuted array
      */
-    public INDArray permute(int[] rearrange);
+    public INDArray permute(int...rearrange);
 
+    /**
+     * Dimshuffle: an extension of permute that adds the ability
+     * to broadcast various dimensions.
+     * This will only accept integers and xs.
+     *
+     * An x indicates a dimension should be broadcasted rather than permuted.
+     *
+     * @param rearrange the dimensions to swap to
+     * @param newOrder the new order (think permute)
+     * @param broadCastable (whether the dimension is broadcastable) (must be same length as new order)
+     * @return the newly permuted array
+     */
+    public INDArray dimShuffle(Object[] rearrange,int[] newOrder,boolean[] broadCastable);
 
     /**
      * Returns the specified column.

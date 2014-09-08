@@ -60,7 +60,7 @@ public class Transforms {
             }
         }
 
-        return zz.reshape(input.shape());
+        return zz.reshape(signalNDArray.shape());
     }
 
     /**

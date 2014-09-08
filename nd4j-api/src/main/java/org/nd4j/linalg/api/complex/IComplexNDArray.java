@@ -824,7 +824,20 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray add(INDArray other,INDArray result);
 
 
-
+    /**
+     * Dimshuffle: an extension of permute that adds the ability
+     * to broadcast various dimensions.
+     * This will only accept integers and xs.
+     * <p/>
+     * An x indicates a dimension should be broadcasted rather than permuted.
+     *
+     * @param rearrange     the dimensions to swap to
+     * @param newOrder      the new order (think permute)
+     * @param broadCastable (whether the dimension is broadcastable) (must be same length as new order)
+     * @return the newly permuted array
+     */
+    @Override
+    IComplexNDArray dimShuffle(Object[] rearrange, int[] newOrder, boolean[] broadCastable);
 
     /**
      * Perform an copy matrix multiplication

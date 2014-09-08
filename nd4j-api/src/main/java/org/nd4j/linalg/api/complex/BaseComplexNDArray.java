@@ -22,9 +22,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.*;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -1622,11 +1620,18 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         assert dimension <= shape.length : "Invalid dimension " + dimension;
         if(ordering == NDArrayFactory.C) {
 
-            if(dimension == shape.length - 1 && dimension != 0)
-                return Nd4j.createComplex(data,
-                        new int[]{1, shape[dimension]}
-                        , ArrayUtil.removeIndex(stride, 0),
-                        offset + index * 2 * stride[dimension - 1]);
+            if(dimension == shape.length - 1 && dimension != 0) {
+                if (size(dimension) == 1)
+                    return Nd4j.createComplex(data,
+                            new int[]{1, shape[dimension]}
+                            , ArrayUtil.removeIndex(stride, 0),
+                            offset + index * 2);
+                else
+                    return Nd4j.createComplex(data,
+                            new int[]{1, shape[dimension]}
+                            , ArrayUtil.removeIndex(stride, 0),
+                            offset + index * 2 * stride[dimension - 1]);
+            }
 
             else if(dimension == 0)
                 return Nd4j.createComplex(data,
@@ -1635,6 +1640,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                         offset + index * 2);
 
 
+            if(size(dimension) == 0)
+                return  Nd4j.createComplex(data,
+                        new int[]{shape[dimension], 1}
+                        , new int[]{stride[dimension], 1},
+                        offset + index * 2);
 
             return  Nd4j.createComplex(data,
                     new int[]{shape[dimension], 1}
@@ -1644,17 +1654,32 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
         else if(ordering == NDArrayFactory.FORTRAN) {
 
-            if(dimension == shape.length - 1 && dimension != 0)
+            if(dimension == shape.length - 1 && dimension != 0) {
+                if(size(dimension) == 1) {
+                    return Nd4j.createComplex(data,
+                            new int[]{1, shape[dimension]}
+                            , ArrayUtil.removeIndex(stride, 0),
+                            offset + index * 2);
+                }
+
+                else
+                    return Nd4j.createComplex(data,
+                            new int[]{1, shape[dimension]}
+                            , ArrayUtil.removeIndex(stride, 0),
+                            offset + index * 2 * stride[0]);
+            }
+
+            if(size(dimension) == 1) {
                 return Nd4j.createComplex(data,
                         new int[]{1, shape[dimension]}
                         , ArrayUtil.removeIndex(stride, 0),
+                        offset + index * 2);
+            }
+            else
+                return  Nd4j.createComplex(data,
+                        new int[]{shape[dimension], 1}
+                        , new int[]{stride[dimension], 1},
                         offset + index * 2 * stride[0]);
-
-
-            return  Nd4j.createComplex(data,
-                    new int[]{shape[dimension], 1}
-                    , new int[]{stride[dimension], 1},
-                    offset + index * 2 * stride[0]);
         }
 
         throw new IllegalStateException("Illegal ordering..none declared");}
@@ -1700,6 +1725,119 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
         return this;
     }
+
+
+
+    /**
+     * Dimshuffle: an extension of permute that adds the ability
+     * to broadcast various dimensions.
+     *
+     * See theano for more examples.
+     * This will only accept integers and xs.
+     * <p/>
+     * An x indicates a dimension should be broadcasted rather than permuted.
+     *
+     * @param rearrange the dimensions to swap to
+     * @return the newly permuted array
+     */
+    @Override
+    public IComplexNDArray dimShuffle(Object[] rearrange,int[] newOrder,boolean[] broadCastable) {
+        assert broadCastable.length == shape.length : "The broadcastable dimensions must be the same length as the current shape";
+
+        boolean broadcast = false;
+        Set<Object> set = new HashSet<>();
+        for(int i = 0; i < rearrange.length; i++) {
+            set.add(rearrange[i]);
+            if(rearrange[i] instanceof Integer) {
+                Integer j = (Integer) rearrange[i];
+                if(j >= broadCastable.length)
+                    throw new IllegalArgumentException("Illegal dimension, dimension must be < broadcastable.length (aka the real dimensions");
+            }
+            else if(rearrange[i] instanceof Character) {
+                Character c = (Character) rearrange[i];
+                if(c != 'x')
+                    throw new IllegalArgumentException("Illegal input: Must be x");
+                broadcast = true;
+
+            }
+            else
+                throw new IllegalArgumentException("Only characters and integers allowed");
+        }
+
+        //just do permute
+        if(!broadcast) {
+            int[] ret = new int[rearrange.length];
+            for(int i = 0; i < ret.length; i++)
+                ret[i] = (Integer) rearrange[i];
+            return permute(ret);
+        }
+
+        else {
+            List<Integer> drop = new ArrayList<>();
+            for(int i = 0; i < broadCastable.length; i++) {
+                if(!set.contains(i)) {
+                    if(broadCastable[i])
+                        drop.add(i);
+                    else
+                        throw new IllegalArgumentException("We can't drop the given dimension because its not broadcastable");
+                }
+
+            }
+
+
+            //list of dimensions to keep
+            int[] shuffle = new int[broadCastable.length];
+            int count = 0;
+            for(int i = 0; i < rearrange.length; i++) {
+                if(rearrange[i] instanceof Integer) {
+                    shuffle[count++] = (Integer) rearrange[i];
+                }
+            }
+
+
+
+            List<Integer> augment = new ArrayList<>();
+            for(int i = 0; i < rearrange.length; i++) {
+                if(rearrange[i] instanceof Character)
+                    augment.add(i);
+            }
+
+            Integer[] augmentDims = augment.toArray(new Integer[1]);
+
+            count = 0;
+
+            int[] newShape = new int[shuffle.length + drop.size()];
+            for(int i = 0; i < newShape.length; i++) {
+                if(i < shuffle.length) {
+                    newShape[count++] = shuffle[i];
+                }
+                else
+                    newShape[count++] = drop.get(i);
+            }
+
+
+            IComplexNDArray ret = permute(newShape);
+            List<Integer> newDims = new ArrayList<>();
+            int[] shape = Arrays.copyOfRange(ret.shape(),0,shuffle.length);
+            for(int i = 0; i < shape.length; i++) {
+                newDims.add(shape[i]);
+            }
+
+            for(int i = 0; i <  augmentDims.length; i++) {
+                newDims.add(1,augmentDims[i]);
+            }
+
+            int[] toReshape = ArrayUtil.toArray(newDims);
+
+
+            ret = ret.reshape(toReshape);
+            return ret;
+
+        }
+
+
+    }
+
 
     /**
      * Cumulative sum along a dimension (in place)

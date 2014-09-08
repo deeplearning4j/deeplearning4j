@@ -14,9 +14,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.*;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.nd4j.linalg.util.ArrayUtil.*;
@@ -403,27 +401,47 @@ public abstract class BaseNDArray  implements INDArray {
                         , new int[]{stride[dimension], 1},
                         offset + index);
 
+            if(size(dimension) == 1) {
 
-
-            return  Nd4j.create(data,
-                    new int[]{shape[dimension], 1}
-                    , new int[]{stride[dimension], 1},
-                    offset + index * stride[0]);
+                return  Nd4j.create(data,
+                        new int[]{shape[dimension], 1}
+                        , new int[]{stride[dimension], 1},
+                        offset + index);
+            }
+            else
+                return  Nd4j.create(data,
+                        new int[]{shape[dimension], 1}
+                        , new int[]{stride[dimension], 1},
+                        offset + index * stride[0]);
         }
 
         else if(ordering == NDArrayFactory.FORTRAN) {
 
-            if(dimension == shape.length - 1 && dimension != 0)
+            if(dimension == shape.length - 1 && dimension != 0) {
+                if(size(dimension) == 1)
+                    return Nd4j.create(data,
+                            new int[]{1, shape[dimension]}
+                            , ArrayUtil.removeIndex(stride, 0),
+                            offset + index);
                 return Nd4j.create(data,
                         new int[]{1, shape[dimension]}
                         , ArrayUtil.removeIndex(stride, 0),
                         offset + index * stride[dimension - 1]);
 
+            }
+            else {
+                if(size(dimension) == 1)
+                    return  Nd4j.create(data,
+                            new int[]{shape[dimension], 1}
+                            , new int[]{stride[dimension], 1},
+                            offset + index);
 
-            return  Nd4j.create(data,
-                    new int[]{shape[dimension], 1}
-                    , new int[]{stride[dimension], 1},
-                    offset + index * stride[stride.length - 1]);
+                return  Nd4j.create(data,
+                        new int[]{shape[dimension], 1}
+                        , new int[]{stride[dimension], 1},
+                        offset + index * stride[stride.length - 1]);
+            }
+
         }
 
         throw new IllegalStateException("Illegal ordering..none declared");
@@ -1856,10 +1874,10 @@ public abstract class BaseNDArray  implements INDArray {
         LinAlgExceptions.assertMultiplies(this,other);
 
         if (other.isScalar()) {
-            return muli((INDArray) otherArray.element(), resultArray);
+            return muli(otherArray.get(0), resultArray);
         }
         if (isScalar()) {
-            return otherArray.muli((INDArray)  element(), resultArray);
+            return otherArray.muli(get(0), resultArray);
         }
 
         /* check sizes and resize if necessary */
@@ -3241,7 +3259,7 @@ public abstract class BaseNDArray  implements INDArray {
 
         int[] offsets =  Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(),indexes);
-        int[] strides = ordering == 'f' ? ArrayUtil.calcStridesFortran(shape) :  ArrayUtil.copy(stride());
+        int[] strides =  ArrayUtil.copy(stride());
 
         return subArray(offsets,shape,strides);
     }
@@ -3438,7 +3456,10 @@ public abstract class BaseNDArray  implements INDArray {
         if (targetDimensions < dims) {
             throw new IllegalArgumentException("Invalid shape to broad cast " + Arrays.toString(shape));
         }
+
         else if (dims == targetDimensions) {
+            if(dims == 1 && shape.length == 1 && shape[0] == 1 || this.shape[0] == 1)
+                return this;
             if (Shape.shapeEquals(shape, this.shape()))
                 return this;
             throw new IllegalArgumentException("Invalid shape to broad cast " + Arrays.toString(shape));
@@ -3451,7 +3472,115 @@ public abstract class BaseNDArray  implements INDArray {
     }
 
 
+    /**
+     * Dimshuffle: an extension of permute that adds the ability
+     * to broadcast various dimensions.
+     *
+     * See theano for more examples.
+     * This will only accept integers and xs.
+     * <p/>
+     * An x indicates a dimension should be broadcasted rather than permuted.
+     *
+     * @param rearrange the dimensions to swap to
+     * @return the newly permuted array
+     */
+    @Override
+    public INDArray dimShuffle(Object[] rearrange,int[] newOrder,boolean[] broadCastable) {
+        assert broadCastable.length == shape.length : "The broadcastable dimensions must be the same length as the current shape";
 
+        boolean broadcast = false;
+        Set<Object> set = new HashSet<>();
+        for(int i = 0; i < rearrange.length; i++) {
+            set.add(rearrange[i]);
+            if(rearrange[i] instanceof Integer) {
+                Integer j = (Integer) rearrange[i];
+                if(j >= broadCastable.length)
+                    throw new IllegalArgumentException("Illegal dimension, dimension must be < broadcastable.length (aka the real dimensions");
+            }
+            else if(rearrange[i] instanceof Character) {
+                Character c = (Character) rearrange[i];
+                if(c != 'x')
+                    throw new IllegalArgumentException("Illegal input: Must be x");
+                broadcast = true;
+
+            }
+            else
+                throw new IllegalArgumentException("Only characters and integers allowed");
+        }
+
+        //just do permute
+        if(!broadcast) {
+            int[] ret = new int[rearrange.length];
+            for(int i = 0; i < ret.length; i++)
+                ret[i] = (Integer) rearrange[i];
+            return permute(ret);
+        }
+
+        else {
+            List<Integer> drop = new ArrayList<>();
+            for(int i = 0; i < broadCastable.length; i++) {
+                if(!set.contains(i)) {
+                    if(broadCastable[i])
+                        drop.add(i);
+                    else
+                        throw new IllegalArgumentException("We can't drop the given dimension because its not broadcastable");
+                }
+
+            }
+
+
+            //list of dimensions to keep
+            int[] shuffle = new int[broadCastable.length];
+            int count = 0;
+            for(int i = 0; i < rearrange.length; i++) {
+                if(rearrange[i] instanceof Integer) {
+                    shuffle[count++] = (Integer) rearrange[i];
+                }
+            }
+
+
+
+            List<Integer> augment = new ArrayList<>();
+            for(int i = 0; i < rearrange.length; i++) {
+                if(rearrange[i] instanceof Character)
+                    augment.add(i);
+            }
+
+            Integer[] augmentDims = augment.toArray(new Integer[1]);
+
+            count = 0;
+
+            int[] newShape = new int[shuffle.length + drop.size()];
+            for(int i = 0; i < newShape.length; i++) {
+                if(i < shuffle.length) {
+                    newShape[count++] = shuffle[i];
+                }
+                else
+                    newShape[count++] = drop.get(i);
+            }
+
+
+            INDArray ret = permute(newShape);
+            List<Integer> newDims = new ArrayList<>();
+            int[] shape = Arrays.copyOfRange(ret.shape(),0,shuffle.length);
+            for(int i = 0; i < shape.length; i++) {
+                newDims.add(shape[i]);
+            }
+
+            for(int i = 0; i <  augmentDims.length; i++) {
+                newDims.add(1,augmentDims[i]);
+            }
+
+            int[] toReshape = ArrayUtil.toArray(newDims);
+
+
+            ret = ret.reshape(toReshape);
+            return ret;
+
+        }
+
+
+    }
 
     /**
      * See: http://www.mathworks.com/help/matlab/ref/permute.html
@@ -3468,6 +3597,8 @@ public abstract class BaseNDArray  implements INDArray {
         int[] newShape = doPermuteSwap(shape,rearrange);
         int[] newStride = doPermuteSwap(stride,rearrange);
         return  Nd4j.create(data, newShape, newStride, offset, ordering);
+
+
 
     }
 

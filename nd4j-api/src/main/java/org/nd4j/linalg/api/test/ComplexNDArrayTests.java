@@ -63,6 +63,17 @@ public abstract class ComplexNDArrayTests {
     }
 
     @Test
+    public void testDimShuffle() {
+        IComplexNDArray n = Nd4j.complexLinSpace(1,4,4).reshape(2,2);
+        IComplexNDArray twoOneTwo =  n.dimShuffle(new Object[]{0,'x',1},new int[]{0,1},new boolean[]{false,false});
+        assertTrue(Arrays.equals(new int[]{2,1,2},twoOneTwo.shape()));
+
+        IComplexNDArray reverse = n.dimShuffle(new Object[]{1,'x',0},new int[]{1,0},new boolean[]{false,false});
+        assertTrue(Arrays.equals(new int[]{2,1,2}, reverse.shape()));
+
+    }
+
+    @Test
     public void testPutComplex() {
         INDArray fourTwoTwo = Nd4j.linspace(1, 16, 16).reshape(new int[]{4,2,2});
         IComplexNDArray test = Nd4j.createComplex(new int[]{4, 2, 2});

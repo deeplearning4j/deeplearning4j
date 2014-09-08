@@ -1342,6 +1342,23 @@ public class DummyNDArray implements INDArray {
     }
 
     /**
+     * Dimshuffle: an extension of permute that adds the ability
+     * to broadcast various dimensions.
+     * This will only accept integers and xs.
+     * <p/>
+     * An x indicates a dimension should be broadcasted rather than permuted.
+     *
+     * @param rearrange     the dimensions to swap to
+     * @param newOrder      the new order (think permute)
+     * @param broadCastable (whether the dimension is broadcastable) (must be same length as new order)
+     * @return the newly permuted array
+     */
+    @Override
+    public INDArray dimShuffle(Object[] rearrange, int[] newOrder, boolean[] broadCastable) {
+        return null;
+    }
+
+    /**
      * Returns the specified column.
      * Throws an exception if its not a matrix
      *

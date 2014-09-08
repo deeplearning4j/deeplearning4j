@@ -2,6 +2,7 @@ package org.nd4j.jdbc.mysql;
 
 import static org.junit.Assert.*;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -10,7 +11,10 @@ import java.sql.Blob;
 
 public class MysqlLoaderTest {
 
+
+    //simple litmus test, unfortunately relies on an external database
     @Test
+    @Ignore
     public void testMysqlLoader() throws Exception {
         MysqlLoader loader = new MysqlLoader("jdbc:mysql://localhost:3306/nd4j?user=nd4j&password=nd4j","ndarrays","array");
         loader.delete("1");

@@ -131,6 +131,17 @@ public abstract class NDArrayTests {
     }
 
     @Test
+    public void testDimShuffle() {
+        INDArray n = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray twoOneTwo =  n.dimShuffle(new Object[]{0,'x',1},new int[]{0,1},new boolean[]{false,false});
+        assertTrue(Arrays.equals(new int[]{2,1,2},twoOneTwo.shape()));
+
+        INDArray reverse = n.dimShuffle(new Object[]{1,'x',0},new int[]{1,0},new boolean[]{false,false});
+        assertTrue(Arrays.equals(new int[]{2,1,2}, reverse.shape()));
+
+    }
+
+    @Test
     public void testGetVsGetScalar() {
         INDArray a = Nd4j.linspace(1, 4, 4).reshape(2,2);
         float element = a.get(0,1);
@@ -1026,7 +1037,7 @@ public abstract class NDArrayTests {
     public void testBroadCast() {
         INDArray n = Nd4j.linspace(1,4,4);
         INDArray broadCasted = n.broadcast(new int[]{5,4});
-        
+
     }
 
 

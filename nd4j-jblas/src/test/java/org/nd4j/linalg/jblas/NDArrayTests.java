@@ -70,7 +70,6 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         DoubleMatrix d = dReshaped.transpose();
         INDArray n = nReshaped.transpose();
         verifyElements(d,n);
-        assertTrue(ArrayUtil.equals(n.data(),d.data));
         Nd4j.factory().setOrder('c');
 
     }
@@ -219,7 +218,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
             INDArray twoByTwo = Nd4j.create(new float[]{1, 3, 2, 4}, new int[]{2, 2});
             INDArray toAdd = Nd4j.create(new float[]{1, 2}, new int[]{2});
             twoByTwo.addiRowVector(toAdd);
-            INDArray assertion = Nd4j.create(new float[]{2, 3, 5, 6}, new int[]{2, 2});
+            INDArray assertion = Nd4j.create(new float[]{2, 5,3, 6}, new int[]{2, 2});
             assertEquals(assertion,twoByTwo);
 
         }
