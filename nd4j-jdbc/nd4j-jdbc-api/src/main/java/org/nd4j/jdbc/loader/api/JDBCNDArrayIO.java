@@ -14,6 +14,21 @@ import java.sql.SQLException;
  */
 public interface JDBCNDArrayIO {
 
+
+    /**
+     * Convert an ndarray to a blob
+     * @param toConvert the complex ndarray to convert
+     * @return the converted complex ndarray
+     */
+    Blob convert(IComplexNDArray toConvert) throws IOException, SQLException;
+
+    /**
+     * Convert an ndarray to a blob
+     * @param toConvert the ndarray to convert
+     * @return the converted ndarray
+     */
+    Blob convert(INDArray toConvert) throws SQLException, IOException;
+
     /**
      * Load an ndarray from a blob
      * @param blob the blob to load from

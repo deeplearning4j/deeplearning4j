@@ -8,7 +8,7 @@ import org.nd4j.jdbc.loader.impl.BaseLoader;
  * @author Adam Gibson
  */
 public class MysqlLoader extends BaseLoader {
-    protected MysqlLoader(String jdbcUrl, String tableName, String columnName) throws Exception {
+    public MysqlLoader(String jdbcUrl, String tableName, String columnName) throws Exception {
         super(jdbcUrl, tableName, columnName);
     }
 

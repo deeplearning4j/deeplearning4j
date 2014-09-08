@@ -43,6 +43,46 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
     }
 
     /**
+     * Convert an ndarray to a blob
+     *
+     * @param toConvert the complex ndarray to convert
+     * @return the converted complex ndarray
+     */
+    @Override
+    public Blob convert(IComplexNDArray toConvert) throws IOException, SQLException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+
+        Nd4j.writeComplex(toConvert,dos);
+
+        byte[] bytes = bos.toByteArray();
+        Connection c = dataSource.getConnection();
+        Blob b = c.createBlob();
+        b.setBytes(1,bytes);
+        return b;
+    }
+
+    /**
+     * Convert an ndarray to a blob
+     *
+     * @param toConvert the ndarray to convert
+     * @return the converted ndarray
+     */
+    @Override
+    public Blob convert(INDArray toConvert) throws SQLException, IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+
+        Nd4j.write(toConvert, dos);
+
+        byte[] bytes = bos.toByteArray();
+        Connection c = dataSource.getConnection();
+        Blob b = c.createBlob();
+        b.setBytes(1,bytes);
+        return b;
+    }
+
+    /**
      * Load an ndarray from a blob
      *
      * @param blob the blob to load from
@@ -105,8 +145,8 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
         byte[] bytes = bos.toByteArray();
 
         PreparedStatement preparedStatement = c.prepareStatement(insertStatement());
-        preparedStatement.setString(1,id);
-        preparedStatement.setBytes(2,bytes);
+        preparedStatement.setString(1, id);
+        preparedStatement.setBytes(2, bytes);
         int update = preparedStatement.executeUpdate();
         preparedStatement.close();
         c.close();
@@ -147,7 +187,7 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
     public void delete(String id) throws SQLException {
         Connection c = dataSource.getConnection();
         PreparedStatement p = c.prepareStatement(deleteStatement());
-        p.setString(1,id);
+        p.setString(1, id);
         p.execute();
 
     }
