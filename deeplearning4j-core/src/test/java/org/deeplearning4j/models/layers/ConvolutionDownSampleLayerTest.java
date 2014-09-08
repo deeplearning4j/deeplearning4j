@@ -2,14 +2,15 @@ package org.deeplearning4j.models.layers;
 
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.layers.ConvolutionDownSampleLayer;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 
 /**
  * Created by agibsonccc on 9/7/14.
  */
-public class ConvolutionLayerTest {
+public class ConvolutionDownSampleLayerTest {
 
 
     @Test
@@ -22,11 +23,12 @@ public class ConvolutionLayerTest {
 
         NeuralNetConfiguration n = new NeuralNetConfiguration.Builder()
                 .filterSize(new int[]{2,2}).numFeatureMaps(2)
-                .weightShape(new int[]{2,3,9,9}).build();
+                .weightShape(new int[]{2, 3, 9, 9}).build();
 
-        ConvolutionLayer c = new ConvolutionLayer(n);
+        ConvolutionDownSampleLayer c = new ConvolutionDownSampleLayer(n);
 
-        c.activate(d.getFeatureMatrix());
+        INDArray convolved = c.activate(d.getFeatureMatrix());
+
 
     }
 
