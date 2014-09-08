@@ -126,9 +126,7 @@ public class EhCacheVocabCache implements VocabCache {
                     VocabWord w = (VocabWord) val;
                     ret.add(w);
                 }
-                else {
-                    System.out.println("Weirdness");
-                }
+
 
             }
         }
