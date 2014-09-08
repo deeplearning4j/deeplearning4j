@@ -16,43 +16,39 @@ import org.nd4j.linalg.util.ArrayUtil;
  * @author Adam Gibson
  */
 public class ConvolutionLayer extends BaseLayer {
-    private int[] shape;
 
-    //number of feature mapConvolution
-    protected int[] numFilters = {4,4};
-
-    public ConvolutionLayer(NeuralNetConfiguration conf, INDArray W, INDArray b, INDArray input) {
+       public ConvolutionLayer(NeuralNetConfiguration conf, INDArray W, INDArray b, INDArray input) {
         super(conf, W, b, input);
     }
 
 
-    public ConvolutionLayer(int[] shape,NeuralNetConfiguration conf) {
+    public ConvolutionLayer(NeuralNetConfiguration conf) {
         super(conf,null,null,null);
-        this.shape = shape;
+
 
     }
 
     @Override
     protected INDArray createBias() {
-        return Nd4j.zeros(numFilters[0]);
+        return Nd4j.zeros(conf.getFilterSize()[0]);
     }
 
     @Override
     protected INDArray createWeightMatrix() {
-        float prod = ArrayUtil.prod(ArrayUtil.removeIndex(shape, 0));
+        float prod = ArrayUtil.prod(ArrayUtil.removeIndex(conf.getWeightShape(), 0));
         float min = -1 / prod;
         float max = 1 / prod;
         RealDistribution dist = new UniformRealDistribution(conf.getRng(),min,max);
-        return Nd4j.rand(shape,dist);
+        return Nd4j.rand(conf.getWeightShape(),dist);
     }
 
     @Override
     public INDArray activate(INDArray input) {
         ActivationFunction f = conf.getActivationFunction();
         INDArray convolution = Convolution.conv2d(input,getW(), Convolution.Type.VALID);
-        INDArray pooled = Transforms.maxPool(convolution,numFilters,true);
-        INDArray bias = b.broadcast(new int[]{1,numFilters[0],1,1});
-        pooled.addi(bias);
+        INDArray pooled = Transforms.maxPool(convolution, conf.getFilterSize(),true);
+        INDArray bias = b.dimShuffle(new Object[]{'x',0,'x','x'},new int[]{0},new boolean[]{false});
+        pooled.addi(bias.broadcast(pooled.shape()));
         return f.apply(pooled);
     }
 }
