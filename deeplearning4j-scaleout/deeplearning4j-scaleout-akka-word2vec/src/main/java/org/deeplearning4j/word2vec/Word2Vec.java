@@ -573,6 +573,8 @@ public class Word2Vec implements Persistable {
             f.onComplete(new OnComplete<Void>() {
                 @Override
                 public void onComplete(Throwable failure, Void success) throws Throwable {
+                   if(failure != null)
+                       log.error("Error thrown ",failure);
                     latch.countDown();
                 }
             },trainingSystem.dispatcher());

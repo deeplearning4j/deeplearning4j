@@ -62,8 +62,13 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private int[] weightShape;
     //convolutional nets
     private int[] filterSize = {2,2};
+
     private int numFeatureMaps = 2;
+    private int[] featureMapSize = {2,2};
     private int[] stride = {2,2};
+
+    private int numInFeatureMaps = 2;
+
     public NeuralNetConfiguration() {
 
     }
@@ -74,7 +79,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
 
-    public NeuralNetConfiguration(float sparsity, boolean useAdaGrad, float lr, int k, float corruptionLevel, int numIterations, float momentum, float l2, boolean useRegularization, Map<Integer, Float> momentumAfter, int resetAdaGradIterations, float dropOut, boolean applySparsity, WeightInit weightInit, NeuralNetwork.OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride) {
+    public NeuralNetConfiguration(float sparsity, boolean useAdaGrad, float lr, int k, float corruptionLevel, int numIterations, float momentum, float l2, boolean useRegularization, Map<Integer, Float> momentumAfter, int resetAdaGradIterations, float dropOut, boolean applySparsity, WeightInit weightInit, NeuralNetwork.OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride,int[] featureMapSize,int numInFeatureMaps) {
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
@@ -110,6 +115,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.filterSize = filterSize;
         this.numFeatureMaps = numFeatureMaps;
         this.stride = stride;
+        this.featureMapSize = featureMapSize;
+        this.numInFeatureMaps = numInFeatureMaps;
 
     }
 
@@ -142,13 +149,28 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.stride = neuralNetConfiguration.stride;
         this.numFeatureMaps = neuralNetConfiguration.numFeatureMaps;
         this.filterSize = neuralNetConfiguration.filterSize;
-
+        this.featureMapSize = neuralNetConfiguration.featureMapSize;
         if(dist == null)
             this.dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
         this.hiddenUnit = neuralNetConfiguration.hiddenUnit;
     }
 
+    public int getNumInFeatureMaps() {
+        return numInFeatureMaps;
+    }
+
+    public void setNumInFeatureMaps(int numInFeatureMaps) {
+        this.numInFeatureMaps = numInFeatureMaps;
+    }
+
+    public int[] getFeatureMapSize() {
+        return featureMapSize;
+    }
+
+    public void setFeatureMapSize(int[] featureMapSize) {
+        this.featureMapSize = featureMapSize;
+    }
 
     public int[] getWeightShape() {
         return weightShape;
@@ -576,8 +598,22 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int[] weightShape;
         private int[] filterSize;
         private int numFeatureMaps = 2;
+        private int[] featureMapSize = {2,2};
+        private int numInFeatureMaps = 2;
         //subsampling layers
         private int[] stride;
+
+
+
+        public Builder numInFeatureMaps(int numInFeatureMaps) {
+            this.numInFeatureMaps = numInFeatureMaps;
+            return this;
+        }
+        public Builder featureMapSize(int[] featureMapSize) {
+            this.featureMapSize = featureMapSize;
+            return this;
+        }
+
 
         public Builder stride(int[] stride) {
             this.stride = stride;
@@ -712,7 +748,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,  renderWeightsEveryNumEpochs,
                     concatBiases,  constrainGradientToUnitNorm,  rng,
-                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType,weightShape,filterSize,numFeatureMaps,stride);
+                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType,weightShape,filterSize,numFeatureMaps,stride,featureMapSize,numInFeatureMaps);
             return ret;
         }
 
