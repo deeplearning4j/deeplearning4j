@@ -23,8 +23,8 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 	protected Iterator<File> fileIterator;
     protected Queue<String> cache;
     protected LineIterator currLineIterator;
-    protected File file;
-    protected File currentFile;
+    protected volatile File file;
+    protected volatile File currentFile;
 	/**
 	 * Takes a single file or directory
 	 * @param preProcessor the sentence pre processor
@@ -46,7 +46,7 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 
 
 	@Override
-	public synchronized  String nextSentence() {
+	public   String nextSentence() {
 		String ret = null;
 		if(!cache.isEmpty()) {
 			ret = cache.poll();
@@ -89,7 +89,7 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 
 
 
-	private synchronized void nextLineIter() {
+	private  void nextLineIter() {
 		if(fileIterator.hasNext()) {
 			try {
 				File next = fileIterator.next();
@@ -113,7 +113,7 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 	}
 
 	@Override
-	public synchronized boolean hasNext() {
+	public  boolean hasNext() {
 		return currLineIterator != null && currLineIterator.hasNext() || fileIterator.hasNext() || !cache.isEmpty();
 	}
 
