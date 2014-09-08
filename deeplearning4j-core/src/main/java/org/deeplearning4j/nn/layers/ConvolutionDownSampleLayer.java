@@ -15,14 +15,14 @@ import org.nd4j.linalg.util.ArrayUtil;
  *
  * @author Adam Gibson
  */
-public class ConvolutionLayer extends BaseLayer {
+public class ConvolutionDownSampleLayer extends BaseLayer {
 
-       public ConvolutionLayer(NeuralNetConfiguration conf, INDArray W, INDArray b, INDArray input) {
+       public ConvolutionDownSampleLayer(NeuralNetConfiguration conf, INDArray W, INDArray b, INDArray input) {
         super(conf, W, b, input);
     }
 
 
-    public ConvolutionLayer(NeuralNetConfiguration conf) {
+    public ConvolutionDownSampleLayer(NeuralNetConfiguration conf) {
         super(conf,null,null,null);
 
 
