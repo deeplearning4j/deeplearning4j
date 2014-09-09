@@ -19,12 +19,6 @@
     <orderEntry type="library" name="Maven: org.nd4j:jcurand:6.0" level="project" />
     <orderEntry type="library" name="Maven: org.nd4j:jcusparse:6.0" level="project" />
     <orderEntry type="module" module-name="nd4j-api" />
-    <orderEntry type="library" name="Maven: org.apache.commons:commons-math3:3.2" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.commons:commons-lang3:3.3.1" level="project" />
-    <orderEntry type="library" name="Maven: org.springframework:spring-core:3.2.5.RELEASE" level="project" />
-    <orderEntry type="library" name="Maven: commons-logging:commons-logging:1.1.1" level="project" />
-    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.2" level="project" />
-    <orderEntry type="library" name="Maven: com.google.guava:guava:18.0" level="project" />
   </component>
 </module>
 
