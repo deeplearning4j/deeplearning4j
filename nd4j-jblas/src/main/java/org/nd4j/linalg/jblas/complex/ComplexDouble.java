@@ -84,7 +84,7 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
 
     @Override
     public IComplexNumber set(Number real, Number imag) {
-        super.set((double) real,(double) imag);
+        super.set(real.doubleValue(),imag.doubleValue());
         return this;
     }
 

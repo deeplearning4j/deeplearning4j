@@ -98,7 +98,6 @@
         <module>nd4j-api</module>
         <module>nd4j-jblas</module>
         <module>nd4j-jcublas</module>
-        <module>mavenized-jcuda</module>
         <module>nd4j-examples</module>
         <module>nd4j-jdbc</module>
     </modules>
@@ -197,7 +196,7 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
+                    <artifactId>man'tven-compiler-plugin</artifactId>
                     <version>3.1</version>
                     <configuration>
                         <source>1.7</source>

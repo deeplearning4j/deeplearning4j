@@ -137,7 +137,7 @@ public class ComplexNDArrayTests extends org.nd4j.linalg.api.test.ComplexNDArray
         for(int i = 0; i < d2.rows(); i++) {
             for(int j = 0; j < d2.columns(); j++) {
                 double test1 =  d[i][j];
-                double test2 = (double) d2.getScalar(i,j).element();
+                double test2 =  d2.get(i,j);
                 assertEquals(test1,test2,1e-6);
             }
         }
@@ -148,7 +148,7 @@ public class ComplexNDArrayTests extends org.nd4j.linalg.api.test.ComplexNDArray
         for(int i = 0; i < d.rows; i++) {
             for(int j = 0; j < d.columns; j++) {
                 double test1 = d.get(i,j);
-                double test2 = (float) d2.getScalar(i,j).element();
+                double test2 =d2.get(i,j);
                 assertEquals(test1,test2,1e-6);
             }
         }

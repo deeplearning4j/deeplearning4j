@@ -1831,8 +1831,8 @@ public class Nd4j {
           return INSTANCE.createComplex(dim);
     }
 
-    public static IComplexNDArray createComplex(float[] data, int[] ints, int offset) {
-        return INSTANCE.createComplex(data,ints,offset);
+    public static IComplexNDArray createComplex(float[] data, int[] shape, int offset) {
+        return INSTANCE.createComplex(data,shape,offset);
     }
 
     public static INDArray create(float[][] floats) {

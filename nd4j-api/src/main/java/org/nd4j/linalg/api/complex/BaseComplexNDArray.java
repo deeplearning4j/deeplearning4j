@@ -210,6 +210,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray linearView() {
+        if(isVector())
+            return this;
         if(linearView == null)
             linearView = Nd4j.createComplex(data, new int[]{1, length}, offset());
         return (IComplexNDArray) linearView;
@@ -738,7 +740,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         IComplexNDArray linearView = linearView();
         INDArray linearRet = result.linearView();
         for(int i = 0; i < linearView.length(); i++) {
-            linearRet.putScalar(i,linearView.getImag(i));
+            linearRet.putScalar(i,linearView.getReal(i));
         }
         return result;
     }

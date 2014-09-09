@@ -225,6 +225,8 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray linearView() {
+        if(isVector())
+            return this;
         if(linearView == null)
             linearView = Nd4j.create(data, new int[]{1, length}, offset());
         return linearView;

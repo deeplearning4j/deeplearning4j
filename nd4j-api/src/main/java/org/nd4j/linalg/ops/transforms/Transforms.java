@@ -123,10 +123,11 @@ public class Transforms {
 
 
         for (int i = 0; i < d.shape().length; i++) {
-            INDArray tmp = Nd4j.zeros(d.size(i) * (int) scale.getScalar(i).element(), 1);
-            int[] indices = ArrayUtil.range(0, (int) scale.getScalar(i).element() * d.size(i),(int) scale.getScalar(i).element());
+            INDArray tmp = Nd4j.zeros(d.size(i) * (int) scale.get(i), 1);
+            int[] indices = ArrayUtil.range(0, (int) scale.get(i) * d.size(i),(int) scale.get(i));
             tmp.putScalar(indices, 1.0f);
-            idx.put(i, tmp.cumsum(Integer.MAX_VALUE).sum(Integer.MAX_VALUE));
+            idx.put(i,
+                    tmp.cumsum(Integer.MAX_VALUE).sum(Integer.MAX_VALUE));
         }
         return idx;
     }

@@ -8,7 +8,7 @@
     <packaging>jar</packaging>
 
     <name>nd4j-jcublas</name>
-    <url>http://deeplearning4j.org/</url>
+    <url>http://nd4j.org/</url>
 
     <properties>
         <!-- github server corresponds to entry in ~/.m2/settings.xml -->
@@ -37,8 +37,8 @@
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>mavenized-jcuda</artifactId>
-            <version>${project.version}</version>
+            <artifactId>jcublas</artifactId>
+            <version>5.5</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

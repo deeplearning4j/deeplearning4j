@@ -201,6 +201,14 @@ public abstract class ComplexNDArrayTests {
     }
 
     @Test
+    public void testLinearView() {
+        IComplexNDArray n = Nd4j.complexLinSpace(1,4,4).reshape(2,2);
+        IComplexNDArray row = n.getRow(1);
+        IComplexNDArray linear = row.linearView();
+        assertEquals(row,linear);
+    }
+
+    @Test
     public void testSwapAxes() {
         IComplexNDArray n = Nd4j.createComplex(Nd4j.create(new double[]{1, 2, 3}, new int[]{3, 1}));
         IComplexNDArray swapped = n.swapAxes(1,0);

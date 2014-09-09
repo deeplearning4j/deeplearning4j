@@ -289,7 +289,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         for(int i = 0; i < d2.rows(); i++) {
             for(int j = 0; j < d2.columns(); j++) {
                 float test1 =  d[i][j];
-                float test2 = (float) d2.getScalar(i,j).element();
+                float test2 = d2.get(i,j);
                 assertEquals(test1,test2,1e-6);
             }
         }
@@ -300,7 +300,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         if(d.isVector() && d2.isVector())
             for(int j = 0; j < d2.length(); j++) {
                 float test1 = (float) d.get(j);
-                float test2 = (float) d2.getScalar(j).element();
+                float test2 =  d2.get(j);
                 assertEquals(test1,test2,1e-6);
             }
 
@@ -308,7 +308,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
             for(int i = 0; i < d.rows; i++) {
                 for(int j = 0; j < d.columns; j++) {
                     float test1 = (float) d.get(i,j);
-                    float test2 = (float) d2.getScalar(i,j).element();
+                    float test2 = d2.get(i,j);
                     assertEquals(test1,test2,1e-6);
                 }
             }

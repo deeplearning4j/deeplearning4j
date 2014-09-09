@@ -30,7 +30,7 @@ public class JblasSerdeTests {
         assertTrue(Arrays.equals(new int[]{d.rows,d.columns},assertion.shape()));
         for(int i = 0; i < d.rows; i++) {
             for(int j = 0; j < d.columns; j++) {
-                assertEquals(d.get(i,j),(double) assertion.getScalar(i,j).element(),1e-1);
+                assertEquals(d.get(i,j),(double) assertion.get(i,j),1e-1);
             }
         }
     }
