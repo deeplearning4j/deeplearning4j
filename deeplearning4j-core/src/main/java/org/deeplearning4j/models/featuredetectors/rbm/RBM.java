@@ -4,6 +4,8 @@ package org.deeplearning4j.models.featuredetectors.rbm;
 import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 
+import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -207,7 +209,7 @@ public  class RBM extends BaseNeuralNetwork {
 		/*
 		 * Update gradient parameters
 		 */
-         INDArray wGradient = input.transpose().mmul(probHidden.getSecond()).sub(
+        INDArray wGradient = input.transpose().mmul(probHidden.getSecond()).sub(
                 nvSamples.transpose().mmul(nhMeans)
         );
 
@@ -291,12 +293,15 @@ public  class RBM extends BaseNeuralNetwork {
         if(conf.getHiddenUnit() == HiddenUnit.RECTIFIED) {
             INDArray h1Mean = propUp(v);
             INDArray sigH1Mean = sigmoid(h1Mean);
+            RandomGenerator gen = new MersenneTwister(123);
 		/*
 		 * Rectified linear part
 		 */
             INDArray sqrtSigH1Mean = sqrt(sigH1Mean);
             //NANs here with Word2Vec
-            INDArray h1Sample = h1Mean.addi(Sampling.normal(conf.getRng(), h1Mean,1).mul(sqrtSigH1Mean));
+            INDArray sample = Sampling.normal(gen, h1Mean,1);
+            sample.muli(sqrtSigH1Mean);
+            INDArray h1Sample = h1Mean.add(sample);
             h1Sample = Transforms.max(h1Sample);
             //apply dropout
             applyDropOutIfNecessary(h1Sample);
@@ -460,7 +465,8 @@ public  class RBM extends BaseNeuralNetwork {
             vMean.addiRowVector(vBias);
 
         if(conf.getVisibleUnit()  == VisibleUnit.GAUSSIAN) {
-            vMean.addi(Sampling.normal(conf.getRng(), vMean, 1.0));
+            INDArray sample = Sampling.normal(conf.getRng(), vMean, 1.0);
+            vMean.addi(sample);
             return vMean;
         }
         else if(conf.getVisibleUnit() == VisibleUnit.LINEAR) {
