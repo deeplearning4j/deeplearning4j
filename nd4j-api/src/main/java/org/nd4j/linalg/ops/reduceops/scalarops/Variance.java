@@ -20,7 +20,11 @@ public class Variance extends BaseScalarOp {
 
     public float var(INDArray arr) {
         double mean = new Mean().apply(arr);
-        return (float) StatUtils.variance(ArrayUtil.doubleCopyOf(arr.data()), mean);
+        float temp = 0;
+        for(int i = 0; i < arr.length(); i++)
+            temp += (mean - arr.get(i))* (mean - arr.get(i));
+        return temp / arr.length();
+
     }
 
 
