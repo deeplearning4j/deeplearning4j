@@ -65,7 +65,7 @@ public class VocabActor extends UntypedActor {
 				if(stopWords.contains(token))
 					token = "STOP";
                 cache.incrementWordCount(token);
-                System.out.println("Incremented token " + token);
+
 				//note that for purposes of word frequency, the
 				//internal vocab and the final vocab
 				//at the class level contain the same references
