@@ -15,7 +15,7 @@
         <github.global.server>github</github.global.server>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Set needed version of JCuda here -->
-        <jcuda.version>0.6.0</jcuda.version>
+        <jcuda.version>6.0</jcuda.version>
     </properties>
 
     <build>
@@ -38,7 +38,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>jcublas</artifactId>
-            <version>5.5</version>
+            <version>${jcuda.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -46,27 +46,27 @@
             <version>4.11</version>
         </dependency>
         <dependency>
-            <groupId>jcuda</groupId>
+            <groupId>org.nd4j</groupId>
             <artifactId>jcublas</artifactId>
             <version>${jcuda.version}</version>
         </dependency>
         <dependency>
-            <groupId>jcuda</groupId>
+            <groupId>org.nd4j</groupId>
             <artifactId>jcuda</artifactId>
             <version>${jcuda.version}</version>
         </dependency>
         <dependency>
-            <groupId>jcuda</groupId>
+            <groupId>org.nd4j</groupId>
             <artifactId>jcufft</artifactId>
             <version>${jcuda.version}</version>
         </dependency>
         <dependency>
-            <groupId>jcuda</groupId>
+            <groupId>org.nd4j</groupId>
             <artifactId>jcurand</artifactId>
             <version>${jcuda.version}</version>
         </dependency>
         <dependency>
-            <groupId>jcuda</groupId>
+            <groupId>org.nd4j</groupId>
             <artifactId>jcusparse</artifactId>
             <version>${jcuda.version}</version>
         </dependency>
@@ -89,20 +89,5 @@
 
     </distributionManagement>
 
-
-    <repositories>
-        <repository>
-            <id>internal.repo</id>
-            <name>Temporary Staging Repository</name>
-            <url>file://${project.build.directory}/repo</url>
-        </repository>
-        <repository>
-            <id>jcuda.local</id>
-            <name>JCuda</name>
-            <url>file:${project.basedir}/repo</url>
-        </repository>
-
-
-    </repositories>
 
 </project>
