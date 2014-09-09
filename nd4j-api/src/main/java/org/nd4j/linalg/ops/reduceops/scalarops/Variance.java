@@ -16,14 +16,26 @@ public class Variance extends BaseScalarOp {
     }
 
 
-
-
+    /**
+     * Variance (see: apache commons)
+     * @param arr the ndarray to get the variance of
+     * @return the variance for this ndarray
+     */
     public float var(INDArray arr) {
-        double mean = new Mean().apply(arr);
-        float temp = 0;
-        for(int i = 0; i < arr.length(); i++)
-            temp += (mean - arr.get(i))* (mean - arr.get(i));
-        return temp / arr.length();
+        float mean = new Mean().apply(arr);
+        float accum = 0.0f;
+        float dev = 0.0f;
+        float accum2 = 0.0f;
+        for (int i = 0; i < arr.length(); i++) {
+            dev = arr.get(i) - mean;
+            accum += dev * dev;
+            accum2 += dev;
+        }
+
+        float len = arr.length();
+        //bias corrected
+        return  (accum - (accum2 * accum2 / len)) / (len - 1.0f);
+
 
     }
 

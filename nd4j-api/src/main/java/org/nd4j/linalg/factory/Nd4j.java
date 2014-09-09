@@ -1843,4 +1843,13 @@ public class Nd4j {
         return Nd4j.createComplex(Nd4j.linspace(1,8,8));
 
     }
+
+
+    public static INDArray create(float[] data, int[] shape, int[] stride,char ordering, int offset) {
+        return INSTANCE.create(data,shape,stride,offset,ordering);
+    }
+
+    public static INDArray create(float[] data, int[] shape, char ordering, int offset) {
+        return INSTANCE.create(data,shape,getStrides(shape,ordering),offset,ordering);
+    }
 }

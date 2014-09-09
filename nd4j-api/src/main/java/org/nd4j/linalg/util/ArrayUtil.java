@@ -537,6 +537,20 @@ public class ArrayUtil {
     }
 
 
+    public static float[] reverseCopy(float[] e) {
+        float[] copy = new float[e.length];
+        for(int i = 0; i <= e.length / 2; i++)
+        {
+            float temp = e[i];
+            copy[i] = e[e.length - i - 1];
+            copy[e.length - i - 1] = temp;
+        }
+        return copy;
+
+    }
+
+
+
     public static <E> E[] reverseCopy(E[] e) {
         E[] copy = (E[]) new Object[e.length];
         for(int i = 0; i <= e.length / 2; i++)

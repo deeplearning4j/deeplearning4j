@@ -1058,6 +1058,165 @@ public abstract class BaseNDArray  implements INDArray {
     }
 
 
+
+    protected INDArray newShape(int[] newShape,char ordering) {
+        if(Arrays.equals(newShape,this.shape()))
+            return this;
+
+        else if(Shape.isVector(newShape) && isVector()) {
+            if(isRowVector() && Shape.isColumnVectorShape(newShape)) {
+                return Nd4j.create(data,newShape,new int[]{stride[0],1},offset);
+            }
+            else if(isColumnVector() && Shape.isRowVectorShape(newShape)) {
+                return Nd4j.create(data,newShape,new int[]{stride[1]},offset);
+
+            }
+        }
+
+        INDArray newCopy = this;
+        int[] newStrides = null;
+        //create a new copy of the ndarray
+        if(shape().length > 1 &&  ((ordering == NDArrayFactory.C && this.ordering != NDArrayFactory.C) ||
+                (ordering == NDArrayFactory.FORTRAN && this.ordering != NDArrayFactory.FORTRAN))) {
+            newStrides = noCopyReshape(newShape,ordering);
+            if(newStrides == null) {
+                newCopy = Nd4j.create(shape(),ordering);
+                for(int i = 0; i < vectorsAlongDimension(0); i++) {
+                    INDArray copyFrom = vectorAlongDimension(i,0);
+                    INDArray copyTo = newCopy.vectorAlongDimension(i,0);
+                    for(int j = 0; j < copyFrom.length(); j++) {
+                        copyTo.putScalar(j,copyFrom.get(i));
+                    }
+                }
+            }
+
+
+
+
+        }
+
+        //needed to copy data
+        if(newStrides == null)
+            newStrides = stride;
+        if(this instanceof  IComplexNDArray)
+            return Nd4j.createComplex(newCopy.data(),newShape,newStrides,offset);
+        return Nd4j.create(newCopy.data(),newShape,newStrides,offset);
+
+
+    }
+
+    /**
+     * Return the new strides based on the shape and ordering or null
+     * if we can't do a reshape
+     * @param newShape the new shape
+     * @param ordering the ordering of the new shape
+     * @return the new strides or null if we can't reshape
+     */
+    protected int[] noCopyReshape(int[] newShape,char ordering) {
+        List<Integer> oldDims = new ArrayList<>();
+        List<Integer> oldStrides = new ArrayList<>();
+        for (int i = 0; i < shape.length; i++) {
+            if (size(i) != 1) {
+                oldDims.add(size(i));
+                oldStrides.add(stride[i]);
+            }
+        }
+
+        int np = 1;
+        for (int ni = 0; ni < newShape.length; ni++) {
+            np *= newShape[ni];
+        }
+
+        int op = 1;
+        for (int oi = 0; oi < oldDims.size(); oi++) {
+            op *= oldDims.get(oi);
+        }
+        if (np != op) {
+        /* different total sizes; no hope */
+            return null;
+        }
+
+        if (np == 0) {
+        /* the current code does not handle 0-sized arrays, so give up */
+            return null;
+        }
+
+
+          /* oi to oj and ni to nj give the axis ranges currently worked with */
+        int oi = 0;
+        int oj = 1;
+        int ni = 0;
+        int nj = 1;
+
+        List<Integer> newStrides = new ArrayList<>();
+        while (ni < newShape.length && oi < oldDims.size()) {
+            np = newShape[ni];
+            op = oldDims.get(oi);
+
+            while (np != op) {
+                if (np < op)
+                    np *= newShape[nj++];
+                else
+                    op *= oldDims.get(oj++);
+            }
+
+                    /* Check whether the original axes can be combined */
+            for (int ok = oi; ok < oj - 1; ok++) {
+                if (ordering == NDArrayFactory.FORTRAN) {
+                    if (oldStrides.get(ok + 1) != oldDims.get(ok) * oldStrides.get(ok)) {
+                     /* not contiguous enough */
+                        return null;
+                    }
+                } else {
+                /* C order */
+                    if (oldStrides.get(ok) != oldDims.get(ok + 1) * oldStrides.get(ok + 1)) {
+                    /* not contiguous enough */
+                        return null;
+                    }
+                }
+            }
+
+
+             /* Calculate new strides for all axes currently worked with */
+            if (ordering == NDArrayFactory.FORTRAN) {
+                newStrides.set(ni, oldStrides.get(oi));
+                for (int nk = ni + 1; nk < nj; nk++) {
+                    newStrides.set(nk, newStrides.get(nk - 1) * newShape[nk - 1]);
+                }
+            } else {
+            /* C order */
+                newStrides.set(nj - 1, oldStrides.get(oj - 1));
+
+                for (int nk = nj - 1; nk > ni; nk--) {
+                    newStrides.set(nk - 1, newStrides.get(nk) * newShape[nk]);
+                }
+            }
+            ni = nj++;
+            oi = oj++;
+        }
+
+    /*
+     * Set strides corresponding to trailing 1s of the new shape.
+     */
+        int lastStride;
+        if (ni >= 1) {
+            lastStride = newStrides.get(ni - 1);
+        } else {
+            lastStride = length;
+        }
+        if (ordering == NDArrayFactory.FORTRAN) {
+            lastStride *= newShape[ni - 1];
+        }
+        for (int nk = ni; nk < newShape.length; nk++) {
+            newStrides.set(nk, lastStride);
+        }
+
+
+        return ArrayUtil.toArray(newStrides);
+
+
+    }
+
     protected float reduceVector(Ops.DimensionOp op,INDArray vector) {
 
         switch(op) {
@@ -2081,7 +2240,7 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray normmax(int dimension) {
         if(isVector()) {
-            return normmax(Integer.MAX_VALUE);
+            return Nd4j.scalar(Ops.normmax(this));
         }
         else {
             int[] shape = ArrayUtil.removeIndex(shape(),dimension);
@@ -2263,7 +2422,7 @@ public abstract class BaseNDArray  implements INDArray {
         }
 
 
-            //slice of a matrix is a vector
+        //slice of a matrix is a vector
         else if (shape.length == 2) {
             if(size(0) == 1)  {
                 INDArray slice2 = Nd4j.create(
@@ -2551,28 +2710,6 @@ public abstract class BaseNDArray  implements INDArray {
         return ix;
     }
 
-    /**
-     * Returns the begin index of a query
-     * given the stride, array offset
-     * @param indexes the desired indexes to test on
-     * @return the index of the begin of this query
-     */
-    public int getIndex(int... indexes) {
-        return getIndex(offset,stride,indexes);
-    }
-
-
-    protected void ensureSameShape(INDArray arr1,INDArray arr2) {
-        assert true == Shape.shapeEquals(arr1.shape(), arr2.shape());
-
-    }
-
-
-
-
-
-
-
 
 
     /**
@@ -2584,8 +2721,19 @@ public abstract class BaseNDArray  implements INDArray {
             return Nd4j.create(data, new int[]{shape[0], 1}, offset);
         else if(isColumnVector())
             return Nd4j.create(data, new int[]{shape[0]}, offset);
-        return permute(ArrayUtil.range(shape.length -1,-1));
+        if(isMatrix()) {
+            INDArray reverse = Nd4j.create(new int[]{shape[1],shape[0]});
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < columns; j++) {
+                    reverse.put(j, i, get(i, j));
+                }
+            }
 
+            return reverse;
+        }
+
+        INDArray ret = permute(ArrayUtil.range(shape.length -1,-1));
+        return ret;
     }
 
 
@@ -2598,135 +2746,10 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray reshape(int[] shape) {
         assert ArrayUtil.prod(shape) == ArrayUtil.prod(this.shape()) : "Illegal reshape must be of same length as data";
-        long ec = 1;
-        for (int i = 0; i < shape.length; i++) {
-            int si = shape[i];
-            if (( ec * si ) != (((int) ec ) * si ))
-                throw new IllegalArgumentException("Too many elements");
-            ec *= shape[i];
-        }
-
-        int n = (int) ec;
-
-        if (ec != n)
-            throw new IllegalArgumentException("Too many elements");
-
-        if(Shape.shapeEquals(shape(), shape))
-            return this;
-
-        if(ArrayUtil.prod(shape) == ArrayUtil.prod(shape) && ordering == NDArrayFactory.FORTRAN) {
-            return Nd4j.create(data, shape, offset);
-        }
-
-
-        INDArray create = Nd4j.create(shape, Nd4j.getStrides(shape, ordering));
-        INDArray flattened = ravel();
-        int dimension = shape().length == 2 ? 1 : shape.length - 1;
-        //current position in the vector
-        int count = 0;
-        for(int i = 0; i < create.vectorsAlongDimension(dimension); i++) {
-            INDArray vec = create.vectorAlongDimension(i, dimension);
-            for(int j = 0; j < vec.length(); j++) {
-                vec.putScalar(j, flattened.get(count++));
-            }
-        }
-
-
-        return create;
-
+        return newShape(shape,ordering);
     }
 
 
-
-
-
-
-
-
-
-    protected int[] newStridesReshape(int[] shape) {
-
-        int[][] oldShapeAndStride = getNonOneStridesAndShape();
-        int[] oldShape = oldShapeAndStride[0];
-        int[] oldStride = oldShapeAndStride[1];
-         /* oi to oj and ni to nj give the axis ranges currently worked with */
-        int newNd = shape.length;
-        int oldNd = oldShapeAndStride[0].length;
-        int np, op;
-        int nk;
-
-
-        //must be same length
-        if (ArrayUtil.prod(shape) != ArrayUtil.prod(oldShape))
-            return null;
-        //no 0 length arr
-        if (ArrayUtil.prod(shape) == 0)
-            return null;
-
-        int[] newStrides = new int[oldStride.length];
-
-
-         /* oi to oj and ni to nj give the axis ranges currently worked with */
-        int ni = 0,
-                oi = 0,
-                nj = 1,
-                oj = 1;
-
-        for (; ni < newNd && oi < oldNd; ni = nj++, oi = oj++) {
-            np = shape[ni];
-            op = oldShape[oi];
-
-            while (np != op) {
-                if (np < op)
-                /* Misses trailing 1s, these are handled later */
-                    np *= shape[nj++];
-
-                else
-                    op *= oldShape[oj++];
-
-            }
-
-             /* Check whether the original axes can be combined */
-            for (int ok = oi; ok < oj - 1; ok++) {
-                if (ordering == NDArrayFactory.FORTRAN) {
-                    if (oldStride[ok + 1] != oldStride[ok] * oldStride[ok])
-                     /* not contiguous enough */
-                        return null;
-
-                } else {
-                /* C order */
-                    if (oldStride[ok] != oldShape[ok + 1] * oldStride[ok + 1])
-                    /* not contiguous enough */
-                        return null;
-
-                }
-            }
-
-
-        }
-        return Nd4j.getStrides(shape, ordering);
-
-    }
-
-
-    //getScalar a 2d array of the non one sizes of the array and their associated strides
-    protected int[][] getNonOneStridesAndShape() {
-        int nonOneDims = 0;
-        for(int i = 0; i < shape.length; i++)
-            if(size(i) != 1)
-                nonOneDims++;
-        int[][] ret = new int[2][nonOneDims];
-        int count = 0;
-        for(int i = 0; i < shape.length; i++) {
-            if(size(i) != 1) {
-                ret[0][count] = size(i);
-                ret[1][count] = stride[i];
-                count++;
-            }
-        }
-
-        return ret;
-    }
 
 
     @Override
