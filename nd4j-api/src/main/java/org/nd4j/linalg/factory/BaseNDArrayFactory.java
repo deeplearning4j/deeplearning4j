@@ -193,10 +193,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray eye(int n) {
-        INDArray ret = Nd4j.create((int) Math.pow(n, 2));
-
+        INDArray ret = Nd4j.create(n,n);
         for (int i = 0; i < n; i++) {
-            ret.put(i, i, 1.0);
+            ret.put(i,i,1.0);
         }
 
         return ret.reshape(n,n);

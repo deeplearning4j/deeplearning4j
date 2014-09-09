@@ -855,6 +855,16 @@ public abstract class NDArrayTests {
     }
 
 
+    @Test
+    public void testIdentity() {
+        INDArray eye = Nd4j.eye(5);
+        assertTrue(Arrays.equals(new int[]{5,5},eye.shape()));
+        Nd4j.factory().setOrder('f');
+        eye = Nd4j.eye(5);
+        assertTrue(Arrays.equals(new int[]{5,5},eye.shape()));
+
+
+    }
 
 
     @Test
