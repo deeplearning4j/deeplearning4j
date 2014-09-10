@@ -1276,7 +1276,7 @@ public abstract class BaseNDArray  implements INDArray {
             }
         }
 
-        if(Shape.shapeEquals(element.shape(),get.shape())) {
+        if(Shape.shapeEquals(element.shape(),get.shape()) || element.length() == get.length()) {
             INDArray elementLinear = element.linearView();
 
             for(int i = 0; i < linear.length(); i++) {

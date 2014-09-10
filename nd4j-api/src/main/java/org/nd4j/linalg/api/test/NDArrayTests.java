@@ -812,6 +812,14 @@ public abstract class NDArrayTests {
 
 
     @Test
+    public void testAppendBias() {
+        INDArray rand = Nd4j.linspace(1,25,25).transpose();
+        INDArray test = Nd4j.appendBias(rand);
+        INDArray assertion = Nd4j.toFlattened(rand,Nd4j.scalar(1));
+        assertEquals(assertion,test);
+    }
+
+    @Test
     public void testReshape() {
         INDArray arr = Nd4j.create(Nd4j.linspace(1, 24, 24).data(), new int[]{4, 3, 2});
         INDArray reshaped = arr.reshape(new int[]{2,3,4});

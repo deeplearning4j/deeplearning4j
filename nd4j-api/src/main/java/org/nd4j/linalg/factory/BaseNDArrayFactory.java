@@ -148,24 +148,27 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray bilinearProducts(INDArray curr,INDArray in) {
+        assert curr.shape().length == 3;
         if (in.columns() != 1) {
             throw new AssertionError("Expected a column vector");
         }
-        if (in.rows() != curr.columns()) {
+        if (in.rows() !=  curr.size(curr.shape().length - 1)) {
             throw new AssertionError("Number of rows in the input does not match number of columns in tensor");
         }
-        if (curr.rows() != curr.columns()) {
+
+
+        if (curr.size(curr.shape().length - 2) != curr.size(curr.shape().length - 1)) {
             throw new AssertionError("Can only perform this operation on a SimpleTensor with square slices");
         }
 
+        INDArray ret = Nd4j.create(curr.slices(),1);
         INDArray inT = in.transpose();
-        INDArray out = Nd4j.create(curr.slices(), 1);
-        for (int slice = 0; slice < curr.slices(); ++slice) {
-            float result = (float) inT.mul(curr.slice(slice)).mul(in).getScalar(0).element();
-            out.putScalar(slice, result);
+        for(int i = 0; i < curr.slices(); i++) {
+            INDArray slice = curr.slice(i);
+            INDArray inTTimesSlice = inT.mmul(slice);
+            ret.putScalar(i, inTTimesSlice.mmul(in).get(0));
         }
-
-        return out;
+        return ret;
     }
 
     @Override
@@ -351,14 +354,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         for (INDArray vector : vectors) {
             size += vector.rows();
         }
-        // one extra for the bias
-        size++;
 
-        INDArray result = Nd4j.create(size, vectors[0].columns() + 1);
+
+        INDArray result = Nd4j.create(size + 1, vectors[0].columns());
         int index = 0;
         for (INDArray vector : vectors) {
             INDArray put = toFlattened(vector, Nd4j.ones(1));
-            result.put(new NDArrayIndex[]{NDArrayIndex.interval(index,index + vector.rows()),NDArrayIndex.interval(0,vectors[0].columns())},put);
+            result.put(new NDArrayIndex[]{NDArrayIndex.interval(index,index + vector.rows() + 1),NDArrayIndex.interval(0,vectors[0].columns())},put);
             index += vector.rows();
         }
 
