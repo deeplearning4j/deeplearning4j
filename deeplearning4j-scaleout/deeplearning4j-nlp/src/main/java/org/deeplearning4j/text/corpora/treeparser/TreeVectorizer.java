@@ -93,8 +93,11 @@ public class TreeVectorizer {
      * @throws Exception
      */
     public List<Tree> getTreesWithLabels(String sentences,List<String> labels) throws Exception {
+        List<String> realLabels = new ArrayList<>(labels);
+        if(!realLabels.contains("NONE"))
+            realLabels.add("NONE");
         List<Tree> ret = new ArrayList<>();
-        List<Tree> baseTrees = parser.getTreesWithLabels(sentences,labels);
+        List<Tree> baseTrees = parser.getTreesWithLabels(sentences,realLabels);
         for(Tree t : baseTrees) {
             Tree binarized = treeTransformer.transform(t);
             binarized = cnfTransformer.transform(binarized);

@@ -16,9 +16,9 @@ import java.util.Arrays;
 /**
  * Created by agibsonccc on 9/9/14.
  */
-public class FileSentenceIteratorTest {
+public class SentenceIteratorTest {
 
-    private static Logger log = LoggerFactory.getLogger(FileSentenceIteratorTest.class);
+    private static Logger log = LoggerFactory.getLogger(SentenceIteratorTest.class);
 
     @Before
     public void before() throws Exception {
@@ -31,7 +31,7 @@ public class FileSentenceIteratorTest {
         File multiDir = new File("multidir");
         for(int i = 0; i < 2; i++) {
             File newTestFile = new File(multiDir,"testfile-" + i);
-            FileUtils.writeLines(newTestFile, Arrays.asList("Hello", "My", "Name"));
+            FileUtils.writeLines(newTestFile, Arrays.asList("Sentence 1.","Sentence 2.","Sentence 3."));
 
         }
 
@@ -39,13 +39,24 @@ public class FileSentenceIteratorTest {
 
 
     @Test
-    public void testUimaSentenceIterator() {
+    public void testUimaSentenceIterator() throws Exception {
+        SentenceIterator multiIter = UimaSentenceIterator.createWithPath("multidir");
+        SentenceIterator iter = UimaSentenceIterator.createWithPath("dir");
+        testMulti(multiIter,1);
 
     }
 
     @Test
     public void testFileSentenceIterator() throws Exception {
         SentenceIterator iter =  new FileSentenceIterator(new File("dir"));
+        SentenceIterator multiIter = new FileSentenceIterator(new File("multidir"));
+        testSingle(iter);
+        testMulti(multiIter,3);
+
+    }
+
+
+    public void testSingle(SentenceIterator iter) {
         assertTrue(iter.hasNext());
 
         String sentence = iter.nextSentence();
@@ -55,13 +66,15 @@ public class FileSentenceIteratorTest {
         assertEquals("Name",iter.nextSentence());
         assertFalse(iter.hasNext());
 
-        SentenceIterator multiIter =  new FileSentenceIterator(new File("dir"));
-        assertTrue(multiIter.hasNext());
-        for(int i = 0; i < 6; i++) {
-            multiIter.nextSentence();
+    }
+
+    public void testMulti(SentenceIterator iter,int expectedSentences) {
+        assertTrue(iter.hasNext());
+        for(int i = 0; i < expectedSentences * 2; i++) {
+            iter.nextSentence();
         }
 
-        assertFalse(multiIter.hasNext());
+        assertFalse(iter.hasNext());
 
     }
 
