@@ -118,7 +118,7 @@ public class FileSentenceIterator extends BaseSentenceIterator {
     }
 
     @Override
-    public  boolean hasNext() {
+    public  synchronized  boolean hasNext() {
         return currLineIterator != null && currLineIterator.hasNext() || fileIterator.hasNext() || !cache.isEmpty();
     }
 

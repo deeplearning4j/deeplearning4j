@@ -116,7 +116,7 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
 
 
 	@Override
-	public boolean hasNext() {
+	public synchronized boolean hasNext() {
 		try {
 			return reader.hasNext() || sentences != null && sentences.hasNext();
 		} catch (Exception e) {
