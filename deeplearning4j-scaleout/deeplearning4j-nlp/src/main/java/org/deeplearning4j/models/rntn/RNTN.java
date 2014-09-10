@@ -397,7 +397,9 @@ public class RNTN implements Serializable {
 
 
     public INDArray getFeatureVector(String word) {
-        INDArray ret = featureVectors.get(getVocabWord(word)).transpose();
+        INDArray ret = featureVectors.get(getVocabWord(word));
+        if(ret.isRowVector())
+            ret = ret.transpose();
         return ret;
     }
 
@@ -684,7 +686,7 @@ public class RNTN implements Serializable {
 
             if (useFloatTensors) {
                 INDArray floatT = getBinaryINDArray(leftCategory, rightCategory);
-                INDArray INDArrayIn = Nd4j.concatHorizontally(leftVector, rightVector);
+                INDArray INDArrayIn = Nd4j.concat(0,leftVector, rightVector);
                 INDArray INDArrayOut = Nd4j.bilinearProducts(floatT,INDArrayIn);
                 nodeVector = activationFunction.apply(W.mmul(childrenVector).add(INDArrayOut));
             }
@@ -704,6 +706,18 @@ public class RNTN implements Serializable {
 
         tree.setPrediction(predictions);
         tree.setVector(nodeVector);
+    }
+
+
+
+    private INDArray getFloatTensorGradient(INDArray deltaFull, INDArray leftVector, INDArray rightVector) {
+        int size = deltaFull.length();
+        INDArray Wt_df = Nd4j.create(new int[]{size * 2, size * 2, size});
+        INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
+        for (int slice = 0; slice < size; ++slice) {
+            Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.get(slice),fullVector).mmul(fullVector.transpose()));
+        }
+        return Wt_df;
     }
 
 
@@ -900,6 +914,7 @@ public class RNTN implements Serializable {
 
         public Builder setFeatureVectors(Word2Vec vec) {
             setFeatureVectors(vec.toVocabFloat());
+            this.numHidden = vec.getLayerSize();
             return this;
         }
 

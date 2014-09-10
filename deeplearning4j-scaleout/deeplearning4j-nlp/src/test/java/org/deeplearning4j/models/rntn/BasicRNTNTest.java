@@ -1,6 +1,8 @@
 package org.deeplearning4j.models.rntn;
 
 import org.apache.commons.math3.random.MersenneTwister;
+import org.deeplearning4j.models.word2vec.wordstore.ehcache.EhCacheVocabCache;
+import org.deeplearning4j.util.SerializationUtils;
 import org.nd4j.linalg.api.activation.Activations;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.text.corpora.treeparser.TreeVectorizer;
@@ -11,6 +13,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
@@ -29,9 +32,18 @@ public class BasicRNTNTest {
        vectorizer = new TreeVectorizer();
        tokenizerFactory = new UimaTokenizerFactory(false);
        sentenceIter = new CollectionSentenceIterator(Arrays.asList(sentence));
-       vec = new Word2Vec(sentenceIter);
-       vec.fit();
+       File vectors = new File("wordvectors.ser");
+       if(!vectors.exists()) {
+           vec = new Word2Vec(sentenceIter);
+           vec.fit();
 
+           SerializationUtils.saveObject(vec,new File("wordvectors.ser"));
+
+       }
+       else {
+           vec = SerializationUtils.readObject(vectors);
+           vec.setCache(new EhCacheVocabCache());
+       }
    }
 
 
@@ -42,7 +54,7 @@ public class BasicRNTNTest {
         RNTN rntn = new RNTN.Builder().setActivationFunction(Activations.tanh())
                 .setAdagradResetFrequency(1).setCombineClassification(true).setFeatureVectors(vec)
                 .setRandomFeatureVectors(false).setRng(new MersenneTwister(123))
-                .setUseTensors(true).setNumHidden(25).build();
+                .setUseTensors(true).build();
         List<Tree> trees = vectorizer.getTreesWithLabels(sentence,Arrays.asList("LABEL"));
         rntn.fit(trees);
 
