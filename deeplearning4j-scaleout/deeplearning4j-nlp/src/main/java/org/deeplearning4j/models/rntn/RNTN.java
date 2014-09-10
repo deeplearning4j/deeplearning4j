@@ -686,7 +686,7 @@ public class RNTN implements Serializable {
 
             if (useFloatTensors) {
                 INDArray floatT = getBinaryINDArray(leftCategory, rightCategory);
-                INDArray INDArrayIn = Nd4j.concat(0,leftVector, rightVector);
+                INDArray INDArrayIn = Nd4j.concat(1,leftVector, rightVector);
                 INDArray INDArrayOut = Nd4j.bilinearProducts(floatT,INDArrayIn);
                 nodeVector = activationFunction.apply(W.mmul(childrenVector).add(INDArrayOut));
             }
