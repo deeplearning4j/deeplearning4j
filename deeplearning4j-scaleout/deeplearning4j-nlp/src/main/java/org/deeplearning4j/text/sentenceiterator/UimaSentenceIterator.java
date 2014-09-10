@@ -23,10 +23,10 @@ import org.deeplearning4j.text.annotator.TokenizerAnnotator;
  */
 public class UimaSentenceIterator extends BaseSentenceIterator {
 
-	protected CAS cas;
-    protected CollectionReader reader;
-    protected AnalysisEngine engine;
-    protected Iterator<String> sentences;
+	protected volatile CAS cas;
+    protected volatile CollectionReader reader;
+    protected volatile AnalysisEngine engine;
+    protected volatile Iterator<String> sentences;
     protected String path;
 
 	
