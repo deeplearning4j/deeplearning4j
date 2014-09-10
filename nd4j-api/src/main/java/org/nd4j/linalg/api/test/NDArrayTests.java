@@ -921,6 +921,7 @@ public abstract class NDArrayTests {
     }
 
 
+
     @Test
     public void testRSubi() {
         INDArray n2 = Nd4j.ones(2);

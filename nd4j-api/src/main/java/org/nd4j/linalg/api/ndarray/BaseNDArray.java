@@ -1097,7 +1097,7 @@ public abstract class BaseNDArray  implements INDArray {
 
         //needed to copy data
         if(newStrides == null)
-            newStrides = stride;
+            newStrides = Nd4j.getStrides(newShape,ordering);
         if(this instanceof  IComplexNDArray)
             return Nd4j.createComplex(newCopy.data(),newShape,newStrides,offset);
         return Nd4j.create(newCopy.data(),newShape,newStrides,offset);
@@ -1421,17 +1421,7 @@ public abstract class BaseNDArray  implements INDArray {
             return Nd4j.create(data, shape, stride, offsets[0]);
         }
 
-        else if(isMatrix() && Shape.isMatrix(shape)) {
-            int startRow = offsets[0];
-            INDArray ret = Nd4j.create(shape);
-            int count = 0;
-            for(int i = startRow; i < shape[0] + 1; i++) {
-                ret.putRow(count++,getRow(i).get(NDArrayIndex.interval(offsets[1],shape[1])));
-            }
-            return ret;
-        }
-
-
+      
         int offset = this.offset + ArrayUtil.dotProduct(offsets, stride);
 
         return Nd4j.create(

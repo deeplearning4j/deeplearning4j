@@ -339,28 +339,49 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
     /**
-     * Merge the vectors and append a bias
+     * Merge the vectors and append a bias.
+     * Each vector must be either row or column vectors.
+     * An exception is thrown for inconsistency (mixed row and column vectors)
      * @param vectors the vectors to merge
      * @return the merged ndarray appended with the bias
      */
     @Override
     public INDArray appendBias(INDArray...vectors) {
-        int size = 0;
-        for (INDArray vector : vectors) {
-            size += vector.rows();
-        }
-        // one extra for the bias
-        size++;
+       if(vectors[0].isRowVector()) {
+           int size = 0;
+           for (INDArray vector : vectors) {
+               size += vector.rows();
+           }
 
-        INDArray result = Nd4j.create(size, 1);
-        int index = 0;
-        for (INDArray vector : vectors) {
-            result.put(new NDArrayIndex[] {NDArrayIndex.interval(index, index + vector.rows()),NDArrayIndex.interval(0,result.columns())},vector);
-            index += vector.rows();
+           INDArray result = Nd4j.create(size, vectors[0].columns() + 1);
+           for (int i = 0; i < vectors.length; i++) {
+               INDArray vector = Nd4j.toFlattened(vectors[i],Nd4j.ones(1));
+               assert vector.isVector() : "Must be a vector";
+               result.putRow(i,vector);
+           }
+
+           return result;
+
+       }
+        if(vectors[0].isColumnVector()) {
+            int size = 0;
+            for (INDArray vector : vectors) {
+                size += vector.columns();
+            }
+
+            INDArray result = Nd4j.create(vectors[0].rows() + 1,1);
+            for (int i = 0; i < vectors.length; i++) {
+                INDArray vector = Nd4j.toFlattened(vectors[i],Nd4j.ones(1)).transpose();
+                assert vector.isColumnVector() : "Must be a vector";
+                result.putColumn(i,vector);
+            }
+
+            return result;
+
         }
 
-        result.put(new NDArrayIndex[] {NDArrayIndex.interval(index,result.rows()),NDArrayIndex.interval(0,result.columns())}, Nd4j.ones(1, result.columns()));
-        return result;
+        throw new IllegalArgumentException("Please specify a vector");
+
     }
 
 
