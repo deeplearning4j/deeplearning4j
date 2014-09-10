@@ -257,7 +257,7 @@ public class RNTN implements Serializable {
 
     INDArray randomBinaryINDArray() {
         float range = 1.0f / (4.0f * numHidden);
-        INDArray ret = Nd4j.rand(new int[]{numHidden * 2, numHidden * 2, numHidden}, -range, range, rng);
+        INDArray ret = Nd4j.rand(new int[]{numHidden,numHidden * 2, numHidden * 2}, -range, range, rng);
         return ret.muli(scalingForInit);
     }
 
@@ -386,9 +386,9 @@ public class RNTN implements Serializable {
 
     private INDArray getINDArrayGradient(INDArray deltaFull, INDArray leftVector, INDArray rightVector) {
         int size = deltaFull.length();
-        INDArray Wt_df = Nd4j.create(new int[]{size*2, size*2, size});
-        INDArray fullVector = Nd4j.concatHorizontally(leftVector, rightVector);
-        for (int slice = 0; slice < size; ++slice) {
+        INDArray Wt_df = Nd4j.create(new int[]{size,size * 2, size*2});
+        INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
+        for (int slice = 0; slice < size; slice++) {
             Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal((float) deltaFull.getScalar(slice).element(),fullVector).mmul(fullVector.transpose()));
         }
         return Wt_df;
@@ -481,7 +481,7 @@ public class RNTN implements Serializable {
             INDArray D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
             D = Nd4j.getBlasWrapper().scal(scale,D).add(Nd4j.getBlasWrapper().scal(regCost,entry.getValue()));
             derivatives.put(entry.getFirstKey(), entry.getSecondKey(), D);
-            cost += (double) entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).element() * regCost / 2.0;
+            cost += (float) entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).element() * regCost / 2.0;
         }
         return cost;
     }
@@ -496,7 +496,7 @@ public class RNTN implements Serializable {
             INDArray D = derivatives.get(entry.getKey());
             D = Nd4j.getBlasWrapper().scal(scale,D).add(Nd4j.getBlasWrapper().scal(regCost,entry.getValue()));
             derivatives.put(entry.getKey(), D);
-            cost += (double) entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).element() * regCost / 2.0;
+            cost += (float) entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).element() * regCost / 2.0f;
         }
         return cost;
     }
@@ -510,7 +510,7 @@ public class RNTN implements Serializable {
             INDArray D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
             D = D.muli(scale).add(entry.getValue().muli(regCost));
             derivatives.put(entry.getFirstKey(), entry.getSecondKey(), D);
-            cost += (double)  entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).element() * regCost / 2.0;
+            cost += (float)  entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).element() * regCost / 2.0f;
         }
         return cost;
     }
@@ -629,7 +629,7 @@ public class RNTN implements Serializable {
         INDArray WTDeltaNoBias = WTDelta.get(interval( 0, 1),interval(0, deltaFull.rows() * 2));
         int size = deltaFull.length();
         INDArray deltaINDArray = Nd4j.create(size * 2, 1);
-        INDArray fullVector = Nd4j.concatHorizontally(leftVector, rightVector);
+        INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
             INDArray scaledFullVector = Nd4j.getBlasWrapper().scal((float) deltaFull.getScalar(slice).element(),fullVector);
             deltaINDArray = deltaINDArray.add(Wt.slice(slice).add(Wt.slice(slice).transpose()).mmul(scaledFullVector));
@@ -686,7 +686,7 @@ public class RNTN implements Serializable {
 
             if (useFloatTensors) {
                 INDArray floatT = getBinaryINDArray(leftCategory, rightCategory);
-                INDArray INDArrayIn = Nd4j.concat(1,leftVector, rightVector);
+                INDArray INDArrayIn = Nd4j.concat(0,leftVector, rightVector);
                 INDArray INDArrayOut = Nd4j.bilinearProducts(floatT,INDArrayIn);
                 nodeVector = activationFunction.apply(W.mmul(childrenVector).add(INDArrayOut));
             }
@@ -800,8 +800,8 @@ public class RNTN implements Serializable {
 
         if (useFloatTensors) {
             for (MultiDimensionalMap.Entry<String, String, INDArray> entry : binaryINd4j.entrySet()) {
-                int numRows = entry.getValue().rows();
-                int numCols = entry.getValue().columns();
+                int numRows = entry.getValue().size(1);
+                int numCols = entry.getValue().size(2);
                 int numSlices = entry.getValue().slices();
 
                 binaryINDArrayTD.put(entry.getFirstKey(), entry.getSecondKey(), Nd4j.create(new int[]{numRows, numCols, numSlices}));
