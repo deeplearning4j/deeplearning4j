@@ -39,13 +39,12 @@ public class BasicRNTNTest {
     public void testRntn() throws Exception {
 
 
-
         RNTN rntn = new RNTN.Builder().setActivationFunction(Activations.tanh())
                 .setAdagradResetFrequency(1).setCombineClassification(true).setFeatureVectors(vec)
                 .setRandomFeatureVectors(false).setRng(new MersenneTwister(123))
                 .setUseTensors(true).setNumHidden(25).build();
         List<Tree> trees = vectorizer.getTreesWithLabels(sentence,Arrays.asList("LABEL"));
-        rntn.train(trees);
+        rntn.fit(trees);
 
 
 
