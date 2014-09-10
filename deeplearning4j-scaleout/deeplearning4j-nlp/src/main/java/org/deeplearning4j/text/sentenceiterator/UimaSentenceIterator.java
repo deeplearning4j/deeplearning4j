@@ -28,81 +28,86 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
     protected volatile Iterator<String> sentences;
     protected String path;
 
-	
-	public UimaSentenceIterator(SentencePreProcessor preProcessor,String path, AnalysisEngine engine) {
-		super(preProcessor);
-		this.path = path;
-		try {
-			this.reader  = FilesCollectionReader.getCollectionReader(path);
-		} catch (ResourceInitializationException e) {
-			throw new RuntimeException(e);
-		}
-		this.engine = engine;
-	}
 
-	public UimaSentenceIterator(String path, AnalysisEngine engine) {
-		this(null,path,engine);
-	}
+    public UimaSentenceIterator(SentencePreProcessor preProcessor,String path, AnalysisEngine engine) {
+        super(preProcessor);
+        this.path = path;
+        try {
+            this.reader  = FilesCollectionReader.getCollectionReader(path);
+        } catch (ResourceInitializationException e) {
+            throw new RuntimeException(e);
+        }
+        this.engine = engine;
+    }
 
-	@Override
-	public synchronized  String nextSentence() {
-		if(sentences == null || !sentences.hasNext()) {
-			try {
-				CAS cas = engine.newCAS();
+    public UimaSentenceIterator(String path, AnalysisEngine engine) {
+        this(null,path,engine);
+    }
 
-                synchronized (reader) {
+    @Override
+    public synchronized  String nextSentence() {
+        if(sentences == null || !sentences.hasNext()) {
+            try {
+                if(reader.hasNext()) {
+                    CAS cas = engine.newCAS();
 
-                    reader.getNext(cas);
+                    synchronized (reader) {
 
+                        reader.getNext(cas);
+
+                    }
+                    synchronized (engine) {
+                        engine.process(cas);
+
+                    }
+
+                    List<String> list = new ArrayList<>();
+                    for(Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
+                        list.add(sentence.getCoveredText());
+                    }
+
+
+                    sentences = list.iterator();
+                    //needs to be next cas
+                    while(!sentences.hasNext()) {
+                        //sentence is empty; go to another cas
+                        if(reader.hasNext()) {
+                            cas.reset();
+                            reader.getNext(cas);
+                            engine.process(cas);
+                            for(Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
+                                list.add(sentence.getCoveredText());
+                            }
+                            sentences = list.iterator();
+                        }
+                        else
+                            return null;
+                    }
+
+
+                    String ret = sentences.next();
+                    if(this.getPreProcessor() != null)
+                        ret = this.getPreProcessor().preProcess(ret);
+                    return ret;
                 }
-                synchronized (engine) {
-                    engine.process(cas);
 
-                }
+                return null;
 
-				List<String> list = new ArrayList<>();
-				for(Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
-					list.add(sentence.getCoveredText());
-				}
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
 
-
-				sentences = list.iterator();
-				//needs to be next cas
-				while(!sentences.hasNext()) {
-					//sentence is empty; go to another cas
-					if(reader.hasNext()) {
-						cas.reset();
-						reader.getNext(cas);
-						engine.process(cas);
-						for(Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
-							list.add(sentence.getCoveredText());
-						}
-						sentences = list.iterator();
-					}
-					else
-						return null;
-				}
-
-
-				String ret = sentences.next();
-				if(this.getPreProcessor() != null)
-					ret = this.getPreProcessor().preProcess(ret);
-				return ret;
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			} 
-
-		}
-		else {
-			String ret = sentences.next();
-			if(this.getPreProcessor() != null)
-				ret = this.getPreProcessor().preProcess(ret);
-			return ret;
-		}
+        }
+        else {
+            String ret = sentences.next();
+            if(this.getPreProcessor() != null)
+                ret = this.getPreProcessor().preProcess(ret);
+            return ret;
+        }
 
 
 
-	}
+    }
 
     /**
      * Creates a uima sentence iterator with the given path
@@ -115,23 +120,23 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
     }
 
 
-	@Override
-	public synchronized boolean hasNext() {
-		try {
-			return reader.hasNext() || sentences != null && sentences.hasNext();
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		} 
-	}
+    @Override
+    public synchronized boolean hasNext() {
+        try {
+            return reader.hasNext() || sentences != null && sentences.hasNext();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	@Override
-	public void reset() {
-		try {
-			this.reader  = FilesCollectionReader.getCollectionReader(path);
-		} catch (ResourceInitializationException e) {
-			throw new RuntimeException(e);
-		}
-	}
+    @Override
+    public void reset() {
+        try {
+            this.reader  = FilesCollectionReader.getCollectionReader(path);
+        } catch (ResourceInitializationException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 
 
