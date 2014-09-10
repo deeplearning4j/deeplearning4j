@@ -76,9 +76,9 @@ public class MovingWindowMatrix {
         for(int i = 0; i < toSlice.length(); i++) {
             if(window >= toSlice.length())
                 break;
-            double[] w = new double[this.windowRowSize * this.windowColumnSize];
+            float[] w = new float[this.windowRowSize * this.windowColumnSize];
             for(int count = 0; count < this.windowRowSize * this.windowColumnSize; count++) {
-                w[count] = (double) toSlice.getScalar(count + window).element();
+                w[count] = toSlice.get(count + window);
             }
             INDArray add = Nd4j.create(w);
             if(flattened)

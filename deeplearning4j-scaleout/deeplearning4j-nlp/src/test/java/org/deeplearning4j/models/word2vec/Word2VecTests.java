@@ -2,6 +2,7 @@ package org.deeplearning4j.models.word2vec;
 
 import static org.junit.Assert.*;
 
+import org.deeplearning4j.models.word2vec.wordstore.ehcache.EhCacheVocabCache;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.text.inputsanitation.InputHomogenization;
 import org.deeplearning4j.text.sentenceiterator.FileSentenceIterator;
@@ -40,6 +41,7 @@ public class Word2VecTests {
 
         Word2Vec vec = new Word2Vec.Builder()
                .windowSize(5).iterate(iter).tokenizerFactory(t).build();
+        vec.setCache(new EhCacheVocabCache());
         vec.fit();
         assertTrue(vec.getCache().numWords() > 0);
 

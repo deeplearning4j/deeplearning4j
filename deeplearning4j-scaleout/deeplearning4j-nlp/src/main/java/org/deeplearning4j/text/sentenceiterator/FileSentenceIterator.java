@@ -46,7 +46,7 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 
 
     @Override
-    public   String nextSentence() {
+    public   synchronized  String nextSentence() {
         String ret = null;
         if(!cache.isEmpty()) {
             ret = cache.poll();
@@ -63,7 +63,7 @@ public class FileSentenceIterator extends BaseSentenceIterator {
                 if(currLineIterator != null && currLineIterator.hasNext()) {
                     String line = currLineIterator.nextLine();
                     if(line != null)
-                        cache.add(currLineIterator.nextLine());
+                        cache.add(line);
                     else
                         break;
                 }
