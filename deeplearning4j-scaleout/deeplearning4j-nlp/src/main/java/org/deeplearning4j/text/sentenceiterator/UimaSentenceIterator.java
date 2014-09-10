@@ -50,12 +50,12 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
     public synchronized  String nextSentence() {
         if(sentences == null || !sentences.hasNext()) {
             try {
-                if(reader.hasNext()) {
+                if(getReader().hasNext()) {
                     CAS cas = engine.newCAS();
 
                     synchronized (reader) {
                         try {
-                            reader.getNext(cas);
+                            getReader().getNext(cas);
                         }catch(Exception e) {
                             log.warn("Done iterating returning an empty string");
                             return "";
@@ -79,7 +79,7 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
                         //sentence is empty; go to another cas
                         if(reader.hasNext()) {
                             cas.reset();
-                            reader.getNext(cas);
+                            getReader().getNext(cas);
                             engine.process(cas);
                             for(Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
                                 list.add(sentence.getCoveredText());
@@ -129,11 +129,17 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
     @Override
     public synchronized boolean hasNext() {
         try {
-            return reader.hasNext() || sentences != null && sentences.hasNext();
+            return getReader().hasNext() || sentences != null && sentences.hasNext();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
+
+    private synchronized  CollectionReader getReader() {
+        return reader;
+    }
+
 
     @Override
     public void reset() {
