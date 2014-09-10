@@ -16,114 +16,119 @@ import org.apache.commons.io.LineIterator;
 @SuppressWarnings("unchecked")
 public class FileSentenceIterator extends BaseSentenceIterator {
 
-	/*
-	 * Used as a pair for when
-	 * the number of sentences is not known
-	 */
-	protected Iterator<File> fileIterator;
-    protected Queue<String> cache;
-    protected LineIterator currLineIterator;
+    /*
+     * Used as a pair for when
+     * the number of sentences is not known
+     */
+    protected volatile Iterator<File> fileIterator;
+    protected volatile Queue<String> cache;
+    protected volatile LineIterator currLineIterator;
     protected volatile File file;
     protected volatile File currentFile;
-	/**
-	 * Takes a single file or directory
-	 * @param preProcessor the sentence pre processor
-	 * @param file the file or folder to iterate over
-	 */
-	public FileSentenceIterator(SentencePreProcessor preProcessor,File file) {
-		super(preProcessor);
-		this.file = file;
-		cache = new java.util.concurrent.ConcurrentLinkedDeque<>();
-		if(file.isDirectory())
-			fileIterator = FileUtils.iterateFiles(file, null, true);
-		else
-			fileIterator = Arrays.asList(file).iterator();
-	}
+    /**
+     * Takes a single file or directory
+     * @param preProcessor the sentence pre processor
+     * @param file the file or folder to iterate over
+     */
+    public FileSentenceIterator(SentencePreProcessor preProcessor,File file) {
+        super(preProcessor);
+        this.file = file;
+        cache = new java.util.concurrent.ConcurrentLinkedDeque<>();
+        if(file.isDirectory())
+            fileIterator = FileUtils.iterateFiles(file, null, true);
+        else
+            fileIterator = Arrays.asList(file).iterator();
+    }
 
-	public FileSentenceIterator(File dir) {
-		this(null,dir);
-	}
-
-
-	@Override
-	public   String nextSentence() {
-		String ret = null;
-		if(!cache.isEmpty()) {
-			ret = cache.poll();
-			if(preProcessor != null)
-				ret = preProcessor.preProcess(ret);
-			return ret;
-		}
-		else {
-
-			if(currLineIterator == null || !currLineIterator.hasNext())
-				nextLineIter();
-
-			for(int i = 0; i < 100000; i++) {
-				if(currLineIterator != null && currLineIterator.hasNext()) 
-					cache.add(currLineIterator.nextLine());
-
-				else
-					break;
-			}
-
-			if(!cache.isEmpty()) {
-				ret = cache.poll();
-				if(preProcessor != null)
-					ret = preProcessor.preProcess(ret);
-				return ret;
-			}
-
-		}
+    public FileSentenceIterator(File dir) {
+        this(null,dir);
+    }
 
 
-		if(ret == null) {
-			if(!cache.isEmpty())
-				ret = cache.poll();
-			else
-				return null;
-		}
-		return ret;
+    @Override
+    public   String nextSentence() {
+        String ret = null;
+        if(!cache.isEmpty()) {
+            ret = cache.poll();
+            if(preProcessor != null)
+                ret = preProcessor.preProcess(ret);
+            return ret;
+        }
+        else {
 
-	}
+            if(currLineIterator == null || !currLineIterator.hasNext())
+                nextLineIter();
+
+            for(int i = 0; i < 100000; i++) {
+                if(currLineIterator != null && currLineIterator.hasNext()) {
+                    String line = currLineIterator.nextLine();
+                    if(line != null)
+                        cache.add(currLineIterator.nextLine());
+                    else
+                        break;
+                }
+
+                else
+                    break;
+            }
+
+            if(!cache.isEmpty()) {
+                ret = cache.poll();
+                if(preProcessor != null)
+                    ret = preProcessor.preProcess(ret);
+                return ret;
+            }
+
+        }
+
+
+        if(ret == null) {
+            if(!cache.isEmpty())
+                ret = cache.poll();
+            else
+                return null;
+        }
+        return ret;
+
+    }
 
 
 
-	private  void nextLineIter() {
-		if(fileIterator.hasNext()) {
-			try {
-				File next = fileIterator.next();
+    private  void nextLineIter() {
+        if(fileIterator.hasNext()) {
+            try {
+                File next = fileIterator.next();
                 currentFile = next;
-				if(next.getAbsolutePath().endsWith(".gz")) {
-					if(currLineIterator != null)
-						currLineIterator.close();
-					currLineIterator = IOUtils.lineIterator(new BufferedInputStream(new GZIPInputStream(new FileInputStream(next))), "UTF-8");
+                if(next.getAbsolutePath().endsWith(".gz")) {
+                    if(currLineIterator != null)
+                        currLineIterator.close();
+                    currLineIterator = IOUtils.lineIterator(new BufferedInputStream(new GZIPInputStream(new FileInputStream(next))), "UTF-8");
 
-				}
-				else {
-					if(currLineIterator != null)
-						currLineIterator.close();
-					currLineIterator = FileUtils.lineIterator(next);
+                }
+                else {
+                    if(currLineIterator != null)
+                        currLineIterator.close();
+                    currLineIterator = FileUtils.lineIterator(next);
 
-				}
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		}
-	}
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
-	@Override
-	public  boolean hasNext() {
-		return currLineIterator != null && currLineIterator.hasNext() || fileIterator.hasNext() || !cache.isEmpty();
-	}
-
-
-	@Override
-	public void reset() {
-		fileIterator = FileUtils.iterateFiles(file, null, true);
+    @Override
+    public  boolean hasNext() {
+        return currLineIterator != null && currLineIterator.hasNext() || fileIterator.hasNext() || !cache.isEmpty();
+    }
 
 
-	}
+    @Override
+    public void reset() {
+        fileIterator = FileUtils.iterateFiles(file, null, true);
+
+
+    }
 
 
 
