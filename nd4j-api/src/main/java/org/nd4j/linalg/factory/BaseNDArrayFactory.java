@@ -291,8 +291,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public void copy(INDArray a,INDArray b) {
-        a = a.reshape(new int[]{1,a.length()});
-        b = b.reshape(new int[]{1,b.length()});
+        a = a.linearView();
+        b = b.linearView();
         for(int i = 0; i < a.length(); i++) {
             b.put(i,a.getScalar(i));
         }
@@ -347,40 +347,22 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray appendBias(INDArray...vectors) {
-       if(vectors[0].isRowVector()) {
-           int size = 0;
-           for (INDArray vector : vectors) {
-               size += vector.rows();
-           }
+        int size = 0;
+        for (INDArray vector : vectors) {
+            size += vector.rows();
+        }
+        // one extra for the bias
+        size++;
 
-           INDArray result = Nd4j.create(size, vectors[0].columns() + 1);
-           for (int i = 0; i < vectors.length; i++) {
-               INDArray vector = Nd4j.toFlattened(vectors[i],Nd4j.ones(1));
-               assert vector.isVector() : "Must be a vector";
-               result.putRow(i,vector);
-           }
-
-           return result;
-
-       }
-        if(vectors[0].isColumnVector()) {
-            int size = 0;
-            for (INDArray vector : vectors) {
-                size += vector.columns();
-            }
-
-            INDArray result = Nd4j.create(vectors[0].rows() + 1,1);
-            for (int i = 0; i < vectors.length; i++) {
-                INDArray vector = Nd4j.toFlattened(vectors[i],Nd4j.ones(1)).transpose();
-                assert vector.isColumnVector() : "Must be a vector";
-                result.putColumn(i,vector);
-            }
-
-            return result;
-
+        INDArray result = Nd4j.create(size, vectors[0].columns() + 1);
+        int index = 0;
+        for (INDArray vector : vectors) {
+            INDArray put = toFlattened(vector, Nd4j.ones(1));
+            result.put(new NDArrayIndex[]{NDArrayIndex.interval(index,index + vector.rows()),NDArrayIndex.interval(0,vectors[0].columns())},put);
+            index += vector.rows();
         }
 
-        throw new IllegalArgumentException("Please specify a vector");
+        return result;
 
     }
 
@@ -808,6 +790,130 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
 
+    /**
+     * concatenate ndarrays along a dimension
+     *
+     * @param dimension the dimension to concatenate along
+     * @param toConcat  the ndarrays to concatenate
+     * @return the concatenate ndarrays
+     */
+    @Override
+    public INDArray concat(int dimension, INDArray... toConcat) {
+        if(toConcat.length == 1)
+            return toConcat[0];
+        validateConcat(dimension,toConcat);
+        int sumAlongDim = 0;
+        for(int i = 0; i < toConcat.length; i++)
+            sumAlongDim += toConcat[i].shape()[dimension];
+
+
+        int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
+
+        outputShape[dimension] = sumAlongDim;
+
+
+
+        INDArray ret = Nd4j.create(outputShape);
+        INDArray linear = ret.linearView();
+        int count = 0;
+        for(int i = 0; i < toConcat.length; i++) {
+            INDArray flattened = toConcat[i].linearView();
+
+            for(int j = 0; j < flattened.length(); j++) {
+                linear.putScalar(count++,flattened.get(j));
+            }
+        }
+
+
+
+
+        return ret;
+    }
+
+    /**
+     * concatenate ndarrays along a dimension
+     *
+     * @param dimension the dimension to concatenate along
+     * @param toConcat  the ndarrays to concatenate
+     * @return the concatenate ndarrays
+     */
+    @Override
+    public IComplexNDArray concat(int dimension, IComplexNDArray... toConcat) {
+        if(toConcat.length == 1)
+            return toConcat[0];
+        validateConcat(dimension,toConcat);
+        int sumAlongDim = 0;
+        for(int i = 0; i < toConcat.length; i++)
+            sumAlongDim += toConcat[i].shape()[dimension];
+
+
+        int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
+
+        outputShape[dimension] = sumAlongDim;
+
+
+
+        IComplexNDArray ret = Nd4j.createComplex(outputShape);
+        IComplexNDArray linear = ret.linearView();
+        int count = 0;
+        for(int i = 0; i < toConcat.length; i++) {
+            IComplexNDArray flattened = toConcat[i].linearView();
+
+            for(int j = 0; j < flattened.length(); j++) {
+                linear.putScalar(count++,flattened.getComplex(j));
+            }
+        }
+
+
+
+
+        return ret;
+
+    }
+
+    @Override
+    public IComplexNDArray complexFlatten(IComplexNDArray[] flatten) {
+        int length = 0;
+        for(IComplexNDArray m : flatten)  length += m.length();
+        IComplexNDArray ret = Nd4j.createComplex(length);
+        int linearIndex = 0;
+        for(IComplexNDArray d : flatten) {
+            IComplexNDArray flattened = d.linearView();
+            for(int i = 0; i < d.length(); i++) {
+                ret.putScalar(linearIndex++, flattened.getComplex(i));
+            }
+        }
+
+        return ret;
+
+    }
+
+    @Override
+    public IComplexNDArray complexFlatten(List<IComplexNDArray> flatten) {
+        int length = 0;
+        for(IComplexNDArray m : flatten)  length += m.length();
+        IComplexNDArray ret = Nd4j.createComplex(length);
+        int linearIndex = 0;
+        for(IComplexNDArray d : flatten) {
+            IComplexNDArray flattened = d.linearView();
+            for(int i = 0; i < d.length(); i++) {
+                ret.putScalar(linearIndex++, flattened.getComplex(i));
+            }
+        }
+
+        return ret;
+
+    }
+
+    //input arrays must have same number of dimensions
+    protected static void validateConcat(int dimension,INDArray...arrs) {
+        int dims = arrs[0].shape().length;
+        int[] shape = ArrayUtil.removeIndex(arrs[0].shape(),dimension);
+        for(int i = 1; i < arrs.length; i++) {
+            assert Arrays.equals(shape,ArrayUtil.removeIndex(arrs[i].shape(),dimension));
+            assert arrs[i].shape().length == dims;
+        }
+    }
 
     /**
      * Concatenates two matrices horizontally. Matrices must have identical
@@ -819,7 +925,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         }
 
         INDArray result = Nd4j.create(A.rows(), A.columns() + B.columns());
-        copy(A,result);
+        for(int i = 0; i < A.rows(); i++) {
+            result.putRow(i, A.getRow(i));
+        }
 
         int count = 0;
 
@@ -840,7 +948,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         }
 
         INDArray result = Nd4j.create(A.rows() + B.rows(), A.columns());
-        copy(A,result);
+        for(int i = 0; i < A.columns(); i++) {
+            result.putColumn(i, A.getColumn(i));
+        }
 
         int count = 0;
 

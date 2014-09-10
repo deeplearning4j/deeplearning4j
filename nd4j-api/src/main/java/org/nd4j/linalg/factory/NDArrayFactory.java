@@ -253,6 +253,21 @@ public interface NDArrayFactory  {
      IComplexNDArray createComplex(List<IComplexNDArray> arrs,int[] shape);
 
 
+    /**
+     * Concatneate ndarrays along a dimension
+     * @param dimension the dimension to concatneate along
+     * @param toConcat the ndarrays to concateneate
+     * @return the concatneated ndarrays
+     */
+    INDArray concat(int dimension,INDArray...toConcat);
+
+    /**
+     * Concatneate ndarrays along a dimension
+     * @param dimension the dimension to concatneate along
+     * @param toConcat the ndarrays to concateneate
+     * @return the concatneated ndarrays
+     */
+    IComplexNDArray concat(int dimension,IComplexNDArray...toConcat);
 
 
 
@@ -978,4 +993,8 @@ public interface NDArrayFactory  {
     IComplexNDArray createComplex(float[] dim);
 
     INDArray create(float[] data, int[] shape, int[] stride, int offset, char ordering);
+
+    IComplexNDArray complexFlatten(List<IComplexNDArray> flatten);
+
+    IComplexNDArray complexFlatten(IComplexNDArray[] flatten);
 }

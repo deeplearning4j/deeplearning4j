@@ -142,6 +142,14 @@ public class Nd4j {
 
     }
 
+    public static IComplexNDArray complexFlatten(List<IComplexNDArray> flatten) {
+        return INSTANCE.complexFlatten(flatten);
+    }
+
+    public static IComplexNDArray complexFlatten(IComplexNDArray...flatten) {
+        return INSTANCE.complexFlatten(flatten);
+    }
+
 
     public static INDArray toFlattened(int length,Iterator<? extends INDArray>...matrices) {
         return INSTANCE.toFlattened(length,matrices);
@@ -684,7 +692,7 @@ public class Nd4j {
      * @param columns the number of columns in the row vector
      * @return ndarray
      */
-    public static INDArray createComplex(int columns)  {
+    public static IComplexNDArray createComplex(int columns)  {
         return createComplex(columns,order());
     }
 
@@ -862,8 +870,29 @@ public class Nd4j {
     }
 
 
+    /**
+     * Concatneate ndarrays along a dimension
+     * @param dimension the dimension to concatneate along
+     * @param toConcat the ndarrays to concat
+     * @return the concatted ndarrays with an output shape of
+     * the ndarray shapes save the dimension shape specified
+     * which is then the sum of the sizes along that dimension
+     */
+    public static INDArray concat(int dimension,INDArray...toConcat) {
+        return INSTANCE.concat(dimension,toConcat);
+    }
 
-
+    /**
+     * Concatneate ndarrays along a dimension
+     * @param dimension the dimension to concatneate along
+     * @param toConcat the ndarrays to concat
+     * @return the concatted ndarrays with an output shape of
+     * the ndarray shapes save the dimension shape specified
+     * which is then the sum of the sizes along that dimension
+     */
+    public static IComplexNDArray concat(int dimension,IComplexNDArray...toConcat) {
+        return INSTANCE.concat(dimension,toConcat);
+    }
 
 
 
@@ -1828,7 +1857,7 @@ public class Nd4j {
     }
 
     public static IComplexNDArray createComplex(float[] dim) {
-          return INSTANCE.createComplex(dim);
+        return INSTANCE.createComplex(dim);
     }
 
     public static IComplexNDArray createComplex(float[] data, int[] shape, int offset) {
@@ -1852,4 +1881,6 @@ public class Nd4j {
     public static INDArray create(float[] data, int[] shape, char ordering, int offset) {
         return INSTANCE.create(data,shape,getStrides(shape,ordering),offset,ordering);
     }
+
+
 }

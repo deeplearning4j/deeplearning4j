@@ -930,6 +930,37 @@ public abstract class NDArrayTests {
         assertEquals(n2Assertion,nRsubi);
     }
 
+
+    @Test
+    public void testConcat() {
+        INDArray A = Nd4j.linspace(1,8,8).reshape(2,2,2);
+        INDArray B = Nd4j.linspace(1,12,12).reshape(3,2,2);
+        INDArray concat = Nd4j.concat(0,A,B);
+        assertTrue(Arrays.equals(new int[]{5,2,2},concat.shape()));
+
+    }
+
+    @Test
+    public void testConcatHorizontally() {
+        INDArray rowVector = Nd4j.ones(5);
+        INDArray other = Nd4j.ones(5);
+        INDArray concat = Nd4j.concatHorizontally(rowVector,other);
+        assertEquals(rowVector.rows(),concat.rows());
+        assertEquals(rowVector.columns() * 2,concat.columns());
+
+    }
+
+
+    @Test
+    public void testConcatVertically() {
+        INDArray rowVector = Nd4j.ones(5);
+        INDArray other = Nd4j.ones(5);
+        INDArray concat = Nd4j.concatVertically(rowVector, other);
+        assertEquals(rowVector.rows() * 2,concat.rows());
+        assertEquals(rowVector.columns(),concat.columns());
+
+    }
+
     @Test
     public void testRDivi() {
         INDArray n2 = Nd4j.valueArrayOf(new int[]{2}, 4);
