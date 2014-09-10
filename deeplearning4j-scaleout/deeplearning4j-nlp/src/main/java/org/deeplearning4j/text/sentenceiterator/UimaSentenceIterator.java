@@ -45,14 +45,13 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
 	}
 
 	@Override
-	public String nextSentence() {
+	public synchronized  String nextSentence() {
 		if(sentences == null || !sentences.hasNext()) {
 			try {
 				CAS cas = engine.newCAS();
-                if(cas == null)
-					cas = engine.newCAS();
-				cas.reset();
+
                 synchronized (reader) {
+
                     reader.getNext(cas);
 
                 }
@@ -60,6 +59,7 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
                     engine.process(cas);
 
                 }
+
 				List<String> list = new ArrayList<>();
 				for(Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
 					list.add(sentence.getCoveredText());
