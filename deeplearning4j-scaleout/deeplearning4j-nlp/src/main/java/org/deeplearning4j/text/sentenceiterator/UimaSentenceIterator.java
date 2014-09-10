@@ -14,6 +14,8 @@ import org.cleartk.token.type.Sentence;
 import org.cleartk.util.cr.FilesCollectionReader;
 import org.deeplearning4j.text.annotator.SentenceAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Iterates over and returns sentences
@@ -27,7 +29,7 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
     protected volatile AnalysisEngine engine;
     protected volatile Iterator<String> sentences;
     protected String path;
-
+    private static Logger log = LoggerFactory.getLogger(UimaSentenceIterator.class);
 
     public UimaSentenceIterator(SentencePreProcessor preProcessor,String path, AnalysisEngine engine) {
         super(preProcessor);
@@ -52,8 +54,12 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
                     CAS cas = engine.newCAS();
 
                     synchronized (reader) {
-
-                        reader.getNext(cas);
+                        try {
+                            reader.getNext(cas);
+                        }catch(Exception e) {
+                            log.warn("Done iterating returning an empty string");
+                            return "";
+                        }
 
                     }
                     synchronized (engine) {
