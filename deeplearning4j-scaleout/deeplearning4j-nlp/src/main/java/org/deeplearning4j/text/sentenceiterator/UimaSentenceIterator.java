@@ -23,7 +23,6 @@ import org.deeplearning4j.text.annotator.TokenizerAnnotator;
  */
 public class UimaSentenceIterator extends BaseSentenceIterator {
 
-	protected volatile CAS cas;
     protected volatile CollectionReader reader;
     protected volatile AnalysisEngine engine;
     protected volatile Iterator<String> sentences;
@@ -49,12 +48,18 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
 	public String nextSentence() {
 		if(sentences == null || !sentences.hasNext()) {
 			try {
-				if(cas == null)
+				CAS cas = engine.newCAS();
+                if(cas == null)
 					cas = engine.newCAS();
 				cas.reset();
+                synchronized (reader) {
+                    reader.getNext(cas);
 
-				reader.getNext(cas);
-				engine.process(cas);
+                }
+                synchronized (engine) {
+                    engine.process(cas);
+
+                }
 				List<String> list = new ArrayList<>();
 				for(Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
 					list.add(sentence.getCoveredText());
