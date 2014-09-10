@@ -98,10 +98,9 @@ public class Word2Vec implements Persistable {
      */
     public Word2Vec(SentenceIterator sentenceIter) {
         oob = new float[layerSize];
-        Arrays.fill(oob,0.0f);
+        Arrays.fill(oob, 0.0f);
         readStopWords();
         this.sentenceIter = sentenceIter;
-        buildVocab();
     }
 
 
@@ -309,6 +308,7 @@ public class Word2Vec implements Persistable {
 
         }
 
+        buildVocab();
 
         if(stopWords == null)
             readStopWords();
@@ -426,7 +426,7 @@ public class Word2Vec implements Persistable {
 
     /**
      * Train on the given sentence returning a list of vocab words
-     * @param sentence the sentence to train on
+     * @param sentence the sentence to fit on
      * @return
      */
     public List<VocabWord> trainSentence(String sentence) {
@@ -670,7 +670,7 @@ public class Word2Vec implements Persistable {
     /**
      * Train the word vector
      * on the given words
-     * @param w1 the first word to train
+     * @param w1 the first word to fit
      */
     public void  iterate(VocabWord w1) {
         INDArray l1 = cache.vector(cache.wordAtIndex(w1.getIndex()));
@@ -837,7 +837,7 @@ public class Word2Vec implements Persistable {
         return stopWords;
     }
 
-    public  SentenceIterator getSentenceIter() {
+    public  synchronized SentenceIterator getSentenceIter() {
         return sentenceIter;
     }
 
@@ -968,6 +968,7 @@ public class Word2Vec implements Persistable {
                 ret.layerSize = layerSize;
                 ret.window = window;
                 ret.stopWords = stopWords;
+                ret.setCache(vocabCache);
                 ret.minWordFrequency = minWordFrequency;
                 try {
                     if (tokenizerFactory == null)
@@ -985,6 +986,7 @@ public class Word2Vec implements Persistable {
                 ret.window = window;
                 ret.stopWords = stopWords;
                 ret.minWordFrequency = minWordFrequency;
+                ret.setCache(vocabCache);
 
                 ret.minWordFrequency = minWordFrequency;
 
