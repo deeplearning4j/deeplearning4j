@@ -48,6 +48,8 @@ public class VocabActor extends UntypedActor {
 	public void onReceive(Object message) throws Exception {
 		if(message  instanceof String) {
 			String sentence = message.toString();
+            if(sentence.isEmpty())
+                return;
 			Tokenizer t = tokenizer.create(sentence);
 			List<String> tokens = new ArrayList<>();
 			while(t.hasMoreTokens())
