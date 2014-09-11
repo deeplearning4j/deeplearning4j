@@ -25,6 +25,22 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
     protected String tableName,columnName,idColumnName,jdbcUrl;
     protected DataSource dataSource;
 
+    protected BaseLoader(DataSource dataSource,String jdbcUrl,String tableName, String idColumnName,String columnName) throws Exception {
+        this.dataSource = dataSource;
+        this.jdbcUrl = jdbcUrl;
+        this.tableName = tableName;
+        this.columnName = columnName;
+        this.idColumnName = idColumnName;
+        if(dataSource == null) {
+            dataSource   = new ComboPooledDataSource();
+            ComboPooledDataSource c = (ComboPooledDataSource) dataSource;
+            c.setJdbcUrl(jdbcUrl);
+            c.setDriverClass(DriverFinder.getDriver().getClass().getName());
+
+        }
+    }
+
+
     protected BaseLoader(String jdbcUrl,String tableName, String idColumnName,String columnName) throws Exception {
         this.jdbcUrl = jdbcUrl;
         this.tableName = tableName;
@@ -37,8 +53,8 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
 
     }
 
-    protected BaseLoader(String jdbcUrl,String tableName,String columnName) throws Exception {
-        this(jdbcUrl,tableName,"id",columnName);
+    protected BaseLoader(DataSource dataSource,String jdbcUrl,String tableName,String columnName) throws Exception {
+        this(dataSource,jdbcUrl,tableName,"id",columnName);
 
     }
 

@@ -2,16 +2,18 @@ package org.nd4j.jdbc.mysql;
 
 import org.nd4j.jdbc.loader.impl.BaseLoader;
 
+import javax.sql.DataSource;
+
 /**
  * Mysql loader for ndarrays
  *
  * @author Adam Gibson
  */
 public class MysqlLoader extends BaseLoader {
-    public MysqlLoader(String jdbcUrl, String tableName, String columnName) throws Exception {
-        super(jdbcUrl, tableName, columnName);
-    }
 
+    public MysqlLoader(DataSource dataSource,String jdbcUrl, String tableName, String columnName) throws Exception {
+        super(dataSource,jdbcUrl, tableName, columnName);
+    }
 
     /**
      * Create an insert statement
