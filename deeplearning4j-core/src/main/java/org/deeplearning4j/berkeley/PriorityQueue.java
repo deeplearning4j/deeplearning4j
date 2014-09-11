@@ -92,14 +92,14 @@ public class PriorityQueue<E> implements Iterator<E>, Serializable, Cloneable, P
 	}
 
 	/* (non-Javadoc)
-	 * @see edu.berkeley.nlp.util.PriorityQueueInterface#hasNext()
+	 * @see edu.berkeley.nlp.movingwindow.PriorityQueueInterface#hasNext()
 	 */
 	public boolean hasNext() {
 		return !isEmpty();
 	}
 
 	/* (non-Javadoc)
-	 * @see edu.berkeley.nlp.util.PriorityQueueInterface#next()
+	 * @see edu.berkeley.nlp.movingwindow.PriorityQueueInterface#next()
 	 */
 	public E next() {
 		E first = peek();
@@ -108,14 +108,14 @@ public class PriorityQueue<E> implements Iterator<E>, Serializable, Cloneable, P
 	}
 
 	/* (non-Javadoc)
-	 * @see edu.berkeley.nlp.util.PriorityQueueInterface#remove()
+	 * @see edu.berkeley.nlp.movingwindow.PriorityQueueInterface#remove()
 	 */
 	public void remove() {
 		throw new UnsupportedOperationException();
 	}
 
 	/* (non-Javadoc)
-	 * @see edu.berkeley.nlp.util.PriorityQueueInterface#peek()
+	 * @see edu.berkeley.nlp.movingwindow.PriorityQueueInterface#peek()
 	 */
 	public E peek() {
 		if (size() > 0) return elements.get(0);
@@ -123,7 +123,7 @@ public class PriorityQueue<E> implements Iterator<E>, Serializable, Cloneable, P
 	}
 
 	/* (non-Javadoc)
-	 * @see edu.berkeley.nlp.util.PriorityQueueInterface#getPriority()
+	 * @see edu.berkeley.nlp.movingwindow.PriorityQueueInterface#getPriority()
 	 */
 	public double getPriority() {
 		if (size() > 0) return priorities[0];
@@ -131,21 +131,21 @@ public class PriorityQueue<E> implements Iterator<E>, Serializable, Cloneable, P
 	}
 
 	/* (non-Javadoc)
-	 * @see edu.berkeley.nlp.util.PriorityQueueInterface#size()
+	 * @see edu.berkeley.nlp.movingwindow.PriorityQueueInterface#size()
 	 */
 	public int size() {
 		return size;
 	}
 
 	/* (non-Javadoc)
-	 * @see edu.berkeley.nlp.util.PriorityQueueInterface#isEmpty()
+	 * @see edu.berkeley.nlp.movingwindow.PriorityQueueInterface#isEmpty()
 	 */
 	public boolean isEmpty() {
 		return size == 0;
 	}
 
 	/* (non-Javadoc)
-	 * @see edu.berkeley.nlp.util.PriorityQueueInterface#add(E, double)
+	 * @see edu.berkeley.nlp.movingwindow.PriorityQueueInterface#add(E, double)
 	 */
 	public boolean add(E key, double priority)
 	{

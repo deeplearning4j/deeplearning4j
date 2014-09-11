@@ -1,7 +1,7 @@
 package org.deeplearning4j.nn.gradient;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 
@@ -20,8 +20,8 @@ public class OutputLayerGradient implements Serializable {
 	 * @param num the number to divide by
 	 */
 	public void div(int num) {
-		wGradient.divi(NDArrays.scalar(num));
-		bGradient.divi(NDArrays.scalar(num));
+		wGradient.divi(Nd4j.scalar(num));
+		bGradient.divi(Nd4j.scalar(num));
 	}
 	
 	/**
@@ -80,7 +80,7 @@ public class OutputLayerGradient implements Serializable {
 	}
 
     public INDArray getbGradient() {
-		return bGradient.mean(1);
+		return bGradient;
 	}
 
     public void setbGradient(INDArray bGradient) {

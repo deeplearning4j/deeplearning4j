@@ -11,6 +11,7 @@
         <spring.version>3.2.5.RELEASE</spring.version>
         <mallet.version>2.0.7</mallet.version>
         <jblas.version>1.2.3</jblas.version>
+        <nd4j.version>0.0.1-SNAPSHOT</nd4j.version>
     </properties>
 
     <repositories>
@@ -99,14 +100,14 @@
             <version>${mallet.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>linear-algebra-api</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${nd4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>linear-algebra-jblas</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-jblas</artifactId>
+            <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -1,7 +1,7 @@
 package org.deeplearning4j.datasets.vectorizer;
 
 
-import org.deeplearning4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 
 /**
  * A Vectorizer at its essence takes an input source

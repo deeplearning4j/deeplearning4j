@@ -1,7 +1,7 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast;
 
 import org.deeplearning4j.iterativereduce.tracker.statetracker.WorkRetriever;
-import org.deeplearning4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 import org.deeplearning4j.util.SerializationUtils;
 
 import java.io.File;

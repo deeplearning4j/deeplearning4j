@@ -2,8 +2,8 @@ package org.deeplearning4j.datasets.fetchers;
 
 import org.apache.commons.io.FileUtils;
 
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.util.SerializationUtils;
 
 import java.io.File;

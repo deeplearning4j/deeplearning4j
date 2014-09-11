@@ -2,7 +2,7 @@ package org.deeplearning4j.datasets;
 
 import static org.junit.Assert.*;
 
-import org.deeplearning4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 import org.junit.Test;
 
 public class DataSetTest {

@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 
-import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 
@@ -27,10 +26,10 @@ public class UpdateableImpl implements Updateable<BaseMultiLayerNetwork> {
 	public UpdateableImpl(BaseMultiLayerNetwork wrapped) {
 		if(wrapped == null)
            throw new IllegalArgumentException("Null argument not allowed");
-       if(wrapped.getLayers() == null || wrapped.getLayers()[0] == null)
-           throw new IllegalArgumentException("No layers found!");
-        if(wrapped.getSigmoidLayers() == null || wrapped.getSigmoidLayers()[0] == null)
-            throw new IllegalArgumentException("No sigmoid layers found");
+       if(wrapped.getNeuralNets() == null || wrapped.getNeuralNets()[0] == null)
+           throw new IllegalArgumentException("No neuralNets found!");
+        if(wrapped.getNeuralNets() == null || wrapped.getNeuralNets()[0] == null)
+            throw new IllegalArgumentException("No sigmoid neuralNets found");
 
         this.wrapped = wrapped;
 		if(clazz == null)

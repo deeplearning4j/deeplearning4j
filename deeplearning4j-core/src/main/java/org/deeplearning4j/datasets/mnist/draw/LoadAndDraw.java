@@ -5,9 +5,9 @@ import java.io.ObjectInputStream;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.sampling.Sampling;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.sampling.Sampling;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 
 
@@ -27,7 +27,7 @@ public class LoadAndDraw {
 		
 		DataSet test = null;
 		while(iter.hasNext()) {
-			INDArray reconstructed = network.reconstruct(test.getFeatureMatrix());
+			INDArray reconstructed = network.transform(test.getFeatureMatrix());
 			for(int i = 0; i < test.numExamples(); i++) {
 				INDArray draw1 = test.get(i).getFeatureMatrix().mul(255);
 				INDArray reconstructed2 = reconstructed.getRow(i);

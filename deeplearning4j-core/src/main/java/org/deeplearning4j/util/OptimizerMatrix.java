@@ -1,6 +1,6 @@
 package org.deeplearning4j.util;
 
-import org.deeplearning4j.optimize.TrainingEvaluator;
+import org.deeplearning4j.optimize.api.TrainingEvaluator;
 
 /**
  * Optimizer that handles optimizing parameters. Handles line search
@@ -37,7 +37,7 @@ public interface OptimizerMatrix {
      * The tolerance for change when running
      * @param tolerance
      */
-    void setTolerance(double tolerance);
+    void setTolerance(float tolerance);
 
     /**
      * Sets the training evaluator

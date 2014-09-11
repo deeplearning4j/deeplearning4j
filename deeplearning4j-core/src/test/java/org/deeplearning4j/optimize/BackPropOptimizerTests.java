@@ -1,12 +1,13 @@
 package org.deeplearning4j.optimize;
 
-import org.deeplearning4j.linalg.api.activation.Activations;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.activation.Activations;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork.ParamRange;
 
-import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.models.classifiers.dbn.DBN;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.deeplearning4j.optimize.optimizers.BackPropOptimizer;
 import org.junit.Test;
 
 import org.slf4j.Logger;
@@ -39,35 +40,33 @@ public class BackPropOptimizerTests {
         int fineTuneEpochs = 10000;
 
 
-        DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED)
-                .withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
-                .numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(Activations.tanh())
+        DBN dbn = new DBN.Builder()
                 .hiddenLayerSizes(hiddenLayerSizes)
                 .build();
 
         INDArray params = dbn.params();
         assertEquals(1,params.rows());
         assertEquals(params.columns(),params.length());
-        dbn.setLabels(NDArrays.create(1, nOuts));
+        dbn.setLabels(Nd4j.create(1, nOuts));
 
 
-        BackPropOptimizer op = new BackPropOptimizer(dbn,1e-1,1000);
+        BackPropOptimizer op = new BackPropOptimizer(dbn,1e-1f,1000);
         INDArray layerParams = op.getParameters();
 
         ParamRange r = dbn.startIndexForLayer(0);
         double firstWeightForParam = (double) layerParams.getScalar(r.getwStart() + 1).element();
-        double firstWeightInNetwork = (double) dbn.getLayers()[0].getW().getScalar(1).element();
+        double firstWeightInNetwork = (double) dbn.getNeuralNets()[0].getW().getScalar(1).element();
         assertEquals(0,r.getwStart());
-        int len = dbn.getLayers()[0].getW().length();
+        int len = dbn.getNeuralNets()[0].getW().length();
         assertEquals(len,r.getwEnd());
-        assertEquals(dbn.getLayers()[0].gethBias().length(),Math.abs(r.getBiasStart() - r.getBiasEnd()));
+        assertEquals(dbn.getNeuralNets()[0].gethBias().length(),Math.abs(r.getBiasStart() - r.getBiasEnd()));
 
         ParamRange r2 = dbn.startIndexForLayer(1);
-        assertEquals(dbn.getLayers()[0].getW().length() + dbn.getLayers()[0].gethBias().length(),r2.getwStart());
+        assertEquals(dbn.getNeuralNets()[0].getW().length() + dbn.getNeuralNets()[0].gethBias().length(),r2.getwStart());
 
 
         double secondWeightForParam = (double) layerParams.getScalar(r2.getwStart() + 1).element();
-        double secondWeightInNetwork = (double) dbn.getLayers()[1].getW().getScalar(1).element();
+        double secondWeightInNetwork = (double) dbn.getNeuralNets()[1].getW().getScalar(1).element();
 
 
         assertEquals(true,firstWeightForParam == firstWeightInNetwork);
@@ -78,7 +77,7 @@ public class BackPropOptimizerTests {
         assertEquals(op.getParameters().length(),op.getValueGradient(0).length());
 
 
-        assertEquals(dbn.getLayers()[1].gethBias().length(),Math.abs(r2.getBiasStart() - r2.getBiasEnd()));
+        assertEquals(dbn.getNeuralNets()[1].gethBias().length(),Math.abs(r2.getBiasStart() - r2.getBiasEnd()));
 
     }
 
