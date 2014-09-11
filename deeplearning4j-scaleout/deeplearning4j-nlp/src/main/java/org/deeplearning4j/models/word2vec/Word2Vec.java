@@ -917,7 +917,7 @@ public class Word2Vec implements Persistable {
         private List<String> stopWords = StopWords.getStopWords();
         private int window = 5;
         private TokenizerFactory tokenizerFactory;
-        private VocabCache vocabCache;
+        private VocabCache vocabCache = new EhCacheVocabCache();
 
         public Builder vocabCache(VocabCache cache) {
             this.vocabCache = cache;
