@@ -7,10 +7,10 @@ import java.util.Random;
 
 
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.distancefunction.DistanceFunction;
-import org.deeplearning4j.linalg.distancefunction.EuclideanDistance;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.distancefunction.DistanceFunction;
+import org.nd4j.linalg.distancefunction.EuclideanDistance;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +82,7 @@ public class KMeansClustering implements Serializable {
 			throw new IllegalStateException("KMeans is not ready yet");
 		}
 
-		INDArray distribution = NDArrays.create(1,this.nbCluster);
+		INDArray distribution = Nd4j.create(1,this.nbCluster);
 		INDArray currentCentroid;
 		for (int i = 0; i < this.nbCluster; i++) {
 			currentCentroid = this.centroids.getRow(i);
@@ -160,7 +160,7 @@ public class KMeansClustering implements Serializable {
 
 		// Choose one centroid uniformly at random from among the data points.
 		final INDArray firstCentroid = this.initFeatures.remove(random.nextInt(this.initFeatures.size()));
-		this.centroids = NDArrays.create(this.nbCluster,firstCentroid.columns());
+		this.centroids = Nd4j.create(this.nbCluster,firstCentroid.columns());
 		this.centroids.putRow(0,firstCentroid);
 		log.info("Added initial centroid");
 		INDArray dxs;
@@ -186,7 +186,7 @@ public class KMeansClustering implements Serializable {
 
 
 	protected INDArray computeDxs() {
-		INDArray dxs = NDArrays.create(this.initFeatures.size(), this.initFeatures.get(0).columns());
+		INDArray dxs = Nd4j.create(this.initFeatures.size(), this.initFeatures.get(0).columns());
 
 		int sum = 0;
 		INDArray features;

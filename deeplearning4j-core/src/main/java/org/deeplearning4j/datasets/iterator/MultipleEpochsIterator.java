@@ -1,6 +1,6 @@
 package org.deeplearning4j.datasets.iterator;
 
-import org.deeplearning4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

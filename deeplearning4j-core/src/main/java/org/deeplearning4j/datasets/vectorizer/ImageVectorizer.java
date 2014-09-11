@@ -2,9 +2,9 @@ package org.deeplearning4j.datasets.vectorizer;
 
 import java.io.File;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.util.FeatureUtil;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.util.ImageLoader;
 
 /**

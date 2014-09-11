@@ -1,12 +1,6 @@
 package org.deeplearning4j.util;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.Serializable;
+import java.io.*;
 
 import org.apache.commons.io.FileUtils;
 
@@ -38,7 +32,28 @@ public class SerializationUtils {
 		}
 		
 	}
-	
+
+
+
+    /**
+     * Converts the given object to a byte array
+     * @param toSave the object to save
+     */
+    public static byte[] toByteArray(Serializable toSave) {
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream os = new ObjectOutputStream(bos);
+            os.writeObject(toSave);
+            byte[] ret = bos.toByteArray();
+            os.close();
+            return ret;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+
 	/**
 	 * Writes the object to the output stream
 	 * THIS DOES NOT FLUSH THE STREAM

@@ -1,6 +1,6 @@
 package org.deeplearning4j.util;
 
-import org.deeplearning4j.nn.Persistable;
+import org.deeplearning4j.nn.api.Persistable;
 
 import java.io.*;
 import java.util.ArrayList;

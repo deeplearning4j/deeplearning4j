@@ -4,10 +4,10 @@ import java.util.List;
 
 import org.deeplearning4j.datasets.iterator.DataSetFetcher;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.util.FeatureUtil;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.FeatureUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,7 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
  	 * @return a feature vector
 	 */
 	protected INDArray createInputMatrix(int numRows) {
-		return NDArrays.create(numRows, inputColumns);
+		return Nd4j.create(numRows, inputColumns);
 	}
 	
 	/**
@@ -50,7 +50,7 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 	}
 	
 	protected INDArray createOutputMatrix(int numRows) {
-		return NDArrays.create(numRows,numOutcomes);
+		return Nd4j.create(numRows,numOutcomes);
 	}
 	
 	/**

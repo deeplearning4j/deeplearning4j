@@ -1,8 +1,8 @@
 package org.deeplearning4j.util;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -50,7 +50,7 @@ public class ImageLoader {
     public INDArray asImageMiniBatches(File f,int numMiniBatches,int numRowsPerSlice) {
         try {
             INDArray d = asMatrix(f);
-            INDArray f2 = NDArrays.create(new int[]{numMiniBatches, numRowsPerSlice, d.columns()});
+            INDArray f2 = Nd4j.create(new int[]{numMiniBatches, numRowsPerSlice, d.columns()});
             return f2;
         }catch(Exception e) {
             throw new RuntimeException(e);

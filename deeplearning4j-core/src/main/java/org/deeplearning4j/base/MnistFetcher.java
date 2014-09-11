@@ -17,12 +17,12 @@ public class MnistFetcher {
 	private static Logger log = LoggerFactory.getLogger(MnistFetcher.class);
 	private static final String trainingFilesURL = "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz";
 
-	private static final String trainingFilesFilename = "train-images-idx1-ubyte.gz";
-	public static final String trainingFilesFilename_unzipped = "train-images-idx1-ubyte";
+	private static final String trainingFilesFilename = "images-idx1-ubyte.gz";
+	public static final String trainingFilesFilename_unzipped = "images-idx1-ubyte";
 
 	private static final String trainingFileLabelsURL = "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz";
-	private static final String trainingFileLabelsFilename = "train-labels-idx1-ubyte.gz";
-	public static final String trainingFileLabelsFilename_unzipped = "train-labels-idx1-ubyte";
+	private static final String trainingFileLabelsFilename = "labels-idx1-ubyte.gz";
+	public static final String trainingFileLabelsFilename_unzipped = "labels-idx1-ubyte";
 	private static final String LOCAL_DIR_NAME = "MNIST";
 
 	

@@ -5,7 +5,7 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.*;
 import org.deeplearning4j.iterativereduce.actor.multilayer.MasterActor;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
-import org.deeplearning4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.slf4j.Logger;

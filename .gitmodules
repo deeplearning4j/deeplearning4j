@@ -1,0 +1,4 @@
+[submodule "linear-algebra/mavenized-jcuda"]
+	path = linear-algebra/mavenized-jcuda
+	url = git@github.com:SkymindIO/mavenized-jcuda.git
+	branch = master

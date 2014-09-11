@@ -2,9 +2,9 @@ package org.deeplearning4j.util;
 
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
-import org.deeplearning4j.nn.Persistable;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.deeplearning4j.nn.api.Persistable;
 
 
 import java.io.InputStream;
@@ -60,19 +60,20 @@ public class Viterbi implements Persistable {
     public Pair<Double,INDArray> decode(INDArray labels,boolean binaryLabelMatrix) {
         INDArray outcomeSequence = labels.isColumnVector() || labels.isRowVector() || binaryLabelMatrix ? toOutcomesFromBinaryLabelMatrix(labels) : labels;
         int frames = outcomeSequence.length();
-        INDArray V = NDArrays.ones(frames, states);
-        INDArray pointers = NDArrays.zeros(frames,states);
+        INDArray V = Nd4j.ones(frames, states);
+        INDArray pointers = Nd4j.zeros(frames,states);
         INDArray assigned = V.getRow(0);
         assigned.assign(logPCorrect - logStates);
         V.putRow(0,assigned);
-        V.put(0, (int) outcomeSequence.getScalar(0).element(), NDArrays.scalar(logPCorrect - logStates));
+        V.put(0, (int) outcomeSequence.getScalar(0).element(), Nd4j.scalar(logPCorrect - logStates));
         for(int t = 1; t < frames; t++) {
             for(int k = 0; k < states; k++) {
                 INDArray rowLogProduct = rowOfLogTransitionMatrix(k).add(V.getRow(t  - 1));
-                int maxVal = NDArrays.getBlasWrapper().iamax(rowLogProduct);
+                int maxVal = Nd4j.getBlasWrapper().iamax(rowLogProduct);
                 double argMax = (double) rowLogProduct.max(Integer.MAX_VALUE).element();
                 V.put(t,k,argMax);
-                if(k == outcomeSequence.getScalar(t).element())
+                int element = (int) outcomeSequence.getScalar(t).element();
+                if(k == element)
                     V.put(t,k,logPCorrect + maxVal);
                 else
                     V.put(t,k, logPIncorrect + maxVal);
@@ -81,7 +82,7 @@ public class Viterbi implements Persistable {
             }
         }
 
-        INDArray rectified = NDArrays.zeros(frames);
+        INDArray rectified = Nd4j.zeros(frames);
         rectified.put(rectified.length() - 1,V.getRow(frames - 1).max(Integer.MAX_VALUE));
         for(int t = rectified.length() - 2; t > 0; t--) {
             rectified.put(t,pointers.getScalar(t + 1,(int) rectified.getScalar(t + 1).element()));
@@ -92,16 +93,16 @@ public class Viterbi implements Persistable {
     }
 
     private INDArray rowOfLogTransitionMatrix(int k) {
-        INDArray row = NDArrays.ones(1,states).muli(logOfDiangnalTProb);
+        INDArray row = Nd4j.ones(1,states).muli(logOfDiangnalTProb);
         row.putScalar(k,logMetaInstability);
         return row;
     }
 
 
     private INDArray toOutcomesFromBinaryLabelMatrix(INDArray outcomes) {
-        INDArray ret = NDArrays.create(outcomes.rows(),1);
+        INDArray ret = Nd4j.create(outcomes.rows(),1);
         for(int i = 0; i < outcomes.rows(); i++)
-            ret.put(i,0, NDArrays.getBlasWrapper().iamax(outcomes.getRow(i)));
+            ret.put(i,0, Nd4j.getBlasWrapper().iamax(outcomes.getRow(i)));
         return ret;
     }
 

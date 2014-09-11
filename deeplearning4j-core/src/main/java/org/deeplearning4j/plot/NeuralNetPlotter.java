@@ -7,8 +7,8 @@ import java.util.UUID;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.nn.NeuralNetwork;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 
 import org.slf4j.Logger;
@@ -162,7 +162,7 @@ public class NeuralNetPlotter implements Serializable {
             INDArray row = matrix.getRow(i);
             StringBuffer sb = new StringBuffer();
             for(int j = 0; j < row.length(); j++) {
-                sb.append(String.format("%.10f", row.getScalar(j)));
+                sb.append(String.format("%.10f", row.get(j)));
                 if(j < row.length() - 1)
                     sb.append(",");
             }

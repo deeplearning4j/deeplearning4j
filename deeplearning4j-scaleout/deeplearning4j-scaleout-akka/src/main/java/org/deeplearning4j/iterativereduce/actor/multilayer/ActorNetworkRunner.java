@@ -204,7 +204,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
         if(type.equals("master")) {
 
             if(iter == null)
-                throw new IllegalStateException("Unable to initialize no dataset to train");
+                throw new IllegalStateException("Unable to initialize no dataset to iterate");
 
             log.info("Starting master");
 
@@ -237,8 +237,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
             //ensure network takes on configuration
             if(startingNetwork != null) {
                 startingNetwork.setShouldBackProp(conf.isUseBackProp());
-                startingNetwork.setUseAdaGrad(conf.isUseAdaGrad());
-                startingNetwork.setUseRegularization(conf.isUseRegularization());
+
             }
 
             log.info("Starting Save saver");

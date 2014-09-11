@@ -1,6 +1,6 @@
 package org.deeplearning4j.iterativereduce.akka;
 
-import org.deeplearning4j.autoencoder.DeepAutoEncoder;
+import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
 
 /**
  * Deep AutoEncoder param averaging: over encoder and decoder.
@@ -16,7 +16,7 @@ public class DeepAutoEncoderAccumulator {
 
     /**
      * Param averages both the encoder and decoder
-     * @param deepAutoEncoder the deep autoencoder to combine with
+     * @param deepAutoEncoder the deep autoencoder to combineDouble with
      */
     public void accumulate(DeepAutoEncoder deepAutoEncoder) {
         if(averaged == null)
