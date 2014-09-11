@@ -856,7 +856,7 @@ public class Nd4j {
      * @param B  the second matrix to concat
      */
     public static INDArray hstack(INDArray A, INDArray B) {
-        return INSTANCE.hstack(A, B);
+        return INSTANCE.hstack();
     }
 
     /**
@@ -866,7 +866,7 @@ public class Nd4j {
      * @param B
      */
     public static INDArray vstack(INDArray A, INDArray B) {
-        return INSTANCE.vstack(A, B);
+        return INSTANCE.vstack();
     }
 
 

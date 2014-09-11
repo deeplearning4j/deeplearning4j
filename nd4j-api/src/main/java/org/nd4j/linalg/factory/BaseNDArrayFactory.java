@@ -923,38 +923,38 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     /**
      * Concatenates two matrices horizontally. Matrices must have identical
      * numbers of rows.
+     * @param arrs
      */
-    public INDArray hstack(INDArray A, INDArray B) {
-        if (A.rows() != B.rows()) {
-            throw new IllegalArgumentException("Matrices don't have same number of rows.");
+    public INDArray hstack(INDArray... arrs) {
+        int cols = arrs[0].columns();
+        int rows = arrs[0].rows();
+
+        for(int i = 0; i < arrs.length; i++) {
+            cols += arrs[i].columns();
+            if(arrs[i].rows() != rows)
+                throw new IllegalStateException("Illegal number of rows for array " + i);
+
         }
-        final INDArray ret = Nd4j.create(B.rows(),B.columns() + A.columns());
+
+
+        final INDArray ret = Nd4j.create(rows,cols);
         final AtomicInteger i = new AtomicInteger(0);
-        A.iterateOverAllColumns(new SliceOp() {
-            @Override
-            public void operate(DimensionSlice nd) {
+        for(INDArray a : arrs) {
+            a.iterateOverAllColumns(new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
 
-            }
+                }
 
-            @Override
-            public void operate(INDArray nd) {
-                ret.putColumn(i.get(),nd);
-                i.incrementAndGet();
-            }
-        });
+                @Override
+                public void operate(INDArray nd) {
+                    ret.putColumn(i.get(), nd);
+                    i.incrementAndGet();
+                }
+            });
 
-        B.iterateOverAllColumns(new SliceOp() {
-            @Override
-            public void operate(DimensionSlice nd) {
+        }
 
-            }
-
-            @Override
-            public void operate(INDArray nd) {
-                ret.putColumn(i.get(),nd);
-                i.incrementAndGet();
-            }
-        });
 
 
         return ret;
@@ -963,42 +963,43 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     /**
      * Concatenates two matrices vertically. Matrices must have identical
      * numbers of columns.
+     * @param arrs
      */
     @Override
-    public INDArray vstack(final INDArray A, final INDArray B) {
-        if (A.columns() != B.columns()) {
-            throw new IllegalArgumentException("Matrices don't have same number of columns (" + A.columns() + " != " + B.columns() + ".");
+    public INDArray vstack(final INDArray... arrs) {
+        int cols = arrs[0].columns();
+        int rows = arrs[0].rows();
+
+        for(int i = 0; i < arrs.length; i++) {
+            rows += arrs[i].rows();
+            if(arrs[i].columns() != cols)
+                throw new IllegalStateException("Illegal number of rows for array " + i);
+
         }
 
-        final INDArray ret = Nd4j.create(A.rows() + B.rows(),B.columns());
+
+        final INDArray ret = Nd4j.create(rows,cols);
         final AtomicInteger i = new AtomicInteger(0);
-        A.iterateOverAllRows(new SliceOp() {
-            @Override
-            public void operate(DimensionSlice nd) {
-
-            }
-
-            @Override
-            public void operate(INDArray nd) {
-                ret.putRow(i.get(),nd);
-                i.incrementAndGet();
-            }
-        });
-
-        B.iterateOverAllRows(new SliceOp() {
-            @Override
-            public void operate(DimensionSlice nd) {
-
-            }
-
-            @Override
-            public void operate(INDArray nd) {
-                ret.putRow(i.get(),nd);
-                i.incrementAndGet();
-            }
-        });
 
 
+        for(INDArray arr : arrs) {
+            arr.iterateOverAllRows(new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+
+                }
+
+                @Override
+                public void operate(INDArray nd) {
+                    ret.putRow(i.get(),nd);
+                    i.incrementAndGet();
+                }
+            });
+        }
+
+
+
+  
         return ret;
     }
 

@@ -497,14 +497,16 @@ public interface NDArrayFactory  {
     /**
      * Concatenates two matrices horizontally. Matrices must have identical
      * numbers of rows.
+     * @param arrs
      */
-     INDArray hstack(INDArray A, INDArray B);
+     INDArray hstack(INDArray... arrs);
 
     /**
      * Concatenates two matrices vertically. Matrices must have identical
      * numbers of columns.
+     * @param arrs
      */
-     INDArray vstack(INDArray A, INDArray B);
+     INDArray vstack(INDArray... arrs);
 
 
 
