@@ -34,7 +34,7 @@ public class BasicRNTNTest {
        sentenceIter = new CollectionSentenceIterator(Arrays.asList(sentence));
        File vectors = new File("wordvectors.ser");
        if(!vectors.exists()) {
-           vec = new Word2Vec(sentenceIter);
+           vec = new Word2Vec.Builder().iterate(sentenceIter).build();
            vec.fit();
 
            SerializationUtils.saveObject(vec,new File("wordvectors.ser"));

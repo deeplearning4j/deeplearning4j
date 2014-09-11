@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
@@ -33,7 +34,7 @@ public class EhCacheVocabCache implements VocabCache {
     public final static String WORD_OCCURRENCES = "word_occurrences";
     public final static String NUM_WORDS = "numwords";
     public final static String CODE = "codes";
-
+    private AtomicInteger numWords = new AtomicInteger(0);
     private CacheManager cacheManager;
     private Cache cache;
 
@@ -68,11 +69,13 @@ public class EhCacheVocabCache implements VocabCache {
             Element e = new Element(word + "-" + COUNT,increment);
             cache.put(e);
         }
+
+        incrementWordCountBy(increment);
     }
 
     @Override
     public int wordFrequency(String word) {
-        Element element = cache.get(word + "-"  + FREQUENCY);
+        Element element = cache.get(word + "-"  + COUNT);
         if(element != null && element.getObjectValue() != null)
             return (Integer) element.getObjectValue();
         return 0;
@@ -154,8 +157,9 @@ public class EhCacheVocabCache implements VocabCache {
 
     @Override
     public void addWordToIndex(int index, String word) {
+        assert indexOf(word) < 0 : "Word should not already be in index.";
         store(index,word);
-        incrementWordCount(word);
+        //this word actually belongs in the vocab
         incrementWordCountBy(1);
     }
 
@@ -166,26 +170,21 @@ public class EhCacheVocabCache implements VocabCache {
     }
 
     @Override
-    public int numWords() {
-        Integer numWords = retrieve(NUM_WORDS);
-        if(numWords == null)
-            return 0;
-        return numWords;
+    public synchronized  int numWords() {
+        return numWords.get();
     }
 
 
 
     private void store(Object key,Object value) {
+        assert key != null && value != null : "Unable to store null values";
         Element e = new Element(key,value);
         cache.put(e);
     }
 
 
     private void incrementWordCountBy(int num) {
-        Integer curr = retrieve(NUM_WORDS);
-        if(curr == null)
-            curr = 0;
-        store(NUM_WORDS ,curr + num);
+         numWords.set(numWords.get() + num);
     }
 
 

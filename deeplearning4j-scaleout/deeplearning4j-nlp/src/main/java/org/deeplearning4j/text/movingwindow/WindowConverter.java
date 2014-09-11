@@ -42,7 +42,7 @@ public class WindowConverter {
 			String word = new InputHomogenization(words.get(i)).transform();
 			float[] vec2 = vec.getWordVectorMatrixNormalized(word).floatData();
 			if(vec2 == null)
-				vec2 = vec.getOob();
+				vec2 = vec.getWordVectorMatrix(Word2Vec.UNK).data();
             for(int j = 0; j < vec2.length; j++) {
                 example[count++] = vec2[j];
             }

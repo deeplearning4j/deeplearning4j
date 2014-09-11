@@ -39,11 +39,13 @@ public class Word2VecTests {
         TokenizerFactory t = new UimaTokenizerFactory();
 
 
-        Word2Vec vec = new Word2Vec.Builder()
+        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1)
                .windowSize(5).iterate(iter).tokenizerFactory(t).build();
         vec.setCache(new EhCacheVocabCache());
         vec.fit();
         assertTrue(vec.getCache().numWords() > 0);
+
+        assertEquals(4,vec.getCache().wordFrequency("pearson"));
 
 
 

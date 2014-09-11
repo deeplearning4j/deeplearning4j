@@ -82,9 +82,10 @@ public class Word2Vec implements Persistable {
     private AtomicInteger numSentencesProcessed = new AtomicInteger(0);
     private static ActorSystem trainingSystem;
     private List<String> stopWords;
-    /* out of vocab */
-    private float[] oob;
     private boolean shouldReset = true;
+
+
+    public final static String UNK = "UNK";
 
     public Word2Vec() {}
 
@@ -96,25 +97,21 @@ public class Word2Vec implements Persistable {
      *
      *
      */
-    public Word2Vec(SentenceIterator sentenceIter) {
-        oob = new float[layerSize];
-        Arrays.fill(oob, 0.0f);
+    private Word2Vec(SentenceIterator sentenceIter) {
         readStopWords();
         this.sentenceIter = sentenceIter;
     }
 
 
 
-    public Word2Vec(SentenceIterator sentenceIter,int minWordFrequency) {
-        oob = new float[layerSize];
-        Arrays.fill(oob,0.0f);
+    private Word2Vec(SentenceIterator sentenceIter,int minWordFrequency) {
         readStopWords();
         this.sentenceIter = sentenceIter;
         this.minWordFrequency = minWordFrequency;
     }
 
 
-    public Word2Vec(TokenizerFactory factory,SentenceIterator sentenceIter) {
+    private Word2Vec(TokenizerFactory factory,SentenceIterator sentenceIter) {
         this(sentenceIter);
         this.tokenizerFactory = factory;
     }
@@ -126,7 +123,7 @@ public class Word2Vec implements Persistable {
      * @param sentenceIter
      * @param minWordFrequency
      */
-    public Word2Vec(TokenizerFactory factory,SentenceIterator sentenceIter,int minWordFrequency) {
+    private Word2Vec(TokenizerFactory factory,SentenceIterator sentenceIter,int minWordFrequency) {
         this(factory,sentenceIter);
         this.minWordFrequency = minWordFrequency;
     }
@@ -141,13 +138,13 @@ public class Word2Vec implements Persistable {
      * @param sentences the sentences to use
      * to iterate on
      */
-    public Word2Vec(Collection<String> sentences) {
+    private Word2Vec(Collection<String> sentences) {
         this(sentences,5);
         readStopWords();
 
     }
 
-    public Word2Vec(Collection<String> sentences,TokenizerFactory factory) {
+    private Word2Vec(Collection<String> sentences,TokenizerFactory factory) {
         this(sentences);
         this.tokenizerFactory = factory;
     }
@@ -158,19 +155,17 @@ public class Word2Vec implements Persistable {
      * @param minWordFrequency the minimum word frequency
      * to be counted in the vocab
      */
-    public Word2Vec(Collection<String> sentences,int minWordFrequency) {
+    private Word2Vec(Collection<String> sentences,int minWordFrequency) {
         this.minWordFrequency = minWordFrequency;
         this.sentenceIter = new CollectionSentenceIterator(sentences);
 
         this.buildVocab();
-        oob = new float[layerSize];
-        Arrays.fill(oob,0.0f);
         readStopWords();
 
     }
 
 
-    public Word2Vec(Collection<String> sentences,int minWordFrequency,TokenizerFactory factory) {
+    private Word2Vec(Collection<String> sentences,int minWordFrequency,TokenizerFactory factory) {
         this(sentences,minWordFrequency);
         this.tokenizerFactory = factory;
     }
@@ -201,20 +196,16 @@ public class Word2Vec implements Persistable {
 
     public INDArray getWordVectorMatrix(String word) {
         int i = this.cache.indexOf(word);
-        if(oob == null)
-            oob = new float[layerSize];
-
         if(i < 0)
-            return Nd4j.create(oob, new int[]{layerSize});
+            return cache.vector(UNK);
         return cache.vector(word);
     }
 
     public INDArray getWordVectorMatrixNormalized(String word) {
         int i = this.cache.indexOf(word);
-        if(oob == null)
-            oob = new float[layerSize];
+
         if(i < 0)
-            return Nd4j.zeros(layerSize);
+            return cache.vector(UNK);
         INDArray r =  cache.vector(word);
         return r.div((Nd4j.getBlasWrapper().nrm2(r)));
     }
@@ -436,13 +427,12 @@ public class Word2Vec implements Persistable {
         while(tokenizer.hasMoreTokens()) {
             String next = tokenizer.nextToken();
             if(stopWords.contains(next))
-                next = "STOP";
+                next = UNK;
             VocabWord word = cache.wordFor(next);
             if(word == null)
                 continue;
 
             sentence2.add(word);
-            cache.incrementWordCount(next);
 
         }
 
@@ -568,8 +558,8 @@ public class Word2Vec implements Persistable {
             f.onComplete(new OnComplete<Void>() {
                 @Override
                 public void onComplete(Throwable failure, Void success) throws Throwable {
-                   if(failure != null)
-                       log.error("Error thrown ",failure);
+                    if(failure != null)
+                        log.error("Error thrown ",failure);
                     latch.countDown();
                 }
             },trainingSystem.dispatcher());
@@ -590,7 +580,7 @@ public class Word2Vec implements Persistable {
             long curr = System.currentTimeMillis();
             long lastChanged = semaphore.get();
             long diff = Math.abs(curr - lastChanged);
-            log.info("Waiting on setup...");
+            log.info("Building vocab...");
             //hasn't changed for 5 minutes
             if(diff >= fiveMinutes) {
                 done = true;
@@ -772,7 +762,8 @@ public class Word2Vec implements Persistable {
 
     /* reinit weights */
     private void resetWeights() {
-        for(int i = 0; i < cache.numWords(); i++)
+        int numWords = cache.numWords();
+        for(int i = 0; i < numWords; i++)
             cache.putVector(cache.wordAtIndex(i),randomVector());
 
 
@@ -814,7 +805,7 @@ public class Word2Vec implements Persistable {
 
     @SuppressWarnings("unchecked")
     private void readStopWords() {
-        stopWords = StopWords.getStopWords();
+        this.stopWords = StopWords.getStopWords();
 
 
     }
@@ -834,14 +825,6 @@ public class Word2Vec implements Persistable {
     }
 
 
-
-
-
-    public float[]	 getOob() {
-        if(oob == null)
-            oob = new float[layerSize];
-        return oob;
-    }
 
     public int getWords() {
         return words;
@@ -911,7 +894,6 @@ public class Word2Vec implements Persistable {
             this.alpha = vec.alpha;
             this.minWordFrequency = vec.minWordFrequency;
             this.numSentencesProcessed = vec.numSentencesProcessed;
-            this.oob = vec.oob;
             this.sample = vec.sample;
             this.size = vec.size;
             this.stopWords = vec.stopWords;
@@ -959,8 +941,8 @@ public class Word2Vec implements Persistable {
             return this;
         }
 
-        public Builder stopWords(List<String> stopWords) {
-            this.stopWords = stopWords;
+        public Builder stopWords(List<String> UNKWords) {
+            this.stopWords = UNKWords;
             return this;
         }
 
@@ -983,7 +965,7 @@ public class Word2Vec implements Persistable {
                 Word2Vec ret = new Word2Vec();
                 ret.layerSize = layerSize;
                 ret.window = window;
-                ret.stopWords = stopWords;
+                ret.stopWords = StopWords.getStopWords();
                 ret.setCache(vocabCache);
                 ret.minWordFrequency = minWordFrequency;
                 try {
@@ -993,6 +975,7 @@ public class Word2Vec implements Persistable {
                     throw new RuntimeException(e);
                 }
                 ret.tokenizerFactory = tokenizerFactory;
+
                 return ret;
             }
 
