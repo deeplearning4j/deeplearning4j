@@ -1,8 +1,8 @@
 package org.deeplearning4j.util;
 
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,11 +76,11 @@ public class MovingWindowMatrix {
         for(int i = 0; i < toSlice.length(); i++) {
             if(window >= toSlice.length())
                 break;
-            double[] w = new double[this.windowRowSize * this.windowColumnSize];
+            float[] w = new float[this.windowRowSize * this.windowColumnSize];
             for(int count = 0; count < this.windowRowSize * this.windowColumnSize; count++) {
-                w[count] = (double) toSlice.getScalar(count + window).element();
+                w[count] = toSlice.get(count + window);
             }
-            INDArray add = NDArrays.create(w);
+            INDArray add = Nd4j.create(w);
             if(flattened)
                 add = add.ravel();
             else
@@ -89,7 +89,7 @@ public class MovingWindowMatrix {
                 INDArray currRotation = add.dup();
                 //3 different orientations besides the original
                 for(int rotation = 0; rotation < 3; rotation++) {
-                    NDArrays.rot90(currRotation);
+                    Nd4j.rot90(currRotation);
                     ret.add(currRotation.dup());
                 }
 

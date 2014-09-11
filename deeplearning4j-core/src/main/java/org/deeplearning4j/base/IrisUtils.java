@@ -9,9 +9,9 @@ import java.util.Random;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.berkeley.Pair;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.factory.NDArrays;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.core.io.ClassPathResource;
 
 
@@ -24,7 +24,7 @@ public class IrisUtils {
         @SuppressWarnings("unchecked")
         List<String> lines = IOUtils.readLines(resource.getInputStream());
         List<DataSet> list = new ArrayList<>();
-        INDArray ret = NDArrays.ones(to, 4);
+        INDArray ret = Nd4j.ones(to, 4);
         List<String> outcomeTypes = new ArrayList<>();
         double[][] outcomes = new double[lines.size()][3];
         for(int i = from; i < to; i++) {
@@ -42,7 +42,7 @@ public class IrisUtils {
         }
 
         for(int i = 0; i < ret.rows(); i++)
-            list.add(new DataSet(ret.getRow(i), NDArrays.create(outcomes[i]).transpose()));
+            list.add(new DataSet(ret.getRow(i), Nd4j.create(outcomes[i])));
 
 
 
@@ -60,6 +60,6 @@ public class IrisUtils {
         for(int i = 0; i < 4; i++)
             vector[i] = Double.parseDouble(line[i]);
 
-        ret.putRow(row,NDArrays.create(vector));
+        ret.putRow(row,Nd4j.create(vector));
     }
 }

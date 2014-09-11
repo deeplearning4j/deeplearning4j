@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 
 public class InputSplit {

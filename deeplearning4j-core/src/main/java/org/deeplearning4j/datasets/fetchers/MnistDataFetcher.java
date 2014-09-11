@@ -7,9 +7,9 @@ import java.util.List;
 
 import org.deeplearning4j.base.MnistFetcher;
 import org.deeplearning4j.datasets.mnist.MnistManager;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.dataset.DataSet;
-import org.deeplearning4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.util.ArrayUtil;
 
 
 /**
@@ -87,7 +87,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
                 if(binarize)
                     for(int d = 0; d < in.length(); d++) {
                         if(binarize) {
-                            if((double) in.getScalar(d).element() > 30) {
+                            if((float) in.getScalar(d).element() > 30) {
                                 in.putScalar(d,1);
                             }
                             else
@@ -104,7 +104,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
                 INDArray out = createOutputVector(man.readLabel());
                 boolean found = false;
                 for(int col = 0; col < out.length(); col++) {
-                    if((double) out.getScalar(col).element() > 0) {
+                    if(out.get(col) > 0) {
                         found = true;
                         break;
                     }

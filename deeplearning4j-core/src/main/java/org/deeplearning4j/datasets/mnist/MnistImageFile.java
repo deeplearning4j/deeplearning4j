@@ -25,7 +25,7 @@ public class MnistImageFile extends MnistDbFile {
      * @throws IOException
      * @throws FileNotFoundException
      */
-    public MnistImageFile(String name, String mode) throws FileNotFoundException, IOException {
+    public MnistImageFile(String name, String mode) throws  IOException {
         super(name, mode);
 
         // read header information

@@ -1,7 +1,7 @@
 package org.deeplearning4j.datasets.mnist.draw;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.awt.Graphics;
 import java.awt.Image;

@@ -1,0 +1,289 @@
+package org.deeplearning4j.bagofwords.vectorizer;
+
+import akka.actor.ActorSystem;
+import akka.dispatch.Futures;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.berkeley.Counter;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.FeatureUtil;
+import org.deeplearning4j.text.stopwords.StopWords;
+import org.deeplearning4j.util.MathUtils;
+import org.deeplearning4j.util.SetUtils;
+import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.text.movingwindow.Util;
+import org.deeplearning4j.util.Index;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Collection;
+import java.util.concurrent.Callable;
+
+/**
+ * Turns a applyTransformToDestination of documents in to a tfidf bag of words
+ * @author Adam Gibson
+ */
+public class TfidfVectorizer implements TextVectorizer {
+
+    private Index vocab = new Index();
+    private LabelAwareSentenceIterator sentenceIterator;
+    private TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
+    private List<String> labels;
+    private Counter<String> tfIdfWeights;
+    private int numTop = -1;
+    private List<String> stopWords;
+    private Counter<String> tf = new Counter<>();
+    private Counter<String> idf = new Counter<>();
+    private int numDocs = 0;
+    private static Logger log = LoggerFactory.getLogger(TfidfVectorizer.class);
+    private boolean process = true;
+
+    /**
+     *
+     * @param sentenceIterator the document iterator
+     * @param tokenizerFactory the tokenizer for individual tokens
+     * @param labels the possible labels
+     */
+    public TfidfVectorizer(LabelAwareSentenceIterator sentenceIterator,TokenizerFactory tokenizerFactory,List<String> labels,int numTop) {
+        this.sentenceIterator = sentenceIterator;
+        if(!this.sentenceIterator.hasNext())
+            this.sentenceIterator.reset();
+        this.tokenizerFactory = tokenizerFactory;
+        this.labels = labels;
+        this.numTop = numTop;
+        stopWords = StopWords.getStopWords();
+
+
+    }
+
+
+    /**
+     * Creates this tfidf vectorizer with no vocab limit
+     * @param sentenceIterator the document iterator
+     * @param tokenizerFactory the tokenizer for individual tokens
+     * @param labels the possible labels
+     */
+    public TfidfVectorizer(LabelAwareSentenceIterator sentenceIterator,TokenizerFactory tokenizerFactory,List<String> labels) {
+        this(sentenceIterator,tokenizerFactory,labels,-1);
+
+    }
+
+    private Collection<String> allWords() {
+        return SetUtils.union(tf.keySet(),idf.keySet());
+    }
+
+
+
+
+    private Counter<String> tfIdfWeights() {
+        Counter<String> ret = new Counter<>();
+        for(String word  : allWords())
+            ret.setMinCount(word,tfidfWord(word));
+        return ret;
+    }
+
+    private void initIndexFromTfIdf() {
+        for(String key : tfIdfWeights.keySet())
+            this.vocab.add(key);
+    }
+
+
+
+    private double tfidfWord(String word) {
+        return MathUtils.tfidf(tfForWord(word),idfForWord(word));
+    }
+
+
+    private double tfForWord(String word) {
+        return MathUtils.tf((int) tf.getCount(word));
+    }
+
+    private double idfForWord(String word) {
+        return MathUtils.idf(numDocs,idf.getCount(word));
+    }
+
+    /* calculate tfidf scores */
+    private void process() {
+       if(!process)
+           return;
+
+        ActorSystem actorSystem = ActorSystem.create("Tfidf-vectorizer");
+        List<Future<Void>> futures = new ArrayList<>();
+
+        while(sentenceIterator.hasNext()) {
+            final Counter<String> runningTotal = Util.parallelCounter();
+            final Counter<String> documentOccurrences = Util.parallelCounter();
+            final String sentence = sentenceIterator.nextSentence();
+            futures.add(Futures.future(new Callable<Void>() {
+
+                /**
+                 * Computes a result, or throws an exception if unable to do so.
+                 *
+                 * @return computed result
+                 * @throws Exception if unable to compute a result
+                 */
+                @Override
+                public Void call() throws Exception {
+                    log.info("Handling " + sentence);
+                    Tokenizer tokenizer = tokenizerFactory.create(sentence);
+                    numDocs++;
+                    for (String token : tokenizer.getTokens()) {
+                        if (stopWords.contains(token))
+                            continue;
+                        runningTotal.incrementCount(token, 1.0);
+                        //idf
+                        if (!documentOccurrences.containsKey(token))
+                            documentOccurrences.setMinCount(token, 1.0);
+                    }
+
+                    idf.incrementAll(documentOccurrences);
+                    tf.incrementAll(runningTotal);
+                    return null;
+                }
+            }, actorSystem.dispatcher()));
+            try {
+                Thread.sleep(5);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        log.info("Number of documents was " + futures.size());
+
+        Iterable<Future<Void>> fIter = (Iterable<Future<Void>>) futures;
+        try {
+            Future<Iterable<Void>> composed = Futures.sequence( fIter,actorSystem.dispatcher());
+            log.info("Awaiting futures results");
+            Await.result(composed, Duration.Inf());
+        } catch (Exception e) {
+           log.warn("Done...");
+        }
+
+        actorSystem.shutdown();
+
+        tfIdfWeights = tfIdfWeights();
+        if(numTop > 0)
+            tfIdfWeights.keepTopNKeys(numTop);
+         vocab = new Index();
+        List<String> reversed = new ArrayList<>(tfIdfWeights.getSortedKeys());
+        Collections.reverse(reversed);
+        for(String key : reversed ) {
+            vocab.add(key);
+        }
+
+
+
+        process = false;
+    }
+
+
+    @Override
+    public DataSet vectorize() {
+        process();
+        sentenceIterator.reset();
+        List<DataSet> data = new ArrayList<>();
+        while(sentenceIterator.hasNext()) {
+            data.add(vectorize(sentenceIterator.nextSentence(), sentenceIterator.currentLabel()));
+        }
+
+        tf.clear();
+        idf.clear();
+        tfIdfWeights.clear();
+        allWords().clear();
+        return DataSet.merge(data);
+    }
+
+    private INDArray tfidfForInput(String text) {
+        INDArray ret = Nd4j.create(1, vocab.size());
+        Tokenizer tokenizer = tokenizerFactory.create(text);
+        List<String> tokens = tokenizer.getTokens();
+
+        for(int i = 0;i  < tokens.size(); i++) {
+            int idx = vocab.indexOf(tokens.get(i));
+            if(idx >= 0)
+                ret.putScalar(idx, tfidfWord(tokens.get(i)));
+        }
+
+        return ret;
+
+    }
+
+    private INDArray tfidfForInput(InputStream is) {
+        try {
+            String text = new String(IOUtils.toByteArray(is));
+            return tfidfForInput(text);
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+
+
+    }
+
+
+    /**
+     * The vocab sorted in descending order
+     *
+     * @return the vocab sorted in descending order
+     */
+    @Override
+    public Index vocab() {
+        return vocab;
+    }
+
+    @Override
+    public DataSet vectorize(InputStream is, String label) {
+        return new DataSet(tfidfForInput(is),FeatureUtil.toOutcomeVector(labels.indexOf(label),labels.size()));
+    }
+
+    @Override
+    public DataSet vectorize(String text, String label) {
+        INDArray tfidf  = tfidfForInput(text);
+        INDArray label2 = FeatureUtil.toOutcomeVector(labels.indexOf(label), labels.size());
+        return new DataSet(tfidf,label2);
+    }
+
+    @Override
+    public DataSet vectorize(File input, String label) {
+        try {
+            return vectorize(FileUtils.readFileToString(input),label);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Transforms the matrix
+     *
+     * @param text
+     * @return
+     */
+    @Override
+    public INDArray transform(String text) {
+        return tfidfForInput(text);
+    }
+
+
+}

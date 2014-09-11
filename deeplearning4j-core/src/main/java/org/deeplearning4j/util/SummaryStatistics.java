@@ -1,7 +1,7 @@
 package org.deeplearning4j.util;
 
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * @author Adam Gibson
