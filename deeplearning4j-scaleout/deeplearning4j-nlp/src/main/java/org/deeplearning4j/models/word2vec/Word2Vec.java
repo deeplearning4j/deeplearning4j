@@ -535,7 +535,7 @@ public class Word2Vec implements Persistable {
 
         final ActorRef vocabActor = trainingSystem.actorOf(
                 new RoundRobinPool(Runtime.getRuntime().availableProcessors()).props(
-                        Props.create(VocabActor.class,tokenizerFactory,cache,layerSize,stopWords,semaphore)));
+                        Props.create(VocabActor.class,tokenizerFactory,cache,layerSize,stopWords,semaphore,minWordFrequency)));
 
 		/* all words; including those not in the actual ending index */
         int numCores = Runtime.getRuntime().availableProcessors();
