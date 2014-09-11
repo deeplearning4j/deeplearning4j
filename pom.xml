@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nd4j</groupId>
     <artifactId>nd4j</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
 
     <parent>
         <groupId>org.sonatype.oss</groupId>
@@ -79,7 +79,8 @@
         <connection>scm:git@github.com:SkymindIO/nd4j.git</connection>
         <developerConnection>scm:git:git@github.com:SkymindIO/nd4j.git</developerConnection>
         <url>git@github.com:SkymindIO/nd4j.git</url>
-    </scm>
+      <tag>nd4j-0.0.1</tag>
+  </scm>
 
 
     <packaging>pom</packaging>
