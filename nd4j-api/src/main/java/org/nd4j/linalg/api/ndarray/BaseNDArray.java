@@ -1301,10 +1301,10 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public void iterateOverAllColumns(SliceOp op) {
         if(isVector())
-            op.operate(new DimensionSlice(false,this,null));
+            op.operate(this);
         else if(isMatrix()) {
             for(int i = 0; i < columns(); i++) {
-                op.operate(new DimensionSlice(false,getColumn(i),null));
+                op.operate(getColumn(i));
             }
         }
 
@@ -1323,7 +1323,7 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public void iterateOverAllRows(SliceOp op) {
         if(isVector())
-            op.operate(new DimensionSlice(false,this,null));
+            op.operate(this);
         else if(isMatrix()) {
             for(int i = 0; i < rows(); i++) {
                 op.operate(getRow(i));

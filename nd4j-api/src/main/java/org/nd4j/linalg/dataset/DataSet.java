@@ -186,7 +186,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void addFeatureVector(INDArray toAdd) {
-        setFeatures(Nd4j.hstack(getFeatures(), toAdd));
+        setFeatures(Nd4j.hstack());
     }
 
 
@@ -197,7 +197,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void addFeatureVector(INDArray feature, int example) {
-        getFeatures().putRow(example, Nd4j.hstack(getFeatures().getRow(example), feature));
+        getFeatures().putRow(example, Nd4j.hstack());
     }
 
     @Override

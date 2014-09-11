@@ -929,7 +929,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         int cols = arrs[0].columns();
         int rows = arrs[0].rows();
 
-        for(int i = 0; i < arrs.length; i++) {
+        for(int i = 1; i < arrs.length; i++) {
             cols += arrs[i].columns();
             if(arrs[i].rows() != rows)
                 throw new IllegalStateException("Illegal number of rows for array " + i);
@@ -948,7 +948,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
                 @Override
                 public void operate(INDArray nd) {
-                    ret.putColumn(i.get(), nd);
+                    for(int j = 0; j < nd.length(); j++) {
+                        ret.putScalar(i.get(), nd.get(j));
+
+                    }
                     i.incrementAndGet();
                 }
             });
@@ -970,7 +973,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         int cols = arrs[0].columns();
         int rows = arrs[0].rows();
 
-        for(int i = 0; i < arrs.length; i++) {
+        for(int i = 1; i < arrs.length; i++) {
             rows += arrs[i].rows();
             if(arrs[i].columns() != cols)
                 throw new IllegalStateException("Illegal number of rows for array " + i);
@@ -999,7 +1002,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
 
-  
+
         return ret;
     }
 

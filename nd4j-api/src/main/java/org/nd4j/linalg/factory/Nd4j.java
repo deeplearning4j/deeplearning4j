@@ -852,21 +852,21 @@ public class Nd4j {
     /**
      * Concatenates two matrices horizontally. Matrices must have identical
      * numbers of rows.
-     * @param A the first matrix to concat
-     * @param B  the second matrix to concat
+     * @param arrs the first matrix to concat
+     *
      */
-    public static INDArray hstack(INDArray A, INDArray B) {
-        return INSTANCE.hstack();
+    public static INDArray hstack(INDArray... arrs) {
+        return INSTANCE.hstack(arrs);
     }
 
     /**
      * Concatenates two matrices vertically. Matrices must have identical
      * numbers of columns.
-     * @param A
-     * @param B
+     * @param arrs
+     *
      */
-    public static INDArray vstack(INDArray A, INDArray B) {
-        return INSTANCE.vstack();
+    public static INDArray vstack(INDArray... arrs) {
+        return INSTANCE.vstack(arrs);
     }
 
 
