@@ -28,17 +28,19 @@ public class VocabActor extends UntypedActor {
 	private List<String> stopWords;
 	private AtomicLong lastUpdate;
     private VocabCache cache;
+    private int minWordFrequency;
 
 
 
 
-	public VocabActor(TokenizerFactory tokenizer,  VocabCache cache, int layerSize,List<String> stopWords,AtomicLong lastUpdate) {
+	public VocabActor(TokenizerFactory tokenizer,  VocabCache cache, int layerSize,List<String> stopWords,AtomicLong lastUpdate,int minWordFrequency) {
 		super();
 		this.tokenizer = tokenizer;
 		this.layerSize = layerSize;
 		this.stopWords = stopWords;
 		this.lastUpdate = lastUpdate;
         this.cache = cache;
+        this.minWordFrequency = minWordFrequency;
 	}
 
 
@@ -69,7 +71,7 @@ public class VocabActor extends UntypedActor {
 				//internal vocab and the final vocab
 				//at the class level contain the same references
 				if(!Util.matchesAnyStopWord(stopWords,token)) {
-					if(!cache.containsWord(token)) {
+					if(!cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
 						VocabWord word = new VocabWord(cache.wordFrequency(token),layerSize);
 						word.setIndex(cache.numWords());
 						cache.putVocabWord(token,word);
