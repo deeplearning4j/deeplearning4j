@@ -177,7 +177,7 @@ public class NDArrayTests {
         //works fine according to matlab, let's go with it..
         //reproduce with:  A = reshape(linspace(1,4,4),[2 2 ]);
         //A(1,2) % 1 index based
-        double nFirst = 3;
+        double nFirst = n.get(0,1);
         double dFirst = d.get(0,1);
         assertEquals(nFirst,dFirst,1e-1);
         assertEquals(true,Arrays.equals(d.toArray(),n.toArray()));
@@ -226,6 +226,34 @@ public class NDArrayTests {
         assertEquals(test2,multiSliceTest.slice(1).getRow(2));
 
     }
+    
+    
+    @Test
+    public void testGetWithIndices(){
+    	NDArray smallArr = new NDArray(NDArray.linspace(1,4,4).data,new int[]{2,2});
+    	assertTrue(smallArr.get(0,0) == 1);
+       	assertTrue(smallArr.get(1,0) == 2);
+    	assertTrue(smallArr.get(0,1) == 3);
+       	assertTrue(smallArr.get(1,1) == 4);
+  	
+      	NDArray arr = new NDArray(NDArray.linspace(1,12,12).data,new int[]{3,2,2});
+      	
+      	
+      	int count = 1;
+      	for(int k = 0; k < 2; k++){
+      		for(int j = 0; j<2; j++){
+      			for(int i =0; i < 3 ; i++){
+      				NDArray val = arr.get(new int[]{i,j,k});
+      		      	System.out.println(val.get(0));
+      		    	assertTrue(val.get(0)== count);
+      		    	count++;
+      			}
+      		}
+      		
+      	}
+      	
+    }
+    
 
 
 
@@ -383,7 +411,6 @@ public class NDArrayTests {
 
         INDArray testSlice0 = arr.slice(0);
         INDArray testSlice1 = arr.slice(1);
-
         assertEquals(slice0,testSlice0);
         assertEquals(slice2,testSlice1);
 
@@ -394,7 +421,7 @@ public class NDArrayTests {
 
 
     }
-
+  
     @Test
     public void testSwapAxes() {
         INDArray n = new NDArray(DoubleMatrix.linspace(0,7,8).data,new int[]{2,2,2});
@@ -533,11 +560,11 @@ public class NDArrayTests {
     @Test
     public void reduceTest() {
         INDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
-        INDArray reduced = arr.reduce(Ops.DimensionOp.MAX,1);
+        INDArray reduced = arr.reduce(Ops.DimensionOp.MAX,0);
+        log.info("Reduced " + reduced);
+        reduced = arr.reduce(Ops.DimensionOp.MAX,0);
         log.info("Reduced " + reduced);
         reduced = arr.reduce(Ops.DimensionOp.MAX,1);
-        log.info("Reduced " + reduced);
-        reduced = arr.reduce(Ops.DimensionOp.MAX,2);
         log.info("Reduced " + reduced);
 
 

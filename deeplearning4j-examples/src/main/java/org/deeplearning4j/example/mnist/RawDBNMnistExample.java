@@ -13,6 +13,10 @@ import org.deeplearning4j.rbm.RBM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+	/**
+	 * this data needs to be binarized for accurate models. right now it is continuous. f1 scores close to 1 indicate accuracy.
+	 */
+
 public class RawDBNMnistExample {
 
 	private static Logger log = LoggerFactory.getLogger(RawDBNMnistExample.class);
@@ -36,9 +40,6 @@ public class RawDBNMnistExample {
 		}
 
 		iter.reset();
-
-
-
 
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
