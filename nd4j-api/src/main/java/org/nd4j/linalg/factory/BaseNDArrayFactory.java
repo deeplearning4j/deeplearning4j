@@ -7,11 +7,14 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ndarray.DimensionSlice;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Base NDArrayFactory class.
@@ -921,22 +924,40 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * Concatenates two matrices horizontally. Matrices must have identical
      * numbers of rows.
      */
-    public INDArray concatHorizontally(INDArray A, INDArray B) {
+    public INDArray hstack(INDArray A, INDArray B) {
         if (A.rows() != B.rows()) {
             throw new IllegalArgumentException("Matrices don't have same number of rows.");
         }
+        final INDArray ret = Nd4j.create(B.rows(),B.columns() + A.columns());
+        final AtomicInteger i = new AtomicInteger(0);
+        A.iterateOverAllColumns(new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
 
-        INDArray result = Nd4j.create(A.rows(), A.columns() + B.columns());
-        for(int i = 0; i < A.rows(); i++) {
-            result.putRow(i, A.getRow(i));
-        }
+            }
 
-        int count = 0;
+            @Override
+            public void operate(INDArray nd) {
+                ret.putColumn(i.get(),nd);
+                i.incrementAndGet();
+            }
+        });
 
-        for(int i = A.rows(); i < B.rows(); i++) {
-            result.putRow(i,B.getRow(count++));
-        }
-        return result;
+        B.iterateOverAllColumns(new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
+
+            }
+
+            @Override
+            public void operate(INDArray nd) {
+                ret.putColumn(i.get(),nd);
+                i.incrementAndGet();
+            }
+        });
+
+
+        return ret;
     }
 
     /**
@@ -944,22 +965,41 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * numbers of columns.
      */
     @Override
-    public INDArray concatVertically(INDArray A, INDArray B) {
+    public INDArray vstack(final INDArray A, final INDArray B) {
         if (A.columns() != B.columns()) {
             throw new IllegalArgumentException("Matrices don't have same number of columns (" + A.columns() + " != " + B.columns() + ".");
         }
 
-        INDArray result = Nd4j.create(A.rows() + B.rows(), A.columns());
-        for(int i = 0; i < A.columns(); i++) {
-            result.putColumn(i, A.getColumn(i));
-        }
+        final INDArray ret = Nd4j.create(A.rows() + B.rows(),B.columns());
+        final AtomicInteger i = new AtomicInteger(0);
+        A.iterateOverAllRows(new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
 
-        int count = 0;
+            }
 
-        for(int i = A.columns(); i < B.columns(); i++) {
-            result.putColumn(i,B.getColumn(count++));
-        }
-        return result;
+            @Override
+            public void operate(INDArray nd) {
+                ret.putRow(i.get(),nd);
+                i.incrementAndGet();
+            }
+        });
+
+        B.iterateOverAllRows(new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
+
+            }
+
+            @Override
+            public void operate(INDArray nd) {
+                ret.putRow(i.get(),nd);
+                i.incrementAndGet();
+            }
+        });
+
+
+        return ret;
     }
 
 

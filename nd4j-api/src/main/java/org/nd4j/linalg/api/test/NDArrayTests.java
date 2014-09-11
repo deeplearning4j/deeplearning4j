@@ -952,7 +952,7 @@ public abstract class NDArrayTests {
     public void testConcatHorizontally() {
         INDArray rowVector = Nd4j.ones(5);
         INDArray other = Nd4j.ones(5);
-        INDArray concat = Nd4j.concatHorizontally(rowVector,other);
+        INDArray concat = Nd4j.hstack(rowVector, other);
         assertEquals(rowVector.rows(),concat.rows());
         assertEquals(rowVector.columns() * 2,concat.columns());
 
@@ -963,7 +963,7 @@ public abstract class NDArrayTests {
     public void testConcatVertically() {
         INDArray rowVector = Nd4j.ones(5);
         INDArray other = Nd4j.ones(5);
-        INDArray concat = Nd4j.concatVertically(rowVector, other);
+        INDArray concat = Nd4j.vstack(rowVector, other);
         assertEquals(rowVector.rows() * 2,concat.rows());
         assertEquals(rowVector.columns(),concat.columns());
 

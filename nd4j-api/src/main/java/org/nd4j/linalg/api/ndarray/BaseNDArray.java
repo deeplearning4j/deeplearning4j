@@ -3270,7 +3270,7 @@ public abstract class BaseNDArray  implements INDArray {
 
 
         else
-            throw new IllegalArgumentException("Unable to getFromOrigin column of non 2d matrix");
+            throw new IllegalArgumentException("Unable to get scalar column of non 2d matrix");
     }
 
 
