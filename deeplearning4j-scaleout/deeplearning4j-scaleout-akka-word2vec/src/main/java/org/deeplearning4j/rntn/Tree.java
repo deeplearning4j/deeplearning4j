@@ -87,7 +87,7 @@ public class Tree implements Serializable {
      */
     private List<String> yield(List<String> labels) {
         labels.add(label);
-        for(Tree t : children) {
+        for(Tree t : children()) {
             labels.addAll(t.yield());
         }
         return labels;
