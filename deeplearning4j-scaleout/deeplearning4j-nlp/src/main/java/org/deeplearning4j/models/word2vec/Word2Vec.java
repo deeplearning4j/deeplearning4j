@@ -696,13 +696,16 @@ public class Word2Vec implements Persistable {
         log.info("Constructing priority queue");
         PriorityQueue<VocabWord> heap = new PriorityQueue<>(cache.vocabWords());
         int i = 0;
+        int heapCount = 0;
 
         log.info("Beginning tree construction");
         while(heap.size() > 1) {
             VocabWord min1 = heap.poll();
             VocabWord min2 = heap.poll();
 
-
+            if(heapCount % 1000 == 0) {
+                log.info("Heap progress o far " + heapCount);
+            }
             VocabWord add = new VocabWord(min1.getWordFrequency() + min2.getWordFrequency(),layerSize);
             int index = (cache.numWords() + i);
 
@@ -715,6 +718,7 @@ public class Word2Vec implements Persistable {
             min2.setParent(add);
             heap.add(add);
             i++;
+            heapCount++;
         }
 
         Triple<VocabWord,int[],int[]> triple = new Triple<>(heap.poll(),new int[]{},new int[]{});
@@ -722,7 +726,13 @@ public class Word2Vec implements Persistable {
         log.info("Beginning stack operation");
 
         stack.add(triple);
+
+        int stackCount = 0;
+
         while(!stack.isEmpty())  {
+            if(stackCount % 1000 == 0) {
+                log.info("Stack count so far" + stackCount);
+            }
             triple = stack.pop();
             int[] codes = triple.getSecond();
             int[] points = triple.getThird();
@@ -743,6 +753,7 @@ public class Word2Vec implements Persistable {
                 stack.add(new Triple<>(node.getRight(),plus(codes,1),points));
 
             }
+            stackCount++;
         }
 
 
