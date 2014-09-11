@@ -308,6 +308,7 @@ public class Word2Vec implements Persistable {
 
         }
 
+
         buildVocab();
 
         if(stopWords == null)
@@ -692,9 +693,11 @@ public class Word2Vec implements Persistable {
 
     /* Builds the binary tree for the word relationships */
     private void buildBinaryTree() {
+        log.info("Constructing priority queue");
         PriorityQueue<VocabWord> heap = new PriorityQueue<>(cache.vocabWords());
         int i = 0;
 
+        log.info("Beginning tree construction");
         while(heap.size() > 1) {
             VocabWord min1 = heap.poll();
             VocabWord min2 = heap.poll();
@@ -716,6 +719,8 @@ public class Word2Vec implements Persistable {
 
         Triple<VocabWord,int[],int[]> triple = new Triple<>(heap.poll(),new int[]{},new int[]{});
         Stack<Triple<VocabWord,int[],int[]>> stack = new Stack<>();
+        log.info("Beginning stack operation");
+
         stack.add(triple);
         while(!stack.isEmpty())  {
             triple = stack.pop();
