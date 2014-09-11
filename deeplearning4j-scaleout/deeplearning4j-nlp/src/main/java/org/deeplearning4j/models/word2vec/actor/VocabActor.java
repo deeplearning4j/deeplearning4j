@@ -53,16 +53,8 @@ public class VocabActor extends UntypedActor {
             if(sentence.isEmpty())
                 return;
             Tokenizer t = tokenizer.create(sentence);
-            List<String> tokens = new ArrayList<>();
-            while(t.hasMoreTokens())
-                tokens.add(t.nextToken());
-            getSelf().tell(tokens,getSelf());
-
-        }
-
-        else if(message instanceof Collection) {
-            Collection<String> tokens = (Collection<String>) message;
-            for(String token : tokens) {
+            while(t.hasMoreTokens())  {
+                String token = t.nextToken();
                 if(stopWords.contains(token))
                     token = "STOP";
                 cache.incrementWordCount(token);
@@ -78,7 +70,6 @@ public class VocabActor extends UntypedActor {
                         word.setIndex(idx);
                         cache.putVocabWord(token,word);
                         cache.addWordToIndex(idx,token);
-                        log.info("Adding word " + token + " at index " + idx);
                     }
 
 
@@ -90,6 +81,7 @@ public class VocabActor extends UntypedActor {
             lastUpdate.getAndSet(System.currentTimeMillis());
 
         }
+
 
         else
             unhandled(message);
