@@ -305,7 +305,9 @@ public class RNTN implements Serializable {
         this.trainingTrees = trainingBatch;
         for(Tree t : trainingBatch) {
             forwardPropagateTree(t);
+
             setParameters(getParameters().subi(getValueGradient(0)));
+
         }
     }
 
@@ -544,6 +546,7 @@ public class RNTN implements Serializable {
         INDArray goldLabel = Nd4j.create(numOuts, 1);
         int goldClass = tree.goldLabel();
         if (goldClass >= 0) {
+            assert goldClass <= numOuts : "Tried adding a label that was >= to the number of configured outputs " + numOuts + " with label " + goldClass;
             goldLabel.putScalar(goldClass, 1.0f);
         }
 
