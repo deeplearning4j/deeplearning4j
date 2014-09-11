@@ -22,76 +22,78 @@ import akka.actor.UntypedActor;
  */
 public class VocabActor extends UntypedActor {
 
-	private static Logger log = LoggerFactory.getLogger(VocabActor.class);
-	private TokenizerFactory tokenizer;
-	private int layerSize;
-	private List<String> stopWords;
-	private AtomicLong lastUpdate;
+    private static Logger log = LoggerFactory.getLogger(VocabActor.class);
+    private TokenizerFactory tokenizer;
+    private int layerSize;
+    private List<String> stopWords;
+    private AtomicLong lastUpdate;
     private VocabCache cache;
     private int minWordFrequency;
 
 
 
 
-	public VocabActor(TokenizerFactory tokenizer,  VocabCache cache, int layerSize,List<String> stopWords,AtomicLong lastUpdate,int minWordFrequency) {
-		super();
-		this.tokenizer = tokenizer;
-		this.layerSize = layerSize;
-		this.stopWords = stopWords;
-		this.lastUpdate = lastUpdate;
+    public VocabActor(TokenizerFactory tokenizer,  VocabCache cache, int layerSize,List<String> stopWords,AtomicLong lastUpdate,int minWordFrequency) {
+        super();
+        this.tokenizer = tokenizer;
+        this.layerSize = layerSize;
+        this.stopWords = stopWords;
+        this.lastUpdate = lastUpdate;
         this.cache = cache;
         this.minWordFrequency = minWordFrequency;
-	}
+    }
 
 
 
 
-	@Override
-	public void onReceive(Object message) throws Exception {
-		if(message  instanceof String) {
-			String sentence = message.toString();
+    @Override
+    public void onReceive(Object message) throws Exception {
+        if(message  instanceof String) {
+            String sentence = message.toString();
             if(sentence.isEmpty())
                 return;
-			Tokenizer t = tokenizer.create(sentence);
-			List<String> tokens = new ArrayList<>();
-			while(t.hasMoreTokens())
-				tokens.add(t.nextToken());
-			getSelf().tell(tokens,getSelf());
+            Tokenizer t = tokenizer.create(sentence);
+            List<String> tokens = new ArrayList<>();
+            while(t.hasMoreTokens())
+                tokens.add(t.nextToken());
+            getSelf().tell(tokens,getSelf());
 
-		}
+        }
 
-		else if(message instanceof Collection) {
-			Collection<String> tokens = (Collection<String>) message;
-			for(String token : tokens) {
-				if(stopWords.contains(token))
-					token = "STOP";
+        else if(message instanceof Collection) {
+            Collection<String> tokens = (Collection<String>) message;
+            for(String token : tokens) {
+                if(stopWords.contains(token))
+                    token = "STOP";
                 cache.incrementWordCount(token);
 
-				//note that for purposes of word frequency, the
-				//internal vocab and the final vocab
-				//at the class level contain the same references
-				if(!Util.matchesAnyStopWord(stopWords,token)) {
-					if(!cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
-						VocabWord word = new VocabWord(cache.wordFrequency(token),layerSize);
-						word.setIndex(cache.numWords());
-						cache.putVocabWord(token,word);
-                        cache.addWordToIndex(cache.numWords(),token);
+                //note that for purposes of word frequency, the
+                //internal vocab and the final vocab
+                //at the class level contain the same references
+                if(!Util.matchesAnyStopWord(stopWords,token)) {
+                    if(!cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
+                        VocabWord word = new VocabWord(cache.wordFrequency(token),layerSize);
+                        int idx = cache.numWords();
 
-					}
+                        word.setIndex(idx);
+                        cache.putVocabWord(token,word);
+                        cache.addWordToIndex(idx,token);
+                        log.info("Adding word " + token + " at index " + idx);
+                    }
 
 
-				}
+                }
 
 
-			}
+            }
 
-			lastUpdate.getAndSet(System.currentTimeMillis());
+            lastUpdate.getAndSet(System.currentTimeMillis());
 
-		}
+        }
 
-		else 
-			unhandled(message);
-	}
+        else
+            unhandled(message);
+    }
 
 
 
