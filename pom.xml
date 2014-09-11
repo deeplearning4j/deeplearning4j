@@ -164,7 +164,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>2.1</version>
+                    <version>2.3.2</version>
                     <configuration>
                         <mavenExecutorId>forked-path</mavenExecutorId>
                         <arguments> -Psonatype-oss-release</arguments>
