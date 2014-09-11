@@ -75,6 +75,7 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
         Connection c = dataSource.getConnection();
         Blob b = c.createBlob();
         b.setBytes(1,bytes);
+        c.close();
         return b;
     }
 
@@ -95,6 +96,7 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
         Connection c = dataSource.getConnection();
         Blob b = c.createBlob();
         b.setBytes(1,bytes);
+        c.close();
         return b;
     }
 
@@ -184,14 +186,22 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
         PreparedStatement preparedStatement = c.prepareStatement(loadStatement());
         preparedStatement.setString(1,id);
         ResultSet r = preparedStatement.executeQuery();
-        if(r.wasNull() || !r.next())
+        if(r.wasNull() || !r.next()) {
+            c.close();
+            r.close();
+            preparedStatement.close();
+
             return null;
+        }
         else {
             Blob first = r.getBlob(2);
             c.close();
             r.close();
+            preparedStatement.close();
             return first;
         }
+
+
     }
 
     /**
@@ -205,6 +215,7 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
         PreparedStatement p = c.prepareStatement(deleteStatement());
         p.setString(1, id);
         p.execute();
+        p.close();
 
     }
 }
