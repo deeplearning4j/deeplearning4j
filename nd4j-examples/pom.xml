@@ -19,7 +19,7 @@
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jblas</artifactId>
+            <artifactId>nd4j-jcublas</artifactId>
             <version>0.0.2-SNAPSHOT</version>
         </dependency>
     </dependencies>

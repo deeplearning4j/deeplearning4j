@@ -280,7 +280,7 @@ public class JCublasNDArray extends BaseNDArray {
     protected void setupJcuBlas() {
         if(pointer != null)
             return;
-        pointer = new Pointer().withByteOffset(offset() * Sizeof.FLOAT);
+        pointer = new Pointer();
         if(data != null)
             dataPointer = Pointer.to(data()).withByteOffset(offset() * Sizeof.FLOAT);
 
@@ -293,48 +293,68 @@ public class JCublasNDArray extends BaseNDArray {
             long val = (long) m.invoke(pointer);
             return val;
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to getScalar declared pointer");
+            throw new IllegalStateException("Unable to get declared pointer");
         }
+    }
+
+
+    public void allocTest() {
+
+        if(data != null)
+            dataPointer = Pointer.to(data()).withByteOffset(offset * Sizeof.FLOAT);
+        //allocate memory for the pointer
+        JCublas.cublasAlloc(
+                length,
+                Sizeof.FLOAT
+                , pointer);
+
+        /* Copy from data to pointer at majorStride() (you want to stride through the data properly) incrementing by 1 for the pointer on the GPU.
+        * This allows us to copy only what we need. */
+
+        JCublas.cublasSetVector(
+                length,
+                Sizeof.FLOAT,
+                dataPointer,
+                majorStride(),
+                pointer,
+                1);
+
+        float[] r = new float[length];
+        getData(r);
+
+
     }
 
     public void alloc() {
 
         if(data != null)
-            dataPointer = Pointer.to(data()).withByteOffset(offset() * Sizeof.FLOAT);
+            dataPointer = Pointer.to(data())
+                    .withByteOffset(offset() * Sizeof.FLOAT);
+        //allocate memory for the pointer
+        JCublas.cublasAlloc(
+                length,
+                Sizeof.FLOAT
+                , pointer);
 
-        JCublas.cublasAlloc(length, Sizeof.FLOAT, pointer);
-        if(ordering == NDArrayFactory.FORTRAN) {
-            if(isMatrix() || isColumnVector()) {
-                JCublas.cublasSetMatrix(
-                        rows(),
-                        columns(),
-                        Sizeof.FLOAT,
-                        dataPointer,
-                        rows(),
-                        pointer,
-                        rows());
-            }
+        /* Copy from data to pointer at majorStride() (you want to stride through the data properly) incrementing by 1 for the pointer on the GPU.
+        * This allows us to copy only what we need. */
 
-            else
-                JCublas.cublasSetVector(
-                        length,
-                        Sizeof.FLOAT,
-                        dataPointer,
-                       1,
-                        pointer,
-                        1);
-        }
-        else {
-
-                JCublas.cublasSetVector(
-                        length,
-                        Sizeof.FLOAT,
-                        dataPointer,
-                        1,
-                        pointer,
-                        1);
-        }
-
+        if(length == data.length)
+            JCublas.cublasSetVector(
+                    length,
+                    Sizeof.FLOAT,
+                    dataPointer,
+                    1,
+                    pointer,
+                    1);
+        else
+            JCublas.cublasSetVector(
+                    length,
+                    Sizeof.FLOAT,
+                    dataPointer,
+                    majorStride(),
+                    pointer,
+                    1);
 
     }
 
@@ -343,8 +363,8 @@ public class JCublasNDArray extends BaseNDArray {
     }
 
     public void getData(float[] data) {
-        alloc();
-        getData(Pointer.to(data).withByteOffset(offset()));
+        //alloc();
+        getData(Pointer.to(data));
 
     }
 
@@ -352,48 +372,24 @@ public class JCublasNDArray extends BaseNDArray {
 
 
     public void getData(Pointer p) {
-        if(ordering == NDArrayFactory.FORTRAN) {
-            if(isMatrix() || isColumnVector()) {
-                JCublas.cublasGetMatrix(
-                        rows(),
-                        columns(),
-                        Sizeof.FLOAT,
-                        pointer,
-                        rows(),
-                        p,
-                        rows());
-            }
-            else
-                JCublas.cublasGetVector(
-                        length,
-                        Sizeof.FLOAT,
-                        pointer,
-                        1,
-                        p,
-                        stride[0]);
-        }
-        else {
+        //p is typically the data vector which is strided access
+        if(length == data.length)
+            JCublas.cublasGetVector(
+                    length,
+                    Sizeof.FLOAT,
+                    pointer(),
+                    1,
+                    p,
+                    1);
+        else
+            JCublas.cublasGetVector(
+                    length,
+                    Sizeof.FLOAT,
+                    pointer(),
+                    1,
+                    p,
+                    majorStride());
 
-            if(isColumnVector() || isMatrix()) {
-                JCublas.cublasGetMatrix(
-                        rows(),
-                        columns(),
-                        Sizeof.FLOAT,
-                        pointer,
-                        rows(),
-                        p,
-                        rows());
-
-            }
-            else
-                JCublas.cublasGetVector(
-                        length,
-                        Sizeof.FLOAT,
-                        pointer,
-                        stride[0],
-                        p,
-                        stride[0]);
-        }
 
 
 
@@ -414,4 +410,7 @@ public class JCublasNDArray extends BaseNDArray {
     }
 
 
+    public Pointer pointerWithOffset() {
+        return pointer.withByteOffset(offset() * Sizeof.FLOAT);
+    }
 }

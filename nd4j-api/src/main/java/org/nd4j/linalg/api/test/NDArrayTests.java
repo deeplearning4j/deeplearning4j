@@ -1046,6 +1046,12 @@ public abstract class NDArrayTests {
             assertEquals(scalar,n.getScalar(i));
         }
 
+
+
+    }
+
+    @Test
+    public void testGetScalarFortran() {
         Nd4j.factory().setOrder('f');
         n = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{4});
         for(int i = 0; i < n.length(); i++) {
@@ -1061,7 +1067,6 @@ public abstract class NDArrayTests {
         assertEquals(3,column.get(1),1e-1);
         assertEquals(Nd4j.scalar(1),column.getScalar(0));
         assertEquals(Nd4j.scalar(3),column.getScalar(1));
-
 
     }
 

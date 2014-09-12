@@ -362,6 +362,9 @@ public abstract class BaseNDArray  implements INDArray {
 
 
 
+    public int majorStride() {
+            return stride[0];
+    }
 
 
     /**
@@ -1421,7 +1424,7 @@ public abstract class BaseNDArray  implements INDArray {
             return Nd4j.create(data, shape, stride, offsets[0]);
         }
 
-      
+
         int offset = this.offset + ArrayUtil.dotProduct(offsets, stride);
 
         return Nd4j.create(
@@ -3256,8 +3259,8 @@ public abstract class BaseNDArray  implements INDArray {
             else {
                 INDArray ret = Nd4j.create(
                         data,
-                        new int[]{shape[0]},
-                        new int[]{stride[0]},
+                        new int[]{shape[0],1},
+                        new int[]{stride[0],1},
                         offset + c * rows(), ordering
                 );
 

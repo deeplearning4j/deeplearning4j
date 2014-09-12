@@ -326,10 +326,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
 
     public void alloc() {
         JCublas.cublasAlloc(length, Sizeof.FLOAT, pointer);
-        if(isMatrix())
-            JCublas.cublasSetMatrix(rows,columns,length,dataPointer,stride[0],pointer,stride[1]);
-        else
-            JCublas.cublasSetVector(length, Sizeof.FLOAT, dataPointer, stride[0], pointer, stride[0]);
+        JCublas.cublasSetVector(length, Sizeof.FLOAT, dataPointer, majorStride(), pointer, 1);
 
 
 

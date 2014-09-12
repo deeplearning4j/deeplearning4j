@@ -42,7 +42,10 @@ public class SimpleJCublas {
         for(JCublasNDArray arr : arrs)
             arr.alloc();
     }
-
+    public static void allocTest(JCublasNDArray...arrs) {
+        for(JCublasNDArray arr : arrs)
+            arr.allocTest();
+    }
     public static void free(JCublasNDArray...arrs) {
         for(JCublasNDArray arr : arrs)
             arr.free();
@@ -66,10 +69,10 @@ public class SimpleJCublas {
                 cA.pointer(),
                 A.rows(),
                 cB.pointer(),
-                1,
+                cB.stride()[0],
                 beta,
                 cC.pointer(),
-                1);
+                cC.stride()[0]);
 
         cC.getData();
         free(cA,cB,cC);
@@ -165,9 +168,9 @@ public class SimpleJCublas {
         alloc(xC,yC);
         JCublas.cublasScopy(x.length(),
                 xC.pointer(),
-                1,
+                xC.stride()[0],
                 yC.pointer(),
-                1);
+                yC.stride()[0]);
 
         yC.getData();
 
@@ -214,9 +217,9 @@ public class SimpleJCublas {
         alloc(xC,yC);
         JCublas.cublasSswap(xC.length(),
                 xC.pointer(),
-                1,
+                xC.stride()[0],
                 yC.pointer(),
-                1);
+                yC.stride()[0]);
 
         yC.getData();
         free(xC,yC);
@@ -247,27 +250,29 @@ public class SimpleJCublas {
         JCublasNDArray xC = (JCublasNDArray) x;
         alloc(xC);
 
-        int max = JCublas.cublasIdamax(x.length(), xC.pointer(), x.stride()[0]);
+        int max = JCublas.cublasIsamax(
+                x.length(),
+                xC.pointer(),
+                1);
         free(xC);
-        return max;
+        return max - 1;
 
     }
 
     public static void axpy(float da, INDArray A, INDArray B) {
         JCublasNDArray xA = (JCublasNDArray) A;
         JCublasNDArray xB = (JCublasNDArray) B;
+        //allocate memory
         alloc(xA,xB);
-        float[] xAData = new float[xA.length()];
-        float[] xBData = new float[xB.length()];
-        xA.getData(xAData);
-        xB.getData(xBData);
+
+
         if(xA.ordering() == NDArrayFactory.C) {
             JCublas.cublasSaxpy(
                     xA.length(),
                     da,
-                    xA.pointer(),
-                    xA.stride()[0],
-                    xB.pointer(),
+                    xA.pointerWithOffset(),
+                    1,
+                    xB.pointerWithOffset(),
                     1);
             xB.getData();
         }
@@ -276,7 +281,7 @@ public class SimpleJCublas {
                     xA.length(),
                     da,
                     xA.pointer(),
-                    1 ,
+                   1,
                     xB.pointer(),
                     1);
             xB.getData();
@@ -297,9 +302,9 @@ public class SimpleJCublas {
                 aC.length(),
                 jcuda.cuComplex.cuCmplx(da.realComponent().floatValue(), da.imaginaryComponent().floatValue()),
                 aC.pointer(),
-                1,
+                aC.stride()[0],
                 bC.pointer(),
-                1
+                bC.stride()[0]
         );
 
         ((JCublasComplexNDArray) B).getData();
@@ -314,7 +319,7 @@ public class SimpleJCublas {
                 xC.length(),
                 alpha,
                 xC.pointer(),
-                x.stride()[0]);
+                1);
         xC.getData();
         free(xC);
         return x;
@@ -345,9 +350,9 @@ public class SimpleJCublas {
         float ret=  JCublas.cublasSdot(
                 x.length(),
                 xC.pointer(),
-                1
+                xC.stride()[0]  * Sizeof.FLOAT
                 ,yC.pointer(),
-                1);
+                yC.stride()[0]  * Sizeof.FLOAT);
         free(xC,yC);
         return ret;
     }
@@ -361,9 +366,9 @@ public class SimpleJCublas {
         jcuda.cuDoubleComplex dott = JCublas.cublasZdotc(
                 x.length(),
                 aC.pointer(),
-                1,
+                aC.stride()[0]  * Sizeof.FLOAT,
                 bC.pointer(),
-                1);
+                bC.stride()[0]  * Sizeof.FLOAT);
 
         IComplexDouble ret =   Nd4j.createDouble(dott.x, dott.y);
         free(aC,bC);
@@ -405,7 +410,7 @@ public class SimpleJCublas {
                 x.length(),
                 cuComplex.cuCmplx(alpha.realComponent(),alpha.imaginaryComponent()),
                 xC.pointer(),
-                1
+                xC.stride()[0]
         );
 
 
@@ -422,7 +427,7 @@ public class SimpleJCublas {
                 x.length(),
                 jcuda.cuDoubleComplex.cuCmplx(alpha.realComponent(), alpha.imaginaryComponent()),
                 xC.pointer(),
-                1
+                xC.stride()[0]  * Sizeof.FLOAT
         );
 
 
@@ -435,7 +440,7 @@ public class SimpleJCublas {
         JCublasComplexNDArray xC = (JCublasComplexNDArray) x;
         JCublasComplexNDArray yC = (JCublasComplexNDArray) y;
         alloc(xC,yC);
-        jcuda.cuDoubleComplex dott = JCublas.cublasZdotu(x.length(), xC.pointer(), x.stride()[0], yC.pointer(), yC.stride()[0]);
+        jcuda.cuDoubleComplex dott = JCublas.cublasZdotu(x.length(), xC.pointer(), x.stride()[0]  * Sizeof.FLOAT, yC.pointer(), yC.stride()[0]  * Sizeof.FLOAT);
 
 
         IComplexDouble ret = Nd4j.createDouble(dott.x, dott.y);
