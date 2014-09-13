@@ -641,7 +641,7 @@ public class Word2Vec implements Persistable {
                 continue;
 
             VocabWord word2 = sentence.get(c1);
-            iterate(word);
+            iterate(word, word2);
         }
     }
 
