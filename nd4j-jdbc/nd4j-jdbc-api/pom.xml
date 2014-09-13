@@ -3,7 +3,7 @@
 
   <groupId>org.nd4j</groupId>
   <artifactId>nd4j-jdbc-api</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.2</version>
   <packaging>jar</packaging>
 
   <name>nd4j-jdbc-api</name>
@@ -12,7 +12,7 @@
     <parent>
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-jdbc</artifactId>
-        <version>0.0.2-SNAPSHOT</version>
+        <version>0.0.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -43,4 +43,8 @@
             <version>0.0.2-SNAPSHOT</version>
         </dependency>
     </dependencies>
+
+  <scm>
+    <tag>nd4j-0.0.2</tag>
+  </scm>
 </project>
