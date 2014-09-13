@@ -77,7 +77,7 @@ public abstract class BaseLayer implements Layer {
         if(ret.columns() != b.columns())
             throw new IllegalStateException("This is weird");
         if(conf.isConcatBiases())
-            ret = Nd4j.concatHorizontally(ret,b);
+            ret = Nd4j.hstack(ret,b);
         else
             ret.addiRowVector(b);
         return ret;

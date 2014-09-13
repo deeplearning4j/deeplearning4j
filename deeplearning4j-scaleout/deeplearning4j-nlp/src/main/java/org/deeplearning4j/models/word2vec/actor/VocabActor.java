@@ -1,7 +1,5 @@
 package org.deeplearning4j.models.word2vec.actor;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -58,7 +56,6 @@ public class VocabActor extends UntypedActor {
                 if(stopWords.contains(token))
                     token = "STOP";
                 cache.incrementWordCount(token);
-
                 //note that for purposes of word frequency, the
                 //internal vocab and the final vocab
                 //at the class level contain the same references

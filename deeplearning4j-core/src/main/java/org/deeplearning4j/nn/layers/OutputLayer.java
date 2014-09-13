@@ -501,7 +501,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public INDArray params() {
-        return Nd4j.concatHorizontally(W.linearView(),b.linearView());
+        return Nd4j.hstack(W.linearView(),b.linearView());
     }
 
     /**

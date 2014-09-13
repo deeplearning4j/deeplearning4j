@@ -81,7 +81,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     public INDArray getHiddenValues(INDArray x) {
         INDArray preAct;
         if(conf.isConcatBiases()) {
-            INDArray concat = Nd4j.concatVertically(W,hBias.transpose());
+            INDArray concat = Nd4j.hstack(W,hBias.transpose());
             preAct =  x.mmul(concat);
 
         }
@@ -97,7 +97,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
         if(conf.isConcatBiases()) {
             //row already accounted for earlier
             INDArray preAct = y.mmul(W.transpose());
-            preAct = Nd4j.concatHorizontally(preAct,Nd4j.ones(preAct.rows(),1));
+            preAct = Nd4j.hstack(preAct,Nd4j.ones(preAct.rows(),1));
             return Transforms.sigmoid(preAct);
         }
         else {
