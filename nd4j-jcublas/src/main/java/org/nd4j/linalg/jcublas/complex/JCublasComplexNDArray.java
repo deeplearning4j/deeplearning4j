@@ -2,6 +2,7 @@ package org.nd4j.linalg.jcublas.complex;
 
 import jcuda.Pointer;
 import jcuda.Sizeof;
+import jcuda.cuComplex;
 import jcuda.jcublas.JCublas;
 import org.nd4j.linalg.api.complex.BaseComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -318,15 +319,117 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     }
 
 
-    public void getData() {
-        JCublas.cublasGetVector(length, Sizeof.FLOAT, pointer, stride[0], Pointer.to(data()), stride[0]);
+    public void allocTest() {
+
+        if(data != null)
+            dataPointer = Pointer.to(data()).withByteOffset(offset * Sizeof.FLOAT);
+        //allocate memory for the pointer
+        //note length * 2 due to the complex and real components for the ndarray
+        JCublas.cublasAlloc(
+                length * 2,
+                Sizeof.FLOAT
+                , pointer);
+
+        /* Copy from data to pointer at majorStride() (you want to stride through the data properly) incrementing by 1 for the pointer on the GPU.
+        * This allows us to copy only what we need. */
+
+        JCublas.cublasSetVector(
+                length * 2,
+                Sizeof.FLOAT,
+                dataPointer,
+                1,
+                pointer,
+                1);
+
+        float[] r = new float[length * 2];
+        getData(r);
+
 
     }
 
 
+
     public void alloc() {
-        JCublas.cublasAlloc(length, Sizeof.FLOAT, pointer);
-        JCublas.cublasSetVector(length, Sizeof.FLOAT, dataPointer, majorStride(), pointer, 1);
+
+        if(data != null)
+            dataPointer = Pointer.to(data())
+                    .withByteOffset((offset() / 2) * Sizeof.FLOAT);
+        //allocate memory for the pointer
+        //need 2 * length for all the numbers
+        JCublas.cublasAlloc(
+                length * 2,
+                Sizeof.FLOAT
+                , pointer);
+
+        /* Copy from data to pointer at majorStride() (you want to stride through the data properly) incrementing by 1 for the pointer on the GPU.
+        * This allows us to copy only what we need. */
+
+        if(length == data.length / 2)
+            JCublas.cublasSetVector(
+                    length * 2,
+                    Sizeof.FLOAT,
+                    dataPointer,
+                    1,
+                    pointer,
+                    1);
+        else
+            JCublas.cublasSetVector(
+                    length * 2,
+                    Sizeof.FLOAT,
+                    dataPointer,
+                    majorStride(),
+                    pointer,
+                    1);
+
+    }
+    public void free() {
+        JCublas.cublasFree(pointer);
+    }
+
+    public void getData(float[] data) {
+        //alloc();
+        getData(Pointer.to(data));
+
+    }
+
+
+
+
+    private cuComplex[] jcublasData() {
+        cuComplex[] ret = new cuComplex[data.length / 2];
+        int count = 0;
+        for(int i = 0; i < data.length - 1; i+= 2) {
+            ret[count++] = cuComplex.cuCmplx(data[i],data[i + 1]);
+        }
+        return ret;
+    }
+
+
+
+    public void getData() {
+        getData(dataPointer);
+    }
+
+
+    public void getData(Pointer p) {
+
+        //p is typically the data vector which is strided access
+        if(length == data.length / 2)
+            JCublas.cublasGetVector(
+                    length * 2,
+                    Sizeof.FLOAT,
+                    pointer(),
+                    1,
+                    p,
+                    1);
+        else
+            JCublas.cublasGetVector(
+                    length * 2,
+                    Sizeof.FLOAT,
+                    pointer(),
+                    1,
+                    p,
+                    1);
 
 
 
@@ -337,12 +440,10 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     protected void setupJcuBlas() {
         if(pointer != null)
             return;
-        pointer = new Pointer().withByteOffset(offset());
-        dataPointer = Pointer.to(data()).withByteOffset(offset());
-    }
+        pointer = new Pointer();
+        if(data != null)
+            dataPointer = Pointer.to(data()).withByteOffset((offset() /2) * Sizeof.FLOAT);
 
-    public void free() {
-        JCublas.cublasFree(pointer);
     }
 
 

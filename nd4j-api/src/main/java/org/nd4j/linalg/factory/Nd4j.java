@@ -1869,7 +1869,7 @@ public class Nd4j {
     }
 
     public static IComplexNDArray complexLinSpace(int i, int i1, int i2) {
-        return Nd4j.createComplex(Nd4j.linspace(1,8,8));
+        return Nd4j.createComplex(Nd4j.linspace(i,i1,i2));
 
     }
 

@@ -134,11 +134,13 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta, IComplexNDArray c) {
-        return null;
+        SimpleJCublas.gemm(a,b,alpha,c,beta);
+        return c;
     }
 
     @Override
     public INDArray gesv(INDArray a, int[] ipiv, INDArray b) {
+
         return null;
     }
 

@@ -82,31 +82,31 @@ public class SimpleJCublas {
     }
 
 
-    public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexNDArray C,
-                                       float Alpha, float Beta) {
+    public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexNumber a,IComplexNDArray C
+                                       , IComplexNumber b) {
 
-        JCublasNDArray cA = (JCublasNDArray) A;
-        JCublasNDArray cB = (JCublasNDArray) B;
-        JCublasNDArray cC = (JCublasNDArray) C;
+        JCublasComplexNDArray cA = (JCublasComplexNDArray) A;
+        JCublasComplexNDArray cB = (JCublasComplexNDArray) B;
+        JCublasComplexNDArray cC = (JCublasComplexNDArray) C;
         alloc(cA,cB,cC);
 
-        cuComplex alpha = cuComplex.cuCmplx(Alpha,0);
-        cuComplex beta = cuComplex.cuCmplx(Beta,0);
+        cuComplex alpha = cuComplex.cuCmplx(a.realComponent().floatValue(),b.imaginaryComponent().floatValue());
+        cuComplex beta = cuComplex.cuCmplx(b.realComponent().floatValue(),b.imaginaryComponent().floatValue());
 
         JCublas.cublasCgemm(
                 'n', //trans
                 'n',
-                A.rows(),  // m
-                B.columns(), // n
-                B.rows(), //k,
+                cC.rows(),  // m
+                cC.columns(), // n
+                cA.columns(), //k,
                 alpha,
-                cA.pointer(), // A
+                cA.pointer().withByteOffset((cA.offset()) * Sizeof.FLOAT), // A
                 A.rows(),  // lda
-                cB.pointer(), // x
-                B.rows(), // incx
+                cB.pointer().withByteOffset((cB.offset()) * Sizeof.FLOAT), // x
+                B.rows(), // ldb
                 beta,  // beta
-                cC.pointer(), // y
-                C.rows()); // incy
+                cC.pointer().withByteOffset((cC.offset()) * Sizeof.FLOAT), // y
+                C.rows()); // ldc
 
 
         cC.getData();
@@ -127,9 +127,9 @@ public class SimpleJCublas {
         JCublas.cublasSgemm(
                 'n', //trans
                 'n',
-                A.rows(),  // m
-                B.columns(), // n
-                B.rows(), //k,
+                C.rows(),  // m
+                C.columns(), // n
+                A.columns(), //k,
                 alpha,
                 cA.pointer(), // A
                 A.rows(),  // lda
@@ -181,7 +181,7 @@ public class SimpleJCublas {
 
         JCublasComplexNDArray xC = (JCublasComplexNDArray) x;
         alloc(xC);
-        int max = JCublas.cublasIzamax(x.length(), xC.pointer(), x.stride()[0]);
+        int max = JCublas.cublasIzamax(x.length(), xC.pointer(), 1);
         free(xC);
         return max;
     }
@@ -217,9 +217,9 @@ public class SimpleJCublas {
         alloc(xC,yC);
         JCublas.cublasSswap(xC.length(),
                 xC.pointer(),
-                xC.stride()[0],
+                1,
                 yC.pointer(),
-                yC.stride()[0]);
+                1);
 
         yC.getData();
         free(xC,yC);
@@ -263,7 +263,7 @@ public class SimpleJCublas {
         JCublasNDArray xA = (JCublasNDArray) A;
         JCublasNDArray xB = (JCublasNDArray) B;
         //allocate memory
-        alloc(xA,xB);
+        alloc(xA, xB);
 
 
         if(xA.ordering() == NDArrayFactory.C) {
@@ -302,9 +302,9 @@ public class SimpleJCublas {
                 aC.length(),
                 jcuda.cuComplex.cuCmplx(da.realComponent().floatValue(), da.imaginaryComponent().floatValue()),
                 aC.pointer(),
-                aC.stride()[0],
+                1,
                 bC.pointer(),
-                bC.stride()[0]
+                1
         );
 
         ((JCublasComplexNDArray) B).getData();
@@ -410,7 +410,7 @@ public class SimpleJCublas {
                 x.length(),
                 cuComplex.cuCmplx(alpha.realComponent(),alpha.imaginaryComponent()),
                 xC.pointer(),
-                xC.stride()[0]
+                1
         );
 
 
@@ -427,7 +427,7 @@ public class SimpleJCublas {
                 x.length(),
                 jcuda.cuDoubleComplex.cuCmplx(alpha.realComponent(), alpha.imaginaryComponent()),
                 xC.pointer(),
-                xC.stride()[0]  * Sizeof.FLOAT
+                1
         );
 
 

@@ -240,7 +240,14 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public IComplexNDArray createComplex(float[] dim) {
-        return null;
+        if(dim.length %2 != 0)
+            throw new IllegalArgumentException("Complex nd array buffers must have an even number of elements");
+        IComplexNDArray ret = Nd4j.createComplex(dim.length / 2);
+        int count = 0;
+        for(int i = 0; i < dim.length - 1; i += 2) {
+                ret.putScalar(count++,Nd4j.createDouble(dim[i],dim[i + 1]));
+        }
+        return ret;
     }
 
     @Override

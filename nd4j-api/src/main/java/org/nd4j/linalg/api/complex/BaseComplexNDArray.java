@@ -1498,6 +1498,52 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
 
+    protected IComplexNDArray newShape(int[] newShape,char ordering) {
+        if(Arrays.equals(newShape,this.shape()))
+            return this;
+
+        else if(Shape.isVector(newShape) && isVector()) {
+            if(isRowVector() && Shape.isColumnVectorShape(newShape)) {
+                return Nd4j.createComplex(data,newShape,new int[]{stride[0],1},offset);
+            }
+            else if(isColumnVector() && Shape.isRowVectorShape(newShape)) {
+                return Nd4j.createComplex(data,newShape,new int[]{stride[1]},offset);
+
+            }
+        }
+
+        INDArray newCopy = this;
+        int[] newStrides = null;
+        //create a new copy of the ndarray
+        if(shape().length > 1 &&  ((ordering == NDArrayFactory.C && this.ordering != NDArrayFactory.C) ||
+                (ordering == NDArrayFactory.FORTRAN && this.ordering != NDArrayFactory.FORTRAN))) {
+            newStrides = noCopyReshape(newShape,ordering);
+            if(newStrides == null) {
+                newCopy = Nd4j.create(shape(),ordering);
+                for(int i = 0; i < vectorsAlongDimension(0); i++) {
+                    INDArray copyFrom = vectorAlongDimension(i,0);
+                    INDArray copyTo = newCopy.vectorAlongDimension(i,0);
+                    for(int j = 0; j < copyFrom.length(); j++) {
+                        copyTo.putScalar(j,copyFrom.get(i));
+                    }
+                }
+            }
+
+
+
+
+        }
+
+        //needed to copy data
+        if(newStrides == null)
+            newStrides = Nd4j.getComplexStrides(newShape,ordering);
+
+        return Nd4j.createComplex(newCopy.data(),newShape,newStrides,offset);
+
+
+    }
+
+
     /**
      * Replicate and tile array to fill out to the given shape
      *
@@ -2799,15 +2845,23 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray transpose() {
-        //transpose of row vector is column vector
         if(isRowVector())
             return Nd4j.createComplex(data, new int[]{shape[0], 1}, offset);
-            //transpose of a column vector is row vector
         else if(isColumnVector())
             return Nd4j.createComplex(data, new int[]{shape[0]}, offset);
+        if(isMatrix()) {
+            IComplexNDArray reverse = Nd4j.createComplex(new int[]{shape[1],shape[0]});
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < columns; j++) {
+                    reverse.putScalar(j, i, getComplex(i, j));
+                }
+            }
 
-        IComplexNDArray n = Nd4j.createComplex(data, reverseCopy(shape), reverseCopy(stride), offset);
-        return n;
+            return reverse;
+        }
+
+        IComplexNDArray ret = permute(ArrayUtil.range(shape.length -1,-1));
+        return ret;
 
     }
 
@@ -2898,7 +2952,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray reshape(int[] shape) {
-         return (IComplexNDArray) super.reshape(shape);
+        return (IComplexNDArray) super.reshape(shape);
 
 
     }

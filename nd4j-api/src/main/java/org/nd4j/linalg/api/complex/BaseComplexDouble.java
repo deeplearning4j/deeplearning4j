@@ -3,10 +3,12 @@ package org.nd4j.linalg.api.complex;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Created by agibsonccc on 9/5/14.
+ * Base class for complex doubles
+ *
+ * @author Adam Gibson
  */
 public abstract class BaseComplexDouble implements IComplexDouble {
-    protected static double real,imag;
+    protected  double real,imag;
 
 
 
@@ -16,7 +18,7 @@ public abstract class BaseComplexDouble implements IComplexDouble {
     }
 
     public BaseComplexDouble(double real) {
-        this(real,imag);
+        this(real,0);
     }
 
 
@@ -311,11 +313,6 @@ public abstract class BaseComplexDouble implements IComplexDouble {
         return real == 0;
     }
 
-    @Override
-    public String toString() {
-        return super.toString();
-    }
-
 
 
     @Override
@@ -390,16 +387,37 @@ public abstract class BaseComplexDouble implements IComplexDouble {
         return Nd4j.createDouble(p, q);
     }
 
-    /**
-     * Comparing two DoubleComplex values.
-     *
-     * @param o
-     */
     @Override
     public boolean equals(Object o) {
-        return super.equals(o);
+        if (this == o) return true;
+        if (!(o instanceof BaseComplexDouble)) return false;
+
+        BaseComplexDouble that = (BaseComplexDouble) o;
+
+        if (Double.compare(that.imag, imag) != 0) return false;
+        if (Double.compare(that.real, real) != 0) return false;
+
+        return true;
     }
 
+    @Override
+    public int hashCode() {
+        int result;
+        long temp;
+        temp = Double.doubleToLongBits(real);
+        result = (int) (temp ^ (temp >>> 32));
+        temp = Double.doubleToLongBits(imag);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        return result;
+    }
 
+    @Override
+    public String toString() {
+        if (imag >= 0) {
+            return real + " + " + imag + "i";
+        } else {
+            return real + " - " + (-imag) + "i";
+        }
+    }
 
 }

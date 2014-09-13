@@ -309,10 +309,6 @@ public abstract class BaseComplexFloat implements IComplexFloat {
         return false;
     }
 
-    @Override
-    public String toString() {
-        return super.toString();
-    }
 
 
 
@@ -416,5 +412,22 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     public boolean isImag() {
         return realComponent() == 0;
     }
+
+    @Override
+    public int hashCode() {
+        int result = (real != +0.0f ? Float.floatToIntBits(real) : 0);
+        result = 31 * result + (imag != +0.0f ? Float.floatToIntBits(imag) : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        if (imag >= 0) {
+            return real + " + " + imag + "i";
+        } else {
+            return real + " - " + (-imag) + "i";
+        }
+    }
+
 
 }

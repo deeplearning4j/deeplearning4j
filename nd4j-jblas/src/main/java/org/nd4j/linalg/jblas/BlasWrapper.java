@@ -266,10 +266,16 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 c.columns(),
                 a.columns(),
                 new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
-                a.data(), a.offset() / 2, a.rows(),
-                b.data(), b.offset() / 2, b.rows(),
+                a.data(),
+                a.offset() / 2,
+                a.rows(),
+                b.data(),
+                b.offset() / 2,
+                b.rows(),
                 new ComplexFloat(beta.realComponent().floatValue(), beta.imaginaryComponent().floatValue())
-                , c.data(), c.offset() / 2, c.rows());
+                , c.data(),
+                c.offset() / 2,
+                c.rows());
         return c;
 
     }
