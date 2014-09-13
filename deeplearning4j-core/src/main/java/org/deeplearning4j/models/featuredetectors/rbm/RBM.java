@@ -408,7 +408,7 @@ public  class RBM extends BaseNeuralNetwork {
 
         INDArray preSig = v.mmul(W);
         if(conf.isConcatBiases())
-            preSig = Nd4j.concatHorizontally(preSig,hBias);
+            preSig = Nd4j.hstack(preSig,hBias);
         else
             preSig.addiRowVector(hBias);
 
@@ -460,7 +460,7 @@ public  class RBM extends BaseNeuralNetwork {
     public INDArray propDown(INDArray h) {
         INDArray vMean = h.mmul(W.transpose());
         if(conf.isConcatBiases())
-            vMean = Nd4j.concatHorizontally(vMean, vBias);
+            vMean = Nd4j.hstack(vMean, vBias);
         else
             vMean.addiRowVector(vBias);
 

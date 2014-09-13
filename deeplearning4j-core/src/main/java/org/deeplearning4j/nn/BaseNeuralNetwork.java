@@ -658,7 +658,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     //align input so it can be used in training
     protected INDArray preProcessInput(INDArray input) {
         if(conf.isConcatBiases())
-            return Nd4j.concatHorizontally(input,Nd4j.ones(input.rows(),1));
+            return Nd4j.hstack(input,Nd4j.ones(input.rows(),1));
         return input;
     }
 
