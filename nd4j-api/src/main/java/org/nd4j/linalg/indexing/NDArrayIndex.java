@@ -97,6 +97,7 @@ public class NDArrayIndex {
      * @return the interval
      */
     public static NDArrayIndex interval(int begin,int end,boolean inclusive) {
+        assert begin <= end : "Beginning index in range must be less than end";
         return new NDArrayIndex(ArrayUtil.range(begin,inclusive ?  end + 1 : end));
     }
 
