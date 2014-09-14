@@ -1397,6 +1397,18 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
+    /**
+     * Prints the configuration
+     */
+    public void printConfiguration() {
+        StringBuffer sb = new StringBuffer();
+        int count = 0;
+        for(NeuralNetConfiguration conf : getLayerWiseConfigurations()) {
+            sb.append(" Layer " + count++ + " conf " + conf);
+        }
+
+        log.info(sb.toString());
+    }
 
     @Override
     public void write(OutputStream os) {
