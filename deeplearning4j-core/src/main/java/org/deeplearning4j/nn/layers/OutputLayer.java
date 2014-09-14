@@ -194,6 +194,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         LinAlgExceptions.assertRows(input,labels);
         INDArray output  = output(input);
         assert !Nd4j.hasInvalidNumber(output) : "Invalid number on output!";
+        if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
+            return  LossFunctions.score(input,conf.getLossFunction(),transform(input),conf.getL2(),conf.isUseRegularization());
+
         return  LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
 
 

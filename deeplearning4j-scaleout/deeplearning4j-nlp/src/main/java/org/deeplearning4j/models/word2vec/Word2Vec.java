@@ -194,6 +194,11 @@ public class Word2Vec implements Persistable {
         return cache.indexOf(word);
     }
 
+    /**
+     * Get the word vector for a given matrix
+     * @param word the word to get the matrix for
+     * @return the ndarray for this word
+     */
     public INDArray getWordVectorMatrix(String word) {
         int i = this.cache.indexOf(word);
         if(i < 0)
@@ -201,6 +206,11 @@ public class Word2Vec implements Persistable {
         return cache.vector(word);
     }
 
+    /**
+     * Returns the word vector divided by the norm2 of the array
+     * @param word the word to get the matrix for
+     * @return the looked up matrix
+     */
     public INDArray getWordVectorMatrixNormalized(String word) {
         int i = this.cache.indexOf(word);
 
@@ -721,7 +731,7 @@ public class Word2Vec implements Persistable {
 
         while(!stack.isEmpty())  {
             if(stackCount % 1000 == 0) {
-                log.info("Stack count so far" + stackCount);
+                log.info("Stack count so far " + stackCount);
             }
             triple = stack.pop();
             int[] codes = triple.getSecond();
@@ -975,7 +985,9 @@ public class Word2Vec implements Persistable {
                     throw new RuntimeException(e);
                 }
                 ret.tokenizerFactory = tokenizerFactory;
-
+                vocabCache.putVector(UNK,Nd4j.randn(new int[]{layerSize}));
+                vocabCache.addWordToIndex(0,UNK);
+                vocabCache.putVocabWord(UNK,new VocabWord(1,layerSize));
                 return ret;
             }
 
@@ -997,10 +1009,15 @@ public class Word2Vec implements Persistable {
                     throw new RuntimeException(e);
                 }
 
+                vocabCache.putVector(UNK,Nd4j.randn(new int[]{layerSize}));
+                vocabCache.putVector(UNK,Nd4j.randn(new int[]{layerSize}));
+                vocabCache.addWordToIndex(0,UNK);
+                vocabCache.putVocabWord(UNK,new VocabWord(1,layerSize));
 
                 ret.tokenizerFactory = tokenizerFactory;
                 return ret;
             }
+
 
 
         }
