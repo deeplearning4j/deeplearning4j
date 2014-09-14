@@ -21,7 +21,9 @@ layout: default
         Windows
         See http://icl.cs.utk.edu/lapack-for-windows/lapack/
 
-* You can install DL4J either from source or from Maven central. Here are the **source** instructions. 
+* **Windows users**: Lapack will ask you if you have Intel compilers. You do not. Instead, you will need to install [MinGW 32 bits](http://www.mingw.org/) (the download button is on the upper right) and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). Lapack offers the altervative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). Yes, it's all a big pain in the butt. We're working on it...
+
+* **All users**: You can install DL4J either from source or from Maven central. Here are the **source** instructions. 
 
          git clone https://github.com/agibsonccc/java-deeplearning
          cd java-deeplearning
