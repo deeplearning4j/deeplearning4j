@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -427,6 +428,46 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     public void setStride(int[] stride) {
         this.stride = stride;
+    }
+
+    @Override
+    public String toString() {
+        return "NeuralNetConfiguration{" +
+                "sparsity=" + sparsity +
+                ", useAdaGrad=" + useAdaGrad +
+                ", lr=" + lr +
+                ", k=" + k +
+                ", corruptionLevel=" + corruptionLevel +
+                ", numIterations=" + numIterations +
+                ", momentum=" + momentum +
+                ", l2=" + l2 +
+                ", useRegularization=" + useRegularization +
+                ", momentumAfter=" + momentumAfter +
+                ", resetAdaGradIterations=" + resetAdaGradIterations +
+                ", dropOut=" + dropOut +
+                ", applySparsity=" + applySparsity +
+                ", weightInit=" + weightInit +
+                ", optimizationAlgo=" + optimizationAlgo +
+                ", lossFunction=" + lossFunction +
+                ", renderWeightsEveryNumEpochs=" + renderWeightsEveryNumEpochs +
+                ", concatBiases=" + concatBiases +
+                ", constrainGradientToUnitNorm=" + constrainGradientToUnitNorm +
+                ", rng=" + rng +
+                ", dist=" + dist +
+                ", seed=" + seed +
+                ", nIn=" + nIn +
+                ", nOut=" + nOut +
+                ", activationFunction=" + activationFunction +
+                ", visibleUnit=" + visibleUnit +
+                ", hiddenUnit=" + hiddenUnit +
+                ", activationType=" + activationType +
+                ", weightShape=" + Arrays.toString(weightShape) +
+                ", filterSize=" + Arrays.toString(filterSize) +
+                ", numFeatureMaps=" + numFeatureMaps +
+                ", featureMapSize=" + Arrays.toString(featureMapSize) +
+                ", stride=" + Arrays.toString(stride) +
+                ", numInFeatureMaps=" + numInFeatureMaps +
+                '}';
     }
 
     @Override
