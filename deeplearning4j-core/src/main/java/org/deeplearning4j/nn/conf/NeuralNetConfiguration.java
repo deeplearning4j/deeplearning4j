@@ -42,7 +42,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //use only when binary hidden neuralNets are active
     protected boolean applySparsity = false;
     //weight init scheme, this can either be a distribution or a applyTransformToDestination scheme
-    protected WeightInit weightInit;
+    protected WeightInit weightInit = WeightInit.VI;
     protected NeuralNetwork.OptimizationAlgorithm optimizationAlgo = NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT;
     protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
     protected int renderWeightsEveryNumEpochs = -1;
