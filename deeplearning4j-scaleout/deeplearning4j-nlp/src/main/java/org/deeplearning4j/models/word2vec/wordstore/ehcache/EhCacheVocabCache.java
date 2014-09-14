@@ -39,15 +39,46 @@ public class EhCacheVocabCache implements VocabCache {
     private Cache cache;
 
     public EhCacheVocabCache() {
-        ClassPathResource resource = new ClassPathResource("ehcache.xml");
+        ClassPathResource resource = new ClassPathResource("org/deeplearning4j/ehcache.xml");
         try {
             cacheManager = CacheManager.create(resource.getURL());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
         cache = cacheManager.getCache(CACHE_NAME);
 
+
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+
+            /**
+             * When an object implementing interface <code>Runnable</code> is used
+             * to create a thread, starting the thread causes the object's
+             * <code>run</code> method to be called in that separately executing
+             * thread.
+             * <p/>
+             * The general contract of the method <code>run</code> is that it may
+             * take any action whatsoever.
+             *
+             * @see Thread#run()
+             */
+            @Override
+            public void run() {
+                cache.flush();
+            }
+        }));
+
+
+
+        if(numWords.get() == 0) {
+            Integer numWords = retrieve(NUM_WORDS);
+            if(numWords != null)
+                this.numWords.set(numWords);
+        }
     }
+
+
+
 
 
 
@@ -83,7 +114,7 @@ public class EhCacheVocabCache implements VocabCache {
 
     @Override
     public boolean containsWord(String word) {
-        return retrieve(word + "-" +  VOCAB ) != null;
+        return indexOf(word) >= 0;
     }
 
     @Override
@@ -159,6 +190,7 @@ public class EhCacheVocabCache implements VocabCache {
     public void addWordToIndex(int index, String word) {
         assert indexOf(word) < 0 : "Word should not already be in index.";
         store(index,word);
+        store(word + "-" + INDEX,index);
         //this word actually belongs in the vocab
         incrementWordCountBy(1);
     }
@@ -184,7 +216,8 @@ public class EhCacheVocabCache implements VocabCache {
 
 
     private void incrementWordCountBy(int num) {
-         numWords.set(numWords.get() + num);
+        numWords.set(numWords.get() + num);
+        store(NUM_WORDS,numWords.get() + num);
     }
 
 
