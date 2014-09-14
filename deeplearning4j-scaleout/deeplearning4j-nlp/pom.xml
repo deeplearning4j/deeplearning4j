@@ -10,6 +10,8 @@
 
    </properties>
 
+
+    
   <artifactId>deeplearning4j-nlp</artifactId>
   <dependencies>
   	<dependency>
