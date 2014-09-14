@@ -14,10 +14,10 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 public class HardTanh extends BaseActivationFunction {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -8484119406683594852L;
+    /**
+     *
+     */
+    private static final long serialVersionUID = -8484119406683594852L;
 
 
     /**
@@ -42,39 +42,43 @@ public class HardTanh extends BaseActivationFunction {
 
 
 
-	@Override
-	public INDArray applyDerivative(INDArray input) {
-		if(input instanceof IComplexNDArray) {
-            for(int i = 0; i < input.length(); i++) {
+    @Override
+    public INDArray applyDerivative(INDArray input) {
+        if(input instanceof IComplexNDArray) {
+            IComplexNDArray n2 = (IComplexNDArray) input;
+            IComplexNDArray n2Linear = n2.linearView();
+            for(int i = 0; i < n2Linear.length(); i++) {
 
-                IComplexNumber val = (IComplexNumber) input.getScalar(i).element();
+                IComplexNumber val = n2Linear.getComplex(i);
                 if(val.realComponent().doubleValue() < -1 )
-                     val.set(-1,val.imaginaryComponent().doubleValue());
+                    val.set(-1,val.imaginaryComponent().doubleValue());
                 else if(val.realComponent().doubleValue() > 1)
                     val.set(1,val.imaginaryComponent().doubleValue());
                 else
                     val = Nd4j.createDouble(1, 0).subi(ComplexUtil.pow(ComplexUtil.tanh(val), 2));
 
-                input.put(i, Nd4j.scalar(val));
+                n2Linear.putScalar(i, val);
             }
         }
         else {
-            for(int i = 0; i < input.length(); i++) {
+            INDArray linear = input.linearView();
 
-                double val = (double) input.getScalar(i).element();
+            for(int i = 0; i < linear.length(); i++) {
+
+                float val = linear.get(i);
                 if(val < -1 )
                     val = -1;
                 else if(val > 1)
                     val = 1;
                 else
-                    val = 1 - Math.pow(Math.tanh(val),2);
-                input.put(i, Nd4j.scalar(val));
+                    val = 1 - (float) Math.pow(Math.tanh(val),2);
+                linear.putScalar(i,val);
             }
         }
 
-		
-		return input;
-		
-	}
+
+        return input;
+
+    }
 
 }
