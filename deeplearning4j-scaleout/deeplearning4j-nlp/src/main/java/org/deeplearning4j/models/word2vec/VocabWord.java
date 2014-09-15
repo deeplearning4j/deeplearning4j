@@ -49,18 +49,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 	public VocabWord() {}
 
 
-	@Override
-	public String toString() {
-		return "VocabWord [wordFrequency=" + wordFrequency + ", index="
-				+ index + ", left=" + left + ", right=" + right + ", code="
-				+ code + ", codes=" + Arrays.toString(codes) + ", points=" + Arrays.toString(points)
-				+ "]";
-	}
-
-
-
-
-	public void write(DataOutputStream dos) throws IOException {
+    public void write(DataOutputStream dos) throws IOException {
 		dos.writeDouble(wordFrequency);
 
 	}
@@ -70,25 +59,22 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 		return this;
 	}
 
+    @Override
+    public String toString() {
+        return "VocabWord{" +
+                "wordFrequency=" + wordFrequency +
+                ", index=" + index +
+                ", left=" + left +
+                ", right=" + right +
+                ", code=" + code +
+                ", parent=" + parent +
+                ", codes=" + Arrays.toString(codes) +
+                ", points=" + Arrays.toString(points) +
+                ", word='" + word + '\'' +
+                '}';
+    }
 
 
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + code;
-		result = prime * result + ((codes == null) ? 0 : codes.hashCode());
-		result = prime * result + index;
-		result = prime * result + ((left == null) ? 0 : left.hashCode());
-		result = prime * result
-				+ ((points == null) ? 0 : points.hashCode());
-		result = prime * result + ((right == null) ? 0 : right.hashCode());
-		long temp;
-		temp = Double.doubleToLongBits(wordFrequency);
-		result = prime * result + (int) (temp ^ (temp >>> 32));
-		return result;
-	}
 
 
     public String getWord() {
@@ -97,6 +83,24 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
     public void setWord(String word) {
         this.word = word;
+    }
+
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + code;
+        result = prime * result + ((codes == null) ? 0 : codes.hashCode());
+        result = prime * result + index;
+        result = prime * result + ((left == null) ? 0 : left.hashCode());
+        result = prime * result
+                + ((points == null) ? 0 : points.hashCode());
+        result = prime * result + ((right == null) ? 0 : right.hashCode());
+        long temp;
+        temp = Double.doubleToLongBits(wordFrequency);
+        result = prime * result + (int) (temp ^ (temp >>> 32));
+        return result;
     }
 
     @Override
