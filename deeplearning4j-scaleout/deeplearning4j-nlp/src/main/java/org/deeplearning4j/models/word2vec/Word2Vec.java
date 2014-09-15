@@ -7,8 +7,6 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -180,9 +178,9 @@ public class Word2Vec implements Persistable {
      */
     public List<String> similarWordsInVocabTo(String word,double accuracy) {
         List<String> ret = new ArrayList<>();
-        for(int i = 0; i < cache.numWords(); i++) {
-            if(MathUtils.stringSimilarity(word,cache.wordAtIndex(i)) >= accuracy)
-                ret.add(cache.wordAtIndex(i));
+        for(String s : cache.words()) {
+            if(MathUtils.stringSimilarity(word,s) >= accuracy)
+                ret.add(s);
         }
         return ret;
     }
@@ -221,24 +219,24 @@ public class Word2Vec implements Persistable {
     }
 
 
-
-
-
-
-
-
+    /**
+     * Get the top n words most similar to the given word
+     * @param word the word to compare
+     * @param n the n to get
+     * @return the top n words
+     */
     public Collection<String> wordsNearest(String word,int n) {
         INDArray vec = this.getWordVectorMatrix(word);
         if(vec == null)
             return new ArrayList<>();
-        Counter<String> distances = new Counter<String>();
-        for(int i = 0; i <  cache.numWords(); i++) {
-            double sim = similarity(word,cache.wordAtIndex(i).toString());
-            distances.incrementCount(cache.wordAtIndex(i).toString(), sim);
+        Counter<String> distances = new Counter<>();
+        for(String s : cache.words()) {
+            double sim = similarity(word,s);
+            distances.incrementCount(s, sim);
         }
 
 
-        distances.keepTopNKeys(n);
+        distances.keepBottomNKeys(n);
         return distances.keySet();
 
     }
@@ -319,6 +317,7 @@ public class Word2Vec implements Persistable {
         log.info("Training word2vec multithreaded");
 
 
+        sentenceIter.reset();
 
 
 
@@ -426,14 +425,12 @@ public class Word2Vec implements Persistable {
         }
         INDArray tempVector;
         List<VocabWord> wordEntrys = new ArrayList<>(topNSize);
-        String name;
-        for (int i = 0; i < cache.numWords(); i++) {
-            name = cache.wordAtIndex(i);
+        for (String name : cache.words()) {
             if (name.equals(word)) {
                 continue;
             }
 
-            tempVector = cache.vector(cache.wordAtIndex(i));
+            tempVector = cache.vector(name);
             insertTopN(name, Nd4j.getBlasWrapper().dot(wordVector,tempVector), wordEntrys);
         }
         return new TreeSet<>(wordEntrys);
@@ -736,8 +733,8 @@ public class Word2Vec implements Persistable {
     public double similarity(String word,String word2) {
         if(word.equals(word2))
             return 1.0;
-        INDArray vector = getWordVectorMatrixNormalized(word);
-        INDArray vector2 = getWordVectorMatrixNormalized(word2);
+        INDArray vector = getWordVectorMatrix(word);
+        INDArray vector2 = getWordVectorMatrix(word2);
         if(vector == null || vector2 == null)
             return -1;
         INDArray d1 = Transforms.unitVec(vector);
