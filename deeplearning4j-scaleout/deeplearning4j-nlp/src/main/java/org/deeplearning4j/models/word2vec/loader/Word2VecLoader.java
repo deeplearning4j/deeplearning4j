@@ -40,7 +40,7 @@ public class Word2VecLoader {
 				continue;
 
 			int freq = Integer.parseInt(split[1]);
-			VocabWord realWord = new VocabWord(freq,vec.getLayerSize());
+			VocabWord realWord = new VocabWord(freq,"");
 			//realWord.setIndex(vec.getVocab().size());
 			//vec.getVocab().put(split[0], realWord);
 			//vec.getWordIndex().add(split[0]);

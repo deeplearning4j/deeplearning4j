@@ -14,6 +14,13 @@ public interface VocabCache  {
 
 
     /**
+     * Returns all of the words in the vocab
+     * @returns all the words in the vocab
+     */
+    Collection<String> words();
+
+
+    /**
      * Increment the count for the given word
      * @param word the word to increment the count for
      */
