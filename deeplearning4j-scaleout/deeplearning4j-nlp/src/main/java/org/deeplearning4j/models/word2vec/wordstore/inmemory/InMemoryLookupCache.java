@@ -1,5 +1,7 @@
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
+import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -24,8 +26,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     private Index wordIndex = new Index();
     private Counter<String> wordFrequencies = Util.parallelCounter();
     private Map<String,VocabWord> vocabs = new ConcurrentHashMap<>();
-    private Map<String,INDArray> vectors = new ConcurrentHashMap<>();
     private Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
+    private INDArray syn0,syn1;
     private int codeLength = 0;
     private int vectorLength = 50;
     private AtomicInteger totalWordOccurrences = new AtomicInteger(0);
@@ -42,6 +44,22 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     @Override
     public Collection<String> words() {
         return vocabs.keySet();
+    }
+
+    /**
+     * Reset the weights of the cache
+     */
+    @Override
+    public void resetWeights() {
+        int words = vocabs.size();
+        RandomGenerator g = new MersenneTwister();
+        syn0  = Nd4j.create(new int[]{words,vectorLength});
+
+        INDArray linear = syn0.linearView();
+        for(int i = 0; i < syn0.length(); i++)
+            linear.putScalar(i, g.nextFloat() - 0.5f / vectorLength);
+        syn1 = Nd4j.create(syn0.shape());
+
     }
 
     /**
@@ -132,11 +150,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public INDArray loadCodes(int[] codes) {
-        INDArray load = Nd4j.create(codes.length,codeLength);
-        for(int i = 0; i < load.rows(); i++) {
-            load.putRow(i,this.codes.get(codes[i]));
-        }
-        return load;
+        return syn1.getRows(codes);
     }
 
     /**
@@ -171,7 +185,9 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
             throw new IllegalArgumentException("No null words allowed");
         if(vector == null)
             throw new IllegalArgumentException("No null vectors allowed");
-        vectors.put(word,vector);
+        int idx = indexOf(word);
+        syn0.putRow(idx,vector);
+
     }
 
     /**
@@ -182,7 +198,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     public INDArray vector(String word) {
         if(word == null)
             return null;
-        return vectors.get(word);
+        return syn1.getRow(indexOf(word));
     }
 
     /**

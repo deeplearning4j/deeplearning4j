@@ -19,6 +19,10 @@ public interface VocabCache  {
      */
     Collection<String> words();
 
+    /**
+     * Reset the weights of the cache
+     */
+    void resetWeights();
 
     /**
      * Increment the count for the given word
