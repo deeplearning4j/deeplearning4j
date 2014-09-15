@@ -1,7 +1,7 @@
 package org.deeplearning4j.models.rntn;
 
 import org.apache.commons.math3.random.MersenneTwister;
-import org.deeplearning4j.models.word2vec.wordstore.ehcache.EhCacheVocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.util.SerializationUtils;
 import org.nd4j.linalg.api.activation.Activations;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
@@ -42,7 +42,7 @@ public class BasicRNTNTest {
        }
        else {
            vec = SerializationUtils.readObject(vectors);
-           vec.setCache(new EhCacheVocabCache());
+           vec.setCache(new InMemoryLookupCache(vec.getLayerSize()));
        }
    }
 
