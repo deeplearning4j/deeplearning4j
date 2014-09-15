@@ -589,7 +589,7 @@ public class Word2Vec implements Persistable {
                 continue;
 
             VocabWord word2 = sentence.get(c1);
-            iterate(word);
+            iterate(word, word2);
         }
     }
 
@@ -611,8 +611,8 @@ public class Word2Vec implements Persistable {
      * on the given words
      * @param w1 the first word to fit
      */
-    public void  iterate(VocabWord w1) {
-        INDArray l1 = cache.vector(cache.wordAtIndex(w1.getIndex()));
+    public void  iterate(VocabWord w1, VocabWord w2) {
+        INDArray l1 = cache.vector(cache.wordAtIndex(w2.getIndex()));
         INDArray l2a = cache.loadCodes(w1.getCodes());
         INDArray fa = Transforms.sigmoid(l1.mmul(l2a.transpose()));
         // ga = (1 - word.code - fa) * alpha  # vector of error gradients multiplied by the learning rate
@@ -623,7 +623,7 @@ public class Word2Vec implements Persistable {
             cache.putCode(w1.getPoints()[i], toAdd);
         }
 
-        cache.putVector(cache.wordAtIndex(w1.getIndex()), l1.addi(ga.mmul(l2a)));
+        cache.putVector(cache.wordAtIndex(w2.getIndex()), l1.addi(ga.mmul(l2a)));
     }
 
 
