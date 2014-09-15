@@ -198,7 +198,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     public INDArray vector(String word) {
         if(word == null)
             return null;
-        return syn1.getRow(indexOf(word));
+        return syn0.getRow(indexOf(word));
     }
 
     /**
