@@ -3,7 +3,9 @@ package org.deeplearning4j.models.word2vec.actor;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.VocabWork;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.movingwindow.Util;
@@ -46,11 +48,17 @@ public class VocabActor extends UntypedActor {
 
     @Override
     public void onReceive(Object message) throws Exception {
-        if(message  instanceof String) {
-            String sentence = message.toString();
-            if(sentence.isEmpty())
+        if(message  instanceof VocabWork) {
+            VocabWork work = (VocabWork) message;
+            work.getCount().incrementAndGet();
+            String sentence = work.getWork();
+
+            if(sentence.isEmpty()) {
+                work.countDown();
                 return;
+            }
             Tokenizer t = tokenizer.create(sentence);
+
             while(t.hasMoreTokens())  {
                 String token = t.nextToken();
                 if(stopWords.contains(token))
@@ -73,6 +81,9 @@ public class VocabActor extends UntypedActor {
 
 
             }
+
+
+            work.countDown();
 
             lastUpdate.getAndSet(System.currentTimeMillis());
 

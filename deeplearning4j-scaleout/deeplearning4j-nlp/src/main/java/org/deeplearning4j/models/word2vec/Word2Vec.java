@@ -17,6 +17,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Triple;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -34,7 +35,6 @@ import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.models.word2vec.wordstore.ehcache.EhCacheVocabCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +61,7 @@ public class Word2Vec implements Persistable {
 
     private transient TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
     private transient SentenceIterator sentenceIter;
-    private transient VocabCache cache = new EhCacheVocabCache();
+    private transient VocabCache cache;
     private int topNSize = 40;
     private int sample = 1;
     //learning rate
@@ -325,86 +325,48 @@ public class Word2Vec implements Persistable {
         final AtomicLong changed = new AtomicLong(System.currentTimeMillis());
 
 
-        trainingSystem.actorOf(new RoundRobinPool(Runtime.getRuntime().availableProcessors() *3 ).props(Props.create(new SentenceActor.SentenceActorCreator(this)).withDispatcher("akka.actor.worker-dispatcher")));
+        trainingSystem.actorOf(
+                new RoundRobinPool(Runtime.getRuntime().availableProcessors() *3 )
+                        .props(Props.create(new SentenceActor.SentenceActorCreator(this))
+                                .withDispatcher("akka.actor.worker-dispatcher")));
 
 
-        int numCores = Runtime.getRuntime().availableProcessors();
-
-        final CountDownLatch latch = new CountDownLatch(numCores);
 
 
-        for(int i = 0; i < numCores; i++) {
-            Future<Void> f = Futures.future(new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
-                    while(getSentenceIter().hasNext()) {
+        while(getSentenceIter().hasNext()) {
 
-                        final String sentence = sentenceIter.nextSentence();
-                        if(sentence != null && !sentence.isEmpty()) {
-                            Future<Void> f = Futures.future(new Callable<Void>() {
+            final String sentence = sentenceIter.nextSentence();
+            if(sentence != null && !sentence.isEmpty()) {
+                Future<Void> f = Futures.future(new Callable<Void>() {
 
-                                @Override
-                                public Void call() throws Exception {
-                                    processSentence(sentence);
-                                    return null;
-                                }
+                    @Override
+                    public Void call() throws Exception {
+                        processSentence(sentence);
+                        return null;
+                    }
 
-                            },trainingSystem.dispatcher());
-                            f.onComplete(new OnComplete<Void>() {
+                },trainingSystem.dispatcher());
+                f.onComplete(new OnComplete<Void>() {
 
-                                @Override
-                                public void onComplete(Throwable arg0, Void arg1)
-                                        throws Throwable {
-                                    if(arg0 != null)
-                                        throw arg0;
-                                    numSentencesProcessed.incrementAndGet();
-                                    changed.set(System.currentTimeMillis());
-
-                                }
-
-                            }, trainingSystem.dispatcher());
-
-                        }
+                    @Override
+                    public void onComplete(Throwable arg0, Void arg1)
+                            throws Throwable {
+                        if(arg0 != null)
+                            throw arg0;
+                        numSentencesProcessed.incrementAndGet();
+                        changed.set(System.currentTimeMillis());
 
                     }
-                    return null;
-                }
-            },trainingSystem.dispatcher());
-            f.onComplete(new OnComplete<Void>() {
-                @Override
-                public void onComplete(Throwable failure, Void success) throws Throwable {
-                    latch.countDown();
-                }
-            },trainingSystem.dispatcher());
-        }
 
+                }, trainingSystem.dispatcher());
 
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-        }
-
-
-        boolean done = false;
-        long fiveMinutes = TimeUnit.MINUTES.toMillis(1);
-        while(!done) {
-            long curr = System.currentTimeMillis();
-            long lastChanged = changed.get();
-            long diff = Math.abs(curr - lastChanged);
-            //hasn't changed for 5 minutes
-            if(diff >= fiveMinutes) {
-                done = true;
             }
 
-            else
-                try {
-                    Thread.sleep(15000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+
         }
+
+
+
 
 
 
@@ -538,75 +500,50 @@ public class Word2Vec implements Persistable {
                         Props.create(VocabActor.class,tokenizerFactory,cache,layerSize,stopWords,semaphore,minWordFrequency)));
 
 		/* all words; including those not in the actual ending index */
-        int numCores = Runtime.getRuntime().availableProcessors();
 
-        final CountDownLatch latch = new CountDownLatch(numCores);
-
-        for(int i = 0; i < numCores; i++) {
-
-            Future<Void> f =  Futures.future(new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
-                    while(getSentenceIter().hasNext()) {
-                        String sentence = getSentenceIter().nextSentence();
-                        if(sentence == null)
-                            return null;
-
-                        vocabActor.tell(sentence, vocabActor);
-                        queued.incrementAndGet();
-                        if(queued.get() % 10000 == 0)
-                            log.info("Sent " + queued);
+        final AtomicInteger latch = new AtomicInteger(0);
 
 
-                    }
+        while(getSentenceIter().hasNext()) {
+            String sentence = getSentenceIter().nextSentence();
+            if(sentence == null)
+                break;
+            vocabActor.tell(new VocabWork(latch,sentence), vocabActor);
+            queued.incrementAndGet();
+            log.info("Sent " + queued);
 
-                    return null;
-                }
-            },trainingSystem.dispatcher());
-
-
-            f.onComplete(new OnComplete<Void>() {
-                @Override
-                public void onComplete(Throwable failure, Void success) throws Throwable {
-                    if(failure != null)
-                        log.error("Error thrown ",failure);
-                    latch.countDown();
-                }
-            },trainingSystem.dispatcher());
 
         }
 
 
+
+
         try {
-            latch.await();
+            Thread.sleep(10000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
 
-        boolean done = false;
-        long fiveMinutes = TimeUnit.MINUTES.toMillis(1);
-        while(!done) {
-            long curr = System.currentTimeMillis();
-            long lastChanged = semaphore.get();
-            long diff = Math.abs(curr - lastChanged);
-            log.info("Building vocab...");
-            //hasn't changed for 5 minutes
-            if(diff >= fiveMinutes) {
-                done = true;
-            }
 
-            else
-                try {
-                    Thread.sleep(15000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+        while(latch.get() > 0) {
+            log.info("Building vocab...");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
+
 
         setup();
 
     }
+
+
+
+
+
 
     public void trainSentence(List<VocabWord> sentence) {
         long nextRandom = 5;
@@ -772,9 +709,9 @@ public class Word2Vec implements Persistable {
 
     /* reinit weights */
     private void resetWeights() {
-        int numWords = cache.numWords();
-        for(VocabWord word : cache.vocabWords())
-            cache.putVector(word.getWord(),randomVector());
+        cache.resetWeights();
+        cache.putVector(UNK, Nd4j.randn(new int[]{layerSize}));
+
 
 
 
@@ -927,7 +864,7 @@ public class Word2Vec implements Persistable {
         private List<String> stopWords = StopWords.getStopWords();
         private int window = 5;
         private TokenizerFactory tokenizerFactory;
-        private VocabCache vocabCache = new EhCacheVocabCache();
+        private VocabCache vocabCache;
 
         public Builder vocabCache(VocabCache cache) {
             this.vocabCache = cache;
@@ -984,12 +921,19 @@ public class Word2Vec implements Persistable {
                 }catch(Exception e) {
                     throw new RuntimeException(e);
                 }
-                ret.tokenizerFactory = tokenizerFactory;
 
-                vocabCache.incrementWordCount(UNK,1);
-                vocabCache.putVector(UNK,Nd4j.randn(new int[]{layerSize}));
+                if(vocabCache == null)
+                    vocabCache = new InMemoryLookupCache(layerSize);
+
+                ret.tokenizerFactory = tokenizerFactory;
+                vocabCache.resetWeights();
+                vocabCache.incrementWordCount(UNK, 1);
                 vocabCache.addWordToIndex(0, UNK);
-                vocabCache.putVocabWord(UNK,new VocabWord(1,UNK));
+                VocabWord w = new VocabWord(1,UNK);
+                w.setIndex(0);
+
+                vocabCache.putVocabWord(UNK, w);
+                vocabCache.resetWeights();
                 return ret;
             }
 
@@ -1011,10 +955,16 @@ public class Word2Vec implements Persistable {
                     throw new RuntimeException(e);
                 }
 
-                vocabCache.incrementWordCount(UNK,1);
-                vocabCache.putVector(UNK, Nd4j.randn(new int[]{layerSize}));
+                if(vocabCache == null)
+                    vocabCache = new InMemoryLookupCache(layerSize);
+
+                vocabCache.incrementWordCount(UNK, 1);
                 vocabCache.addWordToIndex(0, UNK);
-                vocabCache.putVocabWord(UNK,new VocabWord(1,UNK));
+                VocabWord w = new VocabWord(1,UNK);
+                w.setIndex(0);
+                vocabCache.putVocabWord(UNK,w);
+                vocabCache.resetWeights();
+
 
                 ret.tokenizerFactory = tokenizerFactory;
                 return ret;
