@@ -60,10 +60,9 @@ public class VocabActor extends UntypedActor {
                 //internal vocab and the final vocab
                 //at the class level contain the same references
                 if(!Util.matchesAnyStopWord(stopWords,token)) {
-                    if(!cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
-                        VocabWord word = new VocabWord(cache.wordFrequency(token),layerSize);
+                    if(cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
+                        VocabWord word = new VocabWord(cache.wordFrequency(token),token);
                         int idx = cache.numWords();
-
                         word.setIndex(idx);
                         cache.putVocabWord(token,word);
                         cache.addWordToIndex(idx,token);

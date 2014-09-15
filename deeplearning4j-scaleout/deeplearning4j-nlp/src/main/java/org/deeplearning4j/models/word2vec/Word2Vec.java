@@ -266,7 +266,7 @@ public class Word2Vec implements Persistable {
 
     private void insertTopN(String name, double score, List<VocabWord> wordsEntrys) {
         if (wordsEntrys.size() < topNSize) {
-            VocabWord v = new VocabWord(score,layerSize);
+            VocabWord v = new VocabWord(score,name);
             v.setIndex(cache.indexOf(name));
             wordsEntrys.add(v);
             return;
@@ -284,7 +284,7 @@ public class Word2Vec implements Persistable {
         }
 
         if (score > min) {
-            VocabWord w = new VocabWord(score,layerSize);
+            VocabWord w = new VocabWord(score, VocabWord.PARENT_NODE);
             w.setIndex(minIndex);
             wordsEntrys.set(minOffe,w);
         }
@@ -624,7 +624,7 @@ public class Word2Vec implements Persistable {
 
             nextRandom = nextRandom * 25214903917L + 11;
             int b = (int) nextRandom % window;
-            skipGram(i,sentence,b);
+            skipGram(i, sentence, b);
         }
     }
 
@@ -706,7 +706,7 @@ public class Word2Vec implements Persistable {
             if(heapCount % 1000 == 0) {
                 log.info("Heap progress o far " + heapCount);
             }
-            VocabWord add = new VocabWord(min1.getWordFrequency() + min2.getWordFrequency(),layerSize);
+            VocabWord add = new VocabWord(min1.getWordFrequency() + min2.getWordFrequency(), VocabWord.PARENT_NODE);
             int index = (cache.numWords() + i);
 
             add.setIndex(index);
@@ -773,8 +773,8 @@ public class Word2Vec implements Persistable {
     /* reinit weights */
     private void resetWeights() {
         int numWords = cache.numWords();
-        for(int i = 0; i < numWords; i++)
-            cache.putVector(cache.wordAtIndex(i),randomVector());
+        for(VocabWord word : cache.vocabWords())
+            cache.putVector(word.getWord(),randomVector());
 
 
 
@@ -986,8 +986,8 @@ public class Word2Vec implements Persistable {
                 }
                 ret.tokenizerFactory = tokenizerFactory;
                 vocabCache.putVector(UNK,Nd4j.randn(new int[]{layerSize}));
-                vocabCache.addWordToIndex(0,UNK);
-                vocabCache.putVocabWord(UNK,new VocabWord(1,layerSize));
+                vocabCache.addWordToIndex(0, UNK);
+                vocabCache.putVocabWord(UNK,new VocabWord(1,UNK));
                 return ret;
             }
 
@@ -1010,9 +1010,9 @@ public class Word2Vec implements Persistable {
                 }
 
                 vocabCache.putVector(UNK,Nd4j.randn(new int[]{layerSize}));
-                vocabCache.putVector(UNK,Nd4j.randn(new int[]{layerSize}));
-                vocabCache.addWordToIndex(0,UNK);
-                vocabCache.putVocabWord(UNK,new VocabWord(1,layerSize));
+                vocabCache.putVector(UNK, Nd4j.randn(new int[]{layerSize}));
+                vocabCache.addWordToIndex(0, UNK);
+                vocabCache.putVocabWord(UNK,new VocabWord(1,UNK));
 
                 ret.tokenizerFactory = tokenizerFactory;
                 return ret;

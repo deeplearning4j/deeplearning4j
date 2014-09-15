@@ -3,14 +3,16 @@ package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.util.Index;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * In memory lookup cache for smaller datasets
@@ -20,15 +22,26 @@ import java.util.Map;
 public class InMemoryLookupCache implements VocabCache,Serializable {
 
     private Index wordIndex = new Index();
-    private Counter<String> wordFrequencies = new Counter<>();
-    private Map<String,VocabWord> vocabs = new HashMap<>();
-    private Map<String,INDArray> vectors = new HashMap<>();
-    private Map<Integer,INDArray> codes = new HashMap<>();
+    private Counter<String> wordFrequencies = Util.parallelCounter();
+    private Map<String,VocabWord> vocabs = new ConcurrentHashMap<>();
+    private Map<String,INDArray> vectors = new ConcurrentHashMap<>();
+    private Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
     private int codeLength = 0;
     private int vectorLength = 50;
+    private AtomicInteger totalWordOccurrences = new AtomicInteger(0);
 
     public InMemoryLookupCache(int vectorLength) {
         this.vectorLength = vectorLength;
+    }
+
+    /**
+     * Returns all of the words in the vocab
+     *
+     * @returns all the words in the vocab
+     */
+    @Override
+    public Collection<String> words() {
+        return vocabs.keySet();
     }
 
     /**
@@ -51,6 +64,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     @Override
     public void incrementWordCount(String word, int increment) {
         wordFrequencies.incrementCount(word,1);
+        totalWordOccurrences.set(totalWordOccurrences.get() + increment);
 
     }
 
@@ -74,7 +88,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public boolean containsWord(String word) {
-        return wordFrequencies.containsKey(word);
+        return wordFrequencies.getCount(word) > 0;
     }
 
     /**
@@ -142,7 +156,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public int totalWordOccurrences() {
-        return (int) wordFrequencies.totalCount();
+        return  totalWordOccurrences.get();
     }
 
     /**
@@ -153,6 +167,10 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public void putVector(String word, INDArray vector) {
+        if(word == null)
+            throw new IllegalArgumentException("No null words allowed");
+        if(vector == null)
+            throw new IllegalArgumentException("No null vectors allowed");
         vectors.put(word,vector);
     }
 
@@ -162,6 +180,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public INDArray vector(String word) {
+        if(word == null)
+            return null;
         return vectors.get(word);
     }
 
@@ -182,9 +202,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     public void addWordToIndex(int index, String word) {
         if(!wordFrequencies.containsKey(word))
             wordFrequencies.incrementCount(word,1);
-        if(!vocabs.containsKey(word))
-            vocabs.put(word,new VocabWord(1,vectorLength));
-        wordIndex.add(word);
+        wordIndex.add(word,index);
     }
 
     /**
@@ -193,13 +211,16 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public void putVocabWord(String word, VocabWord vocabWord) {
+        addWordToIndex(vocabWord.getIndex(),word);
         vocabs.put(word,vocabWord);
+        wordIndex.add(word,vocabWord.getIndex());
+
     }
 
     /**
      * Returns the number of words in the cache
      *
-     * @return the number of words in the cahce
+     * @return the number of words in the cache
      */
     @Override
     public int numWords() {
