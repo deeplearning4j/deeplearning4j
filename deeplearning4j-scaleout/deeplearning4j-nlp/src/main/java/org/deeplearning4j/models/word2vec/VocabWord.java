@@ -7,28 +7,41 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 
+/**
+ * Intermediate layers of the neural network
+ *
+ * @author Adam Gibson
+ */
 public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
 	private static final long serialVersionUID = 2223750736522624256L;
-	private double wordFrequency = 1;
+	//used in comparison when building the huffman tree
+    private double wordFrequency = 1;
 	private int index = -1;
-	private VocabWord left;
+	//children of the binary tree
+    private VocabWord left;
 	private VocabWord right;
 	private int code;
 	private VocabWord parent;
 	private int[] codes = null;
 	private int[] points = null;
+    //for my sanity
+    private String word;
+    public final static String PARENT_NODE = "parent";
 
-	//input layer to hidden layer, hidden layer to output layer
-	private int layerSize = 200;
+
+    public static VocabWord none() {
+        return new VocabWord(0,"none");
+    }
+
 	/**
-	 * 
+	 *
 	 * @param wordFrequency count of the word
-	 * @param layerSize
+
 	 */
-	public VocabWord(double wordFrequency,int layerSize) {
+	public VocabWord(double wordFrequency,String word) {
 		this.wordFrequency = wordFrequency;
-		this.layerSize = layerSize;
+        this.word = word;
 
 	}
 
@@ -41,7 +54,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 		return "VocabWord [wordFrequency=" + wordFrequency + ", index="
 				+ index + ", left=" + left + ", right=" + right + ", code="
 				+ code + ", codes=" + Arrays.toString(codes) + ", points=" + Arrays.toString(points)
-				+ ", layerSize=" + layerSize + "]";
+				+ "]";
 	}
 
 
@@ -52,9 +65,8 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
 	}
 
-	public VocabWord read(DataInputStream dos,int layerSize) throws IOException {
+	public VocabWord read(DataInputStream dos) throws IOException {
 		this.wordFrequency = dos.readDouble();
-		this.layerSize = layerSize;
 		return this;
 	}
 
@@ -68,7 +80,6 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 		result = prime * result + code;
 		result = prime * result + ((codes == null) ? 0 : codes.hashCode());
 		result = prime * result + index;
-		result = prime * result + layerSize;
 		result = prime * result + ((left == null) ? 0 : left.hashCode());
 		result = prime * result
 				+ ((points == null) ? 0 : points.hashCode());
@@ -80,15 +91,15 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 	}
 
 
+    public String getWord() {
+        return word;
+    }
 
+    public void setWord(String word) {
+        this.word = word;
+    }
 
-
-
-
-
-
-
-	@Override
+    @Override
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
@@ -105,8 +116,6 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 		} else if (!codes.equals(other.codes))
 			return false;
 		if (index != other.index)
-			return false;
-		if (layerSize != other.layerSize)
 			return false;
 		if (left == null) {
 			if (other.left != null)
@@ -154,14 +163,6 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 	}
 
 
-	public int getLayerSize() {
-		return layerSize;
-	}
-
-
-	public void setLayerSize(int layerSize) {
-		this.layerSize = layerSize;
-	}
 
 
 	public VocabWord getParent() {

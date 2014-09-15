@@ -13,7 +13,7 @@ public class Huffman {
 
 
 	private Collection<VocabWord> words;
-	private PriorityQueue<VocabWord> heap = new PriorityQueue<VocabWord>();
+	private PriorityQueue<VocabWord> heap = new PriorityQueue<>();
 	private Word2Vec vec;
 	
 	public void build() {
@@ -24,7 +24,7 @@ public class Huffman {
 			VocabWord word1 = heap.poll();
 			VocabWord word2 = heap.poll();
 			double count = word1.getWordFrequency() + word2.getWordFrequency();
-			VocabWord newWord = new VocabWord(count,vec.getLayerSize());
+			VocabWord newWord = new VocabWord(count,VocabWord.PARENT_NODE);
 			
 			word1.setCode(0);
 			word2.setCode(1);

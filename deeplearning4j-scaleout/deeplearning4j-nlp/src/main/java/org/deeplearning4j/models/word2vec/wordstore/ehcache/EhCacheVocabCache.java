@@ -78,9 +78,26 @@ public class EhCacheVocabCache implements VocabCache {
     }
 
 
+    /**
+     * Returns all of the words in the vocab
+     *
+     * @returns all the words in the vocab
+     */
+    @Override
+    public Collection<String> words() {
+        List<Object> keys = cache.getKeys();
+        List<String> ret = new ArrayList<>();
+        for(Object key  : keys) {
+            if(key.toString().contains("-" + VOCAB)) {
+                String key2 = key.toString().replace("-" + VOCAB,"");
+                ret.add(key2);
 
 
+            }
+        }
 
+        return ret;
+    }
 
     @Override
     public void incrementWordCount(String word) {
