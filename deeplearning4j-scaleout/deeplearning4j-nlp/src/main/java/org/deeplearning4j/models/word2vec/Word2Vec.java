@@ -510,7 +510,8 @@ public class Word2Vec implements Persistable {
                 break;
             vocabActor.tell(new VocabWork(latch,sentence), vocabActor);
             queued.incrementAndGet();
-            log.info("Sent " + queued);
+            if(queued.get() % 10000 == 0)
+                log.info("Sent " + queued);
 
 
         }
