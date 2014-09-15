@@ -14,7 +14,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by mjk on 9/15/14.
  */
-public class ReadWriteObjectTest {
+public class SerializationUtilsTest {
     @Test
     public void testWriteRead() {
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
