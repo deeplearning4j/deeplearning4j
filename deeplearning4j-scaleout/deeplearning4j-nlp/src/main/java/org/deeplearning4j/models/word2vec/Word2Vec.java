@@ -102,50 +102,10 @@ public class Word2Vec implements Persistable {
 
 
 
-    private Word2Vec(SentenceIterator sentenceIter,int minWordFrequency) {
-        readStopWords();
-        this.sentenceIter = sentenceIter;
-        this.minWordFrequency = minWordFrequency;
-    }
-
-
-    private Word2Vec(TokenizerFactory factory,SentenceIterator sentenceIter) {
-        this(sentenceIter);
-        this.tokenizerFactory = factory;
-    }
-
-    /**
-     * Specify a custom tokenizer, sentence iterator
-     * and minimum word frequency
-     * @param factory
-     * @param sentenceIter
-     * @param minWordFrequency
-     */
-    private Word2Vec(TokenizerFactory factory,SentenceIterator sentenceIter,int minWordFrequency) {
-        this(factory,sentenceIter);
-        this.minWordFrequency = minWordFrequency;
-    }
 
 
 
-    /**
-     * Assumes whole dataset is passed in.
-     * This is purely meant for batch methods.
-     * Same as calling {@link #Word2Vec(Collection, int)}
-     * with the second argument being 5
-     * @param sentences the sentences to use
-     * to iterate on
-     */
-    private Word2Vec(Collection<String> sentences) {
-        this(sentences,5);
-        readStopWords();
 
-    }
-
-    private Word2Vec(Collection<String> sentences,TokenizerFactory factory) {
-        this(sentences);
-        this.tokenizerFactory = factory;
-    }
 
     /**
      * Initializes based on assumption of whole data applyTransformToDestination being passed in.
