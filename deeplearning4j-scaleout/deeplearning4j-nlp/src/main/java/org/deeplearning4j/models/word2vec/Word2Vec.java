@@ -985,6 +985,8 @@ public class Word2Vec implements Persistable {
                     throw new RuntimeException(e);
                 }
                 ret.tokenizerFactory = tokenizerFactory;
+
+                vocabCache.incrementWordCount(UNK,1);
                 vocabCache.putVector(UNK,Nd4j.randn(new int[]{layerSize}));
                 vocabCache.addWordToIndex(0, UNK);
                 vocabCache.putVocabWord(UNK,new VocabWord(1,UNK));
@@ -1009,7 +1011,7 @@ public class Word2Vec implements Persistable {
                     throw new RuntimeException(e);
                 }
 
-                vocabCache.putVector(UNK,Nd4j.randn(new int[]{layerSize}));
+                vocabCache.incrementWordCount(UNK,1);
                 vocabCache.putVector(UNK, Nd4j.randn(new int[]{layerSize}));
                 vocabCache.addWordToIndex(0, UNK);
                 vocabCache.putVocabWord(UNK,new VocabWord(1,UNK));
