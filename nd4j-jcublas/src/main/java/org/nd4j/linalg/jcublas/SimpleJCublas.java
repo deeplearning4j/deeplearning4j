@@ -70,7 +70,7 @@ public class SimpleJCublas {
         //p is typically the data vector which is strided access
         if(arr.length() == arr.data().length)
             JCublas.cublasGetVector(
-                    arr.length() * 2,
+                    arr.length(),
                     Sizeof.FLOAT,
                     from,
                     1,
@@ -78,12 +78,12 @@ public class SimpleJCublas {
                     1);
         else
             JCublas.cublasGetVector(
-                    arr.length() * 2,
+                    arr.length(),
                     Sizeof.FLOAT,
                     from,
                     1,
                     to.withByteOffset(arr.offset() * Sizeof.FLOAT),
-                    1);
+                    arr.majorStride());
 
 
 
@@ -134,7 +134,7 @@ public class SimpleJCublas {
     /**
      * Retrieve the data from the gpu
      * @param arr the array to get the data for
-     * @param from the origin poitner
+     * @param from the origin pointer
      * @param to the to pointer (DO NOT AUGMENT WITH OFFSET: THIS IS TAKEN CARE OF FOR YOU)
      */
     public static void getData(JCublasComplexNDArray arr,Pointer from,Pointer to) {
@@ -192,7 +192,7 @@ public class SimpleJCublas {
                     ndarray.length(),
                     Sizeof.FLOAT,
                     Pointer.to(ndarray.data()).withByteOffset(ndarray.offset() * Sizeof.FLOAT),
-                    1,
+                    ndarray.majorStride(),
                     ret,
                     1);
 
@@ -531,7 +531,7 @@ public class SimpleJCublas {
             getData(xB,xBPointer,Pointer.to(xB.data()));
         }
         else {
-            JCublas.cublasSaxpy(
+             JCublas.cublasSaxpy(
                     xA.length(),
                     da,
                     xAPointer,
@@ -642,12 +642,12 @@ public class SimpleJCublas {
         Pointer xCPointer = alloc(xC);
         Pointer yCPointer = alloc(yC);
 
-        float ret=  JCublas.cublasSdot(
+        float ret =  JCublas.cublasSdot(
                 x.length(),
                 xCPointer,
-                1
+                xC.majorStride()
                 ,yCPointer,
-                1);
+                yC.majorStride());
 
         free(xCPointer,yCPointer);
         return ret;

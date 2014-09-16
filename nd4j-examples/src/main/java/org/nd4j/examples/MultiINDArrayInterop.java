@@ -59,6 +59,25 @@ public class MultiINDArrayInterop {
 
 
 
+        setJblas();
+        INDArray toTransposeJblas = jblas.create(new float[]{1,2,3,4},new int[]{2,2});
+        setJcublas();
+        INDArray toTransposeJcublas = jcublas.create(new float[]{1,2,3,4},new int[]{2,2});
+        setJblas();
+        INDArray transposeToTransposeJblas = toTransposeJblas.transpose();
+        setJcublas();
+        INDArray transposeToTransposeJcublas = toTransposeJcublas.transpose();
+        assert toTransposeJblas.equals(toTransposeJcublas);
+        assert transposeToTransposeJblas.equals(transposeToTransposeJcublas);
+
+        setJblas();
+        float dotjblas = Nd4j.getBlasWrapper().dot(jblasLinspace,jblasLinspace);
+        setJcublas();
+        float dotjcublas = Nd4j.getBlasWrapper().dot(jcublasLinspace,jcublasLinspace);
+        assert dotjblas == dotjcublas;
+
+
+
     }
 
     public static void setJcublas() {

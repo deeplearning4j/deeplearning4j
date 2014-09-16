@@ -56,7 +56,8 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     }
 
     public float dot(INDArray x, INDArray y) {
-        return 0.0f;
+
+        return SimpleJCublas.dot(x,y);
     }
     //@Override
     public double dotd(INDArray x, INDArray y) {
