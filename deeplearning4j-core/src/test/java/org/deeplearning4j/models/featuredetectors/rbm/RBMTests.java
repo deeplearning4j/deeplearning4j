@@ -105,7 +105,7 @@ public class RBMTests {
     @Test
     public void testMnist() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.5f)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.5f).render(10)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(new MersenneTwister(123))
                 .learningRate(1e-1f).nIn(784).nOut(600).build();
 

@@ -6,8 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -16,6 +15,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Triple;
+import org.deeplearning4j.models.word2vec.actor.SentenceMessage;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -282,67 +282,37 @@ public class Word2Vec implements Persistable {
 
 
 
-        final AtomicLong changed = new AtomicLong(System.currentTimeMillis());
+        final AtomicLong latch = new AtomicLong(System.currentTimeMillis());
 
 
-        trainingSystem.actorOf(
+        ActorRef ref = trainingSystem.actorOf(
                 new RoundRobinPool(Runtime.getRuntime().availableProcessors() *3 )
-                        .props(Props.create(new SentenceActor.SentenceActorCreator(this))
+                        .props(Props.create(SentenceActor.class,this)
                                 .withDispatcher("akka.actor.worker-dispatcher")));
 
 
 
 
         log.info("Processing sentences...");
-        final AtomicInteger wait = new AtomicInteger(0);
         while(getSentenceIter().hasNext()) {
-            final String sentence = sentenceIter.nextSentence();
-            if(sentence != null && !sentence.isEmpty()) {
-                Future<Void> f = Futures.future(new Callable<Void>() {
-
-                    @Override
-                    public Void call() throws Exception {
-                        processSentence(sentence);
-                        wait.incrementAndGet();
-                        return null;
-                    }
-
-                },trainingSystem.dispatcher());
-                f.onComplete(new OnComplete<Void>() {
-
-                    @Override
-                    public void onComplete(Throwable arg0, Void arg1)
-                            throws Throwable {
-                        if(arg0 != null) {
-                            log.warn("Error occurred " + arg0);
-                            wait.decrementAndGet();
-                            throw arg0;
-                        }
-                        numSentencesProcessed.incrementAndGet();
-                        if(numSentencesProcessed.get() % 100 == 0)
-                            log.info("Processed " + numSentencesProcessed.get());
-
-                        changed.set(System.currentTimeMillis());
-                        wait.decrementAndGet();
-
-                    }
-
-                }, trainingSystem.dispatcher());
-
-            }
-
+            String sentence = sentenceIter.nextSentence();
+            if(sentence == null)
+                continue;
+            ref.tell(new SentenceMessage(sentence,latch),ref);
+            numSentencesProcessed.incrementAndGet();
 
         }
 
-
         try {
-            Thread.sleep(1000);
+            Thread.sleep(10000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
 
-        while(wait.get() > 0) {
+
+        while(latch.get() > 0) {
+            log.info("Waiting on sentences...");
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -350,9 +320,6 @@ public class Word2Vec implements Persistable {
             }
         }
 
-
-        if(trainingSystem != null)
-            trainingSystem.shutdown();
 
     }
 
@@ -375,6 +342,8 @@ public class Word2Vec implements Persistable {
      * @return
      */
     public List<VocabWord> trainSentence(String sentence) {
+        if(sentence.isEmpty())
+            return new ArrayList<>();
         Tokenizer tokenizer = tokenizerFactory.create(sentence);
         List<VocabWord> sentence2 = new ArrayList<>();
         while(tokenizer.hasMoreTokens()) {
@@ -597,6 +566,10 @@ public class Word2Vec implements Persistable {
             return;
         INDArray l1 = cache.vector(cache.wordAtIndex(w1.getIndex()));
         INDArray l2a = cache.loadCodes(w1.getCodes());
+        if(l1 == null)
+            return;
+        if(l2a == null)
+            return;
         INDArray fa = Transforms.sigmoid(l1.mmul(l2a.transpose()));
         // ga = (1 - word.code - fa) * alpha  # vector of error gradients multiplied by the learning rate
         INDArray ga = Nd4j.ones(fa.length()).subi(ArrayUtil.toNDArray(w1.getCodes())).subi(fa).muli(alpha.floatValue()).transpose();
