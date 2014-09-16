@@ -46,9 +46,7 @@ public class Word2VecTests {
         InMemoryLookupCache cache = new InMemoryLookupCache(50);
         Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).vocabCache(cache)
                .windowSize(5).iterate(iter).tokenizerFactory(t).build();
-        vec.buildVocab();
-        List<VocabWord> vocabWords = new ArrayList<>(cache.vocabWords());
-        vec.iterate(vocabWords.get(0));
+        vec.fit();
         assertTrue(vec.getCache().numWords() > 0);
 
         assertEquals(4,vec.getCache().wordFrequency("pearson"));

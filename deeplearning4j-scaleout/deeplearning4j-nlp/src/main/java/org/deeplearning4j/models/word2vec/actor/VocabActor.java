@@ -50,6 +50,8 @@ public class VocabActor extends UntypedActor {
     public void onReceive(Object message) throws Exception {
         if(message  instanceof VocabWork) {
             VocabWork work = (VocabWork) message;
+            if(work.getWork() == null || work.getWork().isEmpty())
+                return;
             work.getCount().incrementAndGet();
             String sentence = work.getWork();
 
