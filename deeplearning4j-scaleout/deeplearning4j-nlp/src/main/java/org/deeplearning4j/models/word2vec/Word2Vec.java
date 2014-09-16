@@ -7,6 +7,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -292,8 +293,9 @@ public class Word2Vec implements Persistable {
 
 
 
+        log.info("Processing sentences...");
+        final AtomicInteger wait = new AtomicInteger(0);
         while(getSentenceIter().hasNext()) {
-
             final String sentence = sentenceIter.nextSentence();
             if(sentence != null && !sentence.isEmpty()) {
                 Future<Void> f = Futures.future(new Callable<Void>() {
@@ -301,6 +303,7 @@ public class Word2Vec implements Persistable {
                     @Override
                     public Void call() throws Exception {
                         processSentence(sentence);
+                        wait.incrementAndGet();
                         return null;
                     }
 
@@ -310,10 +313,17 @@ public class Word2Vec implements Persistable {
                     @Override
                     public void onComplete(Throwable arg0, Void arg1)
                             throws Throwable {
-                        if(arg0 != null)
+                        if(arg0 != null) {
+                            log.warn("Error occurred " + arg0);
+                            wait.decrementAndGet();
                             throw arg0;
+                        }
                         numSentencesProcessed.incrementAndGet();
+                        if(numSentencesProcessed.get() % 100 == 0)
+                            log.info("Processed " + numSentencesProcessed.get());
+
                         changed.set(System.currentTimeMillis());
+                        wait.decrementAndGet();
 
                     }
 
@@ -325,8 +335,20 @@ public class Word2Vec implements Persistable {
         }
 
 
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
 
+        while(wait.get() > 0) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
 
 
         if(trainingSystem != null)
@@ -563,24 +585,40 @@ public class Word2Vec implements Persistable {
 
 
 
+
+
     /**
      * Train the word vector
      * on the given words
      * @param w1 the first word to fit
      */
     public void  iterate(VocabWord w1) {
+        if(w1.getCodes() == null)
+            return;
         INDArray l1 = cache.vector(cache.wordAtIndex(w1.getIndex()));
         INDArray l2a = cache.loadCodes(w1.getCodes());
         INDArray fa = Transforms.sigmoid(l1.mmul(l2a.transpose()));
         // ga = (1 - word.code - fa) * alpha  # vector of error gradients multiplied by the learning rate
-        INDArray ga = Nd4j.ones(fa.length()).subi(ArrayUtil.toNDArray(w1.getCodes())).subi(fa).muli(alpha.floatValue());
+        INDArray ga = Nd4j.ones(fa.length()).subi(ArrayUtil.toNDArray(w1.getCodes())).subi(fa).muli(alpha.floatValue()).transpose();
         INDArray outer = ga.mmul(l1);
-        for(int i = 0; i < w1.getPoints().length; i++) {
-            INDArray toAdd = l2a.getRow(i).addi(outer.getRow(i));
-            cache.putCode(w1.getPoints()[i], toAdd);
+        if(l2a.isMatrix()) {
+            for(int i = 0; i < w1.getPoints().length; i++) {
+                INDArray toAdd = l2a.getRow(i).addi(outer.getRow(i));
+                cache.putCode(w1.getPoints()[i], toAdd);
+            }
+        }
+        else {
+            assert l2a.isVector();
+            assert w1.getPoints().length == 1;
+            assert outer.isVector();
+
+            INDArray toAdd = l2a.addi(outer);
+            cache.putCode(w1.getPoints()[0], toAdd);
         }
 
-        cache.putVector(cache.wordAtIndex(w1.getIndex()), l1.addi(ga.mmul(l2a)));
+
+
+        cache.putVector(cache.wordAtIndex(w1.getIndex()), l1.addi(ga.transpose().mmul(l2a)));
     }
 
 
@@ -633,7 +671,6 @@ public class Word2Vec implements Persistable {
             int[] points = triple.getThird();
             VocabWord node = triple.getFirst();
             if(node == null) {
-                log.info("Node was null");
                 continue;
             }
             if(node.getIndex() < cache.numWords()) {
