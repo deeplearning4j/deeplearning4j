@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Shamelessly based on:
  * https://github.com/pmerienne/trident-ml/blob/master/src/main/java/com/github/pmerienne/trident/ml/clustering/KMeans.java
- * 
- * adapted to jblas double matrices
+ *
+ * adapted to ndarray matrices
  * @author Adam Gibson
  *
  */
@@ -31,13 +31,14 @@ public class KMeansClustering implements Serializable {
 
 	private List<Long> counts = null;
 	private INDArray centroids;
-	private List<INDArray> initFeatures = new ArrayList<INDArray>();
-	private Class<DistanceFunction> clazz;
+	private List<INDArray> initFeatures = new ArrayList<>();
+	private Class<? extends DistanceFunction> clazz;
 
 	private Integer nbCluster;
 
 	public KMeansClustering(Integer nbCluster,Class<? extends DistanceFunction> clazz) {
 		this.nbCluster = nbCluster;
+        this.clazz = clazz;
 	}
 
 
@@ -99,7 +100,7 @@ public class KMeansClustering implements Serializable {
 			function = clazz.getConstructor(INDArray.class).newInstance(m1);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
-		} 
+		}
 		return function.apply(m2);
 	}
 
@@ -146,7 +147,7 @@ public class KMeansClustering implements Serializable {
 	/**
 	 * Init clusters using the k-means++ algorithm. (Arthur, D. and
 	 * Vassilvitskii, S. (2007). "k-means++: the advantages of careful seeding".
-	 * 
+	 *
 	 */
 	protected void initCentroids() {
 		// Init counts

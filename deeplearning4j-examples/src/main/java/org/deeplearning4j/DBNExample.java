@@ -31,7 +31,7 @@ public class DBNExample {
         fetcher.fetch(20);
         DataSet d2 = fetcher.next();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().render(10)
                 .momentum(5e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.uniform(gen, 784, 10))
                 .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
