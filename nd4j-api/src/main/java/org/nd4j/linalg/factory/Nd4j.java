@@ -74,6 +74,13 @@ public class Nd4j {
 
 
 
+    public static void setFactory(NDArrayFactory factory) {
+        INSTANCE = factory;
+    }
+
+    public static void setBlasWrapper(BlasWrapper factory) {
+       BLAS_WRAPPER_INSTANCE = factory;
+    }
 
     /**
      * Returns the ordering of the ndarrays

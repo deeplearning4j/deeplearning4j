@@ -83,7 +83,7 @@ public class SimpleJCublas {
 
 
     public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexNumber a,IComplexNDArray C
-                                       , IComplexNumber b) {
+            , IComplexNumber b) {
 
         JCublasComplexNDArray cA = (JCublasComplexNDArray) A;
         JCublasComplexNDArray cB = (JCublasComplexNDArray) B;
@@ -115,13 +115,18 @@ public class SimpleJCublas {
         return C;
 
     }
+
+
+
     public static INDArray gemm(INDArray A, INDArray B, INDArray C,
                                 float alpha, float beta) {
+
 
 
         JCublasNDArray cA = (JCublasNDArray) A;
         JCublasNDArray cB = (JCublasNDArray) B;
         JCublasNDArray cC = (JCublasNDArray) C;
+
         alloc(cA,cB,cC);
 
         JCublas.cublasSgemm(
@@ -138,8 +143,6 @@ public class SimpleJCublas {
                 beta,  // beta
                 cC.pointer(), // y
                 C.rows()); // incy
-
-
         cC.getData();
 
         free(cA,cB,cC);
@@ -281,7 +284,7 @@ public class SimpleJCublas {
                     xA.length(),
                     da,
                     xA.pointer(),
-                   1,
+                    1,
                     xB.pointer(),
                     1);
             xB.getData();

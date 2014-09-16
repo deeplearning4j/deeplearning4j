@@ -249,8 +249,8 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray gemm(float alpha, INDArray a,
                         INDArray b, float beta, INDArray c) {
-        NativeBlas.sgemm('N', 'N', c.rows(), c.columns(), a.columns(), alpha, a.data(), 0,
-                a.rows(), b.data(), 0, b.rows(), beta, c.data(), 0, c.rows());
+        NativeBlas.sgemm('N', 'N', c.rows(), c.columns(), a.columns(), alpha, a.data(), a.offset(),
+                a.rows(), b.data(), b.offset(), b.rows(), beta, c.data(), c.offset(), c.rows());
 
         return c;
     }

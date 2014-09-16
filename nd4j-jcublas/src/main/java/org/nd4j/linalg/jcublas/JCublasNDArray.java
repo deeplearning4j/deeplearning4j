@@ -9,6 +9,7 @@ package org.nd4j.linalg.jcublas;
 
 
 
+import jcuda.CudaException;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
@@ -330,6 +331,11 @@ public class JCublasNDArray extends BaseNDArray {
         if(data != null)
             dataPointer = Pointer.to(data())
                     .withByteOffset(offset() * Sizeof.FLOAT);
+
+        free();
+
+        pointer = new Pointer();
+
         //allocate memory for the pointer
         JCublas.cublasAlloc(
                 length,
@@ -359,7 +365,11 @@ public class JCublasNDArray extends BaseNDArray {
     }
 
     public void free() {
-        JCublas.cublasFree(pointer);
+        try {
+            JCublas.cublasFree(pointer);
+        }catch (CudaException e) {
+
+        }
     }
 
     public void getData(float[] data) {
