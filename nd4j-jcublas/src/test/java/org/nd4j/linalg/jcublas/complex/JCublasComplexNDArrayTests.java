@@ -18,18 +18,7 @@ public class JCublasComplexNDArrayTests extends org.nd4j.linalg.api.test.Complex
 
     private static Logger log = LoggerFactory.getLogger(JCublasComplexNDArrayTests.class);
 
-    @Test
-    public void testAlloc() {
-        JCublasComplexNDArray n = (JCublasComplexNDArray) Nd4j.createComplex(new float[]{1,2,3,4});
-        n.allocTest();
-        n.free();
 
-        float[] data = new float[4];
-        n.alloc();
-        n.getData(data);
-        n.free();
-
-    }
 
 
 
