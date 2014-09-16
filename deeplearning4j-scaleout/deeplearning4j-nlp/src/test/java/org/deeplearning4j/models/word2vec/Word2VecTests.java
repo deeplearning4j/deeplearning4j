@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by agibsonccc on 8/31/14.
@@ -23,6 +25,9 @@ import java.io.File;
 public class Word2VecTests {
 
     private static Logger log = LoggerFactory.getLogger(Word2VecTests.class);
+
+
+
 
     @Test
     public void testWord2VecRunThrough() throws Exception {
@@ -38,10 +43,12 @@ public class Word2VecTests {
 
         TokenizerFactory t = new UimaTokenizerFactory();
 
-
-        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).vocabCache(new InMemoryLookupCache(50))
+        InMemoryLookupCache cache = new InMemoryLookupCache(50);
+        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).vocabCache(cache)
                .windowSize(5).iterate(iter).tokenizerFactory(t).build();
-        vec.fit();
+        vec.buildVocab();
+        List<VocabWord> vocabWords = new ArrayList<>(cache.vocabWords());
+        vec.iterate(vocabWords.get(0));
         assertTrue(vec.getCache().numWords() > 0);
 
         assertEquals(4,vec.getCache().wordFrequency("pearson"));
