@@ -15,8 +15,8 @@ public class ManhattanDistance extends BaseDistanceFunction {
 	}
 
 	@Override
-	public Double apply(INDArray input) {
-		return base.distance1(input);
+	public Float apply(INDArray input) {
+		return (float) base.distance1(input);
 	}
 
 	

@@ -14,8 +14,8 @@ public class CosineSimilarity extends BaseDistanceFunction {
 	}
 
 	@Override
-	public Double apply(INDArray input) {
-		return Transforms.cosineSim(input, base);
+	public Float apply(INDArray input) {
+		return (float) Transforms.cosineSim(input, base);
 	}
 
 	

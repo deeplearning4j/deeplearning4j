@@ -5,7 +5,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 
-public interface DistanceFunction extends Function<INDArray,Double>,Serializable {
+public interface DistanceFunction extends Function<INDArray,Float>,Serializable {
 
 	
 

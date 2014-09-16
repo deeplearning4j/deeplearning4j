@@ -15,8 +15,8 @@ public class EuclideanDistance extends BaseDistanceFunction {
 	}
 
 	@Override
-	public Double apply(INDArray input) {
-		return base.distance2(input);
+	public Float apply(INDArray input) {
+		return (float) base.distance2(input);
 	}
 
 }
