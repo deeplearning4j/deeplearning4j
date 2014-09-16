@@ -57,6 +57,8 @@ public class MultiINDArrayInterop {
         assert jblasmmul.equals(jcublasmmul);
 
 
+
+
     }
 
     public static void setJcublas() {

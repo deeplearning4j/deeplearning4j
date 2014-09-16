@@ -1246,10 +1246,11 @@ public abstract class BaseNDArray  implements INDArray {
     /**
      * Returns the squared (Euclidean) distance.
      */
-    public double squaredDistance(INDArray other) {
-        double sd = 0.0;
+    @Override
+    public float squaredDistance(INDArray other) {
+        float sd = 0.0f;
         for (int i = 0; i < length; i++) {
-            double d = (double) getScalar(i).element() - (double) other.getScalar(i).element();
+            float d =  get(i) -  other.get(i);
             sd += d * d;
         }
         return sd;
@@ -1258,14 +1259,16 @@ public abstract class BaseNDArray  implements INDArray {
     /**
      * Returns the (euclidean) distance.
      */
-    public double distance2(INDArray other) {
-        return  Math.sqrt(squaredDistance(other));
+    @Override
+    public float distance2(INDArray other) {
+        return  (float) Math.sqrt(squaredDistance(other));
     }
 
     /**
      * Returns the (1-norm) distance.
      */
-    public double distance1(INDArray other) {
+    @Override
+    public float distance1(INDArray other) {
         return other.sub(this).sum(Integer.MAX_VALUE).get(0);
     }
 

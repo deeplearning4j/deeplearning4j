@@ -61,6 +61,32 @@ public abstract class NDArrayTests {
 
 
     @Test
+    public void testSubiRowVector() {
+        INDArray oneThroughFour = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray row1 = oneThroughFour.getRow(1);
+        oneThroughFour.subiRowVector(row1);
+        INDArray result = Nd4j.create(new float[]{-2,-2,0,0},new int[]{2,2});
+        assertEquals(result,oneThroughFour);
+
+
+
+    }
+
+
+    @Test
+    public void testAddVectorWithOffset() {
+        INDArray oneThroughFour = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray row1 = oneThroughFour.getRow(1);
+        row1.addi(1);
+        INDArray result = Nd4j.create(new float[]{1,2,4,5},new int[]{2,2});
+        assertEquals(result,oneThroughFour);
+
+
+
+    }
+
+
+    @Test
     public void testLinearViewGetAndPut() {
         INDArray test = Nd4j.linspace(1, 4, 4).reshape(2,2);
         INDArray linear = test.linearView();

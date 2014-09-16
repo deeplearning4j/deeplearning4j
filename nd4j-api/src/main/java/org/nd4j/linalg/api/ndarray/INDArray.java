@@ -521,17 +521,17 @@ public interface INDArray extends Serializable {
     /**
      * Returns the squared (Euclidean) distance.
      */
-    public double squaredDistance(INDArray other);
+    public float squaredDistance(INDArray other);
 
     /**
      * Returns the (euclidean) distance.
      */
-    public double distance2(INDArray other);
+    public float distance2(INDArray other);
 
     /**
      * Returns the (1-norm) distance.
      */
-    public double distance1(INDArray other);
+    public float distance1(INDArray other);
 
 
 

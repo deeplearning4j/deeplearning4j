@@ -75,7 +75,7 @@ public class SimpleJCublas {
                     from,
                     1,
                     to.withByteOffset(arr.offset() * Sizeof.FLOAT),
-                    arr.majorStride());
+                    1);
 
 
 
@@ -108,7 +108,7 @@ public class SimpleJCublas {
                     ndarray.length(),
                     Sizeof.FLOAT,
                     Pointer.to(ndarray.data()).withByteOffset(ndarray.offset() * Sizeof.FLOAT),
-                    ndarray.majorStride(),
+                    1,
                     ret,
                     1);
 
@@ -137,10 +137,10 @@ public class SimpleJCublas {
                 cAPointer,
                 A.rows(),
                 cBPointer,
-                cB.majorStride(),
+                1,
                 beta,
                 cCPointer,
-                cC.majorStride());
+                1);
 
         getData(cC,cCPointer,Pointer.to(cC.data()));
         free(cAPointer,cBPointer,cCPointer);
@@ -245,9 +245,9 @@ public class SimpleJCublas {
         alloc(xC,yC);
         JCublas.cublasScopy(x.length(),
                 xC.pointer(),
-                xC.stride()[0],
+                1,
                 yC.pointer(),
-                yC.stride()[0]);
+                1);
 
         yC.getData();
 
@@ -373,7 +373,7 @@ public class SimpleJCublas {
                     xAPointer,
                     1,
                     xBPointer,
-                    xB.majorStride());
+                    1);
             getData(xB, xBPointer, Pointer.to(xB.data()));
 
         }
@@ -446,9 +446,9 @@ public class SimpleJCublas {
         float ret=  JCublas.cublasSdot(
                 x.length(),
                 xCPointer,
-                xC.stride()[0]  * Sizeof.FLOAT
+                1
                 ,yCPointer,
-                yC.stride()[0]  * Sizeof.FLOAT);
+                1);
         free(xCPointer,yCPointer);
         return ret;
     }

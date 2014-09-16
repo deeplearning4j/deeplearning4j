@@ -560,8 +560,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     /**
      * Returns the squared (Euclidean) distance.
      */
-    public double squaredDistance(INDArray other) {
-        double sd = 0.0;
+    @Override
+    public float squaredDistance(INDArray other) {
+        float sd = 0.0f;
         for (int i = 0; i < length; i++) {
             IComplexNumber diff = (IComplexNumber) getScalar(i).sub(other.getScalar(i)).element();
             double d = (double) diff.absoluteValue();
@@ -573,15 +574,17 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     /**
      * Returns the (euclidean) distance.
      */
-    public double distance2(INDArray other) {
-        return  Math.sqrt(squaredDistance(other));
+    @Override
+    public float distance2(INDArray other) {
+        return  (float) Math.sqrt(squaredDistance(other));
     }
 
     /**
      * Returns the (1-norm) distance.
      */
-    public double distance1(INDArray other) {
-        double d = 0.0;
+    @Override
+    public float distance1(INDArray other) {
+        float d = 0.0f;
         for (int i = 0; i < length; i++) {
             IComplexNumber n = (IComplexNumber) getScalar(i).sub(other.getScalar(i)).element();
             d += n.absoluteValue().doubleValue();
