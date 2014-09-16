@@ -34,6 +34,11 @@ public class SimpleJCublas {
             arr.alloc();
     }
 
+    public static void free(Pointer...pointers) {
+        for(Pointer arr : pointers)
+            JCublas.cublasFree(arr);
+    }
+
     public static void free(JCublasComplexNDArray...arrs) {
         for(JCublasComplexNDArray arr : arrs)
             arr.free();
@@ -53,29 +58,92 @@ public class SimpleJCublas {
     }
 
 
+    public static void getData(JCublasNDArray arr,Pointer from,Pointer to) {
+        //p is typically the data vector which is strided access
+        if(arr.length() == arr.data().length)
+            JCublas.cublasGetVector(
+                    arr.length(),
+                    Sizeof.FLOAT,
+                    from,
+                    1,
+                    to.withByteOffset(arr.offset() * Sizeof.FLOAT),
+                    1);
+        else
+            JCublas.cublasGetVector(
+                    arr.length(),
+                    Sizeof.FLOAT,
+                    from,
+                    1,
+                    to.withByteOffset(arr.offset() * Sizeof.FLOAT),
+                    arr.majorStride());
+
+
+
+
+    }
+
+
+
+    public static Pointer alloc(JCublasNDArray ndarray) {
+        Pointer ret = new Pointer();
+        //allocate memory for the pointer
+        JCublas.cublasAlloc(
+                ndarray.length(),
+                Sizeof.FLOAT
+                , ret);
+
+        /* Copy from data to pointer at majorStride() (you want to stride through the data properly) incrementing by 1 for the pointer on the GPU.
+        * This allows us to copy only what we need. */
+
+        if(ndarray.length() == ndarray.data().length)
+            JCublas.cublasSetVector(
+                    ndarray.length(),
+                    Sizeof.FLOAT,
+                    Pointer.to(ndarray.data()).withByteOffset(ndarray.offset() * Sizeof.FLOAT),
+                    1,
+                    ret,
+                    1);
+        else
+            JCublas.cublasSetVector(
+                    ndarray.length(),
+                    Sizeof.FLOAT,
+                    Pointer.to(ndarray.data()).withByteOffset(ndarray.offset() * Sizeof.FLOAT),
+                    ndarray.majorStride(),
+                    ret,
+                    1);
+
+        return ret;
+
+    }
+
     public static INDArray gemv(INDArray A, INDArray B, INDArray C, float alpha, float beta) {
 
+
+        JCublas.cublasInit();
 
         JCublasNDArray cA = (JCublasNDArray) A;
         JCublasNDArray cB = (JCublasNDArray) B;
         JCublasNDArray cC = (JCublasNDArray) C;
 
-        alloc(cA,cB,cC);
+        Pointer cAPointer = alloc(cA);
+        Pointer cBPointer = alloc(cB);
+        Pointer cCPointer = alloc(cC);
+
 
         JCublas.cublasSgemv('N',
                 A.rows(),
                 A.columns(),
                 alpha,
-                cA.pointer(),
+                cAPointer,
                 A.rows(),
-                cB.pointer(),
-                cB.stride()[0],
+                cBPointer,
+                cB.majorStride(),
                 beta,
-                cC.pointer(),
-                cC.stride()[0]);
+                cCPointer,
+                cC.majorStride());
 
-        cC.getData();
-        free(cA,cB,cC);
+        getData(cC,cCPointer,Pointer.to(cC.data()));
+        free(cAPointer,cBPointer,cCPointer);
 
 
         return C;
@@ -122,12 +190,17 @@ public class SimpleJCublas {
                                 float alpha, float beta) {
 
 
+        JCublas.cublasInit();
 
         JCublasNDArray cA = (JCublasNDArray) A;
         JCublasNDArray cB = (JCublasNDArray) B;
         JCublasNDArray cC = (JCublasNDArray) C;
 
-        alloc(cA,cB,cC);
+        Pointer cAPointer = alloc(cA);
+        Pointer cBPointer = alloc(cB);
+        Pointer cCPointer = alloc(cC);
+
+
 
         JCublas.cublasSgemm(
                 'n', //trans
@@ -136,16 +209,17 @@ public class SimpleJCublas {
                 C.columns(), // n
                 A.columns(), //k,
                 alpha,
-                cA.pointer(), // A
+                cAPointer, // A
                 A.rows(),  // lda
-                cB.pointer(), // x
+                cBPointer, // x
                 B.rows(), // ldb
                 beta,  // beta
-                cC.pointer(), // y
+                cCPointer, // y
                 C.rows()); // incy
-        cC.getData();
 
-        free(cA,cB,cC);
+        getData(cC,cCPointer,Pointer.to(cC.data()));
+
+        free(cAPointer,cBPointer,cCPointer);
 
         return C;
 
@@ -213,15 +287,20 @@ public class SimpleJCublas {
     }
 
     public static void swap(INDArray x, INDArray y) {
-
+        JCublas.cublasInit();
 
         JCublasNDArray xC = (JCublasNDArray) x;
         JCublasNDArray yC = (JCublasNDArray) y;
+        Pointer xCPointer = alloc(xC);
+        Pointer yCPointer = alloc(yC);
+
+
         alloc(xC,yC);
-        JCublas.cublasSswap(xC.length(),
-                xC.pointer(),
+        JCublas.cublasSswap(
+                xC.length(),
+                xCPointer,
                 1,
-                yC.pointer(),
+                yCPointer,
                 1);
 
         yC.getData();
@@ -230,69 +309,78 @@ public class SimpleJCublas {
     }
 
     public static float asum(INDArray x) {
+        JCublas.cublasInit();
+        JCublasNDArray xC = (JCublasNDArray) x;
+        Pointer xCPointer = alloc(xC);
 
-        JCublasComplexNDArray xC = (JCublasComplexNDArray) x;
-        alloc(xC);
 
-        float sum = JCublas.cublasSasum(x.length(), xC.pointer(),1);
-        free(xC);
+        float sum = JCublas.cublasSasum(x.length(), xCPointer,1);
+        JCublas.cublasFree(xCPointer);
         return sum;
     }
 
     public static float nrm2(INDArray x) {
+        JCublas.cublasInit();
         JCublasNDArray xC = (JCublasNDArray) x;
-        alloc(xC);
+        Pointer xCPointer = alloc(xC);
 
-        float normal2 = JCublas.cublasSnrm2(x.length(), xC.pointer(), 1);
-        free(xC);
+
+        float normal2 = JCublas.cublasSnrm2(x.length(), xCPointer, 1);
+        JCublas.cublasFree(xCPointer);
         return normal2;
     }
 
     public static int iamax(INDArray x) {
+        JCublas.cublasInit();
 
         JCublasNDArray xC = (JCublasNDArray) x;
-        alloc(xC);
+        Pointer xCPointer = alloc(xC);
+
 
         int max = JCublas.cublasIsamax(
                 x.length(),
-                xC.pointer(),
+                xCPointer,
                 1);
-        free(xC);
+        free(xCPointer);
         return max - 1;
 
     }
 
     public static void axpy(float da, INDArray A, INDArray B) {
+        JCublas.cublasInit();
+
         JCublasNDArray xA = (JCublasNDArray) A;
         JCublasNDArray xB = (JCublasNDArray) B;
-        //allocate memory
-        alloc(xA, xB);
+
+        Pointer xAPointer = alloc(xA);
+        Pointer xBPointer = alloc(xB);
 
 
         if(xA.ordering() == NDArrayFactory.C) {
             JCublas.cublasSaxpy(
                     xA.length(),
                     da,
-                    xA.pointerWithOffset(),
+                    xAPointer,
                     1,
-                    xB.pointerWithOffset(),
+                    xBPointer,
                     1);
-            xB.getData();
+            getData(xB,xBPointer,Pointer.to(xB.data()));
         }
         else {
             JCublas.cublasSaxpy(
                     xA.length(),
                     da,
-                    xA.pointer(),
+                    xAPointer,
                     1,
-                    xB.pointer(),
-                    1);
-            xB.getData();
+                    xBPointer,
+                    xB.majorStride());
+            getData(xB, xBPointer, Pointer.to(xB.data()));
+
         }
 
 
+        free(xAPointer,xBPointer);
 
-        free(xA,xB);
     }
 
 
@@ -315,16 +403,17 @@ public class SimpleJCublas {
     }
 
     public static INDArray scal(float alpha, INDArray x) {
-
+        JCublas.cublasInit();
         JCublasNDArray xC = (JCublasNDArray) x;
         alloc(xC);
+        Pointer xCPointer = alloc(xC);
         JCublas.cublasSscal(
                 xC.length(),
                 alpha,
-                xC.pointer(),
+                xCPointer,
                 1);
-        xC.getData();
-        free(xC);
+        getData(xC, xCPointer, Pointer.to(xC.data()));
+        JCublas.cublasFree(xCPointer);
         return x;
 
     }
@@ -332,16 +421,17 @@ public class SimpleJCublas {
     public static void copy(INDArray x, INDArray y) {
         JCublasNDArray xC = (JCublasNDArray) x;
         JCublasNDArray yC = (JCublasNDArray) y;
-        alloc(xC,yC);
+        Pointer xCPointer = alloc(xC);
+        Pointer yCPointer = alloc(yC);
         JCublas.cublasDcopy(x.length(),
-                xC.pointer(),
+                xCPointer,
                 1,
-                yC.pointer(),
+                yCPointer,
                 1);
 
 
-        ((JCublasNDArray) y).getData();
-        free(xC,yC);
+        getData(yC,yCPointer,Pointer.to(yC.data()));
+        free(xCPointer,yCPointer);
 
 
     }
@@ -349,14 +439,17 @@ public class SimpleJCublas {
     public static float dot(INDArray x, INDArray y) {
         JCublasNDArray xC = (JCublasNDArray) x;
         JCublasNDArray yC = (JCublasNDArray) y;
-        alloc(xC,yC);
+
+        Pointer xCPointer = alloc(xC);
+        Pointer yCPointer = alloc(yC);
+
         float ret=  JCublas.cublasSdot(
                 x.length(),
-                xC.pointer(),
+                xCPointer,
                 xC.stride()[0]  * Sizeof.FLOAT
-                ,yC.pointer(),
+                ,yCPointer,
                 yC.stride()[0]  * Sizeof.FLOAT);
-        free(xC,yC);
+        free(xCPointer,yCPointer);
         return ret;
     }
 
@@ -378,26 +471,32 @@ public class SimpleJCublas {
         return ret;
     }
     public static INDArray ger(INDArray A, INDArray B, INDArray C, float alpha) {
-        // = alpha * A * tranpose(B) + C
+
+        JCublas.cublasInit();
+        // = alpha * A * transpose(B) + C
         JCublasNDArray aC = (JCublasNDArray) A;
         JCublasNDArray bC = (JCublasNDArray) B;
         JCublasNDArray cC = (JCublasNDArray) C;
-        alloc(aC,bC,cC);
+
+        Pointer aCPointer = alloc(aC);
+        Pointer bCPointer = alloc(bC);
+        Pointer cCPointer = alloc(cC);
+
 
         JCublas.cublasSger(
                 A.rows(),   // m
                 A.columns(),// n
                 alpha,      // alpha
-                aC.pointer(),        // d_A or x
+                aCPointer,        // d_A or x
                 A.rows(),   // incx
-                bC.pointer(),        // dB or y
+                bCPointer,        // dB or y
                 B.rows(),   // incy
-                cC.pointer(),        // dC or A
+                cCPointer,        // dC or A
                 C.rows()    // lda
         );
 
-        cC.getData();
-        free(aC,bC,cC);
+        getData(cC,cCPointer,Pointer.to(cC.data()));
+        free(aCPointer, bCPointer, cCPointer);
 
         return C;
     }
