@@ -231,10 +231,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         return new NeuralNetwork[numLayers];
     }
 
-    @Override
-    public org.deeplearning4j.nn.api.Layer createHiddenLayer(int index, int nIn, int nOut, INDArray layerInput) {
-        return null;
-    }
+
 
 
     /**
@@ -408,18 +405,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
     }
 
-    /**
-     * Transform the data based on the model's output.
-     * This can be anything from a number to reconstructions.
-     *
-     * @param data the data to transform
-     * @return the transformed data
-     */
-    @Override
-    public INDArray transform(INDArray data) {
-        return null;
-    }
-
+  
     /**
      * Fit the model to the given data
      *
