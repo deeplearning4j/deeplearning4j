@@ -194,7 +194,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
         return new DenoisingAutoEncoder[numLayers];
     }
 
-  
+
     /**
      * Fit the model to the given data
      *
