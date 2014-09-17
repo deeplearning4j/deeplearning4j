@@ -94,7 +94,7 @@ public class KMeansClustering implements Serializable {
 	}
 
 
-	private double getDistance(INDArray m1,INDArray m2) {
+	private float getDistance(INDArray m1,INDArray m2) {
 		DistanceFunction function;
 		try {
 			function = clazz.getConstructor(INDArray.class).newInstance(m1);
@@ -112,9 +112,9 @@ public class KMeansClustering implements Serializable {
 		// Find nearest centroid
 		Integer nearestCentroidIndex = 0;
 
-		Double minDistance = Double.MAX_VALUE;
+		Float minDistance = Float.MAX_VALUE;
 		INDArray currentCentroid;
-		Double currentDistance;
+		Float currentDistance;
 		for (int i = 0; i < this.centroids.rows(); i++) {
 			currentCentroid = this.centroids.getRow(i);
 			if (currentCentroid != null) {
@@ -160,7 +160,7 @@ public class KMeansClustering implements Serializable {
 		Random random = new Random();
 
 		// Choose one centroid uniformly at random from among the data points.
-		final INDArray firstCentroid = this.initFeatures.remove(random.nextInt(this.initFeatures.size()));
+		final INDArray firstCentroid = this.initFeatures.remove(random.nextInt(this.initFeatures.size())).linearView();
 		this.centroids = Nd4j.create(this.nbCluster,firstCentroid.columns());
 		this.centroids.putRow(0,firstCentroid);
 		log.info("Added initial centroid");
@@ -172,9 +172,9 @@ public class KMeansClustering implements Serializable {
 
 			// Add one new data point as a center.
 			INDArray features;
-			double r = random.nextDouble() * (double) dxs.getScalar(dxs.length() - 1).element();
+			double r = random.nextFloat() *   dxs.get(dxs.length() - 1);
 			for (int i = 0; i < dxs.length(); i++) {
-				if ((double) dxs.getScalar(i).element() >= r) {
+				if (dxs.get(i) >= r) {
 					features = this.initFeatures.remove(i);
 					this.centroids.putRow(j,features);
 					break;
