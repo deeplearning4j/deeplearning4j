@@ -405,7 +405,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
     }
 
-  
+
     /**
      * Fit the model to the given data
      *
