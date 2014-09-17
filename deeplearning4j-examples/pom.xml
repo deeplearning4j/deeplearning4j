@@ -54,7 +54,7 @@
       </dependency>
       <dependency>
           <groupId>org.nd4j</groupId>
-          <artifactId>nd4j-jblas</artifactId>
+          <artifactId>nd4j-jcublas</artifactId>
           <version>0.0.3-SNAPSHOT</version>
       </dependency>
   </dependencies>

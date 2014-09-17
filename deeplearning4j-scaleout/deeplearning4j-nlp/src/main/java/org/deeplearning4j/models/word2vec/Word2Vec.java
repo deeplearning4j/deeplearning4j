@@ -15,7 +15,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Triple;
-import org.deeplearning4j.models.word2vec.actor.SentenceMessage;
+import org.deeplearning4j.models.word2vec.actor.*;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -25,8 +25,6 @@ import org.deeplearning4j.nn.api.Persistable;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.MathUtils;
-import org.deeplearning4j.models.word2vec.actor.SentenceActor;
-import org.deeplearning4j.models.word2vec.actor.VocabActor;
 import org.deeplearning4j.text.sentenceiterator.CollectionSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
@@ -282,13 +280,18 @@ public class Word2Vec implements Persistable {
 
 
 
-        final AtomicLong latch = new AtomicLong(System.currentTimeMillis());
+        final AtomicLong latch = new AtomicLong(0);
 
+        ActorRef skipgram = trainingSystem.actorOf(
+                new RoundRobinPool(Runtime.getRuntime().availableProcessors() *3 )
+                        .props(Props.create(SkipGramActor.class,this)
+                                .withDispatcher("akka.actor.worker-dispatcher")));
 
         ActorRef ref = trainingSystem.actorOf(
                 new RoundRobinPool(Runtime.getRuntime().availableProcessors() *3 )
-                        .props(Props.create(SentenceActor.class,this)
+                        .props(Props.create(SentenceActor.class,this,skipgram)
                                 .withDispatcher("akka.actor.worker-dispatcher")));
+
 
 
 
@@ -300,7 +303,8 @@ public class Word2Vec implements Persistable {
                 continue;
             ref.tell(new SentenceMessage(sentence,latch),ref);
             numSentencesProcessed.incrementAndGet();
-
+            if(numSentencesProcessed.get() % 100 == 0)
+                log.info("Num sentences processed " + numSentencesProcessed.get());
         }
 
         try {
@@ -312,9 +316,9 @@ public class Word2Vec implements Persistable {
 
 
         while(latch.get() > 0) {
-            log.info("Waiting on sentences...");
+            log.info("Waiting on sentences...Num processed so far " + numSentencesProcessed.get()+ " with latch count at " + latch.get());
             try {
-                Thread.sleep(1000);
+                Thread.sleep(10000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -323,8 +327,12 @@ public class Word2Vec implements Persistable {
 
     }
 
-    public void processSentence(final String sentence) {
-        trainSentence(sentence);
+    /**
+     * Tokenize a sentence and train word vectors on the sentence
+     * @param sentence the sentence to train on 
+     */
+    public void processSentence(final String sentence,ActorRef skipGramActor) {
+        trainSentence(sentence,skipGramActor);
         if(numSentencesProcessed.get() % 10000 == 0) {
             float newAlpha =  alpha.floatValue() * (1 -  (float) cache.totalWordOccurrences() / allWordsCount);
             float oldAlpha = alpha.floatValue();
@@ -341,7 +349,7 @@ public class Word2Vec implements Persistable {
      * @param sentence the sentence to fit on
      * @return
      */
-    public List<VocabWord> trainSentence(String sentence) {
+    public List<VocabWord> trainSentence(String sentence,ActorRef skipGramActor) {
         if(sentence.isEmpty())
             return new ArrayList<>();
         Tokenizer tokenizer = tokenizerFactory.create(sentence);
@@ -358,7 +366,7 @@ public class Word2Vec implements Persistable {
 
         }
 
-        trainSentence(sentence2);
+        trainSentence(sentence2,skipGramActor);
         return sentence2;
     }
 
@@ -494,7 +502,7 @@ public class Word2Vec implements Persistable {
 
 
 
-    public void trainSentence(List<VocabWord> sentence) {
+    public void trainSentence(List<VocabWord> sentence,ActorRef skipGramActor) {
         long nextRandom = 5;
         for(int i = 0; i < sentence.size(); i++) {
             VocabWord entry = sentence.get(i);
@@ -510,7 +518,8 @@ public class Word2Vec implements Persistable {
 
             nextRandom = nextRandom * 25214903917L + 11;
             int b = (int) nextRandom % window;
-            skipGram(i, sentence, b);
+            skipGramActor.tell(new SkipGramMessage(i,b,sentence),skipGramActor);
+            //skipGram(i, sentence, b);
         }
     }
 
