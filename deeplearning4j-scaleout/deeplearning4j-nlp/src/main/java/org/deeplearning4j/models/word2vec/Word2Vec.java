@@ -6,7 +6,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -35,12 +34,9 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import scala.concurrent.Future;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.dispatch.Futures;
-import akka.dispatch.OnComplete;
 import akka.routing.RoundRobinPool;
 
 
@@ -283,12 +279,12 @@ public class Word2Vec implements Persistable {
         final AtomicLong latch = new AtomicLong(0);
 
         ActorRef skipgram = trainingSystem.actorOf(
-                new RoundRobinPool(Runtime.getRuntime().availableProcessors() *3 )
+                new RoundRobinPool(Runtime.getRuntime().availableProcessors())
                         .props(Props.create(SkipGramActor.class,this)
                                 .withDispatcher("akka.actor.worker-dispatcher")));
 
         ActorRef ref = trainingSystem.actorOf(
-                new RoundRobinPool(Runtime.getRuntime().availableProcessors() *3 )
+                new RoundRobinPool(Runtime.getRuntime().availableProcessors())
                         .props(Props.create(SentenceActor.class,this,skipgram)
                                 .withDispatcher("akka.actor.worker-dispatcher")));
 
@@ -366,8 +362,10 @@ public class Word2Vec implements Persistable {
     public List<VocabWord> trainSentence(String sentence,ActorRef skipGramActor) {
         if(sentence.isEmpty())
             return new ArrayList<>();
+
         Tokenizer tokenizer = tokenizerFactory.create(sentence);
         List<VocabWord> sentence2 = new ArrayList<>();
+
         while(tokenizer.hasMoreTokens()) {
             String next = tokenizer.nextToken();
             if(stopWords.contains(next))
@@ -379,6 +377,7 @@ public class Word2Vec implements Persistable {
             sentence2.add(word);
 
         }
+
 
         trainSentence(sentence2,skipGramActor);
         return sentence2;
@@ -396,6 +395,7 @@ public class Word2Vec implements Persistable {
         if (wordVector == null) {
             return null;
         }
+        
         INDArray tempVector;
         List<VocabWord> wordEntrys = new ArrayList<>(topNSize);
         for (String name : cache.words()) {
@@ -533,7 +533,7 @@ public class Word2Vec implements Persistable {
             nextRandom = nextRandom * 25214903917L + 11;
             int b = (int) nextRandom % window;
             skipGramActor.tell(new SkipGramMessage(i,b,sentence),skipGramActor);
-            //skipGram(i, sentence, b);
+
         }
     }
 
@@ -587,7 +587,7 @@ public class Word2Vec implements Persistable {
     public void  iterate(VocabWord w1, VocabWord w2) {
         if(w1.getCodes() == null)
             return;
-        INDArray l1 = cache.vector(cache.wordAtIndex(w2.getIndex()));
+       INDArray l1 = cache.vector(cache.wordAtIndex(w2.getIndex()));
         INDArray l2a = cache.loadCodes(w1.getCodes());
         if(l1 == null)
             return;
@@ -613,11 +613,10 @@ public class Word2Vec implements Persistable {
         }
 
 
-
-        cache.putVector(cache.wordAtIndex(w1.getIndex()), l1.addi(ga.transpose().mmul(l2a)));
-        cache.putVector(cache.wordAtIndex(w2.getIndex()), l1.addi(ga.mmul(l2a)));
-
-    }
+        INDArray ret = l1.addi(ga.transpose().mmul(l2a));
+        cache.putVector(w1.getWord(),ret);
+        cache.putVector(w2.getWord(), ret.dup());
+       }
 
 
 
