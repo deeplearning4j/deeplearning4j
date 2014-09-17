@@ -134,7 +134,7 @@ Installation
 
          <dependency>
            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-scaleout-akka-word2vec</artifactId>
+            <artifactId>deeplearning4j-nlp/artifactId>
              <version>0.0.3.2-SNAPSHOT</version>
           </dependency>
 
