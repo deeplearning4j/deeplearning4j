@@ -202,7 +202,7 @@ public class KMeansClustering implements Serializable {
         final CountDownLatch latch = new CountDownLatch(initFeatures.size());
         for (int i = 0; i < this.initFeatures.size(); i++) {
             final int i2 = i;
-            exec.submit(new Runnable() {
+            exec.execute(new Runnable() {
                 @Override
                 public void run() {
                     INDArray features = initFeatures.get(i2);
