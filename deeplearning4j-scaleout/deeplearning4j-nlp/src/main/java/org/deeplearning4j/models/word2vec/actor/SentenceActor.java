@@ -2,6 +2,7 @@ package org.deeplearning4j.models.word2vec.actor;
 
 
 import akka.actor.ActorRef;
+import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,12 +50,10 @@ public class SentenceActor extends UntypedActor {
     }
 
     private void processMessage(SentenceMessage message) {
-
         SentenceMessage m2 =  message;
         m2.getChanged().incrementAndGet();
         vec.processSentence(m2.getSentence(),skipGramActor);
         m2.getChanged().decrementAndGet();
-
     }
 
 
