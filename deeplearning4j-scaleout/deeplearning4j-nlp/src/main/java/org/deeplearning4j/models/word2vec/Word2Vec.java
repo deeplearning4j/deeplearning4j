@@ -297,14 +297,28 @@ public class Word2Vec implements Persistable {
 
 
         log.info("Processing sentences...");
+
+        List<SentenceMessage> batch = new ArrayList<>();
         while(getSentenceIter().hasNext()) {
             String sentence = sentenceIter.nextSentence();
             if(sentence == null)
                 continue;
             ref.tell(new SentenceMessage(sentence,latch),ref);
+            batch.add(new SentenceMessage(sentence, latch));
+            if(batch.size() % 100 == 0) {
+                ref.tell(new ArrayList<>(batch),ref);
+                batch.clear();
+            }
             numSentencesProcessed.incrementAndGet();
             if(numSentencesProcessed.get() % 100 == 0)
                 log.info("Num sentences processed " + numSentencesProcessed.get());
+        }
+
+
+
+        if(!batch.isEmpty()) {
+            ref.tell(new ArrayList<>(batch), ref);
+            batch.clear();
         }
 
         try {
@@ -546,7 +560,7 @@ public class Word2Vec implements Persistable {
                 continue;
 
             VocabWord word2 = sentence.get(c1);
-            iterate(word);
+            iterate(word,word2);
         }
     }
 
@@ -570,10 +584,10 @@ public class Word2Vec implements Persistable {
      * on the given words
      * @param w1 the first word to fit
      */
-    public void  iterate(VocabWord w1) {
+    public void  iterate(VocabWord w1, VocabWord w2) {
         if(w1.getCodes() == null)
             return;
-        INDArray l1 = cache.vector(cache.wordAtIndex(w1.getIndex()));
+        INDArray l1 = cache.vector(cache.wordAtIndex(w2.getIndex()));
         INDArray l2a = cache.loadCodes(w1.getCodes());
         if(l1 == null)
             return;
@@ -601,6 +615,8 @@ public class Word2Vec implements Persistable {
 
 
         cache.putVector(cache.wordAtIndex(w1.getIndex()), l1.addi(ga.transpose().mmul(l2a)));
+        cache.putVector(cache.wordAtIndex(w2.getIndex()), l1.addi(ga.mmul(l2a)));
+
     }
 
 

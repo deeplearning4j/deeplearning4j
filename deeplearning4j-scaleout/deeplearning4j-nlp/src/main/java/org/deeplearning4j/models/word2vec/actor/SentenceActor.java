@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 
 import akka.actor.UntypedActor;
 
+import java.util.Collection;
+
 
 public class SentenceActor extends UntypedActor {
 
@@ -28,13 +30,16 @@ public class SentenceActor extends UntypedActor {
     @Override
     public void onReceive(final Object message) throws Exception {
         if(message instanceof SentenceMessage) {
+            SentenceMessage message2 = (SentenceMessage) message;
+            processMessage(message2);
 
-            SentenceMessage m2 = (SentenceMessage) message;
-            m2.getChanged().incrementAndGet();
-            vec.processSentence(m2.getSentence(),skipGramActor);
-            m2.getChanged().decrementAndGet();
+        }
 
-
+        else if(message instanceof Collection) {
+            Collection<SentenceMessage> message2 = (Collection<SentenceMessage>) message;
+            for(SentenceMessage message3 : message2) {
+                processMessage(message3);
+            }
         }
 
         else
@@ -42,6 +47,16 @@ public class SentenceActor extends UntypedActor {
 
 
     }
+
+    private void processMessage(SentenceMessage message) {
+
+        SentenceMessage m2 =  message;
+        m2.getChanged().incrementAndGet();
+        vec.processSentence(m2.getSentence(),skipGramActor);
+        m2.getChanged().decrementAndGet();
+
+    }
+
 
 
 
