@@ -25,20 +25,20 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(int[] shape, int offset, char ordering) {
 
         super(shape, offset, ordering);
-        setupJcuBlas();
+        
     }
 
     public JCublasComplexNDArray(int[] shape) {
 
         super(shape);
-        setupJcuBlas();
+        
     }
 
 
     public JCublasComplexNDArray(int[] shape, char ordering) {
 
         super(shape, ordering);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -50,7 +50,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
      */
     public JCublasComplexNDArray(INDArray m, int[] stride, char ordering) {
         super(m, stride, ordering);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -62,7 +62,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(INDArray m, char ordering) {
 
         super(m, ordering);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -73,7 +73,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(INDArray m) {
 
         super(m);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -86,7 +86,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(INDArray m, int[] stride) {
 
         super(m, stride);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -99,7 +99,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
      */
     public JCublasComplexNDArray(List<IComplexNDArray> slices, int[] shape, int[] stride) {
         super(slices, shape, stride);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -113,7 +113,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
      */
     public JCublasComplexNDArray(List<IComplexNDArray> slices, int[] shape, int[] stride, char ordering) {
         super(slices, shape, stride, ordering);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -126,7 +126,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
      */
     public JCublasComplexNDArray(List<IComplexNDArray> slices, int[] shape, char ordering) {
         super(slices, shape, ordering);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -139,7 +139,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(List<IComplexNDArray> slices, int[] shape) {
 
         super(slices, shape);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -152,7 +152,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(IComplexNumber[] newData, int[] shape) {
 
         super(newData, shape);
-        setupJcuBlas();
+        
     }
 
 
@@ -167,7 +167,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(IComplexNumber[] newData, int[] shape, int[] stride) {
 
         super(newData, shape, stride);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -180,7 +180,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(IComplexDouble[] newData, int[] shape) {
 
         super(newData, shape);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -193,7 +193,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
      */
     public JCublasComplexNDArray(IComplexDouble[] newData, int[] shape, char ordering) {
         super(newData, shape, ordering);
-        setupJcuBlas();
+        
     }
 
 
@@ -208,7 +208,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(int[] shape, int[] stride, int offset) {
 
         super(shape, stride, offset);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -222,7 +222,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
      */
     public JCublasComplexNDArray(int[] shape, int[] stride, int offset, char ordering) {
         super(shape, stride, offset, ordering);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -235,7 +235,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
      */
     public JCublasComplexNDArray(int[] shape, int[] stride, char ordering) {
         super(shape, stride, ordering);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -248,7 +248,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(int[] shape, int[] stride) {
 
         super(shape, stride);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -258,7 +258,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(int[] shape, int offset) {
 
         super(shape, offset);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -270,7 +270,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(int newRows, int newColumns) {
 
         super(newRows, newColumns);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -283,7 +283,7 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(int newRows, int newColumns, char ordering) {
 
         super(newRows, newColumns, ordering);
-        setupJcuBlas();
+        
     }
 
     /**
@@ -297,99 +297,25 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
      */
     public JCublasComplexNDArray(float[] data, int[] shape, int[] stride, int offset, char ordering) {
         super(data, shape, stride, offset, ordering);
-        setupJcuBlas();
+        
     }
 
     public JCublasComplexNDArray(float[] data, int[] shape, int[] stride, int offset) {
         super(data, shape, stride, offset);
-        setupJcuBlas();
+        
     }
 
 
 
     public JCublasComplexNDArray(float[] floats, int[] shape, int offset, char ordering) {
         super(floats, shape, offset, ordering);
-        setupJcuBlas();
+        
     }
 
     public JCublasComplexNDArray(float[] floats, int[] shape, int offset) {
 
         super(floats, shape, offset);
-        setupJcuBlas();
-    }
-
-
-    public void allocTest() {
-
-        if(data != null)
-            dataPointer = Pointer.to(data()).withByteOffset(offset * Sizeof.FLOAT);
-        //allocate memory for the pointer
-        //note length * 2 due to the complex and real components for the ndarray
-        JCublas.cublasAlloc(
-                length * 2,
-                Sizeof.FLOAT
-                , pointer);
-
-        /* Copy from data to pointer at majorStride() (you want to stride through the data properly) incrementing by 1 for the pointer on the GPU.
-        * This allows us to copy only what we need. */
-
-        JCublas.cublasSetVector(
-                length * 2,
-                Sizeof.FLOAT,
-                dataPointer,
-                1,
-                pointer,
-                1);
-
-        float[] r = new float[length * 2];
-        getData(r);
-
-
-    }
-
-
-
-    public void alloc() {
-
-        if(data != null)
-            dataPointer = Pointer.to(data())
-                    .withByteOffset((offset() / 2) * Sizeof.FLOAT);
-        //allocate memory for the pointer
-        //need 2 * length for all the numbers
-        JCublas.cublasAlloc(
-                length * 2,
-                Sizeof.FLOAT
-                , pointer);
-
-        /* Copy from data to pointer at majorStride() (you want to stride through the data properly) incrementing by 1 for the pointer on the GPU.
-        * This allows us to copy only what we need. */
-
-        if(length == data.length / 2)
-            JCublas.cublasSetVector(
-                    length * 2,
-                    Sizeof.FLOAT,
-                    dataPointer,
-                    1,
-                    pointer,
-                    1);
-        else
-            JCublas.cublasSetVector(
-                    length * 2,
-                    Sizeof.FLOAT,
-                    dataPointer,
-                    majorStride(),
-                    pointer,
-                    1);
-
-    }
-    public void free() {
-        JCublas.cublasFree(pointer);
-    }
-
-    public void getData(float[] data) {
-        //alloc();
-        getData(Pointer.to(data));
-
+        
     }
 
 
@@ -406,50 +332,5 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
 
 
 
-    public void getData() {
-        getData(dataPointer);
-    }
-
-
-    public void getData(Pointer p) {
-
-        //p is typically the data vector which is strided access
-        if(length == data.length / 2)
-            JCublas.cublasGetVector(
-                    length * 2,
-                    Sizeof.FLOAT,
-                    pointer(),
-                    1,
-                    p,
-                    1);
-        else
-            JCublas.cublasGetVector(
-                    length * 2,
-                    Sizeof.FLOAT,
-                    pointer(),
-                    1,
-                    p,
-                    1);
-
-
-
-
-    }
-
-
-    protected void setupJcuBlas() {
-        if(pointer != null)
-            return;
-        pointer = new Pointer();
-        if(data != null)
-            dataPointer = Pointer.to(data()).withByteOffset((offset() /2) * Sizeof.FLOAT);
-
-    }
-
-
-
-    public Pointer pointer() {
-        return pointer;
-    }
 
 }
