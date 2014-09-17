@@ -29,35 +29,14 @@ public class SimpleJCublas {
         });
     }
 
-    public static void alloc(JCublasComplexNDArray...arrs) {
-        for(JCublasComplexNDArray arr : arrs)
-            arr.alloc();
-    }
 
     public static void free(Pointer...pointers) {
         for(Pointer arr : pointers)
             JCublas.cublasFree(arr);
     }
 
-    public static void free(JCublasComplexNDArray...arrs) {
-        for(JCublasComplexNDArray arr : arrs)
-            arr.free();
-    }
-    public static void alloc(JCublasNDArray...arrs) {
-        for(JCublasNDArray arr : arrs)
-            arr.alloc();
-    }
-    public static void allocTest(JCublasNDArray...arrs) {
-        for(JCublasNDArray arr : arrs)
-            arr.allocTest();
-    }
 
 
-    public static void free(JCublasNDArray...arrs) {
-        for(JCublasNDArray arr : arrs)
-            arr.free();
-
-    }
 
 
     /**
