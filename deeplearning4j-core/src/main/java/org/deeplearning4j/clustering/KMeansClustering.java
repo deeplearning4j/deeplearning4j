@@ -76,8 +76,7 @@ public class KMeansClustering implements Serializable {
 
             // Move centroid
             INDArray update = features.sub(this.centroids.getRow(nearestCentroid)).mul( 1.0 / this.counts.get(nearestCentroid));
-            this.centroids.putRow(nearestCentroid,this.centroids.getRow(nearestCentroid).add(update));
-
+            this.centroids.getRow(nearestCentroid).addi(update);
             return nearestCentroid;
         }
     }
