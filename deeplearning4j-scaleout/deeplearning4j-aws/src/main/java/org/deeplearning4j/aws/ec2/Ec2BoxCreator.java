@@ -1,28 +1,16 @@
 package org.deeplearning4j.aws.ec2;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
+import com.amazonaws.regions.*;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.model.*;
 import org.deeplearning4j.aws.s3.BaseS3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.services.ec2.model.DescribeInstancesResult;
-import com.amazonaws.services.ec2.model.DescribeReservedInstancesResult;
-import com.amazonaws.services.ec2.model.Instance;
-import com.amazonaws.services.ec2.model.InstanceStateChange;
-import com.amazonaws.services.ec2.model.LaunchSpecification;
-import com.amazonaws.services.ec2.model.RequestSpotInstancesRequest;
-import com.amazonaws.services.ec2.model.RequestSpotInstancesResult;
-import com.amazonaws.services.ec2.model.Reservation;
-import com.amazonaws.services.ec2.model.ReservedInstances;
-import com.amazonaws.services.ec2.model.RunInstancesRequest;
-import com.amazonaws.services.ec2.model.RunInstancesResult;
-import com.amazonaws.services.ec2.model.SpotInstanceRequest;
-import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
-import com.amazonaws.services.ec2.model.TerminateInstancesResult;
-import com.amazonaws.services.ec2.model.InstanceState;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Creates Ec2Boxes
  * @author Adam Gibson
@@ -37,6 +25,7 @@ public class Ec2BoxCreator extends BaseS3 {
 	private List<String> boxesCreated;
 	private String securityGroupId;
 	private String keyPair;
+    private Regions regions = Regions.DEFAULT_REGION;
 	private static Logger log = LoggerFactory.getLogger(Ec2BoxCreator.class);
 	
 	//centos
@@ -111,13 +100,18 @@ public class Ec2BoxCreator extends BaseS3 {
 
 	}
 
+    public void setRegion(Regions regions) {
+        this.regions = regions;
+    }
 	public void create() {
 		RunInstancesRequest runInstancesRequest = 
 				new RunInstancesRequest().withImageId(amiId)
 				.withInstanceType(size).withKeyName(keyPair)
 				.withMinCount(1).withSecurityGroupIds(securityGroupId)
 				.withMaxCount(numBoxes);
-		List<Instance> boxes  = getEc2().runInstances(runInstancesRequest)
+        AmazonEC2 ec2 = getEc2();
+        ec2.setRegion(com.amazonaws.regions.Region.getRegion(regions));
+		List<Instance> boxes  = ec2.runInstances(runInstancesRequest)
 				.getReservation().getInstances();
 		if(boxesCreated == null) {
 			boxesCreated = new ArrayList<>();
