@@ -194,23 +194,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
         return new DenoisingAutoEncoder[numLayers];
     }
 
-    @Override
-    public Layer createHiddenLayer(int index, int nIn, int nOut, INDArray layerInput) {
-        return null;
-    }
-
-    /**
-     * Transform the data based on the model's output.
-     * This can be anything from a number to reconstructions.
-     *
-     * @param data the data to transform
-     * @return the transformed data
-     */
-    @Override
-    public INDArray transform(INDArray data) {
-        return null;
-    }
-
+  
     /**
      * Fit the model to the given data
      *
