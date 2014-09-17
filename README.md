@@ -70,7 +70,7 @@ Deeplearning4j has its own IRC channel at https://webchat.freenode.net/, a netwo
 
 
 
-EXPERIMENTAL GPU SUPPORT (work in progress, only scaffolding for now)
+GPU Support (work in progress, only scaffolding for now)
 ==========================================
 
 Initial deployment instructions:
@@ -80,9 +80,9 @@ Initial deployment instructions:
 3. Include the linear-algebra-jcublas in your pom:
 
           <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                     <artifactId>linear-algebra-jcublas</artifactId>
-                      <version>0.0.3.2-SNAPSHOT</version>
+                    <groupId>org.nd4j</groupId>
+                     <artifactId>nd4j-jcublas</artifactId>
+                      <version>0.0.3.1</version>
                    </dependency>
 
 
