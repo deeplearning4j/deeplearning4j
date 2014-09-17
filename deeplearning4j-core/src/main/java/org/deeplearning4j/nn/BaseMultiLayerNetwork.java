@@ -212,6 +212,20 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     }
 
+
+    /**
+     * Transform the data based on the model's output.
+     * This can be anything from a number to reconstructions.
+     *
+     * @param data the data to transform
+     * @return the transformed data
+     */
+    @Override
+    public INDArray transform(INDArray data) {
+        return output(data);
+    }
+
+
     public NeuralNetConfiguration getDefaultConfiguration() {
         return defaultConfiguration;
     }
@@ -1897,7 +1911,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     }
 
-    public abstract Layer createHiddenLayer(int index, int nIn, int nOut,INDArray layerInput);
+
 
     public static class ParamRange implements Serializable {
         private int wStart, wEnd, biasStart, biasEnd;
@@ -1944,9 +1958,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     public static class Builder<E extends BaseMultiLayerNetwork> {
         protected Class<? extends BaseMultiLayerNetwork> clazz;
-        private int nIns;
         private int[] hiddenLayerSizes;
-        private int nOuts;
         private int nLayers;
         private INDArray input, labels;
         protected Map<Integer, MatrixTransform> weightTransforms = new HashMap<>();
