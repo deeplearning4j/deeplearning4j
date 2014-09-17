@@ -43,7 +43,7 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
     /**
-     * Creates a hidden layer with the given parameters.
+     * s a hidden layer with the given parameters.
      * The default implementation is a binomial sampling
      * hidden layer, but this can be overridden
      * for other kinds of hidden units
@@ -56,10 +56,6 @@ public class DBN extends BaseMultiLayerNetwork {
 
     }
 
-    @Override
-    public org.deeplearning4j.nn.api.Layer createHiddenLayer(int index, int nIn, int nOut, INDArray layerInput) {
-        return null;
-    }
 
 
     @Override
@@ -233,17 +229,7 @@ public class DBN extends BaseMultiLayerNetwork {
         return new RBM[numLayers];
     }
 
-    /**
-     * Transform the data based on the model's output.
-     * This can be anything from a number to reconstructions.
-     *
-     * @param data the data to transform
-     * @return the transformed data
-     */
-    @Override
-    public INDArray transform(INDArray data) {
-        return output(data);
-    }
+
 
     /**
      * Fit the model to the given data
