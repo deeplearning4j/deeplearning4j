@@ -395,7 +395,7 @@ public class Word2Vec implements Persistable {
         if (wordVector == null) {
             return null;
         }
-        
+
         INDArray tempVector;
         List<VocabWord> wordEntrys = new ArrayList<>(topNSize);
         for (String name : cache.words()) {
