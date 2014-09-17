@@ -36,8 +36,8 @@ public class IrisExample {
         RandomGenerator gen = new MersenneTwister(123);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED).momentum(5e-1f)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).regularization(true)
+                .momentum(5e-1f)
+                .regularization(true)
                 .regularizationCoefficient(2e-4f).dist(Distributions.uniform(gen))
                 .activationFunction(Activations.tanh()).iterations(100)
                 .weightInit(WeightInit.DISTRIBUTION)
@@ -74,16 +74,14 @@ public class IrisExample {
 
 
         DataSetIterator iter2 = new SamplingDataSetIterator(next,10,10);
-
-        SplitTestAndTrain split = next.splitTestAndTrain(10);
-        d.fit(split.getTrain());
+        d.fit(next);
 
 
 
 
         Evaluation eval = new Evaluation();
-        INDArray output = d.output(split.getTest().getFeatureMatrix());
-        eval.eval(split.getTest().getLabels(),output);
+        INDArray output = d.output(next.getFeatureMatrix());
+        eval.eval(next.getLabels(),output);
         log.info("Score " + eval.stats());
     }
 
