@@ -34,6 +34,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected float momentum = 0.5f;
     /* L2 Regularization constant */
     protected float l2 = 0f;
+    private int pretrainEpochs = 1000;
+    private int finetuneEpochs = 1000;
+    private float pretrainLearningRate = 0.01f;
+    private float finetuneLearningRate = 0.01f;
     protected boolean useRegularization = false;
     //momentum after n iterations
     protected Map<Integer,Float> momentumAfter = new HashMap<>();
@@ -430,6 +434,28 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.stride = stride;
     }
 
+    public int getPretrainEpochs() { return pretrainEpochs; }
+    public void setPretrainEpochs(int pretrainEpochs) {
+        this.pretrainEpochs = pretrainEpochs;
+    }
+    public void setPretrainLearningRate(float pretrainLearningRate) {
+        this.pretrainLearningRate = pretrainLearningRate;
+    }
+    public float getFinetuneLearningRate() {
+        return finetuneLearningRate;
+    }
+
+    public void setFinetuneLearningRate(float finetuneLearningRate) {
+        this.finetuneLearningRate = finetuneLearningRate;
+    }
+
+
+    public int getFinetuneEpochs() {
+        return finetuneEpochs;
+    }
+    public void setFinetuneEpochs(int finetuneEpochs) {
+        this.finetuneEpochs = finetuneEpochs;
+    }
     @Override
     public String toString() {
         return "NeuralNetConfiguration{" +
