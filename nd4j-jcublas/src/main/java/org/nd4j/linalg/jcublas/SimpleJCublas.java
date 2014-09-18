@@ -624,9 +624,9 @@ public class SimpleJCublas {
         float ret =  JCublas.cublasSdot(
                 x.length(),
                 xCPointer,
-                xC.majorStride()
+               1
                 ,yCPointer,
-                yC.majorStride());
+                1);
 
         free(xCPointer,yCPointer);
         return ret;
