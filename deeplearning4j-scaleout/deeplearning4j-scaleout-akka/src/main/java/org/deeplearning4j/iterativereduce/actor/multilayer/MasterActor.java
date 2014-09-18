@@ -1,22 +1,5 @@
 package org.deeplearning4j.iterativereduce.actor.multilayer;
 
-import java.io.DataOutputStream;
-import java.util.*;
-
-import org.deeplearning4j.models.classifiers.dbn.DBN;
-import org.deeplearning4j.iterativereduce.actor.core.Ack;
-import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
-import org.deeplearning4j.iterativereduce.actor.core.DoneMessage;
-import org.deeplearning4j.iterativereduce.actor.core.Job;
-import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
-import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.DeepLearningAccumulatorIterateAndUpdate;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
-import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.scaleout.conf.Conf;
-import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
@@ -24,6 +7,18 @@ import akka.actor.Props;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.routing.RoundRobinPool;
+import org.deeplearning4j.iterativereduce.actor.core.*;
+import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.DeepLearningAccumulatorIterateAndUpdate;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
+import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.scaleout.conf.Conf;
+import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+
+import java.io.DataOutputStream;
+import java.util.Collection;
 
 
 /**
@@ -127,7 +122,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-        network.initializeLayers(Nd4j.zeros(1, conf.getnIn()));
+        network.initializeLayers(Nd4j.zeros(1, conf.getConf().getnIn()));
 
         UpdateableImpl masterResults = new UpdateableImpl(network);
 
