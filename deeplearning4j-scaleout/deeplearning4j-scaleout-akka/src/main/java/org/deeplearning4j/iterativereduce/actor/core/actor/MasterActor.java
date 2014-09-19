@@ -1,12 +1,16 @@
 package org.deeplearning4j.iterativereduce.actor.core.actor;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
+import akka.actor.*;
+import akka.actor.SupervisorStrategy.Directive;
+import akka.cluster.Cluster;
+import akka.contrib.pattern.ClusterReceptionistExtension;
+import akka.contrib.pattern.DistributedPubSubExtension;
+import akka.contrib.pattern.DistributedPubSubMediator;
+import akka.contrib.pattern.DistributedPubSubMediator.Put;
+import akka.dispatch.Futures;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
+import akka.japi.Function;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
@@ -17,25 +21,18 @@ import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableMaster;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import org.deeplearning4j.util.SerializationUtils;
-
 import scala.Option;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import akka.actor.ActorRef;
-import akka.actor.Cancellable;
-import akka.actor.OneForOneStrategy;
-import akka.actor.SupervisorStrategy;
-import akka.actor.SupervisorStrategy.Directive;
-import akka.actor.UntypedActor;
-import akka.cluster.Cluster;
-import akka.contrib.pattern.ClusterReceptionistExtension;
-import akka.contrib.pattern.DistributedPubSubExtension;
-import akka.contrib.pattern.DistributedPubSubMediator;
-import akka.contrib.pattern.DistributedPubSubMediator.Put;
-import akka.dispatch.Futures;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
-import akka.japi.Function;
+
+import java.io.DataOutputStream;
+import java.io.File;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -354,13 +351,15 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
     @Override
     public SupervisorStrategy supervisorStrategy() {
-        return new OneForOneStrategy(0, Duration.Zero(),
+        return new OneForOneStrategy(0,
+                Duration.Zero(),
                 new Function<Throwable, Directive>() {
                     public Directive apply(Throwable cause) {
                         log.error("Problem with processing",cause);
                         return SupervisorStrategy.resume();
                     }
-                });
+                }
+            );
     }
 
     public Conf getConf() {
