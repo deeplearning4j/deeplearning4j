@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import org.apache.commons.lang.time.StopWatch;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
@@ -18,13 +19,12 @@ import org.deeplearning4j.models.word2vec.actor.*;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.AdaGrad;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.nn.api.Persistable;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.MathUtils;
-import org.deeplearning4j.text.sentenceiterator.CollectionSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
@@ -76,52 +76,12 @@ public class Word2Vec implements Persistable {
     private static ActorSystem trainingSystem;
     private List<String> stopWords;
     private boolean shouldReset = true;
+    private AdaGrad adaGrad;
 
 
     public final static String UNK = "UNK";
 
     public Word2Vec() {}
-
-    /**
-     * Specify a sentence iterator
-     *
-     *
-     *
-     *
-     *
-     */
-    private Word2Vec(SentenceIterator sentenceIter) {
-        readStopWords();
-        this.sentenceIter = sentenceIter;
-    }
-
-
-
-
-
-
-
-
-    /**
-     * Initializes based on assumption of whole data applyTransformToDestination being passed in.
-     * @param sentences the sentences to be used for training
-     * @param minWordFrequency the minimum word frequency
-     * to be counted in the vocab
-     */
-    private Word2Vec(Collection<String> sentences,int minWordFrequency) {
-        this.minWordFrequency = minWordFrequency;
-        this.sentenceIter = new CollectionSentenceIterator(sentences);
-
-        this.buildVocab();
-        readStopWords();
-
-    }
-
-
-    private Word2Vec(Collection<String> sentences,int minWordFrequency,TokenizerFactory factory) {
-        this(sentences,minWordFrequency);
-        this.tokenizerFactory = factory;
-    }
 
 
     /**
@@ -170,7 +130,7 @@ public class Word2Vec implements Persistable {
         if(i < 0)
             return cache.vector(UNK);
         INDArray r =  cache.vector(word);
-        return r.div((Nd4j.getBlasWrapper().nrm2(r)));
+        return r.div(Nd4j.getBlasWrapper().nrm2(r));
     }
 
 
@@ -257,10 +217,10 @@ public class Word2Vec implements Persistable {
      * Train the model
      */
     public void fit(){
-        if(trainingSystem == null) {
+        if(trainingSystem == null)
             trainingSystem = ActorSystem.create();
 
-        }
+
 
 
         buildVocab();
@@ -290,21 +250,15 @@ public class Word2Vec implements Persistable {
 
 
 
-
-
         log.info("Processing sentences...");
 
-        List<SentenceMessage> batch = new ArrayList<>();
         while(getSentenceIter().hasNext()) {
             String sentence = sentenceIter.nextSentence();
             if(sentence == null)
                 continue;
-            ref.tell(new SentenceMessage(sentence,latch),ref);
-            batch.add(new SentenceMessage(sentence, latch));
-            if(batch.size() % 100 == 0) {
-                ref.tell(new ArrayList<>(batch),ref);
-                batch.clear();
-            }
+
+            trainSentence(sentence);
+            //ref.tell(new SentenceMessage(sentence,latch),ref);
             numSentencesProcessed.incrementAndGet();
             if(numSentencesProcessed.get() % 100 == 0)
                 log.info("Num sentences processed " + numSentencesProcessed.get());
@@ -312,16 +266,6 @@ public class Word2Vec implements Persistable {
 
 
 
-        if(!batch.isEmpty()) {
-            ref.tell(new ArrayList<>(batch), ref);
-            batch.clear();
-        }
-
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
 
 
 
@@ -341,16 +285,9 @@ public class Word2Vec implements Persistable {
      * Tokenize a sentence and train word vectors on the sentence
      * @param sentence the sentence to train on 
      */
-    public void processSentence(final String sentence,ActorRef skipGramActor) {
-        trainSentence(sentence,skipGramActor);
-        if(numSentencesProcessed.get() % 10000 == 0) {
-            float newAlpha =  alpha.floatValue() * (1 -  (float) cache.totalWordOccurrences() / allWordsCount);
-            float oldAlpha = alpha.floatValue();
-            if(Float.isNaN(newAlpha))
-                newAlpha = oldAlpha;
-            alpha.set(Math.max(MIN_ALPHA,newAlpha));
-            log.info("Alpha updated " + alpha + " progress " + numSentencesProcessed);
-        }
+    public void processSentence(final String sentence) {
+        trainSentence(sentence);
+
     }
 
 
@@ -359,7 +296,7 @@ public class Word2Vec implements Persistable {
      * @param sentence the sentence to fit on
      * @return
      */
-    public List<VocabWord> trainSentence(String sentence,ActorRef skipGramActor) {
+    public List<VocabWord> trainSentence(String sentence) {
         if(sentence.isEmpty())
             return new ArrayList<>();
 
@@ -379,7 +316,7 @@ public class Word2Vec implements Persistable {
         }
 
 
-        trainSentence(sentence2,skipGramActor);
+        trainSentence(sentence2);
         return sentence2;
     }
 
@@ -512,29 +449,35 @@ public class Word2Vec implements Persistable {
     }
 
 
-
-
-
-
-    public void trainSentence(List<VocabWord> sentence,ActorRef skipGramActor) {
-        long nextRandom = 5;
+    /**
+     * Train on a list of vocab words
+     * @param sentence the list of vocab words to train on
+     */
+    public void trainSentence(final List<VocabWord> sentence) {
+        final AtomicLong nextRandom = new AtomicLong(5);
         for(int i = 0; i < sentence.size(); i++) {
-            VocabWord entry = sentence.get(i);
+            final   VocabWord entry = sentence.get(i);
+            final int i1 = i;
             // The subsampling randomly discards frequent words while keeping the ranking same
             if (sample > 0) {
                 double ran = (Math.sqrt(entry.getWordFrequency() / (sample * trainWordsCount)) + 1)
                         * (sample * trainWordsCount) / entry.getWordFrequency();
-                nextRandom = nextRandom * 25214903917L + 11;
-                if (ran < (nextRandom & 0xFFFF) / (double) 65536) {
+                nextRandom.set(nextRandom.get() * 25214903917L + 11);
+                if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
                     continue;
                 }
             }
 
-            nextRandom = nextRandom * 25214903917L + 11;
-            int b = (int) nextRandom % window;
-            skipGramActor.tell(new SkipGramMessage(i,b,sentence),skipGramActor);
+            nextRandom.set(nextRandom.get() * 25214903917L + 11);
+            int b = (int) nextRandom.get() % window;
+            skipGram(i1, sentence, b);
+
 
         }
+
+
+
+
     }
 
 
@@ -545,12 +488,10 @@ public class Word2Vec implements Persistable {
      * @param b
      */
     public void skipGram(int i,List<VocabWord> sentence,int b) {
-        VocabWord word = sentence.get(i);
+        final VocabWord word = sentence.get(i);
         if(word == null)
             return;
-
-
-        //subsampling
+       //subsampling
         for(int j = b; j < window * 2 + 1 - b; j++) {
             if(j == window)
                 continue;
@@ -559,9 +500,10 @@ public class Word2Vec implements Persistable {
             if (c1 < 0 || c1 >= sentence.size())
                 continue;
 
-            VocabWord word2 = sentence.get(c1);
+            final VocabWord word2 = sentence.get(c1);
             iterate(word,word2);
         }
+
     }
 
     public Map<String,INDArray> toVocabFloat() {
@@ -587,36 +529,8 @@ public class Word2Vec implements Persistable {
     public void  iterate(VocabWord w1, VocabWord w2) {
         if(w1.getCodes() == null)
             return;
-       INDArray l1 = cache.vector(cache.wordAtIndex(w2.getIndex()));
-        INDArray l2a = cache.loadCodes(w1.getCodes());
-        if(l1 == null)
-            return;
-        if(l2a == null)
-            return;
-        INDArray fa = Transforms.sigmoid(l1.mmul(l2a.transpose()));
-        // ga = (1 - word.code - fa) * alpha  # vector of error gradients multiplied by the learning rate
-        INDArray ga = Nd4j.ones(fa.length()).subi(ArrayUtil.toNDArray(w1.getCodes())).subi(fa).muli(alpha.floatValue()).transpose();
-        INDArray outer = ga.mmul(l1);
-        if(l2a.isMatrix()) {
-            for(int i = 0; i < w1.getPoints().length; i++) {
-                INDArray toAdd = l2a.getRow(i).addi(outer.getRow(i));
-                cache.putCode(w1.getPoints()[i], toAdd);
-            }
-        }
-        else {
-            assert l2a.isVector();
-            assert w1.getPoints().length == 1;
-            assert outer.isVector();
-
-            INDArray toAdd = l2a.addi(outer);
-            cache.putCode(w1.getPoints()[0], toAdd);
-        }
-
-
-        INDArray ret = l1.addi(ga.transpose().mmul(l2a));
-        cache.putVector(w1.getWord(),ret);
-        cache.putVector(w2.getWord(), ret.dup());
-       }
+        cache.iterate(w1,w2);
+    }
 
 
 
@@ -907,6 +821,7 @@ public class Word2Vec implements Persistable {
                 ret.stopWords = StopWords.getStopWords();
                 ret.setCache(vocabCache);
                 ret.minWordFrequency = minWordFrequency;
+                ret.adaGrad = new AdaGrad(layerSize,1);
                 try {
                     if (tokenizerFactory == null)
                         tokenizerFactory = new UimaTokenizerFactory();
@@ -930,14 +845,16 @@ public class Word2Vec implements Persistable {
             }
 
             else {
-                Word2Vec ret = new Word2Vec(iter);
+                Word2Vec ret = new Word2Vec();
                 ret.layerSize = layerSize;
+                ret.sentenceIter = iter;
                 ret.window = window;
                 ret.stopWords = stopWords;
                 ret.minWordFrequency = minWordFrequency;
                 ret.setCache(vocabCache);
 
                 ret.minWordFrequency = minWordFrequency;
+                ret.adaGrad = new AdaGrad(layerSize,1);
 
 
                 try {
