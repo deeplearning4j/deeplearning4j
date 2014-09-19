@@ -8,7 +8,7 @@ Deeplearning4j is the first commercial-grade deep-learning library written in Ja
 
 Deeplearning4j **integrates with GPUs** and includes a versatile **n-dimensional array** class. DL4J aims to be cutting-edge plug and play, more convention than configuration. By following its conventions, you get an [infinitely scalable](../scaleout.html) deep-learning architecture suitable for Hadoop and other big-data structures. This Java deep-learning library has a domain-specific language for neural networks that serves to turn their multiple knobs. 
 
-Deeplearning4j includes a **distributed deep-learning framework** and a normal deep-learning framework; i.e. it runs on a single thread as well. Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via iterative reduce, and they are equally compatible with Java, Scala and Clojure.
+Deeplearning4j includes a **distributed deep-learning framework** and a normal deep-learning framework (i.e. it runs on a single thread as well). Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via iterative reduce, and they are equally compatible with Java, Scala and Clojure. 
 
 The distributed deep-learning framework is made for data input and neural net training at scale, and its output should be highly accurate predictive models. 
 
@@ -16,4 +16,4 @@ By following the links at the bottom of each page, you will learn to set up, and
 
 For a quick introduction to neural nets, please see our [overview](../overview.html).
 
-There are a lot of knobs to turn when you're training a deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers. If you have questions, please join [our Google Group](https://groups.google.com/forum/#!forum/deeplearning4j); for premium support, [contact us at Skymind](http://www.skymind.io/contact.html).
+There are a lot of knobs to turn when you're training a deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers. If you have questions, please join [our Google Group](https://groups.google.com/forum/#!forum/deeplearning4j); for premium support, [contact us at Skymind](http://www.skymind.io/contact.html). The linear algebra engine powering our matrix manipulations is [ND4J](http://nd4j.org/).
