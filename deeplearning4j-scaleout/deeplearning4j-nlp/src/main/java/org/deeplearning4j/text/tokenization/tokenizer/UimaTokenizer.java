@@ -37,10 +37,12 @@ public class UimaTokenizer implements Tokenizer {
             CAS cas = this.pool.getCas(Integer.MAX_VALUE);
 
             cas.setDocumentText(tokens);
+
             this.engine.process(cas);
             Collection<Token> tokenList = JCasUtil.select(cas.getJCas(), Token.class);
 
             for(Token t : tokenList) {
+
                 if(!checkForLabel || valid(t.getCoveredText()))
                     if(t.getLemma() != null)
                         this.tokens.add(t.getLemma());

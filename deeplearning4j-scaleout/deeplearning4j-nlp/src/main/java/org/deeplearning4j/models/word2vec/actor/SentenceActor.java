@@ -36,6 +36,8 @@ public class SentenceActor extends UntypedActor {
 
         }
 
+
+
         else if(message instanceof Collection) {
             Collection<SentenceMessage> message2 = (Collection<SentenceMessage>) message;
             for(SentenceMessage message3 : message2) {
@@ -52,7 +54,7 @@ public class SentenceActor extends UntypedActor {
     private void processMessage(SentenceMessage message) {
         SentenceMessage m2 =  message;
         m2.getChanged().incrementAndGet();
-        vec.processSentence(m2.getSentence(),skipGramActor);
+        vec.processSentence(m2.getSentence());
         m2.getChanged().decrementAndGet();
     }
 
