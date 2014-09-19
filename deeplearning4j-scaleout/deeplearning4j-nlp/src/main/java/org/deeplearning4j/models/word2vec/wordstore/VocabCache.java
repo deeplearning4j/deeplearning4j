@@ -14,6 +14,13 @@ public interface VocabCache  {
 
 
     /**
+     * Iterate on the given 2 vocab words
+     * @param w1 the first word to iterate on
+     * @param w2 the second word to iterate on
+     */
+    void iterate(VocabWord w1,VocabWord w2);
+
+    /**
      * Returns all of the words in the vocab
      * @returns all the words in the vocab
      */
