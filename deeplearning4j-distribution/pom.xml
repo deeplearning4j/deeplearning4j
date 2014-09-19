@@ -19,7 +19,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.deeplearning4j</groupId>
-			<artifactId>deeplearning4j-scaleout-akka-word2vec</artifactId>
+			<artifactId>deeplearning4j-nlp</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
