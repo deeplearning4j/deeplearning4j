@@ -9,6 +9,7 @@ import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.util.Index;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.MathUtils;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -28,12 +29,65 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     private Map<String,VocabWord> vocabs = new ConcurrentHashMap<>();
     private Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
     private INDArray syn0,syn1;
-    private int codeLength = 0;
     private int vectorLength = 50;
     private AtomicInteger totalWordOccurrences = new AtomicInteger(0);
-
     public InMemoryLookupCache(int vectorLength) {
         this.vectorLength = vectorLength;
+
+    }
+
+    /**
+     * Iterate on the given 2 vocab words
+     *
+     * @param w1 the first word to iterate on
+     * @param w2 the second word to iterate on
+     */
+    @Override
+    public void iterate(VocabWord w1, VocabWord w2) {
+        if(w1.getCodes() == null)
+            return;
+        if(w2.getIndex() >= syn0.rows())
+            return;
+
+        int l1 = w2.getIndex();
+        //current word vector
+        INDArray syn0 = this.syn0.getRow(l1);
+
+        //error for current word and context
+        INDArray neu1e = Nd4j.create(vectorLength);
+
+
+        float avgChange = 0.0f;
+        for(int d = 0; d < w1.getCodes().length; d++) {
+            int inner = w1.getPoints()[d];
+            int l2 = inner;
+            //other word vector
+            INDArray syn1 = this.syn1.getRow(l2);
+            if(l1 >= this.syn0.rows() || l2 >= this.syn1.rows())
+                break;
+
+            float dot = Nd4j.getBlasWrapper().dot(syn0,syn1);
+            if (dot <= -6  || dot >= 6)
+                continue;
+
+            //score
+            float f = (float) MathUtils.sigmoid(dot);
+            //gradient
+            float g = (1 - w1.getCodes()[d] - f);
+            float lr = w1.getLearningRate(d,g);
+
+            g *= lr;
+            avgChange += g;
+            Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
+            Nd4j.getBlasWrapper().axpy(g, syn0, syn1);
+
+        }
+
+        avgChange /=  w1.getCodes().length;
+
+        Nd4j.getBlasWrapper().axpy(avgChange,neu1e,syn0);
+
+
     }
 
     /**
@@ -57,7 +111,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
         INDArray linear = syn0.linearView();
         for(int i = 0; i < syn0.length(); i++)
-            linear.putScalar(i, g.nextFloat() - 0.5f / vectorLength);
+            linear.putScalar(i, (g.nextFloat() - 0.5f) / vectorLength);
         syn1 = Nd4j.create(syn0.shape());
 
     }
@@ -138,7 +192,6 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public void putCode(int codeIndex, INDArray code) {
-        codeLength = code.length();
         codes.put(codeIndex,code);
     }
 
