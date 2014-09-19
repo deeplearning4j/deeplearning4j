@@ -94,7 +94,7 @@ public class AdaGrad implements Serializable {
      * @param gradient the gradient to getFromOrigin learning rates for
      * @return the feature specific learning rates
      */
-    public INDArray getLearningRates(INDArray gradient) {
+    public synchronized INDArray getLearningRates(INDArray gradient) {
         this.gradient = gradient;
         INDArray squaredGradient = pow(this.gradient,2);
         if(this.historicalGradient == null || this.historicalGradient.length() != this.gradient.length())

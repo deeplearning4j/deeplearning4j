@@ -853,4 +853,28 @@ public class SimpleJCublas {
         free(aCPointer,bCPointer,cCPointer);
         return C;
     }
+
+
+    /**
+     * Simpler version of saxpy
+     * taking in to account the parameters of the ndarray
+     * @param alpha the alpha to scale by
+     * @param x the x
+     * @param y the y
+     */
+    public static void saxpy(float alpha, INDArray x, INDArray y) {
+        JCublas.cublasInit();
+        JCublasNDArray xC = (JCublasNDArray) x;
+        JCublasNDArray yC = (JCublasNDArray) y;
+
+        Pointer xCPointer = alloc(xC);
+        Pointer yCPointer = alloc(yC);
+
+        JCublas.cublasSaxpy(x.length(),alpha,xCPointer,1,yCPointer,1);
+
+
+        getData(yC,yCPointer,Pointer.to(yC.data()));
+        free(xCPointer,yCPointer);
+
+    }
 }

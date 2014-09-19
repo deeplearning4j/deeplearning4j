@@ -1,12 +1,16 @@
 package org.nd4j.linalg.jcublas;
 
+import jcuda.jcublas.JCublas;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 
 /**
- * Created by mjk on 8/20/14.
+ * Blas wrapper for JCUDA
+ *
+ * @author mjk
+ * @author Adam Gibson
  */
 public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
@@ -218,6 +222,18 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public void dcopy(int n, float[] dx, int dxIdx, int incx, float[] dy, int dyIdx, int incy) {
 
+    }
+
+    /**
+     * Abstraction over saxpy
+     *
+     * @param alpha the alpha to scale by
+     * @param x     the ndarray to use
+     * @param y     the ndarray to use
+     */
+    @Override
+    public void saxpy(float alpha, INDArray x, INDArray y) {
+        SimpleJCublas.saxpy(alpha,x,y);
     }
 
 

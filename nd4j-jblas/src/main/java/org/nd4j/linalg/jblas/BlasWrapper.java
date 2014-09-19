@@ -76,6 +76,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray axpy(float da, INDArray dx, INDArray dy) {
         //NativeBlas.daxpy(dx.length(), da, dx.data(), 0, 1, dy.data(), 0, 1);
+        assert dx.length() == dy.length() : "Dx length must be the same as dy length";
         JavaBlas.raxpy(dx.length(), da, dx.data(), dx.offset(), dx.stride()[0], dy.data(), dy.offset(), dy.stride()[0]);
 
         return dy;
@@ -168,7 +169,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public INDArray gemv(float alpha, INDArray a,
-                        INDArray x, float beta, INDArray y) {
+                         INDArray x, float beta, INDArray y) {
         if (false) {
             NativeBlas.sgemv('N', a.rows(), a.columns(), alpha, a.data(), 0, a.rows(), x.data(), 0,
                     1, beta, y.data(), 0, 1);
@@ -200,7 +201,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public INDArray ger(float alpha, INDArray x,
-                       INDArray y, INDArray a) {
+                        INDArray y, INDArray a) {
         NativeBlas.sger(a.rows(), a.columns(), alpha, x.data(), 0, 1, y.data(), 0, 1, a.data(),
                 0, a.rows());
         return a;
@@ -232,7 +233,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public IComplexNDArray gerc(IComplexNumber alpha, IComplexNDArray x,
-                               IComplexNDArray y, IComplexNDArray a) {
+                                IComplexNDArray y, IComplexNDArray a) {
         NativeBlas.cgerc(a.rows(), a.columns(), (ComplexFloat) alpha, x.data(), x.offset(), 1, y.data(), y.offset(), 1, a.data(),
                 a.offset(), a.rows());
         return a;
@@ -248,7 +249,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public INDArray gemm(float alpha, INDArray a,
-                        INDArray b, float beta, INDArray c) {
+                         INDArray b, float beta, INDArray c) {
         NativeBlas.sgemm('N', 'N', c.rows(), c.columns(), a.columns(), alpha, a.data(), a.offset(),
                 a.rows(), b.data(), b.offset(), b.rows(), beta, c.data(), c.offset(), c.rows());
 
@@ -287,7 +288,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
 
     public INDArray gesv(INDArray a, int[] ipiv,
-                        INDArray b) {
+                         INDArray b) {
         int info = NativeBlas.sgesv(a.rows(), b.columns(), a.data(), a.offset(), a.rows(), ipiv, 0,
                 b.data(), b.offset(), b.rows());
         checkInfo("DGESV", info);
@@ -308,7 +309,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 //START
 
     public INDArray sysv(char uplo, INDArray a, int[] ipiv,
-                        INDArray b) {
+                         INDArray b) {
         int info = NativeBlas.ssysv(uplo, a.rows(), b.columns(), a.data(), 0, a.rows(), ipiv, 0,
                 b.data(), 0, b.rows());
         checkInfo("SYSV", info);
@@ -454,11 +455,6 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int smlsiz = NativeBlas.ilaenv(9, "DGELSD", "", m, n, nrhs, 0);
         int nlvl = max(0, (int) log2(minmn/ (smlsiz+1)) + 1);
 
-//      System.err.printf("GELSD\n");
-//      System.err.printf("m = %d, n = %d, nrhs = %d\n", m, n, nrhs);
-//      System.err.printf("smlsiz = %d, nlvl = %d\n", smlsiz, nlvl);
-//      System.err.printf("iwork size = %d\n", 3 * minmn * nlvl + 11 * minmn);
-
         int[] iwork = new int[3 * minmn * nlvl + 11 * minmn];
         float[] s = new float[minmn];
         int[] rank = new int[1];
@@ -488,6 +484,27 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public void dcopy(int n, float[] dx, int dxIdx, int incx, float[] dy, int dyIdx, int incy) {
         NativeBlas.scopy(n,dx,dxIdx,incx,dy,dyIdx,incy);
+    }
+
+    /**
+     * Abstraction over saxpy
+     *
+     * @param alpha the alpha to scale by
+     * @param x     the ndarray to use
+     * @param y     the ndarray to use
+     */
+    @Override
+    public void saxpy(float alpha, INDArray x, INDArray y) {
+        JavaBlas.raxpy(
+                x.length(),
+                alpha,
+                x.data(),
+                x.offset(),
+                x.stride()[0],
+                y.data(),
+                y.offset(),
+                y.stride()[0]);
+
     }
 
 }

@@ -223,8 +223,13 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
 
     public  void dcopy(int n, float[] dx, int dxIdx, int incx, float[] dy, int dyIdx, int incy);
 
-
-
+    /**
+     * Abstraction over saxpy
+     * @param alpha the alpha to scale by
+     * @param x the ndarray to use
+     * @param y the ndarray to use
+     */
+    void saxpy(float alpha,INDArray x,INDArray y);
 
 
 
