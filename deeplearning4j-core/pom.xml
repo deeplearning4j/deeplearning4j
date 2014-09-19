@@ -11,7 +11,7 @@
         <spring.version>3.2.5.RELEASE</spring.version>
         <mallet.version>2.0.7</mallet.version>
         <jblas.version>1.2.3</jblas.version>
-        <nd4j.version>0.0.3</nd4j.version>
+        <nd4j.version>0.0.3.2</nd4j.version>
     </properties>
 
     <repositories>
@@ -94,11 +94,7 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>
-        <dependency>
-            <groupId>cc.mallet</groupId>
-            <artifactId>mallet</artifactId>
-            <version>${mallet.version}</version>
-        </dependency>
+     
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
