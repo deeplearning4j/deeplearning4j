@@ -1,20 +1,21 @@
 package org.deeplearning4j.iterativereduce.actor.multilayer;
 
-import java.util.List;
-
-import org.deeplearning4j.iterativereduce.actor.core.*;
-import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
-import org.nd4j.linalg.dataset.DataSet;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.optimize.api.TrainingEvaluator;
-import org.deeplearning4j.scaleout.conf.Conf;
-import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
+import org.deeplearning4j.iterativereduce.actor.core.Ack;
+import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
+import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
+import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
+import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.optimize.api.TrainingEvaluator;
+import org.deeplearning4j.scaleout.conf.Conf;
+import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
+import org.nd4j.linalg.dataset.DataSet;
+
+import java.util.List;
 
 /**
  * Iterative reduce actor for handling batch sizes
@@ -189,11 +190,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
             log.info("Worker " + id + " finetune");
             if(tracker.testSet() != null) {
                 TrainingEvaluator eval = tracker.create(network);
-                network.finetune(d.getLabels(), conf.getFinetuneLearningRate(), conf.getFinetuneEpochs(),eval);
+                network.finetune(d.getLabels(), conf.getConf().getFinetuneLearningRate(), conf.getConf().getFinetuneEpochs(),eval);
 
             }
             else
-                network.finetune(d.getLabels(), conf.getFinetuneLearningRate(), conf.getFinetuneEpochs(),null);
+                network.finetune(d.getLabels(), conf.getConf().getFinetuneLearningRate(), conf.getConf().getFinetuneEpochs(),null);
 
         }
 

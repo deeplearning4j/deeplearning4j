@@ -2,10 +2,22 @@ package org.deeplearning4j.nn;
 
 
 
-import org.deeplearning4j.models.featuredetectors.autoencoder.AutoEncoder;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.models.featuredetectors.autoencoder.AutoEncoder;
+import org.deeplearning4j.nn.api.Classifier;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.api.Persistable;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.layers.OutputLayer;
+import org.deeplearning4j.optimize.api.TrainingEvaluator;
+import org.deeplearning4j.optimize.optimizers.BackPropOptimizer;
+import org.deeplearning4j.optimize.optimizers.BackPropROptimizer;
+import org.deeplearning4j.optimize.optimizers.MultiLayerNetworkOptimizer;
+import org.deeplearning4j.util.Dl4jReflection;
+import org.deeplearning4j.util.SerializationUtils;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -14,23 +26,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.sampling.Sampling;
 import org.nd4j.linalg.transformation.MatrixTransform;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
-import org.deeplearning4j.nn.api.*;
-import org.deeplearning4j.nn.api.Layer;
-
-
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.optimize.api.TrainingEvaluator;
-import org.deeplearning4j.optimize.optimizers.BackPropOptimizer;
-import org.deeplearning4j.optimize.optimizers.BackPropROptimizer;
-import org.deeplearning4j.optimize.optimizers.MultiLayerNetworkOptimizer;
-
-import org.deeplearning4j.util.Dl4jReflection;
-import org.deeplearning4j.util.SerializationUtils;
-
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -285,7 +281,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
     public void init() {
-        if(layerWiseConfigurations == null) {
+        if(layerWiseConfigurations == null || layers == null) {
             intializeConfigurations();
         }
 
