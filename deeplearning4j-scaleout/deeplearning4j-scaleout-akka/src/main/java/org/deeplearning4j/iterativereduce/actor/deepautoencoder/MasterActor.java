@@ -143,11 +143,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
             network = this.network;
 
 
-        network.setOutputLayerActivation(conf.getOutputActivationFunction());
-        network.setRoundCodeLayerInput(conf.isRoundCodeLayer());
-        network.setNormalizeCodeLayerOutput(conf.isNormalizeCodeLayer());
-
-
+     
 
         UpdateableEncoderImpl masterResults = new UpdateableEncoderImpl(network);
 
