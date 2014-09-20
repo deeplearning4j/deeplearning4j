@@ -2,8 +2,8 @@
 #  tsne.py
 #
 # Implementation of t-SNE in Python. The implementation was tested on Python 2.5.1, and it requires a working
-# installation of NumPy. The implementation comes with an example on the MNIST dataset. In order to plot the
-# results of this example, a working installation of matplotlib is required.
+# installation of NumPy. The implementation comes with an example on the MNIST dataset. In order to pl the
+# results of this example, a working installation of matpllib is required.
 # The example can be run by executing: ipython tsne.py -pylab
 #
 #
@@ -11,7 +11,7 @@
 #  Copyright (c) 2008 Tilburg University. All rights reserved.
 
 import numpy as np
-import pylab as Plot
+import pylab as pl
 import argparse
 
 
@@ -121,8 +121,8 @@ def tsne(X = np.array([]), no_dims = 2, initial_dims = 50, perplexity = 30.0):
 
     # Compute P-values
     P = x2p(X, 1e-5, perplexity)
-    P = P + np.transpose(P)
-    P = P / np.sum(P)
+    P += np.transpose(P)
+    P  /= (np.sum(P) + 1e-6)
     P *=  4									# early exaggeration
     P = np.maximum(P, 1e-12)
 
@@ -180,7 +180,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    X = np.loadtxt(args.path)
+    X = np.loadtxt(open(args.path,"rb"),delimiter=",")
     Y = tsne(X, args.ndims, args.initialdims, args.perplexity)
-    Plot.scatter(Y[:,0], Y[:,1], 20)
+    pl.scatter(Y[:,0], Y[:,1], 20)
+    pl.show()
 
