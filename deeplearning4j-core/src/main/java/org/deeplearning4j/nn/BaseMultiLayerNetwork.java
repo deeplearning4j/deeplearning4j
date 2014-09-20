@@ -2,10 +2,22 @@ package org.deeplearning4j.nn;
 
 
 
-import org.deeplearning4j.models.featuredetectors.autoencoder.AutoEncoder;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.models.featuredetectors.autoencoder.AutoEncoder;
+import org.deeplearning4j.nn.api.Classifier;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.api.Persistable;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.layers.OutputLayer;
+import org.deeplearning4j.optimize.api.TrainingEvaluator;
+import org.deeplearning4j.optimize.optimizers.BackPropOptimizer;
+import org.deeplearning4j.optimize.optimizers.BackPropROptimizer;
+import org.deeplearning4j.optimize.optimizers.MultiLayerNetworkOptimizer;
+import org.deeplearning4j.util.Dl4jReflection;
+import org.deeplearning4j.util.SerializationUtils;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -14,23 +26,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.sampling.Sampling;
 import org.nd4j.linalg.transformation.MatrixTransform;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
-import org.deeplearning4j.nn.api.*;
-import org.deeplearning4j.nn.api.Layer;
-
-
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.optimize.api.TrainingEvaluator;
-import org.deeplearning4j.optimize.optimizers.BackPropOptimizer;
-import org.deeplearning4j.optimize.optimizers.BackPropROptimizer;
-import org.deeplearning4j.optimize.optimizers.MultiLayerNetworkOptimizer;
-
-import org.deeplearning4j.util.Dl4jReflection;
-import org.deeplearning4j.util.SerializationUtils;
-
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -198,9 +194,20 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             LinAlgExceptions.assertSameShape(network.getW(), h.getW());
             LinAlgExceptions.assertSameShape(h.getB(), network.gethBias());
 
+            assert h.conf().getnIn() == h.getW().rows() : "Number of inputs not consistent with number of rows in weight matrix";
+            assert h.conf().getnOut() == h.getW().columns()  : "Number of inputs not consistent with number of rows in weight matrix";
+
             if (i < getnLayers() - 1) {
                 Layer h1 = layers[i + 1];
                 NeuralNetwork network1 = neuralNets[i + 1];
+
+
+
+                assert h1.conf().getnIn() == h1.getW().rows() : "Number of inputs not consistent with number of rows in weight matrix";
+                assert h1.conf().getnOut() == h1.getW().columns()  : "Number of inputs not consistent with number of rows in weight matrix";
+                assert network1.conf().getnIn() == network1.getW().rows() : "Number of inputs not consistent with number of rows in weight matrix";
+                assert network1.conf().getnOut() == network1.getW().columns()  : "Number of inputs not consistent with number of rows in weight matrix";
+
                 if (h1.conf().getnIn() != h.conf().getnOut())
                     throw new IllegalStateException("Invalid structure: hidden layer in for " + (i + 1) + " not equal to number of ins " + i);
                 if (network.conf().getnOut() != network1.conf().getnIn())
@@ -274,7 +281,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
     public void init() {
-        if(layerWiseConfigurations == null) {
+        if(layerWiseConfigurations == null || layers == null) {
             intializeConfigurations();
         }
 
@@ -732,6 +739,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     public void setLayers(Layer[] layers) {
         this.layers = layers;
+    }
+
+    public void setNeuralNets(NeuralNetwork[] neuralNets) {
+        this.neuralNets = neuralNets;
     }
 
     /**
@@ -1970,6 +1981,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         private boolean useDropConnect = false;
         private boolean useGaussNewtonVectorProductBackProp = false;
         protected NeuralNetConfiguration conf;
+        protected List<NeuralNetConfiguration> layerWiseConfiguration;
+
+
+
+        public Builder<E> layerWiseCOnfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
+            this.layerWiseConfiguration = layerWiseConfiguration;
+            return this;
+        }
 
         public Builder<E> configure(NeuralNetConfiguration conf) {
             this.conf = conf;
@@ -2136,7 +2155,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                 ret.setHiddenLayerSizes(this.hiddenLayerSizes);
                 ret.setnLayers(this.nLayers);
                 ret.setShouldBackProp(this.backProp);
-
+                ret.setLayerWiseConfigurations(layerWiseConfiguration);
                 ret.neuralNets = new NeuralNetwork[nLayers];
                 ret.setInput(this.input);
                 ret.setLineSearchBackProp(lineSearchBackProp);

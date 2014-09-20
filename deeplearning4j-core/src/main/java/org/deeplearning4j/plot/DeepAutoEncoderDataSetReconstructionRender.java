@@ -1,6 +1,6 @@
 package org.deeplearning4j.plot;
 
-import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
+import org.deeplearning4j.models.featuredetectors.autoencoder.SemanticHashing;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -13,7 +13,7 @@ import org.nd4j.linalg.transformation.MatrixTransform;
  */
 public class DeepAutoEncoderDataSetReconstructionRender {
     private DataSetIterator iter;
-    private DeepAutoEncoder encoder;
+    private SemanticHashing encoder;
     private int rows,columns;
     private MatrixTransform picDraw,reconDraw;
 
@@ -25,7 +25,7 @@ public class DeepAutoEncoderDataSetReconstructionRender {
      * @param rows rows
      * @param columns columns
      */
-    public DeepAutoEncoderDataSetReconstructionRender(DataSetIterator iter, DeepAutoEncoder encoder,int rows, int columns) {
+    public DeepAutoEncoderDataSetReconstructionRender(DataSetIterator iter, SemanticHashing encoder,int rows, int columns) {
         this.iter = iter;
         this.encoder = encoder;
         this.rows = rows;

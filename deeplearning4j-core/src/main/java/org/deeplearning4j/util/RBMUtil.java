@@ -1,7 +1,5 @@
 package org.deeplearning4j.util;
 
-import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
-import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 
 import static  org.deeplearning4j.models.featuredetectors.rbm.RBM.HiddenUnit;
