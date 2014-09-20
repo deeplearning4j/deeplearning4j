@@ -1985,6 +1985,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         private boolean useDropConnect = false;
         private boolean useGaussNewtonVectorProductBackProp = false;
         protected NeuralNetConfiguration conf;
+        protected List<NeuralNetConfiguration> layerWiseConfiguration;
+
+
+
+        public Builder<E> layerWiseCOnfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
+            this.layerWiseConfiguration = layerWiseConfiguration;
+            return this;
+        }
 
         public Builder<E> configure(NeuralNetConfiguration conf) {
             this.conf = conf;
@@ -2151,7 +2159,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                 ret.setHiddenLayerSizes(this.hiddenLayerSizes);
                 ret.setnLayers(this.nLayers);
                 ret.setShouldBackProp(this.backProp);
-
+                ret.setLayerWiseConfigurations(layerWiseConfiguration);
                 ret.neuralNets = new NeuralNetwork[nLayers];
                 ret.setInput(this.input);
                 ret.setLineSearchBackProp(lineSearchBackProp);
