@@ -22,7 +22,7 @@ def Hbeta(D = np.array([]), beta = 1.0):
     P = np.exp(-D.copy() * beta)
     sumP = sum(P)
     H = np.log(sumP) + beta * np.sum(D * P) / sumP
-    P = P / sumP
+    P = P / (sumP + 1e-6)
     return H, P
 
 
@@ -150,7 +150,7 @@ def tsne(X = np.array([]), no_dims = 2, initial_dims = 50, perplexity = 30.0):
         gains[gains < min_gain] = min_gain
         iY = momentum * iY - eta * (gains * dY)
         Y += iY
-        Y = Y - np.tile(np.mean(Y, 0), (n, 1))
+        Y -= np.tile(np.mean(Y, 0), (n, 1))
 
         # Compute current value of cost function
         if (iter + 1) % 10 == 0:
