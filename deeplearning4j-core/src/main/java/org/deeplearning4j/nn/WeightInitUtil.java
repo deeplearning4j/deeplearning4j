@@ -39,7 +39,7 @@ public class WeightInitUtil {
 
             case  VI:
                 double r = Math.sqrt(6) / Math.sqrt(nIn + nOut + 1);
-                ret.muli(Nd4j.scalar(2)).muli(Nd4j.scalar(r)).subi(Nd4j.scalar(r));
+                ret.muli(2).muli(r).subi(r);
                 return ret;
 
             case DISTRIBUTION:
