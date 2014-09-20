@@ -28,12 +28,34 @@
 
 
     <properties>
-        <slf4j.version>1.7.5</slf4j.version>
+        <slf4j.version>1.7.6</slf4j.version>
         <junit.version>4.11</junit.version>
     </properties>
 
 
     <profiles>
+    <profile>
+      <id>qa</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>install</phase>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
         <profile>
             <id>release-sign-artifacts</id>
             <activation>
@@ -244,4 +266,5 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
 </project>

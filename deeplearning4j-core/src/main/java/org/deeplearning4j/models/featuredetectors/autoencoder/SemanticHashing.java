@@ -1,12 +1,13 @@
 package org.deeplearning4j.models.featuredetectors.autoencoder;
 
 
-import java.util.*;
-
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.layers.OutputLayer;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -14,12 +15,12 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.transformation.MatrixTransform;
-import org.deeplearning4j.nn.*;
-
-import org.deeplearning4j.nn.api.NeuralNetwork;
-import org.deeplearning4j.nn.layers.OutputLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 
 

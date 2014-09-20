@@ -143,8 +143,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
             network = this.network;
 
 
-
-
         UpdateableEncoderImpl masterResults = new UpdateableEncoderImpl(network);
 
         /**
