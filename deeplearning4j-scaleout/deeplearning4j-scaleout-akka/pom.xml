@@ -15,6 +15,7 @@
         <hazelcast.version>3.2-RC2</hazelcast.version>
         <spring.version>3.2.5.RELEASE</spring.version>
         <dropwizard.version>0.7.0</dropwizard.version>
+        <jackson.version>2.3.2</jackson.version>
     </properties>
     <dependencyManagement>
 
@@ -29,58 +30,26 @@
                 <groupId>org.hibernate</groupId>
                 <artifactId>hibernate-validator</artifactId>
                 <version>5.1.1.Final</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>log4j-over-slf4j</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-log4j12</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>log4j</groupId>
-                        <artifactId>log4j</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>2.3.2</version>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.3.2</version>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
-                <version>2.3.2</version>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard</groupId>
                 <artifactId>dropwizard-core</artifactId>
                 <version>${dropwizard.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-databind</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>log4j-over-slf4j</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-log4j12</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>log4j</groupId>
-                        <artifactId>log4j</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
@@ -127,6 +96,12 @@
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
 
+            <exclusions>
+            	<exclusion>
+            		<artifactId>log4j-over-slf4j</artifactId>
+            		<groupId>org.slf4j</groupId>
+            	</exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.uima</groupId>
@@ -195,14 +170,10 @@
             <artifactId>deeplearning4j-scaleout-zookeeper</artifactId>
             <version>${project.version}</version>
             <exclusions>
-                <exclusion>
-                    <artifactId>netty</artifactId>
-                    <groupId>org.jboss.netty</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>commons-math</artifactId>
-                    <groupId>org.apache.commons</groupId>
-                </exclusion>
+            	<exclusion>
+            		<artifactId>netty</artifactId>
+            		<groupId>org.jboss.netty</groupId>
+            	</exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -225,6 +196,15 @@
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast-all</artifactId>
             <version>${hazelcast.version}</version>
+        </dependency>
+
+
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-jblas</artifactId>
+            <version>0.0.3.2</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>

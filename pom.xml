@@ -28,7 +28,7 @@
 
 
     <properties>
-        <slf4j.version>1.7.5</slf4j.version>
+        <slf4j.version>1.7.6</slf4j.version>
         <junit.version>4.11</junit.version>
     </properties>
 
