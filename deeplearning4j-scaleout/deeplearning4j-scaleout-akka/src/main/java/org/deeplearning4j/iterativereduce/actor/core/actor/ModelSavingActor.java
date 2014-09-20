@@ -2,7 +2,7 @@ package org.deeplearning4j.iterativereduce.actor.core.actor;
 
 import java.io.File;
 
-import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
+import org.deeplearning4j.models.featuredetectors.autoencoder.SemanticHashing;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.core.ModelSaver;
@@ -87,8 +87,8 @@ public class ModelSavingActor extends UntypedActor {
                 if(stateTracker.hasBegun())
                     modelSaver.save(current);
             }
-            else if(stateTracker.getCurrent().get().getClass().isAssignableFrom(DeepAutoEncoder.class)) {
-                DeepAutoEncoder current = (DeepAutoEncoder) stateTracker.getCurrent().get();
+            else if(stateTracker.getCurrent().get().getClass().isAssignableFrom(SemanticHashing.class)) {
+                SemanticHashing current = (SemanticHashing) stateTracker.getCurrent().get();
                 stateTracker.setCurrent(new UpdateableEncoderImpl(current));
                 if(stateTracker.hasBegun())
                     modelSaver.save(current);

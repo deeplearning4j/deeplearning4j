@@ -8,7 +8,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.transformation.MatrixTransform;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -42,6 +44,7 @@ public class Conf implements Serializable,Cloneable {
     private boolean normalizeCodeLayer = false;
     private boolean lineSearchBackProp = false;
     private NeuralNetConfiguration conf;
+    private List<NeuralNetConfiguration> layerConfigs = new ArrayList<>();
 
     public NeuralNetConfiguration getConf() {
         return conf;
@@ -50,6 +53,14 @@ public class Conf implements Serializable,Cloneable {
     public void setConf(NeuralNetConfiguration conf) {
         this.conf = conf;
     }
+    public void setLayerConfigs() {
+        List<NeuralNetConfiguration> layers = new ArrayList<>();
+        for(int i = 0; i < layerSizes.length; i++) {
+            layers.add(conf.clone());
+        }
+        setLayerConfigs(layers);
+    }
+    public void setLayerConfigs(List<NeuralNetConfiguration> l) { this.layerConfigs = l; }
 
     public boolean isLineSearchBackProp() {
         return lineSearchBackProp;
@@ -234,7 +245,7 @@ public class Conf implements Serializable,Cloneable {
      */
     public BaseMultiLayerNetwork init() {
         if(getMultiLayerClazz().isAssignableFrom(DBN.class)) {
-            return new DBN.Builder().configure(conf)
+            return new DBN.Builder().configure(conf).layerWiseCOnfiguration(layerConfigs)
             .withClazz(getMultiLayerClazz()).lineSearchBackProp(isLineSearchBackProp())
                     .hiddenLayerSizes(getLayerSizes())
                     .build();

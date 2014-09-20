@@ -645,7 +645,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int resetAdaGradIterations = -1;
         private float dropOut = 0;
         private boolean applySparsity = false;
-        private WeightInit weightInit = WeightInit.SI;
+        private WeightInit weightInit = WeightInit.VI;
         private NeuralNetwork.OptimizationAlgorithm optimizationAlgo = NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private int renderWeightsEveryNumEpochs = -1;
         private boolean concatBiases = false;
