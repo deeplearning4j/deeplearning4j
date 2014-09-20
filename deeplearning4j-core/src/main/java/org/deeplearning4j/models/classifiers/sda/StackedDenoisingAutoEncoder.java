@@ -4,6 +4,7 @@ import org.deeplearning4j.models.featuredetectors.da.DenoisingAutoEncoder;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.transformation.MatrixTransform;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.api.Layer;
@@ -126,15 +127,8 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
 
     @Override
     public void pretrain(INDArray input, Object[] otherParams) {
-        if (otherParams == null) {
-            otherParams = new Object[]{0.01, 0.3, 1000};
-        }
 
-        Float lr = (Float) otherParams[0];
-        Float corruptionLevel = (Float) otherParams[1];
-        Integer iterations = (Integer) otherParams[2];
-
-        pretrain(input, lr, corruptionLevel, iterations);
+         pretrain(input, defaultConfiguration.getLr(), defaultConfiguration.getCorruptionLevel(),defaultConfiguration.getNumIterations());
 
     }
 
@@ -334,6 +328,14 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
             this.clazz = clazz;
             return this;
         }
+
+        public StackedDenoisingAutoEncoder build() {
+            StackedDenoisingAutoEncoder ret = super.build();
+            ret.initializeLayers(Nd4j.zeros(1, ret.defaultConfiguration.getnIn()));
+
+            return ret;
+        }
+
 
     }
 }
