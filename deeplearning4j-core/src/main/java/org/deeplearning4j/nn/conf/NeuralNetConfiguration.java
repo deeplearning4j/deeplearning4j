@@ -2,15 +2,17 @@ package org.deeplearning4j.nn.conf;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
+import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.nd4j.linalg.api.activation.ActivationFunction;
-import org.nd4j.linalg.api.activation.Activations;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.nd4j.linalg.api.activation.ActivationFunction;
+import org.nd4j.linalg.api.activation.Activations;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -56,9 +58,15 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //whether to constrain the gradient to unit norm or not
     protected boolean constrainGradientToUnitNorm = false;
     /* RNG for sampling. */
+    protected long seed = 123;
     protected transient RandomGenerator rng;
     protected transient RealDistribution dist;
-    protected long seed = 123;
+    private void readObject(java.io.ObjectInputStream in)
+            throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        rng = new MersenneTwister(seed);
+        dist = new UniformRealDistribution();
+    }
     protected int nIn,nOut;
     protected ActivationFunction activationFunction;
     private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
