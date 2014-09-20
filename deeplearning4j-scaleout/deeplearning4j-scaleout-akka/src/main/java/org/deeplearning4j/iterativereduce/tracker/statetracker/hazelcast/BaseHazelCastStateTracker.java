@@ -559,7 +559,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
         if(type.equals("master") && !PortTaken.portTaken(stateTrackerPort)) {
             //sets up a proper connection string for reference wrt external actors needing a reference
             if(connectionString.equals("master")) {
-                String host = InetAddress.getLocalHost().getHostName();
+                String host = "0.0.0.0";
                 this.connectionString = host + ":" + stateTrackerPort;
             }
 
