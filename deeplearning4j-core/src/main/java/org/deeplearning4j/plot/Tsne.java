@@ -1,11 +1,17 @@
 package org.deeplearning4j.plot;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -15,7 +21,45 @@ import java.util.UUID;
  */
 public class Tsne {
 
-    public void plot() {
+
+
+
+    private String commandTemplate = "python /tmp/tsne.py --path %s --ndims %d --perplexity %.3f --initialdims %s";
+
+    private static Logger log = LoggerFactory.getLogger(Tsne.class);
+
+
+    private static ClassPathResource r = new ClassPathResource("/scripts/tsne.py");
+
+
+    static {
+        loadIntoTmp();
+    }
+
+    private static void loadIntoTmp() {
+
+        File script = new File("/tmp/tsne.py");
+
+
+        try {
+            List<String> lines = IOUtils.readLines(r.getInputStream());
+            FileUtils.writeLines(script, lines);
+
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to load python file");
+
+        }
+
+    }
+
+    public void plot(INDArray matrix,int nDims,float perplexity,int initialDims) throws IOException {
+
+        String path = writeMatrix(matrix);
+        String command = String.format(commandTemplate,path,nDims,perplexity,initialDims);
+        Process is = Runtime.getRuntime().exec(command);
+
+        log.info("Std out " + IOUtils.readLines(is.getInputStream()).toString());
+        log.error(IOUtils.readLines(is.getErrorStream()).toString());
 
     }
 
