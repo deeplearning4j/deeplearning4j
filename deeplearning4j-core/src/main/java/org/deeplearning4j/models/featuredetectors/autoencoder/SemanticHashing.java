@@ -3,10 +3,10 @@ package org.deeplearning4j.models.featuredetectors.autoencoder;
 
 import java.util.*;
 
-import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -17,7 +17,6 @@ import org.nd4j.linalg.transformation.MatrixTransform;
 import org.deeplearning4j.nn.*;
 
 import org.deeplearning4j.nn.api.NeuralNetwork;
-import org.deeplearning4j.nn.layers.Layer;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,21 +83,16 @@ import org.slf4j.LoggerFactory;
  *
  *
  */
-public class DeepAutoEncoder extends BaseMultiLayerNetwork {
+public class SemanticHashing extends BaseMultiLayerNetwork {
 
     /**
      *
      */
     private static final long serialVersionUID = -3571832097247806784L;
     private BaseMultiLayerNetwork encoder;
-    //learn binary codes
-    private ActivationFunction outputLayerActivation = Activations.sigmoid();
-    private boolean roundCodeLayerInput = false;
-    //could be useful for gaussian/rectified
-    private boolean normalizeCodeLayerOutput = false;
-    private static Logger log = LoggerFactory.getLogger(DeepAutoEncoder.class);
+    private static Logger log = LoggerFactory.getLogger(SemanticHashing.class);
 
-    public DeepAutoEncoder(){}
+    public SemanticHashing(){}
 
 
 
@@ -319,25 +313,6 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
 
 
-    public void setRoundCodeLayerInput(boolean roundCodeLayerInput) {
-        this.roundCodeLayerInput = roundCodeLayerInput;
-    }
-
-    public ActivationFunction getOutputLayerActivation() {
-        return outputLayerActivation;
-    }
-
-    public void setOutputLayerActivation(ActivationFunction outputLayerActivation) {
-        this.outputLayerActivation = outputLayerActivation;
-    }
-
-    public boolean isNormalizeCodeLayerOutput() {
-        return normalizeCodeLayerOutput;
-    }
-
-    public void setNormalizeCodeLayerOutput(boolean normalizeCodeLayerOutput) {
-        this.normalizeCodeLayerOutput = normalizeCodeLayerOutput;
-    }
 
     /**
      * Sets the input and labels and returns a score for the prediction
@@ -391,7 +366,8 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
      */
     @Override
     public void fit(DataSet data) {
-
+        this.input = data.getFeatureMatrix();
+        finetune(data.getLabels(), defaultConfiguration.getLr(),defaultConfiguration.getNumIterations());
     }
 
     /**
@@ -418,11 +394,11 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     }
 
 
-    public static class Builder extends BaseMultiLayerNetwork.Builder<DeepAutoEncoder> {
+    public static class Builder extends BaseMultiLayerNetwork.Builder<SemanticHashing> {
         private  BaseMultiLayerNetwork encoder;
 
         public Builder() {
-            clazz = DeepAutoEncoder.class;
+            clazz = SemanticHashing.class;
         }
 
         public Builder withEncoder(BaseMultiLayerNetwork encoder) {
@@ -567,65 +543,117 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         }
 
         @Override
-        public DeepAutoEncoder buildEmpty() {
+        public SemanticHashing buildEmpty() {
             return  super.buildEmpty();
 
         }
 
         @Override
-        public DeepAutoEncoder build() {
+        public SemanticHashing build() {
 
 
             //everything but output layer
             int inverseCount = encoder.getNeuralNets().length - 1;
             NeuralNetwork[] autoEncoders = new NeuralNetwork[encoder.getNeuralNets().length * 2 - 1];
-            Layer[] hiddenLayers = new Layer[encoder.getNeuralNets().length * 2 - 1];
+            Layer[] hiddenLayers = new Layer[autoEncoders.length + 1];
             for(int i = 0; i < autoEncoders.length; i++) {
                 if(i < encoder.getNeuralNets().length) {
-                    AutoEncoder a = new AutoEncoder.Builder().configure(encoder.getNeuralNets()[i].conf())
+                    AutoEncoder a = new AutoEncoder.Builder().configure(encoder.getNeuralNets()[i].conf().clone())
                             .withVisibleBias(encoder.getNeuralNets()[i].getvBias().dup())
                             .withHBias(encoder.getNeuralNets()[i].gethBias().dup())
                             .build();
 
 
 
-                    Layer h = (Layer) encoder.getNeuralNets()[i].clone();
+                    int nIn = a.getW().rows();
+                    int nOut = a.getW().columns();
+
+                    Layer h = encoder.getLayers()[i].clone();
+                    h.setConfiguration(a.conf());
+
                     hiddenLayers[i] = h;
                     autoEncoders[i] = a;
+
+
+
+                    hiddenLayers[i].setB(a.gethBias());
+                    hiddenLayers[i].setW(a.getW());
+
+                    hiddenLayers[i].conf().setnIn(nIn);
+                    hiddenLayers[i].conf().setnOut(nOut);
+
+                    autoEncoders[i].conf().setnIn(nIn);
+                    autoEncoders[i].conf().setnOut(nOut);
+
                     if(i == encoder.getNeuralNets().length - 1)
                         a.conf().setActivationFunction(Activations.linear());
 
                 }
                 else {
+                    NeuralNetConfiguration reverseConf = encoder.getNeuralNets()[inverseCount].conf().clone();
+
+
+
                     AutoEncoder a = new AutoEncoder.Builder()
-                            .configure(encoder.getNeuralNets()[inverseCount].conf())
+                            .configure(reverseConf)
                             .withWeights(encoder.getNeuralNets()[inverseCount].getW().transpose())
                             .withVisibleBias(encoder.getNeuralNets()[inverseCount].gethBias().dup())
                             .withHBias(encoder.getNeuralNets()[inverseCount].getvBias().dup())
                             .build();
 
+
+                    int nIn = a.getW().rows();
+                    int nOut = a.getW().columns();
+
+
+
+                    reverseConf.setnIn(nIn);
+                    reverseConf.setnOut(nOut);
+
                     autoEncoders[i] = a;
-                    hiddenLayers[i] = (Layer) encoder.getNeuralNets()[inverseCount].transpose();
+                    hiddenLayers[i] =  encoder.getLayers()[inverseCount].transpose();
+
+                    hiddenLayers[i].setConfiguration(reverseConf);
+
+
+                    hiddenLayers[i].setB(a.gethBias());
+                    hiddenLayers[i].setW(a.getW());
+
+
+
                     inverseCount--;
                 }
             }
 
-            OutputLayer o = new OutputLayer.Builder()
+            OutputLayer o = new OutputLayer.Builder().configure(encoder.getNeuralNets()[0].conf())
                     .withBias(encoder.getNeuralNets()[0].getvBias())
                     .withWeights(encoder.getNeuralNets()[0].getW().transpose())
                     .build();
 
 
+            o.conf().setLossFunction(encoder.getOutputLayer().conf().getLossFunction());
+            o.conf().setActivationType(NeuralNetConfiguration.ActivationType.HIDDEN_LAYER_ACTIVATION);
+            o.conf().setnIn(o.getW().rows());
+            o.conf().setnOut(o.getW().columns());
+
+            hiddenLayers[hiddenLayers.length - 1] = o;
+            SemanticHashing e = new SemanticHashing();
+            e.setLayers(hiddenLayers);
+            e.setNeuralNets(autoEncoders);
 
 
-            DeepAutoEncoder e = new DeepAutoEncoder();
-            e.setLayers(autoEncoders);
+
+
+            e.setDefaultConfiguration(conf);
             e.setUseDropConnect(encoder.isUseDropConnect());
             e.setUseGaussNewtonVectorProductBackProp(encoder.isUseGaussNewtonVectorProductBackProp());
             e.setSampleFromHiddenActivations(encoder.isSampleFromHiddenActivations());
             e.setLineSearchBackProp(encoder.isLineSearchBackProp());
             e.setForceNumEpochs(shouldForceEpochs);
 
+
+
+            e.dimensionCheck();
 
             return e;
 

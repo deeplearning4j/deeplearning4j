@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.WeightInitUtil;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 
+import java.lang.reflect.Constructor;
 import java.util.Arrays;
 
 /**
@@ -53,7 +54,12 @@ public abstract class BaseLayer implements Layer {
 
 
     protected INDArray createWeightMatrix() {
-        INDArray W = WeightInitUtil.initWeights(conf.getnIn(),conf.getnOut(),conf.getWeightInit(),conf.getActivationFunction(),conf.getDist());
+        INDArray W = WeightInitUtil.initWeights(
+                conf.getnIn(),
+                conf.getnOut(),
+                conf.getWeightInit(),
+                conf.getActivationFunction(),
+                conf.getDist());
         return W;
     }
 
@@ -185,17 +191,12 @@ public abstract class BaseLayer implements Layer {
     public Layer clone() {
         Layer layer = null;
         try {
-            layer =  getClass().newInstance();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+            Constructor c = getClass().getConstructor(NeuralNetConfiguration.class,INDArray.class,INDArray.class,INDArray.class);
+            layer = (Layer) c.newInstance(conf,W.dup(),b.dup(),input != null  ? input.dup() : null);
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
-        layer.setB(b.dup());
-        layer.setW(W.dup());
-        if(input != null)
-            layer.setInput(input.dup());
         return layer;
 
     }
@@ -204,16 +205,16 @@ public abstract class BaseLayer implements Layer {
     public Layer transpose() {
         Layer layer = null;
         try {
-            layer = getClass().newInstance();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+            Constructor c = getClass().getConstructor(NeuralNetConfiguration.class,INDArray.class,INDArray.class,INDArray.class);
+            NeuralNetConfiguration clone = conf.clone();
+            int nIn = clone.getnOut(),nOut = clone.getnIn();
+            clone.setnIn(nIn);
+            clone.setnOut(nOut);
+            layer = (Layer) c.newInstance(conf,W.transpose().dup(),b.transpose().dup(),input != null  ? input.transpose().dup() : null);
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        layer.setB(b.dup());
-        layer.setW(W.transpose().dup());
-        if(input != null)
-            layer.setInput(input.transpose().dup());
+
         return layer;
     }
 
