@@ -629,7 +629,8 @@ public class RNTN implements Serializable {
     private INDArray computeINDArrayDeltaDown(INDArray deltaFull, INDArray leftVector, INDArray rightVector,
                                                 INDArray W, INDArray Wt) {
         INDArray WTDelta = W.transpose().mmul(deltaFull);
-        INDArray WTDeltaNoBias = WTDelta.get(interval( 0, 1),interval(0, deltaFull.rows() * 2));
+        INDArray WTDeltaNoBias = WTDelta.isMatrix() ? WTDelta.get(interval( 0, 1),interval(0, (deltaFull.rows() * 2) + 1)) :
+                WTDelta.get(interval(0, (deltaFull.rows() * 2)));
         int size = deltaFull.length();
         INDArray deltaINDArray = Nd4j.create(size * 2, 1);
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);

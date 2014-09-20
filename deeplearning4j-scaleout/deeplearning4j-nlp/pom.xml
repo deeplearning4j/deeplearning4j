@@ -25,6 +25,12 @@
   		<version>${project.version}</version>
   	</dependency>
 
+      <dependency>
+          <groupId>org.nd4j</groupId>
+          <artifactId>nd4j-jblas</artifactId>
+          <version>0.0.3.2</version>
+          <scope>Test</scope>
+      </dependency>
 
   	<dependency>
   		<groupId>junit</groupId>
