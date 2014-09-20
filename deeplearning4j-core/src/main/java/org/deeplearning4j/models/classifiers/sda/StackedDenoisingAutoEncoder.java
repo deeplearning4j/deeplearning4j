@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -297,6 +298,13 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
             weightTransforms.putAll(transforms);
             return this;
         }
+
+        @Override
+        public Builder layerWiseCOnfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
+            super.layerWiseCOnfiguration(layerWiseConfiguration);
+            return this;
+        }
+
 
 
         public Builder hiddenLayerSizes(Integer[] hiddenLayerSizes) {

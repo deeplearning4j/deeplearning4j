@@ -7,7 +7,7 @@ import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.routing.RoundRobinPool;
-import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
+import org.deeplearning4j.models.featuredetectors.autoencoder.SemanticHashing;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.ModelSaver;
@@ -46,7 +46,7 @@ public class DeepAutoEncoderDistributedTrainer implements DeepLearningConfigurab
     private transient ActorSystem system;
     private Integer epochs;
     private ActorRef mediator;
-    private DeepAutoEncoder startingNetwork;
+    private SemanticHashing startingNetwork;
     private BaseMultiLayerNetwork encoder;
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderDistributedTrainer.class);
     private static String systemName = "ClusterSystem";
@@ -67,7 +67,7 @@ public class DeepAutoEncoderDistributedTrainer implements DeepLearningConfigurab
      * @param iter the dataset to use
      * @param startingNetwork a starting neural network
      */
-    public DeepAutoEncoderDistributedTrainer(String type, DataSetIterator iter, DeepAutoEncoder startingNetwork) {
+    public DeepAutoEncoderDistributedTrainer(String type, DataSetIterator iter, SemanticHashing startingNetwork) {
         this.type = type;
         this.iter = iter;
         this.startingNetwork = startingNetwork;
@@ -119,7 +119,7 @@ public class DeepAutoEncoderDistributedTrainer implements DeepLearningConfigurab
      * Master constructor
      * @param iter the dataset to use
      */
-    public DeepAutoEncoderDistributedTrainer(DataSetIterator iter, DeepAutoEncoder startingNetwork) {
+    public DeepAutoEncoderDistributedTrainer(DataSetIterator iter, SemanticHashing startingNetwork) {
         this("master",iter,startingNetwork);
     }
 

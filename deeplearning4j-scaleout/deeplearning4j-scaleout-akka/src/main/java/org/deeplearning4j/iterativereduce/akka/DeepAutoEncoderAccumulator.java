@@ -1,13 +1,13 @@
 package org.deeplearning4j.iterativereduce.akka;
 
-import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
+import org.deeplearning4j.models.featuredetectors.autoencoder.SemanticHashing;
 
 /**
  * Deep AutoEncoder param averaging: over encoder and decoder.
  */
 public class DeepAutoEncoderAccumulator {
 
-    private DeepAutoEncoder averaged = null;
+    private SemanticHashing averaged = null;
     private int numWorkers;
 
     public DeepAutoEncoderAccumulator(int numWorkers) {
@@ -16,17 +16,17 @@ public class DeepAutoEncoderAccumulator {
 
     /**
      * Param averages both the encoder and decoder
-     * @param deepAutoEncoder the deep autoencoder to combineDouble with
+     * @param semanticHashing the deep autoencoder to combineDouble with
      */
-    public void accumulate(DeepAutoEncoder deepAutoEncoder) {
+    public void accumulate(SemanticHashing semanticHashing) {
         if(averaged == null)
-            this.averaged = deepAutoEncoder;
+            this.averaged = semanticHashing;
         else {
-            averaged.getEncoder().merge(deepAutoEncoder,numWorkers);
+            averaged.getEncoder().merge(semanticHashing,numWorkers);
         }
     }
 
-    public DeepAutoEncoder averaged() {
+    public SemanticHashing averaged() {
         return averaged;
     }
 
