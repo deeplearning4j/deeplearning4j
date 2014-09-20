@@ -1,6 +1,6 @@
 package org.deeplearning4j.scaleout.iterativereduce.deepautoencoder;
 
-import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
+import org.deeplearning4j.models.featuredetectors.autoencoder.SemanticHashing;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import org.deeplearning4j.util.SerializationUtils;
 
@@ -11,11 +11,11 @@ import java.nio.ByteBuffer;
  * Holds updates for a deep autoencoder
  * @author Adam Gibson
  */
-public class UpdateableEncoderImpl implements Updateable<DeepAutoEncoder> {
+public class UpdateableEncoderImpl implements Updateable<SemanticHashing> {
 
-    protected DeepAutoEncoder masterResults;
+    protected SemanticHashing masterResults;
 
-    public UpdateableEncoderImpl(DeepAutoEncoder masterResults) {
+    public UpdateableEncoderImpl(SemanticHashing masterResults) {
         this.masterResults = masterResults;
     }
 
@@ -36,13 +36,13 @@ public class UpdateableEncoderImpl implements Updateable<DeepAutoEncoder> {
     }
 
     @Override
-    public DeepAutoEncoder get() {
+    public SemanticHashing get() {
         return masterResults;
     }
 
     @Override
-    public void set(DeepAutoEncoder deepAutoEncoder) {
-        this.masterResults = deepAutoEncoder;
+    public void set(SemanticHashing semanticHashing) {
+        this.masterResults = semanticHashing;
 
     }
 

@@ -4,7 +4,7 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
-import org.deeplearning4j.models.featuredetectors.autoencoder.DeepAutoEncoder;
+import org.deeplearning4j.models.featuredetectors.autoencoder.SemanticHashing;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
@@ -89,11 +89,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-        else if(message instanceof DeepAutoEncoder) {
+        else if(message instanceof SemanticHashing) {
             if(results == null)
-                results = new UpdateableEncoderImpl((DeepAutoEncoder) message);
+                results = new UpdateableEncoderImpl((SemanticHashing) message);
             else
-                results.set((DeepAutoEncoder) message);
+                results.set((SemanticHashing) message);
             log.info("Set network");
         }
 
@@ -131,7 +131,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
         log.info("Training network on worker " + id);
 
-        DeepAutoEncoder network = getResults().get();
+        SemanticHashing network = getResults().get();
         isWorking.set(true);
         while(network == null) {
             try {
