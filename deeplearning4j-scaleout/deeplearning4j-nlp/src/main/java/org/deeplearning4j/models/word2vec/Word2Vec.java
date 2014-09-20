@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import org.apache.commons.lang.time.StopWatch;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
@@ -76,7 +75,6 @@ public class Word2Vec implements Persistable {
     private static ActorSystem trainingSystem;
     private List<String> stopWords;
     private boolean shouldReset = true;
-    private AdaGrad adaGrad;
 
 
     public final static String UNK = "UNK";
@@ -834,7 +832,6 @@ public class Word2Vec implements Persistable {
                 ret.stopWords = StopWords.getStopWords();
                 ret.setCache(vocabCache);
                 ret.minWordFrequency = minWordFrequency;
-                ret.adaGrad = new AdaGrad(layerSize,1);
                 try {
                     if (tokenizerFactory == null)
                         tokenizerFactory = new UimaTokenizerFactory();
@@ -867,7 +864,6 @@ public class Word2Vec implements Persistable {
                 ret.setCache(vocabCache);
 
                 ret.minWordFrequency = minWordFrequency;
-                ret.adaGrad = new AdaGrad(layerSize,1);
 
 
                 try {
