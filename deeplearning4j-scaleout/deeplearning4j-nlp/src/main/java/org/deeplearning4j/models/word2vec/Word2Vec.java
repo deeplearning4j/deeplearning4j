@@ -107,6 +107,19 @@ public class Word2Vec implements Persistable {
         return cache.indexOf(word);
     }
 
+
+    /**
+     * Get the word vector for a given matrix
+     * @param word the word to get the matrix for
+     * @return the ndarray for this word
+     */
+    public float[] getWordVector(String word) {
+        int i = this.cache.indexOf(word);
+        if(i < 0)
+            return cache.vector(UNK).ravel().data();
+        return cache.vector(word).ravel().data();
+    }
+
     /**
      * Get the word vector for a given matrix
      * @param word the word to get the matrix for
