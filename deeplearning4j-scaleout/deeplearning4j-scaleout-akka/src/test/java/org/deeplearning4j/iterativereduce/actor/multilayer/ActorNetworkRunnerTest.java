@@ -22,6 +22,8 @@ public class ActorNetworkRunnerTest {
         TestDataSetIterator iter = new TestDataSetIterator(mnist);
         ActorNetworkRunner runner = new ActorNetworkRunner(iter);
 
+        System.setProperty("akka.remote.netty.tcp.hostname","localhost");
+
         NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder()
                 .nIn(784).nOut(10).build();
 
