@@ -686,7 +686,10 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
         join.getMulticastConfig().setEnabled(!isAws);
 
 
-
+        String interf = System.getProperty("hazelcast.interface");
+        if (interf != null) {
+            conf.getNetworkConfig().getInterfaces().setEnabled(true).addInterface(interf);
+        }
 
         ListConfig jobConfig = new ListConfig();
         jobConfig.setName(JOBS);

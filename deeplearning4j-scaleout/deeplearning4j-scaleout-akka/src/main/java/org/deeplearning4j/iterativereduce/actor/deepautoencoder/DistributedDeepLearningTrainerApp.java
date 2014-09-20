@@ -162,19 +162,19 @@ public class DistributedDeepLearningTrainerApp implements DeepLearningConfigurab
 			conf.setMultiLayerClazz((Class<? extends BaseMultiLayerNetwork>) Class.forName(getClassForAlgorithm()));
 			conf.setLayerSizes(hiddenLayerSizes);
 			conf.setSplit(10);
-			conf.setnIn(iter.inputColumns());
-			conf.setnOut(iter.totalOutcomes());
-			conf.setPretrainEpochs(pretrainEpochs);
-			conf.setFinetuneEpochs(finetuneEpochs);
-			conf.setSeed(rngSeed);
-			conf.setPretrainLearningRate(pretrainLearningRate);
-			conf.setUseAdaGrad(useAdaGrad);
-			conf.setCorruptionLevel(corruptionLevel);
+			conf.getConf().setnIn(iter.inputColumns());
+			conf.getConf().setnOut(iter.totalOutcomes());
+			conf.getConf().setPretrainEpochs(pretrainEpochs);
+			conf.getConf().setFinetuneEpochs(finetuneEpochs);
+			conf.getConf().setSeed(rngSeed);
+			conf.getConf().setPretrainLearningRate(pretrainLearningRate);
+			conf.getConf().setUseAdaGrad(useAdaGrad);
+			conf.getConf().setCorruptionLevel(corruptionLevel);
 			conf.setSplit(split);
-			conf.setK(k);
-			conf.setFinetuneLearningRate(finetuneLearningRate);
-			conf.setPretrainEpochs(pretrainEpochs);
-			conf.setPretrainLearningRate(pretrainLearningRate);
+			conf.getConf().setK(k);
+			conf.getConf().setFinetuneLearningRate(finetuneLearningRate);
+			conf.getConf().setPretrainEpochs(pretrainEpochs);
+			conf.getConf().setPretrainLearningRate(pretrainLearningRate);
 
 
 			//run the master

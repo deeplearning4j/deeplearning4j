@@ -1,12 +1,9 @@
 package org.deeplearning4j.iterativereduce.actor.multilayer;
 
 
-import java.io.File;
-
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
-import org.nd4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.core.conf.DeepLearningConfigurableDistributed;
@@ -17,8 +14,11 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.kohsuke.args4j.spi.FloatOptionHandler;
 import org.kohsuke.args4j.spi.IntOptionHandler;
+import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
 
 /**
  * Main command line app for handling workers or starting up a master for training a neural network:
@@ -162,19 +162,19 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			conf.setMultiLayerClazz((Class<? extends BaseMultiLayerNetwork>) Class.forName(getClassForAlgorithm()));
 			conf.setLayerSizes(hiddenLayerSizes);
 			conf.setSplit(10);
-			conf.setnIn(iter.inputColumns());
-			conf.setnOut(iter.totalOutcomes());
-			conf.setPretrainEpochs(pretrainEpochs);
-			conf.setFinetuneEpochs(finetuneEpochs);
-			conf.setSeed(rngSeed);
-			conf.setPretrainLearningRate(pretrainLearningRate);
-			conf.setUseAdaGrad(useAdaGrad);
-			conf.setCorruptionLevel(corruptionLevel);
+			conf.getConf().setnIn(iter.inputColumns());
+			conf.getConf().setnOut(iter.totalOutcomes());
+			conf.getConf().setPretrainEpochs(pretrainEpochs);
+			conf.getConf().setFinetuneEpochs(finetuneEpochs);
+			conf.getConf().setSeed(rngSeed);
+			conf.getConf().setPretrainLearningRate(pretrainLearningRate);
+			conf.getConf().setUseAdaGrad(useAdaGrad);
+			conf.getConf().setCorruptionLevel(corruptionLevel);
 			conf.setSplit(split);
-			conf.setK(k);
-			conf.setFinetuneLearningRate(finetuneLearningRate);
-			conf.setPretrainEpochs(pretrainEpochs);
-			conf.setPretrainLearningRate(pretrainLearningRate);
+			conf.getConf().setK(k);
+			conf.getConf().setFinetuneLearningRate(finetuneLearningRate);
+			conf.getConf().setPretrainEpochs(pretrainEpochs);
+			conf.getConf().setPretrainLearningRate(pretrainLearningRate);
 
 
 			//run the master

@@ -218,7 +218,7 @@ public class DeepAutoEncoderDistributedTrainer implements DeepLearningConfigurab
         ActorRefUtils.addShutDownForSystem(system);
         mediator = DistributedPubSubExtension.get(system).mediator();
 
-        epochs = conf.getPretrainEpochs();
+        epochs = conf.getConf().getPretrainEpochs();
         if(type.equals("master")) {
 
             if(iter == null)

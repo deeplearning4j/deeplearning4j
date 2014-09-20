@@ -1,14 +1,12 @@
 package org.deeplearning4j.iterativereduce.actor.multilayer;
 
-import java.io.*;
-import java.net.URI;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.compress.utils.IOUtils;
+import akka.actor.*;
+import akka.cluster.Cluster;
+import akka.contrib.pattern.ClusterClient;
+import akka.contrib.pattern.ClusterSingletonManager;
+import akka.contrib.pattern.DistributedPubSubExtension;
+import akka.contrib.pattern.DistributedPubSubMediator;
+import akka.routing.RoundRobinPool;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.ModelSaver;
@@ -24,21 +22,15 @@ import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import scala.concurrent.duration.Duration;
-import akka.actor.ActorRef;
-import akka.actor.ActorSelection;
-import akka.actor.ActorSystem;
-import akka.actor.Address;
-import akka.actor.AddressFromURIString;
-import akka.actor.PoisonPill;
-import akka.actor.Props;
-import akka.cluster.Cluster;
-import akka.contrib.pattern.ClusterClient;
-import akka.contrib.pattern.ClusterSingletonManager;
-import akka.contrib.pattern.DistributedPubSubExtension;
-import akka.contrib.pattern.DistributedPubSubMediator;
-import akka.routing.RoundRobinPool;
+
+import java.io.Serializable;
+import java.net.URI;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Controller for coordinating model training for a neural network based
@@ -200,7 +192,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
         ActorRefUtils.addShutDownForSystem(system);
         mediator = DistributedPubSubExtension.get(system).mediator();
 
-        epochs = conf.getPretrainEpochs();
+        epochs = conf.getConf().getPretrainEpochs();
         if(type.equals("master")) {
 
             if(iter == null)
