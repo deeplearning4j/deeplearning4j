@@ -198,9 +198,20 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             LinAlgExceptions.assertSameShape(network.getW(), h.getW());
             LinAlgExceptions.assertSameShape(h.getB(), network.gethBias());
 
+            assert h.conf().getnIn() == h.getW().rows() : "Number of inputs not consistent with number of rows in weight matrix";
+            assert h.conf().getnOut() == h.getW().columns()  : "Number of inputs not consistent with number of rows in weight matrix";
+
             if (i < getnLayers() - 1) {
                 Layer h1 = layers[i + 1];
                 NeuralNetwork network1 = neuralNets[i + 1];
+
+
+
+                assert h1.conf().getnIn() == h1.getW().rows() : "Number of inputs not consistent with number of rows in weight matrix";
+                assert h1.conf().getnOut() == h1.getW().columns()  : "Number of inputs not consistent with number of rows in weight matrix";
+                assert network1.conf().getnIn() == network1.getW().rows() : "Number of inputs not consistent with number of rows in weight matrix";
+                assert network1.conf().getnOut() == network1.getW().columns()  : "Number of inputs not consistent with number of rows in weight matrix";
+
                 if (h1.conf().getnIn() != h.conf().getnOut())
                     throw new IllegalStateException("Invalid structure: hidden layer in for " + (i + 1) + " not equal to number of ins " + i);
                 if (network.conf().getnOut() != network1.conf().getnIn())
@@ -732,6 +743,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     public void setLayers(Layer[] layers) {
         this.layers = layers;
+    }
+
+    public void setNeuralNets(NeuralNetwork[] neuralNets) {
+        this.neuralNets = neuralNets;
     }
 
     /**

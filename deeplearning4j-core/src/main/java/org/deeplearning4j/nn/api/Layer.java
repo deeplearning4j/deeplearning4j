@@ -49,6 +49,12 @@ public interface Layer extends Serializable,Cloneable {
      */
     INDArray activate(INDArray input);
 
+    /**
+     * Return a transposed copy of the weights/bias
+     * (this means reverse the number of inputs and outputs on the weights)
+     *
+     * @return the transposed layer
+     */
     Layer transpose();
 
     Layer clone();
