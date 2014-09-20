@@ -521,6 +521,11 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
         }
 
 
+        @Override
+        public Builder layerWiseCOnfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
+            super.layerWiseCOnfiguration(layerWiseConfiguration);
+            return this;
+        }
 
 
 

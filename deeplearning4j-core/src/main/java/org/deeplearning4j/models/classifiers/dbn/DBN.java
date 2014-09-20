@@ -16,6 +16,7 @@ import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -275,7 +276,11 @@ public class DBN extends BaseMultiLayerNetwork {
         }
 
 
-
+        @Override
+        public Builder layerWiseCOnfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
+             super.layerWiseCOnfiguration(layerWiseConfiguration);
+            return this;
+        }
 
         @Override
         public Builder lineSearchBackProp(boolean lineSearchBackProp) {
