@@ -24,6 +24,7 @@ public class UimaTokenizerFactory implements TokenizerFactory {
     private AnalysisEngine tokenizer;
     private CasPool pool;
     private boolean checkForLabel;
+    private static AnalysisEngine defaultAnalysisEngine;
 
 
     public UimaTokenizerFactory() throws ResourceInitializationException {
@@ -33,7 +34,7 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 
 
     public UimaTokenizerFactory(AnalysisEngine tokenizer) {
-       this(tokenizer,true);
+        this(tokenizer,true);
     }
 
 
@@ -73,10 +74,14 @@ public class UimaTokenizerFactory implements TokenizerFactory {
      */
     public static AnalysisEngine defaultAnalysisEngine()  {
         try {
-            return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(
-                    SentenceAnnotator.getDescription(),
-                    TokenizerAnnotator.getDescription(),
-                    StemmerAnnotator.getDescription("English")));
+            if(defaultAnalysisEngine == null)
+
+                defaultAnalysisEngine =  AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(
+                        SentenceAnnotator.getDescription(),
+                        TokenizerAnnotator.getDescription(),
+                        StemmerAnnotator.getDescription("English")));
+
+            return defaultAnalysisEngine;
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
