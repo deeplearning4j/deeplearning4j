@@ -13,12 +13,10 @@ import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.models.word2vec.actor.*;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.AdaGrad;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.nn.api.Persistable;
 import org.deeplearning4j.text.stopwords.StopWords;
@@ -249,19 +247,7 @@ public class Word2Vec implements Persistable {
 
         final AtomicLong latch = new AtomicLong(0);
 
-        ActorRef skipgram = trainingSystem.actorOf(
-                new RoundRobinPool(Runtime.getRuntime().availableProcessors())
-                        .props(Props.create(SkipGramActor.class,this)
-                                .withDispatcher("akka.actor.worker-dispatcher")));
-
-        ActorRef ref = trainingSystem.actorOf(
-                new RoundRobinPool(Runtime.getRuntime().availableProcessors())
-                        .props(Props.create(SentenceActor.class,this,skipgram)
-                                .withDispatcher("akka.actor.worker-dispatcher")));
-
-
-
-        log.info("Processing sentences...");
+               log.info("Processing sentences...");
 
         while(getSentenceIter().hasNext()) {
             String sentence = sentenceIter.nextSentence();
@@ -289,6 +275,8 @@ public class Word2Vec implements Persistable {
             }
         }
 
+
+        trainingSystem.shutdown();
 
     }
 
@@ -502,7 +490,7 @@ public class Word2Vec implements Persistable {
         final VocabWord word = sentence.get(i);
         if(word == null)
             return;
-       //subsampling
+        //subsampling
         for(int j = b; j < window * 2 + 1 - b; j++) {
             if(j == window)
                 continue;
@@ -549,79 +537,12 @@ public class Word2Vec implements Persistable {
     /* Builds the binary tree for the word relationships */
     private void buildBinaryTree() {
         log.info("Constructing priority queue");
-        PriorityQueue<VocabWord> heap = new PriorityQueue<>(cache.vocabWords());
-        int i = 0;
-        int heapCount = 0;
-
-        log.info("Beginning tree construction");
-        while(heap.size() > 1) {
-            VocabWord min1 = heap.poll();
-            VocabWord min2 = heap.poll();
-
-            if(heapCount % 1000 == 0) {
-                log.info("Heap progress o far " + heapCount);
-            }
-            VocabWord add = new VocabWord(min1.getWordFrequency() + min2.getWordFrequency(), VocabWord.PARENT_NODE);
-            int index = (cache.numWords() + i);
-
-            add.setIndex(index);
-            add.setLeft(min1);
-            add.setRight(min2);
-            min1.setCode(0);
-            min2.setCode(1);
-            min1.setParent(add);
-            min2.setParent(add);
-            heap.add(add);
-            i++;
-            heapCount++;
-        }
-
-        Triple<VocabWord,int[],int[]> triple = new Triple<>(heap.poll(),new int[]{},new int[]{});
-        Stack<Triple<VocabWord,int[],int[]>> stack = new Stack<>();
-        log.info("Beginning stack operation");
-
-        stack.add(triple);
-
-        int stackCount = 0;
-
-        while(!stack.isEmpty())  {
-            if(stackCount % 1000 == 0) {
-                log.info("Stack count so far " + stackCount);
-            }
-            triple = stack.pop();
-            int[] codes = triple.getSecond();
-            int[] points = triple.getThird();
-            VocabWord node = triple.getFirst();
-            if(node == null) {
-                continue;
-            }
-            if(node.getIndex() < cache.numWords()) {
-                node.setCodes(codes);
-                node.setPoints(points);
-            }
-            else {
-                int[] copy = plus(points,node.getIndex() - cache.numWords());
-                points = copy;
-                triple.setThird(points);
-                stack.add(new Triple<>(node.getLeft(),plus(codes,0),points));
-                stack.add(new Triple<>(node.getRight(),plus(codes,1),points));
-
-            }
-            stackCount++;
-        }
-
-
+        Huffman huffman = new Huffman(cache.vocabWords());
+        huffman.build();
 
         log.info("Built tree");
     }
 
-    private int[] plus (int[] addTo,int add) {
-        int[] copy = new int[addTo.length + 1];
-        for(int c = 0; c < addTo.length; c++)
-            copy[c] = addTo[c];
-        copy[addTo.length] = add;
-        return copy;
-    }
 
 
     /* reinit weights */
@@ -657,7 +578,7 @@ public class Word2Vec implements Persistable {
         INDArray vector2 = getWordVectorMatrix(word2);
         if(vector == null || vector2 == null)
             return -1;
-       return Transforms.cosineSim(vector,vector2);
+        return   Transforms.cosineSim(vector,vector2);
     }
 
 
