@@ -652,16 +652,12 @@ public class Word2Vec implements Persistable {
     public double similarity(String word,String word2) {
         if(word.equals(word2))
             return 1.0;
+
         INDArray vector = getWordVectorMatrix(word);
         INDArray vector2 = getWordVectorMatrix(word2);
         if(vector == null || vector2 == null)
             return -1;
-        INDArray d1 = Transforms.unitVec(vector);
-        INDArray d2 = Transforms.unitVec(vector2);
-        double ret = Nd4j.getBlasWrapper().dot(d1, d2);
-        if(ret <  0)
-            return 0;
-        return ret;
+       return Transforms.cosineSim(vector,vector2);
     }
 
 
