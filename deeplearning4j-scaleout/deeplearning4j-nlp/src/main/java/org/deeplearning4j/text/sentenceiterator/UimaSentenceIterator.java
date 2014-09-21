@@ -13,6 +13,7 @@ import org.apache.uima.resource.ResourceInitializationException;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.util.cr.FilesCollectionReader;
 import org.deeplearning4j.text.annotator.SentenceAnnotator;
+import org.deeplearning4j.text.annotator.StemmerAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,8 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
     protected volatile Iterator<String> sentences;
     protected String path;
     private static Logger log = LoggerFactory.getLogger(UimaSentenceIterator.class);
+    private static AnalysisEngine defaultAnalysisEngine;
+
 
     public UimaSentenceIterator(SentencePreProcessor preProcessor,String path, AnalysisEngine engine) {
         super(preProcessor);
@@ -53,19 +56,17 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
                 if(getReader().hasNext()) {
                     CAS cas = engine.newCAS();
 
-                    synchronized (reader) {
-                        try {
-                            getReader().getNext(cas);
-                        }catch(Exception e) {
-                            log.warn("Done iterating returning an empty string");
-                            return "";
-                        }
-
+                    try {
+                        getReader().getNext(cas);
+                    }catch(Exception e) {
+                        log.warn("Done iterating returning an empty string");
+                        return "";
                     }
-                    synchronized (engine) {
-                        engine.process(cas);
 
-                    }
+
+                    engine.process(cas);
+
+
 
                     List<String> list = new ArrayList<>();
                     for(Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
@@ -149,6 +150,25 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
             throw new RuntimeException(e);
         }
     }
+
+
+    /**
+     * Return a a sentence segmenter
+     * @return a sentence segmenter
+     */
+    public static AnalysisEngine segmenter() {
+        try {
+            if(defaultAnalysisEngine == null)
+
+                defaultAnalysisEngine =  AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(
+                        SentenceAnnotator.getDescription()));
+
+            return defaultAnalysisEngine;
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
 
 

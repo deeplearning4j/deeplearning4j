@@ -247,7 +247,7 @@ public class Word2Vec implements Persistable {
 
         final AtomicLong latch = new AtomicLong(0);
 
-               log.info("Processing sentences...");
+        log.info("Processing sentences...");
 
         while(getSentenceIter().hasNext()) {
             String sentence = sentenceIter.nextSentence();
@@ -410,6 +410,8 @@ public class Word2Vec implements Persistable {
         final AtomicInteger latch = new AtomicInteger(0);
 
 
+
+
         while(getSentenceIter().hasNext()) {
             String sentence = getSentenceIter().nextSentence();
             if(sentence == null)
@@ -548,11 +550,7 @@ public class Word2Vec implements Persistable {
     /* reinit weights */
     private void resetWeights() {
         cache.resetWeights();
-        cache.putVector(UNK, Nd4j.randn(new int[]{layerSize}));
-
-
-
-
+        cache.putVector(UNK, randomVector());
     }
 
     public INDArray randomVector() {
@@ -587,6 +585,46 @@ public class Word2Vec implements Persistable {
     @SuppressWarnings("unchecked")
     private void readStopWords() {
         this.stopWords = StopWords.getStopWords();
+
+
+    }
+
+
+
+
+    @Override
+    public void write(OutputStream os) {
+        try {
+            ObjectOutputStream dos = new ObjectOutputStream(os);
+
+            dos.writeObject(this);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    @Override
+    public void load(InputStream is) {
+        try {
+            ObjectInputStream ois = new ObjectInputStream(is);
+            Word2Vec vec = (Word2Vec) ois.readObject();
+            this.allWordsCount = vec.allWordsCount;
+            this.alpha = vec.alpha;
+            this.minWordFrequency = vec.minWordFrequency;
+            this.numSentencesProcessed = vec.numSentencesProcessed;
+            this.sample = vec.sample;
+            this.size = vec.size;
+            this.stopWords = vec.stopWords;
+            this.topNSize = vec.topNSize;
+            this.trainWordsCount = vec.trainWordsCount;
+            this.window = vec.window;
+
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+
 
 
     }
@@ -653,42 +691,6 @@ public class Word2Vec implements Persistable {
         this.shouldReset = false;
     }
 
-    @Override
-    public void write(OutputStream os) {
-        try {
-            ObjectOutputStream dos = new ObjectOutputStream(os);
-
-            dos.writeObject(this);
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-    @Override
-    public void load(InputStream is) {
-        try {
-            ObjectInputStream ois = new ObjectInputStream(is);
-            Word2Vec vec = (Word2Vec) ois.readObject();
-            this.allWordsCount = vec.allWordsCount;
-            this.alpha = vec.alpha;
-            this.minWordFrequency = vec.minWordFrequency;
-            this.numSentencesProcessed = vec.numSentencesProcessed;
-            this.sample = vec.sample;
-            this.size = vec.size;
-            this.stopWords = vec.stopWords;
-            this.topNSize = vec.topNSize;
-            this.trainWordsCount = vec.trainWordsCount;
-            this.window = vec.window;
-
-        }catch(Exception e) {
-            throw new RuntimeException(e);
-        }
-
-
-
-    }
 
 
     public static class Builder {
