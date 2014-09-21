@@ -93,7 +93,7 @@ Line 12-14: We get the labels by grabbing the last element of our String array. 
 
 Lines 16-18: We start to binarize the labels with our outcomeTypes list. Each label has a certain position, or index, and we’ll use that index number to map onto the label row we make here. So, if *i. setosa* is the label, we’ll put it at the end of the outcomeTypes list. From there, we’ll create a new label row, three elements in size, and mark the corresponding position in rowOutcome as the 1, and 0 for the two others. Finally, we save rowOutcome into the 2D array outcomes that we made earlier. 
 
-By the time we finish we will have a new row that will have a numeric representation of a row that is classified as *i. setosa* would look like:
+By the time we finish, we'll a row with a numeric representation of labels. A data record classified as *i. setosa* would look like:
 
 ![final table](../img/final_table.png)
 
