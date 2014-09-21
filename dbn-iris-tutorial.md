@@ -4,7 +4,7 @@ layout: default
 ---
 
 to run the example, [go here](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/iris/IrisExample.java)
-# **DBNs = Classifiers**
+# DBNs = Classifiers
 
 Deep-belief networks are multi-class classifiers. Given many inputs belonging to various classes, a DBN can first learn from a small training set, and then classify unlabeled data according to those various classes. It can take in one input and decide which label should be applied to its data record. 
 
@@ -20,9 +20,9 @@ This tutorial is based on a classic data set, the IRIS (https://archive.ics.uci.
 
 Here is a single record:
 
-          |Sepal length|Sepal width|Petal length|Petal width|Species|
-          |----|----|-----|-----|----|
-          |5.1|3.5|1.4|0.2|i.setosa|
+|Sepal length|Sepal width|Petal length|Petal width|Species|
+|----|----|-----|-----|----|
+|5.1|3.5|1.4|0.2|i.setosa|
 
 While the table above is human readable, Deeplearning4j’s algorithms need it to be something more like
 
@@ -39,12 +39,12 @@ Given three output nodes making binary decisions, we can label the three iris sp
 
 DL4J uses an object called a DataSet to load data into a neural network. A DataSet is an easy way to store data (and its associated labels) which we want to make predictions about. The columns First and Second, below, are both NDArrays. One of the NDArrays will hold the data’s attributes; the other holds the label. 
 
-          |First  (data to predict) | Second (outcome, or labels)|
-          |-----------------|---------------------------------|
-          |ribbit|frog|
-          |ribbit|frog|
-          |bark|dog|
-          |meow|cat|
+|First  (data to predict) | Second (outcome, or labels)|
+|-----------------|---------------------------------|
+|ribbit|frog|
+|ribbit|frog|
+|bark|dog|
+|meow|cat|
 
 (Contained within a DataSet object are two NDArrays, a fundamental object that DL4J uses for numeric computation. N-dimensional arrays are scalable, multi-dimensional arrays suitable for sophisticated mathematical operations and frequently used in scientific computing.) 
 
