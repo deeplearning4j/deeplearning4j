@@ -24,7 +24,7 @@ public class Word2VecSimilarityTester {
 	private static Logger log = LoggerFactory.getLogger(Word2VecSimilarityTester.class);
 
 	public static void main(String[] args) throws Exception {
-		Word2Vec vec = Word2VecLoader.loadModel(new File(args[0]));
+		Word2Vec vec = Word2VecLoader.loadGoogleBinary(args[0]);
 
 
 		File trainingDir = new File(args[1]);
