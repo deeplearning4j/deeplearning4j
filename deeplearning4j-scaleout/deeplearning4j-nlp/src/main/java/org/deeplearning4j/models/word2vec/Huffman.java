@@ -6,16 +6,14 @@ import java.util.PriorityQueue;
 
 public class Huffman {
 
-	public Huffman(Collection<VocabWord> words,Word2Vec vec) {
+	public Huffman(Collection<VocabWord> words) {
 		this.words = words;
-		this.vec = vec;
 	}
 
 
 	private Collection<VocabWord> words;
 	private PriorityQueue<VocabWord> heap = new PriorityQueue<>();
-	private Word2Vec vec;
-	
+
 	public void build() {
 		heap.addAll(words);
 

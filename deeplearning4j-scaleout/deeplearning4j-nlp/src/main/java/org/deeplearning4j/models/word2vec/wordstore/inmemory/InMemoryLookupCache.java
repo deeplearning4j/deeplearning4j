@@ -25,16 +25,45 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class InMemoryLookupCache implements VocabCache,Serializable {
 
     private Index wordIndex = new Index();
+    private boolean useAdaGrad = true;
     private Counter<String> wordFrequencies = Util.parallelCounter();
     private Map<String,VocabWord> vocabs = new ConcurrentHashMap<>();
     private Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
     private INDArray syn0,syn1;
     private int vectorLength = 50;
     private AtomicInteger totalWordOccurrences = new AtomicInteger(0);
+    private float lr = 1e-1f;
+
+
     public InMemoryLookupCache(int vectorLength) {
-        this.vectorLength = vectorLength;
+        this(vectorLength,true);
 
     }
+
+    /**
+     * Initialization constructor for pre loaded models
+     * @param vectorLength the vector length
+     * @param vocabSize the vocab  size
+     */
+    public InMemoryLookupCache(int vectorLength,int vocabSize) {
+        this.vectorLength = vectorLength;
+        syn0 = Nd4j.create(vocabSize,vectorLength);
+    }
+
+
+    public InMemoryLookupCache(int vectorLength,boolean useAdaGrad) {
+        this.vectorLength = vectorLength;
+        this.useAdaGrad = useAdaGrad;
+
+    }
+
+    public InMemoryLookupCache(int vectorLength,boolean useAdaGrad,float lr) {
+        this.vectorLength = vectorLength;
+        this.useAdaGrad = useAdaGrad;
+        this.lr = lr;
+
+    }
+
 
     /**
      * Iterate on the given 2 vocab words
@@ -74,7 +103,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
             float f = (float) MathUtils.sigmoid(dot);
             //gradient
             float g = (1 - w1.getCodes()[d] - f);
-            float lr = w1.getLearningRate(d,g);
+            float lr = useAdaGrad ? w1.getLearningRate(d,g) : this.lr;
 
             g *= lr;
             avgChange += g;

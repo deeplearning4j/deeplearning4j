@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.zip.GZIPInputStream;
 
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -15,80 +16,76 @@ import org.deeplearning4j.util.Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * Loads word 2 vec models
+ * @author Adam Gibson
+ */
 public class Word2VecLoader {
 
-	private static Logger log = LoggerFactory.getLogger(Word2VecLoader.class);
     private static final int MAX_SIZE = 50;
 
-	public static Word2Vec loadModel(File file) throws Exception {
-		log.info("Loading model from " + file.getAbsolutePath());
-		Word2Vec ret = new Word2Vec();
-		ret.load(new BufferedInputStream(new FileInputStream(file)));
-		return ret;
-	}
 
 
 
+    /**
+     * Loads the google model
+     * @param path the path to the google model
+     * @return the loaded model
+     * @throws IOException
+     */
+	public static Word2Vec loadGoogleBinary(String path) throws IOException {
+        DataInputStream dis = null;
+        BufferedInputStream bis = null;
+        double len = 0;
+        float vector = 0;
+        int words,size = 0;
+        InMemoryLookupCache cache;
 
-	private static Word2Vec loadGoogleVocab(Word2Vec vec,String path) throws IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(new File(path)));
-		String temp = null;
-		while((temp = reader.readLine()) != null) {
-			String[] split = temp.split(" ");
-			if(split[0].equals("</s>"))
-				continue;
+        try {
+            bis = new BufferedInputStream(new FileInputStream(path));
+            dis = new DataInputStream(bis);
+            words = Integer.parseInt(readString(dis));
+            size = Integer.parseInt(readString(dis));
 
-			int freq = Integer.parseInt(split[1]);
-			VocabWord realWord = new VocabWord(freq,"");
-			//realWord.setIndex(vec.getVocab().size());
-			//vec.getVocab().put(split[0], realWord);
-			//vec.getWordIndex().add(split[0]);
-		}
-		reader.close();
-		return vec;
-	}
+            cache = new InMemoryLookupCache(size,words);
+
+            String word;
+            float[] vectors = null;
+            for (int i = 0; i < words; i++) {
+                word = readString(dis);
+                vectors = new float[size];
+                len = 0;
+                for (int j = 0; j < size; j++) {
+                    vector = readFloat(dis);
+                    len += vector * vector;
+                    vectors[j] = vector;
+                }
+                len = Math.sqrt(len);
+
+                for (int j = 0; j < size; j++)
+                    vectors[j] /= len;
 
 
-	public static Word2Vec loadGoogleText(String path,String vocabPath) throws IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(new File(path)));
-		String temp = null;
-		boolean first = true;
-		Integer vectorSize = null;
-		Integer rows = null;
-		int currRow = 0;
-		Word2Vec ret = new Word2Vec();
-		while((temp = reader.readLine()) != null) {
-			if(first) {
-				String[] split = temp.split(" ");
-				rows = Integer.parseInt(split[0]);
-				vectorSize = Integer.parseInt(split[1]);
-				ret.setLayerSize(vectorSize);
-				//ret.setSyn0(Nd4j.create(rows - 1,vectorSize));
-				first = false;
-			}
+                INDArray row = Nd4j.create(vectors);
+                cache.addWordToIndex(cache.numWords(),word);
+                cache.putVector(word,row);
 
-			else {
-				StringTokenizer tokenizer = new StringTokenizer(temp);
-				float[] vec = new float[ret.getLayerSize()];
-				int count = 0;
-				String word = tokenizer.nextToken();
-				if(word.equals("</s>"))
-					continue;
+                dis.read();
+            }
+        }
+        finally {
+            bis.close();
+            dis.close();
+        }
 
-				while(tokenizer.hasMoreTokens()) {
-					vec[count++] = Float.parseFloat(tokenizer.nextToken());
-				}
-				//ret.getSyn0().putRow(currRow, Nd4j.create(vec));
-				currRow++;
 
-			}
-		}
-		reader.close();
-
-		return loadGoogleVocab(ret,vocabPath);
+        Word2Vec ret = new Word2Vec();
+        ret.setCache(cache);
+        ret.setLayerSize(size);
+        return ret;
 
 	}
+
 
 
     /**
@@ -118,61 +115,6 @@ public class Word2VecLoader {
     }
 
 
-    /**
-     * Loads the google binary model
-     * Credit to: https://github.com/NLPchina/Word2VEC_java/blob/master/src/com/ansj/vec/Word2VEC.java
-     * @param path path to model
-     *
-     * @throws IOException
-     */
-    @Deprecated
-    public static Word2Vec loadGoogleModel(String path) throws IOException {
-        DataInputStream dis = null;
-        BufferedInputStream bis = null;
-        double len = 0;
-        float vector = 0;
-        Word2Vec ret = new Word2Vec();
-        Index wordIndex = new Index();
-        INDArray wordVectors = null;
-        try {
-            bis = new BufferedInputStream(path.endsWith(".gz") ? new GZIPInputStream(new FileInputStream(path)) : new FileInputStream(path));
-            dis = new DataInputStream(bis);
-            Map<String,INDArray> wordMap = new HashMap<>();
-            //number of words
-            int words = Integer.parseInt(readString(dis));
-            //word vector size
-            int size = Integer.parseInt(readString(dis));
-            wordVectors = Nd4j.create(words,size);
-            String word;
-            float[] vectors = null;
-            for (int i = 0; i < words; i++) {
-                word = readString(dis);
-                log.info("Loaded " + word);
-                vectors = new float[size];
-                len = 0;
-                for (int j = 0; j < size; j++) {
-                    vector = readFloat(dis);
-                    len += vector * vector;
-                    vectors[j] =  vector;
-                }
-                len = Math.sqrt(len);
-
-                for (int j = 0; j < size; j++) {
-                    vectors[j] /= len;
-                }
-                wordIndex.add(word);
-                wordVectors.putRow(i, Nd4j.create(vectors));
-            }
-        } finally {
-            bis.close();
-            dis.close();
-        }
-
-       // ret.setWordIndex(wordIndex);
-        //ret.setSyn0(wordVectors);
-
-        return ret;
-    }
 
     /**
      * Credit to: https://github.com/NLPchina/Word2VEC_java/blob/master/src/com/ansj/vec/Word2VEC.java
