@@ -96,7 +96,7 @@ Lines 16-18: We start to binarize the labels with our outcomeTypes list. Each la
 By the time we finish we will have a new row that will have a numeric representation of a row that is classified as *i. setosa* would look like:
 
 |Sepal length|Sepal width|Petal length|Petal width|I. setosa|I. virginica|I. versicolor|
-|--|--|--|--|--|--|--|
+|---|---|---|---|---|---|---|
 |5.1|3.5|1.4|0.2|1|0|0|
 
 The words you see in the upper boxes only serve to illustrate our tutorial and remind us which words go with which numbers. The numbers in the lower boxes will be what appear as a vector for data processing. In fact, the bottom, finished row is what we call *vectorized data*.
