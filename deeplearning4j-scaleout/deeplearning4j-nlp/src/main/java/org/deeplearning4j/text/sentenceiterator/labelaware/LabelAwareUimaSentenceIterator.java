@@ -1,8 +1,11 @@
 package org.deeplearning4j.text.sentenceiterator.labelaware;
 
 import org.apache.uima.analysis_engine.AnalysisEngine;
+import org.apache.uima.resource.ResourceInitializationException;
+import org.deeplearning4j.text.corpora.breaker.CorpusBreaker;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentencePreProcessor;
+import org.deeplearning4j.text.uima.UimaResource;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -14,12 +17,12 @@ import java.lang.reflect.Field;
  */
 public class LabelAwareUimaSentenceIterator extends UimaSentenceIterator implements LabelAwareSentenceIterator {
 
-    public LabelAwareUimaSentenceIterator(SentencePreProcessor preProcessor, String path, AnalysisEngine engine) {
-        super(preProcessor, path, engine);
+    public LabelAwareUimaSentenceIterator(SentencePreProcessor preProcessor, String path,UimaResource resource,CorpusBreaker breaker) {
+        super(preProcessor, path, resource,breaker);
     }
 
-    public LabelAwareUimaSentenceIterator(String path, AnalysisEngine engine) {
-        super(path, engine);
+    public LabelAwareUimaSentenceIterator(String path, AnalysisEngine engine) throws ResourceInitializationException {
+        super(path, new UimaResource(engine));
     }
 
 

@@ -1,5 +1,7 @@
 package org.deeplearning4j.text.sentenceiterator;
 
+import java.io.File;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -15,6 +17,9 @@ import org.cleartk.util.cr.FilesCollectionReader;
 import org.deeplearning4j.text.annotator.SentenceAnnotator;
 import org.deeplearning4j.text.annotator.StemmerAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
+import org.deeplearning4j.text.corpora.breaker.CorpusBreaker;
+import org.deeplearning4j.text.corpora.breaker.FileCorpusBreaker;
+import org.deeplearning4j.text.uima.UimaResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,26 +32,63 @@ import org.slf4j.LoggerFactory;
 public class UimaSentenceIterator extends BaseSentenceIterator {
 
     protected volatile CollectionReader reader;
-    protected volatile AnalysisEngine engine;
     protected volatile Iterator<String> sentences;
     protected String path;
     private static Logger log = LoggerFactory.getLogger(UimaSentenceIterator.class);
     private static AnalysisEngine defaultAnalysisEngine;
+    private CorpusBreaker corpusBreaker;
+    private UimaResource resource;
 
 
-    public UimaSentenceIterator(SentencePreProcessor preProcessor,String path, AnalysisEngine engine) {
+    public UimaSentenceIterator(SentencePreProcessor preProcessor,String path,UimaResource resource,CorpusBreaker corpusBreaker) {
         super(preProcessor);
         this.path = path;
-        try {
-            this.reader  = FilesCollectionReader.getCollectionReader(path);
-        } catch (ResourceInitializationException e) {
-            throw new RuntimeException(e);
+        File  f = new File(path);
+        if(f.isFile()) {
+
+            //more than a kilobyte break up the file (only do this for files
+            if(f.getTotalSpace() >= 1024) {
+                if(corpusBreaker == null)
+                    this.corpusBreaker = new FileCorpusBreaker(f,1024,1000000);
+                else
+                     this.corpusBreaker = corpusBreaker;
+                try {
+                    URI[] locations = corpusBreaker.corporaLocations();
+                    File parentDir = new File(locations[0]).getParentFile();
+                    this.reader  = FilesCollectionReader.getCollectionReader(parentDir.getAbsolutePath());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            else {
+                try {
+
+                    this.reader  = FilesCollectionReader.getCollectionReader(path);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+
         }
-        this.engine = engine;
+        else {
+            try {
+                this.reader  = FilesCollectionReader.getCollectionReader(path);
+            } catch (ResourceInitializationException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        this.resource = resource;
     }
 
-    public UimaSentenceIterator(String path, AnalysisEngine engine) {
-        this(null,path,engine);
+    public UimaSentenceIterator(String path, UimaResource resource,CorpusBreaker corpusBreaker) {
+        this(null,path,resource,corpusBreaker);
+    }
+
+
+    public UimaSentenceIterator(String path, UimaResource resource) {
+        this(null,path,resource,null);
     }
 
     @Override
@@ -54,7 +96,7 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
         if(sentences == null || !sentences.hasNext()) {
             try {
                 if(getReader().hasNext()) {
-                    CAS cas = engine.newCAS();
+                    CAS cas =  resource.retrieve();
 
                     try {
                         getReader().getNext(cas);
@@ -64,7 +106,7 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
                     }
 
 
-                    engine.process(cas);
+                    resource.getAnalysisEngine().process(cas);
 
 
 
@@ -81,7 +123,7 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
                         if(reader.hasNext()) {
                             cas.reset();
                             getReader().getNext(cas);
-                            engine.process(cas);
+                            resource.getAnalysisEngine().process(cas);
                             for(Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
                                 list.add(sentence.getCoveredText());
                             }
@@ -116,14 +158,18 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
 
     }
 
-    /**
+    public UimaResource getResource() {
+		return resource;
+	}
+
+	/**
      * Creates a uima sentence iterator with the given path
      * @param path the path to the root directory or file to read from
      * @return the uima sentence iterator for the given root dir or file
      * @throws Exception
      */
     public static SentenceIterator createWithPath(String path) throws Exception {
-        return new UimaSentenceIterator(path,AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(TokenizerAnnotator.getDescription(), SentenceAnnotator.getDescription())));
+        return new UimaSentenceIterator(path,new UimaResource(AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(TokenizerAnnotator.getDescription(), SentenceAnnotator.getDescription()))));
     }
 
 

@@ -1,74 +1,81 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.deeplearning4j</groupId>
-    <artifactId>deeplearning4j-scaleout</artifactId>
-    <version>0.0.3.2-SNAPSHOT</version>
-  </parent>
-   <properties>
-       <cleartk.version>2.0.0</cleartk.version>
-       <spring.version>3.2.5.RELEASE</spring.version>
-   </properties>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.deeplearning4j</groupId>
+		<artifactId>deeplearning4j-scaleout</artifactId>
+		<version>0.0.3.2-SNAPSHOT</version>
+	</parent>
+	<properties>
+		<cleartk.version>2.0.0</cleartk.version>
+		<spring.version>3.2.5.RELEASE</spring.version>
+	</properties>
 
 
-    
-  <artifactId>deeplearning4j-nlp</artifactId>
-  <dependencyManagement>
-  <dependencies>
-   <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-beans</artifactId>
-      <version>${spring.version}</version>
-   </dependency>
-      <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-context</artifactId>
-      <version>${spring.version}</version>
-   </dependency>
-  </dependencies>
-  </dependencyManagement>
-  
-  
-  <dependencies>
-  	<dependency>
-  		<groupId>org.deeplearning4j</groupId>
-  		<artifactId>deeplearning4j-scaleout-akka</artifactId>
-  		<version>${project.version}</version>
-  		<exclusions>
-  			<exclusion>
-  				<artifactId>log4j-over-slf4j</artifactId>
-  				<groupId>org.slf4j</groupId>
-  			</exclusion>
-  		</exclusions>
-  	</dependency>
-  	<dependency>
-  		<groupId>org.deeplearning4j</groupId>
-  		<artifactId>deeplearning4j-core</artifactId>
-  		<version>${project.version}</version>
-  	</dependency>
 
-      <dependency>
-          <groupId>org.nd4j</groupId>
-          <artifactId>nd4j-jblas</artifactId>
-          <version>0.0.3.2</version>
-          <scope>Test</scope>
-      </dependency>
-
-  	<dependency>
-  		<groupId>junit</groupId>
-  		<artifactId>junit</artifactId>
-  	</dependency>
+	<artifactId>deeplearning4j-nlp</artifactId>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-beans</artifactId>
+				<version>${spring.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-context</artifactId>
+				<version>${spring.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 
-  	<dependency>
-  		<groupId>org.cleartk</groupId>
-  		<artifactId>cleartk-snowball</artifactId>
-  		<version>${cleartk.version}</version>
-  	</dependency>
-      <dependency>
-          <groupId>org.cleartk</groupId>
-          <artifactId>cleartk-opennlp-tools</artifactId>
-          <version>${cleartk.version}</version>
-      </dependency>
-  </dependencies>
+	<dependencies>
+		<dependency>
+			<groupId>org.deeplearning4j</groupId>
+			<artifactId>deeplearning4j-scaleout-akka</artifactId>
+			<version>${project.version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>log4j-over-slf4j</artifactId>
+					<groupId>org.slf4j</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.cleartk</groupId>
+			<artifactId>cleartk-clearnlp</artifactId>
+			<version>${cleartk.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.deeplearning4j</groupId>
+			<artifactId>deeplearning4j-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.nd4j</groupId>
+			<artifactId>nd4j-jblas</artifactId>
+			<version>0.0.3.2</version>
+			<scope>Test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.cleartk</groupId>
+			<artifactId>cleartk-snowball</artifactId>
+			<version>${cleartk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.cleartk</groupId>
+			<artifactId>cleartk-opennlp-tools</artifactId>
+			<version>${cleartk.version}</version>
+		</dependency>
+	</dependencies>
 </project>
