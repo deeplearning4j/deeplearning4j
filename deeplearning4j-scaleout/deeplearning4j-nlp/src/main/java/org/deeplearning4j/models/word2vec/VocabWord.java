@@ -4,6 +4,8 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import com.google.common.util.concurrent.AtomicDouble;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -22,7 +24,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
     private static final long serialVersionUID = 2223750736522624256L;
     //used in comparison when building the huffman tree
-    private double wordFrequency = 1;
+    private AtomicDouble wordFrequency = new AtomicDouble(0);
     private int index = -1;
     //children of the binary tree
     private VocabWord left;
@@ -46,7 +48,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
      */
     public VocabWord(double wordFrequency,String word) {
-        this.wordFrequency = wordFrequency;
+        this.wordFrequency.set(wordFrequency);
         this.word = word;
 
     }
@@ -56,12 +58,12 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
 
     public void write(DataOutputStream dos) throws IOException {
-        dos.writeDouble(wordFrequency);
+        dos.writeDouble(wordFrequency.get());
 
     }
 
     public VocabWord read(DataInputStream dos) throws IOException {
-        this.wordFrequency = dos.readDouble();
+        this.wordFrequency.set(dos.readDouble());
         return this;
     }
 
@@ -101,7 +103,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
                 + ((points == null) ? 0 : points.hashCode());
         result = prime * result + ((right == null) ? 0 : right.hashCode());
         long temp;
-        temp = Double.doubleToLongBits(wordFrequency);
+        temp = Double.doubleToLongBits(wordFrequency.get());
         result = prime * result + (int) (temp ^ (temp >>> 32));
         return result;
     }
@@ -139,8 +141,8 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
                 return false;
         } else if (!right.equals(other.right))
             return false;
-        if (Double.doubleToLongBits(wordFrequency) != Double
-                .doubleToLongBits(other.wordFrequency))
+        if (Double.doubleToLongBits(wordFrequency.get()) != Double
+                .doubleToLongBits(other.wordFrequency.get()))
             return false;
         return true;
     }
@@ -166,7 +168,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
 
     public void setWordFrequency(double wordFrequency) {
-        this.wordFrequency = wordFrequency;
+        this.wordFrequency.set(wordFrequency);
     }
 
 
@@ -227,7 +229,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
 
     public void increment() {
-        wordFrequency++;
+        wordFrequency.getAndAdd(1.0);
     }
 
 
@@ -240,13 +242,13 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
     }
 
     public double getWordFrequency() {
-        return wordFrequency;
+        return wordFrequency.get();
     }
 
 
     @Override
     public int compareTo(VocabWord o) {
-        return Double.compare(wordFrequency, o.wordFrequency);
+        return Double.compare(wordFrequency.get(), o.wordFrequency.get());
     }
 
     public float getLearningRate(int index,float g) {

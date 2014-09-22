@@ -72,7 +72,8 @@ public class Huffman {
 			int[] points = triple.getThird();
 			VocabWord node = triple.getFirst();
 
-
+            if(node == null)
+            	continue;
 		
 
 

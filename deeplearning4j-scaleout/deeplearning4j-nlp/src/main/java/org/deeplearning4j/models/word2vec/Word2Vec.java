@@ -257,7 +257,6 @@ public class Word2Vec implements Persistable {
 				continue;
 
 			trainSentence(sentence);
-			//ref.tell(new SentenceMessage(sentence,latch),ref);
 			numSentencesProcessed.incrementAndGet();
 			if(numSentencesProcessed.get() % 100 == 0)
 				log.info("Num sentences processed " + numSentencesProcessed.get());
