@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-to run the example, [use this file](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/iris/IrisExample.java)
+*previous* - [mnist for deep-belief networks](../mnist-tutorial.html)
 # DBNs = Classifiers
 
 Deep-belief networks are multi-class classifiers. Given many inputs belonging to various classes, a DBN can first learn from a small training set, and then classify unlabeled data according to those various classes. It can take in one input and decide which label should be applied to its data record. 
@@ -16,7 +16,13 @@ The network outputs a vector containing one number per output node. The number o
 
 ### The IRIS Dataset
 
-This tutorial is based on a classic data set, the IRIS (https://archive.ics.uci.edu/ml/datasets/Iris) data set, which describes the measured dimensions of a set of three species of flowers. The iris species have petals and sepals (the green, leaflike sheaths at the base of petals) of different lengths, measured in centimeters. Each species name serves as a label. Success is teaching a neural net to classify by species the data records of individual flowers while knowing only their dimensions. 
+The [Iris flower dataset](https://archive.ics.uci.edu/ml/datasets/Iris) is widely used in machine learning to test classification techniques. We will use it to verify the effectiveness of our neural nets.
+
+The dataset consists of four measurements taken from 50 examples of each of three species of Iris, so 150 flowers and 600 data points in all. The iris species have petals and sepals (the green, leaflike sheaths at the base of petals) of different lengths, measured in centimeters. The length and width of both sepals and petals were taken for the species Iris setosa, Iris virginica and Iris versicolor. Each species name serves as a label. 
+
+The continuous nature of those measurements make the Iris dataset a perfect test for continuous deep-belief networks. Those four features alone can be sufficient to classify the three species accurately. That is, Success is teaching a neural net to classify by species the data records of individual flowers while knowing only their dimensions, and failure to do so is a very strong signal that your neural net needs fixing. 
+
+The dataset is small, which can present its own problems, and the species I. virginica and I. versicolor are so similar that they partially overlap. 
 
 Here is a single record:
 
@@ -35,7 +41,7 @@ Given three output nodes making binary decisions, we can label the three iris sp
 
 ### Loading the data
 
-DL4J uses an object called a DataSet to load data into a neural network. A DataSet is an easy way to store data (and its associated labels) which we want to make predictions about. The columns First and Second, below, are both NDArrays. One of the NDArrays will hold the data’s attributes; the other holds the label. 
+DL4J uses an object called a DataSet to load data into a neural network. A DataSet is an easy way to store data (and its associated labels) which we want to make predictions about. The columns First and Second, below, are both NDArrays. One of the NDArrays will hold the data’s attributes; the other holds the label. (To run the example, [use this file](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/iris/IrisExample.java).)
 
 ![input output table](../img/ribbit_table.png)
 
@@ -182,5 +188,11 @@ In this example, we have the following
                      0.767064393939394
     ====================================================
 
+After your net has trained, you'll see an F1 score like this. In machine learning, an F1 score is one metric used to determine how well a classifier performs. It's a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It's basically the probability that your net's guesses are correct.
+
 Our model wasn’t tuned all that well (back to the knobs!), and this is just a first pass, but not bad!
+
+In the end, a a working network's visual representation of the Iris dataset will look something like this
+
+![Alt text](../img/iris_dataset.png)
 
