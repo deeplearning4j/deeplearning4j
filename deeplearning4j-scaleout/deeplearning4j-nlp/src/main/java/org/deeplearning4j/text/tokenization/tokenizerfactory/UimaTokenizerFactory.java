@@ -9,6 +9,7 @@ import org.deeplearning4j.text.annotator.StemmerAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
 import org.deeplearning4j.text.tokenization.tokenizer.UimaTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
+import org.deeplearning4j.text.uima.UimaResource;
 
 
 /**
@@ -21,71 +22,84 @@ import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
  */
 public class UimaTokenizerFactory implements TokenizerFactory {
 
-    private AnalysisEngine tokenizer;
-    private CasPool pool;
-    private boolean checkForLabel;
-    private static AnalysisEngine defaultAnalysisEngine;
+
+	private UimaResource uimaResource;
+	private boolean checkForLabel;
+	private static AnalysisEngine defaultAnalysisEngine;
 
 
-    public UimaTokenizerFactory() throws ResourceInitializationException {
-        this(defaultAnalysisEngine(),true);
-    }
+	public UimaTokenizerFactory() throws ResourceInitializationException {
+		this(defaultAnalysisEngine(),true);
+	}
 
 
-
-    public UimaTokenizerFactory(AnalysisEngine tokenizer) {
-        this(tokenizer,true);
-    }
-
-
-    public UimaTokenizerFactory(boolean checkForLabel) throws ResourceInitializationException {
-        this(defaultAnalysisEngine(),checkForLabel);
-    }
+	public UimaTokenizerFactory(UimaResource resource) {
+		this(resource,true);
+	}
 
 
-
-    public UimaTokenizerFactory(AnalysisEngine tokenizer,boolean checkForLabel) {
-        super();
-        this.tokenizer = tokenizer;
-        this.checkForLabel = checkForLabel;
-        try {
-            pool = new CasPool(Runtime.getRuntime().availableProcessors() * 10,tokenizer);
-
-        }catch(Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+	public UimaTokenizerFactory(AnalysisEngine tokenizer) {
+		this(tokenizer,true);
+	}
 
 
 
-    @Override
-    public  Tokenizer create(String toTokenize) {
-        if(tokenizer == null || pool == null)
-            throw new IllegalStateException("Unable to proceed; tokenizer or pool is null");
-        if(toTokenize == null || toTokenize.isEmpty())
-            throw new IllegalArgumentException("Unable to proceed; on sentence to tokenize");
-        return new UimaTokenizer(toTokenize,tokenizer,pool,checkForLabel);
-    }
+	public UimaTokenizerFactory(UimaResource resource,boolean checkForLabel) {
+		this.uimaResource = resource;
+		this.checkForLabel = checkForLabel;
+	}
+
+	public UimaTokenizerFactory(boolean checkForLabel) throws ResourceInitializationException {
+		this(defaultAnalysisEngine(),checkForLabel);
+	}
 
 
-    /**
-     * Creates a tokenization,/stemming pipeline
-     * @return a tokenization/stemming pipeline
-     */
-    public static AnalysisEngine defaultAnalysisEngine()  {
-        try {
-            if(defaultAnalysisEngine == null)
 
-                defaultAnalysisEngine =  AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(
-                        SentenceAnnotator.getDescription(),
-                        TokenizerAnnotator.getDescription(),
-                        StemmerAnnotator.getDescription("English")));
+	public UimaTokenizerFactory(AnalysisEngine tokenizer,boolean checkForLabel) {
+		super();
+		this.checkForLabel = checkForLabel;
+		try {
+			this.uimaResource = new UimaResource(tokenizer);
 
-            return defaultAnalysisEngine;
-        }catch(Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+
+		}catch(Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+
+
+	@Override
+	public  Tokenizer create(String toTokenize) {
+		if(toTokenize == null || toTokenize.isEmpty())
+			throw new IllegalArgumentException("Unable to proceed; on sentence to tokenize");
+		return new UimaTokenizer(toTokenize,uimaResource,checkForLabel);
+	}
+
+
+	public UimaResource getUimaResource() {
+		return uimaResource;
+	}
+
+
+	/**
+	 * Creates a tokenization,/stemming pipeline
+	 * @return a tokenization/stemming pipeline
+	 */
+	public static AnalysisEngine defaultAnalysisEngine()  {
+		try {
+			if(defaultAnalysisEngine == null)
+
+				defaultAnalysisEngine =  AnalysisEngineFactory.createEngine(
+						AnalysisEngineFactory.createEngineDescription(
+								SentenceAnnotator.getDescription(),
+								TokenizerAnnotator.getDescription()));
+
+			return defaultAnalysisEngine;
+		}catch(Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 
 }
