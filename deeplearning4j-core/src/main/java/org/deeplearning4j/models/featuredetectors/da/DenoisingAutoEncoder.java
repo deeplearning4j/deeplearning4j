@@ -234,9 +234,9 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     @Override
     public  NeuralNetworkGradient getGradient(Object[] params) {
 
-        float corruptionLevel = (float) params[0];
-        float lr = (float) params[1];
-        int iteration = (int) params[2];
+        float corruptionLevel = conf.getCorruptionLevel();
+        float lr = conf.getLr();
+        int iteration = conf.getNumIterations();
 
         if(wAdaGrad != null)
             this.wAdaGrad.setMasterStepSize(lr);
@@ -251,13 +251,14 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
         INDArray z = getReconstructedInput(y);
         INDArray visibleLoss =  input.sub(z);
-        INDArray hiddenLoss = conf.getSparsity() == 0 ? visibleLoss.mmul(W).mul(y).mul(y.rsub(1)) : visibleLoss.mmul(W).mul(y).mul(y.add(- conf.getSparsity()));
+        INDArray hiddenLoss = conf.getSparsity() == 0 ? visibleLoss.mmul(W).mul(y).mul(y.rsub(1)) :
+        	visibleLoss.mmul(W).mul(y).mul(y.add(- conf.getSparsity()));
 
 
         INDArray wGradient = corruptedX.transpose().mmul(hiddenLoss).add(visibleLoss.transpose().mmul(y));
 
-        INDArray hBiasGradient = hiddenLoss.mean(1);
-        INDArray vBiasGradient = visibleLoss.mean(1);
+        INDArray hBiasGradient = hiddenLoss.mean(0);
+        INDArray vBiasGradient = visibleLoss.mean(0);
 
         NeuralNetworkGradient gradient = new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
         updateGradientAccordingToParams(gradient,iteration, lr);

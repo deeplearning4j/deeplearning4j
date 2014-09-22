@@ -28,14 +28,14 @@ public class StackedDenoisingAutoEncoderExample {
     public static void main(String[] args) throws Exception {
         RandomGenerator gen = new MersenneTwister(123);
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        fetcher.fetch(10);
+        fetcher.fetch(30000);
         DataSet d2 = fetcher.next();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(5e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.uniform(gen, 784, 10))
                 .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
-                .learningRate(1e-1f).nIn(784).nOut(d2.numOutcomes()).build();
+                .learningRate(1e-1f).nIn(784).nOut(10).build();
 
         //note: denoising autoencoders are primarily meant for binary data. There is an extension
         //by bengio for continuous data that needs to be implemented yet.

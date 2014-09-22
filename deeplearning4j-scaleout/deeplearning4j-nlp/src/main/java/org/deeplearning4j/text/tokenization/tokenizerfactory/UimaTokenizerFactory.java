@@ -1,5 +1,7 @@
 package org.deeplearning4j.text.tokenization.tokenizerfactory;
 
+import java.io.InputStream;
+
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.fit.factory.AnalysisEngineFactory;
 import org.apache.uima.resource.ResourceInitializationException;
@@ -99,6 +101,13 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 		}catch(Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+
+	@Override
+	public Tokenizer create(InputStream toTokenize) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 
