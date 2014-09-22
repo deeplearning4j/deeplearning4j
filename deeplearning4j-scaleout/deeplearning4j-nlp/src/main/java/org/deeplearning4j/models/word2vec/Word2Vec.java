@@ -458,32 +458,12 @@ public class Word2Vec implements Persistable {
 		while(docIter != null && docIter.hasNext()) {
 			InputStream is = docIter.nextDocument();
 
-			Tokenizer t = tokenizerFactory.create(is);
+			vocabActor.tell(new StreamWork(is,latch),vocabActor);
 
-			while(t.hasMoreTokens())  {
-				String token = t.nextToken();
-				if(stopWords.contains(token))
-					token = "STOP";
-				cache.incrementWordCount(token);
-				//note that for purposes of word frequency, the
-				//internal vocab and the final vocab
-				//at the class level contain the same references
-				if(!Util.matchesAnyStopWord(stopWords,token)) {
-					if(cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
-						VocabWord word = new VocabWord(cache.wordFrequency(token),token);
-						int idx = cache.numWords();
-						word.setIndex(idx);
-						cache.putVocabWord(token,word);
-						cache.addWordToIndex(idx,token);
-					}
+			queued.incrementAndGet();
+			if(queued.get() % 10000 == 0)
+				log.info("Sent " + queued);
 
-
-				}
-
-
-			}
-
-			IOUtils.closeQuietly(is);
 
 		}
 
