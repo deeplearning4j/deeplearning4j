@@ -1,4 +1,4 @@
-package org.deeplearning4j.mnist;
+package org.deeplearning4j.tsne;
 
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.plot.Tsne;
