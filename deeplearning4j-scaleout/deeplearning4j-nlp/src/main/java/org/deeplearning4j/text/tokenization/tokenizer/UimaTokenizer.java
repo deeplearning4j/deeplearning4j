@@ -9,6 +9,7 @@ import org.apache.uima.cas.CAS;
 import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.util.CasPool;
 import org.cleartk.token.type.Token;
+import org.deeplearning4j.text.uima.UimaResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,26 +20,20 @@ import org.slf4j.LoggerFactory;
  */
 public class UimaTokenizer implements Tokenizer {
 
-    private AnalysisEngine engine;
     private List<String> tokens;
     private int index;
-    private CasPool pool;
     private static Logger log = LoggerFactory.getLogger(UimaTokenizer.class);
     private boolean checkForLabel;
 
 
 
-    public UimaTokenizer(String tokens,AnalysisEngine engine,CasPool pool,boolean checkForLabel) {
-        this.engine = engine;
-        this.pool = pool;
+    public UimaTokenizer(String tokens,UimaResource resource,boolean checkForLabel) {
+    
         this.checkForLabel = checkForLabel;
         this.tokens = new ArrayList<>();
         try {
-            CAS cas = this.pool.getCas(Integer.MAX_VALUE);
+            CAS cas = resource.process(tokens);
 
-            cas.setDocumentText(tokens);
-
-            this.engine.process(cas);
             Collection<Token> tokenList = JCasUtil.select(cas.getJCas(), Token.class);
 
             for(Token t : tokenList) {
@@ -53,10 +48,11 @@ public class UimaTokenizer implements Tokenizer {
             }
 
 
-            pool.releaseCas(cas);
+           resource.release(cas);
 
 
         } catch (Exception e) {
+        	e.printStackTrace();
             throw new RuntimeException(e);
         }
 
