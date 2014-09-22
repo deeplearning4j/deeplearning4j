@@ -4,6 +4,7 @@ package org.deeplearning4j.text.tokenization.tokenizerfactory;
 import static  org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDescription;
 import static  org.apache.uima.fit.factory.AnalysisEngineFactory.createEngine;
 
+import java.io.InputStream;
 import java.util.Collection;
 
 import org.apache.uima.analysis_engine.AnalysisEngine;
@@ -53,6 +54,12 @@ public class PosUimaTokenizerFactory implements TokenizerFactory {
 	@Override
 	public Tokenizer create(String toTokenize) {
 		return new PosUimaTokenizer(toTokenize,tokenizer,allowedPoSTags);
+	}
+
+	@Override
+	public Tokenizer create(InputStream toTokenize) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 
