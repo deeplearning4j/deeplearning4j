@@ -11,7 +11,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.AtomicDouble;
 
-import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
@@ -22,7 +21,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.nn.api.Persistable;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
-import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.MathUtils;
@@ -56,6 +54,7 @@ public class Word2Vec implements Persistable {
 	private transient SentenceIterator sentenceIter;
 	private transient DocumentIterator docIter;
 	private transient VocabCache cache;
+
 	private int topNSize = 40;
 	private int sample = 1;
 	//learning rate
@@ -77,7 +76,6 @@ public class Word2Vec implements Persistable {
 	private static ActorSystem trainingSystem;
 	private List<String> stopWords;
 	private boolean shouldReset = true;
-
 
 	public final static String UNK = "UNK";
 
@@ -758,6 +756,14 @@ public class Word2Vec implements Persistable {
 		private TokenizerFactory tokenizerFactory;
 		private VocabCache vocabCache;
 		private DocumentIterator docIter;
+		private float lr = 2.5e-1f;
+		
+		
+		
+		public Builder learningRate(float lr) {
+			this.lr = lr;
+			return this;
+		}
 
 
 		public Builder iterate(DocumentIterator iter) {
@@ -811,6 +817,7 @@ public class Word2Vec implements Persistable {
 				Word2Vec ret = new Word2Vec();
 				ret.layerSize = layerSize;
 				ret.window = window;
+				ret.alpha.set(lr);
 				ret.stopWords = StopWords.getStopWords();
 				ret.setCache(vocabCache);
 				ret.minWordFrequency = minWordFrequency;
@@ -839,6 +846,7 @@ public class Word2Vec implements Persistable {
 
 			else {
 				Word2Vec ret = new Word2Vec();
+				ret.alpha.set(lr);
 				ret.layerSize = layerSize;
 				ret.sentenceIter = iter;
 				ret.window = window;
