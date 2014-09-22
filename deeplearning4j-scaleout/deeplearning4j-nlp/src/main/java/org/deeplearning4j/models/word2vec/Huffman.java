@@ -28,6 +28,7 @@ public class Huffman {
 	public void build() {
 		heap.addAll(words);
 
+		int size = words.size();
 		//build huffman tree
 		for(int i = 0 ; i< words.size() - 1; i++) {
 			VocabWord word1 = heap.poll();
@@ -45,14 +46,12 @@ public class Huffman {
 
 			newWord.setLeft(word1);
 			newWord.setRight(word2);
-			int idx = i + words.size();
+			int idx = i + size;
 			newWord.setIndex(idx);
 			heap.add(newWord);
 		}
 
-
-
-
+		//assign binary codes to each node
 		Triple<VocabWord,int[],int[]> triple = new Triple<>(heap.poll(),new int[]{},new int[]{});
 		Stack<Triple<VocabWord,int[],int[]>> stack = new Stack<>();
 		log.info("Beginning stack operation");
@@ -65,17 +64,24 @@ public class Huffman {
 			if(stackCount % 1000 == 0) {
 				log.info("Stack count so far " + stackCount);
 			}
+
+
+
 			triple = stack.pop();
 			int[] codes = triple.getSecond();
 			int[] points = triple.getThird();
 			VocabWord node = triple.getFirst();
-			if(node == null) {
-				continue;
-			}
+
+
+		
+
+
+
 			if(node.getIndex() < words.size()) {
 				node.setCodes(codes);
 				node.setPoints(points);
 			}
+
 			else {
 				int[] copy = plus(points,node.getIndex() - words.size());
 				points = copy;
@@ -83,9 +89,12 @@ public class Huffman {
 				stack.add(new Triple<>(node.getLeft(),plus(codes,0),points));
 				stack.add(new Triple<>(node.getRight(),plus(codes,1),points));
 
-			}
+			}			
+
+
 			stackCount++;
 		}
+
 
 
 
