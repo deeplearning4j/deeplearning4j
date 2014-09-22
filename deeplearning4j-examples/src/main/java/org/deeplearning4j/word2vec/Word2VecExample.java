@@ -39,9 +39,9 @@ public class Word2VecExample {
 	public void train() throws Exception {
 		VocabCache cache;
 		if(vec == null && !new File("vec.ser").exists()) {
-			cache = new InMemoryLookupCache(100,true);
+			cache = new InMemoryLookupCache(100,true,0.025f);
 
-			vec = new Word2Vec.Builder().minWordFrequency(1).vocabCache(cache)
+			vec = new Word2Vec.Builder().minWordFrequency(5).vocabCache(cache)
 					.windowSize(5)
 					.layerSize(100).iterate(iter).tokenizerFactory(tokenizer)
 					.build();

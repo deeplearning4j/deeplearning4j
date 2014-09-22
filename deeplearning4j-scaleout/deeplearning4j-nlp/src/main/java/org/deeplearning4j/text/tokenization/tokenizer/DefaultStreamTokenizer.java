@@ -11,7 +11,18 @@ public class DefaultStreamTokenizer implements Tokenizer {
 	public DefaultStreamTokenizer(InputStream is) {
 		Reader r = new BufferedReader(new InputStreamReader(is));
 		streamTokenizer = new StreamTokenizer(r);
-		streamTokenizer.wordChars('.','.');
+		char separator = ',';  
+		streamTokenizer.resetSyntax();  
+		// Characters other than comma and special characters are word characters  
+		streamTokenizer.wordChars('\u0000', (char)(separator - 1));                 // Everything is a word character  
+		streamTokenizer.wordChars((char)(separator + 1), '\u00ff');                 // except for the separator  
+		streamTokenizer.whitespaceChars('\n', '\n');   
+		// Make end-of-line whitespace(and therefore a word delimiter)  
+		streamTokenizer.whitespaceChars(separator, separator);                      // Delimiter separates words  
+		streamTokenizer.whitespaceChars(' ',' ');
+		streamTokenizer.eolIsSignificant(true);                                     // End-of-line to be reported as TT_EOL  
+
+
 	}
 
 	@Override
@@ -21,7 +32,7 @@ public class DefaultStreamTokenizer implements Tokenizer {
 
 	@Override
 	public int countTokens() {
-	     throw new UnsupportedOperationException();
+		return getTokens().size();
 	}
 
 	@Override
@@ -44,7 +55,6 @@ public class DefaultStreamTokenizer implements Tokenizer {
 				throw new RuntimeException(e);
 
 			}
-			System.out.println();
 		}
 
 		return sb.toString();
