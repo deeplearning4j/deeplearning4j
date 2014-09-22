@@ -1,5 +1,6 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
+import java.io.StreamTokenizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
