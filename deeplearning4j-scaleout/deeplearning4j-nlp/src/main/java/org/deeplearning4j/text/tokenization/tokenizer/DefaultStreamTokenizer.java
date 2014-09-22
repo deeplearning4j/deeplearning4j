@@ -8,7 +8,6 @@ public class DefaultStreamTokenizer implements Tokenizer {
 
 	private StreamTokenizer streamTokenizer;
 
-
 	public DefaultStreamTokenizer(InputStream is) {
 		Reader r = new BufferedReader(new InputStreamReader(is));
 		streamTokenizer = new StreamTokenizer(r);
@@ -16,7 +15,7 @@ public class DefaultStreamTokenizer implements Tokenizer {
 
 	@Override
 	public boolean hasMoreTokens() {
-		return streamTokenizer.ttype == StreamTokenizer.TT_EOF;
+		return streamTokenizer.ttype != StreamTokenizer.TT_EOF;
 	}
 
 	@Override

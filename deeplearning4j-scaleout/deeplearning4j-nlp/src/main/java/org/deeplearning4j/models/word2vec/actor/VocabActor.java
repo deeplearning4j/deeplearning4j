@@ -1,9 +1,12 @@
 package org.deeplearning4j.models.word2vec.actor;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.deeplearning4j.models.word2vec.StreamWork;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.VocabWork;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
@@ -22,79 +25,116 @@ import akka.actor.UntypedActor;
  */
 public class VocabActor extends UntypedActor {
 
-    private static Logger log = LoggerFactory.getLogger(VocabActor.class);
-    private TokenizerFactory tokenizer;
-    private int layerSize;
-    private List<String> stopWords;
-    private AtomicLong lastUpdate;
-    private VocabCache cache;
-    private int minWordFrequency;
+	private static Logger log = LoggerFactory.getLogger(VocabActor.class);
+	private TokenizerFactory tokenizer;
+	private List<String> stopWords;
+	private AtomicLong lastUpdate;
+	private VocabCache cache;
+	private int minWordFrequency;
 
 
 
 
-    public VocabActor(TokenizerFactory tokenizer,  VocabCache cache, int layerSize,List<String> stopWords,AtomicLong lastUpdate,int minWordFrequency) {
-        super();
-        this.tokenizer = tokenizer;
-        this.layerSize = layerSize;
-        this.stopWords = stopWords;
-        this.lastUpdate = lastUpdate;
-        this.cache = cache;
-        this.minWordFrequency = minWordFrequency;
-    }
+	public VocabActor(TokenizerFactory tokenizer,  VocabCache cache, int layerSize,List<String> stopWords,AtomicLong lastUpdate,int minWordFrequency) {
+		super();
+		this.tokenizer = tokenizer;
+		this.stopWords = stopWords;
+		this.lastUpdate = lastUpdate;
+		this.cache = cache;
+		this.minWordFrequency = minWordFrequency;
+	}
 
 
 
 
-    @Override
-    public void onReceive(Object message) throws Exception {
-        if(message  instanceof VocabWork) {
-            VocabWork work = (VocabWork) message;
-            if(work.getWork() == null || work.getWork().isEmpty())
-                return;
-            work.getCount().incrementAndGet();
-            String sentence = work.getWork();
+	@Override
+	public void onReceive(Object message) throws Exception {
+		if(message  instanceof VocabWork) {
+			VocabWork work = (VocabWork) message;
+			if(work.getWork() == null || work.getWork().isEmpty())
+				return;
+			work.getCount().incrementAndGet();
+			String sentence = work.getWork();
 
-            if(sentence.isEmpty()) {
-                work.countDown();
-                return;
-            }
-            Tokenizer t = tokenizer.create(sentence);
+			if(sentence.isEmpty()) {
+				work.countDown();
+				return;
+			}
+			Tokenizer t = tokenizer.create(sentence);
 
-            while(t.hasMoreTokens())  {
-                String token = t.nextToken();
-                if(stopWords.contains(token))
-                    token = "STOP";
-                cache.incrementWordCount(token);
-                //note that for purposes of word frequency, the
-                //internal vocab and the final vocab
-                //at the class level contain the same references
-                if(!Util.matchesAnyStopWord(stopWords,token)) {
-                    if(cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
-                        VocabWord word = new VocabWord(cache.wordFrequency(token),token);
-                        int idx = cache.numWords();
-                        word.setIndex(idx);
-                        cache.putVocabWord(token,word);
-                        cache.addWordToIndex(idx,token);
-                    }
-
-
-                }
+			while(t.hasMoreTokens())  {
+				String token = t.nextToken();
+				if(stopWords.contains(token))
+					token = "STOP";
+				cache.incrementWordCount(token);
+				//note that for purposes of word frequency, the
+				//internal vocab and the final vocab
+				//at the class level contain the same references
+				if(!Util.matchesAnyStopWord(stopWords,token)) {
+					if(cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
+						VocabWord word = new VocabWord(cache.wordFrequency(token),token);
+						int idx = cache.numWords();
+						word.setIndex(idx);
+						cache.putVocabWord(token,word);
+						cache.addWordToIndex(idx,token);
+					}
 
 
-            }
+				}
 
 
-            work.countDown();
-
-            lastUpdate.getAndSet(System.currentTimeMillis());
-
-        }
+			}
 
 
-        else
-            unhandled(message);
-    }
+			work.countDown();
+
+			lastUpdate.getAndSet(System.currentTimeMillis());
+
+		}
+
+
+		else if(message instanceof StreamWork) {
+			StreamWork work = (StreamWork) message;
+			InputStream is = work.getIs();
+
+			Tokenizer t = tokenizer.create(is);
+
+			while(t.hasMoreTokens())  {
+				String token = t.nextToken();
+				if(stopWords.contains(token))
+					token = "STOP";
+				cache.incrementWordCount(token);
+				//note that for purposes of word frequency, the
+				//internal vocab and the final vocab
+				//at the class level contain the same references
+				if(!Util.matchesAnyStopWord(stopWords,token)) {
+					if(cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
+						VocabWord word = new VocabWord(cache.wordFrequency(token),token);
+						int idx = cache.numWords();
+						word.setIndex(idx);
+						cache.putVocabWord(token,word);
+						cache.addWordToIndex(idx,token);
+					}
+
+
+				}
+
+
+			}
+
+			IOUtils.closeQuietly(is);
+			work.countDown();
+
+			lastUpdate.getAndSet(System.currentTimeMillis());
+
+
+		}
+
+
+
+		else
+			unhandled(message);
+	}
 
 
 
