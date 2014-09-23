@@ -37,6 +37,12 @@ public class DefaultTokenizer implements Tokenizer {
 		}
 		return tokens;
 	}
+
+	@Override
+	public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
+		// TODO Auto-generated method stub
+		
+	}
 	
 	
 
