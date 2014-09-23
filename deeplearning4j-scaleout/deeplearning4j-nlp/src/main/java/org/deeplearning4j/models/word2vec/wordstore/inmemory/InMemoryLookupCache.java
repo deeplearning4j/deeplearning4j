@@ -162,6 +162,12 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 	@Override
 	public  synchronized void incrementWordCount(String word, int increment) {
 		wordFrequencies.incrementCount(word,1);
+		if(containsWord(word)) {
+			VocabWord word2 = wordFor(word);
+			word2.increment(increment);
+			
+
+		}
 		totalWordOccurrences.set(totalWordOccurrences.get() + increment);
 
 	}
