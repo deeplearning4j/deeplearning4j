@@ -34,10 +34,14 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 	private RandomGenerator rng = new MersenneTwister(123);
 	private AtomicInteger totalWordOccurrences = new AtomicInteger(0);
 	private float lr = 1e-1f;
-
-
+    float[] expTable = new float[1000];
+    float MAX_EXP = 6;
 	public InMemoryLookupCache(int vectorLength) {
 		this(vectorLength,true);
+		for (int i = 0; i < expTable.length; i++) {
+		    expTable[i] = (float) Math.exp((i / (int)expTable.length * 2 - 1) * MAX_EXP); // Precompute the exp() table
+		    expTable[i] = expTable[i] / (expTable[i] + 1);                   // Precompute f(x) = x / (x + 1)
+		  }
 
 	}
 
@@ -97,9 +101,14 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 				break;
 
 			float dot = Nd4j.getBlasWrapper().dot(syn0,syn1);
-
+            if(dot <= -6 || dot >= 6)
+            	continue;
+            int idx = (int)((dot + MAX_EXP) * (expTable.length / MAX_EXP / 2));
+            if(idx >= expTable.length)
+            	continue;
 			//score
-			float f = (float) MathUtils.sigmoid(dot);
+			float f = (float) expTable[idx];
+			//expTable[(int)((f + MAX_EXP)  (EXP_TABLE_SIZE / MAX_EXP / 2))];
 			//gradient
 			float g = (1 - w1.getCodes()[d] - f);
 			float lr = useAdaGrad ? w1.getLearningRate(d,g) : this.lr;
@@ -112,6 +121,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 		}
 
 		avgChange /=  w1.getCodes().length;
+		
+		
 		if(useAdaGrad)
 			Nd4j.getBlasWrapper().axpy(avgChange,neu1e,syn0);
 		else
@@ -136,7 +147,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 	public void resetWeights() {
 		int words = vocabs.size();
 
-		syn0  = Nd4j.randn(new int[]{words,vectorLength}).subi(0.5f).divi(vectorLength);
+		syn0  = Nd4j.rand(new int[]{words,vectorLength}).subi(0.5f).divi(vectorLength);
 		syn1 = Nd4j.create(syn0.shape());
 
 	}
