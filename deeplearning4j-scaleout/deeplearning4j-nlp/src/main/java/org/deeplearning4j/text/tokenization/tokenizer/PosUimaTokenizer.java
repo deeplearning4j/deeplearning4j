@@ -110,6 +110,12 @@ public class PosUimaTokenizer  implements Tokenizer {
         }
     }
 
+	@Override
+	public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
+		// TODO Auto-generated method stub
+		
+	}
+
 
 
 

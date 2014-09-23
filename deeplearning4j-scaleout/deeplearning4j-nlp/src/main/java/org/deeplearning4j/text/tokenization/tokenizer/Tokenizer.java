@@ -35,6 +35,12 @@ public interface Tokenizer {
 	 */
 	List<String> getTokens();
 	
+	/**
+	 * Set the token pre process
+	 * @param tokenPreProcessor the token pre processor to set
+	 */
+	void setTokenPreProcessor(TokenPreProcess tokenPreProcessor);
+	
 	
 	
 	

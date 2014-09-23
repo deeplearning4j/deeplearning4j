@@ -3,10 +3,16 @@ package org.deeplearning4j.text.tokenization.tokenizer;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-
+/**
+ * Tokenizer based on the {@link java.io.StreamTokenizer}
+ * @author Adam Gibson
+ *
+ */
 public class DefaultStreamTokenizer implements Tokenizer {
 
 	private StreamTokenizer streamTokenizer;
+	private TokenPreProcess tokenPreProcess;
+
 
 	public DefaultStreamTokenizer(InputStream is) {
 		Reader r = new BufferedReader(new InputStreamReader(is));
@@ -57,7 +63,12 @@ public class DefaultStreamTokenizer implements Tokenizer {
 			}
 		}
 
-		return sb.toString();
+		String ret =  sb.toString();
+		
+		if(tokenPreProcess != null)
+			ret = tokenPreProcess.preProcess(ret);
+		return ret;
+		
 	}
 
 	@Override
@@ -67,6 +78,11 @@ public class DefaultStreamTokenizer implements Tokenizer {
 			tokens.add(nextToken());
 		}
 		return tokens;
+	}
+
+	@Override
+	public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
+		this.tokenPreProcess = tokenPreProcessor;
 	}
 
 }
