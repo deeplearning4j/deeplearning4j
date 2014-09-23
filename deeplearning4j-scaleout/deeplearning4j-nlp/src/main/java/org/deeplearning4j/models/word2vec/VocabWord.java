@@ -229,7 +229,11 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
 
     public void increment() {
-        wordFrequency.getAndAdd(1.0);
+       increment(1);
+    }
+    
+    public void increment(int by) {
+        wordFrequency.getAndAdd(by);
     }
 
 
