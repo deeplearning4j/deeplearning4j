@@ -73,7 +73,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 	 * @param w2 the second word to iterate on
 	 */
 	@Override
-	public synchronized void iterate(VocabWord w1, VocabWord w2) {
+	public  void iterate(VocabWord w1, VocabWord w2) {
 		if(w1.getCodes() == null)
 			return;
 		if(w2.getIndex() >= syn0.rows())
@@ -97,8 +97,6 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 				break;
 
 			float dot = Nd4j.getBlasWrapper().dot(syn0,syn1);
-			if (dot <= -6  || dot >= 6)
-				continue;
 
 			//score
 			float f = (float) MathUtils.sigmoid(dot);
@@ -114,9 +112,10 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 		}
 
 		avgChange /=  w1.getCodes().length;
-
-		Nd4j.getBlasWrapper().axpy(avgChange,neu1e,syn0);
-
+		if(useAdaGrad)
+			Nd4j.getBlasWrapper().axpy(avgChange,neu1e,syn0);
+		else
+			Nd4j.getBlasWrapper().axpy(1,neu1e,syn0);
 
 	}
 
@@ -165,7 +164,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 		if(containsWord(word)) {
 			VocabWord word2 = wordFor(word);
 			word2.increment(increment);
-			
+
 
 		}
 		totalWordOccurrences.set(totalWordOccurrences.get() + increment);
