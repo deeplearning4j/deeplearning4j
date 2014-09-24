@@ -12,7 +12,25 @@ import java.util.Collection;
  */
 public interface VocabCache  {
 
-
+	
+	
+	/**
+	 * Load vocab
+	 */
+	void loadVocab();
+	
+ 
+	/**
+	 * Vocab exists already
+	 * @return
+	 */
+	boolean vocabExists();
+	
+    /**
+     * Saves the vocab: this allow for reuse of word frequencies	
+     */
+	void saveVocab();
+	
     /**
      * Iterate on the given 2 vocab words
      * @param w1 the first word to iterate on

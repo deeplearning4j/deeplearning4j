@@ -1,10 +1,12 @@
 package org.deeplearning4j.mdoels.featuredetectors.da;
 
 import static org.junit.Assert.*;
+
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.models.featuredetectors.da.DenoisingAutoEncoder;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.deeplearning4j.nn.api.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -17,11 +19,11 @@ public class DenoisingAutoEncoderTest {
 	public void testDenoisingAutoEncoder() throws Exception {
 		
 	    MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.5f)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.5f).render(10).optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(new MersenneTwister(123))
                 .learningRate(1e-1f).nIn(784).nOut(600).build();
 
-        fetcher.fetch(1000);
+        fetcher.fetch(10);
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();

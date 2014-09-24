@@ -51,52 +51,10 @@ public class Huffman {
 			heap.add(newWord);
 		}
 
-		//assign binary codes to each node
-		Triple<VocabWord,int[],int[]> triple = new Triple<>(heap.poll(),new int[]{},new int[]{});
-		Stack<Triple<VocabWord,int[],int[]>> stack = new Stack<>();
-		log.info("Beginning stack operation");
-
-		stack.add(triple);
-
-		int stackCount = 0;
-
-		while(!stack.isEmpty())  {
-			if(stackCount % 1000 == 0) {
-				log.info("Stack count so far " + stackCount);
-			}
-
-
-
-			triple = stack.pop();
-			int[] codes = triple.getSecond();
-			int[] points = triple.getThird();
-			VocabWord node = triple.getFirst();
-
-            if(node == null)
-            	continue;
-		
-
-
-
-			if(node.getIndex() < words.size()) {
-				node.setCodes(codes);
-				node.setPoints(points);
-			}
-
-			else {
-				int[] copy = plus(points,node.getIndex() - words.size());
-				points = copy;
-				triple.setThird(points);
-				stack.add(new Triple<>(node.getLeft(),plus(codes,0),points));
-				stack.add(new Triple<>(node.getRight(),plus(codes,1),points));
-
-			}			
-
-
-			stackCount++;
+	
+		for(VocabWord word : words) {
+			word.createLinks();
 		}
-
-
 
 
 
