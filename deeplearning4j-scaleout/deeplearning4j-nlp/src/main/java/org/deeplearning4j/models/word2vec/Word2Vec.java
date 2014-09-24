@@ -235,7 +235,8 @@ public class Word2Vec implements Persistable {
 
 
 		buildVocab();
-
+		//save vocab after building
+		cache.saveVocab();
 		if(stopWords == null)
 			readStopWords();
 
@@ -438,8 +439,19 @@ public class Word2Vec implements Persistable {
 	public void buildVocab() {
 		readStopWords();
 
+		if(cache.vocabExists()) {
+			log.info("Loading vocab...");
+			cache.loadVocab();
+			cache.resetWeights();
+			return;
+		}
+
 		if(trainingSystem == null)
 			trainingSystem = ActorSystem.create();
+
+
+
+
 
 		final AtomicLong semaphore = new AtomicLong(System.currentTimeMillis());
 		final AtomicInteger queued = new AtomicInteger(0);
@@ -756,9 +768,9 @@ public class Word2Vec implements Persistable {
 		private VocabCache vocabCache;
 		private DocumentIterator docIter;
 		private float lr = 2.5e-1f;
-		
-		
-		
+
+
+
 		public Builder learningRate(float lr) {
 			this.lr = lr;
 			return this;
