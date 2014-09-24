@@ -110,10 +110,9 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
 		if(w1.getConnections() == null)
 			return;
-		
+
 		for(VocabWord word : w1.getConnections()) {
-			int inner = w1.getIndex();
-			int l2 = inner;
+			int l2 = word.getIndex();
 			//other word vector
 			INDArray syn1 = this.syn1.getRow(l2);
 			if(l1 >= this.syn0.rows() || l2 >= this.syn1.rows())
@@ -135,7 +134,6 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
 			Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
 			Nd4j.getBlasWrapper().axpy(g, syn0, syn1);
-			avgChange /=  w1.getCodes().length;
 			count++;
 		}
 
@@ -168,7 +166,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 	public void resetWeights() {
 		int words = vocabs.size();
 
-		syn0  = Nd4j.rand(new int[]{words,vectorLength})
+		syn0  = Nd4j.randn(new int[]{words,vectorLength})
 				.subi(0.5f)
 				.divi(vectorLength);
 		syn1 = Nd4j.create(syn0.shape());

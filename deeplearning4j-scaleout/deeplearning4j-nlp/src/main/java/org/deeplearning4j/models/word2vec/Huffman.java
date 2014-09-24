@@ -52,9 +52,9 @@ public class Huffman {
 		}
 
 	
-		for(VocabWord word : words) {
-			word.createLinks();
-		}
+	while(!heap.isEmpty()) {
+		heap.poll().createLinks();
+	}
 
 
 

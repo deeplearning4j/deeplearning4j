@@ -641,7 +641,7 @@ public class Word2Vec implements Persistable {
 		INDArray vector2 = getWordVectorMatrix(word2);
 		if(vector == null || vector2 == null)
 			return -1;
-		return   Transforms.cosineSim(vector.dup(),vector2.dup());
+		return   1 - Transforms.cosineSim(vector.dup(),vector2.dup());
 	}
 
 
