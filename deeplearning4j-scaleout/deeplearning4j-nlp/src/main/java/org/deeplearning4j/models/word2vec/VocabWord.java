@@ -39,7 +39,8 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 	private String word;
 	public final static String PARENT_NODE = "parent";
 	private INDArray historicalGradient;
-	private List<VocabWord> connections;
+	private int[] points;
+	
 
 	public static VocabWord none() {
 		return new VocabWord(0,"none");
@@ -52,6 +53,8 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 	 */
 	public VocabWord(double wordFrequency,String word) {
 		this.wordFrequency.set(wordFrequency);
+		if(word == null || word.isEmpty())
+			throw new IllegalArgumentException("Word must not be null or empty");
 		this.word = word;
 
 	}
@@ -73,80 +76,6 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
 
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + code;
-		result = prime * result + Arrays.hashCode(codes);
-		result = prime * result
-				+ ((connections == null) ? 0 : connections.hashCode());
-		result = prime
-				* result
-				+ ((historicalGradient == null) ? 0 : historicalGradient
-						.hashCode());
-		result = prime * result + index;
-		result = prime * result + ((left == null) ? 0 : left.hashCode());
-		result = prime * result + ((parent == null) ? 0 : parent.hashCode());
-		result = prime * result + ((right == null) ? 0 : right.hashCode());
-		result = prime * result + ((word == null) ? 0 : word.hashCode());
-		result = prime * result
-				+ ((wordFrequency == null) ? 0 : wordFrequency.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		VocabWord other = (VocabWord) obj;
-		if (code != other.code)
-			return false;
-		if (!Arrays.equals(codes, other.codes))
-			return false;
-		if (connections == null) {
-			if (other.connections != null)
-				return false;
-		} else if (!connections.equals(other.connections))
-			return false;
-		if (historicalGradient == null) {
-			if (other.historicalGradient != null)
-				return false;
-		} else if (!historicalGradient.equals(other.historicalGradient))
-			return false;
-		if (index != other.index)
-			return false;
-		if (left == null) {
-			if (other.left != null)
-				return false;
-		} else if (!left.equals(other.left))
-			return false;
-		if (parent == null) {
-			if (other.parent != null)
-				return false;
-		} else if (!parent.equals(other.parent))
-			return false;
-		if (right == null) {
-			if (other.right != null)
-				return false;
-		} else if (!right.equals(other.right))
-			return false;
-		if (word == null) {
-			if (other.word != null)
-				return false;
-		} else if (!word.equals(other.word))
-			return false;
-		if (wordFrequency == null) {
-			if (other.wordFrequency != null)
-				return false;
-		} else if (!wordFrequency.equals(other.wordFrequency))
-			return false;
-		return true;
-	}
 
 	public INDArray getHistoricalGradient() {
 		return historicalGradient;
@@ -156,13 +85,6 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 		this.historicalGradient = historicalGradient;
 	}
 
-	public List<VocabWord> getConnections() {
-		return connections;
-	}
-
-	public void setConnections(List<VocabWord> connections) {
-		this.connections = connections;
-	}
 
 	public void setWordFrequency(AtomicDouble wordFrequency) {
 		this.wordFrequency = wordFrequency;
@@ -273,32 +195,8 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 		return wordFrequency.get();
 	}
 
-
-	public void createLinks() {
-		VocabWord curr = this;
-		if(connections != null)
-			return;
-		connections = new ArrayList<>();
-		while((curr = curr.parent) != null) {
-			connections.add(curr);
-		}
-		
-		Collections.reverse(connections);
-		
-		codes = new int[connections.size()];
-		
-		for(int i = 1; i < codes.length; i++) {
-			codes[i - 1] = connections.get(i).code;
-		}
-		
-		codes[codes.length - 1] = code;
-		
-		
-		
-		
-
-	}
-
+	
+	
 	@Override
 	public int compareTo(VocabWord o) {
 		return Double.compare(wordFrequency.get(), o.wordFrequency.get());
@@ -317,6 +215,83 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 		return ret;
 
 	}
+
+	public int[] getPoints() {
+		return points;
+	}
+
+	public void setPoints(int[] points) {
+		this.points = points;
+	}
+
+	@Override
+	public String toString() {
+		return "VocabWord [wordFrequency=" + wordFrequency + ", index=" + index
+				+ ", code=" + code + ", word=" + word + "]";
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + code;
+		result = prime * result + Arrays.hashCode(codes);
+		result = prime
+				* result
+				+ ((historicalGradient == null) ? 0 : historicalGradient
+						.hashCode());
+		result = prime * result + index;
+		result = prime * result + ((parent == null) ? 0 : parent.hashCode());
+		result = prime * result + Arrays.hashCode(points);
+		result = prime * result + ((word == null) ? 0 : word.hashCode());
+		result = prime * result
+				+ ((wordFrequency == null) ? 0 : wordFrequency.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		VocabWord other = (VocabWord) obj;
+		if (code != other.code)
+			return false;
+		if (!Arrays.equals(codes, other.codes))
+			return false;
+		if (historicalGradient == null) {
+			if (other.historicalGradient != null)
+				return false;
+		} else if (!historicalGradient.equals(other.historicalGradient))
+			return false;
+		if (index != other.index)
+			return false;
+		if (parent == null) {
+			if (other.parent != null)
+				return false;
+		} else if (!parent.equals(other.parent))
+			return false;
+		if (!Arrays.equals(points, other.points))
+			return false;
+		if (word == null) {
+			if (other.word != null)
+				return false;
+		} else if (!word.equals(other.word))
+			return false;
+		if (wordFrequency == null) {
+			if (other.wordFrequency != null)
+				return false;
+		} else if (!wordFrequency.equals(other.wordFrequency))
+			return false;
+		return true;
+	}
+	
+
+
+	
 
 
 }
