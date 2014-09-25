@@ -30,8 +30,6 @@ public class IrisExample {
 
     private static Logger log = LoggerFactory.getLogger(IrisExample.class);
 
-
-
     public static void main(String[] args) {
         RandomGenerator gen = new MersenneTwister(123);
 
@@ -44,10 +42,7 @@ public class IrisExample {
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
                 .learningRate(1e-1f).nIn(4).nOut(3).build();
 
-
         List<NeuralNetConfiguration> list = new ArrayList<>();
-
-
 
         DBN d = new DBN.Builder()
                 .configure(conf)
@@ -58,7 +53,6 @@ public class IrisExample {
 
            //d.getLayers()[i].conf().set
         }
-
 
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
         d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
@@ -71,20 +65,12 @@ public class IrisExample {
         DataSet next = iter.next(110);
         next.normalizeZeroMeanZeroUnitVariance();
 
-
-
         DataSetIterator iter2 = new SamplingDataSetIterator(next,10,10);
         d.fit(next);
-
-
-
 
         Evaluation eval = new Evaluation();
         INDArray output = d.output(next.getFeatureMatrix());
         eval.eval(next.getLabels(),output);
         log.info("Score " + eval.stats());
     }
-
-
-
 }
