@@ -70,7 +70,7 @@ public class VocabActor extends UntypedActor {
 				//note that for purposes of word frequency, the
 				//internal vocab and the final vocab
 				//at the class level contain the same references
-				if(!Util.matchesAnyStopWord(stopWords,token)) {
+				if(!Util.matchesAnyStopWord(stopWords,token) && token != null && !token.isEmpty()) {
 					if(!cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
 						VocabWord word = new VocabWord(cache.wordFrequency(token),token);
 						int idx = cache.numWords();
@@ -81,7 +81,7 @@ public class VocabActor extends UntypedActor {
 
 				}
 				
-				else  if(Util.matchesAnyStopWord(stopWords,token)) {
+				else  if(Util.matchesAnyStopWord(stopWords,token) && token != null && !token.isEmpty()) {
 					token = "STOP";
 					if(!cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
 						VocabWord word = new VocabWord(cache.wordFrequency(token),token);
@@ -118,7 +118,7 @@ public class VocabActor extends UntypedActor {
 				//note that for purposes of word frequency, the
 				//internal vocab and the final vocab
 				//at the class level contain the same references
-				if(!Util.matchesAnyStopWord(stopWords,token)) {
+				if(!Util.matchesAnyStopWord(stopWords,token) && token != null && !token.isEmpty()) {
 					if(!cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
 						VocabWord word = new VocabWord(cache.wordFrequency(token),token);
 						int idx = cache.numWords();
@@ -126,7 +126,7 @@ public class VocabActor extends UntypedActor {
 						cache.putVocabWord(token,word);
 					}
 					
-					else  if(Util.matchesAnyStopWord(stopWords,token)) {
+					else  if(Util.matchesAnyStopWord(stopWords,token) && token != null && !token.isEmpty()) {
 						token = "STOP";
 						if(!cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
 							VocabWord word = new VocabWord(cache.wordFrequency(token),token);
