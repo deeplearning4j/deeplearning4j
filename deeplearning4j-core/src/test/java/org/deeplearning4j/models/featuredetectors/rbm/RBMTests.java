@@ -119,6 +119,9 @@ public class RBMTests {
 
         rbm.fit(input);
 
+
+
+
     }
 
 

@@ -835,7 +835,7 @@ public class Word2Vec implements Persistable {
 
                 ret.docIter = docIter;
                 ret.tokenizerFactory = tokenizerFactory;
-                vocabCache.resetWeights();
+
                 return ret;
             }
 
