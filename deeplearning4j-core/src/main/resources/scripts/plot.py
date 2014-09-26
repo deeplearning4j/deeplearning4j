@@ -4,6 +4,10 @@ import math
 from PIL import Image
 from matplotlib.pyplot import hist, title, subplot,scatter
 import matplotlib.pyplot as plot
+
+from mpltools import style, layout
+style.use('ggplot')
+
 def sigmoid(xx):
     return .5 * (1 + tanh(xx / 2.))
 
