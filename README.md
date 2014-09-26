@@ -1,31 +1,20 @@
-ND4J
-=========================================
+# ND4J
 
+A Numpy and Matlab like environment for cross-platform scientific computing. 
 
-A Numpy and matlab like environment for cross platform scientific computing. 
-
-Supports GPUS via CUDA and Native via jblas.
-
-All of this is wrapped in a unifying interface.
-
-The api is a mix of numpy and jblas.
-
-
-
+* Supports GPUS via CUDA and Native via Jblas.
+* All of this is wrapped in a unifying interface.
+* The API is a mix of Numpy and Jblas.
 
 An example creation:
 
           INDArray arr = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
 
+This will create a 2 x 2 NDarray.
 
-This will create a 2 x 2 ndarray.
-
-
-The way the project works as follows:
-
+The project works as follows:
 
 Include the following in your pom.xml:
-
 
        <dependency>
         <artifactId>nd4j</artifactId>
@@ -34,10 +23,7 @@ Include the following in your pom.xml:
         <version>0.0.1-SNAPSHOT</version>
        </dependency>
 
-
-
-From here, you need to pick an implementation suitable for your needs. This can be either jblas for native or cuda for GPUs.
-
+From there, you need to pick a suitable implementation. This can be either Jblas for native or Cuda for GPUs.
 
 Jblas:
 
@@ -57,30 +43,21 @@ Jcuda:
                        <version>0.0.1-SNAPSHOT</version>
                       </dependency>
 
-For jcuda, we are still in the process of streamlining the release for this one. For now, please do the following:
-
+For Jcuda, we are still in the process of streamlining the release for this one. For now, please do the following:
 
                   git clone https://github.com/SkymindIO/mavenized-jcuda
                   cd mavenized-jcuda
                   mvn clean install
 
+This will install the Jcuda jar files.
 
-This will install the jcuda jar files.
+You need to specify a version of Jcuda to use as well. The version will depend on your GPU. Amazon supports 0.5.5.
 
-You need to specify a version of jcuda to use as well. The version will depend on your GPU. Amazon supports 0.5.5.
-
-
-We will be streamllining this process soon as well. 
-
-
-
+We will be streamlining this process soon. 
 
 Basics:
 
-
-
 In place operations:
-
 
          INDArray arr = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
          //scalar operation
@@ -89,16 +66,14 @@ In place operations:
          //element wise operations
          INDArray arr2 = ND4j.create(new float[]{5,6,7,8},new int[]{2,2});
          arr.addi(arr2);
- 
-       
-         Duplication operations:
+         
+Duplication operations:
                 
                  //clone then add
                   arr.add(1);
                   //clone then add
                   arr.add(arr2);
                  
-        
-         Dimension wise operations (column and row order depending on the implementation chosen)
+Dimensionwise operations (column and row order depending on the implementation chosen)
          
          arr.sum(0);
