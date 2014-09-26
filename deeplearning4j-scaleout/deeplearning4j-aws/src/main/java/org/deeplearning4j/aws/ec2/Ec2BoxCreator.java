@@ -32,7 +32,6 @@ public class Ec2BoxCreator extends BaseS3 {
 	public final static String DEFAULT_AMI = "ami-8997afe0";
 	/**
 	 * 
-	 * @param amiId amazon image id
 	 * @param numBoxes number of boxes
 	 * @param size the size of the instances
 	 */

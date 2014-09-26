@@ -175,7 +175,12 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     public void resetWeights() {
         int words = vocabs.size();
         rng = new MersenneTwister(123);
-        syn0  = Nd4j.rand(new int[]{words,vectorLength},rng).subi(0.5f).divi(vectorLength);
+        syn0  = Nd4j.zeros(new int[]{words,vectorLength});
+        for(int i = 0; i < syn0.rows(); i++) {
+            INDArray row = Nd4j.rand(new int[]{syn0.columns()},rng);
+            row.subi(0.5f).divi((float) vectorLength);
+            syn0.putRow(i,row);
+        }
         syn1 = Nd4j.create(syn0.shape());
 
     }
