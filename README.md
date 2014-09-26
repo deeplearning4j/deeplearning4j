@@ -1,4 +1,4 @@
-ND4j
+ND4J
 =========================================
 
 
@@ -102,12 +102,3 @@ In place operations:
          Dimension wise operations (column and row order depending on the implementation chosen)
          
          arr.sum(0);
-         
-       
-
-
-
-
-
-
-
