@@ -57,7 +57,7 @@ public class DBNTest {
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
         d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
         //note zeros here
-       // d.getOutputLayer().setW(Nd4j.zeros(d.getOutputLayer().getW().shape()));
+        // d.getOutputLayer().setW(Nd4j.zeros(d.getOutputLayer().getW().shape()));
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
@@ -83,8 +83,8 @@ public class DBNTest {
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
                 .learningRate(1e-1f).nIn(784).nOut(3).build();
 
-
-        DBN d = new DBN.Builder().configure(conf)
+        List<NeuralNetConfiguration> confs = new ArrayList<>();
+        DBN d = new DBN.Builder().configure(conf).layerWiseCOnfiguration(confs)
                 .hiddenLayerSizes(new int[]{500, 250, 200})
                 .build();
 
