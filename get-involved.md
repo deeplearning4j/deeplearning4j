@@ -17,9 +17,7 @@ Deeplearning4j is distributed under an Apache 2.0 license, the most permissive l
 
 We're looking for contributors to help on a number of fronts. 
 
-Convolutional nets are 90 percent done -- we just need to build the front end to load the data in.  Recursive neural tensor networks will be the next stop, and we're planning to add RNNs, although they're well implemented elsewhere. 
-
-The big project later this year will be integrating with GPUs. Some of these will be hard (but not impossible) nuts to crack and help is welcome. 
+We're planning to add recurrent neural nets, although they're well implemented elsewhere. A Python SDK is planned, as is Spark integration. 
 
 For those of you who'd like to bring deep-learning applications to a much wider set of users, we can use help with documentation and tutorials. This site is open source and we accept pull requests (just look on the gh-pages branch).
 
