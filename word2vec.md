@@ -228,13 +228,13 @@ Here are some functions you can call:
 
 *Q: I get a lot of stack traces such as*
 
-    java.lang.StackOverflowError: null
-    at java.lang.ref.Reference.<init>(Reference.java:254) ~[na:1.8.0_11]
-    at java.lang.ref.WeakReference.<init>(WeakReference.java:69) ~[na:1.8.0_11]
-    at java.io.ObjectStreamClass$WeakClassKey.<init>(ObjectStreamClass.java:2306) [na:1.8.0_11]
-    at java.io.ObjectStreamClass.lookup(ObjectStreamClass.java:322) ~[na:1.8.0_11]
-    at java.io.ObjectOutputStream.writeObject0(ObjectOutputStream.java:1134) ~[na:1.8.0_11]
-    at java.io.ObjectOutputStream.defaultWriteFields(ObjectOutputStream.java:1548) ~[na:1.8.0_11]
+       java.lang.StackOverflowError: null
+       at java.lang.ref.Reference.<init>(Reference.java:254) ~[na:1.8.0_11]
+       at java.lang.ref.WeakReference.<init>(WeakReference.java:69) ~[na:1.8.0_11]
+       at java.io.ObjectStreamClass$WeakClassKey.<init>(ObjectStreamClass.java:2306) [na:1.8.0_11]
+       at java.io.ObjectStreamClass.lookup(ObjectStreamClass.java:322) ~[na:1.8.0_11]
+       at java.io.ObjectOutputStream.writeObject0(ObjectOutputStream.java:1134) ~[na:1.8.0_11]
+       at java.io.ObjectOutputStream.defaultWriteFields(ObjectOutputStream.java:1548) ~[na:1.8.0_11]
 
 *A:* Look inside the directory where you started your Word2vec application. This can, for example, be an IntelliJ project home directory or the directory where you typed Java at the command line. It should have some directories that look like:
 
