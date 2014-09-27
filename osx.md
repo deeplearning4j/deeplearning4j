@@ -7,7 +7,7 @@ layout: default
 
 * DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
 
-* Due to our reliance on Jblas for CPUs, native bindings for Blas are required. These are already installed on OSx. 
+* Due to our reliance on Jblas for CPUs, native bindings for Blas are required. These are already installed on OSX. 
 
 * You can install DL4J either from source or from Maven central. Here are the **source** instructions. 
 
