@@ -26,7 +26,18 @@
           <div class="container">
            <h1 style="display:inline-flex; padding-top:"><a href="/" style="color:#F2F2EB; top:50px; padding-top:50px" >{{ site.name }}</a></h1>
             <ul class="navlinks" style="display:block; padding-top:60px">
-                <li><a style="color:#F2F2EB" href="gettingstarted.html">Get Started</a></li>
+                <li>
+                  <div class="dropdown">
+                      <a id="dLabel" role="button" data-toggle="dropdown" data-target="#" href="/gettingstarted.html">
+                      Get Started <span class="caret"></span>
+                      </a>
+                        <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                          <li role="presentation">
+                            <a role="menuitem" tabindex="-1" href="../windows.html">Windows</a>
+                          </li>
+                        </ul>
+                  </div>
+                </li>
                 <li><a style="color:#F2F2EB" href="get-involved.html">Get Involved</a></li>
                 <li><a style="color:#F2F2EB" href="http://www.skymind.io/upcoming-events.html">September Bootcamps</a></li>
                 <li><a style="color:#F2F2EB" href="downloads.html">Download</a></li>
