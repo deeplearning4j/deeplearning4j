@@ -13,8 +13,6 @@ Given an input record, the DBN will choose a label from a set of labels. This go
 
 The network outputs a vector containing one number per output node. The number of output nodes equals the number of labels. Each of those outputs are going to be a 0 or 1, and taken together, those 0s and 1s form the vector. 
 
-![image of nn multiclassifier here](http://i.imgur.com/qfQWwHB.png)
-
 ### The IRIS Dataset
 
 The [Iris flower dataset](https://archive.ics.uci.edu/ml/datasets/Iris) is widely used in machine learning to test classification techniques. We will use it to verify the effectiveness of our neural nets.
