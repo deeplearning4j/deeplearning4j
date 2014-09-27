@@ -114,8 +114,8 @@ layout: default
              <version>0.0.3.2-SNAPSHOT</version>
            </dependency>
 
-**NEXT STEP**: We recommend following our [**MNIST tutorial**](../rbm-mnist-tutorial.html) and [running a few examples](../quickstart.html). 
+**Next step**: Follow our [**MNIST tutorial**](../rbm-mnist-tutorial.html) and [running a few examples](../quickstart.html). 
 
-**Advanced users**: If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html).
+If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html).
 
 For a deeper dive, check out our [Github repo](https://github.com/agibsonccc/java-deeplearning) or access the core through [Maven](http://maven.apache.org/download.cgi).
