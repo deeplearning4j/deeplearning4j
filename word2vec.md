@@ -100,7 +100,7 @@ The following code saves your Viterbi implementation for later use:
        
         SerializationUtils.saveObject(viterbi, new File("mypath"));
 
-### N-grams & skip-grams
+### N-grams & Skip-grams
 
 Words are read into the vector one at a time, *and scanned back and forth within a certain range*, much like n-grams. (An n-gram is a contiguous sequence of n items from a given linguistic sequence; it is the nth version of unigram, bigram, trigram, four-gram or five-gram.)  
 
@@ -160,7 +160,7 @@ In lines 1 and 2, we get a file pointer to the directory ‘reuters’. Then we 
 
 On lines 4-8, we prepare the data by homogenizing it (e.g. lower-case all words and remove punctuation marks), which makes it easier for processing. 
 
-### Preparing to create a Word2Vec object
+### Preparing to Create a Word2Vec Object
 
 Next we need the following
 
@@ -249,7 +249,7 @@ You can shut down your Word2vec application and try to delete them.
 
         Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5).layerSize(300).iterate(iter).tokenizerFactory(t).build();
 
-###fine-tuning DBNs
+###Fine-tuning DBNs
 
 Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used to finetune a deep-belief network:
 
