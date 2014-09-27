@@ -71,18 +71,6 @@ public class Word2VecExample {
 				String[] split = line.split(",");
 				System.out.println(vec.similarity(split[0],split[1]));
 			}
-
-
-
-
 		}
-
-
-
-
-
-
 	}
-
-
 }
