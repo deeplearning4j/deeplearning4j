@@ -7,7 +7,8 @@ layout: default
 
 * DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
 
-* Due to our reliance on Jblas for CPUs, native bindings for Blas are required. You'll find them on [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/) will ask you if you have Intel compilers. You do not. Instead, you will need to install [MinGW 32 bits](http://www.mingw.org/) (the download button is on the upper right) and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). Lapack offers the altervative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). Yes, it's all a big pain in the butt. We're working on it...
+* Due to our reliance on Jblas for CPUs, native bindings for Blas are required. You'll find them on [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/), which will ask you if you have Intel compilers. You do not. 
+* Instead, you will need to install [MinGW 32 bits](http://www.mingw.org/) (the download button is on the upper right) and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). Lapack offers the altervative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). Yes, it's all a big pain in the butt. We're working on it...
 
 * You can install DL4J either from source or from Maven central. Here are the **source** instructions. 
 
