@@ -236,8 +236,10 @@ Here are some functions you can call:
 
 *A:* Look inside the directory where you started your Word2vec application. This can, for example, be an IntelliJ project home directory or the directory where you typed Java at the command line. It should have some directories that look like:
 
-ehcache_auto_created2810726831714447871diskstore  ehcache_auto_created4727787669919058795diskstore
-ehcache_auto_created3883187579728988119diskstore  ehcache_auto_created9101229611634051478diskstore
+       ehcache_auto_created2810726831714447871diskstore  
+       ehcache_auto_created4727787669919058795diskstore
+       ehcache_auto_created3883187579728988119diskstore  
+       ehcache_auto_created9101229611634051478diskstore
 
 You can shut down your Word2vec application and try to delete them.
 
