@@ -255,6 +255,6 @@ Now that you have a basic idea of how to set up Word2Vec, here's one example of 
 
 <script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/word2vec/Word2VecExample.java?slice=28:73"></script>
 
-There are a couple parameters to pay special attention to here. The first is the number of words to be vectorized in the window, which you enter after widowSize. The second is the number of nodes contained in the layer, which you'll enter after LayerSize. Those two numbers will be multiplied to obtain the number of inputs. 
+There are a couple parameters to pay special attention to here. The first is the number of words to be vectorized in the window, which you enter after WindowSize. The second is the number of nodes contained in the layer, which you'll enter after LayerSize. Those two numbers will be multiplied to obtain the number of inputs. 
 
 Word2Vec is especially useful in preparing text-based data for information retrieval and QA systems, which DL4J implements with [deep autoencoders](../deepautoencoder.html). For sentence parsing and other NLP tasks, we also have an implementation of [recursive neural tensor networks](../recursiveneuraltensornetwork.html).
