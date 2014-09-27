@@ -10,9 +10,11 @@ layout: default
 
 ###Introduction to Word2vec
 
-Word2vec is at the heart of text analysis with deep learning. While it does not implement deep learning, Word2vec is crucial to getting input in a numerical form that deep-learning nets can ingest -- the vector. 
+Word2Vec is a neural net that processes textual data before they are handled by deep-learning algorithms. It is at the heart of text analysis with deep learning. While it does not implement deep learning, Word2vec is crucial to getting input in a numerical form that deep-learning nets can ingest -- the vector. Its advantage over methods such as Bag of Words is that it retains knowledge of the context surrounding any given word. 
 
-Word2vec creates features without human intervention, and some of those features include the context of individual words; that is, it retains context in the form of multiword windows. In machine learning, the meaning of a word is essentially the words that surround it. Given enough data, usage and context, Word2vec can make highly accurate guesses as to a word’s meaning (for the purpose of deep learning, a word's meaning is simply a sign that helps to classify larger entities) based on its past appearances. 
+Word2vec creates features without human intervention, including the context of individual words; that context comes in the form of multiword windows. (In machine learning, the meaning of a word is the words that surround it.) Given enough data, usage and context, Word2vec can make highly accurate guesses as to a word’s meaning (for the purpose of deep learning, a word's meaning is simply a sign that helps to classify larger entities) based on its past appearances. 
+
+Word2vec expects a string of sentences as its input. Each sentence -- that is, each list of words -- is vectorized and then compared to other vectorized lists of words in an n-dimensional vector space. Related words and/or groups of words appear next to each other in that space. Quantifying them allows us to measure their similarities with exactitude, and therefore to cluster them. Those clusters form the basis of search, sentiment analysis and recommendations. 
 
 The output of the Word2vec neural net is a vocabulary with a vector attached to it, which can be fed into a deep-learning net for classification/labeling. 
 
