@@ -8,7 +8,7 @@ layout: default
 
 *to see our Word2vec code, skip to the [training section](../word2vec.html#training1)*
 
-###introduction to word2vec
+###Introduction to Word2vec
 
 Word2vec is at the heart of text analysis with deep learning. While it does not implement deep learning, Word2vec is crucial to getting input in a numerical form that deep-learning nets can ingest -- the vector. 
 
@@ -24,9 +24,9 @@ Here's a graph of words associated with "China" using Word2vec:
 
 ![Alt text](../img/word2vec.png) 
 
-*The other method of preparing text for input to a deep-learning net is called [Bag of Words (BoW)](../bagofwords-tf-idf.html). BoW produces a vocabulary with word counts associated to each element of the text. Its output is a wordcount vector. That said, it does not retain context, and therefore is not useful in a granular analysis of those words' meaning.* 
+The other method of preparing text for input to a deep-learning net is called [Bag of Words (BoW)](../bagofwords-tf-idf.html). BoW produces a vocabulary with word counts associated to each element of the text. Its output is a wordcount vector. That said, it does not retain context, and therefore is not useful in a granular analysis of those words' meaning.
 
-## <a name="training1">training</a> 
+## <a name="training1">Training</a> 
 
 Word2Vec trains on raw text. It then records the context, or usage, of each word encoded as word vectors. After training, it's used as lookup table to compose windows of training text for various tasks in natural-language processing.
 
@@ -50,7 +50,7 @@ You can then use Word2vec as a lookup table in the following way:
 
 If the word isn't in the vocabulary, Word2vec returns zeros -- nothing more.
 
-### windows
+### Windows
 
 Word2Vec works with neural networks by facilitating the moving-window model for training on word occurrences. There are two ways to get windows for text:
 
@@ -99,7 +99,154 @@ on anything containing that window, it will automatically contain that label. Th
 The following code saves your Viterbi implementation for later use:
        
         SerializationUtils.saveObject(viterbi, new File("mypath"));
-        
+
+### N-grams & skip-grams
+
+Words are read into the vector one at a time, *and scanned back and forth within a certain range*, much like n-grams. (An n-gram is a contiguous sequence of n items from a given linguistic sequence; it is the nth version of unigram, bigram, trigram, four-gram or five-gram.)  
+
+This n-gram is then fed into a neural network to learn the significance of a given word vector; i.e. significance is defined as its usefulness as an indicator of certain larger meanings, or labels. 
+
+![enter image description here](http://i.imgur.com/SikQtsk.png)
+
+Word2vec uses different kinds of "windows" to take in words: continuous n-grams and skip-grams. 
+
+Consider the following sentence:
+
+    How’s the weather up there?
+
+This can be broken down into a series of continuous trigrams.
+
+    {“How’s”, “the”, “weather”}
+    {“the”, “weather”, “up”}
+    {“weather”, “up”, “there”}
+
+It can also be converted into a series of skip-grams.
+
+    {“How’s”, “the”, “up”}
+    {“the”, “weather”, “there”}
+    {“How’s”, “weather”, “up”}
+    {“How’s”, “weather”, “there”}
+    ...
+
+A skip-gram, as you can see, is a form of noncontinous n-gram.
+
+In the literature, you will often see references to a "context window." In the example above, the context window is 3. Many windows use a context window of 5. 
+
+### The Dataset
+
+For this example, we'll use a small dataset of articles from the Reuters newswire. 
+
+With DL4J, you can use a **[UimaSentenceIterator](https://uima.apache.org/)** to intelligently load your data. For simplicity's sake, we'll use a **FileSentenceIterator**.
+
+### Loading Your Data
+
+DL4J makes it easy to load a corpus of documents. For this example, we have a folder in the user home directory called "reuters," containing a couple articles.
+
+Consider the following code:
+
+    String reuters= System.getProperty("user.home") +             
+    new String("/reuters/");
+    File file = new File(reuters);
+
+    SentenceIterator iter = new FileSentenceIterator(new SentencePreProcessor() {
+    @Override
+    public String preProcess(String sentence) {
+        return new 
+        InputHomogenization(sentence).transform();
+        }
+    },file);
+
+In lines 1 and 2, we get a file pointer to the directory ‘reuters’. Then we can pass that to FileSentenceIterator. The SentenceIterator is a critical component to DL4J’s Word2Vec usage. This allows us to scan through your data easily, one sentence at a time.
+
+On lines 4-8, we prepare the data by homogenizing it (e.g. lower-case all words and remove punctuation marks), which makes it easier for processing. 
+
+### Preparing to create a Word2Vec object
+
+Next we need the following
+
+        TokenizerFactory t = new UimaTokenizerFactory();
+
+In general, a tokenizer takes raw streams of undifferentiated text and returns discrete, tidy, tangible representations, which we call tokens and are actually words. Instead of seeing something like: 
+
+    the|brown|fox   jumped|over####spider-man.
+
+A tokenizer would give us a list of words, or tokens, that we can recognize as the following list
+
+1. the
+2. brown
+3. fox
+4. jumped
+5. over
+6. spider-man
+
+A smart tokenizer will recognize that the hyphen in *spider-man* can be part of the name. 
+
+The word “Uima” refers to an Apache project -- Unstructured Information Management applications -- that helps make sense of unstructured data, as a tokenizer does. It is, in fact, a smart tokenizer. 
+
+### Creating a Word2Vec object
+
+Now we can actually write some code to create a Word2Vec object. Consider the following:
+
+    Word2Vec vec = new Word2Vec.Builder().windowSize(5).layerSize(300).iterate(iter).tokenizerFactory(t).build();
+
+Here we can create a word2Vec with a few parameters
+
+    windowSize : Specifies the size of the n-grams. 5 is a good default
+
+    iterate : The SentenceIterator object that we created earlier
+    
+    tokenizerFactory : Our UimaTokenizerFactory object that we created earlier
+
+This next line is important. 
+
+    vec.setCache(new EhCacheVocabCache());
+
+The EhCacheVocabCache object is important to maintain performance. This object will cache your vocabulary to disk. You need to allocate and create a new cache object for DL4J to work properly.
+
+After this line it's also a good idea to set up any other parameters you need.
+
+Finally, we can actually fit our data to a Word2Vec object
+
+    vec.fit();
+
+That’s it. The fit() method can take a few moments to run, but when it finishes, you are free to start querying a Word2Vec object any way you want. 
+
+    String oil = new String("oil");
+    System.out.printf("%f\n", vec.similarity(oil, oil));
+
+In this example, you should get a similarity of 1. Word2Vec uses cosine similarity, and a cosine similarity of two identical vectors will always be 1. 
+
+Here are some functions you can call:
+
+1. *similarity(String, String)* - Find the cosine similarity between words
+2. *analogyWords(String A, String B, String x)* - A is to B as x is to ?
+3. *wordsNearest(String A, int n)* - Find the n-nearest words to A
+
+### Troubleshooting & Tuning Word2Vec
+
+*Q: I get a lot of stack traces such as*
+
+    java.lang.StackOverflowError: null
+    at java.lang.ref.Reference.<init>(Reference.java:254) ~[na:1.8.0_11]
+    at java.lang.ref.WeakReference.<init>(WeakReference.java:69) ~[na:1.8.0_11]
+    at java.io.ObjectStreamClass$WeakClassKey.<init>(ObjectStreamClass.java:2306) [na:1.8.0_11]
+    at java.io.ObjectStreamClass.lookup(ObjectStreamClass.java:322) ~[na:1.8.0_11]
+    at java.io.ObjectOutputStream.writeObject0(ObjectOutputStream.java:1134) ~[na:1.8.0_11]
+    at java.io.ObjectOutputStream.defaultWriteFields(ObjectOutputStream.java:1548) ~[na:1.8.0_11]
+
+*A:* Look inside the directory where you started your Word2vec application. This can, for example, be an IntelliJ project home directory or the directory where you typed Java at the command line. It should have some directories that look like:
+
+ehcache_auto_created2810726831714447871diskstore  ehcache_auto_created4727787669919058795diskstore
+ehcache_auto_created3883187579728988119diskstore  ehcache_auto_created9101229611634051478diskstore
+
+You can shut down your Word2vec application and try to delete them.
+
+*Q: Not all of the words from my raw text data are appearing in my Word2vec object…*
+
+*A: Try to raise the layer size via **.layerSize()** on your Word2Vec object like so*
+
+        Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5).layerSize(300).iterate(iter).tokenizerFactory(t).build();
+
 ###fine-tuning DBNs
 
 Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used to finetune a deep-belief network:
