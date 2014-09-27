@@ -251,10 +251,10 @@ You can shut down your Word2vec application and try to delete them.
 
 ###Fine-tuning DBNs
 
-Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used to finetune a deep-belief network:
+Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used with DL4J's API:
 
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/word2vec/MovingWindowSingleThreaded.java?slice=96:110"></script>
+<script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/word2vec/Word2VecExample.java?slice=28:73"></script>
 
-There are three parameters to pay special attention to here. The first is the number of words to be vectorized in the window, which you enter after getWindow. The second is the number of nodes contained in the layer, which you'll enter after getLayerSize. Those two numbers will be multiplied to obtain the number of inputs. Finally, remember to make your activation algorithm *hardtanh*. 
+There are a couple parameters to pay special attention to here. The first is the number of words to be vectorized in the window, which you enter after widowSize. The second is the number of nodes contained in the layer, which you'll enter after LayerSize. Those two numbers will be multiplied to obtain the number of inputs. 
 
 Word2Vec is especially useful in preparing text-based data for information retrieval and QA systems, which DL4J implements with [deep autoencoders](../deepautoencoder.html). For sentence parsing and other NLP tasks, we also have an implementation of [recursive neural tensor networks](../recursiveneuraltensornetwork.html).
