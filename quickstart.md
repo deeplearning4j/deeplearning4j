@@ -66,6 +66,6 @@ The way to judge whether your net has successfully learned the dataset is to loo
 
 By this point, you should have a net that produces relatively accurate reconstructions. Congratulations. (If you haven't, please [let us know](https://groups.google.com/forum/#!forum/deeplearning4j)!)
 
-**NEXT STEP**: Here is a tutorial on [how to run any example on DL4J](../runexample.html). Go [here](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/) to choose the next example to run. (You can choose examples for MNIST, Iris and Labeled Faces in the Wild.)
+**NEXT STEP**: Here is a tutorial on [how to run any example on DL4J](../runexample.html). Go [here](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j) to choose the next example to run. (You can choose examples for MNIST, Iris and Labeled Faces in the Wild.)
 
 Once you've explored all our examples, you'll want to get the whole code base running by following the instructions on our  [Getting Started page](../gettingstarted.html).
