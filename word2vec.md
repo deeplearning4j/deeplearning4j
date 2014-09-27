@@ -226,7 +226,7 @@ Here are some functions you can call:
 
 ### Troubleshooting & Tuning Word2Vec
 
-*Q: I get a lot of stack traces such as*
+*Q: I get a lot of stack traces like this*
 
        java.lang.StackOverflowError: null
        at java.lang.ref.Reference.<init>(Reference.java:254) ~[na:1.8.0_11]
