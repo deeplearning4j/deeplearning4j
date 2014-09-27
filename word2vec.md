@@ -247,7 +247,7 @@ You can shut down your Word2vec application and try to delete them.
 
 *Q: Not all of the words from my raw text data are appearing in my Word2vec object…*
 
-*A: Try to raise the layer size via **.layerSize()** on your Word2Vec object like so*
+*A:* Try to raise the layer size via **.layerSize()** on your Word2Vec object like so
 
         Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5).layerSize(300).iterate(iter).tokenizerFactory(t).build();
 
