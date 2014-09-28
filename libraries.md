@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# architecture
+# Architecture
 
 DeepLearning4j uses a handful of technologies for normal and distributed training, as well as prediction with neural networks. Below you'll find the current architecture, an alpha version that is likely to change with the welcome feedback of our users.
 

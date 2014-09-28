@@ -3,10 +3,9 @@ title:
 layout: default
 ---
 
-*previous* - [bag of words - tf-idf](../bagofwords-tf-idf.html)
 # Word2vec
 
-*to see our Word2vec code, skip to the [training section](../word2vec.html#training1)*
+To see our Word2vec code, skip to the [training section](../word2vec.html#training1).
 
 ###Introduction to Word2vec
 

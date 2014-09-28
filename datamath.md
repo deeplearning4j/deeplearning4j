@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# data's mathematical representations
+# Data's mathematical representations
 
 Neural nets, and computers in general, only perceive the world as it is processed through mathematical transformations. Math is their seeing-eye dog. Unlike humans, they require data to be transformed into numeric representations before they can work with it. Deeplearning4j utilizes a number of built-in mathematical functions to manipulate and represent data; i.e. to make it workable. 
 

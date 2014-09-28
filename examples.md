@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# use cases
+# Use cases
 
 ### named-entity recognition
 

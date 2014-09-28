@@ -7,7 +7,7 @@ layout: default
 
 In building Deeplearning4j, we made a series of design decisions, explained in depth below.
 
-### minibatch processing
+### Minibatch processing
 
 To train, deep-learning nets must ingest data, and to train well, they usually need to ingest a great deal. The networks can process the input more quickly and more accurately by ingesting minibatches 5-10 elements at a time in parallel. 
 
@@ -23,7 +23,7 @@ Minibatches also allow for parallel learning in the cluster, which is crucial to
 
 In Google's large-scale distributed training, minibatches are part of its [Sandblaster tool](http://research.google.com/archive/large_deep_networks_nips2012.html). The algorithm used to process them is called [Limited-memory BFGS](https://en.wikipedia.org/wiki/Limited-memory_BFGS), or L-BFGS.
 
-### parameter averaging
+### Parameter averaging
 
 Parameter averaging is an integral part of distributed training. Parameters are the weights and biases of node layers in the net. When training is distributed to several workers, they will send different sets of parameters back to the master. Parameter averaging is how the master coordinates the workers efforts, taking into account differences in the data that each worker trained on. 
 
@@ -35,7 +35,7 @@ This tool is similar to L2 regularization, which also ensures that weights don't
 
 It's important to note that the parameters of each layer in a multilayer network, including the output layer, are added up and averaged. 
 
-### job coordination
+### Job coordination
 
 Job coordination is central to the distributed training of neural nets, the method by which many worker nodes can act in concert. Its overarching theme is internode communication. In Deeplearning4j, job coordination depends on Zookeeper and Hazelcast. 
 
@@ -51,6 +51,6 @@ Zookeeper acts as the central store for configuration; it's what the system uses
 
 Configuration will create a single-threaded network at each node, an actual deep-belief network or restricted Boltzmann machine. The conf contains metadata about where the master is, the absolute path to the master actor, or parameter server. The parameter server functions as the source of truth, or current best model, for all nodes. 
 
-### amazon web services support
+### Amazon Web Services Support
 
 Deeplearning4j allows you to programmatically set up nodes. With it, you can create EC2 instances, and provision and read data from S3. 

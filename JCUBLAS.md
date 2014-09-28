@@ -1,7 +1,11 @@
-DL4J GPU Support
-================
-DL4J now includes basic GPU support. This means DL4J can use your GPU device to greatly enhance its performance
+---
+title: 
+layout: default
+---
 
+# DL4J GPU Support
+
+Deeplearning4j now includes basic GPU support. This means it can use your GPU device to enhance its performance.
 
 Architecture
 ----
@@ -320,7 +324,7 @@ public class JCublasSample
     }
 }```
 
-Now, go a head and compile and run it. For simplicity's sake, I copy the jar files into the $CWD.
+Now, go ahead and compile and run it. For simplicity's sake, I copy the jar files into the $CWD.
 
     $ cp JCuda-All-0.5.5-bin-linux-x86_64/*jar ./
     $ javac -cp ".:*" JCublasSample.java

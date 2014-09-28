@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-#deep learning: further reading
+# Deep learning: further reading
 
 **[Semantic Compositionality through Recursive Matrix-Vector Spaces](http://ttic.uchicago.edu/~haotang/speech/SocherHuvalManningNg_EMNLP2012.pdf)**; Richard Socher, Brody Huval, Christopher D. Manning and Andrew Y. Ng; Computer Science Department, Stanford University
 

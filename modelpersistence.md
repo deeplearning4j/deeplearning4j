@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# saving and loading a neural network
+# Saving and loading a neural network
 
 Neural networks that implement the [Persistable](../doc/org/deeplearning4j/nn/Persistable.html) interface are persistable via Java serialization.
 

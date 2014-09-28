@@ -3,23 +3,23 @@ title: deeplearning4j
 layout: default
 ---
 
-# creating deep-learning networks
+# Creating deep-learning networks
 
-## single thread
+## Single thread
 
 While single-threaded and multithreaded deep-learning networks are just two ways of distributing the task load, real differences arise between single network and multinetwork deep-learning systems, as well as stochastic and nonstochastic generative models.
 
 Single-network neural nets are composed of just two layers, like a [cat's cradle](https://en.wikipedia.org/wiki/File:Cat's_cradle_soldier's_bed.png). Multinetwork nets link double-layer nets together in long chains, each one functioning as a subnetwork in its own right. 
 
-### continuous restricted boltzmann machine
+### Continuous restricted boltzmann machine
 
 Restricted Boltzmann machines are composed of binomial neurons; that is, they can only activated with the values one and zero. Continuous restricted Boltzmann machines accept decimals. That is the only difference. 
 
-### parameters
+### Parameters
 
-### input
+### Input
 
-### denoising autoencoder
+### Denoising autoencoder
 
 An autoencoder is a neural network used for dimensionality reduction; that is, for feature selection and extraction. Autoencoders with more hidden layers than inputs run the risk of learning the [identity function](https://en.wikipedia.org/wiki/Identity_function) -- where the output simple equals the input -- thereby becoming useless. 
 

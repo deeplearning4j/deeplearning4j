@@ -3,8 +3,7 @@ title:
 layout: default
 ---
 
-*previous* - [deep-belief network](../deepbeliefnetwork.html)
-# deep autoencoders
+# Deep autoencoders
 
 *to cut straight to the code, [click here](../deepautoencoder.html#initiate)*
 

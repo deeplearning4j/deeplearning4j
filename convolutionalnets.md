@@ -3,7 +3,6 @@ title:
 layout: default
 ---
 
-*previous* - [restricted Boltzmann machine](../restrictedboltzmannmachine.html)
 # Convolutional Nets
 
 Convolutional nets take slices of the feature space, say, of an image, and learn them one by one. 

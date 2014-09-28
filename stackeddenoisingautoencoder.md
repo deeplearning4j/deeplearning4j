@@ -3,8 +3,7 @@ title:
 layout: default
 ---
 
-*previous* - [denoising autoencoders](../denoisingautoencoder.html)
-# stacked denoising autoencoders
+# Stacked denoising autoencoders
 
 A stacked denoising autoencoder is to a denoising autoencoder what a deep-belief network is to a [restricted Boltzmann machine](../restrictedboltzmannmachine.html). A key function of SDAs, and deep learning more generally, is their capacity for unsupervised pre-training, layer by layer, as input is fed through. Once each layer is pre-trained to conduct feature selection and extraction on the input from the preceding layer, a second stage of supervised fine tuning can follow. 
 
@@ -12,13 +11,13 @@ A word on stochastic corruption in SDAs: Denoising autoencoders shuffle data aro
 
 The serial resamplings are based on a generative model to randomly provide data to be processed. This is known as a Markov Chain, and more specifically, a Markov Chain Monte Carlo algorithm that steps through the data set seeking a representative sampling of indicators that can be used to construct more and more complex features.
 
-### parameters & corruption levels
+### Parameters & corruption levels
 
 See the [parameters common to all multilayer networks](../multinetwork.html). 
 
 The amount of noise to apply to the input will take the form of a percentage. Typically 30 percent (0.3) is fine, but if you have a small amount of data, you may want to consider adding more.
 
-### initiating a stacked denoising autoencoder
+### Initiating a stacked denoising autoencoder
 
 Here's how you set up a single-thread stacked denoising autoencoder: 
 

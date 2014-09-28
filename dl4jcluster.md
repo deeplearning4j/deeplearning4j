@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-#setting up a deeplearning4j cluster
+# Setting up a deeplearning4j cluster
 
 *Assumptions: AWS experience*
 

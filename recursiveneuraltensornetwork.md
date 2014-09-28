@@ -3,7 +3,6 @@ title:
 layout: default
 ---
 
-*previous* - [deep autoencoder](../deepautoencoder.html)
 # Recursive Neural Tensor Network
 
 Recursive neural tensor networks (RNTNs) are neural nets useful for natural-language processing. They have a tree structure with a neural net at each node. You can use recursive neural tensor networks for boundary segmentation, to determine which word groups are positive and which are negative. The same applies to sentences as a whole. 

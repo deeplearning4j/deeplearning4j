@@ -3,8 +3,7 @@ title:
 layout: default
 ---
 
-*previous* - [running worker nodes](../distributed.html)
-# mnist for restricted boltzmann machines
+# MNIST for restricted Boltzmann machines
 
 The MNIST database is a large set of handwritten digits used to train neural networks and other algorithms in image recognition. MNIST has 60,000 images in its training set and 10,000 in its test set. 
 

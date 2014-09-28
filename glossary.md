@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# glossary
+# Glossary
 
 ### <a name="activation">Activation</a> 
 An activation for a neural network is defined as the mapping of the input to the output via a [non-linear transform function](#nonlineartransformfunction).

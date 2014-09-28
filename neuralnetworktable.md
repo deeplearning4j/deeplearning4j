@@ -3,7 +3,6 @@ title:
 layout: default
 ---
 
-*previous* - [deep autoencoder](../deepautoencoder.html)
 # How to Choose a Neural Network
 
 The following table attempts to show the neural nets most useful for different problems. 

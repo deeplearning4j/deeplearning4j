@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# single-layer neural network
+# Single-layer neural network
 
 A single-layer neural network in deep learning is a net composed of an input layer, which is  visible layer, and a hidden output layer. 
 
