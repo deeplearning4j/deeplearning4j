@@ -3,8 +3,7 @@ title:
 layout: default
 ---
 
-
-###model saving
+# Model saving
 
 In DL4J, you can save models via the [Persistable](../doc/org/deeplearning4j/nn/Persistable.html) interface.
 

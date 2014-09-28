@@ -1,5 +1,4 @@
-Deep Learning for Java
-=====================================
+# Deep Learning for Java
 
 DL4J leverages matrix operations built on top of the BLAS linear algebra libraries for faster performance over your standard Java libraries.
 
@@ -19,7 +18,6 @@ Typically building a network will look something like this.
                                 .numberOfInputs(conf.getInt(N_IN)).numberOfOutPuts(conf.getInt(OUT)).withClazz(conf.getClazz(CLASS))
                                 .hiddenLayerSizes(conf.getIntsWithSeparator(LAYER_SIZES, ",")).withRng(rng)
                                 .build();
-
 
 Configuration is based on the constants specified in DeepLearningConfigurable.
 
@@ -66,13 +64,13 @@ Usage for the command line app:
              -t type of worker
              -ad address of master worker
 
-Training tips:
+### Training tips
 
 For classification: Due to heavy sampling leveraged in deep learning, try to have training batches (each row in a training matrix is an individual part of a batch). It is reccomended to have one class of each label in each training batch to minimize sampling error (See Hinton's Practical Guide to RBMs).
 
 Maven central and other support coming soon.
 
-Contact us:
+### Contact us
 
 Deeplearning4j has its own IRC channel at https://webchat.freenode.net/, a network intended primarily for developers of free and open source software. Just enter /join #deeplearning4j on IRC where you would normally type to chat.
 

@@ -3,7 +3,6 @@ title:
 layout: default
 ---
 
-*previous* - [mnist for deep-belief networks](../mnist-tutorial.html)
 # DBNs = Classifiers
 
 Deep-belief networks are multi-class classifiers. Given many inputs belonging to various classes, a DBN can first learn from a small training set, and then classify unlabeled data according to those various classes. It can take in one input and decide which label should be applied to its data record. 

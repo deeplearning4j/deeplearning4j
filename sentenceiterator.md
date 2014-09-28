@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# sentence iterator
+# Sentence iterator
 
 A [sentence iterator](../doc/org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) is used in both [Word2vec](../word2vec.html) and [Bag of Words](../bagofwords-tf-idf.html).
 

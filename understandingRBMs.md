@@ -3,10 +3,10 @@ title:
 layout: default
 ---
 
-*previous* - [restricted Boltzmann machines](../restrictedboltzmannmachine.html)
-# understanding RBMs
+# Understanding RBMs
 
-Restricted Boltzmann machines are at the heart of many deep-learning nets, so their mechanism deserves a bit more attention. 
+[Restricted Boltzmann machines](../restrictedboltzmannmachine.html) are at the heart of many deep-learning nets, so their mechanism deserves a bit more attention. 
+
 To walk through the process of how an RBM works, we’ll use the example of [MNIST](../rbm-mnist-tutorial.html), a collection of images representing the handwritten numerals one through nine, which RBMs are typically trained to recognize and classify in order to prove that they function at all.
 
 Each RBM has just two "node" layers, a visible layer and a hidden one. The first, visible, layer receives input; that is, the data you feed into the net to be learned. You can think of the RBM's input nodes as receptacles into which random samples of data are placed. They’re data boxes, each holding a data point, which in the initial layer would be a sampling of pixels. 
@@ -17,7 +17,7 @@ As it iterates over MNIST, an RBM is fed one numeral-image at a time *without kn
 
 Each time the RBM guesses wrong, it is told to go back and try again, until it discovers the pixels that best indicate the numeral they’re a part of. The connections among nodes that led it to the wrong conclusion are punished, or discounted. They grow weaker as the net searches for a path toward greater accuracy and less error.
 
-### invisible cities
+### Invisible cities
 
 Since it's a stretch to even imagine an entity that cannot identify numbers, one way to explain how RBMs work is through analogy.
 
@@ -47,7 +47,7 @@ So maybe from your initial Market Street data point, you would have a 50 percent
 
 Likewise, while many numeral-images — 1, 4, 5 and 7 — contain more or less vertical bars, only three of them also contain horizontal bars. And of those, only the 4 allows the two bars to cross forming four 90 degree angles. Thus, enlarging the groups of features per node as you move deeper also raises the likelihood that those increasingly rare feature-groups correlate with a single numeral-image. 
 
-### markov chains
+### Markov chains
 
 RBMs tie all their nodes together in an algorithm called a Markov Chain. Markov Chains are essentially logical circuits that connect two or more states via probabilities. A sequence of coin flips, a series of die rolls, [Rozencrantz and Guildenstern marching toward their fate](https://en.wikipedia.org/wiki/Rosencrantz_and_Guildenstern_Are_Dead). 
 

@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# about us
+# About us
 
 Deeplearning4j is an open-source, distributed deep-learning project in Java spearheaded by the people at [Skymind](http://www.skymind.io), a San Francisco-based business intelligence and enterprise software firm. We're a team of data scientists, deep-learning specialists, Java programmers and semi-sentient robots. 
 
@@ -15,6 +15,6 @@ There are a lot of knobs to turn when you're training a distributed deep-learnin
 
 Deeplearning4j has been featured in [Wired](http://www.wired.com/2014/06/skymind-deep-learning/), [GigaOM](http://gigaom.com/2014/06/02/a-startup-called-skymind-launches-pushing-open-source-deep-learning/), [Businessweek](http://www.businessweek.com/articles/2014-06-03/teaching-smaller-companies-how-to-probe-deep-learning-on-their-own), [Venturebeat](http://venturebeat.com/2014/06/02/skymind-launches-with-open-source-plug-and-play-deep-learning-features-for-your-app/) and [The Wall Street Journal](http://blogs.wsj.com/cio/2014/06/03/the-morning-download-apple-relies-on-ecosystem-for-innovation/). 
 
-Deeplearning4j has its own [IRC channel](https://webchat.freenode.net/) on Freenode, an IRC network intended primarily for developers of free and open-source software. Just enter /join #deeplearning4j in IRC where you would normally type to chat. 
+Deeplearning4j has its own [IRC channel on Freenode](https://webchat.freenode.net/), an IRC network intended primarily for developers of free and open-source software. Just enter /join #deeplearning4j in IRC where you would normally type to chat. 
 
 The linear algebra engine powering our matrix manipulations is [ND4J](http://nd4j.org/). (See its [Github repo here](https://github.com/SkymindIO/nd4j/).)

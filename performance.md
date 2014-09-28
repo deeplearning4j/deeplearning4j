@@ -3,8 +3,7 @@ title:
 layout: default
 ---
 
-*previous* - [architecture](../architecture.html)
-# performance and practical considerations
+# Performance and practical considerations
 
 A number of other deep-learning frameworks exist, differing from DL4J largely in their use of Python and their audience, which is the research community. They include [Theano](http://deeplearning.net/software/theano/), [PyBrain](http://pybrain.org/), [PyLearn2](http://deeplearning.net/software/pylearn2/) and the [neural network toolbox](http://www.mathworks.com/products/neural-network/) for MatLab.
 

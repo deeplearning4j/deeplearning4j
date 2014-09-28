@@ -3,8 +3,7 @@ title:
 layout: default
 ---
 
-*previous* - [iris flower tutorial](../iris-flower-dataset-tutorial.html)
-# data sets and machine learning
+# Data sets and machine learning
 
 Garbage in, garbage out. 
 

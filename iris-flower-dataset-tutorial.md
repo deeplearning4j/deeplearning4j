@@ -3,8 +3,6 @@ title:
 layout: default
 ---
 
-*previous* - [mnist for deep-belief networks](../mnist-tutorial.html)
-to run the example, [use this file](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/iris/IrisExample.java)
 # DBNs = Classifiers
 
 Deep-belief networks are multi-class classifiers. Given many inputs belonging to various classes, a DBN can first learn from a small training set, and then classify unlabeled data according to those various classes. It can take in one input and decide which label should be applied to its data record. 
@@ -12,6 +10,8 @@ Deep-belief networks are multi-class classifiers. Given many inputs belonging to
 Given an input record, the DBN will choose a label from a set of labels. This goes beyond a Boolean ‘yes’ or ‘no’ to handle a broader, multinomial taxonomy of inputs. 
 
 The network outputs a vector containing one number per output node. The number of output nodes equals the number of labels. Each of those outputs are going to be a 0 or 1, and taken together, those 0s and 1s form the vector. 
+
+*(To run the example, [use this file](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/iris/IrisExample.java).)*
 
 ### The IRIS Dataset
 

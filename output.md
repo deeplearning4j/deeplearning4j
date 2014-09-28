@@ -3,8 +3,7 @@ title:
 layout: default
 ---
 
-
-# output interpretation
+# Output interpretation
 
 The output of neural networks can be hard to interpret. You'll probably ask yourself questions like "How accurate is my model?" or "What do these numbers mean?" Not only that, but each kind of neural network has a different kind of output. 
 

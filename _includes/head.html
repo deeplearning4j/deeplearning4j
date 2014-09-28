@@ -1,132 +1,37 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <title margin-left="55px";>{{ page.title }}</title>
-        <meta name="viewport" content="width=device-width">
-        <meta name="description" content="Open-Source Deep-Learning Software">
-        <meta name="keywords" content="Deep Learning, Java, Hadoop, Restricted Boltzmann Machine, Deep-Belief Network, Neural Net, Scala, Clojure, JVM, Spark, Yarn, MNIST, Iris, Word2vec, Bag of Words, Convolutional Net, Recursive Neural Tensor Network, Machine vision, Machine Learning, Sentiment Analysis, Deep Autoencoder, Iterative Reduce, Hessian Free">
-        <meta name="author" content="Chris Nicholson, Adam Gibson">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
 
-        <!-- syntax highlighting CSS -->
+  <!-- Enable responsiveness on mobile devices-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="keywords" content="Deep Learning, Java, Hadoop, Restricted Boltzmann Machine, Deep-Belief Network, Neural Net, Scala, Clojure, JVM, Spark, Yarn, MNIST, Iris, Word2vec, Bag of Words, Convolutional Net, Recursive Neural Tensor Network, Machine vision, Machine Learning, Sentiment Analysis, Deep Autoencoder, Iterative Reduce, Hessian Free">
+  <meta name="description" content="Open-Source Deep-Learning Software">
+  <meta name="author" content="Chris Nicholson, Adam Gibson">
+
+  <title>
+    {% if page.title == "Home" %}
+      {{ site.title }} &middot; {{ site.tagline }}
+    {% else %}
+      {{ page.title }} &middot; {{ site.title }}
+    {% endif %}
+  </title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="{{ site.baseurl }}public/css/poole.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}public/css/syntax.css">
+  
   <link rel="stylesheet" type="text/css" media="all" href="css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" media="all" href="css/bootstrap-responsive.min.css">
   <link rel="stylesheet" type="text/css" media="all" href="css/global.css">
-  <link rel="shortcut icon" href="dl4j_icon.ico">
+
   <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
   <script type="text/javascript" language="javascript" charset="utf-8" src="js/bootstrap.min.js"></script>
   <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/gist-embed/1.7/gist-embed.min.js"></script>
 
-    </head>
+  <!-- Icons -->
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="{{ site.baseurl }}public/apple-touch-icon-precomposed.png">
+  <link rel="shortcut icon" href="{{ site.baseurl }}public/favicon.ico">
 
-    <body>
-        <nav id="navigation">
-          <div class="container">
-           <h1 style="display:inline-flex; padding-top:"><a href="/" style="color:#F2F2EB; top:50px; padding-top:50px" >{{ site.name }}</a></h1>
-            <ul class="navlinks" style="display:block; padding-top:60px">
-                <li>
-                  <div class="dropdown">
-                      <a id="dLabel" role="button" data-toggle="dropdown" data-target="#" style="color:#F2F2EB;" href="/gettingstarted.html">
-                      Get Started <span class="caret"></span>
-                      </a>
-                        <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
-                          <li role="presentation">
-                            <a role="menuitem" tabindex="-1" href="../linux.html">Linux</a>
-                          </li><br>
-                          <li role="presentation">
-                            <a role="menuitem" tabindex="-1" href="../osx.html">OSX</a>
-                          </li><br>
-                          <li role="presentation">
-                            <a role="menuitem" tabindex="-1" href="../windows.html">Windows</a>
-                          </li>
-                        </ul>
-                  </div>
-                </li>
-                <li><a style="color:#F2F2EB" href="get-involved.html">Get Involved</a></li>
-                <li><a style="color:#F2F2EB" href="word2vec.html">Word2vec</a></li>
-                <li><a style="color:#F2F2EB" href="https://groups.google.com/forum/#!forum/deeplearning4j">Google Group</a></li>
-                <li><a style="color:#F2F2EB" href="about.html">About</a></li>
-            </ul>
-
-            </div>
-          
-        </nav>
-
-          <br /><br /><br />
-          <div class="span3" style="font-family: Arial, sans-serif;" padding-right="100px">
-                <br />
-                <ul>
-                   <li><a href="../overview.html">Neural Nets Overview</a></li>
-                    <ul>
-                        <li><a href="../restrictedboltzmannmachine.html">Restricted Boltzmann Machine</a></li>
-                        <li><a href="../convolutionalnets.html">Convolutional Nets (ConvNets)</a></li>
-                        <li><a href="../denoisingautoencoder.html">Denoising Autoencoder</a></li>
-                    </ul>
-                   <li><a href="../multinetwork.html">Multilayer Neural Nets</a></li>
-                    <ul>
-
-                        <li><a href="../deepbeliefnetwork.html">Deep-Belief Network</a></li>
-                        <li><a href="../deepautoencoder.html">Deep AutoEncoder</a></li>
-                        <li><a href="../recursiveneuraltensornetwork.html">Recursive Neural Tensor Network</a></li>
-                        <li><a href="../stackeddenoisingautoencoder.html">Stacked Denoising Autoencoder</a></li>
-                    </ul>
-                    <li>Tutorials</li>
-                      <ul>
-                        <li><a href="../runexample.html">Running Any Example</a></li>
-                        <li><a href="../rbm-mnist-tutorial.html">MNIST RBM Tutorial</a></li>
-                        <li><a href="../mnist-tutorial.html">MNIST DBN Tutorial</a></li>
-                        <li><a href="/iris-flower-dataset-tutorial.html">Iris Flower Tutorial</a>
-                        <li><a href="/facial-reconstruction-tutorial.html">Facial Reconstruction Tutorial</a>
-                        </li>
-                      </ul>
-                    </li>
-                    <li>How To</li>
-                      <ul>
-                        <li><a href="../gettingstarted.html">Get Started</a></li>
-                        <li><a href="../quickstart.html">Run Your First Example</a></li>
-                        <li><a href="../neuralnetworktable.html">Choose a Neural Net</a></li>
-                        <li><a href="../trainingtricks.html">Train Neural Networks</a></li>
-                        <li><a href="../debug.html">Debug Neural Net Models</a></li>
-                        <li><a href="../modelpersistence.html">Save and Load Models</a></li>
-                        <li><a href="../output.html">Interpret Neural Net Output</a></li>
-                      </ul>
-                    <li>Datasets</li>
-                      <ul>
-                        <li><a href="../dataset-methods.html">Dataset Methods</a></li>
-                        <li><a href="../data-sets-ml.html">Datasets and Machine Learning</a></li>
-                        <li><a href="../customdatasets.html">Custom Datasets</a></li>
-                        <li><a href="../downloads.html">Downloads</a></li>
-                        <li><a href="../csv-deep-learning.html">CSV Data Uploads</a></li>
-                      </ul>
-                   <li>Scaleout</li>
-                     <ul> 
-                       <li><a href="../dl4jcluster.html">Clustering/Distributed setup</a></li>
-                       <li><a href="../scaleout.html">Multiprocessor / Clustering</a></li>
-                       <li><a href="../distributed.html">Running Worker Nodes</a></li>
-                     </ul>
-                    <li>Text</li>
-                      <ul>  
-                        <li><a href="../textanalysis.html">Textual Analysis and DL</a></li>
-                        <li><a href="../bagofwords-tf-idf.html">Bag of Words</a></li>
-                        <li><a href="../word2vec.html">Word2vec</a></li>
-                        <li><a href="../sentenceiterator.html">Sentence and Document Segmentation</a></li>
-                        <li><a href="../tokenization.html">Tokenization</a></li> 
-
-                      </ul> 
-                    <li>Resources</li>
-                      <ul>    
-                        <li><a href="../compare-dl4j-torch7-pylearn.html">DL4J, Torch7 and Pylearn2</a></li>
-                        <li><a href="../examples.html">Use Cases</a></li>
-                        <li><a href="../libraries.html">Libraries/Dependencies</a></li>
-                        <li><a href="../architecture.html">Architecture</a></li>
-                        <li><a href="../features.html">Features</a></li>
-                        <li><a href="../glossary.html">Glossary</a></li>
-                        <li><a href="../datamath.html">Data's Mathematical Representations</a></li>
-                        <li><a href="../deeplearningpapers.html">Further Reading</a></li>
-                        <li><a href="../about.html">About</a></li>
-
-                      </ul>
-                </ul>
-                    </div>
-          <div class="span8">
+  <!-- RSS -->
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="{{ site.baseurl }}atom.xml">
+</head>

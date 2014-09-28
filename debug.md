@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# visualizing deep learning
+# Visualizing deep learning
 
 Deep-learning networks can be hard to debug, but Deeplearning4j's networks have built-in support for runtime visualization of the weight matrices for each neural network and its bias. You can also visualize the activations of the network. 
 

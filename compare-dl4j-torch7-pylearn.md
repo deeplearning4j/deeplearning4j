@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Deeplearning4j vs. Torch7 vs. Pylearn2
+# DL4J vs. Torch7 vs. Pylearn2
 
 Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a Java-based, industry-focused, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. 
 

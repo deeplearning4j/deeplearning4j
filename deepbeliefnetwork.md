@@ -3,8 +3,7 @@ title:
 layout: default
 ---
 
-*previous* - [restricted Boltzmann machine](../restrictedboltzmannmachine.html)
-# deep-belief networks
+# Deep-belief networks
 
 For our purposes, a deep-belief network can be defined as a stack of restricted Boltzmann machines in which each layer communicates with both the previous and subsequent layers. The nodes of any single layer don't communicate with each other laterally. 
 

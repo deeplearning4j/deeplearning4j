@@ -3,8 +3,7 @@ title:
 layout: default
 ---
 
-*previous* - [Iris flower dataset](../iris-flower-dataset-tutorial.html)
-# facial reconstruction
+# Facial reconstruction
 
 Facial images are one type of continuous data from which deep-learning nets can extract features. In this case, we're using a continuous restricted Boltzmann machine, or CRBM, to identify relevant facial features.
 

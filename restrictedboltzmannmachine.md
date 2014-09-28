@@ -3,8 +3,7 @@ title:
 layout: default
 ---
 
-*previous* - [a neural nets overview](../index.html)
-# restricted Boltzmann machine (rbm)
+# Restricted Boltzmann machines
 
 To quote Geoff Hinton, a Boltzmann machine is "a network of symmetrically connected, neuron-like units that make [stochastic](../glossary.html#downpoursgd) decisions about whether to be on or off." 
 
@@ -16,7 +15,7 @@ A trained restricted Boltzmann machine will learn the structure of the data fed 
 
 [RBMs](../glossary.html#restrictedboltzmannmachine) are useful for [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [classification](https://en.wikipedia.org/wiki/Statistical_classification), [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering), [feature learning](https://en.wikipedia.org/wiki/Feature_learning) and [topic modeling](https://en.wikipedia.org/wiki/Topic_model). Given their relative simplicity, restricted Boltzmann machines are the first neural network we'll tackle.
 
-### parameters & k
+### Parameters & k
 
 See [the parameters common to all single-layer networks](../singlelayernetwork.html).
 
@@ -50,7 +49,7 @@ The last snippet will construct a new training set and show the reconstructed in
 
 After your net has trained, you'll see an F1 score. In machine learning, that's the name for one metric used to determine how well a classifier performs. The [f1 score](https://en.wikipedia.org/wiki/F1_score) is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It's basically the probability that your net's guesses are correct.
 
-### continuous RBMs
+### Continuous RBMs
 
 A continuous restricted Boltzmann machine is a form of RBM that accepts continuous input (i.e. numbers cut finer than integers) via a different type of contrastive divergence sampling. This allows the CRBM to handle things like image pixels or word-count vectors that are normalized to decimals between zero and one.
 
@@ -62,7 +61,7 @@ Those additional algorithms and their combinations can vary layer by layer. The 
 
 *A brief aside: Geoff Hinton has noted and we can confirm that Gaussian transformations do not work well on RBMs' hidden layers, which are where the reconstructions happen; i.e. those are the layers that matter. The rectified-linear-unit transformations used instead are capable of representing more features than binary transformations, which we employ on [deep-belief nets](../deepbeliefnetwork.html).*
 
-### conclusions
+### Conclusions
 
 Once built, you can test your trained restricted Boltzmann machine by feeding it unstructured data and checking the output.
 

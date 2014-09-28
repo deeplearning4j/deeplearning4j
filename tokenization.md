@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# tokenization
+# Tokenization
 
 Tokenization is the process of breaking text down into individual words. Word windows are also composed of tokens. [Word2Vec](../word2vec.html) can output text windows that comprise training examples for input into neural nets, as seen here.
 

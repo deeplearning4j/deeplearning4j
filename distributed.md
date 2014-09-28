@@ -3,8 +3,7 @@ title:
 layout: default
 ---
 
-*previous* - [iterative reduce on multithreaded training](../scaleout.html)
-# running worker nodes
+# Running worker nodes
 
 Running deeplearning4j in distributed mode is accessible with the following code:
 

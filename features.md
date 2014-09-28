@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# features
+# Features
 
 Here's a non-exhaustive list of Deeplearning4j's features. We'll be updating it as new nets and tools are added. 
 
@@ -13,9 +13,6 @@ Here's a non-exhaustive list of Deeplearning4j's features. We'll be updating it 
 * [Deep-belief networks](../deepbeliefnetwork.html)
 * [Denoising and Stacked Denoising autoencoders](../denoisingautoencoder.html)
 * [Deep autoencoders](../deepautoencoder.html)
-
-*Coming soon*
-
 * [Convolutional deep-belief networks](../convolutionalnets.html)
 * [Recursive neural tensor networks](http://nlp.stanford.edu/sentiment/)
 
@@ -28,10 +25,7 @@ DL4J contains the following built-in vectorization algorithms:
 * Viterbi for sequential classification
 * [Word2Vec](../word2vec.html)
 * [Bag-of-Words encoding for word count and TF-IDF](../bagofwords-tf-idf.html)
-
-*Coming soon*
-
-* Dependency parsing
+* Constituency parsing
 
 DL4J supports two kinds of back propagation (optimization algorithms):
 

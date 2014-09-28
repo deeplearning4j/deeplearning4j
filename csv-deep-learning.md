@@ -3,8 +3,7 @@ title:
 layout: default
 ---
 
-*previous* - [custom datasets](../customdatasets.html)*
-# loading data from csv's
+# Loading data from csv's
 
 It’s useful to know how to load data from CSV files into neural nets, especially when dealing with time series. There’s an easy way to do that with Deeplearning4j, because our DataSetIterator has a CSVDataSetIterator implementation. 
 

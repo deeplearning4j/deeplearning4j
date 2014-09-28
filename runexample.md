@@ -3,8 +3,6 @@ title:
 layout: default
 ---
 
-**prerequisites**: *you've [set up native matrices with Blas](../gettingstarted.html)*
-
 #How to Run Any DL4J Example
 
 Java involves deep and complex file systems, which you'll need to work with to run examples. 

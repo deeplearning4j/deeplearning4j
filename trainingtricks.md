@@ -2,7 +2,7 @@
 layout: default
 ---
 
-# training tricks
+# Training tricks
 
 There is an art to training neural networks, just as there is an art to training tigers to jump through a ring of fire. A little to the left or a little to the right and disaster strikes.
 

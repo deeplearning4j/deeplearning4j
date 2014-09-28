@@ -2,37 +2,28 @@
 layout: default
 ---
 
-*to run examples, go to our [quickstart](../quickstart.html)*
-#Getting Started
+# Getting Started
+
+Contents
+
+* <a href="#all">Deeplearning4j install (All OS)</a>
+    * <a href="#linux">Linux</a>
+    * <a href="#osx">OSX</a>
+    * <a href="#windows">Windows</a>
+    * <a href="#next">Running Examples</a>
+
+### <a name="all">All Operating Systems</a>
 
 * DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
 
-* Due to our reliance on Jblas for CPUs, native bindings for Blas are required.
-
-        Fedora/RHEL
-        yum -y install blas
-
-        Ubuntu
-        apt-get install libblas* (credit to @sujitpal)
-
-        OSX
-        Already Installed
-
-        Windows
-        See http://icl.cs.utk.edu/lapack-for-windows/lapack/
-
-* **Windows users**: Lapack will ask you if you have Intel compilers. You do not. Instead, you will need to install [MinGW 32 bits](http://www.mingw.org/) (the download button is on the upper right) and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). Lapack offers the altervative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). Yes, it's all a big pain in the butt. We're working on it...
-
-* **All users**: You can install DL4J either from source or from Maven central. Here are the **source** instructions. 
+* You can install DL4J either from source or from Maven central. Here are the **source** instructions. 
 
          git clone https://github.com/agibsonccc/java-deeplearning
          cd java-deeplearning
 
 ### IntelliJ
 
-* To work with DL4J code, you should download the Java IDE IntelliJ. A [free, community edition](http://www.jetbrains.com/idea/download/) is available at:
-
-         http://www.jetbrains.com/idea/download/
+* To work with DL4J code, you should download the Java IDE IntelliJ. A free, community edition is available [here](http://www.jetbrains.com/idea/download/).
 
 * Unzip the download, move it to your applications folder, and open the application. Upon opening, you may be prompted to install a Java SE 6 runtime. If so, install it. 
 
@@ -114,7 +105,37 @@ layout: default
              <version>0.0.3.2-SNAPSHOT</version>
            </dependency>
 
-**Next step**: Follow our [**MNIST tutorial**](../rbm-mnist-tutorial.html) and [running a few examples](../quickstart.html). 
+### <a name="linux">Linux</a>
+
+* Due to our reliance on Jblas for CPUs, native bindings for Blas are required.
+
+        Fedora/RHEL
+        yum -y install blas
+
+        Ubuntu
+        apt-get install libblas* (credit to @sujitpal)
+
+### <a name="osx">OSX</a>
+
+* Jblas is already installed on OSX. :)
+
+* How to get IntelliJ to pull in imports, and how to do dependencies...
+
+### <a name="windows">Windows</a>
+
+* First, install [Anaconda](http://docs.continuum.io/anaconda/install.html#windows-install). 
+
+* Second, install [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/). Lapack will ask you if you have Intel compilers. You do not. 
+
+* Instead, you will need to install [MinGW 32 bits](http://www.mingw.org/) (the download button is on the upper right) and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). 
+
+* Lapack offers the altervative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). 
+
+* JAVA_HOME, where is the JDK, put mvn in the path...
+
+### <a name="next">Next steps: Running Examples</a>
+
+Follow our [**MNIST tutorial**](../rbm-mnist-tutorial.html) and try [running a few examples](../quickstart.html). 
 
 If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html).
 
