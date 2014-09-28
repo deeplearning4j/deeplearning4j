@@ -119,8 +119,6 @@ Contents
 
 * Jblas is already installed on OSX. :)
 
-* How to get IntelliJ to pull in imports, and how to do dependencies...
-
 ### <a name="windows">Windows</a>
 
 * First, install [Anaconda](http://docs.continuum.io/anaconda/install.html#windows-install). 
@@ -130,8 +128,6 @@ Contents
 * Instead, you will need to install [MinGW 32 bits](http://www.mingw.org/) (the download button is on the upper right) and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). 
 
 * Lapack offers the altervative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). 
-
-* JAVA_HOME, where is the JDK, put mvn in the path...
 
 ### <a name="next">Next steps: Running Examples</a>
 
