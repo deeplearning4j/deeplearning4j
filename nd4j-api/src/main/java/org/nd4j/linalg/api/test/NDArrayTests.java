@@ -217,6 +217,43 @@ public abstract class NDArrayTests {
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         float assertion = 5.47722557505f;
         assertEquals(assertion,n.norm2(Integer.MAX_VALUE).get(0),1e-1);
+
+        INDArray row = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
+        INDArray row1 = row.getRow(1);
+        float norm2 = row1.norm2(Integer.MAX_VALUE).get(0);
+        float assertion2 = 5.0f;
+        assertEquals(assertion2,norm2,1e-1);
+
+    }
+
+
+    @Test
+    public void testCosineSim() {
+        INDArray vec1 = Nd4j.create(new float[]{1,2,3,4});
+        INDArray vec2 = Nd4j.create(new float[]{1,2,3,4});
+        double sim = Transforms.cosineSim(vec1,vec2);
+        assertEquals(1,sim,1e-1);
+
+        INDArray vec3 = Nd4j.create(new float[]{0.2f,0.3f,0.4f,0.5f});
+        INDArray vec4 = Nd4j.create(new float[]{0.6f,0.7f,0.8f,0.9f});
+        sim = Transforms.cosineSim(vec3,vec4);
+        assertEquals(0.98,sim,1e-1);
+
+    }
+
+    @Test
+    public void testScal() {
+        INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
+        float assertion = 2;
+        INDArray answer = Nd4j.create(new float[]{2,4,6,8});
+        assertEquals(answer,Nd4j.getBlasWrapper().scal(assertion,answer));
+
+        INDArray row = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
+        INDArray row1 = row.getRow(1);
+        float assertion2 = 5.0f;
+        INDArray answer2 = Nd4j.create(new float[]{15,20});
+        assertEquals(answer2,Nd4j.getBlasWrapper().scal(assertion2,row1));
+
     }
 
     @Test

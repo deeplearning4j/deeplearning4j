@@ -64,6 +64,20 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
     }
 
     @Test
+    public void testAxpy() {
+        Nd4j.factory().setOrder('f');
+
+        INDArray row = Nd4j.create(new float[]{1,2,3});
+        float alpha = 1f;
+        INDArray matrix = Nd4j.create(new float[]{1,2,3,4,5,6},new int[]{2,3});
+        INDArray row1 = matrix.getRow(1);
+        Nd4j.getBlasWrapper().axpy(alpha,row,row1);
+        INDArray answer = Nd4j.create(new float[]{3,6,9});
+        assertEquals(answer,row1);
+    }
+
+
+    @Test
     public void testTransposeCompat() {
         Nd4j.factory().setOrder('f');
         DoubleMatrix dReshaped = DoubleMatrix.linspace(1,8,8).reshape(2,4);

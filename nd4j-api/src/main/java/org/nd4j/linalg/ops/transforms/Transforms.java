@@ -134,14 +134,14 @@ public class Transforms {
 
 
     /**
-     * Consine similarity
+     * Cosine similarity
      * @param d1
      * @param d2
      * @return
      */
     public static  double cosineSim(INDArray d1, INDArray d2) {
-        d1 = unitVec(d1);
-        d2 = unitVec(d2);
+        d1 = unitVec(d1.dup());
+        d2 = unitVec(d2.dup());
         double ret = Nd4j.getBlasWrapper().dot(d1,d2);
         return ret;
     }

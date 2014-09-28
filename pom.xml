@@ -96,6 +96,7 @@
         <module>nd4j-jcublas</module>
         <module>nd4j-examples</module>
         <module>nd4j-jdbc</module>
+        <module>nd4j-netlib-blas</module>
     </modules>
 
     <properties>
@@ -229,12 +230,15 @@
                 <artifactId>guava</artifactId>
                 <version>18.0</version>
             </dependency>
-
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit-dep</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>${junit.version}</version>
-                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

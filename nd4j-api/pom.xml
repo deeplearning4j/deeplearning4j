@@ -31,7 +31,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>4.11</junit.version>
-        <slf4j.version>1.7.2</slf4j.version>
+        <slf4j.version>1.7.6</slf4j.version>
         <spring.version>3.2.5.RELEASE</spring.version>
     </properties>
 
@@ -67,11 +67,7 @@
             <artifactId>spring-core</artifactId>
             <version>${spring.version}</version>
         </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit-dep</artifactId>
-            <version>${junit.version}</version>
-        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
