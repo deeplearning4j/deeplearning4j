@@ -97,6 +97,8 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
     private Map<String,Long> heartbeat;
     private StateTrackerDropWizardResource resource;
 
+    public final static String HAZELCAST_HOST = "hazelcast.host";
+
     public BaseHazelCastStateTracker() throws Exception {
         this(DEFAULT_HAZELCAST_PORT);
 
@@ -559,9 +561,18 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
         if(type.equals("master") && !PortTaken.portTaken(stateTrackerPort)) {
             //sets up a proper connection string for reference wrt external actors needing a reference
             if(connectionString.equals("master")) {
-                String host = "0.0.0.0";
-                this.connectionString = host + ":" + stateTrackerPort;
+                String hazelCastHost = null;
+                try {
+                    //try localhost fall back to 0.0.0.0
+                    hazelCastHost = System.getProperty(HAZELCAST_HOST, InetAddress.getLocalHost().getHostName());
+                }catch(Exception e) {
+                    hazelCastHost = "0.0.0.0";
+                }
+                this.connectionString = hazelCastHost + ":" + stateTrackerPort;
             }
+
+
+
 
             this.hazelCastPort = stateTrackerPort;
             config = hazelcast();

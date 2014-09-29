@@ -88,7 +88,7 @@ public class Ec2BoxCreator extends BaseS3 {
 
 		// Setup an arraylist to collect all of the request ids we want to
 		// watch hit the running state.
-		List<String> spotInstanceRequestIds = new ArrayList<String>();
+		List<String> spotInstanceRequestIds = new ArrayList<>();
 
 		// Add all of the request ids to the hashset, so we can determine when they hit the
 		// active state.
@@ -102,7 +102,12 @@ public class Ec2BoxCreator extends BaseS3 {
     public void setRegion(Regions regions) {
         this.regions = regions;
     }
-	public void create() {
+
+
+    /**
+     * Create the instances
+     */
+    public void create() {
 		RunInstancesRequest runInstancesRequest = 
 				new RunInstancesRequest().withImageId(amiId)
 				.withInstanceType(size).withKeyName(keyPair)
