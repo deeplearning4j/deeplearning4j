@@ -1,16 +1,7 @@
 package org.deeplearning4j.models.word2vec;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.PriorityQueue;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
-import org.deeplearning4j.berkeley.Triple;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,87 +12,110 @@ import org.slf4j.LoggerFactory;
  */
 public class Huffman {
 
-	public Huffman(Collection<VocabWord> words) {
-		this.words = words;
-	}
+    public Huffman(Collection<VocabWord> words) {
+        this.words = new ArrayList<>(words);
+    }
 
 
-	private static Logger log = LoggerFactory.getLogger(Huffman.class);
+    private static Logger log = LoggerFactory.getLogger(Huffman.class);
 
-	private Collection<VocabWord> words;
-	private PriorityQueue<VocabWord> heap;
+    private List<VocabWord> words;
 
-	public void build() {
-		heap = new PriorityQueue<>(words.size());
-		heap.addAll(words);
+    public void build() {
+        long[] count = new long[words.size() * 2 + 1];
+        int[] binary = new int[words.size() * 2 + 1];
+        int[] code = new int[40];
+        int[] point = new int[40];
+        int[] parentNode = new int[words.size() * 2 + 1];
+        int a = 0;
 
-		List<VocabWord> wordRefs = new ArrayList<>();
-		wordRefs.addAll(words);
+        while (a < words.size()) {
+            count[a] = (long) words.get(a).getWordFrequency();
+            a++;
+        }
 
-		int size = words.size();
-		//build huffman tree
+        a = words.size();
 
-		for(int i = 0; i < words.size() - 1; i++) {
-			VocabWord word1 = heap.poll();
-			VocabWord word2 = heap.poll();
-
-			double count = word1.getWordFrequency() + word2.getWordFrequency();
-			VocabWord newWord = new VocabWord(count,VocabWord.PARENT_NODE);
-
-			word1.setCode(0);
-			word2.setCode(1);
-
-			word1.setParent(newWord);
-			word2.setParent(newWord);
-
-			newWord.setLeft(word1);
-			newWord.setRight(word2);
-
-			newWord.setIndex(i  + words.size());
-
-			heap.add(newWord);
-
-			wordRefs.add(newWord);
+        while(a < words.size() * 2) {
+            count[a] = Integer.MAX_VALUE;
+            a++;
+        }
 
 
 
-		}
+        int pos1 = words.size() - 1;
+        int pos2 = words.size();
 
-		Stack<Triple<VocabWord,int[],int[]>> stack = new Stack<>();
-		stack.add(new Triple<>(heap.poll(),new int[0],new int[0]));
-		while(!stack.isEmpty()) {
-			Triple<VocabWord,int[],int[]> triple = stack.pop();
-			VocabWord node = triple.getFirst();
-			int[] codes = triple.getSecond();
-			int[] points = triple.getThird();
-			if(node.getIndex() < words.size()) {
-				node.setCodes(ArrayUtil.copy(codes));
-				node.setPoints(ArrayUtil.copy(points));
-			}
-			else {
-				points = plus(points,node.getIndex() - words.size());
-				stack.push(new Triple<>(node.getLeft(),plus(codes,0),ArrayUtil.copy(points)));
-				stack.push(new Triple<>(node.getRight(),plus(codes,1),ArrayUtil.copy(points)));
-			}
+        int min1i;
+        int min2i;
 
-		}
+        a = 0;
+        // Following algorithm constructs the Huffman tree by adding one node at a time
+        for (a = 0; a < words.size() - 1; a++) {
+            // First, find two smallest nodes 'min1, min2'
+            if (pos1 >= 0) {
+                if (count[pos1] < count[pos2]) {
+                    min1i = pos1;
+                    pos1--;
+                } else {
+                    min1i = pos2;
+                    pos2++;
+                }
+            } else {
+                min1i = pos2;
+                pos2++;
+            }
+            if (pos1 >= 0) {
+                if (count[pos1] < count[pos2]) {
+                    min2i = pos1;
+                    pos1--;
+                } else {
+                    min2i = pos2;
+                    pos2++;
+                }
+            } else {
+                min2i = pos2;
+                pos2++;
+            }
+
+            count[words.size() + a] = count[min1i] + count[min2i];
+            parentNode[min1i] = words.size() + a;
+            parentNode[min2i] = words.size() + a;
+            binary[min2i] = 1;
+        }
+        // Now assign binary code to each vocabulary word
+        int i = 0;
+        a = 0;
+        int b = 0;
+        // Now assign binary code to each vocabulary word
+        for (a = 0; a < words.size(); a++) {
+            b = a;
+            i = 0;
+            do {
+                code[i] = binary[b];
+                point[i] = b;
+                i++;
+                b = parentNode[b];
+                if(i >= 40)
+                    break;
+            } while(b != words.size() * 2 - 2 && i < 40);
 
 
+            words.get(a).setCodeLength(i);
+            words.get(a).getPoints()[0] = words.size() - 2;
 
-	}
+            for (b = 0; b < i; b++) {
+                if(b >= 40)
+                    break;
+                if(i - b  >= 40)
+                    break;
+                words.get(a).getCodes()[i - b - 1] = code[b];
+                words.get(a).getPoints()[i - b] = point[b] - words.size();
+
+            }
+        }
 
 
-
-
-	private int[] plus (int[] addTo,int add) {
-	 if(addTo == null || addTo.length < 1)
-		 return new int[] {add};
-		int[] copy = new int[addTo.length + 1];
-		for(int c = 0; c < addTo.length; c++)
-			copy[c] = addTo[c];
-		copy[addTo.length] = add;
-		return copy;
-	}
-
+    }
 
 }

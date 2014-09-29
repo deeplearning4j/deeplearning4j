@@ -39,12 +39,17 @@ public class StackedDenoisingAutoEncoderTest {
     @Test
     public void testDbn() throws IOException {
         RandomGenerator gen = new MersenneTwister(123);
+        MnistDataFetcher fetcher = new MnistDataFetcher(true);
+
+        fetcher.fetch(100);
+        DataSet d2 = fetcher.next();
+
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(5e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.uniform(gen,784,10))
-                .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE)
+                .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE).iterations(1)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
-                .learningRate(1e-1f).nIn(784).nOut(10).build();
+                .learningRate(1e-1f).nIn(d2.numInputs()).nOut(d2.numOutcomes()).build();
 
 
         StackedDenoisingAutoEncoder d = new StackedDenoisingAutoEncoder.Builder().configure(conf)
@@ -53,9 +58,6 @@ public class StackedDenoisingAutoEncoderTest {
 
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
         d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
-        MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        fetcher.fetch(3000);
-        DataSet d2 = fetcher.next();
 
         d.fit(d2);
 

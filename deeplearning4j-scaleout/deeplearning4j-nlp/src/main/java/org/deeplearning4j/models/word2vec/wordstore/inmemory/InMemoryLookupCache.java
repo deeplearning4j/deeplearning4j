@@ -1,6 +1,6 @@
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
-import org.apache.commons.math3.random.MersenneTwister;
+import it.unimi.dsi.util.XorShift64StarRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -33,11 +33,12 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     private Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
     private INDArray syn0,syn1;
     private int vectorLength = 50;
-    private RandomGenerator rng = new MersenneTwister(123);
+    private transient RandomGenerator rng = new XorShift64StarRandomGenerator(123);
     private AtomicInteger totalWordOccurrences = new AtomicInteger(0);
     private float lr = 1e-1f;
     float[] expTable = new float[1000];
     static float MAX_EXP = 6;
+
     public InMemoryLookupCache(int vectorLength) {
         this(vectorLength,true);
         initExpTable();
@@ -56,18 +57,25 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
 
     public InMemoryLookupCache(int vectorLength,boolean useAdaGrad) {
+       this(vectorLength,useAdaGrad,0.025f,new XorShift64StarRandomGenerator(123));
+
+
+    }
+
+
+    public InMemoryLookupCache(int vectorLength,boolean useAdaGrad,float lr,RandomGenerator gen) {
         this.vectorLength = vectorLength;
         this.useAdaGrad = useAdaGrad;
+        this.lr = lr;
+        this.rng = gen;
         initExpTable();
+
 
 
     }
 
     public InMemoryLookupCache(int vectorLength,boolean useAdaGrad,float lr) {
-        this.vectorLength = vectorLength;
-        this.useAdaGrad = useAdaGrad;
-        this.lr = lr;
-        initExpTable();
+           this(vectorLength,useAdaGrad,lr,new XorShift64StarRandomGenerator(123));
 
 
 
@@ -76,10 +84,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
     private void initExpTable() {
         for (int i = 0; i < expTable.length; i++) {
-            //    expTable[i] = exp((i / (real)EXP_TABLE_SIZE * 2 - 1) * MAX_EXP); // Precompute the exp() table
-            float tmp = (float) Math.exp((2.0 * i / expTable.length - 1.0) * MAX_EXP);
-            //expTable(i) = (tmp / (tmp + 1.0)).toFloat
-            expTable[i]  = tmp / (tmp + 1);                // Precompute f(x) = x / (x + 1)
+            float tmp =  (float) Math.exp((i / (float) expTable.length * 2 - 1) * MAX_EXP);
+            expTable[i]  = tmp / (tmp + 1);
         }
     }
 
@@ -91,59 +97,44 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public  void iterate(VocabWord w1, VocabWord w2) {
-        if(w1.getCodes() == null)
-            return;
-        if(w2.getIndex() >= syn0.rows())
-            return;
-
-
-
-
-        int l1 = w2.getIndex();
         //current word vector
-        INDArray syn0 = this.syn0.getRow(l1);
+        INDArray syn0 = this.syn0.getRow(w2.getIndex());
 
         //error for current word and context
-        INDArray neu1e = Nd4j.create(vectorLength);
+        INDArray work = Nd4j.create(vectorLength);
 
 
         float avgChange = 0.0f;
 
 
-        int count = 0;
 
-        if(w1.getPoints() == null)
-            return;
+        for(int i = 0; i < w1.getCodeLength(); i++) {
+            int code = w1.getCodes()[i];
+            int point = w1.getPoints()[i];
 
-
-        for(int l2 : w1.getPoints()) {
             //other word vector
-            INDArray syn1 = this.syn1.getRow(l2);
-            if(l1 >= this.syn0.rows() || l2 >= this.syn1.rows())
-                break;
+            INDArray syn1 = this.syn1.getRow(point);
+
 
             float dot = Nd4j.getBlasWrapper().dot(syn0,syn1);
-            if(dot <= -MAX_EXP || dot >= MAX_EXP)
+
+            if(dot < -MAX_EXP || dot >= MAX_EXP)
                 continue;
 
 
-            int idx = (int) ((dot + MAX_EXP) * (expTable.length / MAX_EXP / 2.0));
+            int idx = (int) ((dot + MAX_EXP) * ((float) expTable.length / MAX_EXP / 2.0));
             if(idx >= expTable.length)
                 continue;
-
+            
             //score
             float f =  expTable[idx];
             //gradient
-            float g = (1 - w1.getCodes()[count] - f);
-            float lr = useAdaGrad ? w1.getLearningRate(count,g) : this.lr;
-
-            g *= lr;
+            float g = (1 - code - f) * this.lr;
 
             avgChange += g;
 
-            Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
+            Nd4j.getBlasWrapper().axpy(g, syn1, work);
             Nd4j.getBlasWrapper().axpy(g, syn0, syn1);
-            count++;
         }
 
 
@@ -152,9 +143,9 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
 
         if(useAdaGrad)
-            Nd4j.getBlasWrapper().axpy(avgChange,neu1e,syn0);
+            Nd4j.getBlasWrapper().axpy(avgChange,work,syn0);
         else
-            Nd4j.getBlasWrapper().axpy(1,neu1e,syn0);
+            Nd4j.getBlasWrapper().axpy(1,work,syn0);
 
     }
 
@@ -173,14 +164,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public void resetWeights() {
-        int words = vocabs.size();
-        rng = new MersenneTwister(123);
-        syn0  = Nd4j.zeros(new int[]{words,vectorLength});
-        for(int i = 0; i < syn0.rows(); i++) {
-            INDArray row = Nd4j.rand(new int[]{syn0.columns()},rng);
-            row.subi(0.5f).divi((float) vectorLength);
-            syn0.putRow(i,row);
-        }
+        syn0  = Nd4j.rand(new int[]{vocabs.size(),vectorLength},rng).subi(0.5f).divi((float) vectorLength);
         syn1 = Nd4j.create(syn0.shape());
 
     }

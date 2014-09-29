@@ -10,10 +10,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+
 
 
 
@@ -32,14 +30,14 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 	//children of the binary tree
 	private VocabWord left;
 	private VocabWord right;
-	private int code;
 	private VocabWord parent;
-	private int[] codes = null;
+	private int[] codes = new int[40];
 	//for my sanity
 	private String word;
 	public final static String PARENT_NODE = "parent";
 	private INDArray historicalGradient;
-	private int[] points;
+	private int[] points = new int[40];
+    private int codeLength = 0;
 	
 
 	public static VocabWord none() {
@@ -75,21 +73,6 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
 
 
-
-
-	public INDArray getHistoricalGradient() {
-		return historicalGradient;
-	}
-
-	public void setHistoricalGradient(INDArray historicalGradient) {
-		this.historicalGradient = historicalGradient;
-	}
-
-
-	public void setWordFrequency(AtomicDouble wordFrequency) {
-		this.wordFrequency = wordFrequency;
-	}
-
 	public String getWord() {
 		return word;
 	}
@@ -112,39 +95,10 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
 
 
-
-	public void setWordFrequency(double wordFrequency) {
-		this.wordFrequency.set(wordFrequency);
-	}
-
-
-
-
-	public VocabWord getParent() {
-		return parent;
-	}
-
-
-
 	public void setParent(VocabWord parent) {
 		this.parent = parent;
 	}
 
-
-
-
-
-	public int getCode() {
-		return code;
-	}
-
-
-
-
-
-	public void setCode(int code) {
-		this.code = code;
-	}
 
 
 
@@ -224,75 +178,60 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 		this.points = points;
 	}
 
-	@Override
-	public String toString() {
-		return "VocabWord [wordFrequency=" + wordFrequency + ", index=" + index
-				+ ", code=" + code + ", word=" + word + "]";
-	}
+    public int getCodeLength() {
+        return codeLength;
+    }
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + code;
-		result = prime * result + Arrays.hashCode(codes);
-		result = prime
-				* result
-				+ ((historicalGradient == null) ? 0 : historicalGradient
-						.hashCode());
-		result = prime * result + index;
-		result = prime * result + ((parent == null) ? 0 : parent.hashCode());
-		result = prime * result + Arrays.hashCode(points);
-		result = prime * result + ((word == null) ? 0 : word.hashCode());
-		result = prime * result
-				+ ((wordFrequency == null) ? 0 : wordFrequency.hashCode());
-		return result;
-	}
+    public void setCodeLength(int codeLength) {
+        this.codeLength = codeLength;
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		VocabWord other = (VocabWord) obj;
-		if (code != other.code)
-			return false;
-		if (!Arrays.equals(codes, other.codes))
-			return false;
-		if (historicalGradient == null) {
-			if (other.historicalGradient != null)
-				return false;
-		} else if (!historicalGradient.equals(other.historicalGradient))
-			return false;
-		if (index != other.index)
-			return false;
-		if (parent == null) {
-			if (other.parent != null)
-				return false;
-		} else if (!parent.equals(other.parent))
-			return false;
-		if (!Arrays.equals(points, other.points))
-			return false;
-		if (word == null) {
-			if (other.word != null)
-				return false;
-		} else if (!word.equals(other.word))
-			return false;
-		if (wordFrequency == null) {
-			if (other.wordFrequency != null)
-				return false;
-		} else if (!wordFrequency.equals(other.wordFrequency))
-			return false;
-		return true;
-	}
-	
+    @Override
+    public String toString() {
+        return "VocabWord{" +
+                "wordFrequency=" + wordFrequency +
+                ", index=" + index +
+                ", codes=" + Arrays.toString(codes) +
+                ", word='" + word + '\'' +
+                ", historicalGradient=" + historicalGradient +
+                ", points=" + Arrays.toString(points) +
+                '}';
+    }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof VocabWord)) return false;
 
-	
+        VocabWord vocabWord = (VocabWord) o;
 
+        if (index != vocabWord.index) return false;
+        if (!Arrays.equals(codes, vocabWord.codes)) return false;
+        if (historicalGradient != null ? !historicalGradient.equals(vocabWord.historicalGradient) : vocabWord.historicalGradient != null)
+            return false;
+        if (left != null ? !left.equals(vocabWord.left) : vocabWord.left != null) return false;
+        if (parent != null ? !parent.equals(vocabWord.parent) : vocabWord.parent != null) return false;
+        if (!Arrays.equals(points, vocabWord.points)) return false;
+        if (right != null ? !right.equals(vocabWord.right) : vocabWord.right != null) return false;
+        if (word != null ? !word.equals(vocabWord.word) : vocabWord.word != null) return false;
+        if (wordFrequency != null ? !wordFrequency.equals(vocabWord.wordFrequency) : vocabWord.wordFrequency != null)
+            return false;
 
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = wordFrequency != null ? wordFrequency.hashCode() : 0;
+        result = 31 * result + index;
+        result = 31 * result + (left != null ? left.hashCode() : 0);
+        result = 31 * result + (right != null ? right.hashCode() : 0);
+        result = 31 * result + (parent != null ? parent.hashCode() : 0);
+        result = 31 * result + (codes != null ? Arrays.hashCode(codes) : 0);
+        result = 31 * result + (word != null ? word.hashCode() : 0);
+        result = 31 * result + (historicalGradient != null ? historicalGradient.hashCode() : 0);
+        result = 31 * result + (points != null ? Arrays.hashCode(points) : 0);
+        return result;
+    }
 }
 

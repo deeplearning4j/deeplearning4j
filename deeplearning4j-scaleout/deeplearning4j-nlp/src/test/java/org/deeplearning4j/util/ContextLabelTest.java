@@ -35,9 +35,9 @@ public class ContextLabelTest {
         //positive and none
         assertEquals(2, ret.getSecond().size());
         List<String> vals = new ArrayList<>(ret.getSecond().values());
-        assertEquals(true,vals.contains("negative"));
+        assertEquals(true,vals.contains("NEGATIVE"));
         assertEquals(true,vals.contains("none"));
-        assertEquals("this suck realli bad .",ret.getFirst());
+        assertEquals("This sucks really bad .",ret.getFirst());
     }
 
 

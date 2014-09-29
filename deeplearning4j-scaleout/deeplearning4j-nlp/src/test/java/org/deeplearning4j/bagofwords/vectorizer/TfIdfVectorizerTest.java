@@ -31,7 +31,7 @@ public class TfIdfVectorizerTest {
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
         TextVectorizer vectorizer = new TfidfVectorizer(iter,tokenizerFactory,labels);
         DataSet vectorized = vectorizer.vectorize();
-        assertEquals(3,vectorized.numInputs());
+        assertEquals(4,vectorized.numInputs());
         assertEquals(2,vectorized.numOutcomes());
         log.info("Vectorized " + vectorized.toString());
     }
