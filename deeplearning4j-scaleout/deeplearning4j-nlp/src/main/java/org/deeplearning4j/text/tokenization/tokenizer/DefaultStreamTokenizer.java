@@ -26,7 +26,7 @@ public class DefaultStreamTokenizer implements Tokenizer {
 		// Make end-of-line whitespace(and therefore a word delimiter)  
 		streamTokenizer.whitespaceChars(separator, separator);                      // Delimiter separates words  
 		streamTokenizer.whitespaceChars(' ',' ');
-		streamTokenizer.eolIsSignificant(true);                                     // End-of-line to be reported as TT_EOL  
+		streamTokenizer.eolIsSignificant(false);                                     // End-of-line to be reported as TT_EOL
 
 
 	}
