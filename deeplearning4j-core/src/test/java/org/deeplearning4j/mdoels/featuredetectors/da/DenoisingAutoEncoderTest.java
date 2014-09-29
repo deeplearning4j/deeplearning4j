@@ -19,7 +19,8 @@ public class DenoisingAutoEncoderTest {
 	public void testDenoisingAutoEncoder() throws Exception {
 		
 	    MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.5f).render(10).optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.5f)
+                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT).iterations(100)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(new MersenneTwister(123))
                 .learningRate(1e-1f).nIn(784).nOut(600).build();
 

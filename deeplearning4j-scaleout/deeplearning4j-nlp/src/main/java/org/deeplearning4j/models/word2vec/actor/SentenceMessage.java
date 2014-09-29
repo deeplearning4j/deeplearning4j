@@ -14,7 +14,8 @@ public class SentenceMessage implements Serializable {
 	private static final long serialVersionUID = -8132989189483837222L;
 	private String sentence;
 	private  AtomicLong changed;
-	public SentenceMessage(String sentence,AtomicLong changed) {
+
+    public SentenceMessage(String sentence,AtomicLong changed) {
 		super();
 		this.sentence = sentence;
 		this.changed = changed;

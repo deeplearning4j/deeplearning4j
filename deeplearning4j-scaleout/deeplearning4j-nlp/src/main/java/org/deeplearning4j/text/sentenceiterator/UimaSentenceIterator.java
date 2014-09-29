@@ -15,10 +15,7 @@ import org.apache.uima.resource.ResourceInitializationException;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.util.cr.FilesCollectionReader;
 import org.deeplearning4j.text.annotator.SentenceAnnotator;
-import org.deeplearning4j.text.annotator.StemmerAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
-import org.deeplearning4j.text.corpora.breaker.CorpusBreaker;
-import org.deeplearning4j.text.corpora.breaker.FileCorpusBreaker;
 import org.deeplearning4j.text.uima.UimaResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,38 +33,25 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
     protected String path;
     private static Logger log = LoggerFactory.getLogger(UimaSentenceIterator.class);
     private static AnalysisEngine defaultAnalysisEngine;
-    private CorpusBreaker corpusBreaker;
     private UimaResource resource;
 
 
-    public UimaSentenceIterator(SentencePreProcessor preProcessor,String path,UimaResource resource,CorpusBreaker corpusBreaker) {
+    public UimaSentenceIterator(SentencePreProcessor preProcessor,String path,UimaResource resource) {
         super(preProcessor);
         this.path = path;
         File  f = new File(path);
         if(f.isFile()) {
 
             //more than a kilobyte break up the file (only do this for files
-            if(f.getTotalSpace() >= 1024) {
-                if(corpusBreaker == null)
-                    this.corpusBreaker = new FileCorpusBreaker(f,1024,1000000);
-                else
-                     this.corpusBreaker = corpusBreaker;
-                try {
-                    URI[] locations = corpusBreaker.corporaLocations();
-                    File parentDir = new File(locations[0]).getParentFile();
-                    this.reader  = FilesCollectionReader.getCollectionReader(parentDir.getAbsolutePath());
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            else {
-                try {
 
-                    this.reader  = FilesCollectionReader.getCollectionReader(path);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+
+            try {
+
+                this.reader  = FilesCollectionReader.getCollectionReader(path);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
+
 
 
         }
@@ -82,13 +66,9 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
         this.resource = resource;
     }
 
-    public UimaSentenceIterator(String path, UimaResource resource,CorpusBreaker corpusBreaker) {
-        this(null,path,resource,corpusBreaker);
-    }
-
 
     public UimaSentenceIterator(String path, UimaResource resource) {
-        this(null,path,resource,null);
+        this(null,path,resource);
     }
 
     @Override
@@ -159,10 +139,10 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
     }
 
     public UimaResource getResource() {
-		return resource;
-	}
+        return resource;
+    }
 
-	/**
+    /**
      * Creates a uima sentence iterator with the given path
      * @param path the path to the root directory or file to read from
      * @return the uima sentence iterator for the given root dir or file

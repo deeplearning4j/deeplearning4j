@@ -6,11 +6,16 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.AtomicDouble;
 
+import it.unimi.dsi.util.XorShift1024StarRandomGenerator;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
@@ -67,7 +72,7 @@ public class Word2Vec implements Persistable {
     private int trainWordsCount = 0;
     //number of neurons per layer
     private int layerSize = 50;
-    private transient  RandomGenerator g = new MersenneTwister(123);
+    private transient  RandomGenerator g;
     private static Logger log = LoggerFactory.getLogger(Word2Vec.class);
     private int size = 0;
     private int words = 0;
@@ -76,8 +81,10 @@ public class Word2Vec implements Persistable {
     private static ActorSystem trainingSystem;
     private List<String> stopWords;
     private boolean shouldReset = true;
-
+    //number of iterations to run
+    private int numIterations = 5;
     public final static String UNK = "UNK";
+    private long seed = 123;
 
     public Word2Vec() {}
 
@@ -248,35 +255,85 @@ public class Word2Vec implements Persistable {
         if(docIter != null)
             docIter.reset();
 
+        trainingSystem.shutdown();
+
         final AtomicLong latch = new AtomicLong(0);
+        final ActorRef sentenceActor = trainingSystem.actorOf(
+                new RoundRobinPool(Runtime.getRuntime().availableProcessors()).props(
+                        Props.create(SentenceActor.class,this)));
+
+
+        ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
         log.info("Processing sentences...");
+        if(getSentenceIter() != null && getSentenceIter().hasNext())
+            for(int i = 0; i < numIterations; i++) {
+                while(getSentenceIter() != null && getSentenceIter().hasNext()) {
 
-        while(getSentenceIter() != null && getSentenceIter().hasNext()) {
-            String sentence = sentenceIter.nextSentence();
-            if(sentence == null)
-                continue;
-
-            trainSentence(sentence);
-            numSentencesProcessed.incrementAndGet();
-            if(numSentencesProcessed.get() % 100 == 0)
-                log.info("Num sentences processed " + numSentencesProcessed.get());
-        }
+                    final String sentence = sentenceIter.nextSentence();
+                    if(sentence == null)
+                        continue;
 
 
-        while(docIter != null && docIter.hasNext()) {
-            InputStream is = docIter.nextDocument();
-            trainSentence(is);
-            numSentencesProcessed.incrementAndGet();
-            if(numSentencesProcessed.get() % 100 == 0)
-                log.info("Num sentences processed " + numSentencesProcessed.get());
-            try {
-                is.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+                    service.execute(new Runnable() {
+
+                        /**
+                         * When an object implementing interface <code>Runnable</code> is used
+                         * to create a thread, starting the thread causes the object's
+                         * <code>run</code> method to be called in that separately executing
+                         * thread.
+                         * <p/>
+                         * The general contract of the method <code>run</code> is that it may
+                         * take any action whatsoever.
+                         *
+                         * @see Thread#run()
+                         */
+                        @Override
+                        public void run() {
+                            trainSentence(sentence);
+                        }
+                    });
+
+                    //sentenceActor.tell(new SentenceMessage(sentence,latch),sentenceActor);
+                    numSentencesProcessed.incrementAndGet();
+                    if(numSentencesProcessed.get() % 100 == 0)
+                        log.info("Num sentences processed " + numSentencesProcessed.get());
+                }
+
+                if(sentenceIter != null)
+                    sentenceIter.reset();
             }
 
+
+        try {
+            service.shutdown();
+            service.awaitTermination(1, TimeUnit.DAYS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
+
+
+        if(docIter != null && docIter.hasNext())
+            for(int iter = 0; iter < numIterations; iter++) {
+                while (docIter != null && docIter.hasNext()) {
+                    InputStream is = docIter.nextDocument();
+                    trainSentence(is);
+                    numSentencesProcessed.incrementAndGet();
+                    if (numSentencesProcessed.get() % 100 == 0)
+                        log.info("Num sentences processed " + numSentencesProcessed.get());
+                    try {
+                        is.close();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                }
+
+                if(docIter != null)
+                    docIter.reset();
+
+
+            }
 
 
 
@@ -296,14 +353,6 @@ public class Word2Vec implements Persistable {
 
     }
 
-    /**
-     * Tokenize a sentence and train word vectors on the sentence
-     * @param sentence the sentence to train on
-     */
-    public void processSentence(final String sentence) {
-        trainSentence(sentence);
-
-    }
 
 
 
@@ -522,13 +571,6 @@ public class Word2Vec implements Persistable {
     public void trainSentence(final List<VocabWord> sentence) {
         for(int i = 0; i < sentence.size(); i++)
             skipGram(i, sentence);
-
-
-
-
-
-
-
     }
 
 
@@ -541,9 +583,14 @@ public class Word2Vec implements Persistable {
         final VocabWord word = sentence.get(i);
         if(word == null)
             return;
+        if(g == null)
+            g = new XorShift1024StarRandomGenerator(seed);
+
         int b = g.nextInt(window);
-        int a = b;
-        while(a < window * 2 + 1 - b) {
+        int start = Math.max(0, i - window - b);
+        int end = i + window + 1 - b;
+
+        for(int a = start; a < end; a++) {
             if(a != window) {
                 int c = i - window + a;
                 if(c >= 0 && c < sentence.size()) {
@@ -551,7 +598,6 @@ public class Word2Vec implements Persistable {
                     iterate(word,lastWord);
                 }
             }
-            a++;
         }
 
     }
@@ -577,8 +623,6 @@ public class Word2Vec implements Persistable {
      * @param w1 the first word to fit
      */
     public void  iterate(VocabWord w1, VocabWord w2) {
-        if(w1.getCodes() == null)
-            return;
         cache.iterate(w1,w2);
     }
 
@@ -593,10 +637,6 @@ public class Word2Vec implements Persistable {
 
         log.info("Built tree");
 
-        for(VocabWord w : cache.vocabWords()) {
-            System.out.println(w);
-        }
-
     }
 
 
@@ -604,15 +644,6 @@ public class Word2Vec implements Persistable {
     /* reinit weights */
     private void resetWeights() {
         cache.resetWeights();
-        //cache.putVector(UNK, randomVector());
-    }
-
-    public INDArray randomVector() {
-        INDArray ret = Nd4j.create(layerSize);
-        for(int i = 0; i < ret.length(); i++) {
-            ret.putScalar(i, g.nextFloat() - 0.5f / layerSize);
-        }
-        return ret;
     }
 
 
@@ -630,7 +661,7 @@ public class Word2Vec implements Persistable {
         INDArray vector2 = getWordVectorMatrix(word2);
         if(vector == null || vector2 == null)
             return -1;
-        return    Transforms.cosineSim(vector.dup(),vector2.dup());
+        return  Transforms.cosineSim(vector,vector2);
     }
 
 
@@ -759,7 +790,18 @@ public class Word2Vec implements Persistable {
         private VocabCache vocabCache;
         private DocumentIterator docIter;
         private float lr = 2.5e-1f;
+        private int iterations = 5;
+        private long seed = 123;
 
+        public Builder seed(long seed) {
+            this.seed = seed;
+            return this;
+        }
+
+        public Builder iterations(int iterations) {
+            this.iterations = iterations;
+            return this;
+        }
 
 
         public Builder learningRate(float lr) {
@@ -822,7 +864,10 @@ public class Word2Vec implements Persistable {
                 ret.alpha.set(lr);
                 ret.stopWords = stopWords;
                 ret.setCache(vocabCache);
+                ret.numIterations = iterations;
                 ret.minWordFrequency = minWordFrequency;
+                ret.seed = seed;
+
                 try {
                     if (tokenizerFactory == null)
                         tokenizerFactory = new UimaTokenizerFactory();
@@ -850,7 +895,8 @@ public class Word2Vec implements Persistable {
                 ret.setCache(vocabCache);
                 ret.docIter = docIter;
                 ret.minWordFrequency = minWordFrequency;
-
+                ret.numIterations = iterations;
+                ret.seed = seed;
 
                 try {
                     if (tokenizerFactory == null)

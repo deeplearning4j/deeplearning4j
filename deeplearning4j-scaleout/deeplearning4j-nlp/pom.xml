@@ -65,7 +65,11 @@
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 		</dependency>
-
+        <dependency>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>dsiutils</artifactId>
+            <version>2.2.2</version>
+        </dependency>
 
 		<dependency>
 			<groupId>org.cleartk</groupId>

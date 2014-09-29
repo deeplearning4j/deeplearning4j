@@ -3,10 +3,13 @@ package org.deeplearning4j.models.word2vec;
 import static org.junit.Assert.*;
 
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.documentiterator.FileDocumentIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
@@ -30,19 +33,24 @@ public class Word2VecTests {
     public void testWord2VecRunThroughVectors() throws Exception {
         ClassPathResource resource = new ClassPathResource("/basic2/line2.txt");
         File file = resource.getFile().getParentFile();
-        DocumentIterator iter = new FileDocumentIterator(file);
+        SentenceIterator iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
         new File("cache.ser").delete();
 
 
-        TokenizerFactory t = new DefaultTokenizerFactory();
+        TokenizerFactory t = new UimaTokenizerFactory();
 
-        InMemoryLookupCache cache = new InMemoryLookupCache(100,true,0.0025f);
+        InMemoryLookupCache cache = new InMemoryLookupCache(100,false,0.025f);
+
         Word2Vec vec = new Word2Vec.Builder()
-                .minWordFrequency(1).layerSize(100).stopWords(new ArrayList<String>())
+                .minWordFrequency(1).iterations(5)
+                .layerSize(100)
+                .stopWords(new ArrayList<String>())
                 .vocabCache(cache)
                 .windowSize(5).iterate(iter).tokenizerFactory(t).build();
 
-        assertEquals(new ArrayList<String>(),vec.getStopWords());
+        assertEquals(new ArrayList<String>(), vec.getStopWords());
+
+
         vec.fit();
 
 
@@ -61,7 +69,7 @@ public class Word2VecTests {
 
         TokenizerFactory t = new DefaultTokenizerFactory();
 
-        InMemoryLookupCache cache = new InMemoryLookupCache(100,false,0.025f);
+        InMemoryLookupCache cache = new InMemoryLookupCache(100,true,0.025f);
         Word2Vec vec = new Word2Vec.Builder()
                 .minWordFrequency(1).layerSize(100).stopWords(new ArrayList<String>())
                 .vocabCache(cache)
@@ -77,9 +85,6 @@ public class Word2VecTests {
         assertTrue(Arrays.equals(cache.wordFor("test").getPoints(),new int[]{0}));
 
 
-        double sim = vec.similarity("This","test");
-        INDArray thisVec = vec.getWordVectorMatrix("This");
-        INDArray thisVec2 = vec.getWordVectorMatrix("test");
         assertTrue(vec.getCache().numWords() > 0);
 
         assertEquals(0,cache.indexOf("This"));

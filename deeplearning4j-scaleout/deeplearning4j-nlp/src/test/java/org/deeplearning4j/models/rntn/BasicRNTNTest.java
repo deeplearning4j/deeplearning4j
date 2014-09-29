@@ -29,12 +29,14 @@ public class BasicRNTNTest {
     private String sentence = "<LABEL> This is one sentence. </LABEL>";
    @Before
    public void init() throws Exception {
+       new File("cache.ser").delete();
        vectorizer = new TreeVectorizer();
        tokenizerFactory = new UimaTokenizerFactory(false);
        sentenceIter = new CollectionSentenceIterator(Arrays.asList(sentence));
        File vectors = new File("wordvectors.ser");
        if(!vectors.exists()) {
-           vec = new Word2Vec.Builder().iterate(sentenceIter).build();
+           vec = new Word2Vec.Builder().vocabCache(new InMemoryLookupCache(100))
+                   .iterate(sentenceIter).build();
            vec.fit();
 
            SerializationUtils.saveObject(vec,new File("wordvectors.ser"));
@@ -52,8 +54,10 @@ public class BasicRNTNTest {
 
 
         RNTN rntn = new RNTN.Builder().setActivationFunction(Activations.tanh())
-                .setAdagradResetFrequency(1).setCombineClassification(true).setFeatureVectors(vec)
-                .setRandomFeatureVectors(false).setRng(new MersenneTwister(123))
+                .setAdagradResetFrequency(1)
+                .setCombineClassification(true).setFeatureVectors(vec)
+                .setRandomFeatureVectors(false)
+                .setRng(new MersenneTwister(123))
                 .setUseTensors(true).build();
         List<Tree> trees = vectorizer.getTreesWithLabels(sentence,Arrays.asList("LABEL"));
         rntn.fit(trees);
