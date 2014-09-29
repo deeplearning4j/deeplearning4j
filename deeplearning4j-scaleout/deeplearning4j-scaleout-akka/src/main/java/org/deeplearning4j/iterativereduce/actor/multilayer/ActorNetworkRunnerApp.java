@@ -149,6 +149,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 
             log.info("Creating hazel cast via worker " + stateTracker.connectionString());
             runner = new ActorNetworkRunner(type,address);
+            runner.setMasterHost(host);
             runner.setStateTracker(stateTracker);
 			runner.setup(conf);
 			retriever.close();

@@ -6,6 +6,8 @@ import java.util.concurrent.Callable;
 import akka.actor.ActorSystem;
 import akka.dispatch.Futures;
 import akka.dispatch.OnComplete;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.ec2.model.Region;
 import org.deeplearning4j.aws.ec2.Ec2BoxCreator;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -37,6 +39,8 @@ public class ClusterSetup {
 	private String workerSetupScriptPath;
 	@Option(name = "-mscript", usage = "path to master script to run this will allow customization of the dependencies")
 	private String masterSetupScriptPath;
+    @Option(name = "-region",usage = "specify a region")
+    private String region = Regions.US_EAST_1.getName();
 
     private ActorSystem as;
 
@@ -58,6 +62,7 @@ public class ClusterSetup {
 	public void exec() {
 		//master + workers
 		Ec2BoxCreator boxCreator = new Ec2BoxCreator(ami,numWorkers,size,securityGroupName,keyPairName);
+        boxCreator.setRegion(Regions.fromName(region));
 		boxCreator.create();
 		boxCreator.blockTillAllRunning();
 		List<String> hosts = boxCreator.getHosts();

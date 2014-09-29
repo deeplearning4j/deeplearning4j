@@ -58,6 +58,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
     private Conf conf;
     private boolean finetune = false;
     private int stateTrackerPort = -1;
+    private String masterHost;
 
     /**
      * Master constructor
@@ -243,6 +244,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
             //store it in zookeeper for service discovery
             conf.setMasterUrl(getMasterAddress().toString());
             conf.setMasterAbsPath(ActorRefUtils.absPath(masterActor, system));
+
             //sets up the connection string for reference on the external worker
             conf.setStateTrackerConnectionString(stateTracker.connectionString());
             ActorRefUtils.registerConfWithZooKeeper(conf, system);
@@ -286,6 +288,14 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 
                 String connectionString = conf.getStateTrackerConnectionString();
+                //issue with setting the master url, fallback
+                if(connectionString.contains("0.0.0.0")) {
+                    if(masterHost == null)
+                        throw new IllegalStateException("No master host specified and host discovery was lost due to improper setup on the master (related to hostname resolution) Please run the following command on your host: sudo hostname YOUR_HOST_NAME . This will make your hostname resolution work correctly on master.");
+                    connectionString = connectionString.replace("0.0.0.0",masterHost);
+                }
+
+
                 log.info("Creating state tracker with connection string "+  connectionString);
                 if(stateTracker == null)
                     stateTracker = new HazelCastStateTracker(connectionString);
@@ -480,6 +490,11 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
         this.stateTrackerPort = stateTrackerPort;
     }
 
+    public String getMasterHost() {
+        return masterHost;
+    }
 
-
+    public void setMasterHost(String masterHost) {
+        this.masterHost = masterHost;
+    }
 }
