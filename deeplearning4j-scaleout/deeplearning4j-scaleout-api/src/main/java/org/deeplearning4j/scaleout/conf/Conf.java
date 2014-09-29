@@ -5,6 +5,7 @@ import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.nd4j.linalg.transformation.MatrixTransform;
 
 import java.io.Serializable;
@@ -51,6 +52,9 @@ public class Conf implements Serializable,Cloneable {
     }
 
     public void setConf(NeuralNetConfiguration conf) {
+        if(conf.getRng() != null && !(conf.getRng() instanceof SynchronizedRandomGenerator)) {
+            conf.setRng(new SynchronizedRandomGenerator(conf.getRng()));
+        }
         this.conf = conf;
     }
     public void setLayerConfigs() {
