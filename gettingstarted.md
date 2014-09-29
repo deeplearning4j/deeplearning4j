@@ -73,7 +73,7 @@ Contents
          <dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-core</artifactId>
-			<version>0.0.3.2-SNAPSHOT</version>
+			<version>0.0.3.2</version>
 		 </dependency>
 
 * For multithreaded/clustering support, add this dependency to your POM file:
@@ -81,7 +81,7 @@ Contents
          <dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-scaleout-akka</artifactId>
-			<version>0.0.3.2-SNAPSHOT</version>
+			<version>0.0.3.2</version>
          </dependency>
 
 * For natural-language processing (NLP), add this dependency to your POM file:
@@ -89,7 +89,7 @@ Contents
          <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-scaleout-akka-word2vec</artifactId>
-            <version>0.0.3.2-SNAPSHOT</version>
+            <version>0.0.3.2</version>
          </dependency>
 
 * To locally install Jcublas, which does linear algebra for GPUs, first enter these commands:
