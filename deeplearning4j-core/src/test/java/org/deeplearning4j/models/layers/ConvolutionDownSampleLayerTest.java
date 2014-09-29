@@ -4,6 +4,7 @@ import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.ConvolutionDownSampleLayer;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 
@@ -14,6 +15,7 @@ public class ConvolutionDownSampleLayerTest {
 
 
     @Test
+    @Ignore
     public void testConvolution() throws Exception {
         MnistDataFetcher data = new MnistDataFetcher(true);
         data.fetch(2);
