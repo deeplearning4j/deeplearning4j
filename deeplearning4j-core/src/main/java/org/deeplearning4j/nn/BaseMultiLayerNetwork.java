@@ -2166,6 +2166,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                 ret.getHiddenBiasTransforms().putAll(hiddenBiasTransforms);
                 if (hiddenLayerSizes == null)
                     throw new IllegalStateException("Unable to build network, no hidden layer sizes defined");
+
                 return ret;
             } catch (Exception e) {
                 throw new RuntimeException(e);
