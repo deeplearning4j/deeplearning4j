@@ -130,7 +130,7 @@ Add these POM coordinates to your project:
 
 * Lapack offers the altervative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). 
 
-### <a name="next">Next steps: Running Examples</a>
+### <a name="next">Next Steps: Running Examples</a>
 
 Follow our [**MNIST tutorial**](../rbm-mnist-tutorial.html) and try [running a few examples](../quickstart.html). 
 
