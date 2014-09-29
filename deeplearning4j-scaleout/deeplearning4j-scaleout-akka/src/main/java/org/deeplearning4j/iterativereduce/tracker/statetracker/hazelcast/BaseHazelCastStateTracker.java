@@ -499,7 +499,11 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
      */
     @Override
     public void addUpdate(String id,E update) {
+        if(update == null)
+            return;
+
         try {
+
             updateSaver().save(id,update);
         } catch (Exception e) {
             throw new RuntimeException(e);
