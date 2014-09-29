@@ -57,7 +57,6 @@ Neural net knobs supported
          Probability distribution manipulation for initial weight generation
 
 
-
 Coming up
 =============================
 
@@ -67,7 +66,6 @@ Contact
 =============================
 
 Deeplearning4j has its own IRC channel at https://webchat.freenode.net/, a network intended primarily for developers of free and open source software. Just enter /join #deeplearning4j on IRC where you would normally type to chat.
-
 
 
 GPU Support (work in progress, only scaffolding for now)
@@ -82,9 +80,8 @@ Initial deployment instructions:
           <dependency>
                     <groupId>org.nd4j</groupId>
                      <artifactId>nd4j-jcublas</artifactId>
-                      <version>0.0.3.1</version>
+                      <version>0.0.3.2</version>
                    </dependency>
-
 
 Bugs/Feature Requests
 =============================
@@ -110,32 +107,26 @@ Installation
             </repository>
        </repositories>
 
-
 ## Singular neural nets
        
        <dependency>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-core</artifactId>
-         <version>0.0.3.2-SNAPSHOT</version>
+         <version>0.0.3.2</version>
       </dependency>
-
 
 ## Scaleout for multithreaded methods and clustering
        
         <dependency>
          <groupId>org.deeplearning4j</groupId>
            <artifactId>deeplearning4j-scaleout-akka</artifactId>
-         <version>0.0.3.2-SNAPSHOT</version>
+         <version>0.0.3.2</version>
         </dependency>
-
-
 
 ## Text analysis
 
          <dependency>
            <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-nlp/artifactId>
-             <version>0.0.3.2-SNAPSHOT</version>
+             <version>0.0.3.2</version>
           </dependency>
-
-
