@@ -2,6 +2,7 @@ package org.deeplearning4j.plot;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,7 @@ public class Tsne {
 
 
 
-    private String commandTemplate = "python /tmp/tsne.py --path %s --ndims %d --perplexity %.3f --initialdims %s";
+    private String commandTemplate = "python /tmp/tsne.py --path %s --ndims %d --perplexity %.3f --initialdims %s --labels %s";
 
     private static Logger log = LoggerFactory.getLogger(Tsne.class);
 
@@ -52,10 +53,19 @@ public class Tsne {
 
     }
 
-    public void plot(INDArray matrix,int nDims,float perplexity,int initialDims) throws IOException {
+    /**
+     * Plot tsne
+     * @param matrix the matrix to plot
+     * @param nDims the number
+     * @param perplexity
+     * @param initialDims
+     * @param labels
+     * @throws IOException
+     */
+    public void plot(INDArray matrix,int nDims,float perplexity,int initialDims,List<String> labels) throws IOException {
 
         String path = writeMatrix(matrix);
-        String command = String.format(commandTemplate,path,nDims,perplexity,initialDims);
+        String command = String.format(commandTemplate,path,nDims,perplexity,initialDims, StringUtils.join(labels, ","));
         Process is = Runtime.getRuntime().exec(command);
 
         log.info("Std out " + IOUtils.readLines(is.getInputStream()).toString());

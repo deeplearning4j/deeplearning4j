@@ -12,8 +12,12 @@ import java.util.Collection;
  */
 public interface VocabCache  {
 
-	
-	
+
+    /**
+     * Render the words via tsne
+     */
+    void plotVocab();
+
 	/**
 	 * Load vocab
 	 */
