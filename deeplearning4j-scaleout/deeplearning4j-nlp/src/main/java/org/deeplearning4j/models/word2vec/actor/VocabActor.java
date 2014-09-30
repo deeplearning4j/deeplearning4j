@@ -26,7 +26,7 @@ import akka.actor.UntypedActor;
 public class VocabActor extends UntypedActor {
 
 	private static Logger log = LoggerFactory.getLogger(VocabActor.class);
-	private TokenizerFactory tokenizer;
+	private transient TokenizerFactory tokenizer;
 	private List<String> stopWords;
 	private AtomicLong lastUpdate;
 	private VocabCache cache;

@@ -176,6 +176,8 @@ if __name__ == "__main__":
                    help='perplexity for tsne')
     parser.add_argument('--initialdims',type=int,
                    help='initial number of dimensions for tsne')
+    parser.add_argument('--labels',type=int,
+                   help='csv values (one for each label)')
 
     args = parser.parse_args()
 
@@ -183,5 +185,18 @@ if __name__ == "__main__":
     X = np.loadtxt(open(args.path,"rb"),delimiter=",")
     Y = tsne(X, args.ndims, args.initialdims, args.perplexity)
     pl.scatter(Y[:,0], Y[:,1], 20)
+    fig, ax = plt.subplots()
+    ax.scatter(Y[:,0], Y[:,1])
+    labels = []
+    if args.labels is None:
+        for i in xrange(args.initialdims):
+            labels.append(i)
+    else:
+        for i,txt in enumerate(args.labels.split(',')):
+            labels.append(txt)
+
+    for i, txt in enumerate(args.labels):
+        ax.annotate(txt, (z[i],y[i]))
+
     pl.show()
 
