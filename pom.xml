@@ -30,6 +30,8 @@
     <properties>
         <slf4j.version>1.7.6</slf4j.version>
         <junit.version>4.11</junit.version>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+        <maven.test.skip>true</maven.test.skip>
     </properties>
 
 
