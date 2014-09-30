@@ -4,6 +4,9 @@ import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.plot.Tsne;
 import org.nd4j.linalg.dataset.DataSet;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by agibsonccc on 9/20/14.
  */
@@ -14,8 +17,10 @@ public class TsneExample {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         fetcher.fetch(10);
         DataSet d2 = fetcher.next();
-
-        tsne.plot(d2.getFeatureMatrix(),2,0.2f,28);
+        List<String> list = new ArrayList<>();
+        for(int i = 0; i < list.size(); i++)
+            list.add(String.valueOf(i));
+        tsne.plot(d2.getFeatureMatrix(),2,0.2f,28,list);
     }
 
 

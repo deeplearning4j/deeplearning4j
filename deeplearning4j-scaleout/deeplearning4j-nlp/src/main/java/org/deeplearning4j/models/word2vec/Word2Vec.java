@@ -565,6 +565,14 @@ public class Word2Vec implements Persistable {
 
 
     /**
+     * Create a tsne plot
+     */
+    public void plotTsne() {
+       cache.plotVocab();
+    }
+
+
+    /**
      * Train on a list of vocab words
      * @param sentence the list of vocab words to train on
      */

@@ -5,6 +5,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.plot.Tsne;
 import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.util.Index;
 import org.deeplearning4j.util.SerializationUtils;
@@ -13,8 +14,11 @@ import org.nd4j.linalg.factory.Nd4j;
 
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -148,6 +152,9 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
             Nd4j.getBlasWrapper().axpy(1,work,syn0);
 
     }
+
+
+
 
     /**
      * Returns all of the words in the vocab
@@ -365,6 +372,23 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     @Override
     public boolean vocabExists() {
         return new File("cache.ser").exists();
+    }
+
+    /**
+     * Render the words via tsne
+     */
+    @Override
+    public void plotVocab() {
+        Tsne tsne = new Tsne();
+        try {
+            List<String> plot = new ArrayList<>();
+            for(int i = 0; i < wordIndex.size(); i++) {
+                plot.add(wordIndex.get(i).toString());
+            }
+            tsne.plot(syn0,2,0.3f,syn0.shape()[1],plot);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
