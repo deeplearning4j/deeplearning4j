@@ -65,7 +65,10 @@ public class Tsne {
     public void plot(INDArray matrix,int nDims,float perplexity,int initialDims,List<String> labels) throws IOException {
 
         String path = writeMatrix(matrix);
-        String command = String.format(commandTemplate,path,nDims,perplexity,initialDims, StringUtils.join(labels, ","));
+        String labelPath = UUID.randomUUID().toString();
+        File f = new File(labelPath);
+        FileUtils.writeLines(f,labels);
+        String command = String.format(commandTemplate,path,nDims,perplexity,initialDims,labelPath);
         Process is = Runtime.getRuntime().exec(command);
 
         log.info("Std out " + IOUtils.readLines(is.getInputStream()).toString());

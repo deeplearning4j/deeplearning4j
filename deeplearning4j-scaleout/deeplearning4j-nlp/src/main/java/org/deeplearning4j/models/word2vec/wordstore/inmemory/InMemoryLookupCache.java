@@ -382,8 +382,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         Tsne tsne = new Tsne();
         try {
             List<String> plot = new ArrayList<>();
-            for(int i = 0; i < wordIndex.size(); i++) {
-                plot.add(wordIndex.get(i).toString());
+            for(String s : words()) {
+                plot.add(s);
             }
             tsne.plot(syn0,2,0.3f,syn0.shape()[1],plot);
         } catch (IOException e) {
