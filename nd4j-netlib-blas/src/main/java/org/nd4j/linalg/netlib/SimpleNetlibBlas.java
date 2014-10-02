@@ -105,22 +105,22 @@ public class SimpleNetlibBlas {
 
 
         BLAS.getInstance().sgemm(
-                "n",
-                "n",
+                "N",
+                "N",
                 C.rows(),
                 C.columns(),
                 A.columns(),
                 alpha,
                 A.data(),
-                A.rows(),
-                B.columns()
+                A.offset(),
+                A.rows()
                 , B.data(),
+                B.offset(),
                 B.rows(),
-                C.rows(),
                 beta,
                 C.data(),
-                C.rows(),
-                C.columns());
+                C.offset(),
+                C.rows());
 
         return C;
 
