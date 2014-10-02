@@ -6,6 +6,7 @@
 		<version>0.0.3.2</version>
 	</parent>
 	<properties>
+        <nd4j.version>0.0.3.4-SNAPSHOT</nd4j.version>
 		<cleartk.version>2.0.0</cleartk.version>
 		<spring.version>3.2.5.RELEASE</spring.version>
 	</properties>
@@ -56,8 +57,8 @@
 		<dependency>
 			<groupId>org.nd4j</groupId>
 			<artifactId>nd4j-jblas</artifactId>
-			<version>0.0.3.2</version>
-			<scope>Test</scope>
+			<version>${nd4j.version}</version>
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>
