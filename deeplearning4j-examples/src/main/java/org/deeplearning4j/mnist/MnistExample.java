@@ -30,8 +30,8 @@ public class MnistExample {
     public static void main(String[] args) throws Exception {
         RandomGenerator gen = new MersenneTwister(123);
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .momentum(5e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.uniform(gen, 784, 10))
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().render(10)
+                .momentum(5e-1f)
                 .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
                 .learningRate(1e-1f).nIn(784).nOut(3).build();
@@ -46,7 +46,7 @@ public class MnistExample {
         d.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
         d.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        fetcher.fetch(1000);
+        fetcher.fetch(10);
         DataSet d2 = fetcher.next();
 
         d.fit(d2);
