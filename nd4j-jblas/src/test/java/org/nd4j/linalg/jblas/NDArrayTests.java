@@ -172,7 +172,17 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
 
 
 
+    @Test
+    public void testDot() {
+        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray row1 = linspace.getRow(0);
+        INDArray row2 = linspace.getRow(1);
+        float dot = Nd4j.getBlasWrapper().dot(row1,row2);
+        assertEquals(11,dot,1e-1);
 
+
+
+    }
 
 
     @Test

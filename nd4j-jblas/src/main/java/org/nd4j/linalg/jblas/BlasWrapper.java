@@ -96,7 +96,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public float dot(INDArray x, INDArray y) {
         //return NativeBlas.ddot(x.length(), x.data(), 0, 1, y.data(), 0, 1);
-        return JavaBlas.rdot(x.length(), x.data(), x.offset(), 1, y.data(), y.offset(), 1);
+        return JavaBlas.rdot(x.length(), x.data(), x.offset(), x.stride()[0], y.data(), y.offset(), y.stride()[0]);
     }
 
     /**
