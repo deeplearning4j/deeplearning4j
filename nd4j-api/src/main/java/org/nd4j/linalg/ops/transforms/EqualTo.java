@@ -28,7 +28,7 @@ public class EqualTo extends BaseElementWiseOp {
                return Nd4j.createDouble(1, 0);
             }
             else
-                return 1;
+                return (float) 1;
 
 
         }
@@ -37,7 +37,7 @@ public class EqualTo extends BaseElementWiseOp {
                 return  Nd4j.createDouble(0, 0);
 
             else
-                return 0;
+                return (float) 0;
 
 
         }

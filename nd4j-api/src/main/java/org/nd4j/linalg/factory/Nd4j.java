@@ -501,6 +501,9 @@ public class Nd4j {
      * @return new matrix
      */
     public static IComplexNDArray diag(IComplexNDArray x) {
+        if(x.isScalar())
+            return x.dup();
+
         IComplexNDArray m = Nd4j.createComplex(x.length(), x.length());
         IComplexNDArray xLinear = x.linearView();
 
@@ -518,6 +521,10 @@ public class Nd4j {
      * @return new matrix
      */
     public static INDArray diag(INDArray x) {
+        if(x.isScalar())
+            return x.dup();
+
+
         INDArray m = Nd4j.create(x.length(), x.length());
         INDArray xLinear = x.linearView();
 
@@ -629,7 +636,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int rows,int columns) {
-        return INSTANCE.rand(rows,columns);
+        return INSTANCE.randn(rows,columns);
     }
 
     /**

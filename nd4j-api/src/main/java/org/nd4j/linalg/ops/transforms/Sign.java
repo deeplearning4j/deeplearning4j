@@ -33,10 +33,10 @@ public class Sign extends BaseElementWiseOp {
         else {
             float n = (float) value;
             if(n < 0)
-                return -1;
+                return (float) -1;
             else if(n > 0)
-                return 1;
-            return 0;
+                return (float) 1;
+            return (float) 0;
         }
 
     }

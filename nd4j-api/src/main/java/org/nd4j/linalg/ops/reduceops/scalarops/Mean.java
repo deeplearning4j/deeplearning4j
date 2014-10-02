@@ -14,12 +14,23 @@ public class Mean extends BaseScalarOp {
 
     @Override
     public float accumulate(INDArray arr, int i, float soFar) {
-       if(i < arr.length() - 1)
-           return soFar + arr.get(i);
+        if(i < arr.length() - 1)
+            return soFar + arr.get(i);
         else {
-           soFar +=  arr.get(i);
-           return soFar / arr.length();
-       }
+            soFar +=  arr.get(i);
+            soFar /= arr.length();
+            // Compute initial estimate using definitional formula
+            double xbar = soFar;
+
+            // Compute correction factor in second pass
+            double correction = 0;
+            for (int j = 0; j < arr.length(); j++) {
+                correction += arr.get(j) - xbar;
+            }
+
+            return (float)  (xbar + (correction/arr.length()));
+
+        }
 
     }
 }
