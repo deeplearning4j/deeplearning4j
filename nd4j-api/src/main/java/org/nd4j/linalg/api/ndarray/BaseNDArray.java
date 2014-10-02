@@ -363,7 +363,7 @@ public abstract class BaseNDArray  implements INDArray {
 
 
     public int majorStride() {
-            return stride[0];
+        return stride[0];
     }
 
 
@@ -540,6 +540,80 @@ public abstract class BaseNDArray  implements INDArray {
 
         data[ix] = value.floatValue();
 
+        return this;
+    }
+
+    /**
+     * Returns an ndarray with 1 if the element is epsilon equals
+     *
+     * @param other the number to compare
+     * @return a copied ndarray with the given
+     * binary conditions
+     */
+    @Override
+    public INDArray eps(Number other) {
+        return dup().epsi(other);
+    }
+
+    /**
+     * Returns an ndarray with 1 if the element is epsilon equals
+     *
+     * @param other the number to compare
+     * @return a copied ndarray with the given
+     * binary conditions
+     */
+    @Override
+    public INDArray epsi(Number other) {
+        INDArray linearView = linearView();
+        float otherVal = other.floatValue();
+
+        for(int i = 0; i < linearView.length(); i++) {
+            float val = linearView.get(i);
+            float diff = Math.abs(val - otherVal);
+            if(diff <= Nd4j.EPS_THRESHOLD)
+                linearView.putScalar(i,1);
+            else
+                linearView.putScalar(i,0);
+
+        }
+        return this;
+    }
+
+    /**
+     * epsilon equals than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     *
+     * @param other the number to compare
+     * @return
+     */
+    @Override
+    public INDArray eps(INDArray other) {
+        return dup().epsi(other);
+    }
+
+    /**
+     * In place epsilon equals than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     *
+     * @param other the number to compare
+     * @return
+     */
+    @Override
+    public INDArray epsi(INDArray other) {
+        INDArray linearView = linearView();
+        INDArray otherLinearView = other.linearView();
+        for(int i = 0; i < linearView.length(); i++) {
+            float val = linearView.get(i);
+            float otherVal = otherLinearView.get(i);
+            float diff = Math.abs(val - otherVal);
+            if(diff <= Nd4j.EPS_THRESHOLD)
+                linearView.putScalar(i,1);
+            else
+                linearView.putScalar(i,0);
+
+        }
         return this;
     }
 

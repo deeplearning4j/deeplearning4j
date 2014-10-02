@@ -15,7 +15,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
+import java.io.File;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -228,6 +231,16 @@ public abstract class NDArrayTests {
 
 
     @Test
+    public void testDiag() {
+        INDArray diag2 = Nd4j.linspace(1,8,8).reshape(2,4);
+        INDArray diag = Nd4j.diag(diag2);
+        for(int i = 0; i < diag2.length(); i++) {
+            assertEquals(i + 1,diag.get(i,i),1e-1);
+        }
+
+    }
+
+    @Test
     public void testCosineSim() {
         INDArray vec1 = Nd4j.create(new float[]{1,2,3,4});
         INDArray vec2 = Nd4j.create(new float[]{1,2,3,4});
@@ -265,6 +278,15 @@ public abstract class NDArrayTests {
     }
 
 
+    @Test
+    public void testLoad() throws Exception {
+        ClassPathResource r = new ClassPathResource("/testdata/testload.txt");
+        File f = r.getFile();
+        INDArray assertShape = Nd4j.create(2,784);
+        INDArray load = Nd4j.readTxt(f.getAbsolutePath(),"   ");
+        assertTrue(Arrays.equals(assertShape.shape(),load.shape()));
+
+    }
 
 
     @Test

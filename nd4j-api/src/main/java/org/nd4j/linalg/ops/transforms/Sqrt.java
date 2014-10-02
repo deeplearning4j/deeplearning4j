@@ -1,12 +1,14 @@
 package org.nd4j.linalg.ops.transforms;
 
-import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.BaseElementWiseOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
- * Created by agibsonccc on 8/16/14.
+ * Sqrt function
+ *
+ * @author Adam Gibson
  */
 public class Sqrt extends BaseElementWiseOp {
     /**
@@ -18,7 +20,7 @@ public class Sqrt extends BaseElementWiseOp {
      */
     @Override
     public Object apply(INDArray from,Object value, int i) {
-        if(value instanceof IComplexNDArray) {
+        if(value instanceof IComplexNumber) {
             return ComplexUtil.sqrt((org.nd4j.linalg.api.complex.IComplexNumber) value);
         }
         return (float) Math.sqrt((float) value);

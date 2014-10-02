@@ -403,8 +403,8 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public int geev(char jobvl, char jobvr, INDArray A,
                     INDArray WR, INDArray WI, INDArray VL, INDArray VR) {
-        int info = NativeBlas.sgeev(jobvl, jobvr, A.rows(), A.data(), 0, A.rows(), WR.data(), 0,
-                WI.data(), 0, VL.data(), 0, VL.rows(), VR.data(), 0, VR.rows());
+        int info = NativeBlas.sgeev(jobvl, jobvr, A.rows(), A.data(), A.offset(), A.rows(), WR.data(), WR.offset(),
+                WI.data(), WI.offset(), VL.data(), VL.offset(), A.rows() ,VR.data(), 0, A.rows());
         if (info > 0)
             throw new LapackConvergenceException("DGEEV", "First " + info + " eigenvalues have not converged.");
         return info;
@@ -412,7 +412,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public int sygvd(int itype, char jobz, char uplo, INDArray A, INDArray B, INDArray W) {
-        int info = NativeBlas.ssygvd(itype, jobz, uplo, A.rows(), A.data(), 0, A.rows(), B.data(), 0, B.rows(), W.data(), 0);
+        int info = NativeBlas.ssygvd(itype, jobz, uplo, A.rows(), A.data(), A.offset(), A.rows(), B.data(), B.offset(), B.rows(), W.data(), W.offset());
         if (info == 0)
             return 0;
         else {
@@ -458,7 +458,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int[] iwork = new int[3 * minmn * nlvl + 11 * minmn];
         float[] s = new float[minmn];
         int[] rank = new int[1];
-        int info = NativeBlas.sgelsd(m, n, nrhs, A.data(), 0, m, B.data(), 0, B.rows(), s, 0, -1, rank, 0, iwork, 0);
+        int info = NativeBlas.sgelsd(m, n, nrhs, A.data(), A.offset(), m, B.data(), B.offset(), B.rows(), s, 0, -1, rank, 0, iwork, 0);
         if (info == 0) {
             return;
         } else if (info < 0) {

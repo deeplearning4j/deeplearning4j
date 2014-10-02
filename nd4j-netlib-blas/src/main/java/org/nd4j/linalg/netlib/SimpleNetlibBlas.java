@@ -1,6 +1,7 @@
 package org.nd4j.linalg.netlib;
 
 import com.github.fommil.netlib.BLAS;
+import com.github.fommil.netlib.LAPACK;
 import org.jblas.NativeBlas;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -10,6 +11,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.netlib.complex.ComplexDouble;
 import org.nd4j.linalg.netlib.complex.ComplexFloat;
+import org.netlib.util.intW;
 
 /**
  *
@@ -126,6 +128,71 @@ public class SimpleNetlibBlas {
 
 
     /**
+     * Calculate eigen values
+     * @param jobz
+     * @param range
+     * @param uplo
+     * @param a
+     * @param vl
+     * @param vu
+     * @param il
+     * @param iu
+     * @param abstol
+     * @param w
+     * @param z
+     * @param isuppz
+     * @return
+     */
+    public static int syevr(char jobz, char range, char uplo, INDArray a,
+                            float vl, int vu, int il, int iu, float abstol,
+                            INDArray w, INDArray z, int[] isuppz) {
+        int n = a.rows();
+        org.netlib.util.intW m = new intW(0);
+        org.netlib.util.intW info = new org.netlib.util.intW(0);
+
+        float[] work = new float[1];
+        int lwork = 0;
+        int[] iwork = new int[1];
+        int liwork = 0;
+
+
+        LAPACK.getInstance().ssyevr(
+                String.valueOf(jobz),
+                String.valueOf(range),
+                String.valueOf(uplo),
+                n,
+                a.data(),
+                a.offset(),
+                a.rows(),
+                vl,
+                vu,
+                il,
+                iu,
+                abstol,
+                m,
+                w.data(),
+                w.offset(),
+                z.data(),
+                z.offset(),
+                z.rows(),
+                isuppz,
+                0,//suppZIdx
+                work,
+                0,//workOffset
+                lwork,
+                iwork,
+                0,//iworkoffset
+                liwork,
+                info
+        );
+
+
+
+        return info.val;
+
+    }
+
+    /**
      * Calculate the 2 norm of the ndarray
      * @param A
      * @return
@@ -227,7 +294,7 @@ public class SimpleNetlibBlas {
     }
 
     /**
-     * And and scale by the given scalar da
+     * Add and scale by the given scalar da
      * @param da
      * @param A
      * @param B

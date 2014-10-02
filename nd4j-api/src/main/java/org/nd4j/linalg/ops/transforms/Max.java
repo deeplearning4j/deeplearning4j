@@ -10,9 +10,9 @@ import org.nd4j.linalg.ops.BaseElementWiseOp;
  * @author Adam Gibson
  */
 public class Max extends BaseElementWiseOp {
-    private double max = 0;
+    private Number max = 0;
 
-    public Max(double max) {
+    public Max(Number max) {
         this.max = max;
     }
 
@@ -29,12 +29,12 @@ public class Max extends BaseElementWiseOp {
     public Object apply(INDArray from,Object value, int i) {
         if(value instanceof IComplexNumber) {
             IComplexNumber num = (IComplexNumber) value;
-            if(num.realComponent().doubleValue() > max)
+            if(num.realComponent().doubleValue() > max.doubleValue())
                 return num;
             return num.set(max,num.imaginaryComponent());
         }
 
         float val = (float) value;
-        return (float) Math.max(max,val);
+        return (float) Math.max(max.doubleValue(),val);
     }
 }

@@ -87,6 +87,70 @@ public interface IComplexNDArray extends INDArray {
     public IComplexNDArray putScalar(int i,Number value);
 
 
+
+    /**
+     * Returns an ndarray with 1 if the element is epsilon equals
+     *
+     * @param other the number to compare
+     * @return a copied ndarray with the given
+     * binary conditions
+     */
+
+    IComplexNDArray eps(IComplexNumber other);
+
+    /**
+     * Returns an ndarray with 1 if the element is epsilon equals
+     *
+     * @param other the number to compare
+     * @return a copied ndarray with the given
+     * binary conditions
+     */
+
+    IComplexNDArray epsi(IComplexNumber other);
+
+
+    /**
+     * Returns an ndarray with 1 if the element is epsilon equals
+     *
+     * @param other the number to compare
+     * @return a copied ndarray with the given
+     * binary conditions
+     */
+    @Override
+    IComplexNDArray eps(Number other);
+
+    /**
+     * Returns an ndarray with 1 if the element is epsilon equals
+     *
+     * @param other the number to compare
+     * @return a copied ndarray with the given
+     * binary conditions
+     */
+    @Override
+    IComplexNDArray epsi(Number other);
+
+    /**
+     * epsilon equals than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     *
+     * @param other the number to compare
+     * @return
+     */
+    @Override
+    IComplexNDArray eps(INDArray other);
+
+    /**
+     * In place epsilon equals than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     *
+     * @param other the number to compare
+     * @return
+     */
+    @Override
+    IComplexNDArray epsi(INDArray other);
+
     @Override
     IComplexNDArray lt(Number other);
 

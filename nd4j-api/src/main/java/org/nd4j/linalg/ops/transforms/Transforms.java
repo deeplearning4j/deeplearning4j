@@ -146,12 +146,19 @@ public class Transforms {
         return ret;
     }
 
+    /**
+     * Normalize data to zero mean and unit variance
+     * substract by the mean and divide by the standard deviation
+     * @param toNormalize the ndarray to normalize
+     * @return the normalized ndarray
+     */
     public static INDArray normalizeZeroMeanAndUnitVariance(INDArray toNormalize) {
-        INDArray columnMeans = toNormalize.mean(1);
-        INDArray columnStds = toNormalize.std(1);
+        INDArray columnMeans = toNormalize.mean(0);
+        INDArray columnStds = toNormalize.std(0);
 
         toNormalize.subiRowVector(columnMeans);
-        columnStds.addi(1e-6);
+        //padding for non zero
+        columnStds.addi(Nd4j.EPS_THRESHOLD);
         toNormalize.diviRowVector(columnStds);
         return toNormalize;
     }
@@ -191,7 +198,7 @@ public class Transforms {
 
 
     /**
-     * Binary matrix of whether the number at a given index is greatger than
+     * Binary matrix of whether the number at a given index is greater than
      * @param ndArray
      * @return
      */
@@ -200,6 +207,23 @@ public class Transforms {
 
     }
 
+    /**
+     * Signum function of this ndarray
+     * @param toSign
+     * @return
+     */
+    public static INDArray sign(IComplexNDArray toSign) {
+        return exec(toSign,Sign.class,null);
+    }
+
+    /**
+     * Signum function of this ndarray
+     * @param toSign
+     * @return
+     */
+    public static INDArray sign(INDArray toSign) {
+        return exec(toSign,Sign.class,null);
+    }
 
 
     /**
@@ -294,6 +318,26 @@ public class Transforms {
         return exec(ndArray,Identity.class,null);
     }
     public static INDArray max(INDArray ndArray) {
+        return exec(ndArray,Max.class,null);
+    }
+
+    /**
+     * Max function
+     * @param ndArray
+     * @param max
+     * @return
+     */
+    public static INDArray max(INDArray ndArray,float max) {
+        return exec(ndArray,Max.class,new Object[]{max});
+    }
+
+    /**
+     * Max function
+     * @param ndArray the ndarray to take the max function of
+     * @param max the value to compare
+     * @return
+     */
+    public static IComplexNDArray max(IComplexNDArray ndArray,float max) {
         return exec(ndArray,Max.class,null);
     }
     public static IComplexNDArray max(IComplexNDArray ndArray) {

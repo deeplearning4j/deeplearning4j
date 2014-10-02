@@ -96,6 +96,15 @@ public abstract class ComplexNDArrayTests {
     }
 
     @Test
+    public void testColumnWithReshape() {
+        IComplexNDArray ones = Nd4j.complexOnes(4).reshape(2,2);
+        IComplexNDArray column = Nd4j.createComplex(new float[]{2,0,6,0});
+        ones.putColumn(1,column);
+        assertEquals(column,ones.getColumn(1));
+    }
+
+
+    @Test
     public void testCreateFromNDArray() {
         INDArray arr = Nd4j.create(new double[][]{{1, 2}, {3, 4}});
         IComplexNDArray complex = Nd4j.createComplex(arr);

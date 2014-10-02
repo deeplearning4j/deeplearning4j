@@ -10,11 +10,11 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.InputStreamUtil;
+import org.nd4j.linalg.util.Shape;
 import org.springframework.core.io.ClassPathResource;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
@@ -45,6 +45,7 @@ public class Nd4j {
     public final static IComplexNumber UNIT;
     public final static IComplexNumber ZERO;
     public final static IComplexNumber NEG_UNIT;
+    public static float EPS_THRESHOLD = 1e-6f;
 
 
     static {
@@ -79,7 +80,7 @@ public class Nd4j {
     }
 
     public static void setBlasWrapper(BlasWrapper factory) {
-       BLAS_WRAPPER_INSTANCE = factory;
+        BLAS_WRAPPER_INSTANCE = factory;
     }
 
     /**
@@ -102,6 +103,26 @@ public class Nd4j {
         return BLAS_WRAPPER_INSTANCE;
     }
 
+
+    /**
+     * Create a complex ndarray based on the
+     * real and imaginary
+     * @param real the real numbers
+     * @param imag the imaginary components
+     * @return the complex
+     */
+    public static IComplexNDArray createComplex(INDArray real,INDArray imag) {
+        assert Shape.shapeEquals(real.shape(),imag.shape());
+        IComplexNDArray ret = Nd4j.createComplex(real.shape());
+        INDArray realLinear = real.linearView();
+        INDArray imagLinear = imag.linearView();
+        IComplexNDArray retLinear = ret.linearView();
+        for(int i = 0; i < ret.length(); i++) {
+            retLinear.putScalar(i,Nd4j.createComplexNumber(realLinear.get(i),imagLinear.get(i)));
+        }
+
+        return ret;
+    }
 
     /**
      * Create an n x (shape)
@@ -195,6 +216,62 @@ public class Nd4j {
     public static void rot90(INDArray toRotate) {
         INSTANCE.rot90(toRotate);
 
+    }
+
+    /**
+     * Read line via input streams
+     * @param filePath the input stream ndarray
+     *           @param split the split separator
+     * @return the read txt method
+     *
+     */
+    public static INDArray readTxt(String filePath,String split) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)));
+        String line;
+        int numLines = InputStreamUtil.countLines(filePath);
+        int numColumns = -1;
+        INDArray ret = null;
+        int count = 0;
+        while((line = reader.readLine()) != null) {
+            String[] data = line.trim().split(split);
+            if(numColumns < 0) {
+                numColumns = data.length;
+                ret = Nd4j.create(numLines,numColumns);
+            }
+            else
+                assert data.length == numColumns : "Data has inconsistent number of columns";
+            ret.putRow(count++,loadRow(data));
+
+
+
+        }
+
+        return ret;
+    }
+
+
+
+
+
+    /**
+     * Read line via input streams
+     * @param filePath the input stream ndarray
+     * @return the read txt method
+     *
+     */
+    public static INDArray readTxt(String filePath) throws IOException {
+        return readTxt(filePath,"\t");
+    }
+
+
+
+    private static INDArray loadRow(String[] data) {
+        INDArray ret = Nd4j.create(data.length);
+        for(int i = 0; i < data.length; i++) {
+            ret.putScalar(i,Float.parseFloat(data[i]));
+        }
+
+        return ret;
     }
 
 
@@ -415,6 +492,40 @@ public class Nd4j {
         return INSTANCE.rand(rows,columns,min,max,rng);
     }
 
+
+
+    /**
+     * Creates a new matrix where the values of the given vector are the diagonal values of
+     * the matrix.
+     * @param x the diagonal values
+     * @return new matrix
+     */
+    public static IComplexNDArray diag(IComplexNDArray x) {
+        IComplexNDArray m = Nd4j.createComplex(x.length(), x.length());
+        IComplexNDArray xLinear = x.linearView();
+
+        for (int i = 0; i < x.length(); i++)
+            m.putScalar(i, i, xLinear.getComplex(i));
+
+        return m;
+    }
+
+
+    /**
+     * Creates a new matrix where the values of the given vector are the diagonal values of
+     * the matrix.
+     * @param x the diagonal values
+     * @return new matrix
+     */
+    public static INDArray diag(INDArray x) {
+        INDArray m = Nd4j.create(x.length(), x.length());
+        INDArray xLinear = x.linearView();
+
+        for (int i = 0; i < x.length(); i++)
+            m.put(i, i, xLinear.get(i));
+
+        return m;
+    }
 
     public static INDArray appendBias(INDArray...vectors) {
         return INSTANCE.appendBias(vectors);
@@ -1472,6 +1583,15 @@ public class Nd4j {
     }
 
 
+    /**
+     * An alias for repmat
+     * @param tile the ndarray to tile
+     * @param repeat the shape to repeat
+     * @return the tiled ndarray
+     */
+    public static INDArray tile(INDArray tile,int[] repeat) {
+        return tile.repmat(repeat);
+    }
 
 
     /**

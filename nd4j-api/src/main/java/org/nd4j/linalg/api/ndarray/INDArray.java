@@ -92,6 +92,25 @@ public interface INDArray extends Serializable {
      * @return
      */
     public INDArray lti(Number other);
+
+    /**
+     * Returns an ndarray with 1 if the element is epsilon equals
+     * @param other the number to compare
+     * @return a copied ndarray with the given
+     * binary conditions
+     */
+    public INDArray eps(Number other);
+
+
+    /**
+     * Returns an ndarray with 1 if the element is epsilon equals
+     * @param other the number to compare
+     * @return a copied ndarray with the given
+     * binary conditions
+     */
+    public INDArray epsi(Number other);
+
+
     /**
      * Returns an ndarray with 1 if the element is less than
      * the given element 0 other wise
@@ -109,7 +128,13 @@ public interface INDArray extends Serializable {
      */
     public INDArray eqi(Number other);
 
+    /**
+     * Greater than boolean (copying)(
+     * @param other
+     * @return
+     */
     public INDArray gt(Number other);
+
     /**
      * In place greater than comparison:
      * If the given number is less than the
@@ -138,6 +163,24 @@ public interface INDArray extends Serializable {
      */
     public INDArray lti(INDArray other);
 
+
+    /**
+     *  epsilon equals than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     * @param other the number to compare
+     * @return
+     */
+    public INDArray eps(INDArray other);
+
+    /**
+     * In place epsilon equals than comparison:
+     * If the given number is less than the
+     * comparison number the item is 0 otherwise 1
+     * @param other the number to compare
+     * @return
+     */
+    public INDArray epsi(INDArray other);
 
     /**
      *  equal than comparison:
@@ -188,7 +231,7 @@ public interface INDArray extends Serializable {
     public INDArray rdiv(Number n);
 
     /**
-     * In place reverse divison
+     * In place reverse division
      * @param n
      * @return
      */
@@ -209,6 +252,12 @@ public interface INDArray extends Serializable {
     public INDArray divi(Number n);
 
 
+    /**
+     * Scalar multiplication (copy)
+     * @param n the number to multiply by
+     * @return a copy of this ndarray multiplied by the given number
+     *
+     */
     public INDArray mul(Number n);
 
     /**
@@ -219,7 +268,14 @@ public interface INDArray extends Serializable {
     public INDArray muli(Number n);
 
 
+    /**
+     * Scalar subtraction (copied)
+     * @param n the number to subtract by
+     * @return this ndarray - the given number
+     */
     public INDArray sub(Number n);
+
+
     /**
      * In place scalar subtraction
      * @param n
@@ -227,6 +283,11 @@ public interface INDArray extends Serializable {
      */
     public INDArray subi(Number n);
 
+    /**
+     * Scalar addition (cloning)
+     * @param n the number to add
+     * @return a clone with this matrix + the given number
+     */
     public INDArray add(Number n);
 
     /**
@@ -237,9 +298,12 @@ public interface INDArray extends Serializable {
     public INDArray addi(Number n);
 
 
-
-
-
+    /**
+     * Reverse division (number / ndarray)
+     * @param n the number to divide by
+     * @param result
+     * @return
+     */
     public INDArray rdiv(Number n,INDArray result);
 
 
@@ -251,6 +315,12 @@ public interface INDArray extends Serializable {
      */
     public INDArray rdivi(Number n,INDArray result);
 
+    /**
+     * Reverse subtraction
+     * @param n the number to subtract by
+     * @param result the result ndarray
+     * @return
+     */
     public INDArray rsub(Number n,INDArray result);
 
     /**
@@ -262,6 +332,12 @@ public interface INDArray extends Serializable {
     public INDArray rsubi(Number n,INDArray result);
 
 
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     public INDArray div(Number n,INDArray result);
 
     /**
@@ -765,14 +841,6 @@ public interface INDArray extends Serializable {
      * @return the result of the addition
      */
     public INDArray add(INDArray other,INDArray result);
-
-
-
-
-
-
-
-
 
 
     /**

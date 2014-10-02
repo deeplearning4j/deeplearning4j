@@ -174,6 +174,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
 
 
 
+
     @Test
     public void testFortranCreation() {
         double[][] data = new double[][]{
