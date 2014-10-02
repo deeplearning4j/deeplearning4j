@@ -1984,7 +1984,7 @@ public class Nd4j {
     }
 
     public static IComplexNDArray createComplex(float[] dim) {
-        return INSTANCE.createComplex(dim);
+        return INSTANCE.createComplex(dim,new int[]{1,dim.length / 2});
     }
 
     public static IComplexNDArray createComplex(float[] data, int[] shape, int offset) {

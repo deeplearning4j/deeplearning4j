@@ -84,7 +84,15 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public IComplexNDArray axpy(IComplexNumber da, IComplexNDArray dx, IComplexNDArray dy) {
-        NativeBlas.caxpy(dx.length(), new org.jblas.ComplexFloat(da.realComponent().floatValue(), da.imaginaryComponent().floatValue()), dx.data(), dx.offset(), 1, dy.data(), dy.offset(), 1);
+        NativeBlas.caxpy(dx.length(),
+                new org.jblas.ComplexFloat(da.realComponent().floatValue(),
+                        da.imaginaryComponent().floatValue()), dx.data(),
+                dx.offset(),
+                dx.stride()[0],
+                dy.data(),
+                dy.offset(),
+                dy.stride()[0]);
+
         return dy;
     }
 
@@ -96,7 +104,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public float dot(INDArray x, INDArray y) {
         //return NativeBlas.ddot(x.length(), x.data(), 0, 1, y.data(), 0, 1);
-        return JavaBlas.rdot(x.length(), x.data(), x.offset(), x.stride()[0], y.data(), y.offset(), y.stride()[0]);
+        return JavaBlas.rdot(
+                x.length(),
+                x.data(),
+                x.offset(),
+                x.stride()[0],
+                y.data(),
+                y.offset(),
+                y.stride()[0]);
     }
 
     /**
@@ -111,7 +126,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public ComplexFloat dotu(IComplexNDArray x, IComplexNDArray y) {
-        return new ComplexFloat(NativeBlas.cdotu(x.length(), x.data(), x.offset(), 1, y.data(), y.offset(), 1));
+        return new ComplexFloat(NativeBlas.cdotu(x.length(), x.data(), x.offset(), x.stride()[0], y.data(), y.offset(), y.stride()[0]));
     }
 
     /**
@@ -119,11 +134,11 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public double nrm2(INDArray x) {
-        return NativeBlas.snrm2(x.length(), x.data(), 0, 1);
+        return NativeBlas.snrm2(x.length(), x.data(), x.offset(), x.stride()[0]);
     }
     @Override
     public double nrm2(IComplexNDArray x) {
-        return NativeBlas.scnrm2(x.length(), x.data(), 0, 1);
+        return NativeBlas.scnrm2(x.length(), x.data(), x.offset(), x.stride()[0]);
     }
 
     /**
@@ -131,12 +146,12 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public double asum(INDArray x) {
-        return NativeBlas.sasum(x.length(), x.data(), x.offset(), 1);
+        return NativeBlas.sasum(x.length(), x.data(), x.offset(), x.stride()[0]);
     }
 
     @Override
     public double asum(IComplexNDArray x) {
-        return NativeBlas.scasum(x.length(), x.data(), x.offset(), 1);
+        return NativeBlas.scasum(x.length(), x.data(), x.offset(), x.stride()[0]);
     }
 
     /**
@@ -170,29 +185,26 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray gemv(float alpha, INDArray a,
                          INDArray x, float beta, INDArray y) {
-        if (false) {
-            NativeBlas.sgemv('N', a.rows(), a.columns(), alpha, a.data(), 0, a.rows(), x.data(), 0,
-                    1, beta, y.data(), 0, 1);
-        } else {
-            if (beta == 0.0) {
-                for (int j = 0; j < a.columns(); j++) {
-                    double xj = x.get(j);
-                    if (xj != 0.0) {
-                        for (int i = 0; i < a.rows(); i++) {
-                            y.putScalar(i,y.get(i) + a.get(i,j) * xj);
-                        }
-                    }
-                }
-            } else {
-                for (int j = 0; j < a.columns(); j++) {
-                    double byj = beta * y.data()[j];
-                    double xj = x.get(j);
+
+        if (beta == 0.0) {
+            for (int j = 0; j < a.columns(); j++) {
+                double xj = x.get(j);
+                if (xj != 0.0) {
                     for (int i = 0; i < a.rows(); i++) {
-                        y.putScalar(j,a.get(i,j) * xj + byj);
+                        y.putScalar(i,y.get(i) + a.get(i,j) * xj);
                     }
                 }
             }
+        } else {
+            for (int j = 0; j < a.columns(); j++) {
+                double byj = beta * y.data()[j];
+                double xj = x.get(j);
+                for (int i = 0; i < a.rows(); i++) {
+                    y.putScalar(j,a.get(i,j) * xj + byj);
+                }
+            }
         }
+
         return y;
     }
 
@@ -202,8 +214,8 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray ger(float alpha, INDArray x,
                         INDArray y, INDArray a) {
-        NativeBlas.sger(a.rows(), a.columns(), alpha, x.data(), 0, 1, y.data(), 0, 1, a.data(),
-                0, a.rows());
+        NativeBlas.sger(a.rows(), a.columns(), alpha, x.data(), x.offset(), x.stride()[0], y.data(), y.offset(), y.stride()[0], a.data(),
+                a.offset(), a.rows());
         return a;
     }
 
@@ -219,7 +231,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
         NativeBlas.cgeru(a.rows(), a.columns(),
                 new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
-                x.data(), x.offset(), 1, y.data(), y.offset(), 1, a.data(),
+                x.data(), x.offset(), x.stride()[0], y.data(), y.offset(), y.stride()[0], a.data(),
                 a.offset(), a.rows());
         return a;
     }
@@ -234,7 +246,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public IComplexNDArray gerc(IComplexNumber alpha, IComplexNDArray x,
                                 IComplexNDArray y, IComplexNDArray a) {
-        NativeBlas.cgerc(a.rows(), a.columns(), (ComplexFloat) alpha, x.data(), x.offset(), 1, y.data(), y.offset(), 1, a.data(),
+        NativeBlas.cgerc(a.rows(), a.columns(), (ComplexFloat) alpha,
+                x.data(), x.offset(), x.stride()[0],
+                y.data(), y.offset(), y.stride()[0],
+                a.data(),
                 a.offset(), a.rows());
         return a;
     }
@@ -310,8 +325,8 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     public INDArray sysv(char uplo, INDArray a, int[] ipiv,
                          INDArray b) {
-        int info = NativeBlas.ssysv(uplo, a.rows(), b.columns(), a.data(), 0, a.rows(), ipiv, 0,
-                b.data(), 0, b.rows());
+        int info = NativeBlas.ssysv(uplo, a.rows(), b.columns(), a.data(), a.offset(), a.rows(), ipiv, 0,
+                b.data(), b.offset(), b.rows());
         checkInfo("SYSV", info);
 
         if (info > 0)
@@ -322,7 +337,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     }
 
     public int syev(char jobz, char uplo, INDArray a, INDArray w) {
-        int info = NativeBlas.ssyev(jobz, uplo, a.rows(), a.data(), 0, a.rows(), w.data(), 0);
+        int info = NativeBlas.ssyev(jobz, uplo, a.rows(), a.data(), a.offset(), a.rows(), w.data(), w.offset());
 
         if (info > 0)
             throw new LapackConvergenceException("SYEV",
@@ -343,7 +358,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int info;
 
         info = NativeBlas.ssyevx(jobz, range, uplo, n, a.data(), 0, a.rows(), vl, vu, il,
-                iu, abstol, m, 0, w.data(), 0, z.data(), 0, z.rows(), iwork, 0, ifail, 0);
+                iu, abstol, m, 0, w.data(), w.offset(), z.data(), 0, z.rows(), iwork, 0, ifail, 0);
 
         if (info > 0) {
             StringBuilder msg = new StringBuilder();
@@ -392,7 +407,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public void posv(char uplo, INDArray A, INDArray B) {
         int n = A.rows();
         int nrhs = B.columns();
-        int info = NativeBlas.sposv(uplo, n, nrhs, A.data(), 0, A.rows(), B.data(), 0,
+        int info = NativeBlas.sposv(uplo, n, nrhs, A.data(), A.offset(), A.rows(), B.data(), B.offset(),
                 B.rows());
         checkInfo("DPOSV", info);
         if (info > 0)
@@ -404,7 +419,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public int geev(char jobvl, char jobvr, INDArray A,
                     INDArray WR, INDArray WI, INDArray VL, INDArray VR) {
         int info = NativeBlas.sgeev(jobvl, jobvr, A.rows(), A.data(), A.offset(), A.rows(), WR.data(), WR.offset(),
-                WI.data(), WI.offset(), VL.data(), VL.offset(), A.rows() ,VR.data(), 0, A.rows());
+                WI.data(), WI.offset(), VL.data(), VL.offset(), A.rows() ,VR.data(), VR.offset(), A.rows());
         if (info > 0)
             throw new LapackConvergenceException("DGEEV", "First " + info + " eigenvalues have not converged.");
         return info;
