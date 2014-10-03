@@ -83,5 +83,13 @@ public interface DataSetIterator extends Iterator<DataSet>,Serializable {
      * @return
      */
 	int numExamples();
+
+
+    /**
+     * Set a pre processor
+     * @param preProcessor a pre processor to set
+     */
+    void setPreProcessor(DataSetPreProcessor preProcessor);
+
 	
 }

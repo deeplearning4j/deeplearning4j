@@ -71,7 +71,7 @@
       </dependency>
       <dependency>
           <groupId>org.nd4j</groupId>
-          <artifactId>nd4j-jblas</artifactId>
+          <artifactId>nd4j-netlib-blas</artifactId>
           <version>${nd4j.version}</version>
       </dependency>
   </dependencies>

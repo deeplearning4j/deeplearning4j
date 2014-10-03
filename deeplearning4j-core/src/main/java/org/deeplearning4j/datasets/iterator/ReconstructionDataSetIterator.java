@@ -12,7 +12,7 @@ import org.nd4j.linalg.dataset.DataSet;
 public class ReconstructionDataSetIterator implements DataSetIterator {
 
     private DataSetIterator iter;
-
+    private DataSetPreProcessor preProcessor;
     public ReconstructionDataSetIterator(DataSetIterator iter) {
         this.iter = iter;
     }
@@ -97,6 +97,17 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
     @Override
     public int numExamples() {
         return iter.numExamples();
+    }
+
+    /**
+     * Set a pre processor
+     *
+     * @param preProcessor a pre processor to set
+     */
+    @Override
+    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+        this.preProcessor = preProcessor;
+
     }
 
     /**
