@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
 
     X = np.loadtxt(open(args.path,"rb"),delimiter=",")
-    Y = tsne(X, args.ndims, args.initialdims, args.perplexity)
+    Y = np.loadtxt(open(args.path,"rb"),delimiter=",")
     pl.scatter(Y[:,0], Y[:,1], 20)
     fig, ax = plt.subplots()
     ax.scatter(Y[:,0], Y[:,1])

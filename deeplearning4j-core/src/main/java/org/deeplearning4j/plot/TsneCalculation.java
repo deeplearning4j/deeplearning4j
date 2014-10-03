@@ -41,6 +41,12 @@ public class TsneCalculation {
         this.switchMomentumIteration = switchMomentumIteration;
     }
 
+    /**
+     *
+     * @param d
+     * @param beta
+     * @return
+     */
     public Pair<Float,INDArray> hBeta(INDArray d,INDArray beta) {
         if(d.length() != beta.length() && !beta.isScalar())
             throw new IllegalArgumentException("D != beta");
@@ -56,8 +62,13 @@ public class TsneCalculation {
     }
 
 
-
-
+    /**
+     * Reduce the dimension of x
+     * to the specified number of dimensions
+     * @param X the x to reduce
+     * @param nDims the number of dimensions to reduce to
+     * @return the reduced dimension
+     */
     public INDArray pca(INDArray X,int nDims) {
         if(normalize) {
             INDArray mean = X.mean(0);
@@ -75,6 +86,13 @@ public class TsneCalculation {
 
     }
 
+    /**
+     *
+     * @param X
+     * @param tol
+     * @param perplexity
+     * @return
+     */
     public INDArray x2p(INDArray X,float tol,float perplexity) {
         int n = X.rows();
 
@@ -139,8 +157,14 @@ public class TsneCalculation {
     }
 
 
-
-    public  void calculate(INDArray X,int nDims,int initialDims,float perplexity) {
+    /**
+     *
+     * @param X
+     * @param nDims
+     * @param initialDims
+     * @param perplexity
+     */
+    public  INDArray calculate(INDArray X,int nDims,int initialDims,float perplexity) {
         X = pca(X,initialDims);
         if(nDims > X.shape().length)
             nDims = X.shape().length;
@@ -195,6 +219,8 @@ public class TsneCalculation {
                 momentum = finalMomentum;
 
         }
+
+        return y;
     }
 
     public static class Builder {

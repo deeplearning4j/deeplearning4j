@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.DataSetPreProcessor;
 import org.deeplearning4j.iterativereduce.actor.core.SerializableFileIter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -26,7 +27,7 @@ public class TopicModelingDataSetIterator implements DataSetIterator {
 	private VocabCreator vocabCreator;
 	private SerializableFileIter files;
 	private int batchSize = 1;
-
+    private DataSetPreProcessor preProcessor;
 	/**
 	 * 
 	 * @param rootDir the root directory to getFromOrigin data from
@@ -171,8 +172,18 @@ public class TopicModelingDataSetIterator implements DataSetIterator {
 
 	}
 
+    /**
+     * Set a pre processor
+     *
+     * @param preProcessor a pre processor to set
+     */
+    @Override
+    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+        this.preProcessor = preProcessor;
+    }
 
-	@Override
+
+    @Override
 	public DataSet next(int num) {
 		int curr = 0;
 		if(!hasNext())
@@ -193,8 +204,10 @@ public class TopicModelingDataSetIterator implements DataSetIterator {
 
 		}
 
-		return DataSet.merge(d);
-
+		DataSet ret =  DataSet.merge(d);
+        if(preProcessor != null)
+            preProcessor.preProcess(ret);
+        return ret;
 	}
 
 	
