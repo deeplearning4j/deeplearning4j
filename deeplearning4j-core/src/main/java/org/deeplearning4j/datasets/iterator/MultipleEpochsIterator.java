@@ -13,6 +13,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
     private DataSetIterator iter;
     private int passes = 0;
     private static Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
+    private DataSetPreProcessor preProcessor;
 
     public MultipleEpochsIterator(int numPasses,DataSetIterator iter) {
         this.numPasses = numPasses;
@@ -102,6 +103,16 @@ public class MultipleEpochsIterator implements DataSetIterator {
     }
 
     /**
+     * Set a pre processor
+     *
+     * @param preProcessor a pre processor to set
+     */
+    @Override
+    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+        this.preProcessor = preProcessor;
+    }
+
+    /**
      * Returns {@code true} if the iteration has more elements.
      * (In other words, returns {@code true} if {@link #next} would
      * return an element rather than throwing an exception.)
@@ -131,7 +142,10 @@ public class MultipleEpochsIterator implements DataSetIterator {
         }
         batch++;
 
-        return iter.next();
+        DataSet next = iter.next();
+        if(preProcessor != null)
+            preProcessor.preProcess(next);
+        return next;
     }
 
     /**

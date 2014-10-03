@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.test;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.DataSet;
 
 /**
@@ -15,6 +16,7 @@ public class TestDataSetIterator implements DataSetIterator {
 	private static final long serialVersionUID = -3042802726018263331L;
 	private DataSetIterator wrapped;
 	private int numDataSets = 0;
+    private DataSetPreProcessor preProcessor;
 	
 	
 	public TestDataSetIterator(DataSetIterator wrapped) {
@@ -30,7 +32,10 @@ public class TestDataSetIterator implements DataSetIterator {
 	@Override
 	public DataSet next() {
 		numDataSets++;
-		return wrapped.next();
+		DataSet next = wrapped.next();
+        if(preProcessor != null)
+            preProcessor.preProcess(next);
+        return next;
 	}
 
 	@Override
@@ -73,7 +78,17 @@ public class TestDataSetIterator implements DataSetIterator {
 		return wrapped.numExamples();
 	}
 
-	public synchronized int getNumDataSets() {
+    /**
+     * Set a pre processor
+     *
+     * @param preProcessor a pre processor to set
+     */
+    @Override
+    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+        this.preProcessor = preProcessor;
+    }
+
+    public synchronized int getNumDataSets() {
 		return numDataSets;
 	}
 

@@ -89,8 +89,8 @@ public class CSVDataFetcher extends BaseDataFetcher {
 
 
     private void init() {
-        final Set<Integer> labels = new HashSet<>();
-        final List<Integer> rowLabels = new ArrayList<>();
+        final Set<String> labels = new HashSet<>();
+        final List<String> rowLabels = new ArrayList<>();
         final List<INDArray> features = new ArrayList<>();
         final AtomicInteger i1 = new AtomicInteger(-1);
         csv.read(is,new CSVReadProc() {
@@ -105,7 +105,7 @@ public class CSVDataFetcher extends BaseDataFetcher {
                 }
                 else if(values.length  - 1 != i1.get())
                     return;
-                Pair<INDArray,Integer> row = processRow(values);
+                Pair<INDArray,String> row = processRow(values);
                 rowLabels.add(row.getSecond());
                 labels.add(row.getSecond());
                 features.add(row.getFirst());
@@ -113,8 +113,9 @@ public class CSVDataFetcher extends BaseDataFetcher {
         });
 
         List<DataSet> l = new ArrayList<>();
+        List<String> labelIndices = new ArrayList<>(labels);
         for(int i = 0; i < rowLabels.size(); i++) {
-            l.add(new DataSet(features.get(i), FeatureUtil.toOutcomeVector(rowLabels.get(i), labels.size())));
+            l.add(new DataSet(features.get(i), FeatureUtil.toOutcomeVector(labelIndices.indexOf(rowLabels.get(i)), labels.size())));
         }
 
         this.numOutcomes = labels.size();
@@ -124,12 +125,10 @@ public class CSVDataFetcher extends BaseDataFetcher {
     }
 
 
-    private Pair<INDArray,Integer> processRow(String[] data) {
+    private Pair<INDArray,String> processRow(String[] data) {
 
         String label = data[labelColumn].replaceAll(".\".","");
-        double labelDouble = Double.parseDouble(label);
-        int labelVal = (int) labelDouble;
-        
+
         double[] d = new double[data.length - 1];
         int index = 0;
         for(int i = 0; i < data.length; i++){
@@ -140,7 +139,7 @@ public class CSVDataFetcher extends BaseDataFetcher {
         }
         
         INDArray d1 = Nd4j.create(d).reshape(1,d.length);
-        return new Pair<>(d1, labelVal);
+        return new Pair<>(d1, label);
     }
 
     /**

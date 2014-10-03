@@ -1,4 +1,4 @@
-package org.deeplearning4j.mdoels.featuredetectors.da;
+package org.deeplearning4j.models.featuredetectors.autoencoder;
 
 import static org.junit.Assert.*;
 

@@ -19,12 +19,12 @@ public class TsneCalculationTest {
 
     @Test
     public void testTsne() throws Exception {
-        TsneCalculation calculation = new TsneCalculation.Builder().normallize(false)
+        TsneCalculation calculation = new TsneCalculation.Builder().normallize(true)
                 .build();
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
         File f = resource.getFile();
         INDArray data = Nd4j.readTxt(f.getAbsolutePath(),"   ");
-        //data = data.getRow(1);
+        data = data.getRow(0);
         //assertTrue(Arrays.equals(new int[]{2500,784},data.shape()));
         calculation.calculate(data,2,50,20);
     }

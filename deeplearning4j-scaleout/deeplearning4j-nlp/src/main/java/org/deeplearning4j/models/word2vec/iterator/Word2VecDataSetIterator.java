@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.word2vec.iterator;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.DataSetPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -32,6 +33,7 @@ public class Word2VecDataSetIterator implements DataSetIterator {
     private boolean addLabels = true;
     private int batch = 10;
     private DataSet curr;
+    private DataSetPreProcessor preProcessor;
 
     /**
      * Allows for customization of all of the params of the iterator
@@ -174,8 +176,11 @@ public class Word2VecDataSetIterator implements DataSetIterator {
             labelOutput.putRow(i, FeatureUtil.toOutcomeVector(labels.indexOf(label), labels.size()));
         }
 
-        return new DataSet(inputs,labelOutput);
+        DataSet ret =  new DataSet(inputs,labelOutput);
+        if(preProcessor != null)
+            preProcessor.preProcess(ret);
 
+        return ret;
     }
 
 
@@ -214,6 +219,17 @@ public class Word2VecDataSetIterator implements DataSetIterator {
     @Override
     public int numExamples() {
         return 0;
+    }
+
+    /**
+     * Set a pre processor
+     *
+     * @param preProcessor a pre processor to set
+     */
+    @Override
+    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+        this.preProcessor = preProcessor;
+
     }
 
     /**
