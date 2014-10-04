@@ -1,8 +1,10 @@
 package org.nd4j.linalg.dataset.api;
 
+import com.google.common.base.Function;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.nd4j.linalg.indexing.Condition;
 
 import java.io.Serializable;
 import java.util.Iterator;
@@ -13,6 +15,9 @@ import java.util.List;
  */
 public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>,Serializable {
     INDArray getFeatures();
+
+
+    void apply(Condition condition,Function<Number,Number> function);
 
     void setFeatures(INDArray features);
 

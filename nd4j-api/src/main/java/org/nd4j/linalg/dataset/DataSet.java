@@ -12,11 +12,14 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import com.google.common.base.Function;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.Condition;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.MathUtils;
 import org.slf4j.Logger;
@@ -61,6 +64,11 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public INDArray getFeatures() {
         return features;
+    }
+
+    @Override
+    public void apply(Condition condition, Function<Number, Number> function) {
+        BooleanIndexing.applyWhere(getFeatureMatrix(),condition,function);
     }
 
     @Override
