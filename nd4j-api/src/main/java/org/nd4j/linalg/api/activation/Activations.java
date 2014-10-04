@@ -16,7 +16,16 @@ public class Activations {
 
     private static ActivationFunction ROUNDED_LINEAR = new RoundedLinear();
     private static ActivationFunction RECTIFIEDLINEAR = new RoundedLinear();
+    private static ActivationFunction MAX_OUT = new MaxOut();
 
+
+    /**
+     * Max out activation: max of input(i,j)
+     * @return
+     */
+    public static ActivationFunction maxOut() {
+        return MAX_OUT;
+    }
 
     /**
      * Softmax with row wise features
