@@ -2,14 +2,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-jcublas</artifactId>
-  <version>0.0.3.4</version>
+  <version>0.0.3.5-SNAPSHOT</version>
     <packaging>jar</packaging>
 
 
     <parent>
         <artifactId>nd4j</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.0.3.4</version>
+        <version>0.0.3.5-SNAPSHOT</version>
     </parent>
 
     <name>nd4j-jcublas</name>
