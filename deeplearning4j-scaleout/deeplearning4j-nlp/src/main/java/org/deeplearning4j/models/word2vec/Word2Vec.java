@@ -258,9 +258,6 @@ public class Word2Vec implements Persistable {
         trainingSystem.shutdown();
 
         final AtomicLong latch = new AtomicLong(0);
-        final ActorRef sentenceActor = trainingSystem.actorOf(
-                new RoundRobinPool(Runtime.getRuntime().availableProcessors()).props(
-                        Props.create(SentenceActor.class,this)));
 
 
         ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
