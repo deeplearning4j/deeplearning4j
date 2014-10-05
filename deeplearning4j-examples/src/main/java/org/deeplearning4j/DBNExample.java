@@ -28,7 +28,7 @@ public class DBNExample {
     public static void main(String[] args) throws Exception {
         RandomGenerator gen = new MersenneTwister(123);
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        fetcher.fetch(10);
+        fetcher.fetch(100);
         DataSet d2 = fetcher.next();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
