@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nd4j</groupId>
     <artifactId>nd4j</artifactId>
-    <version>0.0.3.4-SNAPSHOT</version>
+    <version>0.0.3.4</version>
 
     <parent>
         <groupId>org.sonatype.oss</groupId>
@@ -12,7 +12,6 @@
     </parent>
 
 
-  
 
     <profiles>
         <profile>
@@ -82,7 +81,7 @@
         <connection>scm:git@github.com:SkymindIO/nd4j.git</connection>
         <developerConnection>scm:git:git@github.com:SkymindIO/nd4j.git</developerConnection>
         <url>git@github.com:SkymindIO/nd4j.git</url>
-      <tag>HEAD</tag>
+      <tag>nd4j-0.0.3.4</tag>
   </scm>
 
 
@@ -103,6 +102,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>4.11</junit.version>
         <slf4j.version>1.7.5</slf4j.version>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+
     </properties>
     <developers>
         <developer>
