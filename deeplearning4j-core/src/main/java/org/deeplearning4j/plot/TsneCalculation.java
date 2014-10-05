@@ -230,7 +230,7 @@ public class TsneCalculation {
 
         //diagonal op here
         p = p.add(p.transpose()).muli(0.5f);
-        p = Transforms.max(p.diviRowVector(p.sum(0)),realMin);
+        p = Transforms.max(p.diviRowVector(p.sum(0).addi(1e-6f)),realMin);
         float constant = Nd4j.getBlasWrapper().dot(p,Transforms.log(p));
         //lie for better local minima
         p.muli(4);
