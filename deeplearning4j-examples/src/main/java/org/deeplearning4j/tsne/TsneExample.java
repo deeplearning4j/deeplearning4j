@@ -18,8 +18,8 @@ public class TsneExample {
         fetcher.fetch(10);
         DataSet d2 = fetcher.next();
         List<String> list = new ArrayList<>();
-        for(int i = 0; i < list.size(); i++)
-            list.add(String.valueOf(i));
+        for(int i = 0; i < d2.numExamples(); i++)
+            list.add(String.valueOf(d2.get(i).outcome()));
         tsne.plot(d2.getFeatureMatrix(),2,0.2f,28,list);
     }
 
