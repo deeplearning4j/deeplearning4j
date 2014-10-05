@@ -1,5 +1,6 @@
 package org.nd4j.linalg.factory;
 
+import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
@@ -536,6 +537,27 @@ public class Nd4j {
 
     public static INDArray appendBias(INDArray...vectors) {
         return INSTANCE.appendBias(vectors);
+    }
+
+
+    /**
+     * Perform an operation along a diagonal
+     * @param x the ndarray to perform the operation on
+     * @param func the operation to perform
+     */
+    public static void doAlongDiagonal(INDArray x,Function<Number,Number> func) {
+        for(int i = 0; i < x.rows(); i++)
+            x.putScalar(i,func.apply(x.get(i,i)));
+    }
+
+    /**
+     * Perform an operation along a diagonal
+     * @param x the ndarray to perform the operation on
+     * @param func the operation to perform
+     */
+    public static void doAlongDiagonal(IComplexNDArray x,Function<IComplexNumber,IComplexNumber> func) {
+        for(int i = 0; i < x.rows(); i++)
+            x.putScalar(i,func.apply(x.getComplex(i,i)));
     }
 
 
