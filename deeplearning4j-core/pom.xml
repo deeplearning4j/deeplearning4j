@@ -116,7 +116,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.nd4j</groupId>
-			<artifactId>nd4j-netlib-blas</artifactId>
+			<artifactId>nd4j-jblas</artifactId>
 			<version>${nd4j.version}</version>
 			<scope>test</scope>
 		</dependency>
