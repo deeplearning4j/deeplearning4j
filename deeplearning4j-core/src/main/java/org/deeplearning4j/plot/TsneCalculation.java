@@ -215,12 +215,13 @@ public class TsneCalculation {
 
 
 
-        INDArray y = Nd4j.randn(X.rows(),nDims).muli(1e-3f);
+        INDArray y = Nd4j.randn(X.rows(),nDims);
         INDArray yIncs = Nd4j.create(y.shape());
         INDArray gains = Nd4j.ones(y.shape());
 
         INDArray p = d2p(D,perplexity,tolerance);
 
+        //set 0 along the diagonal
         Nd4j.doAlongDiagonal(p,new Function<Number, Number>() {
             @Override
             public Number apply(Number input) {
@@ -228,7 +229,6 @@ public class TsneCalculation {
             }
         });
 
-        //diagonal op here
         p = p.add(p.transpose()).muli(0.5f);
         p = Transforms.max(p.diviRowVector(p.sum(0).addi(1e-6f)),realMin);
         float constant = Nd4j.getBlasWrapper().dot(p,Transforms.log(p));
@@ -239,7 +239,6 @@ public class TsneCalculation {
         for(int i = 0; i < maxIter; i++) {
 
             INDArray sumY = Transforms.pow(y,2).sum(1);
-            //num = 1 ./ (1 + bsxfun(@plus, sum_ydata, bsxfun(@plus, sum_ydata', -2 * (ydata * ydata'))))
             //Student-t distribution
             INDArray num = y.mmul(y.transpose()).muli(-2).addiColumnVector(sumY.transpose()).addiRowVector(sumY).addi(1).rdivi(1);
             Nd4j.doAlongDiagonal(num,new Function<Number, Number>() {
@@ -250,19 +249,15 @@ public class TsneCalculation {
             });
 
 
-            //Q = max(num ./ sum(num(:)), realmin);
             // normalize to get probabilities
             INDArray  q = Transforms.max(num.diviRowVector(num.sum(0).addi(1e-6f)),realMin);
-            //L = (P - Q) .* num;
             INDArray L = p.sub(q).muli(num);
-            // y_grads = 4 * (diag(sum(L, 1)) - L) * ydata;
             INDArray yGrads = Nd4j.diag(L.sum(0)).subi(L).mmul(y);
+
             if(i < stopLyingIteration)
-                 yGrads.muli(4);
-           // gains = (gains + .2) .* (sign(y_grads) ~= sign(y_incs)) ...         % note that the y_grads are actually -y_grads
-            //        + (gains * .8) .* (sign(y_grads) == sign(y_incs));
+                yGrads.muli(4);
             gains = gains.add(.2f).muli(sign(yGrads).eps(sign(yIncs)))
-                    .addi(gains.mul(momentum))
+                    .addi(gains.mul(0.8f))
                     .muli(sign(yGrads).eq(sign(yIncs)));
 
             BooleanIndexing.applyWhere(gains,new Condition() {
@@ -283,12 +278,8 @@ public class TsneCalculation {
                 }
             });
 
-            //y_incs = momentum * y_incs - epsilon * (gains .* y_grads);
-            yIncs = yIncs.mul(momentum).sub(epsilon).mul(gains.mul(yGrads));
-            // ydata = ydata + y_incs;
-            y.addi(yIncs);
-            // ydata = bsxfun(@minus, ydata, mean(ydata, 1));
-            y.subiRowVector(y.mean(0));
+            yIncs = yIncs.mul(momentum).subi(epsilon).muli(gains.mul(yGrads));
+            y.addi(yIncs).subiRowVector(y.mean(0));
 
             if(i == switchMomentumIteration)
                 momentum = finalMomentum;
@@ -300,7 +291,7 @@ public class TsneCalculation {
                         break;
                 }
                 else
-                      costCheck = cost;
+                    costCheck = cost;
                 log.info("Cost " + cost + " at iteration " + i);
             }
 

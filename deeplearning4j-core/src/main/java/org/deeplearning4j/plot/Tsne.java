@@ -78,8 +78,10 @@ public class Tsne {
      */
     public void plot(INDArray matrix,int nDims,float perplexity,int initialDims,List<String> labels) throws IOException {
 
-        TsneCalculation calculation = new TsneCalculation.Builder()
-                .setFinalMomentum(0.9f).setInitialMomentum(0.5f)
+        TsneCalculation calculation = new TsneCalculation.Builder().setMaxIter(1000000)
+                .usePca(true)
+                .setFinalMomentum(0.9f).setInitialMomentum(0.5f).normalize(true)
+
                 .build();
         INDArray y = calculation.calculate(matrix,nDims,initialDims,perplexity);
 
