@@ -31,6 +31,7 @@ public class Tsne {
 
 
     private static ClassPathResource r = new ClassPathResource("/scripts/tsne.py");
+    private static ClassPathResource r2 = new ClassPathResource("/scripts/render.py");
 
 
     static {
@@ -45,6 +46,19 @@ public class Tsne {
         try {
             List<String> lines = IOUtils.readLines(r.getInputStream());
             FileUtils.writeLines(script, lines);
+
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to load python file");
+
+        }
+
+
+        File script2 = new File("/tmp/render.py");
+
+
+        try {
+            List<String> lines2 = IOUtils.readLines(r2.getInputStream());
+            FileUtils.writeLines(script2, lines2);
 
         } catch (IOException e) {
             throw new IllegalStateException("Unable to load python file");
