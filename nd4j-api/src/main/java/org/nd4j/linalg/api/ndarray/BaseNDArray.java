@@ -802,11 +802,13 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public   INDArray dup() {
-        return Nd4j.create(
-                Arrays.copyOf(data, data.length),
-                Arrays.copyOf(shape, shape.length),
-                Arrays.copyOf(stride, stride.length)
-                , offset, ordering);
+        INDArray ret = Nd4j.create(shape());
+        INDArray linear = linearView();
+        INDArray retLinear = ret.linearView();
+        for(int i = 0; i < ret.length(); i++) {
+            retLinear.putScalar(i,linear.get(i));
+        }
+        return ret;
     }
 
     /**

@@ -669,9 +669,12 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray dup() {
-        float[] dupData = new float[data.length];
-        System.arraycopy(data,0,dupData,0,dupData.length);
-        IComplexNDArray ret = Nd4j.createComplex(dupData, shape, stride, offset, ordering);
+        IComplexNDArray ret = Nd4j.createComplex(shape());
+        IComplexNDArray linear = linearView();
+        IComplexNDArray retLinear = ret.linearView();
+        for(int i = 0; i < ret.length(); i++) {
+            retLinear.putScalar(i,linear.getComplex(i));
+        }
         return ret;
     }
 
