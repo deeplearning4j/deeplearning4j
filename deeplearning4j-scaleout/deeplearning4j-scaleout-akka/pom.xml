@@ -11,11 +11,12 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<akka.version>2.3.3</akka.version>
-		<netty.version>3.6.6.Final</netty.version>
+        <netty.version>3.8.0.Final</netty.version>
 		<hazelcast.version>3.2-RC2</hazelcast.version>
 		<spring.version>3.2.5.RELEASE</spring.version>
 		<dropwizard.version>0.7.0</dropwizard.version>
 		<jackson.version>2.3.2</jackson.version>
+        <nd4j.version>0.0.3.4</nd4j.version>
 	</properties>
 	<dependencyManagement>
 
@@ -202,7 +203,7 @@
 		<dependency>
 			<groupId>org.nd4j</groupId>
 			<artifactId>nd4j-jblas</artifactId>
-			<version>0.0.3.2</version>
+			<version>${nd4j.version}</version>
 			<scope>test</scope>
 		</dependency>
 

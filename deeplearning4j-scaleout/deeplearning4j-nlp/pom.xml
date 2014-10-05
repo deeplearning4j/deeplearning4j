@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
@@ -6,12 +7,12 @@
 		<version>0.0.3.2</version>
 	</parent>
 	<properties>
-        <nd4j.version>0.0.3.4-SNAPSHOT</nd4j.version>
+		<nd4j.version>0.0.3.4</nd4j.version>
 		<cleartk.version>2.0.0</cleartk.version>
 		<spring.version>3.2.5.RELEASE</spring.version>
-        <netty.version>3.6.6.Final</netty.version>
+		<netty.version>3.8.0.Final</netty.version>
 
-    </properties>
+	</properties>
 
 
 
@@ -28,11 +29,11 @@
 				<artifactId>spring-context</artifactId>
 				<version>${spring.version}</version>
 			</dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty</artifactId>
+				<version>${netty.version}</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
@@ -49,11 +50,7 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		<dependency>
-			<groupId>org.cleartk</groupId>
-			<artifactId>cleartk-clearnlp</artifactId>
-			<version>${cleartk.version}</version>
-		</dependency>
+
 
 		<dependency>
 			<groupId>org.deeplearning4j</groupId>
@@ -72,11 +69,11 @@
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 		</dependency>
-        <dependency>
-            <groupId>it.unimi.dsi</groupId>
-            <artifactId>dsiutils</artifactId>
-            <version>2.2.2</version>
-        </dependency>
+		<dependency>
+			<groupId>it.unimi.dsi</groupId>
+			<artifactId>dsiutils</artifactId>
+			<version>2.2.2</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.cleartk</groupId>
