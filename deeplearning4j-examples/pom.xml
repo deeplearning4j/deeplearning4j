@@ -9,7 +9,7 @@
   <name>DeepLearning4j Examples</name>
   <description>Examples of training different data sets</description>
   <properties>
-      <nd4j.version>0.0.3.4-SNAPSHOT</nd4j.version>
+      <nd4j.version>0.0.3.4</nd4j.version>
   </properties>
 
    <build>
