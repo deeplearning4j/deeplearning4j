@@ -135,7 +135,7 @@ public class Nd4j {
     public static IComplexNDArray repeat(IComplexNDArray n,int num) {
         List<IComplexNDArray> list = new ArrayList<>();
         for(int i = 0; i < num; i++)
-            list.add(n);
+            list.add(n.dup());
         return Nd4j.createComplex(list, Ints.concat(new int[]{num},n.shape()));
     }
 
@@ -149,7 +149,7 @@ public class Nd4j {
     public static INDArray repeat(INDArray n,int num) {
         List<INDArray> list = new ArrayList<>();
         for(int i = 0; i < num; i++)
-            list.add(n);
+            list.add(n.dup());
         return Nd4j.create(list, Ints.concat(new int[]{num},n.shape()));
     }
 

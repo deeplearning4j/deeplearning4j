@@ -76,6 +76,9 @@ public abstract class NDArrayTests {
     }
 
 
+
+
+
     @Test
     public void testAddVectorWithOffset() {
         INDArray oneThroughFour = Nd4j.linspace(1,4,4).reshape(2,2);
@@ -1181,6 +1184,15 @@ public abstract class NDArrayTests {
     public void testBroadCast() {
         INDArray n = Nd4j.linspace(1,4,4);
         INDArray broadCasted = n.broadcast(new int[]{5,4});
+        for(int i = 0; i < broadCasted.rows(); i++) {
+            assertEquals(n,broadCasted.getRow(i));
+        }
+
+        INDArray broadCast2 = broadCasted.getRow(0).broadcast(new int[]{5,4});
+        assertEquals(broadCasted,broadCast2);
+
+        INDArray linearView = broadCasted.linearView();
+        log.info("Linear view " + linearView);
 
     }
 

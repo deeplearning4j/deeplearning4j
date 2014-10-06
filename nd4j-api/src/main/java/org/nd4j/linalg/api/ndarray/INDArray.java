@@ -24,6 +24,13 @@ public interface INDArray extends Serializable {
     public INDArray linearView();
 
     /**
+     * Returns a linear view reference of shape
+     * 1,length(ndarray)
+     * @return the linear view of this ndarray
+     */
+    public INDArray linearViewColumnOrder();
+
+    /**
      * Returns the number of possible vectors for a given dimension
      * @param dimension the dimension to calculate the number of vectors for
      * @return the number of possible vectors along a dimension

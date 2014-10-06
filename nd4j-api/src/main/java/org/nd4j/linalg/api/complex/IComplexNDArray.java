@@ -10,7 +10,14 @@ import org.nd4j.linalg.ops.reduceops.Ops;
  * @author Adam Gibson
  */
 public interface IComplexNDArray extends INDArray {
-
+    /**
+     * Returns a linear view reference of shape
+     * length(ndarray),1
+     *
+     * @return the linear view of this ndarray
+     */
+    @Override
+    IComplexNDArray linearViewColumnOrder();
 
     /**
      * Returns a linear view reference of shape

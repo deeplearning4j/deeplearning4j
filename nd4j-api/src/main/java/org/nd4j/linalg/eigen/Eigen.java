@@ -18,7 +18,7 @@ public class Eigen {
      */
     public static IComplexNDArray eigenvalues(INDArray A) {
         assert A.rows() == A.columns();
-        INDArray WR = Nd4j.create(A.rows());
+        INDArray WR = Nd4j.create(A.rows(),A.rows());
         INDArray WI = WR.dup();
         Nd4j.getBlasWrapper().geev(
                 'N',
@@ -71,14 +71,20 @@ public class Eigen {
         INDArray WR = Nd4j.create(A.rows());
         INDArray WI = WR.dup();
         INDArray VR = Nd4j.create(A.rows(), A.rows());
-        INDArray VL = Nd4j.create(A.rows());
+        INDArray VL = Nd4j.create(A.rows(),A.rows());
 
-        Nd4j.getBlasWrapper().geev('v','v',A.dup(),WR,WI,VL,VR);
+        Nd4j.getBlasWrapper().geev(
+                'v',
+                'v',
+                A.dup(),
+                WR,
+                WI,
+                VL,
+                VR);
 
         // transferring the result
         IComplexNDArray E = Nd4j.createComplex(WR, WI);
         IComplexNDArray V =  Nd4j.createComplex(A.rows(), A.rows());
-        //System.err.printf("VR = %s\n", VR.toString());
         for (int i = 0; i < A.rows(); i++) {
             if (E.getComplex(i).isReal()) {
                 IComplexNDArray column = Nd4j.createComplex(VR.getColumn(i));

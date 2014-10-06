@@ -154,16 +154,7 @@ public abstract class BaseNDArray  implements INDArray {
      * @param shape the shape of the ndarray
      */
     public BaseNDArray(List<INDArray> slices, int[] shape, char ordering) {
-        List<float[]> list = new ArrayList<>();
-        for(int i = 0; i < slices.size(); i++)
-            list.add(slices.get(i).data());
-        this.ordering = ordering;
-        this.data = ArrayUtil.combine(list);
-
-        initShape(shape);
-
-
-
+             this(slices,shape,Nd4j.getStrides(shape),ordering);
     }
 
 
@@ -176,13 +167,22 @@ public abstract class BaseNDArray  implements INDArray {
      * @param shape the shape of the ndarray
      */
     public BaseNDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
-        List<float[]> list = new ArrayList<>();
-        for(int i = 0; i < slices.size(); i++)
-            list.add(slices.get(i).data());
-        this.ordering = ordering;
-        this.data = ArrayUtil.combine(list);
+        float[] ret = new float[ArrayUtil.prod(shape)];
+
         this.stride = stride;
+        this.ordering = ordering;
+        this.data = ret;
+
         initShape(shape);
+
+        INDArray linearAll = ordering == NDArrayFactory.C ? linearView() : linearViewColumnOrder();
+        int count = 0;
+        for(int i = 0; i < slices(); i++) {
+           putSlice(i,slices.get(i));
+        }
+
+
+
 
 
 
@@ -215,6 +215,11 @@ public abstract class BaseNDArray  implements INDArray {
         else
             this.linearView = Nd4j.create(data, new int[]{1, length}, offset());
 
+    }
+
+    @Override
+    public INDArray linearViewColumnOrder() {
+        return  Nd4j.create(data, new int[]{length,1},Nd4j.getStrides(new int[]{length,1}),offset());
     }
 
     /**
@@ -1690,6 +1695,22 @@ public abstract class BaseNDArray  implements INDArray {
      * @return
      */
     protected INDArray doColumnWise(INDArray columnVector,char operation) {
+      /*  asserColumnVector(columnVector);
+        INDArray columnBroadcasted = columnVector.broadcast(shape());
+        INDArray columnBroadCastedLinear = columnBroadcasted.linearViewColumnOrder();
+
+
+        switch(operation) {
+            case 'a' : linearView().addi(columnBroadCastedLinear); break;
+            case 's' : linearView().subi(columnBroadCastedLinear); break;
+            case 'm' : linearView().muli(columnBroadCastedLinear); break;
+            case 'd' : linearView().divi(columnBroadCastedLinear); break;
+        }
+
+
+        return this;
+*/
+
         asserColumnVector(columnVector);
         if(columnVector.columns() == columns() && columnVector.rows() == 1) {
             for(int i = 0; i < columns(); i++) {
@@ -1734,6 +1755,18 @@ public abstract class BaseNDArray  implements INDArray {
      */
     protected INDArray doRowWise(INDArray rowVector,char operation) {
         assertRowVector(rowVector);
+        INDArray broadcasted = rowVector.broadcast(shape());
+        INDArray broadCastedLinear = broadcasted.linearView();
+        switch(operation) {
+            case 'a' : linearView().addi(broadCastedLinear); break;
+            case 's' : linearView().subi(broadCastedLinear); break;
+            case 'm' : linearView().muli(broadCastedLinear); break;
+            case 'd' : linearView().divi(broadCastedLinear); break;
+        }
+
+        return this;
+
+    /*    assertRowVector(rowVector);
         if(rowVector.rows() == rows() && rowVector.columns() == 1) {
             for(int i = 0; i < rows(); i++) {
                 switch(operation) {
@@ -1756,7 +1789,7 @@ public abstract class BaseNDArray  implements INDArray {
             }
         }
 
-        return this;
+        return this;*/
     }
 
 
@@ -3582,20 +3615,32 @@ public abstract class BaseNDArray  implements INDArray {
     public INDArray broadcast(int[] shape) {
         int dims = this.shape.length;
         int targetDimensions = shape.length;
+
+
         if (targetDimensions < dims) {
             throw new IllegalArgumentException("Invalid shape to broad cast " + Arrays.toString(shape));
         }
+        else if(isColumnVector()) {
+            int n = shape[0];
+            INDArray ret = Nd4j.create(shape);
+            for(int i = 0; i < n; i++) {
+                ret.putColumn(i,this);
+            }
+            return ret;
+        }
 
-        else if (dims == targetDimensions) {
-            if(dims == 1 && shape.length == 1 && shape[0] == 1 || this.shape[0] == 1)
+
+        //edge case where column vector looks like a matrix
+        else if (dims == targetDimensions && !isColumnVector()) {
+            if(isVector())
                 return this;
             if (Shape.shapeEquals(shape, this.shape()))
                 return this;
             throw new IllegalArgumentException("Invalid shape to broad cast " + Arrays.toString(shape));
         }
         else {
-            int n= shape[0];
-            INDArray s= broadcast(Arrays.copyOfRange(shape, 1, targetDimensions));
+            int n = shape[0];
+            INDArray s = broadcast(Arrays.copyOfRange(shape, 1, targetDimensions));
             return Nd4j.repeat(s,n);
         }
     }

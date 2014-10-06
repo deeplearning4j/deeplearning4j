@@ -202,6 +202,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     }
 
+    @Override
+    public IComplexNDArray linearViewColumnOrder() {
+        return Nd4j.createComplex(data,new int[]{length,1},offset());
+    }
+
     /**
      * Returns a linear view reference of shape
      * 1,length(ndarray)

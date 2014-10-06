@@ -77,7 +77,15 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public INDArray axpy(float da, INDArray dx, INDArray dy) {
         //NativeBlas.daxpy(dx.length(), da, dx.data(), 0, 1, dy.data(), 0, 1);
         assert dx.length() == dy.length() : "Dx length must be the same as dy length";
-        JavaBlas.raxpy(dx.length(), da, dx.data(), dx.offset(), dx.stride()[0], dy.data(), dy.offset(), dy.stride()[0]);
+        JavaBlas.raxpy(
+                dx.length(),
+                da,
+                dx.data(),
+                dx.offset(),
+                dx.stride()[0],
+                dy.data(),
+                dy.offset(),
+                dy.stride()[0]);
 
         return dy;
     }
@@ -433,8 +441,36 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public int geev(char jobvl, char jobvr, INDArray A,
                     INDArray WR, INDArray WI, INDArray VL, INDArray VR) {
-        int info = NativeBlas.sgeev(jobvl, jobvr, A.rows(), A.data(), A.offset(), A.rows(), WR.data(), WR.offset(),
-                WI.data(), WI.offset(), VL.data(), VL.offset(), A.rows() ,VR.data(), VR.offset(), A.rows());
+        int n = A.rows();
+        assert WR.length() == n;
+        assert WI.length() == n;
+        assert VL.columns() == n;
+        assert VR.columns() == n;
+        int ldvl = VL.rows();
+        int ldvr = VR.rows();
+        if(Character.toLowerCase(jobvl) == 'v')
+            assert ldvl >= n;
+
+        if(Character.toLowerCase(jobvr) == 'r')
+            assert ldvr >= n;
+
+        int info = NativeBlas.sgeev(
+                jobvl,
+                jobvr,
+                A.rows(),
+                A.data(),
+                A.offset(),
+                A.rows(),
+                WR.data(),
+                WR.offset(),
+                WI.data(),
+                WI.offset(),
+                VL.data(),
+                VL.offset(),
+                ldvl,
+                VR.data(),
+                VR.offset(),
+                ldvr);
         if (info > 0)
             throw new LapackConvergenceException("DGEEV", "First " + info + " eigenvalues have not converged.");
         return info;

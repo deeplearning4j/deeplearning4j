@@ -28,7 +28,7 @@ import java.lang.reflect.Field;
 public class SimpleJCublas {
     static {
         //write the file to somewhere on java.library.path where there is permissions
-        ClassPathResource resource = new ClassPathResource("/" + resourceName() );
+        ClassPathResource resource = new ClassPathResource("/" + resourceName().substring(3));
         String home = findWritableLibDir();
         File cuBlastmp = new File(home);
         File shared = new File(cuBlastmp,resourceName());
