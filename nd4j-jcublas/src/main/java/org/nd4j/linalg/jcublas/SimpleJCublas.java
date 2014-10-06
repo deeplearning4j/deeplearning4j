@@ -2,6 +2,7 @@ package org.nd4j.linalg.jcublas;
 
 import jcuda.*;
 import jcuda.jcublas.JCublas;
+import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -10,6 +11,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
+import org.springframework.core.io.ClassPathResource;
+
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.reflect.Field;
 
 /**
  * Created by mjk on 8/20/14.
@@ -19,7 +27,28 @@ import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
  */
 public class SimpleJCublas {
     static {
+        //write the file to somewhere on java.library.path where there is permissions
+        ClassPathResource resource = new ClassPathResource("/" + resourceName() );
+        String home = findWritableLibDir();
+        File cuBlastmp = new File(home);
+        File shared = new File(cuBlastmp,resourceName());
+        try {
+            shared.createNewFile();
+            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(shared));
+            IOUtils.copy(resource.getInputStream(),bos);
+            bos.flush();
+            bos.close();
+
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to initialize jcublas");
+        }
+
+        shared.deleteOnExit();
+        cuBlastmp.deleteOnExit();
+
+
         JCublas.setLogLevel(LogLevel.LOG_DEBUG);
+
         JCublas.setExceptionsEnabled(true);
         JCublas.cublasInit();
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -29,6 +58,33 @@ public class SimpleJCublas {
         });
     }
 
+    private static String resourceName() {
+        LibUtils.OSType osType = LibUtils.calculateOS();
+        switch(osType) {
+            case APPLE:
+                return "libJCublas-linux-x86_64.so";
+            case LINUX:
+                return "libJCublas-linux-x86_64.so";
+            case SUN:
+                return "libJCublas-linux-x86_64.so";
+            case WINDOWS:
+               return "libJCublas-windows-x86.dll";
+            default:
+                return null;
+        }
+    }
+
+    //finds a writable directory on the java.library.path
+    private static String findWritableLibDir() {
+        String[] libPath = System.getProperty("java.library.path").split(File.pathSeparator);
+        for(String s : libPath) {
+            File dir = new File(s);
+            if(dir.canWrite())
+                return s;
+        }
+
+        throw new IllegalStateException("Unable to write to any library directories for jcublas");
+    }
 
     public static void free(Pointer...pointers) {
         for(Pointer arr : pointers)
@@ -510,7 +566,7 @@ public class SimpleJCublas {
             getData(xB,xBPointer,Pointer.to(xB.data()));
         }
         else {
-             JCublas.cublasSaxpy(
+            JCublas.cublasSaxpy(
                     xA.length(),
                     da,
                     xAPointer,
@@ -624,7 +680,7 @@ public class SimpleJCublas {
         float ret =  JCublas.cublasSdot(
                 x.length(),
                 xCPointer,
-               1
+                1
                 ,yCPointer,
                 1);
 
@@ -649,7 +705,7 @@ public class SimpleJCublas {
                 aCPointer,
                 1,
                 bCPointer,
-               1);
+                1);
 
         IComplexDouble ret =   Nd4j.createDouble(dott.x, dott.y);
         free(aCPointer,bCPointer);

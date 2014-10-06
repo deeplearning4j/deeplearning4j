@@ -278,15 +278,7 @@ public abstract class NDArrayTests {
     }
 
 
-    @Test
-    public void testLoad() throws Exception {
-        ClassPathResource r = new ClassPathResource("/testdata/testload.txt");
-        File f = r.getFile();
-        INDArray assertShape = Nd4j.create(2,784);
-        INDArray load = Nd4j.readTxt(f.getAbsolutePath(),"   ");
-        assertTrue(Arrays.equals(assertShape.shape(),load.shape()));
 
-    }
 
 
     @Test

@@ -19,7 +19,7 @@
         <!-- github server corresponds to entry in ~/.m2/settings.xml -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Set needed version of JCuda here -->
-        <jcuda.version>6.0</jcuda.version>
+        <jcuda.version>6.5</jcuda.version>
     </properties>
 
     <build>
