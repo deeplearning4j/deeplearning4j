@@ -175,8 +175,6 @@ public abstract class BaseNDArray  implements INDArray {
 
         initShape(shape);
 
-        INDArray linearAll = ordering == NDArrayFactory.C ? linearView() : linearViewColumnOrder();
-        int count = 0;
         for(int i = 0; i < slices(); i++) {
            putSlice(i,slices.get(i));
         }
@@ -1695,7 +1693,7 @@ public abstract class BaseNDArray  implements INDArray {
      * @return
      */
     protected INDArray doColumnWise(INDArray columnVector,char operation) {
-      /*  asserColumnVector(columnVector);
+        asserColumnVector(columnVector);
         INDArray columnBroadcasted = columnVector.broadcast(shape());
         INDArray columnBroadCastedLinear = columnBroadcasted.linearViewColumnOrder();
 
@@ -1709,31 +1707,9 @@ public abstract class BaseNDArray  implements INDArray {
 
 
         return this;
-*/
 
-        asserColumnVector(columnVector);
-        if(columnVector.columns() == columns() && columnVector.rows() == 1) {
-            for(int i = 0; i < columns(); i++) {
-                switch(operation) {
-                    case 'a' : getColumn(i).addi(columnVector.get(i)); break;
-                    case 's' : getColumn(i).subi(columnVector.get(i)); break;
-                    case 'm' : getColumn(i).muli(columnVector.get(i)); break;
-                    case 'd' : getColumn(i).divi(columnVector.get(i)); break;
-                }
-            }
-        }
-        else {
-            for(int j = 0; j< columns(); j++) {
-                switch(operation) {
-                    case 'a' : getColumn(j).addi(columnVector); break;
-                    case 's' : getColumn(j).subi(columnVector); break;
-                    case 'm' : getColumn(j).muli(columnVector); break;
-                    case 'd' : getColumn(j).divi(columnVector); break;
-                }
-            }
-        }
 
-        return this;
+
     }
 
 
