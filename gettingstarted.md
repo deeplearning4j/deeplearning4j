@@ -124,7 +124,7 @@ Then enter ldconfig in the terminal followed by the file path to link Cuda. Your
 
 	ldconfig /usr/local/cuda/lib64
 
-If you're still unable to load Jcublas, you will need to add the parameter -D to your code (it's a JVM argument); i.e. java -cp "lib/*" <= <SOME DIRECTORY WRITABLE BY USER> -D <OTHER ARGS>
+If you're still unable to load Jcublas, you will need to add the parameter -D to your code (it's a JVM argument); i.e. java.library.path (settable via -Djava.librarypath=...) for a writable directory, then -D then <OTHER ARGS>.
 
 If you're using IntelliJ as your IDE, this should be taken care of already. 
 
