@@ -116,6 +116,16 @@ Add these POM coordinates to your project:
         Ubuntu
         apt-get install libblas* (credit to @sujitpal)
 
+* If GPUs are broken, you'll need to enter an extra command. First find out where Cuda installs itself. It will look something like this
+
+	/usr/local/cuda/lib64
+
+Then enter ldconfig in the terminal followed by the file path to link Cuda. Your command will look similar to this
+
+	ldconfig /usr/local/cuda/lib64
+
+If you're still unable to load Jcublas, you will need to add the parameter -D to your code (it's a JVM argument); i.e. java -cp "lib/*" <= <SOME DIRECTORY WRITABLE BY USER> -D <OTHER ARGS>
+
 ### <a name="osx">OSX</a>
 
 * Jblas is already installed on OSX. :)
