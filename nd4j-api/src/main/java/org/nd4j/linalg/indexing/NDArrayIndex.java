@@ -92,21 +92,34 @@ public class NDArrayIndex {
      */
     public static NDArrayIndex[] create(INDArray index) {
         assert index.isMatrix();
-        NDArrayIndex[] ret = new NDArrayIndex[index.rows()];
-        for(int i = 0; i < index.rows(); i++) {
-            INDArray row = index.getRow(i);
-            int[] nums = new int[index.getRow(i).columns()];
-            for(int j = 0; j < row.columns(); j++) {
-                nums[j] = (int) row.get(j);
+
+        if(index.isMatrix()) {
+
+            NDArrayIndex[] ret = new NDArrayIndex[index.rows()];
+            for(int i = 0; i < index.rows(); i++) {
+                INDArray row = index.getRow(i);
+                int[] nums = new int[index.getRow(i).columns()];
+                for(int j = 0; j < row.columns(); j++) {
+                    nums[j] = (int) row.get(j);
+                }
+
+                NDArrayIndex idx = new NDArrayIndex(nums);
+                ret[i]  = idx;
+
             }
 
-            NDArrayIndex idx = new NDArrayIndex(nums);
-            ret[i]  = idx;
 
+            return ret;
+
+        }
+        else if(index.isVector()) {
+           int[] indices = ArrayUtil.toInts(index);
+            return new NDArrayIndex[]{new NDArrayIndex(indices)};
         }
 
 
-        return ret;
+        throw new IllegalArgumentException("Passed in ndarray must be a matrix or a vector");
+
     }
 
     /**

@@ -1,6 +1,10 @@
 package org.nd4j.linalg.indexing;
 
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Indexing util.
@@ -67,11 +71,11 @@ public class Indices {
     public static NDArrayIndex[] adjustIndices(int[] originalShape,NDArrayIndex...indexes) {
         if(indexes.length < originalShape.length)
             indexes = fillIn(originalShape,indexes);
-       if(indexes.length > originalShape.length) {
-           NDArrayIndex[] ret = new NDArrayIndex[originalShape.length];
-           System.arraycopy(indexes,0,ret,0,originalShape.length);
-           return ret;
-       }
+        if(indexes.length > originalShape.length) {
+            NDArrayIndex[] ret = new NDArrayIndex[originalShape.length];
+            System.arraycopy(indexes,0,ret,0,originalShape.length);
+            return ret;
+        }
 
         if(indexes.length == originalShape.length)
             return indexes;
@@ -113,7 +117,13 @@ public class Indices {
             ret[i] = Math.abs(end - begin);
         }
 
-        return ret;
+        List<Integer> nonZeros = new ArrayList<>();
+        for(int i = 0; i < ret.length; i++) {
+            if(ret[i] > 0)
+                nonZeros.add(ret[i]);
+        }
+
+        return ArrayUtil.toArray(nonZeros);
     }
 
 
@@ -147,7 +157,15 @@ public class Indices {
             ret[i] = Math.abs(end - begin);
         }
 
-        return ret;
+        List<Integer> nonZeros = new ArrayList<>();
+        for(int i = 0; i < ret.length; i++) {
+            if(ret[i] > 0)
+                nonZeros.add(ret[i]);
+        }
+
+
+        return ArrayUtil.toArray(nonZeros);
+
     }
 
 

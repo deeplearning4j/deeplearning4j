@@ -60,7 +60,7 @@ public class ArrayUtil {
     public static int[] toInts(INDArray n) {
         if(n instanceof IComplexNDArray)
             throw new IllegalArgumentException("Unable to convert complex array");
-        n = n.reshape(new int[]{1,n.length()});
+        n = n.linearView();
         int[] ret = new int[n.length()];
         for(int i = 0; i < n.length(); i++)
             ret[i] = (int) n.get(i);
