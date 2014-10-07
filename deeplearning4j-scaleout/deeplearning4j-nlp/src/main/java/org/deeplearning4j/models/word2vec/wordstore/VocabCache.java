@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
+import org.deeplearning4j.plot.Tsne;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.models.word2vec.VocabWord;
 
@@ -12,6 +13,11 @@ import java.util.Collection;
  */
 public interface VocabCache  {
 
+    /**
+     * Render the words via tsne
+     * @param tsne the tsne to use
+     */
+    void plotVocab(Tsne tsne);
 
     /**
      * Render the words via tsne

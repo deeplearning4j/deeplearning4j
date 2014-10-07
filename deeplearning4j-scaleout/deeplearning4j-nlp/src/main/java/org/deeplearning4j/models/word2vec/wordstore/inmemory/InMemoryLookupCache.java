@@ -374,18 +374,33 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         return new File("cache.ser").exists();
     }
 
-    /**
-     * Render the words via tsne
-     */
     @Override
-    public void plotVocab() {
-        Tsne tsne = new Tsne();
+    public void plotVocab(Tsne tsne) {
         try {
             List<String> plot = new ArrayList<>();
             for(String s : words()) {
                 plot.add(s);
             }
-            tsne.plot(syn0,2,0.3f,syn0.shape()[1],plot);
+            tsne.plot(syn0,2,syn0.shape()[1],plot);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Render the words via tsne
+     */
+    @Override
+    public void plotVocab() {
+        Tsne tsne = new Tsne.Builder()
+                .normalize(false).setFinalMomentum(0.8f)
+                .setMaxIter(1000).build();
+        try {
+            List<String> plot = new ArrayList<>();
+            for(String s : words()) {
+                plot.add(s);
+            }
+            tsne.plot(syn0,2,syn0.shape()[1],plot);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
