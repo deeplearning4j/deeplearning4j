@@ -62,6 +62,12 @@ public class Eigen {
 
     /**
      * Computes the eigenvalues and eigenvectors of a general matrix.
+     *
+     * For matlab users note the following from their documentation:
+     * The columns of V present eigenvectors of A. The diagonal matrix D contains eigenvalues.
+     *
+     * This is in reverse order of the matlab eig(A) call.
+     *
      * @param A the ndarray to get the eigen vectors for
      * @return 2 arrays representing W (eigen vectors) and V (normalized eigen vectors)
      */

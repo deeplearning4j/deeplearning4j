@@ -197,6 +197,33 @@ public abstract class NDArrayTests {
     }
 
     @Test
+    public void testSortWithIndicesDescending() {
+        INDArray toSort = Nd4j.linspace(1,4,4).reshape(2,2);
+        //indices,data
+        INDArray[] sorted = Nd4j.sortWithIndices(toSort.dup(),1,false);
+        INDArray sorted2 = Nd4j.sort(toSort.dup(),1,false);
+        assertEquals(sorted[1],sorted2);
+        INDArray shouldIndex = Nd4j.create(new float[]{1,0,1,0},new int[]{2,2});
+        assertEquals(shouldIndex,sorted[0]);
+
+
+    }
+
+
+    @Test
+    public void testSortWithIndices() {
+        INDArray toSort = Nd4j.linspace(1,4,4).reshape(2,2);
+        //indices,data
+        INDArray[] sorted = Nd4j.sortWithIndices(toSort.dup(),1,true);
+        INDArray sorted2 = Nd4j.sort(toSort.dup(),1,true);
+        assertEquals(sorted[1],sorted2);
+        INDArray shouldIndex = Nd4j.create(new float[]{0,1,0,1},new int[]{2,2});
+        assertEquals(shouldIndex,sorted[0]);
+
+
+    }
+
+    @Test
     public void testDimShuffle() {
         INDArray n = Nd4j.linspace(1,4,4).reshape(2,2);
         INDArray twoOneTwo =  n.dimShuffle(new Object[]{0,'x',1},new int[]{0,1},new boolean[]{false,false});

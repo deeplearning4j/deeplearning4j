@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.InputStreamUtil;
 import org.nd4j.linalg.util.Shape;
@@ -143,12 +144,137 @@ public class Nd4j {
      * Sort an ndarray along a particular dimension
      * @param ndarray the ndarray to sort
      * @param dimension the dimension to sort
+     * @return an array with indicies and the sorted ndarray
+     */
+    public static INDArray[] sortWithIndices(IComplexNDArray ndarray,int dimension,boolean ascending) {
+        INDArray indices = Nd4j.create(ndarray.shape());
+        INDArray[] ret = new INDArray[2];
+
+        for(int i = 0; i < ndarray.vectorsAlongDimension(dimension); i++) {
+            IComplexNDArray vec = ndarray.vectorAlongDimension(i,dimension);
+            INDArray indexVector = indices.vectorAlongDimension(i,dimension);
+
+            final IComplexNumber[] data = new IComplexNumber[vec.length()];
+            final Float[] index = new Float[vec.length()];
+
+            for(int j = 0; j < vec.length(); j++) {
+                data[j] = vec.getComplex(j);
+                index[j] = (float) j;
+
+            }
+
+
+            if(ascending)
+                Arrays.sort(index,new Comparator<Float>() {
+                    @Override
+                    public int compare(Float o1, Float o2) {
+                        int idx1 = (int) o1.floatValue();
+                        int idx2 = (int) o2.floatValue();
+
+                        return Float.compare(
+                                data[idx1].asFloat().absoluteValue().floatValue(),
+                                data[idx2].absoluteValue().floatValue());
+                    }
+                });
+
+            else
+                Arrays.sort(index,new Comparator<Float>() {
+                    @Override
+                    public int compare(Float o1, Float o2) {
+                        int idx1 = (int) o1.floatValue();
+                        int idx2 = (int) o2.floatValue();
+
+                        return -Float.compare(
+                                data[idx1].absoluteValue().floatValue(),
+                                data[idx2].absoluteValue().floatValue());
+                    }
+                });
+
+
+            for(int j = 0; j < vec.length(); j++) {
+                vec.putScalar(j, data[(int) index[j].floatValue()]);
+                indexVector.putScalar(j,index[j]);
+            }
+
+
+        }
+
+        ret[0] = indices;
+        ret[1] = ndarray;
+
+        return ret;
+    }
+
+
+
+    /**
+     * Sort an ndarray along a particular dimension
+     * @param ndarray the ndarray to sort
+     * @param dimension the dimension to sort
+     * @return the indices and the sorted ndarray
+     */
+    public static INDArray[] sortWithIndices(INDArray ndarray,int dimension,boolean ascending) {
+        INDArray indices = Nd4j.create(ndarray.shape());
+        INDArray[] ret = new INDArray[2];
+
+        for(int i = 0; i < ndarray.vectorsAlongDimension(dimension); i++) {
+            INDArray vec = ndarray.vectorAlongDimension(i,dimension);
+            INDArray indexVector = indices.vectorAlongDimension(i,dimension);
+            final Float[] data = new Float[vec.length()];
+            final Float[] index = new Float[vec.length()];
+
+            for(int j = 0; j < vec.length(); j++) {
+                data[j] = vec.get(j);
+                index[j] = (float) j;
+            }
+
+            /**
+             * Inject a comparator that sorts indices relative to
+             * the actual values in the data.
+             * This allows us to retain the indices
+             * and how they were rearranged.
+             */
+            Arrays.sort(index,new Comparator<Float>() {
+                @Override
+                public int compare(Float o1, Float o2) {
+                    int o = (int) o1.floatValue();
+                    int oo2 = (int) o2.floatValue();
+                    return Float.compare(data[o],data[oo2]);
+                }
+            });
+
+            if(ascending)
+                for(int j = 0; j < vec.length(); j++) {
+                    vec.putScalar(j, data[(int) index[j].floatValue()]);
+                    indexVector.putScalar(j,index[j]);
+                }
+            else {
+                int count = data.length - 1;
+                for(int j = 0; j < vec.length(); j++) {
+                    int currCount2 = count;
+                    count--;
+                    vec.putScalar(j, data[(int) index[currCount2].floatValue()]);
+                    indexVector.putScalar(j,index[currCount2]);
+                }
+            }
+
+        }
+
+        ret[0] = indices;
+        ret[1] = ndarray;
+
+        return ret;
+    }
+
+    /**
+     * Sort an ndarray along a particular dimension
+     * @param ndarray the ndarray to sort
+     * @param dimension the dimension to sort
      * @return the sorted ndarray
      */
     public static IComplexNDArray sort(IComplexNDArray ndarray,int dimension,boolean ascending) {
         for(int i = 0; i < ndarray.vectorsAlongDimension(dimension); i++) {
             IComplexNDArray vec = ndarray.vectorAlongDimension(i,dimension);
-            vec.toString();
             IComplexNumber[] data = new IComplexNumber[vec.length()];
             for(int j = 0; j < vec.length(); j++) {
                 data[j] = vec.getComplex(j);
@@ -172,6 +298,7 @@ public class Nd4j {
                                 o2.asFloat().absoluteValue().floatValue());
                     }
                 });
+
             for(int j = 0; j < vec.length(); j++)
                 vec.putScalar(j,data[j]);
 

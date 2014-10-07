@@ -92,6 +92,35 @@ public abstract class ComplexNDArrayTests {
 
     }
 
+
+
+    @Test
+    public void testSortWithIndicesDescending() {
+        IComplexNDArray toSort = Nd4j.complexLinSpace(1,4,4).reshape(2,2);
+        //indices,data
+        INDArray[] sorted = Nd4j.sortWithIndices(toSort.dup(),1,false);
+        INDArray sorted2 = Nd4j.sort(toSort.dup(),1,false);
+        assertEquals(sorted[1],sorted2);
+        INDArray shouldIndex = Nd4j.create(new float[]{1,0,1,0},new int[]{2,2});
+        assertEquals(shouldIndex,sorted[0]);
+
+
+    }
+
+
+    @Test
+    public void testSortWithIndices() {
+        IComplexNDArray toSort = Nd4j.complexLinSpace(1,4,4).reshape(2,2);
+        //indices,data
+        INDArray[] sorted = Nd4j.sortWithIndices(toSort.dup(),1,true);
+        INDArray sorted2 = Nd4j.sort(toSort.dup(),1,true);
+        assertEquals(sorted[1],sorted2);
+        INDArray shouldIndex = Nd4j.create(new float[]{0,1,0,1},new int[]{2,2});
+        assertEquals(shouldIndex,sorted[0]);
+
+
+    }
+
     @Test
     public void testDimShuffle() {
         IComplexNDArray n = Nd4j.complexLinSpace(1,4,4).reshape(2,2);
