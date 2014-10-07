@@ -144,7 +144,7 @@ public class Nd4j {
      * Sort an ndarray along a particular dimension
      * @param ndarray the ndarray to sort
      * @param dimension the dimension to sort
-     * @return an array with indicies and the sorted ndarray
+     * @return an array with indices and the sorted ndarray
      */
     public static INDArray[] sortWithIndices(IComplexNDArray ndarray,int dimension,boolean ascending) {
         INDArray indices = Nd4j.create(ndarray.shape());
@@ -172,7 +172,7 @@ public class Nd4j {
                         int idx2 = (int) o2.floatValue();
 
                         return Float.compare(
-                                data[idx1].asFloat().absoluteValue().floatValue(),
+                                data[idx1].absoluteValue().floatValue(),
                                 data[idx2].absoluteValue().floatValue());
                     }
                 });
@@ -693,45 +693,105 @@ public class Nd4j {
     }
 
 
-
     /**
      * Creates a new matrix where the values of the given vector are the diagonal values of
-     * the matrix.
+     * the matrix if a vector is passed in, if a matrix is returns the kth diagonal
+     * in the matrix
      * @param x the diagonal values
+     * @param k the kth diagonal to get
      * @return new matrix
      */
-    public static IComplexNDArray diag(IComplexNDArray x) {
+    public static IComplexNDArray diag(IComplexNDArray x,int k) {
         if(x.isScalar())
             return x.dup();
 
-        IComplexNDArray m = Nd4j.createComplex(x.length(), x.length());
-        IComplexNDArray xLinear = x.linearView();
+        if(x.isVector()) {
+            IComplexNDArray m = Nd4j.createComplex(x.length(), x.length());
+            IComplexNDArray xLinear = x.linearView();
 
-        for (int i = 0; i < x.length(); i++)
-            m.putScalar(i, i, xLinear.getComplex(i));
+            for (int i = 0; i < x.length(); i++)
+                m.putScalar(i, i, xLinear.getComplex(i));
 
-        return m;
+            return m;
+        }
+
+        else if(x.isMatrix()) {
+            int vectorLength = x.rows() - k;
+            IComplexNDArray ret = Nd4j.createComplex(new int[]{vectorLength,1});
+            for(int i = 0; i < vectorLength; i++) {
+                ret.putScalar(i,x.getComplex(i,i));
+            }
+
+            return ret;
+        }
+
+
+
+        throw new IllegalArgumentException("Illegal input for diagonal of shape " + x.shape().length);
+
     }
 
 
     /**
      * Creates a new matrix where the values of the given vector are the diagonal values of
-     * the matrix.
+     * the matrix if a vector is passed in, if a matrix is returns the kth diagonal
+     * in the matrix
+     * @param x the diagonal values
+     * @param k the kth diagonal to get
+     * @return new matrix
+     */
+    public static INDArray diag(INDArray x,int k) {
+        if(x.isScalar())
+            return x.dup();
+
+        if(x.isVector()) {
+            INDArray m = Nd4j.create(x.length(), x.length());
+            INDArray xLinear = x.linearView();
+
+            for (int i = 0; i < x.length(); i++)
+                m.put(i, i, xLinear.get(i));
+
+            return m;
+
+        }
+
+        else if(x.isMatrix()) {
+            int vectorLength = x.rows() - k;
+            INDArray ret = Nd4j.create(new int[]{vectorLength,1});
+            for(int i = 0; i < vectorLength; i++) {
+                ret.putScalar(i,x.get(i,i));
+            }
+
+            return ret;
+        }
+
+
+
+        throw new IllegalArgumentException("Illegal input for diagonal of shape " + x.shape().length);
+    }
+
+    /**
+     * Creates a new matrix where the values of the given vector are the diagonal values of
+     * the matrix if a vector is passed in, if a matrix is returns the kth diagonal
+     * in the matrix
+     * @param x the diagonal values
+     * @return new matrix
+     */
+    public static IComplexNDArray diag(IComplexNDArray x) {
+        return diag(x,0);
+
+    }
+
+
+    /**
+     * Creates a new matrix where the values of the given vector are the diagonal values of
+     * the matrix if a vector is passed in, if a matrix is returns the kth diagonal
+     * in the matrix
      * @param x the diagonal values
      * @return new matrix
      */
     public static INDArray diag(INDArray x) {
-        if(x.isScalar())
-            return x.dup();
-
-
-        INDArray m = Nd4j.create(x.length(), x.length());
-        INDArray xLinear = x.linearView();
-
-        for (int i = 0; i < x.length(); i++)
-            m.put(i, i, xLinear.get(i));
-
-        return m;
+        return diag(x,0);
     }
 
     public static INDArray appendBias(INDArray...vectors) {

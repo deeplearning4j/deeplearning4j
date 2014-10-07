@@ -296,11 +296,17 @@ public abstract class NDArrayTests {
 
     @Test
     public void testDiag() {
-        INDArray diag2 = Nd4j.linspace(1,8,8).reshape(2,4);
+        INDArray diag2 = Nd4j.linspace(1,8,8);
         INDArray diag = Nd4j.diag(diag2);
         for(int i = 0; i < diag2.length(); i++) {
             assertEquals(i + 1,diag.get(i,i),1e-1);
         }
+
+
+        INDArray diag3 = diag2.reshape(2,4);
+        INDArray diagMatrix = Nd4j.diag(diag3);
+        log.info("diag " + Nd4j.diag(diag3));
+
 
     }
 

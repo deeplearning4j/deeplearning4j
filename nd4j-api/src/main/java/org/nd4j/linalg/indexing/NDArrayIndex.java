@@ -1,5 +1,6 @@
 package org.nd4j.linalg.indexing;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
@@ -12,6 +13,10 @@ import java.util.Arrays;
 public class NDArrayIndex {
 
     private int[] indices = new int[1];
+
+
+
+
 
 
     public NDArrayIndex(int[] indices) {
@@ -76,6 +81,32 @@ public class NDArrayIndex {
     @Override
     public int hashCode() {
         return Arrays.hashCode(indices);
+    }
+
+
+    /**
+     * Create from a matrix. The rows are the indices
+     * The columns are the individual element in each ndarrayindex
+     * @param index the matrix to get indices from
+     * @return the indices to get
+     */
+    public static NDArrayIndex[] create(INDArray index) {
+        assert index.isMatrix();
+        NDArrayIndex[] ret = new NDArrayIndex[index.rows()];
+        for(int i = 0; i < index.rows(); i++) {
+            INDArray row = index.getRow(i);
+            int[] nums = new int[index.getRow(i).columns()];
+            for(int j = 0; j < row.columns(); j++) {
+                nums[j] = (int) row.get(j);
+            }
+
+            NDArrayIndex idx = new NDArrayIndex(nums);
+            ret[i]  = idx;
+
+        }
+
+
+        return ret;
     }
 
     /**
