@@ -20,13 +20,13 @@ public class PCA {
      * Happily based on the great work done in the tsne paper here:
      * http://homepage.tudelft.nl/19j49/t-SNE.html
      *
-     * 
+     *
      * @param X the x to reduce
      * @param nDims the number of dimensions to reduce to
      * @param normalize normalize
      * @return the reduced dimension
      */
-    public INDArray pca(INDArray X,int nDims,boolean normalize) {
+    public static INDArray pca(INDArray X,int nDims,boolean normalize) {
         if(normalize) {
             INDArray mean = X.mean(0);
             X = X.subiRowVector(mean);
