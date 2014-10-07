@@ -76,6 +76,17 @@ public abstract class NDArrayTests {
     }
 
 
+    @Test
+    public void testSort() {
+        INDArray toSort = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray ascending = Nd4j.sort(toSort.dup(),1,true);
+        //rows already already sorted
+        assertEquals(toSort,ascending);
+
+        INDArray columnSorted = Nd4j.create(new float[]{2,1,4,3},new int[]{2,2});
+        INDArray sorted = Nd4j.sort(toSort.dup(),0,false);
+        assertEquals(columnSorted,sorted);
+    }
 
 
 
@@ -158,6 +169,29 @@ public abstract class NDArrayTests {
 
         INDArray firstAndSecondRowTest = twoByTwo.get(NDArrayIndex.interval(1, 3));
         assertEquals(firstAndSecondRow, firstAndSecondRowTest);
+
+
+    }
+
+
+    @Test
+    public void testDup() {
+        INDArray orig = Nd4j.linspace(1,4,4);
+        INDArray dup = orig.dup();
+        assertEquals(orig,dup);
+
+        INDArray matrix = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
+        INDArray dup2 = matrix.dup();
+        assertEquals(matrix,dup2);
+
+        INDArray row1 = matrix.getRow(1);
+        INDArray dupRow = row1.dup();
+        assertEquals(row1,dupRow);
+
+
+        INDArray columnSorted = Nd4j.create(new float[]{2,1,4,3},new int[]{2,2});
+        INDArray dup3 = columnSorted.dup();
+        assertEquals(columnSorted,dup3);
 
 
     }

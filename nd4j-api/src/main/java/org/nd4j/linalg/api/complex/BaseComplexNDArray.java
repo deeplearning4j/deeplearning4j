@@ -1809,7 +1809,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                     return Nd4j.createComplex(data,
                             new int[]{1, shape[dimension]}
                             , ArrayUtil.removeIndex(stride, 0),
-                            offset + index * 2 * stride[dimension - 1]);
+                            offset + index * stride[0]);
             }
 
             else if(dimension == 0)

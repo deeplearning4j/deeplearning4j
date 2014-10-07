@@ -63,6 +63,36 @@ public abstract class ComplexNDArrayTests {
     }
 
     @Test
+    public void testSortFortran() {
+
+        IComplexNDArray matrix = Nd4j.complexLinSpace(1,4,4).reshape(2,2);
+        IComplexNDArray sorted = Nd4j.sort(matrix.dup(),1,true);
+        assertEquals(matrix,sorted);
+
+        IComplexNDArray reversed = Nd4j.createComplex(
+                new float[]{2,0,1,0,4,0,3,0}
+                ,new int[]{2,2});
+
+        IComplexNDArray sortedReversed = Nd4j.sort(matrix.dup(),1,false);
+        assertEquals(reversed,sortedReversed);
+
+    }
+    @Test
+    public void testSort() {
+        IComplexNDArray matrix = Nd4j.complexLinSpace(1,4,4).reshape(2,2);
+        IComplexNDArray sorted = Nd4j.sort(matrix.dup(),1,true);
+        assertEquals(matrix,sorted);
+
+        IComplexNDArray reversed = Nd4j.createComplex(
+         new float[]{2,0,1,0,4,0,3,0}
+        ,new int[]{2,2});
+
+        IComplexNDArray sortedReversed = Nd4j.sort(matrix,1,false);
+        assertEquals(reversed,sortedReversed);
+
+    }
+
+    @Test
     public void testDimShuffle() {
         IComplexNDArray n = Nd4j.complexLinSpace(1,4,4).reshape(2,2);
         IComplexNDArray twoOneTwo =  n.dimShuffle(new Object[]{0,'x',1},new int[]{0,1},new boolean[]{false,false});

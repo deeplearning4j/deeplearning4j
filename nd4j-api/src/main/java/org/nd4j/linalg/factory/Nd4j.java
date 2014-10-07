@@ -140,6 +140,78 @@ public class Nd4j {
     }
 
     /**
+     * Sort an ndarray along a particular dimension
+     * @param ndarray the ndarray to sort
+     * @param dimension the dimension to sort
+     * @return the sorted ndarray
+     */
+    public static IComplexNDArray sort(IComplexNDArray ndarray,int dimension,boolean ascending) {
+        for(int i = 0; i < ndarray.vectorsAlongDimension(dimension); i++) {
+            IComplexNDArray vec = ndarray.vectorAlongDimension(i,dimension);
+            vec.toString();
+            IComplexNumber[] data = new IComplexNumber[vec.length()];
+            for(int j = 0; j < vec.length(); j++) {
+                data[j] = vec.getComplex(j);
+            }
+            if(ascending)
+                Arrays.sort(data,new Comparator<IComplexNumber>() {
+                    @Override
+                    public int compare(IComplexNumber o1, IComplexNumber o2) {
+                        return Float.compare(
+                                o1.asFloat().absoluteValue().floatValue(),
+                                o2.asFloat().absoluteValue().floatValue());
+                    }
+                });
+
+            else
+                Arrays.sort(data,new Comparator<IComplexNumber>() {
+                    @Override
+                    public int compare(IComplexNumber o1, IComplexNumber o2) {
+                        return -Float.compare(
+                                o1.asFloat().absoluteValue().floatValue(),
+                                o2.asFloat().absoluteValue().floatValue());
+                    }
+                });
+            for(int j = 0; j < vec.length(); j++)
+                vec.putScalar(j,data[j]);
+
+
+        }
+
+        return ndarray;
+    }
+    /**
+     * Sort an ndarray along a particular dimension
+     * @param ndarray the ndarray to sort
+     * @param dimension the dimension to sort
+     * @return the sorted ndarray
+     */
+    public static INDArray sort(INDArray ndarray,int dimension,boolean ascending) {
+        for(int i = 0; i < ndarray.vectorsAlongDimension(dimension); i++) {
+            INDArray vec = ndarray.vectorAlongDimension(i,dimension);
+            float[] data = new float[vec.length()];
+            for(int j = 0; j < vec.length(); j++) {
+                data[j] = vec.get(j);
+            }
+
+            Arrays.sort(data);
+
+            if(ascending)
+                for(int j = 0; j < vec.length(); j++)
+                    vec.putScalar(j,data[j]);
+            else {
+                int count = data.length - 1;
+                for(int j = 0; j < vec.length(); j++) {
+                    vec.putScalar(j, data[count--]);
+                }
+            }
+
+        }
+
+        return ndarray;
+    }
+
+    /**
      * Create an n x (shape)
      * ndarray where the ndarray is repeated num times
      * @param n the ndarray to replicate
