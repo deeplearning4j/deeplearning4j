@@ -13,7 +13,6 @@
 import numpy as np
 import pylab as pl
 import argparse
-import render
 
 def Hbeta(D = np.array([]), beta = 1.0):
     """Compute the perplexity and the P-row for a specific value of the precision of a Gaussian distribution."""
@@ -196,8 +195,5 @@ if __name__ == "__main__":
        ax.annotate(txt, (x[i],y[i]))
 
     pl.show()
-    #import render
-
-    #render.render([(title, Y[0], Y[1]) for title, point in zip(labels, Y[0],Y[1])], "test-output.rendered.png", width=3000, height=1800)
 
 

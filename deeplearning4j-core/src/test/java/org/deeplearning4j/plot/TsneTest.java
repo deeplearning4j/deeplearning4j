@@ -10,11 +10,11 @@ import java.io.File;
 /**
  * Created by agibsonccc on 10/1/14.
  */
-public class TsneCalculationTest {
+public class TsneTest {
 
     @Test
     public void testTsne() throws Exception {
-        TsneCalculation calculation = new TsneCalculation.Builder().normalize(false)
+        Tsne calculation = new Tsne.Builder().normalize(false)
                 .build();
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
         File f = resource.getFile();
