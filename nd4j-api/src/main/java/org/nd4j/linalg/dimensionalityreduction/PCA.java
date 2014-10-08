@@ -67,10 +67,14 @@ public class PCA {
             INDArray mmul = X.mmul(M);
             INDArray vec = lambda.mul(1 / Math.sqrt(X.size(0))).rdivi(1).transpose();
             M =  Nd4j.createComplex(mmul.muliRowVector(vec));
+            X = Nd4j.createComplex(X.subRowVector(X.mean(0))).mmul(M);
+
         }
 
+        else
+            X = Nd4j.createComplex(X.subRowVector(X.mean(0))).transpose().mmul(M);
 
-        X = Nd4j.createComplex(X.subRowVector(X.mean(0))).mmul(M);
+
         return X;
 
 

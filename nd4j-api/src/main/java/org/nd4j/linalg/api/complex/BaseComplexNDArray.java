@@ -2160,6 +2160,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
         int[] offsets =  Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(),indexes);
+
+        if(ArrayUtil.prod(shape) > length())
+            return this;
+
+
         int[] strides = ordering == 'f' ? ArrayUtil.calcStridesFortran(shape,2) :  ArrayUtil.copy(stride());
 
         if(offsets.length != shape.length)

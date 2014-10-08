@@ -3397,6 +3397,10 @@ public abstract class BaseNDArray  implements INDArray {
 
         int[] offsets =  Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(),indexes);
+
+        if(ArrayUtil.prod(shape) > length())
+            return this;
+
         int[] strides =  ArrayUtil.copy(stride());
 
         if(offsets.length != shape.length)
