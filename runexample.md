@@ -21,7 +21,7 @@ Once you've unzipped your file, you'll need to cd into the SNAPSHOT folder, whic
 
 With the SNAPSHOT folder as your working directory, you can run any example it contains. The MNIST example is where most DL4J users start:
 
-		java -cp "lib/*" org.deeplearning4j.example.mnist.RBMMnistExample
+		java -cp "lib/*" org.deeplearning4j.mnist.MnistExample
 
 If windows pop up with graphs and numeral-image reconstructions, as they should if Numpy is working properly, you'll need to close them to keep the training going. The graphs' x-axis is narrow, but if they display normal (bell-curve-shaped) distributions, that indicates your net is training well.
 
@@ -33,17 +33,17 @@ To translate GitHub file paths into file paths suitable for the command line, dr
 
 For example, the file at 
 
-[https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/convnet/mnist/MnistExampleMultiThreaded.java](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/MnistExampleMultiThreaded.java)
+[https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/mnist/MnistExample.java](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/mnist/MnistExample.java)
 
 can be translated to the command line as
 
-		java -cp "lib/*" org.deeplearning4j.example.mnist.MnistExampleMultiThreaded
+		java -cp "lib/*" org.deeplearning4j.mnist.MnistExample
 
-Here are a few other examples you can run, each of which takes about as long as the Mnist example above: 
+Here are a few other examples to run, each of which takes about as long as the Mnist example above: 
 		
-		java -cp "lib/*" org.deeplearning4j.example.iris.IrisRBMExample
+		java -cp "lib/*" org.deeplearning4j.iris.IrisExample
 		
-		java -cp "lib/*" org.deeplearning4j.example.lfw.MultiThreadedLFW
+		java -cp "lib/*" org.deeplearning4j.DBNExample
 		
 
 A fuller explanation of class paths in Java can be found in [Oracle's  documentation](http://docs.oracle.com/javase/8/docs/technotes/tools/windows/classpath.html).
