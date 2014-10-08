@@ -21,7 +21,7 @@ public class TsneTest {
         INDArray data = Nd4j.readTxt(f.getAbsolutePath(),"   ");
         //data = data.getRow(0);
         //assertTrue(Arrays.equals(new int[]{2500,784},data.shape()));
-        calculation.calculate(data,2,50,20);
+        calculation.calculate(data,2,20);
     }
 
 
