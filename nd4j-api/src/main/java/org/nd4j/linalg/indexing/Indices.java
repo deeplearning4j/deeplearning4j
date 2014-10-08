@@ -154,7 +154,7 @@ public class Indices {
             if(end > shape[i])
                 end = shape[i] - 1;
             int begin = currIndices[0];
-            ret[i] = Math.abs(end - begin);
+            ret[i]  = indices[i].indices().length;
         }
 
         List<Integer> nonZeros = new ArrayList<>();

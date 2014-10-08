@@ -63,7 +63,6 @@ public class PCA {
         M = M.get(rowsAndColumnIndices);
         lambda = lambda.get(NDArrayIndex.interval(0, nDims));
 
-        // M = bsxfun(@times, X' * M, (1 ./ sqrt(size(X, 1) .* lambda))');
         if(X.size(1) < X.size(0)) {
             INDArray mmul = X.mmul(M);
             INDArray vec = lambda.mul(1 / Math.sqrt(X.size(0))).rdivi(1).transpose();
