@@ -10,7 +10,70 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Adam Gibson
  */
 public class BooleanIndexing {
+    /**
+     * And
+     * @param n
+     * @param cond
+     * @return
+     */
+    public static boolean and(IComplexNDArray n,Condition cond) {
+        boolean ret = true;
+        IComplexNDArray linear = n.linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            ret = ret && cond.apply(linear.getComplex(i));
+        }
 
+        return ret;
+    }
+
+    /**
+     * Or over the whole ndarray given some condition
+     * @param n
+     * @param cond
+     * @return
+     */
+    public static boolean or(IComplexNDArray n,Condition cond) {
+        boolean ret = true;
+        IComplexNDArray linear = n.linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            ret = ret || cond.apply(linear.getComplex(i));
+        }
+
+        return ret;
+    }
+
+
+    /**
+     * And over the whole ndarray given some condition
+     * @param n
+     * @param cond
+     * @return
+     */
+    public static boolean and(INDArray n,Condition cond) {
+        boolean ret = true;
+        INDArray linear = n.linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            ret = ret && cond.apply(linear.get(i));
+        }
+
+        return ret;
+    }
+
+    /**
+     * Or over the whole ndarray given some condition
+     * @param n
+     * @param cond
+     * @return
+     */
+    public static boolean or(INDArray n,Condition cond) {
+        boolean ret = true;
+        INDArray linear = n.linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            ret = ret || cond.apply(linear.get(i));
+        }
+
+        return ret;
+    }
 
     /**
      * Based on the matching elements
