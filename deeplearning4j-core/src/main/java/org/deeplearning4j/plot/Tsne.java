@@ -39,7 +39,6 @@ public class Tsne {
     private float realMin = 1e-12f;
     private float initialMomentum = 0.5f;
     private float finalMomentum = 0.8f;
-    private int eta = 500;
     private final float minGain = 1e-2f;
     private float momentum = initialMomentum;
     private int switchMomentumIteration = 100;
@@ -99,7 +98,6 @@ public class Tsne {
             float realMin,
             float initialMomentum,
             float finalMomentum,
-            int eta,
             float momentum,
             int switchMomentumIteration,
             boolean normalize,
@@ -116,7 +114,6 @@ public class Tsne {
         this.initialMomentum = initialMomentum;
         this.usePca = usePca;
         this.finalMomentum = finalMomentum;
-        this.eta = eta;
         this.momentum = momentum;
         this.switchMomentumIteration = switchMomentumIteration;
         this.perplexity = perplexity;
@@ -278,6 +275,7 @@ public class Tsne {
 
 
         INDArray y = Nd4j.randn(X.rows(),nDims).muli(1e-3f);
+        INDArray yGrads = Nd4j.create(y.shape());
         INDArray yIncs = Nd4j.create(y.shape());
         INDArray gains = Nd4j.ones(y.shape());
 
@@ -313,7 +311,8 @@ public class Tsne {
         float constant = Nd4j.getBlasWrapper().dot(p, log(p));
         //lie for better local minima
         p.muli(4);
-        float epsilon = 500;
+
+
         float costCheck = Float.NEGATIVE_INFINITY;
         for(int i = 0; i < maxIter; i++) {
 
@@ -322,8 +321,8 @@ public class Tsne {
             INDArray num = y.mmul(
                     y.transpose())
                     .muli(-2)
-                    .addiRowVector(sumY)
-                    .addiColumnVector(sumY.transpose())
+                    .addiRowVector(sumY).transpose()
+                    .addiRowVector(sumY.transpose())
                     .addi(1).rdivi(1);
             Nd4j.doAlongDiagonal(num,new Function<Number, Number>() {
                 @Override
@@ -336,7 +335,7 @@ public class Tsne {
             // normalize to get probabilities
             INDArray  q =  max(num.divi(num.sum(Integer.MAX_VALUE).addi(1e-6f)), realMin);
             INDArray L = p.sub(q).muli(num);
-            INDArray yGrads = Nd4j.diag(L.sum(0)).subi(L).muli(4).mmul(y);
+            yGrads = Nd4j.diag(L.sum(0)).subi(L).muli(4).mmul(y);
             if(useAdaGrad) {
                 if(adaGrad == null) {
                     adaGrad = new AdaGrad(yGrads.shape());
@@ -352,7 +351,8 @@ public class Tsne {
                     .addi(gains.mul(0.8f))
                     .muli(sign(yGrads).eq(sign(yIncs))),minGain);
 
-            yIncs = yIncs.mul(momentum).subi(gains.mul(yGrads).muli(epsilon));
+
+            yIncs = yIncs.mul(momentum).subi(gains.mul(yGrads));
             y.addi(yIncs).subiRowVector(y.mean(0));
 
             if(i == switchMomentumIteration)
@@ -523,7 +523,7 @@ public class Tsne {
         }
 
         public Tsne build() {
-            return new Tsne(maxIter, realMin, initialMomentum, finalMomentum, eta, momentum, switchMomentumIteration,normalize,usePca,stopLyingIteration,tolerance,learningRate,useAdaGrad,perplexity);
+            return new Tsne(maxIter, realMin, initialMomentum, finalMomentum, momentum, switchMomentumIteration,normalize,usePca,stopLyingIteration,tolerance,learningRate,useAdaGrad,perplexity);
         }
 
     }
