@@ -260,8 +260,8 @@ public class Tsne {
             X = X.divi(X.max(Integer.MAX_VALUE));
             X = X.subiRowVector(X.mean(0));
         }
-        if(nDims > X.shape().length)
-            nDims = X.shape().length;
+        if(nDims > X.columns())
+            nDims = X.columns();
 
 
 
@@ -291,9 +291,8 @@ public class Tsne {
             }
         });
 
-        p.addi(p.transpose()).muli(0.5f);
-        p =  max(p.divi(p.sum(Integer.MAX_VALUE).addi(1e-6f)), realMin);
-
+        p = p.add(p.transpose()).muli(0.5f);
+        p = max(p.div(p.sum(Integer.MAX_VALUE)),realMin);
         BooleanIndexing.applyWhere(p,new Condition() {
             @Override
             public Boolean apply(Number input) {
@@ -320,7 +319,12 @@ public class Tsne {
 
             INDArray sumY =  pow(y, 2).sum(1);
             //Student-t distribution
-            INDArray num = y.mmul(y.transpose()).muli(-2).addiColumnVector(sumY.transpose()).addiRowVector(sumY).addi(1).rdivi(1);
+            INDArray num = y.mmul(
+                    y.transpose())
+                    .muli(-2)
+                    .addiRowVector(sumY)
+                    .addiColumnVector(sumY.transpose())
+                    .addi(1).rdivi(1);
             Nd4j.doAlongDiagonal(num,new Function<Number, Number>() {
                 @Override
                 public Number apply(Number input) {
@@ -343,44 +347,29 @@ public class Tsne {
             else
                 yGrads.muli(learningRate);
 
-            gains = gains.add(.2f).muli(sign(yGrads).eps(sign(yIncs)))
+            gains = max(gains.add(.2f).muli
+                    (sign(yGrads).eps(sign(yIncs)))
                     .addi(gains.mul(0.8f))
-                    .muli(sign(yGrads).eq(sign(yIncs)));
+                    .muli(sign(yGrads).eq(sign(yIncs))),minGain);
 
-            BooleanIndexing.applyWhere(gains,new Condition() {
-                @Override
-                public Boolean apply(Number input) {
-                    return input.floatValue() < minGain;
-                }
-
-                @Override
-                public Boolean apply(IComplexNumber input) {
-                    return input.absoluteValue().floatValue() < minGain;
-
-                }
-            },new Function<Number, Number>() {
-                @Override
-                public Number apply(Number input) {
-                    return minGain;
-                }
-            });
-
-            yIncs = yIncs.mul(momentum).subi(epsilon).muli(gains.mul(yGrads));
+            yIncs = yIncs.mul(momentum).subi(gains.mul(yGrads).muli(epsilon));
             y.addi(yIncs).subiRowVector(y.mean(0));
 
             if(i == switchMomentumIteration)
                 momentum = finalMomentum;
-            if(i % 10 == 0) {
-                float cost = constant - Nd4j.getBlasWrapper().dot(p, log(q));
-                if(!Float.isInfinite(costCheck)) {
-                    float diff = Math.abs(costCheck - cost);
-                    if(diff <= 1e-6 && i > stopLyingIteration)
-                        break;
-                }
 
-                costCheck = cost;
-                log.info("Cost " + cost + " at iteration " + i);
+            INDArray logQ = log(q);
+            float dot = Nd4j.getBlasWrapper().dot(p, logQ);
+            float cost = constant - dot;
+            if(!Float.isInfinite(costCheck)) {
+                float diff = Math.abs(costCheck - cost);
+                if(diff <= 1e-6 && i > stopLyingIteration)
+                    break;
             }
+
+            costCheck = cost;
+            log.info("Cost " + cost + " at iteration " + i);
+
 
             if(i == stopLyingIteration)
                 p.divi(4);
