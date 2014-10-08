@@ -580,8 +580,10 @@ public abstract class NDArrayTests {
         INDArray test = Nd4j.create(new float[]{3, 7, 11, 15}, new int[]{2, 2});
         INDArray sum = n.sum(n.shape().length - 1);
         assertEquals(test,sum);
-    }
 
+
+
+    }
 
 
     @Test

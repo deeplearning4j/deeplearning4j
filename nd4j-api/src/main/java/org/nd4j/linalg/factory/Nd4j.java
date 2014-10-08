@@ -805,8 +805,9 @@ public class Nd4j {
      * @param func the operation to perform
      */
     public static void doAlongDiagonal(INDArray x,Function<Number,Number> func) {
-        for(int i = 0; i < x.rows(); i++)
-            x.putScalar(i,func.apply(x.get(i,i)));
+        if(x.isMatrix())
+            for(int i = 0; i < x.rows(); i++)
+                x.put(i,i,func.apply(x.get(i,i)));
     }
 
     /**
@@ -815,8 +816,9 @@ public class Nd4j {
      * @param func the operation to perform
      */
     public static void doAlongDiagonal(IComplexNDArray x,Function<IComplexNumber,IComplexNumber> func) {
+        if(x.isMatrix())
         for(int i = 0; i < x.rows(); i++)
-            x.putScalar(i,func.apply(x.getComplex(i,i)));
+            x.putScalar(i,i,func.apply(x.getComplex(i,i)));
     }
 
 
