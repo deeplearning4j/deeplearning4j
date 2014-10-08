@@ -5,14 +5,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 /**
  * Created by agibsonccc on 10/8/14.
  */
-public class IsInfinite extends BaseCondition {
-    public IsInfinite(Number value) {
-        super(value);
-    }
-
-    public IsInfinite(IComplexNumber complexNumber) {
-        super(complexNumber);
-    }
+public class IsInfinite implements Condition {
 
     @Override
     public Boolean apply(Number input) {

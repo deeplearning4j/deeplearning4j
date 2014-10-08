@@ -9,18 +9,14 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 public class Conditions {
 
 
-    public static Condition isInfinite(IComplexNumber value) {
-        return new IsInfinite(value);
-    }
-    public static Condition isInfinite(Number value) {
-        return new IsInfinite(value);
+    public static Condition isInfinite() {
+        return new IsInfinite();
     }
 
-    public static Condition isNan(IComplexNumber value) {
-        return new IsNaN(value);
-    }
-    public static Condition isNan(Number value) {
-        return new IsNaN(value);
+
+
+    public static Condition isNan() {
+        return new IsNaN();
     }
 
     public static Condition epsEquals(IComplexNumber value) {

@@ -5,14 +5,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 /**
  * Created by agibsonccc on 10/8/14.
  */
-public class IsNaN extends BaseCondition {
-    public IsNaN(Number value) {
-        super(value);
-    }
-
-    public IsNaN(IComplexNumber complexNumber) {
-        super(complexNumber);
-    }
+public class IsNaN implements Condition {
 
     @Override
     public Boolean apply(Number input) {
