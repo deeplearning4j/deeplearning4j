@@ -8,6 +8,21 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
  */
 public class Conditions {
 
+
+    public static Condition isInfinite(IComplexNumber value) {
+        return new IsInfinite(value);
+    }
+    public static Condition isInfinite(Number value) {
+        return new IsInfinite(value);
+    }
+
+    public static Condition isNan(IComplexNumber value) {
+        return new IsNaN(value);
+    }
+    public static Condition isNan(Number value) {
+        return new IsNaN(value);
+    }
+
     public static Condition epsEquals(IComplexNumber value) {
         return new EqualsCondition(value);
     }
