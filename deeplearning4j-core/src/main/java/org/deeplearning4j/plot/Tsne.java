@@ -4,17 +4,14 @@ import com.google.common.base.Function;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.berkeley.Pair;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
-import org.nd4j.linalg.eigen.Eigen;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.Condition;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.AdaGrad;
-import org.nd4j.linalg.ops.transforms.Transforms;
+import static org.nd4j.linalg.ops.transforms.Transforms.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -133,12 +130,12 @@ public class Tsne {
      * @param beta
      * @return
      */
-    public Pair<Float,INDArray> hBeta(INDArray d,float beta) {
-        INDArray P = Transforms.exp(d.neg().muli(beta));
-        float sum = P.sum(Integer.MAX_VALUE).get(0);
+    public Pair<INDArray,INDArray> hBeta(INDArray d,float beta) {
+        INDArray P =  exp(d.neg().muli(beta));
+        INDArray sum = P.sum(0);
 
-        float H = (float) Math.log(sum) + beta *  Nd4j.getBlasWrapper().dot(d,P) / sum;
-        P.divi(sum + 1e-6f);
+        INDArray H = log(sum).addi(beta).muli(d.mul(P).sum(0)).divi(sum);
+
 
         return new Pair<>(H,P);
     }
@@ -172,13 +169,40 @@ public class Tsne {
                     float betaMin = Float.NEGATIVE_INFINITY;
                     float betaMax = Float.POSITIVE_INFINITY;
 
-                    Pair<Float,INDArray> pair =  hBeta(d.getRow(j),beta.get(j));
+                    Pair<INDArray,INDArray> pair =  hBeta(d.getRow(j),beta.get(j));
 
-                    float hDiff = pair.getFirst() - (logU);
+                    INDArray hDiff = pair.getFirst().sub(logU);
                     int tries = 0;
 
-                    while(Math.abs(hDiff) > tolerance && tries < 50) {
-                        if(hDiff > 0) {
+                    Condition c = new Condition() {
+                        @Override
+                        public Boolean apply(Number input) {
+                            return input.floatValue() > tolerance;
+                        }
+
+                        @Override
+                        public Boolean apply(IComplexNumber input) {
+                            return input.absoluteValue().floatValue() > tolerance;
+                        }
+                    };
+
+
+
+
+                    Condition c2 = new Condition() {
+                        @Override
+                        public Boolean apply(Number input) {
+                            return input.floatValue() > 0;
+                        }
+
+                        @Override
+                        public Boolean apply(IComplexNumber input) {
+                            return input.absoluteValue().floatValue() > 0;
+                        }
+                    };
+
+                    while(BooleanIndexing.and(abs(hDiff),c) && tries < 50) {
+                        if(BooleanIndexing.and(hDiff,c2)) {
                             betaMin = beta.get(j);
                             if(Float.isInfinite(betaMax))
                                 beta.putScalar(j,beta.get(j) * 2);
@@ -194,7 +218,7 @@ public class Tsne {
                         }
 
                         pair = hBeta(d.getRow(j),beta.get(j));
-                        hDiff = pair.getFirst() -  logU;
+                        hDiff = pair.getFirst().sub(logU);
                         tries++;
                     }
 
@@ -229,7 +253,7 @@ public class Tsne {
      */
     public  INDArray calculate(INDArray X,int nDims,float perplexity) {
         if(usePca)
-            X = PCA.pca(X, nDims,normalize);
+            X = PCA.pca(X, Math.min(50,X.columns()),normalize);
             //normalization (don't normalize again after pca)
         else if(normalize) {
             X = X.sub(X.min(Integer.MAX_VALUE));
@@ -242,7 +266,7 @@ public class Tsne {
 
 
 
-        INDArray sumX = Transforms.pow(X,2).sum(1);
+        INDArray sumX =  pow(X, 2).sum(1);
         INDArray D = X.mmul(
                 X.transpose())
                 .muli(-2)
@@ -268,7 +292,7 @@ public class Tsne {
         });
 
         p.addi(p.transpose()).muli(0.5f);
-        p = Transforms.max(p.diviRowVector(p.sum(0).addi(1e-6f)),realMin);
+        p =  max(p.divi(p.sum(Integer.MAX_VALUE).addi(1e-6f)), realMin);
 
         BooleanIndexing.applyWhere(p,new Condition() {
             @Override
@@ -287,14 +311,14 @@ public class Tsne {
             }
         });
 
-        float constant = Nd4j.getBlasWrapper().dot(p,Transforms.log(p));
+        float constant = Nd4j.getBlasWrapper().dot(p, log(p));
         //lie for better local minima
         p.muli(4);
         float epsilon = 500;
         float costCheck = Float.NEGATIVE_INFINITY;
         for(int i = 0; i < maxIter; i++) {
 
-            INDArray sumY = Transforms.pow(y,2).sum(1);
+            INDArray sumY =  pow(y, 2).sum(1);
             //Student-t distribution
             INDArray num = y.mmul(y.transpose()).muli(-2).addiColumnVector(sumY.transpose()).addiRowVector(sumY).addi(1).rdivi(1);
             Nd4j.doAlongDiagonal(num,new Function<Number, Number>() {
@@ -306,7 +330,7 @@ public class Tsne {
 
 
             // normalize to get probabilities
-            INDArray  q = Transforms.max(num.diviRowVector(num.sum(0).addi(1e-6f)),realMin);
+            INDArray  q =  max(num.divi(num.sum(Integer.MAX_VALUE).addi(1e-6f)), realMin);
             INDArray L = p.sub(q).muli(num);
             INDArray yGrads = Nd4j.diag(L.sum(0)).subi(L).muli(4).mmul(y);
             if(useAdaGrad) {
@@ -319,7 +343,7 @@ public class Tsne {
             else
                 yGrads.muli(learningRate);
 
-             gains = gains.add(.2f).muli(sign(yGrads).eps(sign(yIncs)))
+            gains = gains.add(.2f).muli(sign(yGrads).eps(sign(yIncs)))
                     .addi(gains.mul(0.8f))
                     .muli(sign(yGrads).eq(sign(yIncs)));
 
@@ -347,7 +371,7 @@ public class Tsne {
             if(i == switchMomentumIteration)
                 momentum = finalMomentum;
             if(i % 10 == 0) {
-                float cost = constant - Nd4j.getBlasWrapper().dot(p,Transforms.log(q));
+                float cost = constant - Nd4j.getBlasWrapper().dot(p, log(q));
                 if(!Float.isInfinite(costCheck)) {
                     float diff = Math.abs(costCheck - cost);
                     if(diff <= 1e-6 && i > stopLyingIteration)
