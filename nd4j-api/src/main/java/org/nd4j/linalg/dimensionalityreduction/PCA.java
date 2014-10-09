@@ -61,18 +61,8 @@ public class PCA {
         };
 
         M = M.get(rowsAndColumnIndices);
-        lambda = lambda.get(NDArrayIndex.interval(0, nDims));
 
-        if(X.size(1) < X.size(0)) {
-            INDArray mmul = X.mmul(M);
-            INDArray vec = lambda.mul(1 / Math.sqrt(X.size(0))).rdivi(1).transpose();
-            M =  Nd4j.createComplex(mmul.muliRowVector(vec));
-            X = Nd4j.createComplex(X.subRowVector(X.mean(0))).mmul(M);
-
-        }
-
-        else
-            X = Nd4j.createComplex(X.subRowVector(X.mean(0))).transpose().mmul(M);
+        X = Nd4j.createComplex(X.subRowVector(X.mean(0))).mmul(M);
 
 
         return X;

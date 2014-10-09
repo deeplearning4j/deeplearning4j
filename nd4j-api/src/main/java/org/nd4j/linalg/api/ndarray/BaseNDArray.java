@@ -1501,10 +1501,6 @@ public abstract class BaseNDArray  implements INDArray {
         }
 
 
-        if(isVector()) {
-            //offsets should be 1
-            return Nd4j.create(data, shape, stride, offsets[0]);
-        }
 
 
         int offset = this.offset + ArrayUtil.dotProduct(offsets, stride);
@@ -3407,7 +3403,7 @@ public abstract class BaseNDArray  implements INDArray {
             offsets = Arrays.copyOfRange(offsets,0,shape.length);
 
         if(strides.length != shape.length)
-            strides = Arrays.copyOfRange(offsets,0,shape.length);
+            strides = Arrays.copyOfRange(strides,0,shape.length);
 
         return subArray(offsets,shape,strides);
     }
@@ -3467,7 +3463,7 @@ public abstract class BaseNDArray  implements INDArray {
 
 
         else
-            throw new IllegalArgumentException("Unable to getFromOrigin row of non 2d matrix");
+            throw new IllegalArgumentException("Unable to get row of non 2d matrix");
     }
 
     /**
@@ -3607,7 +3603,7 @@ public abstract class BaseNDArray  implements INDArray {
             throw new IllegalArgumentException("Invalid shape to broad cast " + Arrays.toString(shape));
         }
         else if(isColumnVector()) {
-            int n = shape[0];
+            int n = shape[1];
             INDArray ret = Nd4j.create(shape);
             for(int i = 0; i < n; i++) {
                 ret.putColumn(i,this);

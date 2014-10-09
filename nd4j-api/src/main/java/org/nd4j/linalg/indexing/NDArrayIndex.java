@@ -91,7 +91,6 @@ public class NDArrayIndex {
      * @return the indices to get
      */
     public static NDArrayIndex[] create(INDArray index) {
-        assert index.isMatrix();
 
         if(index.isMatrix()) {
 

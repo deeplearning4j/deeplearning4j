@@ -126,13 +126,18 @@ public abstract class NDArrayTests {
         assertEquals(Nd4j.create(new float[]{6, 10, 18, 22}, new int[]{1, 2, 2}),get);
 
         INDArray anotherGet = Nd4j.create(new float[]{6, 7, 10, 11, 18, 19, 22, 23}, new int[]{2, 1, 2});
-        INDArray test2 = test.get(NDArrayIndex.interval(1,3),NDArrayIndex.interval(1,4));
+        INDArray test2 = test.get(NDArrayIndex.interval(1,3),NDArrayIndex.interval(1,2));
         assertEquals(5,test2.offset());
         //offset is off: should be 5
         assertTrue(Arrays.equals(new int[]{2,1,2},test2.shape()));
         assertEquals(test2,anotherGet);
 
+        INDArray linear = test2.slice(0).linearView();
+        assertEquals(10,linear.get(1),1e-1);
 
+        INDArray row = Nd4j.create(new float[]{7,11});
+        INDArray result = test2.slice(1);
+        assertEquals(row,result);
     }
 
     @Test
@@ -604,6 +609,13 @@ public abstract class NDArrayTests {
         INDArray scalar = Nd4j.scalar(385);
         assertEquals(scalar,innerProduct);
 
+    }
+
+    @Test
+    public void testSum2() {
+        INDArray test = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
+        INDArray sum = test.sum(1);
+        log.info("Sum" + sum);
     }
 
 

@@ -418,6 +418,34 @@ public class Nd4j {
 
     }
 
+
+
+    /**
+     * Read line via input streams
+     * @param filePath the input stream ndarray
+     * @param split the split separator
+     * @return the read txt method
+     *
+     */
+    public static void writeTxt(INDArray write,String filePath,String split) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
+        for(int i = 0; i < write.rows(); i++) {
+            StringBuffer sb = new StringBuffer();
+            INDArray row = write.getRow(i);
+            for(int j = 0; j < row.columns(); j++) {
+                sb.append(row.get(j));
+                sb.append(split);
+            }
+            sb.append("\n");
+            writer.write(sb.toString());
+        }
+
+        writer.flush();
+        writer.close();
+
+
+    }
+
     /**
      * Read line via input streams
      * @param filePath the input stream ndarray
@@ -817,8 +845,8 @@ public class Nd4j {
      */
     public static void doAlongDiagonal(IComplexNDArray x,Function<IComplexNumber,IComplexNumber> func) {
         if(x.isMatrix())
-        for(int i = 0; i < x.rows(); i++)
-            x.putScalar(i,i,func.apply(x.getComplex(i,i)));
+            for(int i = 0; i < x.rows(); i++)
+                x.putScalar(i,i,func.apply(x.getComplex(i,i)));
     }
 
 
