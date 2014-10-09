@@ -135,24 +135,7 @@ public interface INDArray extends Serializable {
      * @return
      */
     public INDArray eqi(Number other);
-    /**
-     * 1 in an ndarray when condition is fulfilled,
-     * 0 otherwise(copying)(
-     * @param condition  the condition to be fulfilled
-     * @param other
-     * @return
-     */
-    public INDArray cond(Condition condition,Number other);
-
-    /**
-     * 1 in an ndarray when condition is fulfilled,
-     * 0 otherwise(copying)(
-     * @param condition the condition to be fulfilled
-     * @param other
-     * @return
-     */
-    public INDArray condi(Condition condition,Number other);
-    /**
+      /**
      * Greater than boolean (copying)(
      * @param other
      * @return
@@ -205,6 +188,10 @@ public interface INDArray extends Serializable {
      * @return
      */
     public INDArray epsi(INDArray other);
+
+    INDArray neq(INDArray other);
+
+    INDArray neqi(INDArray other);
 
     /**
      *  equal than comparison:
@@ -553,6 +540,20 @@ public interface INDArray extends Serializable {
      */
     public INDArray putSlice(int slice,INDArray put);
 
+    /**
+     * 1 in the ndarray if the element matches
+     * the condition 0 otherwise
+     * @param condition
+     * @return
+     */
+    INDArray cond(Condition condition);
+    /**
+     * 1 in the ndarray if the element matches
+     * the condition 0 otherwise
+     * @param condition
+     * @return
+     */
+    INDArray condi(Condition condition);
 
     /**
      * Iterate along a dimension.

@@ -195,6 +195,25 @@ public class Transforms {
         return exec(ndArray,EqualTo.class,null);
     }
 
+    /**
+     * Binary matrix of whether the number at a given index is equal
+     * @param ndArray
+     * @return
+     */
+    public static INDArray neq(INDArray ndArray) {
+        return exec(ndArray,NotEqualTo.class,null);
+
+    }
+
+    /**
+     * Binary matrix of whether the number at a given index is equal
+     * @param ndArray
+     * @return
+     */
+    public static IComplexNDArray neq(IComplexNDArray ndArray) {
+        return exec(ndArray,NotEqualTo.class,null);
+    }
+
 
 
     /**

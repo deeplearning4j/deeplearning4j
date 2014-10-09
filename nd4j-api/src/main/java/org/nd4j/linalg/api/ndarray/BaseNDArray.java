@@ -660,6 +660,15 @@ public abstract class BaseNDArray  implements INDArray {
     public INDArray lti(INDArray other) {
         return Transforms.lt(other);
     }
+    @Override
+    public INDArray neq(INDArray other) {
+        return dup().neqi(other);
+    }
+
+    @Override
+    public INDArray neqi(INDArray other) {
+        return Transforms.neq(other);
+    }
 
     @Override
     public INDArray eq(INDArray other) {
@@ -1362,7 +1371,7 @@ public abstract class BaseNDArray  implements INDArray {
             }
         }
 
-        if(Shape.shapeEquals(element.shape(),get.shape()) || element.length() == get.length()) {
+        if(Shape.shapeEquals(element.shape(),get.shape()) || element.length() <= get.length()) {
             INDArray elementLinear = element.linearView();
 
             for(int i = 0; i < linear.length(); i++) {
@@ -1515,15 +1524,15 @@ public abstract class BaseNDArray  implements INDArray {
     }
 
     @Override
-    public INDArray cond(Condition condition, Number other) {
-        return dup().condi(condition,other);
+    public INDArray cond(Condition condition) {
+        return dup().condi(condition);
     }
 
     @Override
-    public INDArray condi(Condition condition, Number other) {
+    public INDArray condi(Condition condition) {
         INDArray linear = linearView();
         for(int i = 0 ;i < length(); i++) {
-            boolean met = condition.apply(other);
+            boolean met = condition.apply(linear.get(i));
             linear.putScalar(i,met ? 1 : 0);
         }
         return this;

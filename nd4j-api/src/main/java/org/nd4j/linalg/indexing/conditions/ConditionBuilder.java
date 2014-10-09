@@ -30,7 +30,7 @@ public class ConditionBuilder {
         return this;
     }
 
-    public ConditionBuilder equals(Condition...conditions) {
+    public ConditionBuilder eq(Condition...conditions) {
         if(soFar == null)
             soFar = new ConditionEquals(conditions);
         else {

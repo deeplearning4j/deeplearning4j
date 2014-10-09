@@ -75,37 +75,18 @@ public interface IComplexNDArray extends INDArray {
      * 1 in an ndarray when condition is fulfilled,
      * 0 otherwise(copying)(
      * @param condition  the condition to be fulfilled
-     * @param other
      * @return
      */
-    public IComplexNDArray cond(Condition condition,IComplexNumber other);
+    public IComplexNDArray cond(Condition condition);
 
     /**
      * 1 in an ndarray when condition is fulfilled,
      * 0 otherwise(copying)(
      * @param condition the condition to be fulfilled
-     * @param other
      * @return
      */
-    public IComplexNDArray condi(Condition condition,IComplexNumber other);
+    public IComplexNDArray condi(Condition condition);
 
-    /**
-     * 1 in an ndarray when condition is fulfilled,
-     * 0 otherwise(copying)(
-     * @param condition  the condition to be fulfilled
-     * @param other
-     * @return
-     */
-    public IComplexNDArray cond(Condition condition,Number other);
-
-    /**
-     * 1 in an ndarray when condition is fulfilled,
-     * 0 otherwise(copying)(
-     * @param condition the condition to be fulfilled
-     * @param other
-     * @return
-     */
-    public IComplexNDArray condi(Condition condition,Number other);
 
     /**
      * Assign all of the elements in the given

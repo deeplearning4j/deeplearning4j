@@ -723,7 +723,25 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public INDArray put(NDArrayIndex[] indices, INDArray element) {
-        return null;
+        IComplexNDArray get = get(indices);
+        IComplexNDArray linear = get.linearView();
+        IComplexNDArray element2 = element instanceof  IComplexNDArray ? (IComplexNDArray) element : Nd4j.createComplex(element);
+        if(element.isScalar()) {
+            for(int i = 0; i < linear.length(); i++) {
+                linear.putScalar(i,element2.getComplex(0));
+            }
+        }
+
+        if(Shape.shapeEquals(element.shape(),get.shape()) || element.length() <= get.length()) {
+            IComplexNDArray elementLinear = element2.linearView();
+
+            for(int i = 0; i < linear.length(); i++) {
+                linear.putScalar(i,elementLinear.getComplex(i));
+            }
+        }
+
+
+        return this;
     }
 
 
@@ -2178,32 +2196,17 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return subArray(offsets,shape,strides);
     }
 
+
     @Override
-    public IComplexNDArray cond(Condition condition, IComplexNumber other) {
-        return dup().condi(condition,other);
+    public IComplexNDArray cond(Condition condition) {
+        return dup().condi(condition);
     }
 
     @Override
-    public IComplexNDArray condi(Condition condition, IComplexNumber other) {
+    public IComplexNDArray condi(Condition condition) {
         IComplexNDArray linear = linearView();
         for(int i = 0 ;i < length(); i++) {
-            boolean met = condition.apply(other);
-            IComplexNumber put = Nd4j.createComplexNumber(met ? 1 : 0,0);
-            linear.putScalar(i,put);
-        }
-        return this;
-    }
-
-    @Override
-    public IComplexNDArray cond(Condition condition, Number other) {
-        return dup().condi(condition, other);
-    }
-
-    @Override
-    public IComplexNDArray condi(Condition condition, Number other) {
-        IComplexNDArray linear = linearView();
-        for(int i = 0 ;i < length(); i++) {
-            boolean met = condition.apply(other);
+            boolean met = condition.apply(linear.getComplex(i));
             IComplexNumber put = Nd4j.createComplexNumber(met ? 1 : 0, 0);
             linear.putScalar(i,put);
         }
