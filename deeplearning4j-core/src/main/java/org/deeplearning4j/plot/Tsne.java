@@ -3,15 +3,27 @@ package org.deeplearning4j.plot;
 import com.google.common.base.Function;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.berkeley.Pair;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
+import static org.nd4j.linalg.factory.Nd4j.*;
+
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.Condition;
+import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.ConditionBuilder;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Not;
+import org.nd4j.linalg.indexing.functions.Value;
+import org.nd4j.linalg.indexing.functions.Zero;
 import org.nd4j.linalg.learning.AdaGrad;
+
+import static org.nd4j.linalg.factory.Nd4j.diag;
 import static org.nd4j.linalg.ops.transforms.Transforms.*;
+
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -27,6 +39,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static org.nd4j.linalg.ops.transforms.Transforms.max;
 import static org.nd4j.linalg.ops.transforms.Transforms.sign;
 
 /**
@@ -50,6 +63,7 @@ public class Tsne {
     private AdaGrad adaGrad;
     private boolean useAdaGrad = true;
     private float perplexity = 30f;
+    private INDArray gains,yIncs;
 
     private String commandTemplate = "python /tmp/tsne.py --path %s --ndims %d --perplexity %.3f --initialdims %s --labels %s";
 
@@ -129,11 +143,12 @@ public class Tsne {
      */
     public Pair<INDArray,INDArray> hBeta(INDArray d,float beta) {
         INDArray P =  exp(d.neg().muli(beta));
-        INDArray sum = P.sum(0);
+        INDArray sum = P.sum(Integer.MAX_VALUE);
+        INDArray otherSum = d.mul(P).sum(0);
+        INDArray H = log(sum)
+                .addi(otherSum.muli(beta).divi(sum));
 
-        INDArray H = log(sum).addi(beta).muli(d.mul(P).sum(0)).divi(sum);
-
-
+        P.divi(sum);
         return new Pair<>(H,P);
     }
 
@@ -150,90 +165,67 @@ public class Tsne {
      */
     public INDArray d2p(final INDArray d,final float u,final float tolerance) {
         int n = d.rows();
-        final INDArray p = Nd4j.create(n, n);
-        final INDArray beta = Nd4j.ones(n, 1);
+        final INDArray p = zeros(n, n);
+        final INDArray beta =  ones(n, 1);
         final float logU = (float) Math.log(u);
         log.info("Calculating probabilities of data similarities..");
-        ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         for(int i = 0; i < n; i++) {
             if(i % 500 == 0)
                 log.info("Handled " + i + " records");
             final int j = i;
-            service.submit(new Runnable() {
-                @Override
-                public void run() {
-                    float betaMin = Float.NEGATIVE_INFINITY;
-                    float betaMax = Float.POSITIVE_INFINITY;
+            float betaMin = Float.NEGATIVE_INFINITY;
+            float betaMax = Float.POSITIVE_INFINITY;
 
-                    Pair<INDArray,INDArray> pair =  hBeta(d.getRow(j),beta.get(j));
+            INDArray row = d.slice(j).get(NDArrayIndex.interval(1, d.columns()));
+            Pair<INDArray,INDArray> pair =  hBeta(row,beta.get(j));
 
-                    INDArray hDiff = pair.getFirst().sub(logU);
-                    int tries = 0;
-
-                    Condition c = new Condition() {
-                        @Override
-                        public Boolean apply(Number input) {
-                            return input.floatValue() > tolerance;
-                        }
-
-                        @Override
-                        public Boolean apply(IComplexNumber input) {
-                            return input.absoluteValue().floatValue() > tolerance;
-                        }
-                    };
+            INDArray hDiff = pair.getFirst().sub(logU);
+            int tries = 0;
 
 
-
-
-                    Condition c2 = new Condition() {
-                        @Override
-                        public Boolean apply(Number input) {
-                            return input.floatValue() > 0;
-                        }
-
-                        @Override
-                        public Boolean apply(IComplexNumber input) {
-                            return input.absoluteValue().floatValue() > 0;
-                        }
-                    };
-
-                    while(BooleanIndexing.and(abs(hDiff),c) && tries < 50) {
-                        if(BooleanIndexing.and(hDiff,c2)) {
-                            betaMin = beta.get(j);
-                            if(Float.isInfinite(betaMax))
-                                beta.putScalar(j,beta.get(j) * 2);
-                            else
-                                beta.putScalar(j,(beta.get(j) + betaMax) / 2);
-                        }
-                        else {
-                            betaMax = beta.get(j);
-                            if(Float.isInfinite(betaMin))
-                                beta.putScalar(j,beta.get(j) / 2);
-                            else
-                                beta.putScalar(j,(beta.get(j) + betaMin) / 2);
-                        }
-
-                        pair = hBeta(d.getRow(j),beta.get(j));
-                        hDiff = pair.getFirst().sub(logU);
-                        tries++;
-                    }
-
-                    p.putRow(j,pair.getSecond());
-
+            //while hdiff > tolerance
+            while(BooleanIndexing.and(abs(hDiff), Conditions.greaterThan(tolerance)) && tries < 50) {
+                //if hdiff > 0
+                if(BooleanIndexing.and(hDiff,Conditions.greaterThan(0))) {
+                    betaMin = beta.get(j);
+                    if(Float.isInfinite(betaMax))
+                        beta.putScalar(j,beta.get(j) * 2);
+                    else
+                        beta.putScalar(j,(beta.get(j) + betaMax) / 2);
                 }
-            });
+                else {
+                    betaMax = beta.get(j);
+                    if(Float.isInfinite(betaMin))
+                        beta.putScalar(j,beta.get(j) / 2);
+                    else
+                        beta.putScalar(j,(beta.get(j) + betaMin) / 2);
+                }
+
+                pair = hBeta(d.slice(j).get(NDArrayIndex.interval(1, d.columns())),beta.get(j));
+                hDiff = pair.getFirst().subi(logU);
+                tries++;
+            }
+
+            p.slice(j).put(new NDArrayIndex[]{NDArrayIndex.interval(1, d.columns())}, pair.getSecond());
         }
 
-        service.shutdown();
-        try {
-            service.awaitTermination(1, TimeUnit.DAYS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
 
+        //set 0 along the diagonal
+        doAlongDiagonal(p,new Function<Number, Number>() {
+            @Override
+            public Number apply(Number input) {
+                return 0;
+            }
+        });
 
-        return p;
+        INDArray pOut = p.add(p.transpose());
+        pOut.divi(p.sum(Integer.MAX_VALUE));
+        pOut = Transforms.max(pOut, 1e-12f);
+        //ensure no nans
+        BooleanIndexing.applyWhere(pOut,Conditions.isNan(),new Value(realMin));
+        log.info("Mean value of sigma " + sqrt(beta.rdiv(1).mean(Integer.MAX_VALUE)));
+        return pOut;
 
     }
 
@@ -257,6 +249,7 @@ public class Tsne {
             X = X.divi(X.max(Integer.MAX_VALUE));
             X = X.subiRowVector(X.mean(0));
         }
+
         if(nDims > X.columns())
             nDims = X.columns();
 
@@ -264,113 +257,42 @@ public class Tsne {
 
 
         INDArray sumX =  pow(X, 2).sum(1);
+
+
         INDArray D = X.mmul(
-                X.transpose())
-                .muli(-2)
-                .addiColumnVector(
-                        sumX.transpose())
+                X.transpose()).mul(-2)
+                .addiRowVector(sumX)
+                .transpose()
                 .addiRowVector(sumX);
 
 
+        //output
+        INDArray y = randn(X.rows(),nDims,new MersenneTwister(123)).muli(1e-3f);
 
 
-        INDArray y = Nd4j.randn(X.rows(),nDims).muli(1e-3f);
-        INDArray yGrads = Nd4j.create(y.shape());
-        INDArray yIncs = Nd4j.create(y.shape());
-        INDArray gains = Nd4j.ones(y.shape());
 
         INDArray p = d2p(D,perplexity,tolerance);
 
-        //set 0 along the diagonal
-        Nd4j.doAlongDiagonal(p,new Function<Number, Number>() {
-            @Override
-            public Number apply(Number input) {
-                return 0;
-            }
-        });
 
-        p = p.add(p.transpose()).muli(0.5f);
-        p = max(p.div(p.sum(Integer.MAX_VALUE)),realMin);
-        BooleanIndexing.applyWhere(p,new Condition() {
-            @Override
-            public Boolean apply(Number input) {
-                return Float.isNaN(input.floatValue());
-            }
-
-            @Override
-            public Boolean apply(IComplexNumber input) {
-                return Float.isNaN(input.realComponent().floatValue());
-            }
-        },new Function<Number, Number>() {
-            @Override
-            public Number apply(Number input) {
-                return realMin;
-            }
-        });
-
-        float constant = Nd4j.getBlasWrapper().dot(p, log(p));
         //lie for better local minima
         p.muli(4);
 
-
-        float costCheck = Float.NEGATIVE_INFINITY;
-        for(int i = 0; i < maxIter; i++) {
-
-            INDArray sumY =  pow(y, 2).sum(1);
-            //Student-t distribution
-            INDArray num = y.mmul(
-                    y.transpose())
-                    .muli(-2)
-                    .addiRowVector(sumY).transpose()
-                    .addiRowVector(sumY.transpose())
-                    .addi(1).rdivi(1);
-            Nd4j.doAlongDiagonal(num,new Function<Number, Number>() {
-                @Override
-                public Number apply(Number input) {
-                    return 0;
-                }
-            });
-
-
-            // normalize to get probabilities
-            INDArray  q =  max(num.divi(num.sum(Integer.MAX_VALUE).addi(1e-6f)), realMin);
-            INDArray L = p.sub(q).muli(num);
-            yGrads = Nd4j.diag(L.sum(0)).subi(L).muli(4).mmul(y);
-            if(useAdaGrad) {
-                if(adaGrad == null) {
-                    adaGrad = new AdaGrad(yGrads.shape());
-                    adaGrad.setMasterStepSize(learningRate);
-                }
-                yGrads.muli(adaGrad.getLearningRates(yGrads));
+        //init adagrad where needed
+        if(useAdaGrad) {
+            if(adaGrad == null) {
+                adaGrad = new AdaGrad(y.shape());
+                adaGrad.setMasterStepSize(learningRate);
             }
-            else
-                yGrads.muli(learningRate);
-
-            gains = max(gains.add(.2f).muli
-                    (sign(yGrads).eps(sign(yIncs)))
-                    .addi(gains.mul(0.8f))
-                    .muli(sign(yGrads).eq(sign(yIncs))),minGain);
+        }
 
 
-            yIncs = yIncs.mul(momentum).subi(gains.mul(yGrads));
-            y.addi(yIncs).subiRowVector(y.mean(0));
+
+
+        for(int i = 0; i < maxIter; i++) {
+            step(y,p,i);
 
             if(i == switchMomentumIteration)
                 momentum = finalMomentum;
-
-            INDArray logQ = log(q);
-            float dot = Nd4j.getBlasWrapper().dot(p, logQ);
-            float cost = constant - dot;
-            if(!Float.isInfinite(costCheck)) {
-                float diff = Math.abs(costCheck - cost);
-                if(diff <= 1e-6 && i > stopLyingIteration)
-                    break;
-            }
-
-            costCheck = cost;
-            log.info("Cost " + cost + " at iteration " + i);
-
-
             if(i == stopLyingIteration)
                 p.divi(4);
 
@@ -379,6 +301,68 @@ public class Tsne {
         return y;
     }
 
+
+    /* compute the gradient given the current solution, the probabilities and the constant */
+    private Pair<Float,INDArray> gradient(INDArray y,INDArray p) {
+        INDArray sumY =  pow(y, 2).sum(1);
+        if(yIncs == null)
+            yIncs =  zeros(y.shape());
+        if(gains == null)
+            gains = ones(y.shape());
+
+
+        //Student-t distribution
+        //also un normalized q
+        INDArray qu = y.mmul(
+                y.transpose())
+                .muli(-2)
+                .addiRowVector(sumY).transpose()
+                .addiRowVector(sumY)
+                .addi(1).rdivi(1);
+
+        //set diagonal to zero
+        doAlongDiagonal(qu,new Zero());
+
+
+
+        // normalize to get probabilities
+        INDArray  q =  max(qu.div(qu.sum(Integer.MAX_VALUE)), realMin);
+
+        INDArray L = p.sub(q).mul(qu);
+
+
+        INDArray yGrads =  diag(L.sum(0)).subi(L).muli(4).mmul(y);
+        gains = gains.add(.2f)
+                .mul(yGrads.cond(Conditions.greaterThan(0)).neq(yIncs.cond(Conditions.greaterThan(0))))
+                .addi(gains.mul(0.8f).mul(yGrads.cond(Conditions.greaterThan(0)).eq(yIncs.cond(Conditions.greaterThan(0)))));
+
+        BooleanIndexing.applyWhere(
+                gains,
+                Conditions.lessThan(minGain),
+                new Value(minGain));
+
+
+        INDArray gradChange = gains.mul(yGrads);
+
+        if(useAdaGrad)
+            gradChange.muli(adaGrad.getLearningRates(gradChange));
+        else
+            gradChange.muli(learningRate);
+
+
+        yIncs.muli(momentum).subi(gradChange);
+
+        float cost = p.mul(log(p.div(q))).sum(Integer.MAX_VALUE).get(0);
+        return new Pair<>(cost,yIncs);
+    }
+
+
+    public void step(INDArray y,INDArray p,int i) {
+        Pair<Float,INDArray> costGradient = gradient(y,p);
+        INDArray yIncs = costGradient.getSecond();
+        log.info("Cost at iteration " + i + " was " + costGradient.getFirst());
+        y.addi(yIncs).subiRowVector(y.mean(0));
+    }
 
 
     /**
@@ -435,7 +419,7 @@ public class Tsne {
 
     public static class Builder {
         private int maxIter = 1000;
-        private float realMin = 1e-6f;
+        private float realMin = 1e-12f;
         private float initialMomentum = 5e-1f;
         private float finalMomentum = 8e-1f;
         private int eta = 500;
