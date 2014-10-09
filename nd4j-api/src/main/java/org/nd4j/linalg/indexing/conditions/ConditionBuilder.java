@@ -46,4 +46,10 @@ public class ConditionBuilder {
         return this;
     }
 
+    public Condition build() {
+        return soFar;
+    }
+
+
+
 }
