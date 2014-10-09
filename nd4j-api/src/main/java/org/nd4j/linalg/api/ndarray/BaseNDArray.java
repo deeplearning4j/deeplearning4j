@@ -2825,7 +2825,7 @@ public abstract class BaseNDArray  implements INDArray {
             INDArray reverse = Nd4j.create(new int[]{shape[1],shape[0]});
             for (int i = 0; i < rows; i++) {
                 for (int j = 0; j < columns; j++) {
-                    reverse.put(j, i, get(i, j));
+                    reverse.putScalar(new int[]{j, i}, get(i, j));
                 }
             }
 
