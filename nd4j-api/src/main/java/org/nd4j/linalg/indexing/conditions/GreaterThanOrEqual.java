@@ -1,4 +1,4 @@
-package org.nd4j.linalg.indexing;
+package org.nd4j.linalg.indexing.conditions;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 

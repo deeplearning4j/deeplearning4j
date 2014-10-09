@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.complex;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
+import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.reduceops.Ops;
 
@@ -67,6 +68,44 @@ public interface IComplexNDArray extends INDArray {
      */
     @Override
     IComplexNDArray vectorAlongDimension(int index, int dimension);
+
+
+
+    /**
+     * 1 in an ndarray when condition is fulfilled,
+     * 0 otherwise(copying)(
+     * @param condition  the condition to be fulfilled
+     * @param other
+     * @return
+     */
+    public IComplexNDArray cond(Condition condition,IComplexNumber other);
+
+    /**
+     * 1 in an ndarray when condition is fulfilled,
+     * 0 otherwise(copying)(
+     * @param condition the condition to be fulfilled
+     * @param other
+     * @return
+     */
+    public IComplexNDArray condi(Condition condition,IComplexNumber other);
+
+    /**
+     * 1 in an ndarray when condition is fulfilled,
+     * 0 otherwise(copying)(
+     * @param condition  the condition to be fulfilled
+     * @param other
+     * @return
+     */
+    public IComplexNDArray cond(Condition condition,Number other);
+
+    /**
+     * 1 in an ndarray when condition is fulfilled,
+     * 0 otherwise(copying)(
+     * @param condition the condition to be fulfilled
+     * @param other
+     * @return
+     */
+    public IComplexNDArray condi(Condition condition,Number other);
 
     /**
      * Assign all of the elements in the given

@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ndarray;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.reduceops.Ops;
 
@@ -134,7 +135,23 @@ public interface INDArray extends Serializable {
      * @return
      */
     public INDArray eqi(Number other);
+    /**
+     * 1 in an ndarray when condition is fulfilled,
+     * 0 otherwise(copying)(
+     * @param condition  the condition to be fulfilled
+     * @param other
+     * @return
+     */
+    public INDArray cond(Condition condition,Number other);
 
+    /**
+     * 1 in an ndarray when condition is fulfilled,
+     * 0 otherwise(copying)(
+     * @param condition the condition to be fulfilled
+     * @param other
+     * @return
+     */
+    public INDArray condi(Condition condition,Number other);
     /**
      * Greater than boolean (copying)(
      * @param other

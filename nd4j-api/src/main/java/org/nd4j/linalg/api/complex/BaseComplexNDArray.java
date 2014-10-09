@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
@@ -2175,6 +2176,38 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
         return subArray(offsets,shape,strides);
+    }
+
+    @Override
+    public IComplexNDArray cond(Condition condition, IComplexNumber other) {
+        return dup().condi(condition,other);
+    }
+
+    @Override
+    public IComplexNDArray condi(Condition condition, IComplexNumber other) {
+        IComplexNDArray linear = linearView();
+        for(int i = 0 ;i < length(); i++) {
+            boolean met = condition.apply(other);
+            IComplexNumber put = Nd4j.createComplexNumber(met ? 1 : 0,0);
+            linear.putScalar(i,put);
+        }
+        return this;
+    }
+
+    @Override
+    public IComplexNDArray cond(Condition condition, Number other) {
+        return dup().condi(condition, other);
+    }
+
+    @Override
+    public IComplexNDArray condi(Condition condition, Number other) {
+        IComplexNDArray linear = linearView();
+        for(int i = 0 ;i < length(); i++) {
+            boolean met = condition.apply(other);
+            IComplexNumber put = Nd4j.createComplexNumber(met ? 1 : 0, 0);
+            linear.putScalar(i,put);
+        }
+        return this;
     }
 
     /**

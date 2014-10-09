@@ -5,6 +5,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
@@ -1513,7 +1514,20 @@ public abstract class BaseNDArray  implements INDArray {
         );
     }
 
+    @Override
+    public INDArray cond(Condition condition, Number other) {
+        return dup().condi(condition,other);
+    }
 
+    @Override
+    public INDArray condi(Condition condition, Number other) {
+        INDArray linear = linearView();
+        for(int i = 0 ;i < length(); i++) {
+            boolean met = condition.apply(other);
+            linear.putScalar(i,met ? 1 : 0);
+        }
+        return this;
+    }
 
     /**
      * Iterate along a dimension.
