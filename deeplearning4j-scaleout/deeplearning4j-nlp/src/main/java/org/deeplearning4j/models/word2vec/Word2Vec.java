@@ -169,7 +169,7 @@ public class Word2Vec implements Persistable {
         }
 
 
-        distances.keepBottomNKeys(n);
+        distances.keepTopNKeys(n);
         return distances.keySet();
 
     }
@@ -476,6 +476,13 @@ public class Word2Vec implements Persistable {
         log.info("Resetting weights");
         if(shouldReset)
             resetWeights();
+        InMemoryLookupCache l = (InMemoryLookupCache) cache;
+        try {
+            Nd4j.writeTxt(l.getSyn0(),"/home/agibsonccc/Desktop/syn0test-java.txt"," ");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
 
@@ -662,11 +669,11 @@ public class Word2Vec implements Persistable {
         if(word.equals(word2))
             return 1.0;
 
-        INDArray vector = getWordVectorMatrix(word);
-        INDArray vector2 = getWordVectorMatrix(word2);
+        INDArray vector = getWordVectorMatrixNormalized(word);
+        INDArray vector2 = getWordVectorMatrixNormalized(word2);
         if(vector == null || vector2 == null)
             return -1;
-        return  Transforms.cosineSim(vector,vector2);
+        return  Nd4j.getBlasWrapper().dot(vector,vector2);
     }
 
 

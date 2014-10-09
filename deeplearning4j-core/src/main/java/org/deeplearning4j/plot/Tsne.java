@@ -9,13 +9,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
 import static org.nd4j.linalg.factory.Nd4j.*;
 
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.conditions.Condition;
-import org.nd4j.linalg.indexing.conditions.ConditionBuilder;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.conditions.Not;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.indexing.functions.Zero;
 import org.nd4j.linalg.learning.AdaGrad;
@@ -35,12 +31,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+
 
 import static org.nd4j.linalg.ops.transforms.Transforms.max;
-import static org.nd4j.linalg.ops.transforms.Transforms.sign;
 
 /**
  * Tsne calculation
@@ -52,7 +45,7 @@ public class Tsne {
     private float realMin = 1e-12f;
     private float initialMomentum = 0.5f;
     private float finalMomentum = 0.8f;
-    private final float minGain = 1e-2f;
+    private  float minGain = 1e-2f;
     private float momentum = initialMomentum;
     private int switchMomentumIteration = 100;
     private boolean normalize = true;
@@ -117,8 +110,9 @@ public class Tsne {
             boolean normalize,
             boolean usePca,
             int stopLyingIteration,
-            float tolerance,float learningRate,boolean useAdaGrad,float perplexity) {
+            float tolerance,float learningRate,boolean useAdaGrad,float perplexity,float minGain) {
         this.tolerance = tolerance;
+        this.minGain = minGain;
         this.useAdaGrad = useAdaGrad;
         this.learningRate = learningRate;
         this.stopLyingIteration = stopLyingIteration;
@@ -422,7 +416,6 @@ public class Tsne {
         private float realMin = 1e-12f;
         private float initialMomentum = 5e-1f;
         private float finalMomentum = 8e-1f;
-        private int eta = 500;
         private float momentum = 5e-1f;
         private int switchMomentumIteration = 100;
         private boolean normalize = true;
@@ -432,8 +425,13 @@ public class Tsne {
         private float learningRate = 1e-1f;
         private boolean useAdaGrad = true;
         private float perplexity = 30;
+        private float minGain = 1e-1f;
 
 
+        public Builder minGain(float minGain) {
+            this.minGain = minGain;
+            return this;
+        }
 
         public Builder perplexity(float perplexity) {
             this.perplexity = perplexity;
@@ -491,10 +489,7 @@ public class Tsne {
             return this;
         }
 
-        public Builder setEta(int eta) {
-            this.eta = eta;
-            return this;
-        }
+
 
         public Builder setMomentum(float momentum) {
             this.momentum = momentum;
@@ -507,7 +502,7 @@ public class Tsne {
         }
 
         public Tsne build() {
-            return new Tsne(maxIter, realMin, initialMomentum, finalMomentum, momentum, switchMomentumIteration,normalize,usePca,stopLyingIteration,tolerance,learningRate,useAdaGrad,perplexity);
+            return new Tsne(maxIter, realMin, initialMomentum, finalMomentum, momentum, switchMomentumIteration,normalize,usePca,stopLyingIteration,tolerance,learningRate,useAdaGrad,perplexity,minGain);
         }
 
     }
