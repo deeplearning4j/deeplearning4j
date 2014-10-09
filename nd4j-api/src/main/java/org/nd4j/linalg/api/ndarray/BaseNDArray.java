@@ -524,7 +524,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray other = arr.ravel();
         INDArray thisArr = ravel();
         for(int i = 0; i < other.length(); i++)
-            thisArr.put(i, other.getScalar(i));
+            thisArr.putScalar(i, other.get(i));
         return this;
     }
 
