@@ -53,7 +53,6 @@ public class LineSentenceIterator extends BaseSentenceIterator {
     @Override
     public void reset() {
         try {
-            this.file.reset();
             iter = IOUtils.lineIterator(this.file,"UTF-8");
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -102,7 +102,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     @Override
     public  void iterate(VocabWord w1, VocabWord w2) {
         //current word vector
-        INDArray syn0 = this.syn0.getRow(w2.getIndex());
+        INDArray syn0 = this.syn0.slice(w2.getIndex());
 
         //error for current word and context
         INDArray work = Nd4j.create(vectorLength);
@@ -117,7 +117,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
             int point = w1.getPoints()[i];
 
             //other word vector
-            INDArray syn1 = this.syn1.getRow(point);
+            INDArray syn1 = this.syn1.slice(point);
 
 
             float dot = Nd4j.getBlasWrapper().dot(syn0,syn1);
@@ -425,6 +425,19 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         this.rng = rng;
     }
 
+    public INDArray getSyn0() {
+        return syn0;
+    }
 
+    public void setSyn0(INDArray syn0) {
+        this.syn0 = syn0;
+    }
 
+    public INDArray getSyn1() {
+        return syn1;
+    }
+
+    public void setSyn1(INDArray syn1) {
+        this.syn1 = syn1;
+    }
 }
