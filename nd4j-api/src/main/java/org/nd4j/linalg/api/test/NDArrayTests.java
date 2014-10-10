@@ -140,6 +140,10 @@ public abstract class NDArrayTests {
         assertEquals(row,result);
     }
 
+
+
+
+
     @Test
     public void testSwapAxesFortranOrder() {
         Nd4j.factory().setOrder('f');

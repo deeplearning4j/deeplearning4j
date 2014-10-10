@@ -550,62 +550,154 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray lt(Number other) {
-        return Nd4j.createComplex(super.lt(other));
+        return dup().lti(other);
     }
 
     @Override
     public IComplexNDArray lti(Number other) {
-        return Nd4j.createComplex(super.lti(other));
+        IComplexNDArray linear = linearView();
+        float val = other.floatValue();
+        for(int i  = 0; i < linear.length(); i++) {
+            linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue() < val ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+        }
+        return this;
     }
 
     @Override
     public IComplexNDArray eq(Number other) {
-        return Nd4j.createComplex(super.eq(other));
+        return dup().eqi(other);
     }
 
     @Override
     public IComplexNDArray eqi(Number other) {
-        return Nd4j.createComplex(super.eqi(other));
+        IComplexNDArray linear = linearView();
+        float val = other.floatValue();
+        for(int i  = 0; i < linear.length(); i++) {
+            linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue() == val ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+        }
+        return this;
     }
 
     @Override
     public IComplexNDArray gt(Number other) {
-        return Nd4j.createComplex(super.gt(other));
+        return dup().gti(other);
     }
 
     @Override
     public IComplexNDArray gti(Number other) {
-        return Nd4j.createComplex(super.gti(other));
+        IComplexNDArray linear = linearView();
+        float val = other.floatValue();
+        for(int i  = 0; i < linear.length(); i++) {
+            linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue() > val ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+        }
+        return this;
     }
 
     @Override
     public IComplexNDArray lt(INDArray other) {
-        return Nd4j.createComplex(super.lt(other));
+        return dup().lti(other);
     }
 
     @Override
     public IComplexNDArray lti(INDArray other) {
-        return Nd4j.createComplex(super.lti(other));
+        if(other instanceof IComplexNDArray) {
+            IComplexNDArray linear = linearView();
+            IComplexNDArray otherLinear = (IComplexNDArray) other.linearView();
+            for(int i = 0; i < linear.length(); i++) {
+                linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue()
+                        < otherLinear.getComplex(i).absoluteValue().floatValue() ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+            }
+        }
+        else {
+            IComplexNDArray linear = linearView();
+            INDArray otherLinear =  other.linearView();
+            for(int i = 0; i < linear.length(); i++) {
+                linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue()
+                        < otherLinear.get(i) ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+            }
+        }
+
+        return this;
     }
 
     @Override
     public IComplexNDArray eq(INDArray other) {
-        return Nd4j.createComplex(super.eq(other));
+        return dup().eqi(other);
     }
 
     @Override
     public IComplexNDArray eqi(INDArray other) {
-        return Nd4j.createComplex(super.eqi(other));
+        if(other instanceof IComplexNDArray) {
+            IComplexNDArray linear = linearView();
+            IComplexNDArray otherLinear = (IComplexNDArray) other.linearView();
+            for(int i = 0; i < linear.length(); i++) {
+                linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue()
+                        == otherLinear.getComplex(i).absoluteValue().floatValue() ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+            }
+        }
+        else {
+            IComplexNDArray linear = linearView();
+            INDArray otherLinear =  other.linearView();
+            for(int i = 0; i < linear.length(); i++) {
+                linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue()
+                        == otherLinear.get(i) ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+            }
+        }
+
+        return this;
+    }
+
+    @Override
+    public IComplexNDArray neq(INDArray other) {
+        return dup().neqi(other);
+    }
+
+    @Override
+    public IComplexNDArray neqi(INDArray other) {
+        if(other instanceof IComplexNDArray) {
+            IComplexNDArray linear = linearView();
+            IComplexNDArray otherLinear = (IComplexNDArray) other.linearView();
+            for(int i = 0; i < linear.length(); i++) {
+                linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue()
+                        != otherLinear.getComplex(i).absoluteValue().floatValue() ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+            }
+        }
+        else {
+            IComplexNDArray linear = linearView();
+            INDArray otherLinear =  other.linearView();
+            for(int i = 0; i < linear.length(); i++) {
+                linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue()
+                        != otherLinear.get(i) ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+            }
+        }
+
+        return this;
     }
 
     @Override
     public IComplexNDArray gt(INDArray other) {
-        return Nd4j.createComplex(super.gt(other));
+        return dup().gti(other);
     }
 
     @Override
     public IComplexNDArray gti(INDArray other) {
-        return Nd4j.createComplex(super.gti(other));
+        if(other instanceof IComplexNDArray) {
+            IComplexNDArray linear = linearView();
+            IComplexNDArray otherLinear = (IComplexNDArray) other.linearView();
+            for(int i = 0; i < linear.length(); i++) {
+                linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue()
+                        > otherLinear.getComplex(i).absoluteValue().floatValue() ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+            }
+        }
+        else {
+            IComplexNDArray linear = linearView();
+            INDArray otherLinear =  other.linearView();
+            for(int i = 0; i < linear.length(); i++) {
+                linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue()
+                        > otherLinear.get(i) ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+            }
+        }
+        return this;
     }
 
 

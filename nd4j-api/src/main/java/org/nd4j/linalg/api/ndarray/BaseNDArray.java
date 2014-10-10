@@ -658,7 +658,12 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray lti(INDArray other) {
-        return Transforms.lt(other);
+        INDArray linear = linearView();
+        INDArray otherLinear = other.linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            linear.putScalar(i,linear.get(i) < otherLinear.get(i) ? 1 : 0);
+        }
+        return this;
     }
     @Override
     public INDArray neq(INDArray other) {
@@ -667,7 +672,12 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray neqi(INDArray other) {
-        return Transforms.neq(other);
+        INDArray linear = linearView();
+        INDArray otherLinear = other.linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            linear.putScalar(i,linear.get(i) != otherLinear.get(i) ? 1 : 0);
+        }
+        return this;
     }
 
     @Override
@@ -677,7 +687,12 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray eqi(INDArray other) {
-        return Transforms.eq(other);
+        INDArray linear = linearView();
+        INDArray otherLinear = other.linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            linear.putScalar(i,linear.get(i) == otherLinear.get(i) ? 1 : 0);
+        }
+        return this;
     }
 
     @Override
@@ -687,7 +702,12 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray gti(INDArray other) {
-        return Transforms.gt(other);
+        INDArray linear = linearView();
+        INDArray otherLinear = other.linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            linear.putScalar(i,linear.get(i) > otherLinear.get(i) ? 1 : 0);
+        }
+        return this;
     }
 
 

@@ -87,6 +87,11 @@ public interface IComplexNDArray extends INDArray {
      */
     public IComplexNDArray condi(Condition condition);
 
+    @Override
+    IComplexNDArray neq(INDArray other);
+
+    @Override
+    IComplexNDArray neqi(INDArray other);
 
     /**
      * Assign all of the elements in the given
