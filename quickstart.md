@@ -52,7 +52,7 @@ These tools will generate the visualizations that allow you to debug your neural
 
 * Once you've made the examples folder your current working directory, enter this command:
 
-		java -cp "lib/*" org.deeplearning4j.example.mnist.RBMMnistExample
+		java -cp "lib/*" org.deeplearning4j.mnist.MnistExample
 
 * This is the moment of truth. You should now see evidence in your terminal/cmd that the neural net has begun to train, as the net's iterations begin to scroll down your terminal window. (In some cases, the program may take a minute to locate resources.) Look at the second-to-last number on the right hand side below. It should be decreasing with each new iteration. That’s the measure of the net’s error reconstructing a numeral-image. If the error shrinks, that means your net is learning. 
 
