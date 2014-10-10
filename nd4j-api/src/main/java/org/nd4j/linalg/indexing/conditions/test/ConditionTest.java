@@ -16,14 +16,14 @@ public abstract class ConditionTest {
     public void testNeq() {
         INDArray n = Nd4j.create(new float[]{1,2,3,4});
         INDArray n2 = n.neq(Nd4j.create(new int[]{4}));
-        assertEquals(4,n2.sum(Integer.MAX_VALUE));
+        assertEquals(4,n2.sum(Integer.MAX_VALUE).get(0),1e-1);
 
     }
     @Test
     public void testEq() {
         INDArray n = Nd4j.create(new float[]{1,2,3,4});
         INDArray n2 = n.eq(Nd4j.create(new int[]{4}));
-        assertEquals(0,n2.sum(Integer.MAX_VALUE));
+        assertEquals(0,n2.sum(Integer.MAX_VALUE).get(0),1e-1);
 
     }
 
