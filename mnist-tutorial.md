@@ -42,7 +42,7 @@ Note to Windows uers, in place of the line below, please do the following:
 
 Next, we want to train a deep-belief network to reconstruct the MNIST data set. This is done with following snippet:
 
-<script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RawDBNMnistExample.java?slice=24:72"></script>
+<script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/DBNExample.java?slice=28:58"></script>
 
 After your net has trained, you'll see an F1 score. In machine learning, that's the name for one metric used to determine how well a classifier performs. The [f1 score](https://en.wikipedia.org/wiki/F1_score) is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It's basically the probability that your net's guesses are correct.
 
