@@ -2717,16 +2717,34 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray repmat(int[] shape) {
-        int[] newShape = ArrayUtil.copy(shape());
+        int[] newShape = new int[shape.length];
         assert shape.length <= newShape.length : "Illegal shape: The passed in shape must be <= the current shape length";
-        for(int i = 0; i < shape.length; i++)
-            newShape[i] *= shape[i];
+        int[] oldShape = isRowVector() ? new int[]{1,this.shape[0]} : Arrays.copyOf(this.shape,2);
+        for(int i = 0; i < newShape.length; i++) {
+            if(i < this.shape.length)
+                newShape[i] = oldShape[i] * shape[i];
+            else
+                newShape[i] = oldShape[i];
+        }
+
         INDArray result = Nd4j.create(newShape);
         //nd copy
         if(isScalar()) {
             for(int i = 0; i < result.length(); i++) {
                 result.put(i,getScalar(0));
 
+            }
+        }
+
+        else if(isRowVector()) {
+            if(Shape.isColumnVectorShape(newShape))
+                return transpose();
+            else if(Shape.isMatrix(newShape)) {
+                INDArray ret = Nd4j.create(newShape);
+                for(int i = 0; i < ret.rows(); i++) {
+                    ret.putRow(i,this);
+                }
+                return ret;
             }
         }
 

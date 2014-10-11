@@ -5,7 +5,6 @@ import static org.junit.Assert.*;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 
 /**
  * Created by agibsonccc on 10/10/14.
