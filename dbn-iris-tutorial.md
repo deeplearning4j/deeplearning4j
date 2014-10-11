@@ -191,7 +191,7 @@ After your net has trained, you'll see an F1 score like this. In machine learnin
 
 Our model wasn’t tuned all that well (back to the knobs!), and this is just a first pass, but not bad!
 
-In the end, a a working network's visual representation of the Iris dataset will look something like this
+In the end, a working network's visual representation of the Iris dataset will look something like this
 
 ![Alt text](../img/iris_dataset.png)
 
