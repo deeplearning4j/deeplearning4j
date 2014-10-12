@@ -22,12 +22,12 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
 
     private BaseMultiLayerNetwork network;
     private int length = -1;
-    private float lr  = 1e-1f;
+    private double lr  = 1e-1f;
     private int epochs = 1000;
     private static Logger log = LoggerFactory.getLogger(BackPropOptimizer.class);
     private int currentIteration = -1;
 
-    public BackPropOptimizer(BaseMultiLayerNetwork network,float lr,int epochs) {
+    public BackPropOptimizer(BaseMultiLayerNetwork network,double lr,int epochs) {
         this.network = network;
         this.lr = lr;
         this.epochs = epochs;
@@ -42,7 +42,7 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
         if(!lineSearch) {
             log.info("BEGIN BACKPROP WITH SCORE OF " + network.score());
 
-            Float lastEntropy =  network.score();
+            double lastEntropy =  network.score();
             //store a copy of the network for when binary cross entropy gets
             //worse after an iteration
             BaseMultiLayerNetwork revert = network.clone();
@@ -62,7 +62,7 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
 
                 boolean train = true;
                 int count = 0;
-                float changeTolerance = 1e-6f;
+                double changeTolerance = 1e-6f;
                 int backPropIterations = 0;
                 while(train) {
                     if(backPropIterations >= epochs) {
@@ -75,9 +75,9 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
 
                 /* Trains logistic regression post weight updates */
 
-                    Float entropy = network.score();
-                    if(lastEntropy == null || entropy < lastEntropy) {
-                        float diff = Math.abs(entropy - lastEntropy);
+                    double entropy = network.score();
+                    if(entropy < lastEntropy) {
+                        double diff = Math.abs(entropy - lastEntropy);
                         if(diff < changeTolerance) {
                             log.info("Not enough of a change on back prop...breaking");
                             break;
@@ -143,7 +143,7 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
 
 
     @Override
-    public float getValue() {
+    public double getValue() {
         return - (network.score());
     }
 
@@ -158,7 +158,7 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
 
 
     @Override
-    public void setParameter(int index, float value) {
+    public void setParameter(int index, double value) {
 
     }
 
@@ -168,7 +168,7 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
     }
 
     @Override
-    public float getParameter(int index) {
+    public double getParameter(int index) {
         return 0;
     }
 

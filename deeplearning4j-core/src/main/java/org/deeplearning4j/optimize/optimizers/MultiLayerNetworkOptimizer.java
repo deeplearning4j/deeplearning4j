@@ -41,7 +41,7 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
         this.currentIteration = value;
     }
 
-    public void optimize(INDArray labels,float lr,int epochs,TrainingEvaluator eval) {
+    public void optimize(INDArray labels,double lr,int epochs,TrainingEvaluator eval) {
         network.getOutputLayer().setLabels(labels);
 
         if(!network.isForceNumEpochs()) {
@@ -80,7 +80,7 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
      * @param lr
      * @param iteration
      */
-    public void optimize(INDArray labels,float lr,int iteration) {
+    public void optimize(INDArray labels,double lr,int iteration) {
         network.getOutputLayer().setLabels(labels);
         if(!network.isForceNumEpochs()) {
             if(network.isShouldBackProp())
@@ -116,33 +116,33 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
 
 
 
-    public void getParameters(float[] buffer) {
+    public void getParameters(double[] buffer) {
         int idx = 0;
         for(int i = 0; i < network.getOutputLayer().getW().length(); i++) {
-            buffer[idx++] = (float) network.getOutputLayer().getW().getScalar(i).element();
+            buffer[idx++] = (double) network.getOutputLayer().getW().getScalar(i).element();
 
         }
         for(int i = 0; i < network.getOutputLayer().getB().length(); i++) {
-            buffer[idx++] = (float) network.getOutputLayer().getB().getScalar(i).element();
+            buffer[idx++] = (double) network.getOutputLayer().getB().getScalar(i).element();
         }
     }
 
 
 
     @Override
-    public float getParameter(int index) {
+    public double getParameter(int index) {
         if(index >= network.getOutputLayer().getW().length()) {
             int i = index - network.getOutputLayer().getB().length();
-            return (float) network.getOutputLayer().getB().getScalar(i).element();
+            return (double) network.getOutputLayer().getB().getScalar(i).element();
         }
         else
-            return (float) network.getOutputLayer().getW().getScalar(index).element();
+            return (double) network.getOutputLayer().getW().getScalar(index).element();
     }
 
 
 
 
-    public void setParameters(float[] params) {
+    public void setParameters(double[] params) {
         int idx = 0;
         for(int i = 0; i < network.getOutputLayer().getW().length(); i++) {
             network.getOutputLayer().getW().putScalar(i, params[idx++]);
@@ -157,7 +157,7 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
 
 
     @Override
-    public void setParameter(int index, float value) {
+    public void setParameter(int index, double value) {
         if(index >= network.getOutputLayer().getW().length()) {
             int i = index - network.getOutputLayer().getB().length();
             network.getOutputLayer().getB().putScalar(i, value);
@@ -169,7 +169,7 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
 
 
 
-    public void getValueGradient(float[] buffer) {
+    public void getValueGradient(double[] buffer) {
         OutputLayerGradient gradient = network.getOutputLayer().getGradient(lr);
 
         INDArray weightGradient = gradient.getwGradient();
@@ -178,24 +178,24 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
         int idx = 0;
 
         for(int i = 0; i < weightGradient.length(); i++)
-            buffer[idx++] = (float) weightGradient.getScalar(i).element();
+            buffer[idx++] = (double) weightGradient.getScalar(i).element();
         for(int i = 0; i < biasGradient.length(); i++)
-            buffer[idx++] = (float) biasGradient.getScalar(i).element();
+            buffer[idx++] = (double) biasGradient.getScalar(i).element();
 
     }
 
 
 
     @Override
-    public float getValue() {
-        return (float) network.score();
+    public double getValue() {
+        return (double) network.score();
     }
 
 
 
     @Override
     public INDArray getParameters() {
-        float[] d = new float[getNumParameters()];
+        double[] d = new double[getNumParameters()];
         this.getParameters(d);
         return Nd4j.create(d);
     }
@@ -204,7 +204,7 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
 
     @Override
     public void setParameters(INDArray params) {
-        this.setParameters(params.data());
+        this.setParameters(params.data().asDouble());
     }
 
 
@@ -212,7 +212,7 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
 
     @Override
     public INDArray getValueGradient(int iteration) {
-        float[] buffer = new float[getNumParameters()];
+        double[] buffer = new double[getNumParameters()];
         getValueGradient(buffer);
         return Nd4j.create(buffer);
     }

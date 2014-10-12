@@ -98,7 +98,7 @@ public class KMeansClustering implements Serializable {
     }
 
 
-    private float getDistance(INDArray m1,INDArray m2) {
+    private double getDistance(INDArray m1,INDArray m2) {
         DistanceFunction function;
         try {
             function = clazz.getConstructor(INDArray.class).newInstance(m1);
@@ -116,9 +116,9 @@ public class KMeansClustering implements Serializable {
         // Find nearest centroid
         Integer nearestCentroidIndex = 0;
 
-        Float minDistance = Float.MAX_VALUE;
+        double minDistance = Float.MAX_VALUE;
         INDArray currentCentroid;
-        Float currentDistance;
+        double currentDistance;
         for (int i = 0; i < this.centroids.rows(); i++) {
             currentCentroid = this.centroids.getRow(i);
             if (currentCentroid != null) {
@@ -179,9 +179,9 @@ public class KMeansClustering implements Serializable {
 
             // Add one new data point as a center.
             INDArray features;
-            double r = random.nextFloat() *   dxs.get(dxs.length() - 1);
+            double r = random.nextFloat() *   dxs.getDouble(dxs.length() - 1);
             for (int i = 0; i < dxs.length(); i++) {
-                if (dxs.get(i) >= r) {
+                if (dxs.getDouble(i) >= r) {
                     features = this.initFeatures.remove(i);
                     this.centroids.putRow(j,features);
                     break;

@@ -61,7 +61,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
 
     @Override
     public NeuralNetworkGradient getGradient(Object[] params) {
-        float lr = (float) params[0];
+        double lr = (double) params[0];
         int iterations = (int) params[1];
 
 

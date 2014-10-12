@@ -233,7 +233,7 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
      * Trains the decoder on the given input
      * @param input the given input to iterate on
      */
-    public void finetune(INDArray input,float lr,int iterations) {
+    public void finetune(INDArray input,double lr,int iterations) {
         this.input = input;
 
 
@@ -323,7 +323,7 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
      * @return the score for the given input,label pairs
      */
     @Override
-    public float score(DataSet data) {
+    public double score(DataSet data) {
         return 0;
     }
 

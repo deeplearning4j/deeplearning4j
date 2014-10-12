@@ -46,7 +46,7 @@ public class BackPropROptimizer implements Serializable,OptimizableByGradientVal
         if(!lineSearch) {
             log.info("BEGIN BACKPROP WITH SCORE OF " + network.score());
 
-            Float lastEntropy =  network.score();
+            double lastEntropy =  network.score();
             //store a copy of the network for when binary cross entropy gets
             //worse after an iteration
             BaseMultiLayerNetwork revert = network.clone();
@@ -77,8 +77,8 @@ public class BackPropROptimizer implements Serializable,OptimizableByGradientVal
                     count++;
                 /* Trains logistic regression post weight updates */
 
-                    Float entropy = network.score();
-                    if(lastEntropy == null || entropy < lastEntropy) {
+                    double entropy = network.score();
+                    if( entropy < lastEntropy) {
                         double diff = Math.abs(entropy - lastEntropy);
                         if(diff < changeTolerance) {
                             log.info("Not enough of a change on back prop...breaking");
@@ -95,7 +95,7 @@ public class BackPropROptimizer implements Serializable,OptimizableByGradientVal
                         train = false;
                     }
 
-                    else if(entropy >= lastEntropy || Float.isNaN(entropy) || Float.isInfinite(entropy)) {
+                    else if(entropy >= lastEntropy || Double.isNaN(entropy) || Double.isInfinite(entropy)) {
                         train = false;
                         network.update(revert);
                         log.info("Reverting to best score " + lastEntropy);
@@ -142,7 +142,7 @@ public class BackPropROptimizer implements Serializable,OptimizableByGradientVal
     }
 
     @Override
-    public float getValue() {
+    public double getValue() {
         return - (network.score());
     }
 
@@ -154,24 +154,20 @@ public class BackPropROptimizer implements Serializable,OptimizableByGradientVal
     }
 
 
-    public void getParameters(float[] buffer) {
+    public void getParameters(double[] buffer) {
         System.arraycopy(getParameters().data(),0,buffer,0,buffer.length);
     }
 
     @Override
-    public float getParameter(int index) {
+    public double getParameter(int index) {
         return 0;
     }
 
 
-    public void setParameters(float[] params) {
+    public void setParameters(double[] params) {
         setParameters(Nd4j.create(params));
     }
 
-
-    public void setParameter(int index, double value) {
-
-    }
 
     @Override
     public INDArray getParameters() {
@@ -186,7 +182,7 @@ public class BackPropROptimizer implements Serializable,OptimizableByGradientVal
     }
 
     @Override
-    public void setParameter(int index, float value) {
+    public void setParameter(int index, double value) {
 
     }
 

@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
 import static org.nd4j.linalg.factory.Nd4j.*;
 
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -42,20 +43,20 @@ import static org.nd4j.linalg.ops.transforms.Transforms.max;
 public class Tsne {
 
     private int maxIter = 1000;
-    private float realMin = 1e-12f;
-    private float initialMomentum = 0.5f;
-    private float finalMomentum = 0.8f;
-    private  float minGain = 1e-2f;
-    private float momentum = initialMomentum;
+    private double realMin = 1e-12f;
+    private double initialMomentum = 0.5f;
+    private double finalMomentum = 0.8f;
+    private  double minGain = 1e-2f;
+    private double momentum = initialMomentum;
     private int switchMomentumIteration = 100;
     private boolean normalize = true;
     private boolean usePca = false;
     private int stopLyingIteration = 250;
-    private float tolerance = 1e-5f;
-    private float learningRate = 1e-1f;
+    private double tolerance = 1e-5f;
+    private double learningRate = 1e-1f;
     private AdaGrad adaGrad;
     private boolean useAdaGrad = true;
-    private float perplexity = 30f;
+    private double perplexity = 30f;
     private INDArray gains,yIncs;
 
     private String commandTemplate = "python /tmp/tsne.py --path %s --ndims %d --perplexity %.3f --initialdims %s --labels %s";
@@ -102,15 +103,15 @@ public class Tsne {
 
     public Tsne(
             int maxIter,
-            float realMin,
-            float initialMomentum,
-            float finalMomentum,
-            float momentum,
+            double realMin,
+            double initialMomentum,
+            double finalMomentum,
+            double momentum,
             int switchMomentumIteration,
             boolean normalize,
             boolean usePca,
             int stopLyingIteration,
-            float tolerance,float learningRate,boolean useAdaGrad,float perplexity,float minGain) {
+            double tolerance,double learningRate,boolean useAdaGrad,double perplexity,double minGain) {
         this.tolerance = tolerance;
         this.minGain = minGain;
         this.useAdaGrad = useAdaGrad;
@@ -135,7 +136,7 @@ public class Tsne {
      * @param beta
      * @return
      */
-    public Pair<INDArray,INDArray> hBeta(INDArray d,float beta) {
+    public Pair<INDArray,INDArray> hBeta(INDArray d,double beta) {
         INDArray P =  exp(d.neg().muli(beta));
         INDArray sum = P.sum(Integer.MAX_VALUE);
         INDArray otherSum = d.mul(P).sum(0);
@@ -157,22 +158,22 @@ public class Tsne {
      * @param tolerance the tolerance for convergence
      * @return the probabilities of co-occurrence
      */
-    public INDArray d2p(final INDArray d,final float u,final float tolerance) {
+    public INDArray d2p(final INDArray d,final double u,final double tolerance) {
         int n = d.rows();
         final INDArray p = zeros(n, n);
         final INDArray beta =  ones(n, 1);
-        final float logU = (float) Math.log(u);
+        final double logU = (double) Math.log(u);
         log.info("Calculating probabilities of data similarities..");
 
         for(int i = 0; i < n; i++) {
             if(i % 500 == 0)
                 log.info("Handled " + i + " records");
             final int j = i;
-            float betaMin = Float.NEGATIVE_INFINITY;
-            float betaMax = Float.POSITIVE_INFINITY;
+            double betaMin = Float.NEGATIVE_INFINITY;
+            double betaMax = Float.POSITIVE_INFINITY;
 
             INDArray row = d.slice(j).get(NDArrayIndex.interval(1, d.columns()));
-            Pair<INDArray,INDArray> pair =  hBeta(row,beta.get(j));
+            Pair<INDArray,INDArray> pair =  hBeta(row,beta.getDouble(j));
 
             INDArray hDiff = pair.getFirst().sub(logU);
             int tries = 0;
@@ -182,21 +183,21 @@ public class Tsne {
             while(BooleanIndexing.and(abs(hDiff), Conditions.greaterThan(tolerance)) && tries < 50) {
                 //if hdiff > 0
                 if(BooleanIndexing.and(hDiff,Conditions.greaterThan(0))) {
-                    betaMin = beta.get(j);
-                    if(Float.isInfinite(betaMax))
-                        beta.putScalar(j,beta.get(j) * 2);
+                    betaMin = beta.getDouble(j);
+                    if(Double.isInfinite(betaMax))
+                        beta.putScalar(j,beta.getDouble(j) * 2);
                     else
-                        beta.putScalar(j,(beta.get(j) + betaMax) / 2);
+                        beta.putScalar(j,(beta.getDouble(j) + betaMax) / 2);
                 }
                 else {
-                    betaMax = beta.get(j);
-                    if(Float.isInfinite(betaMin))
-                        beta.putScalar(j,beta.get(j) / 2);
+                    betaMax = beta.getDouble(j);
+                    if(Double.isInfinite(betaMin))
+                        beta.putScalar(j,beta.getDouble(j) / 2);
                     else
-                        beta.putScalar(j,(beta.get(j) + betaMin) / 2);
+                        beta.putScalar(j,(beta.getDouble(j) + betaMin) / 2);
                 }
 
-                pair = hBeta(d.slice(j).get(NDArrayIndex.interval(1, d.columns())),beta.get(j));
+                pair = hBeta(d.slice(j).get(NDArrayIndex.interval(1, d.columns())),beta.getDouble(j));
                 hDiff = pair.getFirst().subi(logU);
                 tries++;
             }
@@ -234,7 +235,7 @@ public class Tsne {
      * @param nDims
      * @param perplexity
      */
-    public  INDArray calculate(INDArray X,int nDims,float perplexity) {
+    public  INDArray calculate(INDArray X,int nDims,double perplexity) {
         if(usePca)
             X = PCA.pca(X, Math.min(50,X.columns()),normalize);
             //normalization (don't normalize again after pca)
@@ -261,8 +262,13 @@ public class Tsne {
 
 
         //output
-        INDArray y = randn(X.rows(),nDims,new MersenneTwister(123)).muli(1e-3f);
-
+        //INDArray y = randn(X.rows(),nDims,new MersenneTwister(123)).muli(1e-3f);
+        INDArray y = null;
+        try {
+            y = Nd4j.readTxt("/home/agibsonccc/Desktop/y.txt"," ");
+        } catch (IOException e) {
+            throw new IllegalStateException("weird");
+        }
 
 
         INDArray p = d2p(D,perplexity,tolerance);
@@ -297,7 +303,7 @@ public class Tsne {
 
 
     /* compute the gradient given the current solution, the probabilities and the constant */
-    private Pair<Float,INDArray> gradient(INDArray y,INDArray p) {
+    private Pair<Double,INDArray> gradient(INDArray y,INDArray p) {
         INDArray sumY =  pow(y, 2).sum(1);
         if(yIncs == null)
             yIncs =  zeros(y.shape());
@@ -322,13 +328,22 @@ public class Tsne {
         // normalize to get probabilities
         INDArray  q =  max(qu.div(qu.sum(Integer.MAX_VALUE)), realMin);
 
-        INDArray L = p.sub(q).mul(qu);
+        INDArray PQ = p.sub(q);
 
+        INDArray yGrads = Nd4j.create(y.shape());
+        for(int i = 0; i < yGrads.columns(); i++) {
+            //dY[i,:] = np.sum(np.tile(PQ[:,i] * num[:,i], (no_dims, 1)).T * (Y[i,:] - Y), 0)
+            INDArray toTile = PQ.getRow(i).mul(qu.getRow(i));
+            INDArray tiledTranspose = Nd4j.tile(toTile, new int[]{y.columns(), 1}).transpose();
+            INDArray yBroadCast = y.getColumn(i).broadcast(y.shape());
+            INDArray mul = tiledTranspose.mul(yBroadCast).sub(y);
+            INDArray sum1 = mul.sum(0);
+            yGrads.putRow(i, sum1);
+        }
 
-        INDArray yGrads =  diag(L.sum(0)).subi(L).muli(4).mmul(y);
         gains = gains.add(.2f)
                 .mul(yGrads.cond(Conditions.greaterThan(0)).neq(yIncs.cond(Conditions.greaterThan(0))))
-                .addi(gains.mul(0.8f).mul(yGrads.cond(Conditions.greaterThan(0)).eq(yIncs.cond(Conditions.greaterThan(0)))));
+                .add(gains.mul(0.8f).mul(yGrads.cond(Conditions.greaterThan(0)).eq(yIncs.cond(Conditions.greaterThan(0)))));
 
         BooleanIndexing.applyWhere(
                 gains,
@@ -346,16 +361,20 @@ public class Tsne {
 
         yIncs.muli(momentum).subi(gradChange);
 
-        float cost = p.mul(log(p.div(q))).sum(Integer.MAX_VALUE).get(0);
+
+        double cost = p.mul(log(p.div(q))).sum(Integer.MAX_VALUE).getDouble(0);
         return new Pair<>(cost,yIncs);
     }
 
 
     public void step(INDArray y,INDArray p,int i) {
-        Pair<Float,INDArray> costGradient = gradient(y,p);
+        Pair<Double,INDArray> costGradient = gradient(y,p);
         INDArray yIncs = costGradient.getSecond();
         log.info("Cost at iteration " + i + " was " + costGradient.getFirst());
+        y.addi(yIncs);
+        //np.tile(np.mean(Y, 0), (n, 1))
         y.addi(yIncs).subiRowVector(y.mean(0));
+        y.subi(Nd4j.tile(y.mean(0), new int[]{y.rows(), 1}));
     }
 
 
@@ -397,7 +416,7 @@ public class Tsne {
             INDArray row = matrix.getRow(i);
             StringBuffer sb = new StringBuffer();
             for(int j = 0; j < row.length(); j++) {
-                sb.append(String.format("%.10f", row.get(j)));
+                sb.append(String.format("%.10f", row.getDouble(j)));
                 if(j < row.length() - 1)
                     sb.append(",");
             }
@@ -413,27 +432,27 @@ public class Tsne {
 
     public static class Builder {
         private int maxIter = 1000;
-        private float realMin = 1e-12f;
-        private float initialMomentum = 5e-1f;
-        private float finalMomentum = 8e-1f;
-        private float momentum = 5e-1f;
+        private double realMin = 1e-12f;
+        private double initialMomentum = 5e-1f;
+        private double finalMomentum = 8e-1f;
+        private double momentum = 5e-1f;
         private int switchMomentumIteration = 100;
         private boolean normalize = true;
         private boolean usePca = false;
         private int stopLyingIteration = 100;
-        private float tolerance = 1e-5f;
-        private float learningRate = 1e-1f;
+        private double tolerance = 1e-5f;
+        private double learningRate = 1e-1f;
         private boolean useAdaGrad = true;
-        private float perplexity = 30;
-        private float minGain = 1e-1f;
+        private double perplexity = 30;
+        private double minGain = 1e-1f;
 
 
-        public Builder minGain(float minGain) {
+        public Builder minGain(double minGain) {
             this.minGain = minGain;
             return this;
         }
 
-        public Builder perplexity(float perplexity) {
+        public Builder perplexity(double perplexity) {
             this.perplexity = perplexity;
             return this;
         }
@@ -443,13 +462,13 @@ public class Tsne {
             return this;
         }
 
-        public Builder learningRate(float learningRate) {
+        public Builder learningRate(double learningRate) {
             this.learningRate = learningRate;
             return this;
         }
 
 
-        public Builder tolerance(float tolerance) {
+        public Builder tolerance(double tolerance) {
             this.tolerance = tolerance;
             return this;
         }
@@ -474,24 +493,24 @@ public class Tsne {
             return this;
         }
 
-        public Builder setRealMin(float realMin) {
+        public Builder setRealMin(double realMin) {
             this.realMin = realMin;
             return this;
         }
 
-        public Builder setInitialMomentum(float initialMomentum) {
+        public Builder setInitialMomentum(double initialMomentum) {
             this.initialMomentum = initialMomentum;
             return this;
         }
 
-        public Builder setFinalMomentum(float finalMomentum) {
+        public Builder setFinalMomentum(double finalMomentum) {
             this.finalMomentum = finalMomentum;
             return this;
         }
 
 
 
-        public Builder setMomentum(float momentum) {
+        public Builder setMomentum(double momentum) {
             this.momentum = momentum;
             return this;
         }

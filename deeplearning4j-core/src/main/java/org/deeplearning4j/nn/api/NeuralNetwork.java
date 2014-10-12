@@ -39,7 +39,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
      * @param epochs the max number of epochs to run
      * @param extraParams implementation specific params
      */
-    public void backProp(float lr,int epochs,Object[] extraParams);
+    public void backProp(double lr,int epochs,Object[] extraParams);
 
 
     public INDArray getW();

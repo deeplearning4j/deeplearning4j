@@ -80,9 +80,9 @@ public class WindowConverter {
 		for(int i = 0; i < words.size(); i++) {
 			String word = words.get(i);
             INDArray n = vec.getWordVectorMatrixNormalized(word);
-			float[] vec2 = n == null ? vec.getWordVectorMatrix(Word2Vec.UNK).data() : vec.getWordVectorMatrix(word).data();
+			double[] vec2 = n == null ? vec.getWordVectorMatrix(Word2Vec.UNK).data().asDouble() : vec.getWordVectorMatrix(word).data().asDouble();
 			if(vec2 == null)
-				vec2 = vec.getWordVectorMatrix(Word2Vec.UNK).data();
+				vec2 = vec.getWordVectorMatrix(Word2Vec.UNK).data().asDouble();
             for(int j = 0; j < vec2.length; j++) {
                 example[count++] = vec2[j];
             }

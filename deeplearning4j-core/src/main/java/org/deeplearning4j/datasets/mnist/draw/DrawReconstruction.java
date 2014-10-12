@@ -54,7 +54,7 @@ public class DrawReconstruction {
         int[] equiv = new int[data.length()];
         INDArray dataLinear = data.linearView();
         for(int i = 0; i < equiv.length; i++)
-            equiv[i] = Math.round(dataLinear.get(i));
+            equiv[i] = Math.round(dataLinear.getInt(i));
 
         r.setDataElements(0, 0, width, height, equiv);
 

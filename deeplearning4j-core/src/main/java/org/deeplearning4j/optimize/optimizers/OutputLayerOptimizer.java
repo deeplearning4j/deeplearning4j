@@ -36,7 +36,7 @@ public class OutputLayerOptimizer implements OptimizableByGradientValueMatrix {
     }
 
 
-    public void getParameters(float[] buffer) {
+    public void getParameters(double[] buffer) {
         for(int i = 0; i < buffer.length; i++) {
             buffer[i] = getParameter(i);
         }
@@ -47,21 +47,21 @@ public class OutputLayerOptimizer implements OptimizableByGradientValueMatrix {
     }
 
 
-    public float getParameter(int index) {
+    public double getParameter(int index) {
         if(index >= logReg.getW().length())
-            return (float) logReg.getB().getScalar(index - logReg.getW().length()).element();
-        return (float) logReg.getW().getScalar(index).element();
+            return (double) logReg.getB().getScalar(index - logReg.getW().length()).element();
+        return (double) logReg.getW().getScalar(index).element();
     }
 
 
-    public void setParameters(float[] params) {
+    public void setParameters(double[] params) {
         for(int i = 0; i < params.length; i++) {
             setParameter(i,params[i]);
         }
     }
 
     @Override
-    public void setParameter(int index, float value) {
+    public void setParameter(int index, double value) {
         if(index >= logReg.getW().length())
             logReg.getB().putScalar(index - logReg.getW().length(), value);
         else
@@ -69,19 +69,19 @@ public class OutputLayerOptimizer implements OptimizableByGradientValueMatrix {
     }
 
 
-    public void getValueGradient(float[] buffer) {
+    public void getValueGradient(double[] buffer) {
         OutputLayerGradient grad = logReg.getGradient(lr);
         for(int i = 0; i < buffer.length; i++) {
             if(i < logReg.getW().length())
-                buffer[i] = (float) grad.getwGradient().getScalar(i).element();
+                buffer[i] = (double) grad.getwGradient().getScalar(i).element();
             else
-                buffer[i] = (float) grad.getbGradient().getScalar(i - logReg.getW().length()).element();
+                buffer[i] = (double) grad.getbGradient().getScalar(i - logReg.getW().length()).element();
 
         }
     }
 
     @Override
-    public float getValue() {
+    public double getValue() {
         return -logReg.score();
     }
 

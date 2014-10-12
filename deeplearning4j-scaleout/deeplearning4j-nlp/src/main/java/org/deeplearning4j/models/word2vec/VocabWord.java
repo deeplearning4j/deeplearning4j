@@ -156,16 +156,16 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 		return Double.compare(wordFrequency.get(), o.wordFrequency.get());
 	}
 
-	public float getLearningRate(int index,float g) {
+	public double getLearningRate(int index,double g) {
 		if(historicalGradient == null) {
 			historicalGradient = Nd4j.zeros(getCodes().length);
 		}
 
-		float pow = (float) Math.pow(g,2);
-		historicalGradient.putScalar(index, historicalGradient.get(index) + pow);
-		float sqrt = (float) FastMath.sqrt(historicalGradient.get(index));
-		float abs = FastMath.abs(g) / (sqrt + 1e-6f);
-		float ret = abs * 1e-1f;
+		double pow =  Math.pow(g,2);
+		historicalGradient.putScalar(index, historicalGradient.getDouble(index) + pow);
+		double sqrt =  FastMath.sqrt(historicalGradient.getDouble(index));
+		double abs = FastMath.abs(g) / (sqrt + 1e-6f);
+		double ret = abs * 1e-1f;
 		return ret;
 
 	}

@@ -12,7 +12,7 @@ public interface Model {
 
 
 
-    public float score();
+    public double score();
 
     /**
      * Transform the data based on the model's output.

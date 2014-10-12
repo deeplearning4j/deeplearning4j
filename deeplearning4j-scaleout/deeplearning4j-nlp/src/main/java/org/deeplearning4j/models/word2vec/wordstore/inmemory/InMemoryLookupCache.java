@@ -120,7 +120,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
             INDArray syn1 = this.syn1.slice(point);
 
 
-            float dot = Nd4j.getBlasWrapper().dot(syn0,syn1);
+            double dot = Nd4j.getBlasWrapper().dot(syn0,syn1);
 
             if(dot < -MAX_EXP || dot >= MAX_EXP)
                 continue;
