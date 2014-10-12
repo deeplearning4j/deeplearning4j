@@ -162,7 +162,7 @@ public class RBMTests {
                 .learningRate(1e-1f).nIn(6).nOut(4).build();
         RBM rbm = new RBM.Builder().configure(conf).withInput(input).build();
         rbm.setInput(input);
-        float value = rbm.score();
+        double value = rbm.score();
         rbm.contrastiveDivergence(1e-1,1,input);
         value = rbm.score();
 
@@ -191,7 +191,7 @@ public class RBMTests {
                 .learningRate(1e-1f).nIn(6).nOut(4).build();
         RBM rbm = new RBM.Builder().configure(conf).withInput(input).build();
         rbm.setInput(input);
-        float value = rbm.score();
+        double value = rbm.score();
 
 
         NeuralNetworkGradient grad2 = rbm.getGradient(new Object[]{1});
