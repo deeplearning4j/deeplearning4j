@@ -1,5 +1,6 @@
 package org.nd4j.linalg.ops.transforms;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,9 +35,11 @@ public class Exp extends BaseElementWiseOp {
             }
             else {
                 double val = (double) value;
-                if (val < 0)
-                    return Math.expm1(val);
-
+                if (val < 0) {
+                    //BigDecimal d = BigDecimal.valueOf(val);
+                    double ret = FastMath.exp(val);
+                    return  ret;
+                }
 
                 else
                     return Math.exp(val);
