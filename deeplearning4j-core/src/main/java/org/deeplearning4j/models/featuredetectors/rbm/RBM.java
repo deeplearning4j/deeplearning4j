@@ -103,7 +103,7 @@ public  class RBM extends BaseNeuralNetwork {
             this.input = input;
         this.lastMiniBatchSize = input.rows();
         NeuralNetworkGradient gradient = getGradient(new Object[]{k,learningRate,-1});
-        float norm = gradient.getwGradient().norm2(Integer.MAX_VALUE).get(0);
+        double norm = gradient.getwGradient().norm2(Integer.MAX_VALUE).getDouble(0);
         getW().addi(gradient.getwGradient());
         gethBias().addi(gradient.gethBiasGradient());
         getvBias().addi(gradient.getvBiasGradient());

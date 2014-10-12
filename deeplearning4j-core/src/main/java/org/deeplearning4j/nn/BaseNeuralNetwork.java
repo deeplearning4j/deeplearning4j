@@ -99,8 +99,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
 
-    public float l2RegularizedCoefficient() {
-        return ((float) pow(getW(),2).sum(Integer.MAX_VALUE).element()/ 2.0f)  * conf.getL2() + 1e-6f;
+    public double l2RegularizedCoefficient() {
+        return ((double) pow(getW(),2).sum(Integer.MAX_VALUE).element()/ 2.0f)  * conf.getL2() + 1e-6f;
     }
 
     /**
@@ -207,8 +207,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * Backprop with the output being the reconstruction
      */
     @Override
-    public void backProp(float lr,int iterations,Object[] extraParams) {
-        float currRecon = squaredLoss();
+    public void backProp(double lr,int iterations,Object[] extraParams) {
+        double currRecon = squaredLoss();
         boolean train = true;
         NeuralNetwork revert = clone();
         while(train) {
@@ -216,7 +216,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 break;
 
 
-            float newRecon = this.squaredLoss();
+            double newRecon = this.squaredLoss();
             //prevent weights from exploding too far in either direction, we want this as close to zero as possible
             if(newRecon > currRecon || currRecon < 0 && newRecon < currRecon) {
                 update((BaseNeuralNetwork) revert);
@@ -286,7 +286,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @param iteration the current iteration
      * @param learningRate the learning rate for the current iteration
      */
-    protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,int iteration,float learningRate) {
+    protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,int iteration,double learningRate) {
         INDArray wGradient = gradient.getwGradient();
 
         INDArray hBiasGradient = gradient.gethBiasGradient();
@@ -312,7 +312,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
         INDArray wLearningRates = wAdaGrad.getLearningRates(wGradient);
         //change up momentum after so many iterations if specified
-        float momentum = conf.getMomentum();
+        double momentum = conf.getMomentum();
         if(conf.getMomentumAfter() != null && !conf.getMomentumAfter().isEmpty()) {
             int key = conf.getMomentumAfter().keySet().iterator().next();
             if(iteration >= key) {
@@ -387,7 +387,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
     @Override
-    public float score() {
+    public double score() {
         if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 return  LossFunctions.score(input,conf.getLossFunction(),transform(input),conf.getL2(),conf.isUseRegularization());
         else {
@@ -636,11 +636,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
 
-    public float squaredLoss() {
+    public double squaredLoss() {
         INDArray squaredDiff = pow(transform(input).sub(input),2);
-        float loss = (float) squaredDiff.sum(Integer.MAX_VALUE).element() / input.rows();
+        double loss = (double) squaredDiff.sum(Integer.MAX_VALUE).element() / input.rows();
         if(conf.isUseRegularization()) {
-            loss += 0.5 * conf.getL2() * (float) pow(W,2).sum(Integer.MAX_VALUE).element();
+            loss += 0.5 * conf.getL2() * (double) pow(W,2).sum(Integer.MAX_VALUE).element();
         }
 
         return loss;

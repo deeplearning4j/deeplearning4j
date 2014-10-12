@@ -36,16 +36,16 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
     private static final long serialVersionUID = 4455143696487934647L;
     protected NeuralNetwork network;
-    protected float lr;
+    protected double lr;
     protected Object[] extraParams;
-    protected float tolerance = 0.00001f;
+    protected double tolerance = 0.00001f;
     protected static Logger log = LoggerFactory.getLogger(NeuralNetworkOptimizer.class);
     protected List<Double> errors = new ArrayList<>();
     protected transient OptimizerMatrix opt;
     protected OptimizationAlgorithm optimizationAlgorithm;
     protected LossFunctions.LossFunction lossFunction;
     protected  NeuralNetPlotter plotter = new NeuralNetPlotter();
-    protected float maxStep = -1;
+    protected double maxStep = -1;
     protected int currIteration = -1;
     /**
      *
@@ -53,7 +53,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
      * @param lr
      * @param trainingParams
      */
-    public NeuralNetworkOptimizer(NeuralNetwork network,float lr,Object[] trainingParams,OptimizationAlgorithm optimizationAlgorithm,LossFunctions.LossFunction lossFunction) {
+    public NeuralNetworkOptimizer(NeuralNetwork network,double lr,Object[] trainingParams,OptimizationAlgorithm optimizationAlgorithm,LossFunctions.LossFunction lossFunction) {
         this.network = network;
         this.lr = lr;
         //add current iteration as an extra parameter
@@ -126,7 +126,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
 
     @Override
-    public float getParameter(int index) {
+    public double getParameter(int index) {
         throw new UnsupportedOperationException();
 
 
@@ -141,7 +141,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     }
 
     @Override
-    public void setParameter(int index, float value) {
+    public void setParameter(int index, double value) {
         throw new UnsupportedOperationException();
 
     }
@@ -174,7 +174,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
 
     @Override
-    public float getValue() {
+    public double getValue() {
         return - network.score();
 
     }
