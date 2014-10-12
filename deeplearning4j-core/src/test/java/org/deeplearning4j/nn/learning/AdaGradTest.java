@@ -25,7 +25,7 @@ public class AdaGradTest {
 		
 		AdaGrad grad = new AdaGrad(rows,cols,1e-3);
 		INDArray W = Nd4j.ones(rows,cols);
-	    assertEquals(1e-1,grad.getLearningRates(W).get(0),1e-1);
+	    assertEquals(1e-1,grad.getLearningRates(W).getDouble(0),1e-1);
 
 		
 
