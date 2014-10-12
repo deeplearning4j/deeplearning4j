@@ -18,7 +18,7 @@ public interface Classifier extends Model {
      * @return the f1 score for the already
      * set input/output
      */
-    float score();
+    double score();
 
     /**
      * Sets the input and labels and returns a score for the prediction
@@ -26,7 +26,7 @@ public interface Classifier extends Model {
      * @param data the data to score
      * @return the score for the given input,label pairs
      */
-    float score(DataSet data);
+    double score(DataSet data);
 
     /**
      * Returns the f1 score for the given examples.
@@ -37,7 +37,7 @@ public interface Classifier extends Model {
      * @param labels the true labels
      * @return the scores for each ndarray
      */
-    float score(INDArray examples, INDArray labels);
+    double score(INDArray examples, INDArray labels);
 
     /**
      * Returns the number of possible labels

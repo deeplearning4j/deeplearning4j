@@ -27,9 +27,9 @@ public class StochasticHessianFree implements OptimizerMatrix {
     boolean converged = false;
     OptimizableByGradientValueMatrix optimizable;
     TrainingEvaluator eval;
-    Float initialStepSize = 1f;
-    Float tolerance = 1e-5f;
-    Float gradientTolerance = 0f;
+    double initialStepSize = 1f;
+    double tolerance = 1e-5f;
+    double gradientTolerance = 0f;
     private BaseMultiLayerNetwork network;
     int maxIterations = 10000;
     private String myName = "";
@@ -37,16 +37,16 @@ public class StochasticHessianFree implements OptimizerMatrix {
     /* decay, current gradient/direction/current point in vector space,preCondition on conjugate gradient,current parameters */
     private INDArray ch,gradient,xi;
     private NeuralNetEpochListener listener;
-    private Float pi = 0.5f;
-    private Float decrease = 0.99f;
-    private Float boost = 1.0f / decrease;
-    private Float f = 1.0f;
+    private double pi = 0.5f;
+    private double decrease = 0.99f;
+    private double boost = 1.0f / decrease;
+    private double f = 1.0f;
     /* current score, step size */
-    private Float score,step;
+    private double score,step;
 
 
 
-    public StochasticHessianFree(OptimizableByGradientValueMatrix function, Float initialStepSize,BaseMultiLayerNetwork network) {
+    public StochasticHessianFree(OptimizableByGradientValueMatrix function, double initialStepSize,BaseMultiLayerNetwork network) {
         this.initialStepSize = initialStepSize;
         this.optimizable = function;
         this.network = network;
@@ -59,7 +59,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
     }
 
-    public StochasticHessianFree(OptimizableByGradientValueMatrix function, Float initialStepSize, NeuralNetEpochListener listener,BaseMultiLayerNetwork network) {
+    public StochasticHessianFree(OptimizableByGradientValueMatrix function, double initialStepSize, NeuralNetEpochListener listener,BaseMultiLayerNetwork network) {
         this(function,initialStepSize,network);
         this.listener = listener;
 
@@ -87,10 +87,6 @@ public class StochasticHessianFree implements OptimizerMatrix {
         return optimize(maxIterations);
     }
 
-    public void setTolerance(Float t) {
-        tolerance = t;
-    }
-
 
     /* run conjugate gradient for numIterations */
     public Pair<List<Integer>,List<INDArray>> conjGradient(INDArray b,INDArray x0,INDArray preCon,int numIterations) {
@@ -101,7 +97,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
         //x0 is ch
         INDArray r = network.getBackPropRGradient(x0).subi(b);
         INDArray y = r.div(preCon);
-        Float deltaNew = (Float) r.mul(y).sum(Integer.MAX_VALUE).element();
+        double deltaNew = (double) r.mul(y).sum(Integer.MAX_VALUE).element();
         INDArray p = y.neg();
         //initial x
         INDArray x = x0;
@@ -114,13 +110,13 @@ public class StochasticHessianFree implements OptimizerMatrix {
             INDArray Ap = network.getBackPropRGradient(p);
             //log.info("Ap sum at iteration " + iterationCount + " is " + Ap.sum());
             //think Ax + b, this is the curvature
-            Float pAp = (Float) Ap.mul(p).sum(Integer.MAX_VALUE).element();
+            double pAp = (double) Ap.mul(p).sum(Integer.MAX_VALUE).element();
             if(pAp < 0) {
                 log.info("Negative slope: " + pAp + " breaking");
             }
 
 
-            Float val = 0.5f * Nd4j.getBlasWrapper().dot(b.neg().add(r).transpose(), x);
+            double val = 0.5 * Nd4j.getBlasWrapper().dot(b.neg().add(r).transpose(), x);
 
             log.info("Iteration on conjugate gradient " + iterationCount + " with value " + val);
 
@@ -129,16 +125,16 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
 
             //step size
-            Float alpha = deltaNew / pAp;
+            double alpha = deltaNew / pAp;
             //step
             x.addi(p.mul(alpha));
 
            //conjugate gradient
             INDArray rNew = r.add(Ap.mul(alpha));
             INDArray yNew = rNew.div(preCon);
-            Float deltaOld = deltaNew;
-            deltaNew = (Float) rNew.mul(yNew).sum(Integer.MAX_VALUE).element();
-            Float beta = deltaNew / deltaOld;
+            double deltaOld = deltaNew;
+            deltaNew = (double) rNew.mul(yNew).sum(Integer.MAX_VALUE).element();
+            double beta = deltaNew / deltaOld;
             p = yNew.neg().add(p.mul(beta));
 
             r = rNew;
@@ -167,9 +163,9 @@ public class StochasticHessianFree implements OptimizerMatrix {
      * @param params the params of the proposed step
      * @return the rate to step by
      */
-    public Float lineSearch(Float newScore,INDArray params,INDArray p) {
-        Float rate = 1.0f;
-        Float c = 1e-2f;
+    public double lineSearch(double newScore,INDArray params,INDArray p) {
+        double rate = 1.0f;
+        double c = 1e-2f;
         int j = 0;
         int numSearches = 60;
         while(j < numSearches) {
@@ -177,7 +173,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
                 log.info("Iteration " + j + " on line search with current rate of " + rate);
             }
             //converged
-            if(newScore <= (Float) gradient.mul(p).mul(score + c * rate).sum(Integer.MAX_VALUE).element()) {
+            if(newScore <= (double) gradient.mul(p).mul(score + c * rate).sum(Integer.MAX_VALUE).element()) {
                 break;
             }
             else {
@@ -208,14 +204,14 @@ public class StochasticHessianFree implements OptimizerMatrix {
      * @param chs the proposed changes
      * @return the new changed path and score for that path
      */
-    public Pair<INDArray,Float> cgBackTrack(List<INDArray> chs,INDArray p) {
+    public Pair<INDArray,Double> cgBackTrack(List<INDArray> chs,INDArray p) {
         INDArray params = network.params();
-        Float score = network.score(p.add(params));
-        Float currMin = network.score();
+        double score = network.score(p.add(params));
+        double currMin = network.score();
         int i = chs.size() - 2;
 
         for(; i > 0; i--) {
-            Float score2 = network.score(params.add(chs.get(i)));
+            double score2 = network.score(params.add(chs.get(i)));
             if(score2 < score || score2 < currMin) {
                 i++;
                 score = score2;
@@ -264,12 +260,12 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
         INDArray p = cg.getFirst();
 
-        Pair<INDArray,Float> cgBackTrack = cgBackTrack(cg.getSecond(),p);
+        Pair<INDArray,Double> cgBackTrack = cgBackTrack(cg.getSecond(),p);
 
         p = cgBackTrack.getFirst();
 
-        Float rho = network.reductionRatio(cgBackTrack.getFirst(), network.score(), cgBackTrack.getSecond(), gradient);
-        Float newScore = network.score(cgBackTrack.getFirst());
+        double rho = network.reductionRatio(cgBackTrack.getFirst(), network.score(), cgBackTrack.getSecond(), gradient);
+        double newScore = network.score(cgBackTrack.getFirst());
 
         step = lineSearch(newScore,gradient,p);
         network.dampingUpdate(rho,boost,decrease);
@@ -308,7 +304,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
      * @param tolerance
      */
     @Override
-    public void setTolerance(float tolerance) {
+    public void setTolerance(double tolerance) {
 
     }
 }

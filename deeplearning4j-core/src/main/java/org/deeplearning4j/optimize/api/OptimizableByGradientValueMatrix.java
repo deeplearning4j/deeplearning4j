@@ -10,17 +10,17 @@ public interface OptimizableByGradientValueMatrix {
 	public INDArray getParameters ();
 
 
-    public float getParameter(int index);
+    public double getParameter(int index);
 
 	public void setParameters (INDArray params);
 
 
-    public void setParameter (int index, float value);
+    public void setParameter (int index, double value);
 
 	public INDArray getValueGradient (int iteration);
 
 
-    public float getValue ();
+    public double getValue ();
 
 
     void setCurrentIteration(int value);

@@ -190,7 +190,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
 
     @Override
-    public  float score() {
+    public  double score() {
         LinAlgExceptions.assertRows(input,labels);
         INDArray output  = output(input);
         assert !Nd4j.hasInvalidNumber(output) : "Invalid number on output!";
@@ -343,7 +343,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * @return the score for the given input,label pairs
      */
     @Override
-    public float score(DataSet data) {
+    public double score(DataSet data) {
         return score(data.getFeatureMatrix(),data.getLabels());
     }
 
@@ -358,10 +358,10 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * @return the scores for each ndarray
      */
     @Override
-    public float score(INDArray examples, INDArray labels) {
+    public double score(INDArray examples, INDArray labels) {
         Evaluation eval = new Evaluation();
         eval.eval(labels,labelProbabilities(examples));
-        return (float) eval.f1();
+        return (double) eval.f1();
 
     }
 
@@ -529,7 +529,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         INDArray wParams = params.get(NDArrayIndex.interval(0, conf.getnIn() * conf.getnOut()));
         INDArray wLinear = getW().linearView();
         for(int i = 0; i < wParams.length(); i++) {
-            wLinear.putScalar(i,wParams.get(i));
+            wLinear.putScalar(i,wParams.getDouble(i));
         }
         setB(params.get(NDArrayIndex.interval(conf.getnIn() * conf.getnOut(), params.length())));
     }

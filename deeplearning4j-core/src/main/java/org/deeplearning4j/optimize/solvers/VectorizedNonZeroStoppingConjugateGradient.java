@@ -46,15 +46,15 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
     OptimizableByGradientValueMatrix optimizable;
     VectorizedBackTrackLineSearch lineMaximizer;
     TrainingEvaluator eval;
-    float initialStepSize = 1;
-    float tolerance = 1e-5f;
-    float gradientTolerance = 1e-5f;
+    double initialStepSize = 1;
+    double tolerance = 1e-5f;
+    double gradientTolerance = 1e-5f;
     int maxIterations = 10000;
     private String myName = "";
     private NeuralNetEpochListener listener;
 
     // The state of a conjugate gradient search
-    float fp, gg, gam, dgg, step, fret;
+    double fp, gg, gam, dgg, step, fret;
     INDArray xi, g, h;
     int j, iterations;
 
@@ -63,9 +63,9 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 
     // "eps" is a small number to recitify the special case of converging
     // to exactly zero function value
-    final float eps = 1.0e-10f;
+    final double eps = 1.0e-10f;
 
-    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, float initialStepSize) {
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, double initialStepSize) {
         this.initialStepSize = initialStepSize;
         this.optimizable = function;
         this.lineMaximizer = new VectorizedBackTrackLineSearch(function);
@@ -81,7 +81,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 
     }
 
-    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, float initialStepSize,NeuralNetEpochListener listener) {
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, double initialStepSize,NeuralNetEpochListener listener) {
         this(function,initialStepSize);
         this.listener = listener;
 
@@ -103,15 +103,15 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
         this.lineMaximizer = (VectorizedBackTrackLineSearch) lineMaximizer;
     }
 
-    public void setInitialStepSize(float initialStepSize) {
+    public void setInitialStepSize(double initialStepSize) {
         this.initialStepSize = initialStepSize;
     }
 
-    public float getInitialStepSize() {
+    public double getInitialStepSize() {
         return this.initialStepSize;
     }
 
-    public float getStepSize() {
+    public double getStepSize() {
         return step;
     }
 
@@ -119,7 +119,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
         return optimize(maxIterations);
     }
 
-    public void setTolerance(float t) {
+    public void setTolerance(double t) {
         tolerance = t;
     }
 
@@ -130,7 +130,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
         long last = System.currentTimeMillis();
         if (xi == null) {
             fp = optimizable.getValue();
-            assert !Float.isNaN(fp) && !Float.isInfinite(fp) : "Function appears to be NaN or infinite, please check your parameters.";
+            assert !Double.isNaN(fp) && !Double.isInfinite(fp) : "Function appears to be NaN or infinite, please check your parameters.";
             xi = optimizable.getValueGradient(0);
             g = xi.dup();
             h = xi.dup();
@@ -164,7 +164,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             fp = fret;
 
             // This termination provided by McCallum
-            float twoNorm = (float) xi.norm2(Integer.MAX_VALUE).element();
+            double twoNorm = (double) xi.norm2(Integer.MAX_VALUE).element();
             if (twoNorm < gradientTolerance) {
                 logger.info("ConjugateGradient converged: gradient two norm " + twoNorm + ", less than "
                         + gradientTolerance);
@@ -176,8 +176,8 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             }
 
             dgg = gg = 0.0f;
-            gg = Transforms.pow(g, 2).sum(Integer.MAX_VALUE).get(0);
-            dgg =  xi.mul(xi.sub(g)).sum(Integer.MAX_VALUE).get(0);
+            gg = Transforms.pow(g, 2).sum(Integer.MAX_VALUE).getDouble(0);
+            dgg =  xi.mul(xi.sub(g)).sum(Integer.MAX_VALUE).getDouble(0);
             gam = dgg / gg;
 
 
@@ -273,51 +273,51 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
         this.xi = xi;
     }
 
-    public float getFret() {
+    public double getFret() {
         return fret;
     }
 
-    public void setFret(float fret) {
+    public void setFret(double fret) {
         this.fret = fret;
     }
 
-    public float getStep() {
+    public double getStep() {
         return step;
     }
 
-    public void setStep(float step) {
+    public void setStep(double step) {
         this.step = step;
     }
 
-    public float getDgg() {
+    public double getDgg() {
         return dgg;
     }
 
-    public void setDgg(float dgg) {
+    public void setDgg(double dgg) {
         this.dgg = dgg;
     }
 
-    public float getGam() {
+    public double getGam() {
         return gam;
     }
 
-    public void setGam(float gam) {
+    public void setGam(double gam) {
         this.gam = gam;
     }
 
-    public float getGg() {
+    public double getGg() {
         return gg;
     }
 
-    public void setGg(float gg) {
+    public void setGg(double gg) {
         this.gg = gg;
     }
 
-    public float getFp() {
+    public double getFp() {
         return fp;
     }
 
-    public void setFp(float fp) {
+    public void setFp(double fp) {
         this.fp = fp;
     }
 }

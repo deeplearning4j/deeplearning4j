@@ -22,21 +22,21 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
     private NeuralNetEpochListener listener;
     boolean converged = false;
     OptimizableByGradientValueMatrix optimizable;
-    private float maxStep = 1.0f;
+    private double maxStep = 1.0f;
 
-    static final float initialStepSize = 0.2f;
-    float tolerance = 0.00001f;
+    static final double initialStepSize = 0.2f;
+    double tolerance = 0.00001f;
     int maxIterations = 200;
     VectorizedBackTrackLineSearch lineMaximizer;
-    float stpmax = 100;
+    double stpmax = 100;
     private static Logger logger = LoggerFactory.getLogger(VectorizedDeepLearningGradientAscent.class);
     // "eps" is a small number to rectify the special case of converging
     // to exactly zero function value
-    final float eps = 1.0e-10f;
-    float step = initialStepSize;
+    final double eps = 1.0e-10f;
+    double step = initialStepSize;
     TrainingEvaluator eval;
 
-    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function, float initialStepSize) {
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function, double initialStepSize) {
         this.optimizable = function;
         this.lineMaximizer = new VectorizedBackTrackLineSearch(function);
         lineMaximizer.setAbsTolx(tolerance);
@@ -51,7 +51,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 
     }
 
-    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function, float initialStepSize,NeuralNetEpochListener listener) {
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function, double initialStepSize,NeuralNetEpochListener listener) {
         this(function,initialStepSize);
         this.listener = listener;
 
@@ -91,26 +91,26 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
      * Default value is 0.001.
      * @param tolerance tolerance for convergence test
      */
-    public void setTolerance(float tolerance) {
+    public void setTolerance(double tolerance) {
         this.tolerance = tolerance;
     }
 
-    public float getInitialStepSize ()
+    public double getInitialStepSize ()
     {
         return initialStepSize;
     }
 
-    public void setInitialStepSize (float initialStepSize)
+    public void setInitialStepSize (double initialStepSize)
     {
         step = initialStepSize;
     }
 
-    public float getStpmax ()
+    public double getStpmax ()
     {
         return stpmax;
     }
 
-    public void setStpmax (float stpmax)
+    public void setStpmax (double stpmax)
     {
         this.stpmax = stpmax;
     }
@@ -123,8 +123,8 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
     public boolean optimize (int numIterations)
     {
         int iterations;
-        float fret;
-        float fp = optimizable.getValue ();
+        double fret;
+        double fp = optimizable.getValue ();
         INDArray xi = optimizable.getValueGradient(0);
 
         for (iterations = 0; iterations < numIterations; iterations++) {
@@ -132,7 +132,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
             boolean calledEpochDone = false;
             // Ensure step not too large
             optimizable.setCurrentIteration(iterations);
-            float sum = (float) xi.norm2(Integer.MAX_VALUE).element();
+            double sum = (double) xi.norm2(Integer.MAX_VALUE).element();
             if (sum > stpmax) {
                 logger.info ("*** Step 2-norm "+sum+" greater than max " + stpmax + "  Scaling...");
                 xi.muli(stpmax / sum);
@@ -173,7 +173,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
         return false;
     }
 
-    public void setMaxStepSize (float v)
+    public void setMaxStepSize (double v)
     {
         maxStep = v;
     }

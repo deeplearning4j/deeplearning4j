@@ -83,7 +83,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      *
      * For biases this can be bigger.
      */
-    protected float learningRateUpdate = 0.95f;
+    protected double learningRateUpdate = 0.95f;
     /*
      * Any neural networks used as neuralNets.
      * This will always have an equivalent sigmoid layer
@@ -98,7 +98,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * The delta from the previous iteration to this iteration for
      * cross entropy must change >= this amount in order to continue.
      */
-    protected float errorTolerance = 0.0001f;
+    protected double errorTolerance = 0.0001f;
 
 
     /**
@@ -120,7 +120,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     /*
        Damping factor for gradient
      */
-    protected float dampingFactor = 10;
+    protected double dampingFactor = 10;
 
 
     /*
@@ -379,7 +379,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param lr     the learning rate to use
      * @param epochs the max number of epochs to finetune with
      */
-    public void finetune(float lr, int epochs) {
+    public void finetune(double lr, int epochs) {
         finetune(this.labels, lr, epochs);
 
     }
@@ -525,7 +525,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
     //damping update after line search
-    public void dampingUpdate(float rho, float boost, float decrease) {
+    public void dampingUpdate(double rho, double boost, double decrease) {
         if (rho < 0.25 || Double.isNaN(rho)) {
             this.dampingFactor *= boost;
         } else if (rho > 0.75)
@@ -535,13 +535,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
     /* p and gradient are same length */
-    public float reductionRatio(INDArray p, float currScore, float score, INDArray gradient) {
-        float currentDamp = dampingFactor;
+    public double reductionRatio(INDArray p, double currScore, double score, INDArray gradient) {
+        double currentDamp = dampingFactor;
         this.dampingFactor = 0;
         INDArray denom = getBackPropRGradient(p);
         denom.muli(0.5).muli(p.mul(denom)).sum(0);
         denom.subi(gradient.mul(p).sum(0));
-        float rho = (currScore - score) / (float) denom.getScalar(0).element();
+        double rho = (currScore - score) / (double) denom.getScalar(0).element();
         this.dampingFactor = currentDamp;
         if (score - currScore > 0)
             return Float.NEGATIVE_INFINITY;
@@ -850,7 +850,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param epochs the number of epochs to iterate (this is already called in finetune)
      * @param eval   the evaluator for stopping
      */
-    public void backProp(float lr, int epochs, TrainingEvaluator eval) {
+    public void backProp(double lr, int epochs, TrainingEvaluator eval) {
         if (useGaussNewtonVectorProductBackProp) {
             BackPropROptimizer opt = new BackPropROptimizer(this, lr, epochs);
             opt.optimize(eval, epochs, lineSearchBackProp);
@@ -868,7 +868,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param lr     the learning rate to use
      * @param epochs the number of epochs to iterate (this is already called in finetune)
      */
-    public void backProp(float lr, int epochs) {
+    public void backProp(double lr, int epochs) {
         backProp(lr, epochs, null);
 
     }
@@ -976,7 +976,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @return the score for the given input,label pairs
      */
     @Override
-    public float score(org.nd4j.linalg.dataset.api.DataSet data) {
+    public double score(org.nd4j.linalg.dataset.api.DataSet data) {
         return score(data.getFeatureMatrix(), data.getLabels());
     }
 
@@ -1237,7 +1237,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param lr         the learning rate during training
      * @param iterations the number of times to iterate
      */
-    public void finetune(DataSetIterator iter, float lr, int iterations) {
+    public void finetune(DataSetIterator iter, double lr, int iterations) {
         iter.reset();
 
         while (iter.hasNext()) {
@@ -1262,7 +1262,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param lr         the learning rate during training
      * @param iterations the number of times to iterate
      */
-    public void finetune(DataSetIterator iter, float lr, int iterations, TrainingEvaluator eval) {
+    public void finetune(DataSetIterator iter, double lr, int iterations, TrainingEvaluator eval) {
         iter.reset();
 
         while (iter.hasNext()) {
@@ -1290,7 +1290,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param lr         the learning rate during training
      * @param iterations the number of times to iterate
      */
-    public void finetune(INDArray labels, float lr, int iterations) {
+    public void finetune(INDArray labels, double lr, int iterations) {
         this.labels = labels;
         getOutputLayer().setLabels(labels);
         feedForward();
@@ -1308,7 +1308,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param lr         the learning rate during training
      * @param iterations the number of times to iterate
      */
-    public void finetune(INDArray labels, float lr, int iterations, TrainingEvaluator eval) {
+    public void finetune(INDArray labels, double lr, int iterations, TrainingEvaluator eval) {
         feedForward();
 
         if (labels != null)
@@ -1508,12 +1508,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @return the score for the given input,label pairs
      */
     @Override
-    public float score(INDArray input, INDArray labels) {
+    public double score(INDArray input, INDArray labels) {
         feedForward(input);
         setLabels(labels);
         Evaluation eval = new Evaluation();
         eval.eval(labels, labelProbabilities(input));
-        return (float) eval.f1();
+        return  eval.f1();
     }
 
     /**
@@ -1534,7 +1534,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param data the data to score
      * @return the score for the given input,label pairs
      */
-    public float score(DataSet data) {
+    public double score(DataSet data) {
         feedForward(data.getFeatureMatrix());
         setLabels(data.getLabels());
         return score();
@@ -1547,7 +1547,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @return the score of the model (relative to the objective function)
      */
     @Override
-    public float score() {
+    public double score() {
         feedForward();
         return getOutputLayer().score();
     }
@@ -1559,11 +1559,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @return the score of the model (relative to the objective function)
      */
 
-    public float score(INDArray param) {
+    public double score(INDArray param) {
         INDArray params = params();
         setParameters(param);
-        float ret = score();
-        float regCost = 0.5f * defaultConfiguration.getL2() * (float) Transforms.pow(mask.mul(param), 2).sum(Integer.MAX_VALUE).element();
+        double ret = score();
+        double regCost = 0.5f * defaultConfiguration.getL2() * (double) Transforms.pow(mask.mul(param), 2).sum(Integer.MAX_VALUE).element();
         setParameters(params);
         return ret + regCost;
     }
