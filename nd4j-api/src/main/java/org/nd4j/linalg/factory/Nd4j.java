@@ -5,12 +5,12 @@ import com.google.common.primitives.Ints;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.InputStreamUtil;
 import org.nd4j.linalg.util.Shape;
@@ -47,20 +47,20 @@ public class Nd4j {
     public final static IComplexNumber UNIT;
     public final static IComplexNumber ZERO;
     public final static IComplexNumber NEG_UNIT;
-    public static float EPS_THRESHOLD = 1e-6f;
+    public static float EPS_THRESHOLD = 1e-12f;
 
 
     static {
         try {
             ClassPathResource c = new ClassPathResource(LINALG_PROPS);
             props.load(c.getInputStream());
-            dtype = props.get(DTYPE).toString();
-            ORDER = props.getProperty(ORDER_KEY,"c").toString().charAt(0);
+            dtype = System.getProperty(DTYPE,props.get(DTYPE).toString());
+            ORDER = System.getProperty(ORDER_KEY,props.getProperty(ORDER_KEY,"c").toString()).charAt(0);
 
-            ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(props.get(NDARRAY_FACTORY_CLASS).toString());
+            ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(NDARRAY_FACTORY_CLASS,props.get(NDARRAY_FACTORY_CLASS).toString()));
             Constructor c2 = ndArrayFactoryClazz.getConstructor(String.class,Character.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype,ORDER);
-            blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(props.get(BLAS_OPS).toString());
+            blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS,props.get(BLAS_OPS).toString()));
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
             UNIT = Nd4j.createFloat(1, 0);
             ZERO = Nd4j.createFloat(1, 0);
@@ -75,8 +75,38 @@ public class Nd4j {
         return INSTANCE;
     }
 
+    /**
+     * Create a buffer equal of length prod(shape)
+     * @param shape the shape of the buffer to create
+     * @return the created buffer
+     */
+    public static DataBuffer createBuffer(int[] shape) {
+        int length = ArrayUtil.prod(shape);
+         return createBuffer(length);
+    }
 
+    /**
+     * Creates a buffer of the specified length based on the data type
+     * @param length the length of te buffer
+     * @return the buffer to create
+     */
+    public static DataBuffer createBuffer(long length) {
+        if(dataType().equals(DataBuffer.FLOAT))
+            return createBuffer(new float[(int) length]);
+         return createBuffer(new double[(int) length]);
+    }
 
+    public static DataBuffer createBuffer(float[] data) {
+        return INSTANCE.createBuffer(data);
+    }
+
+    public static DataBuffer createBuffer(double[] data) {
+        return INSTANCE.createBuffer(data);
+    }
+
+    public static <E> DataBuffer createBuffer(E[] data) {
+       throw new UnsupportedOperationException();
+    }
     public static void setFactory(NDArrayFactory factory) {
         INSTANCE = factory;
     }
@@ -120,7 +150,7 @@ public class Nd4j {
         INDArray imagLinear = imag.linearView();
         IComplexNDArray retLinear = ret.linearView();
         for(int i = 0; i < ret.length(); i++) {
-            retLinear.putScalar(i,Nd4j.createComplexNumber(realLinear.get(i),imagLinear.get(i)));
+            retLinear.putScalar(i,Nd4j.createComplexNumber(realLinear.getFloat(i),imagLinear.getFloat(i)));
         }
 
         return ret;
@@ -224,7 +254,7 @@ public class Nd4j {
             final Float[] index = new Float[vec.length()];
 
             for(int j = 0; j < vec.length(); j++) {
-                data[j] = vec.get(j);
+                data[j] = vec.getFloat(j);
                 index[j] = (float) j;
             }
 
@@ -318,7 +348,7 @@ public class Nd4j {
             INDArray vec = ndarray.vectorAlongDimension(i,dimension);
             float[] data = new float[vec.length()];
             for(int j = 0; j < vec.length(); j++) {
-                data[j] = vec.get(j);
+                data[j] = vec.getFloat(j);
             }
 
             Arrays.sort(data);
@@ -433,7 +463,7 @@ public class Nd4j {
             StringBuffer sb = new StringBuffer();
             INDArray row = write.getRow(i);
             for(int j = 0; j < row.columns(); j++) {
-                sb.append(row.get(j));
+                sb.append(row.getFloat(j));
                 sb.append(split);
             }
             sb.append("\n");
@@ -552,9 +582,9 @@ public class Nd4j {
         dataOutputStream.writeUTF("real");
 
         if(dataType().equals("float"))
-            ArrayUtil.write(arr.floatData(),dataOutputStream);
+            ArrayUtil.write(arr.data().asFloat(),dataOutputStream);
         else
-            ArrayUtil.write(arr.data(),dataOutputStream);
+            ArrayUtil.write(arr.data().asDouble(),dataOutputStream);
 
     }
 
@@ -618,9 +648,9 @@ public class Nd4j {
         dataOutputStream.writeUTF("complex");
 
         if(dataType().equals("float"))
-            ArrayUtil.write(arr.floatData(),dataOutputStream);
+            ArrayUtil.write(arr.data().asDouble(),dataOutputStream);
         else
-            ArrayUtil.write(arr.data(),dataOutputStream);
+            ArrayUtil.write(arr.data().asFloat(),dataOutputStream);
 
     }
 
@@ -726,7 +756,7 @@ public class Nd4j {
      * the matrix if a vector is passed in, if a matrix is returns the kth diagonal
      * in the matrix
      * @param x the diagonal values
-     * @param k the kth diagonal to get
+     * @param k the kth diagonal to getFloat
      * @return new matrix
      */
     public static IComplexNDArray diag(IComplexNDArray x,int k) {
@@ -765,7 +795,7 @@ public class Nd4j {
      * the matrix if a vector is passed in, if a matrix is returns the kth diagonal
      * in the matrix
      * @param x the diagonal values
-     * @param k the kth diagonal to get
+     * @param k the kth diagonal to getFloat
      * @return new matrix
      */
     public static INDArray diag(INDArray x,int k) {
@@ -777,7 +807,7 @@ public class Nd4j {
             INDArray xLinear = x.linearView();
 
             for (int i = 0; i < x.length(); i++)
-                m.put(i, i, xLinear.get(i));
+                m.put(i, i, xLinear.getFloat(i));
 
             return m;
 
@@ -787,7 +817,7 @@ public class Nd4j {
             int vectorLength = x.rows() - k;
             INDArray ret = Nd4j.create(new int[]{vectorLength,1});
             for(int i = 0; i < vectorLength; i++) {
-                ret.putScalar(i,x.get(i,i));
+                ret.putScalar(i,x.getFloat(i, i));
             }
 
             return ret;
@@ -835,7 +865,7 @@ public class Nd4j {
     public static void doAlongDiagonal(INDArray x,Function<Number,Number> func) {
         if(x.isMatrix())
             for(int i = 0; i < x.rows(); i++)
-                x.put(i,i,func.apply(x.get(i,i)));
+                x.put(i,i,func.apply(x.getFloat(i, i)));
     }
 
     /**
@@ -1143,7 +1173,7 @@ public class Nd4j {
     public static boolean hasInvalidNumber(INDArray num) {
         INDArray linear = num.linearView();
         for(int i = 0;i < linear.length(); i++) {
-            if(Float.isInfinite(linear.get(i)) || Float.isNaN(linear.get(i)))
+            if(Float.isInfinite(linear.getFloat(i)) || Float.isNaN(linear.getFloat(i)))
                 return true;
         }
         return false;
@@ -2281,7 +2311,7 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int[] shape,char ordering) {
-        return INSTANCE.create(shape);
+        return INSTANCE.create(shape,ordering);
     }
 
 
@@ -2328,4 +2358,40 @@ public class Nd4j {
     }
 
 
+    public static INDArray create(DataBuffer data, int[] shape, int[] strides, int offset) {
+        return INSTANCE.create(data,shape,strides,offset);
+    }
+
+    public static INDArray create(DataBuffer data, int[] shape, int offset) {
+        return INSTANCE.create(data,shape,getStrides(shape),offset);
+
+    }
+
+    public static INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering) {
+        return INSTANCE.create(data,newShape,newStride,offset,ordering);
+    }
+
+    public static IComplexNDArray createComplex(DataBuffer data, int[] newShape, int[] newStrides, int offset) {
+        return INSTANCE.createComplex(data,newShape,newStrides,offset);
+    }
+
+    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int offset) {
+        return INSTANCE.createComplex(data,shape,offset);
+    }
+
+    public static IComplexNDArray createComplex(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering) {
+         return INSTANCE.createComplex(data,newDims,newStrides,offset,ordering);
+    }
+
+    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int offset, char ordering) {
+        return INSTANCE.createComplex(data,shape,offset,ordering);
+    }
+
+    public static INDArray create(DataBuffer data, int[] shape) {
+        return INSTANCE.create(data,shape);
+    }
+
+    public static IComplexNDArray createComplex(DataBuffer data, int[] shape) {
+        return INSTANCE.createComplex(data,shape);
+    }
 }

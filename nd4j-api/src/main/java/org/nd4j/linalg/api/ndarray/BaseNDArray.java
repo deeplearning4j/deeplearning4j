@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api.ndarray;
 
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -48,7 +49,7 @@ public abstract class BaseNDArray  implements INDArray {
     protected int[] stride;
     protected int offset = 0;
     protected char ordering;
-    protected float[] data;
+    protected DataBuffer data;
     protected int rows,columns;
     protected int length;
     protected INDArray linearView;
@@ -58,6 +59,22 @@ public abstract class BaseNDArray  implements INDArray {
 
 
 
+    public BaseNDArray(DataBuffer buffer) {
+        this.data = buffer;
+        initShape(new int[]{1,buffer.length()});
+    }
+
+    public BaseNDArray(DataBuffer buffer,int[] shape,int[] stride,int offset,char ordering) {
+        this.data = buffer;
+        if(ArrayUtil.prod(shape) > buffer.length())
+            throw new IllegalArgumentException("Shape must be <= buffer length");
+        initShape(shape);
+        this.stride = stride;
+        this.offset = offset;
+        this.ordering = ordering;
+
+    }
+
     public BaseNDArray(double[][] data) {
         this(data.length, data[0].length);
 
@@ -65,7 +82,7 @@ public abstract class BaseNDArray  implements INDArray {
             assert (data[r].length == columns);
         }
 
-        this.data = new float[length];
+        this.data = Nd4j.createBuffer(length);
 
 
         for (int r = 0; r < rows; r++) {
@@ -155,7 +172,7 @@ public abstract class BaseNDArray  implements INDArray {
      * @param shape the shape of the ndarray
      */
     public BaseNDArray(List<INDArray> slices, int[] shape, char ordering) {
-             this(slices,shape,Nd4j.getStrides(shape),ordering);
+        this(slices,shape,Nd4j.getStrides(shape),ordering);
     }
 
 
@@ -168,7 +185,10 @@ public abstract class BaseNDArray  implements INDArray {
      * @param shape the shape of the ndarray
      */
     public BaseNDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
-        float[] ret = new float[ArrayUtil.prod(shape)];
+
+        DataBuffer ret = slices.get(0).data().dataType().equals(DataBuffer.FLOAT) ?
+                Nd4j.createBuffer(new float[ArrayUtil.prod(shape)])  :
+                Nd4j.createBuffer(new double[ArrayUtil.prod(shape)]);
 
         this.stride = stride;
         this.ordering = ordering;
@@ -177,7 +197,7 @@ public abstract class BaseNDArray  implements INDArray {
         initShape(shape);
 
         for(int i = 0; i < slices(); i++) {
-           putSlice(i,slices.get(i));
+            putSlice(i,slices.get(i));
         }
 
 
@@ -202,18 +222,31 @@ public abstract class BaseNDArray  implements INDArray {
         initShape(shape);
 
         if(data != null  && data.length > 0) {
-            this.data = data;
+            this.data = Nd4j.createBuffer(data);
             if(offset >= data.length)
-                throw new IllegalArgumentException("Invalid offset: must be < data.length");
+                throw new IllegalArgumentException("invalid offset: must be < data.length");
 
 
         }
 
-        if(isVector())
-            linearView = this;
-        else
-            this.linearView = Nd4j.create(data, new int[]{1, length}, offset());
 
+    }
+
+    public BaseNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
+        this.data = data;
+        this.stride = stride;
+        this.offset = offset;
+        this.ordering = Nd4j.order();
+        initShape(shape);
+
+    }
+
+    public BaseNDArray(DataBuffer data, int[] shape) {
+        this(data,shape,Nd4j.getStrides(shape),0,Nd4j.order());
+    }
+
+    public BaseNDArray(DataBuffer buffer, int[] shape, int offset) {
+        this(buffer,shape,Nd4j.getStrides(shape),offset);
     }
 
     @Override
@@ -232,7 +265,7 @@ public abstract class BaseNDArray  implements INDArray {
         if(isVector())
             return this;
         if(linearView == null)
-            linearView = Nd4j.create(data, new int[]{1, length}, offset());
+            linearView = Nd4j.create(data, new int[]{length}, offset());
         return linearView;
     }
 
@@ -333,7 +366,7 @@ public abstract class BaseNDArray  implements INDArray {
     }
 
     public BaseNDArray(float[] data) {
-        this.data = data;
+        this.data = Nd4j.createBuffer(data);
     }
 
     public BaseNDArray(float[][] data) {
@@ -343,7 +376,7 @@ public abstract class BaseNDArray  implements INDArray {
             assert (data[r].length == columns);
         }
 
-        this.data = new float[length];
+        this.data = Nd4j.createBuffer(length);
 
 
         for (int r = 0; r < rows; r++) {
@@ -354,17 +387,10 @@ public abstract class BaseNDArray  implements INDArray {
     }
 
 
-    /**
-     * Returns a linear float array representation of this ndarray
-     *
-     * @return the linear float array representation of this ndarray
-     */
     @Override
-    public float[] floatData() {
-        return data;
+    public void setData(float[] data) {
+        this.data = Nd4j.createBuffer(data);
     }
-
-
 
     public int majorStride() {
         return stride[0];
@@ -400,8 +426,8 @@ public abstract class BaseNDArray  implements INDArray {
 
             if(dimension == shape.length - 1 && dimension != 0)
                 return Nd4j.create(data,
-                        new int[]{1, shape[dimension]}
-                        , ArrayUtil.removeIndex(stride, 0),
+                        new int[]{shape[dimension]}
+                        , new int[]{stride[shape.length - 1]},
                         offset + index * stride[dimension - 1]);
 
             else if(dimension == 0)
@@ -469,16 +495,19 @@ public abstract class BaseNDArray  implements INDArray {
         if(isVector()) {
             double s = 0.0;
             for (int i = 0; i < length; i++) {
-                s += (float) getScalar(i).element();
+                if(data.dataType().equals(DataBuffer.FLOAT))
+                    s += getFloat(i);
+                else
+                    s+= getDouble(i);
                 putScalar(i, s);
             }
         }
 
         else if(dimension == Integer.MAX_VALUE || dimension == shape.length - 1) {
             INDArray flattened = ravel().dup();
-            float prevVal = (float) flattened.getScalar(0).element();
+            double prevVal =  flattened.getDouble(0);
             for(int i = 1; i < flattened.length(); i++) {
-                float d = prevVal + (float) flattened.getScalar(i).element();
+                double d = prevVal + flattened.getDouble(i);
                 flattened.putScalar(i,d);
                 prevVal = d;
             }
@@ -524,26 +553,65 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray other = arr.ravel();
         INDArray thisArr = ravel();
         for(int i = 0; i < other.length(); i++)
-            thisArr.putScalar(i, other.get(i));
+            thisArr.putScalar(i, other.getFloat(i));
         return this;
     }
 
     @Override
-    public INDArray putScalar(int i, Number value) {
+    public INDArray putScalar(int i, double value) {
         int idx = linearIndex(i);
-        data[idx] = value.floatValue();
+        data.put(idx,value);
+        return this;
+    }
+
+
+    @Override
+    public INDArray putScalar(int i, float value) {
+        int idx = linearIndex(i);
+        data.put(idx,value);
         return this;
     }
 
     @Override
-    public INDArray putScalar(int[] indexes, Number value) {
+    public INDArray putScalar(int i, int value) {
+        int idx = linearIndex(i);
+        data.put(idx,value);
+        return this;
+    }
+
+    @Override
+    public INDArray putScalar(int[] indexes, double value) {
         int ix = offset;
         for (int i = 0; i < shape.length; i++) {
             ix += indexes[i] * stride[i];
         }
 
-        data[ix] = value.floatValue();
+        data.put(ix,value);
+        return this;
+    }
 
+
+
+    @Override
+    public INDArray putScalar(int[] indexes, float value) {
+        int ix = offset;
+        for (int i = 0; i < shape.length; i++) {
+            ix += indexes[i] * stride[i];
+        }
+
+        data.put(ix,value);
+        return this;
+    }
+
+
+    @Override
+    public INDArray putScalar(int[] indexes, int value) {
+        int ix = offset;
+        for (int i = 0; i < shape.length; i++) {
+            ix += indexes[i] * stride[i];
+        }
+
+        data.put(ix,value);
         return this;
     }
 
@@ -569,11 +637,11 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray epsi(Number other) {
         INDArray linearView = linearView();
-        float otherVal = other.floatValue();
+        double otherVal = other.doubleValue();
 
         for(int i = 0; i < linearView.length(); i++) {
-            float val = linearView.get(i);
-            float diff = Math.abs(val - otherVal);
+            double val = linearView.getDouble(i);
+            double diff = Math.abs(val - otherVal);
             if(diff <= Nd4j.EPS_THRESHOLD)
                 linearView.putScalar(i,1);
             else
@@ -609,8 +677,8 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linearView = linearView();
         INDArray otherLinearView = other.linearView();
         for(int i = 0; i < linearView.length(); i++) {
-            float val = linearView.get(i);
-            float otherVal = otherLinearView.get(i);
+            float val = linearView.getFloat(i);
+            float otherVal = otherLinearView.getFloat(i);
             float diff = Math.abs(val - otherVal);
             if(diff <= Nd4j.EPS_THRESHOLD)
                 linearView.putScalar(i,1);
@@ -661,7 +729,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linear = linearView();
         INDArray otherLinear = other.linearView();
         for(int i = 0; i < linear.length(); i++) {
-            linear.putScalar(i,linear.get(i) < otherLinear.get(i) ? 1 : 0);
+            linear.putScalar(i,linear.getFloat(i) < otherLinear.getFloat(i) ? 1 : 0);
         }
         return this;
     }
@@ -675,7 +743,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linear = linearView();
         INDArray otherLinear = other.linearView();
         for(int i = 0; i < linear.length(); i++) {
-            linear.putScalar(i,linear.get(i) != otherLinear.get(i) ? 1 : 0);
+            linear.putScalar(i,linear.getFloat(i) != otherLinear.getFloat(i) ? 1 : 0);
         }
         return this;
     }
@@ -690,7 +758,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linear = linearView();
         INDArray otherLinear = other.linearView();
         for(int i = 0; i < linear.length(); i++) {
-            linear.putScalar(i,linear.get(i) == otherLinear.get(i) ? 1 : 0);
+            linear.putScalar(i,linear.getFloat(i) == otherLinear.getFloat(i) ? 1 : 0);
         }
         return this;
     }
@@ -705,7 +773,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linear = linearView();
         INDArray otherLinear = other.linearView();
         for(int i = 0; i < linear.length(); i++) {
-            linear.putScalar(i,linear.get(i) > otherLinear.get(i) ? 1 : 0);
+            linear.putScalar(i,linear.getFloat(i) > otherLinear.getFloat(i) ? 1 : 0);
         }
         return this;
     }
@@ -739,7 +807,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linear = linearView();
         INDArray resultLinear = result.linearView();
         for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, n.floatValue() / linear.get(i));
+            resultLinear.putScalar(i, n.floatValue() / linear.getFloat(i));
         }
         return result;
     }
@@ -754,7 +822,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linear = linearView();
         INDArray resultLinear = result.linearView();
         for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, n.floatValue() - linear.get(i));
+            resultLinear.putScalar(i, n.floatValue() - linear.getFloat(i));
         }
         return result;
     }
@@ -769,7 +837,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linear = linearView();
         INDArray resultLinear = result.linearView();
         for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, linear.get(i) / n.floatValue());
+            resultLinear.putScalar(i, linear.getFloat(i) / n.floatValue());
         }
         return result;
     }
@@ -784,7 +852,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linear = linearView();
         INDArray resultLinear = result.linearView();
         for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, linear.get(i) * n.floatValue());
+            resultLinear.putScalar(i, linear.getFloat(i) * n.floatValue());
         }
         return result;
     }
@@ -799,7 +867,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linear = linearView();
         INDArray resultLinear = result.linearView();
         for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, linear.get(i) - n.floatValue());
+            resultLinear.putScalar(i, linear.getFloat(i) - n.floatValue());
         }
         return result;
     }
@@ -814,7 +882,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linear = linearView();
         INDArray resultLinear = result.linearView();
         for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, linear.get(i) + n.floatValue());
+            resultLinear.putScalar(i, linear.getFloat(i) + n.floatValue());
         }
         return result;
     }
@@ -839,9 +907,41 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linear = linearView();
         INDArray retLinear = ret.linearView();
         for(int i = 0; i < ret.length(); i++) {
-            retLinear.putScalar(i,linear.get(i));
+            retLinear.putScalar(i,linear.getDouble(i));
         }
         return ret;
+    }
+
+
+    /**
+     * Returns the elements at the the specified indices
+     *
+     * @param indices the indices to getScalar
+     * @return the array with the specified elements
+     */
+    @Override
+    public int getInt(int... indices) {
+        int ix = offset;
+        for (int i = 0; i< indices.length; i++)
+            ix += indices[i] * stride[i];
+
+        return data.getInt(ix);
+
+    }
+    /**
+     * Returns the elements at the the specified indices
+     *
+     * @param indices the indices to getScalar
+     * @return the array with the specified elements
+     */
+    @Override
+    public double getDouble(int... indices) {
+        int ix = offset;
+        for (int i = 0; i< indices.length; i++)
+            ix += indices[i] * stride[i];
+
+        return data.getFloat(ix);
+
     }
 
     /**
@@ -851,13 +951,12 @@ public abstract class BaseNDArray  implements INDArray {
      * @return the array with the specified elements
      */
     @Override
-    public float get(int... indices) {
+    public float getFloat(int... indices) {
         int ix = offset;
         for (int i = 0; i< indices.length; i++)
             ix += indices[i] * stride[i];
 
-
-        return data[ix];
+        return data.getFloat(ix);
 
     }
 
@@ -897,8 +996,7 @@ public abstract class BaseNDArray  implements INDArray {
         for (int i = 0; i< indices.length; i++)
             ix += indices[i] * stride[i];
 
-
-        data[ix] = (float) element.element();
+        data.put(ix,element.getDouble(0));
         return this;
 
     }
@@ -958,14 +1056,14 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray view = slice(slice);
 
         if(put.isScalar())
-            putScalar(slice, put.get(0));
+            putScalar(slice, put.getFloat(0));
         else if(put.isVector())
             for(int i = 0; i < put.length(); i++)
-                view.putScalar(i, put.get(i));
+                view.putScalar(i, put.getFloat(i));
         else if(put.shape().length == 2)
             for(int i = 0; i < put.rows(); i++)
                 for(int j = 0; j < put.columns(); j++)
-                    view.put(i,j,put.get(i, j));
+                    view.put(i,j,put.getFloat(i, j));
 
         else {
 
@@ -1079,7 +1177,7 @@ public abstract class BaseNDArray  implements INDArray {
 
 
 
-    //getFromOrigin one result along one dimension based on the given offset
+    //getFloat one result along one dimension based on the given offset
     public DimensionSlice vectorForDimensionAndOffset(int dimension, int offset) {
         if(isScalar() && dimension == 0 && offset == 0)
             return new DimensionSlice(false,getScalar(offset),new int[]{offset});
@@ -1107,7 +1205,7 @@ public abstract class BaseNDArray  implements INDArray {
             INDArray ret = Nd4j.create(new int[]{shape[dimension]});
 
             for(int j = offset; count < this.shape[dimension]; j+= this.stride[dimension]) {
-                double d = data[j];
+                double d = data.getDouble(j);
                 ret.putScalar(count++, d);
                 indices.add(j);
 
@@ -1127,7 +1225,7 @@ public abstract class BaseNDArray  implements INDArray {
         int count = 0;
         boolean newSlice = false;
         for(int j = offset; count < dim.length; j+= this.stride[dimension]) {
-            double d = data[j];
+            double d = data.getDouble(j);
             dim[count++] = d;
             if(j >= currOffsetForSlice)
                 newSlice = true;
@@ -1142,7 +1240,7 @@ public abstract class BaseNDArray  implements INDArray {
         double[] dim = new double[this.shape[dimension]];
         int count = 0;
         for(int j = offset; count < dim.length; j+= this.stride[dimension]) {
-            double d = data[j];
+            double d = data.getDouble(j);
             dim[count++] = d;
         }
 
@@ -1197,7 +1295,7 @@ public abstract class BaseNDArray  implements INDArray {
                     INDArray copyFrom = vectorAlongDimension(i,0);
                     INDArray copyTo = newCopy.vectorAlongDimension(i,0);
                     for(int j = 0; j < copyFrom.length(); j++) {
-                        copyTo.putScalar(j,copyFrom.get(i));
+                        copyTo.putScalar(j,copyFrom.getFloat(i));
                     }
                 }
             }
@@ -1329,23 +1427,23 @@ public abstract class BaseNDArray  implements INDArray {
 
     }
 
-    protected float reduceVector(Ops.DimensionOp op,INDArray vector) {
+    protected double reduceVector(Ops.DimensionOp op,INDArray vector) {
 
         switch(op) {
             case SUM:
-                return (float) vector.sum(Integer.MAX_VALUE).element();
+                return  vector.sum(Integer.MAX_VALUE).getDouble(0);
             case MEAN:
-                return (float) vector.mean(Integer.MAX_VALUE).element();
+                return  vector.mean(Integer.MAX_VALUE).getDouble(0);
             case MIN:
-                return (float) vector.min(Integer.MAX_VALUE).element();
+                return  vector.min(Integer.MAX_VALUE).getDouble(0);
             case MAX:
-                return (float) vector.max(Integer.MAX_VALUE).element();
+                return  vector.max(Integer.MAX_VALUE).getDouble(0);
             case NORM_1:
-                return (float) vector.norm1(Integer.MAX_VALUE).element();
+                return vector.norm1(Integer.MAX_VALUE).getDouble(0);
             case NORM_2:
-                return (float) vector.norm2(Integer.MAX_VALUE).element();
+                return  vector.norm2(Integer.MAX_VALUE).getDouble(0);
             case NORM_MAX:
-                return (float) vector.normmax(Integer.MAX_VALUE).element();
+                return  vector.normmax(Integer.MAX_VALUE).getDouble(0);
             default: throw new IllegalArgumentException("Illegal operation");
         }
     }
@@ -1359,7 +1457,7 @@ public abstract class BaseNDArray  implements INDArray {
     public float squaredDistance(INDArray other) {
         float sd = 0.0f;
         for (int i = 0; i < length; i++) {
-            float d =  get(i) -  other.get(i);
+            float d =  getFloat(i) -  other.getFloat(i);
             sd += d * d;
         }
         return sd;
@@ -1378,7 +1476,7 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public float distance1(INDArray other) {
-        return other.sub(this).sum(Integer.MAX_VALUE).get(0);
+        return other.sub(this).sum(Integer.MAX_VALUE).getFloat(0);
     }
 
     @Override
@@ -1387,7 +1485,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linear = get.linearView();
         if(element.isScalar()) {
             for(int i = 0; i < linear.length(); i++) {
-                linear.putScalar(i,element.get(0));
+                linear.putScalar(i,element.getFloat(0));
             }
         }
 
@@ -1395,7 +1493,7 @@ public abstract class BaseNDArray  implements INDArray {
             INDArray elementLinear = element.linearView();
 
             for(int i = 0; i < linear.length(); i++) {
-                linear.putScalar(i,elementLinear.get(i));
+                linear.putScalar(i,elementLinear.getFloat(i));
             }
         }
 
@@ -1489,12 +1587,12 @@ public abstract class BaseNDArray  implements INDArray {
 
 
     @Override
-    public float[] data() {
+    public DataBuffer data() {
         return data;
     }
 
     @Override
-    public void setData(float[] data) {
+    public void setData(DataBuffer data) {
         this.data = data;
     }
 
@@ -1532,8 +1630,7 @@ public abstract class BaseNDArray  implements INDArray {
 
 
 
-
-        int offset = this.offset + ArrayUtil.dotProduct(offsets, stride);
+        int offset = this.offset + ArrayUtil.dotProduct(offsets, this.stride);
 
         return Nd4j.create(
                 data
@@ -1552,7 +1649,7 @@ public abstract class BaseNDArray  implements INDArray {
     public INDArray condi(Condition condition) {
         INDArray linear = linearView();
         for(int i = 0 ;i < length(); i++) {
-            boolean met = condition.apply(linear.get(i));
+            boolean met = condition.apply(linear.getFloat(i));
             linear.putScalar(i,met ? 1 : 0);
         }
         return this;
@@ -1580,7 +1677,7 @@ public abstract class BaseNDArray  implements INDArray {
                 if(modify && slice.getIndices() != null) {
                     INDArray result = (INDArray) slice.getResult();
                     for(int i = 0; i < slice.getIndices().length; i++) {
-                        data[slice.getIndices()[i]] = (float) result.getScalar(i).element();
+                        data.put(slice.getIndices()[i],result.getDouble(i));
                     }
                 }
             }
@@ -1593,7 +1690,7 @@ public abstract class BaseNDArray  implements INDArray {
                 if(modify && slice.getIndices() != null) {
                     INDArray result = (INDArray) slice.getResult();
                     for(int i = 0; i < slice.getIndices().length; i++) {
-                        data[slice.getIndices()[i]] = (float) result.getScalar(i).element();
+                        data.put(slice.getIndices()[i],result.getDouble(i));
                     }
                 }
             }
@@ -1604,7 +1701,7 @@ public abstract class BaseNDArray  implements INDArray {
                     if(modify && slice.getIndices() != null) {
                         INDArray result = (INDArray) slice.getResult();
                         for(int j = 0; j < slice.getIndices().length; j++) {
-                            data[slice.getIndices()[j]] = (float) result.getScalar(j).element();
+                            data.put(slice.getIndices()[j],result.getDouble(j));
                         }
                     }
 
@@ -1709,7 +1806,7 @@ public abstract class BaseNDArray  implements INDArray {
         if(!isVector() && !isScalar())
             throw new IllegalArgumentException("Unable to do linear indexing with dimensions greater than 1");
         int idx = linearIndex(i);
-        return Nd4j.scalar(data[idx]);
+        return Nd4j.scalar(data.getDouble(idx));
     }
 
 
@@ -1781,30 +1878,6 @@ public abstract class BaseNDArray  implements INDArray {
 
         return this;
 
-    /*    assertRowVector(rowVector);
-        if(rowVector.rows() == rows() && rowVector.columns() == 1) {
-            for(int i = 0; i < rows(); i++) {
-                switch(operation) {
-                    case 'a' : getRow(i).addi(rowVector.get(i)); break;
-                    case 's' : getRow(i).subi(rowVector.get(i)); break;
-                    case 'm' : getRow(i).muli(rowVector.get(i)); break;
-                    case 'd' : getRow(i).divi(rowVector.get(i)); break;
-                }
-
-            }
-        }
-        else {
-            for(int j = 0; j< rows(); j++) {
-                switch(operation) {
-                    case 'a' : getRow(j).addi(rowVector); break;
-                    case 's' : getRow(j).subi(rowVector); break;
-                    case 'm' : getRow(j).muli(rowVector); break;
-                    case 'd' : getRow(j).divi(rowVector); break;
-                }
-            }
-        }
-
-        return this;*/
     }
 
 
@@ -1821,7 +1894,7 @@ public abstract class BaseNDArray  implements INDArray {
             throw new IllegalArgumentException("Unable to insert null element");
         assert element.isScalar() : "Unable to insert non scalar element";
         int idx = linearIndex(i);
-        data[idx] = (float) element.element();
+        data.put(idx,element.getDouble(0));
         return this;
     }
 
@@ -2155,10 +2228,10 @@ public abstract class BaseNDArray  implements INDArray {
         LinAlgExceptions.assertMultiplies(this,other);
 
         if (other.isScalar()) {
-            return muli(otherArray.get(0), resultArray);
+            return muli(otherArray.getFloat(0), resultArray);
         }
         if (isScalar()) {
-            return otherArray.muli(get(0), resultArray);
+            return otherArray.muli(getFloat(0), resultArray);
         }
 
         /* check sizes and resize if necessary */
@@ -2211,10 +2284,10 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray divi(INDArray other, INDArray result) {
         if (other.isScalar()) {
-            return divi(other.get(0), result);
+            return divi(other.getFloat(0), result);
         }
         if (isScalar()) {
-            return other.divi(get(0), result);
+            return other.divi(getFloat(0), result);
         }
 
         INDArray otherLinear = other.linearView();
@@ -2222,7 +2295,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linearView = linearView();
 
         for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, linearView.get(i) / otherLinear.get(i));
+            resultLinear.putScalar(i, linearView.getFloat(i) / otherLinear.getFloat(i));
         }
         return result;
     }
@@ -2248,10 +2321,10 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray muli(INDArray other, INDArray result) {
         if (other.isScalar()) {
-            return muli(other.get(0), result);
+            return muli(other.getFloat(0), result);
         }
         if (isScalar()) {
-            return other.muli(get(0), result);
+            return other.muli(getFloat(0), result);
         }
 
         INDArray otherLinear = other.linearView();
@@ -2259,7 +2332,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linearView = linearView();
 
         for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, linearView.get(i) * otherLinear.get(i));
+            resultLinear.putScalar(i, linearView.getFloat(i) * otherLinear.getFloat(i));
         }
         return result;
     }
@@ -2285,10 +2358,10 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray subi(INDArray other, INDArray result) {
         if (other.isScalar()) {
-            return subi(other.get(0), result);
+            return subi(other.getFloat(0), result);
         }
         if (isScalar()) {
-            return other.rsubi(get(0), result);
+            return other.rsubi(getFloat(0), result);
         }
 
 
@@ -2325,10 +2398,10 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray addi(INDArray other, INDArray result) {
         if (other.isScalar()) {
-            return result.addi(other.get(0),result);
+            return result.addi(other.getFloat(0),result);
         }
         if (isScalar()) {
-            return other.addi(get(0), result);
+            return other.addi(getFloat(0), result);
         }
 
 
@@ -2343,7 +2416,7 @@ public abstract class BaseNDArray  implements INDArray {
             INDArray otherLinear = other.linearView();
             INDArray linear = linearView();
             for(int i = 0; i < resultLinear.length(); i++) {
-                resultLinear.putScalar(i,otherLinear.get(i) + linear.get(i));
+                resultLinear.putScalar(i,otherLinear.getFloat(i) + linear.getFloat(i));
             }
 
         }
@@ -2503,7 +2576,7 @@ public abstract class BaseNDArray  implements INDArray {
         int realStride = stride[0];
         int idx = offset + i * realStride;
 
-        if(data != null && idx >= data.length)
+        if(data != null && idx >= data.length())
             throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
         return idx;
     }
@@ -2641,10 +2714,10 @@ public abstract class BaseNDArray  implements INDArray {
             ix += indexes[i] * stride[i];
         }
 
-        if(ix >= data.length)
+        if(ix >= data.length())
             throw new IllegalArgumentException("Illegal index " + Arrays.toString(indexes));
 
-        return Nd4j.scalar(data[ix]);
+        return Nd4j.scalar(data.getDouble(ix));
     }
 
 
@@ -2787,7 +2860,7 @@ public abstract class BaseNDArray  implements INDArray {
         assert toPut.isVector() && toPut.length() == columns : "Illegal length for row " + toPut.length() + " should have been " + columns;
         INDArray r = getRow(row);
         for(int i = 0; i < r.length(); i++)
-            r.putScalar(i,toPut.get(i));
+            r.putScalar(i,toPut.getFloat(i));
         return this;
     }
 
@@ -2805,25 +2878,53 @@ public abstract class BaseNDArray  implements INDArray {
         assert toPut.isVector() && toPut.length() == rows : "Illegal length for row " + toPut.length() + " should have been " + columns;
         INDArray r = getColumn(column);
         for(int i = 0; i < r.length(); i++)
-            r.putScalar(i,toPut.get(i));
+            r.putScalar(i,toPut.getFloat(i));
 
         return this;
     }
 
-
-
     @Override
-    public float get(int i) {
+    public <E> E getElement(int i) {
         int idx = linearIndex(i);
         if(idx < 0)
             throw new IllegalStateException("Illegal index " + i);
-        return data[idx];
+        return data.getElement(idx);
     }
 
     @Override
-    public float get(int i, int j) {
+    public <E> E getElement(int i, int j) {
         int idx = index(i,j);
-        return data[idx];
+        return data.getElement(idx);
+    }
+
+    @Override
+    public double getDouble(int i) {
+        int idx = linearIndex(i);
+        if(idx < 0)
+            throw new IllegalStateException("Illegal index " + i);
+        return data.getDouble(idx);
+    }
+
+    @Override
+    public double getDouble(int i, int j) {
+        int idx = index(i,j);
+        return data.getDouble(idx);
+    }
+
+
+
+    @Override
+    public float getFloat(int i) {
+        int idx = linearIndex(i);
+        if(idx < 0)
+            throw new IllegalStateException("Illegal index " + i);
+        return data.getFloat(idx);
+    }
+
+    @Override
+    public float getFloat(int i, int j) {
+        int idx = index(i,j);
+        return data.getFloat(idx);
     }
 
     /**
@@ -2863,7 +2964,7 @@ public abstract class BaseNDArray  implements INDArray {
             INDArray reverse = Nd4j.create(new int[]{shape[1],shape[0]});
             for (int i = 0; i < rows; i++) {
                 for (int j = 0; j < columns; j++) {
-                    reverse.putScalar(new int[]{j, i}, get(i, j));
+                    reverse.putScalar(new int[]{j, i}, getFloat(i, j));
                 }
             }
 
@@ -3348,7 +3449,7 @@ public abstract class BaseNDArray  implements INDArray {
         for(int i = 0; i < vectorsAlongDimension(dimension); i++) {
             INDArray vec = vectorAlongDimension(i,dimension);
             for(int j = 0; j < vec.length(); j++) {
-                ret.putScalar(count++,vec.get(j));
+                ret.putScalar(count++,vec.getFloat(j));
             }
         }
 
@@ -3418,7 +3519,7 @@ public abstract class BaseNDArray  implements INDArray {
 
 
         else
-            throw new IllegalArgumentException("Unable to get scalar column of non 2d matrix");
+            throw new IllegalArgumentException("Unable to getFloat scalar column of non 2d matrix");
     }
 
 
@@ -3458,7 +3559,15 @@ public abstract class BaseNDArray  implements INDArray {
         if(ArrayUtil.prod(shape) > length())
             return this;
 
-        int[] strides =  ArrayUtil.copy(stride());
+        int[] strides =  null;
+        if(Shape.isVector(shape)) {
+           strides =  ordering == NDArrayFactory.FORTRAN  ?
+                    ArrayUtil.reverseCopy(stride()) :
+                    ArrayUtil.copy(stride());
+        }
+
+        else
+             strides = ArrayUtil.copy(stride());
 
         if(offsets.length != shape.length)
             offsets = Arrays.copyOfRange(offsets,0,shape.length);
@@ -3524,7 +3633,7 @@ public abstract class BaseNDArray  implements INDArray {
 
 
         else
-            throw new IllegalArgumentException("Unable to get row of non 2d matrix");
+            throw new IllegalArgumentException("Unable to getFloat row of non 2d matrix");
     }
 
     /**
@@ -3546,16 +3655,32 @@ public abstract class BaseNDArray  implements INDArray {
 
         //epsilon equals
         if(isScalar() && n.isScalar()) {
-            float val = (float) element();
-            float val2 = (float) n.element();
-            return Math.abs(val - val2) < 1e-6;
+            if(data.dataType().equals(DataBuffer.FLOAT)) {
+                float val = getFloat(0);
+                float val2 = n.getFloat(0);
+                return Math.abs(val - val2) < 1e-6;
+            }
+            else {
+                double val = getDouble(0);
+                double val2 = n.getDouble(0);
+                return Math.abs(val - val2) < 1e-6;
+            }
+
         }
         else if(isVector() && n.isVector()) {
             for(int i = 0; i < length; i++) {
-                float curr = get(i);
-                float comp = n.get(i);
-                if(Math.abs(curr - comp) > 1e-3)
-                    return false;
+                if(data.dataType().equals(DataBuffer.FLOAT)) {
+                    float curr = getFloat(i);
+                    float comp = n.getFloat(i);
+                    if(Math.abs(curr - comp) > 1e-3)
+                        return false;
+                }
+                else {
+                    double curr = getDouble(i);
+                    double comp = n.getDouble(i);
+                    if(Math.abs(curr - comp) > 1e-3)
+                        return false;
+                }
             }
 
             return true;
@@ -3825,7 +3950,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray flattened = linearView();
         INDArray arrLinear = arr.linearView();
         for(int i = 0; i < flattened.length(); i++) {
-            arrLinear.putScalar(i,flattened.get(i));
+            arrLinear.putScalar(i,flattened.getFloat(i));
         }
 
     }
@@ -3913,7 +4038,7 @@ public abstract class BaseNDArray  implements INDArray {
             StringBuilder sb = new StringBuilder();
             sb.append("[");
             for(int i = 0; i < length; i++) {
-                sb.append(get(i));
+                sb.append(getFloat(i));
                 if(i < length - 1)
                     sb.append(" ,");
             }
@@ -3952,7 +4077,9 @@ public abstract class BaseNDArray  implements INDArray {
     public Object element() {
         if(!isScalar())
             throw new IllegalStateException("Unable to retrieve element from non scalar matrix");
-        return data[offset];
+        if(data.dataType().equals(DataBuffer.FLOAT))
+            return data.getFloat(offset);
+        return data.getDouble(offset);
     }
 
 

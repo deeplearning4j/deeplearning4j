@@ -1,6 +1,7 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.base.Function;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -54,7 +55,7 @@ public class BooleanIndexing {
         boolean ret = true;
         INDArray linear = n.linearView();
         for(int i = 0; i < linear.length(); i++) {
-            ret = ret && cond.apply(linear.get(i));
+            ret = ret && cond.apply(linear.getFloat(i));
         }
 
         return ret;
@@ -70,7 +71,7 @@ public class BooleanIndexing {
         boolean ret = true;
         INDArray linear = n.linearView();
         for(int i = 0; i < linear.length(); i++) {
-            ret = ret || cond.apply(linear.get(i));
+            ret = ret || cond.apply(linear.getFloat(i));
         }
 
         return ret;
@@ -86,9 +87,14 @@ public class BooleanIndexing {
     public static void applyWhere(INDArray to,Condition condition,Function<Number,Number> function) {
         INDArray linear = to.linearView();
         for(int i = 0; i < linear.linearView().length(); i++) {
-            if(condition.apply(linear.get(i))) {
-                linear.putScalar(i,function.apply(linear.get(i)));
-            }
+            if(linear.data().dataType().equals(DataBuffer.FLOAT))
+                if(condition.apply(linear.getFloat(i))) {
+                    linear.putScalar(i,function.apply(linear.getFloat(i)).floatValue());
+                }
+            else  if(condition.apply(linear.getDouble(i))) {
+                    linear.putScalar(i,function.apply(linear.getDouble(i)).doubleValue());
+                }
+
         }
     }
 
@@ -103,7 +109,7 @@ public class BooleanIndexing {
     public static void applyWhere(IComplexNDArray to,Condition condition,Function<IComplexNumber,IComplexNumber> function) {
         IComplexNDArray linear = to.linearView();
         for(int i = 0; i < linear.linearView().length(); i++) {
-            if(condition.apply(linear.get(i))) {
+            if(condition.apply(linear.getFloat(i))) {
                 linear.putScalar(i,function.apply(linear.getComplex(i)));
             }
         }

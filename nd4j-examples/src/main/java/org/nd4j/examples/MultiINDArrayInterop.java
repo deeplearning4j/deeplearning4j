@@ -71,9 +71,9 @@ public class MultiINDArrayInterop {
         assert transposeToTransposeJblas.equals(transposeToTransposeJcublas);
 
         setJblas();
-        float dotjblas = Nd4j.getBlasWrapper().dot(jblasLinspace,jblasLinspace);
+        double dotjblas = Nd4j.getBlasWrapper().dot(jblasLinspace,jblasLinspace);
         setJcublas();
-        float dotjcublas = Nd4j.getBlasWrapper().dot(jcublasLinspace,jcublasLinspace);
+        double  dotjcublas = Nd4j.getBlasWrapper().dot(jcublasLinspace,jcublasLinspace);
         assert dotjblas == dotjcublas;
 
 

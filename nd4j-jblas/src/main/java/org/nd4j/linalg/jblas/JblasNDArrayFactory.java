@@ -1,6 +1,7 @@
 package org.nd4j.linalg.jblas;
 
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -104,6 +105,57 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
         return new ComplexNDArray(arrs,shape);
     }
 
+    @Override
+    public INDArray create(DataBuffer data) {
+        return new NDArray(data);
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer data) {
+        return new ComplexNDArray(data);
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer data, int rows, int columns, int[] stride, int offset) {
+        return new ComplexNDArray(data,new int[]{rows,columns},stride,offset);
+    }
+
+    @Override
+    public INDArray create(DataBuffer data, int rows, int columns, int[] stride, int offset) {
+        return new NDArray(data,new int[]{rows,columns},stride,offset);
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] stride, int offset) {
+        return new ComplexNDArray(data,shape,stride,offset);
+    }
+
+    @Override
+    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int[] stride, int offset) {
+        return createComplex(data,shape,stride,offset,order());
+    }
+
+    @Override
+    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int[] stride, int offset, char ordering) {
+        return new ComplexNDArray(data,shape,stride,offset,ordering);
+
+    }
+
+    @Override
+    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int[] stride, char ordering) {
+        return new ComplexNDArray(data,shape,stride,0,ordering);
+    }
+
+    @Override
+    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int offset, char ordering) {
+        return createComplex(data,shape,Nd4j.getComplexStrides(shape),offset,ordering);
+    }
+
+    @Override
+    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, char ordering) {
+        return createComplex(data,shape,Nd4j.getComplexStrides(shape),0,ordering);
+    }
+
     /**
      * Creates a complex ndarray with the specified shape
      *
@@ -116,6 +168,22 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset) {
         return new ComplexNDArray(data,shape,stride,offset);
+    }
+
+    @Override
+    public INDArray create(int[] shape, char ordering) {
+        return new NDArray(shape,Nd4j.getStrides(shape),0,ordering);
+    }
+
+    @Override
+    public INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering) {
+        return new NDArray(data,newShape,newStride,offset,ordering);
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering) {
+        return new ComplexNDArray(data,newDims,newStrides,offset,ordering);
+
     }
 
     /**
@@ -161,6 +229,26 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
         return new NDArray(data,shape,stride,offset);
     }
 
+    @Override
+    public INDArray create(DataBuffer data, int[] shape) {
+        return new NDArray(data,shape);
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer data, int[] shape) {
+        return new ComplexNDArray(data,shape);
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] stride) {
+        return new ComplexNDArray(data,shape,stride);
+    }
+
+    @Override
+    public INDArray create(DataBuffer data, int[] shape, int[] stride, int offset) {
+        return new NDArray(data,shape,stride,offset,Nd4j.order());
+    }
+
     /**
      * Creates an ndarray with the specified shape
      *
@@ -201,6 +289,11 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
         return new ComplexNDArray(ArrayUtil.floatCopyOf(data),shape,offset,ordering);
     }
 
+    @Override
+    public IComplexNDArray createComplex(DataBuffer buffer, int[] shape, int offset, char ordering) {
+        return new ComplexNDArray(buffer,shape,Nd4j.getComplexStrides(shape),offset,ordering);
+    }
+
     /**
      * @param data
      * @param shape
@@ -210,6 +303,11 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public IComplexNDArray createComplex(double[] data, int[] shape, int offset) {
         return new ComplexNDArray(ArrayUtil.floatCopyOf(data),shape,offset);
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer buffer, int[] shape, int offset) {
+        return new ComplexNDArray(buffer,shape,Nd4j.getComplexStrides(shape),offset,Nd4j.order());
     }
 
     /**
@@ -241,6 +339,11 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray create(float[] data, int[] shape, int[] stride, int offset, char ordering) {
         return new NDArray(data,shape,stride,offset,ordering);
+    }
+
+    @Override
+    public INDArray create(DataBuffer buffer, int[] shape, int offset) {
+        return new NDArray(buffer,shape,Nd4j.getStrides(shape),offset);
     }
 
     /**

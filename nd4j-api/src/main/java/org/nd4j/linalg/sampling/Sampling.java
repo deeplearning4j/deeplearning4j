@@ -32,7 +32,7 @@ public class Sampling {
         INDArray iter = mean.reshape(new int[]{1,mean.length()}).dup();
         INDArray sigmaLinear = sigma.ravel();
         for(int i = 0; i < iter.length(); i++) {
-            RealDistribution reals = new NormalDistribution(rng, mean.get(i), FastMath.sqrt((double) sigmaLinear.get(i)),NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+            RealDistribution reals = new NormalDistribution(rng, mean.getFloat(i), FastMath.sqrt((double) sigmaLinear.getFloat(i)),NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
             iter.putScalar(i,reals.sample());
 
         }
@@ -56,7 +56,7 @@ public class Sampling {
 
         double sqrt = FastMath.sqrt(sigma);
         for(int i = 0; i < iter.length(); i++) {
-            double curr = iter.get(i);
+            double curr = iter.getFloat(i);
             RealDistribution reals = new NormalDistribution(rng,curr, sqrt,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
             linearModify.putScalar(i,reals.sample());
 
@@ -77,7 +77,7 @@ public class Sampling {
         INDArray p2 = p.dup();
         INDArray p2Linear = p2.linearView();
         for(int i = 0; i < p2.length(); i++) {
-            p2Linear.putScalar(i, MathUtils.binomial(rng, n,p2Linear.get(i)));
+            p2Linear.putScalar(i, MathUtils.binomial(rng, n,p2Linear.getFloat(i)));
         }
         return p2;
     }

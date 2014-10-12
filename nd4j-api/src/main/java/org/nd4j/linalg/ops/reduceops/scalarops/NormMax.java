@@ -14,7 +14,7 @@ public class NormMax extends BaseScalarOp {
 
     @Override
     public float accumulate(INDArray arr, int i, float soFar) {
-        float abs = Math.abs(arr.get(i));
+        float abs = Math.abs(arr.getFloat(i));
         return abs > soFar ? abs : soFar;
     }
 }

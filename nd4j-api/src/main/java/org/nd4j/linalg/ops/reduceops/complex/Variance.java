@@ -22,7 +22,7 @@ public class Variance extends BaseScalarOp {
 
     public IComplexNumber var(IComplexNDArray arr) {
         IComplexNumber mean = new Mean().apply(arr);
-        return Nd4j.createDouble(StatUtils.variance(ArrayUtil.doubleCopyOf(arr.data()), mean.absoluteValue().floatValue()), 0);
+        return Nd4j.createDouble(StatUtils.variance(arr.ravel().data().asDouble(), mean.absoluteValue().floatValue()), 0);
     }
 
 

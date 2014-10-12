@@ -15,6 +15,6 @@ public class Sum extends BaseScalarOp {
 
     @Override
     public float accumulate(INDArray arr, int i, float soFar) {
-        return arr.get(i) + soFar;
+        return arr.getFloat(i) + soFar;
     }
 }

@@ -87,8 +87,8 @@ public class NDArrayIndex {
     /**
      * Create from a matrix. The rows are the indices
      * The columns are the individual element in each ndarrayindex
-     * @param index the matrix to get indices from
-     * @return the indices to get
+     * @param index the matrix to getFloat indices from
+     * @return the indices to getFloat
      */
     public static NDArrayIndex[] create(INDArray index) {
 
@@ -99,7 +99,7 @@ public class NDArrayIndex {
                 INDArray row = index.getRow(i);
                 int[] nums = new int[index.getRow(i).columns()];
                 for(int j = 0; j < row.columns(); j++) {
-                    nums[j] = (int) row.get(j);
+                    nums[j] = (int) row.getFloat(j);
                 }
 
                 NDArrayIndex idx = new NDArrayIndex(nums);

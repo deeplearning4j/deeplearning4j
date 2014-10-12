@@ -116,7 +116,7 @@ public interface IComplexNDArray extends INDArray {
 
 
 
-    public IComplexNDArray putScalar(int i,Number value);
+    public IComplexNDArray putScalar(int i, double value);
 
 
 
@@ -1052,7 +1052,6 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray norm1(int dimension);
 
 
-    float[] data();
 
     /**
      * Returns the product along a given dimension

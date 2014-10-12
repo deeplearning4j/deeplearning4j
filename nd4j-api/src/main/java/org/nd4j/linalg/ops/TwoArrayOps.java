@@ -48,7 +48,7 @@ public class TwoArrayOps  {
             INDArray a = (INDArray) scalar;
             if(!a.isScalar())
                 throw new IllegalArgumentException("Only scalar nd arrays allowed");
-            Number n = a.get(0);
+            Number n = a.getFloat(0);
             this.scalar = n.floatValue();
         }
 

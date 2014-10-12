@@ -1552,7 +1552,7 @@ public class BigDecimalMath {
     static public BigDecimal mod2pi(BigDecimal x) {
         /* write x= 2*pi*k+r with the precision in r defined by the precision of x and not
          * compromised by the precision of 2*pi, so the ulp of 2*pi*k should match the ulp of x.
-         * First get a guess of k to figure out how many digits of 2*pi are needed.
+         * First getFloat a guess of k to figure out how many digits of 2*pi are needed.
          */
         int k = (int) (0.5 * x.doubleValue() / Math.PI);
         /* want to have err(2*pi*k)< err(x)=0.5*x.ulp, so err(pi) = err(x)/(4k) with two safety digits
@@ -1596,7 +1596,7 @@ public class BigDecimalMath {
     static public BigDecimal modpi(BigDecimal x) {
         /* write x= pi*k+r with the precision in r defined by the precision of x and not
          * compromised by the precision of pi, so the ulp of pi*k should match the ulp of x.
-         * First get a guess of k to figure out how many digits of pi are needed.
+         * First getFloat a guess of k to figure out how many digits of pi are needed.
          */
         int k = (int) (x.doubleValue() / Math.PI);
         /* want to have err(pi*k)< err(x)=x.ulp/2, so err(pi) = err(x)/(2k) with two safety digits

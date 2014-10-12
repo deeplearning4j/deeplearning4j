@@ -1,6 +1,7 @@
 package org.nd4j.linalg.netlib.complex;
 
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.BaseComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -130,6 +131,10 @@ public class ComplexNDArray extends BaseComplexNDArray {
      */
     public ComplexNDArray(List<IComplexNDArray> slices, int[] shape, char ordering) {
         super(slices, shape, ordering);
+    }
+
+    public ComplexNDArray(float[] data, int[] shape, int[] stride, int offset, Character order) {
+        super(data, shape, stride, offset, order);
     }
 
     /**
@@ -303,5 +308,48 @@ public class ComplexNDArray extends BaseComplexNDArray {
 
     public ComplexNDArray(float[][] floats) {
         this(new NetlibBlasNDArray(floats));
+    }
+
+    public ComplexNDArray(DataBuffer data) {
+        super(data);
+    }
+
+    public ComplexNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
+        super(data,shape,stride,offset);
+    }
+
+    public ComplexNDArray(IComplexNumber[] data, int[] shape, int[] stride, int offset, char ordering) {
+        super(data, shape, stride, offset, ordering);
+    }
+
+    public ComplexNDArray(DataBuffer data, int[] shape) {
+        super(data, shape);
+    }
+
+    public ComplexNDArray(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering) {
+        super(data,newDims,newStrides,offset,ordering);
+    }
+
+    public ComplexNDArray() {
+    }
+
+    public ComplexNDArray(DataBuffer data, int[] shape, int[] stride) {
+        super(data, shape, stride);
+    }
+
+    public ComplexNDArray(IComplexNumber[] data, int[] shape, int[] stride, int offset) {
+        super(data,shape,stride,offset);
+    }
+
+    public ComplexNDArray(IComplexNumber[] data, int[] shape, int offset, char ordering) {
+        super(data,shape,offset,ordering);
+    }
+
+    public ComplexNDArray(DataBuffer buffer, int[] shape, int offset, char ordering) {
+        super(buffer,shape,offset,ordering);
+    }
+
+    public ComplexNDArray(DataBuffer buffer, int[] shape, int offset) {
+        super(buffer,shape,offset);
     }
 }

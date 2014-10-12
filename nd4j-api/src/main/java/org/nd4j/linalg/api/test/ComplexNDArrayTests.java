@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.test;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -47,7 +48,7 @@ public abstract class ComplexNDArrayTests {
         //only each complex double: one element
         assertEquals(1,arr.length());
         //both real and imaginary components
-        assertEquals(2,arr.data().length);
+        assertEquals(2,arr.data().length());
         IComplexNumber n1 = (IComplexNumber) arr.getScalar(0).element();
         assertEquals(0,n1.realComponent().doubleValue(),1e-1);
 
@@ -84,8 +85,8 @@ public abstract class ComplexNDArrayTests {
         assertEquals(matrix,sorted);
 
         IComplexNDArray reversed = Nd4j.createComplex(
-         new float[]{2,0,1,0,4,0,3,0}
-        ,new int[]{2,2});
+                new float[]{2,0,1,0,4,0,3,0}
+                ,new int[]{2,2});
 
         IComplexNDArray sortedReversed = Nd4j.sort(matrix,1,false);
         assertEquals(reversed,sortedReversed);
@@ -142,7 +143,7 @@ public abstract class ComplexNDArrayTests {
             INDArray vector = fourTwoTwo.vectorAlongDimension(i,0);
             IComplexNDArray complexVector = test.vectorAlongDimension(i,0);
             for(int j = 0; j < complexVector.length(); j++) {
-                complexVector.putReal(j,vector.get(j));
+                complexVector.putReal(j,vector.getFloat(j));
             }
         }
 
@@ -169,7 +170,7 @@ public abstract class ComplexNDArrayTests {
         IComplexNDArray complex = Nd4j.createComplex(arr);
         for(int i = 0; i < arr.rows(); i++) {
             for(int j = 0; j < arr.columns(); j++) {
-                double d = arr.get(i,j);
+                double d = arr.getFloat(i, j);
                 IComplexNumber complexD = complex.getComplex(i,j);
                 assertEquals(Nd4j.createDouble(d, 0),complexD);
             }
@@ -182,7 +183,7 @@ public abstract class ComplexNDArrayTests {
         IComplexNDArray fortranComplex = Nd4j.createComplex(fortran);
         for(int i = 0; i < fortran.rows(); i++) {
             for(int j = 0; j < fortran.columns(); j++) {
-                double d = fortran.get(i,j);
+                double d = fortran.getFloat(i, j);
                 IComplexNumber complexD = fortranComplex.getComplex(i,j);
                 assertEquals(Nd4j.createDouble(d, 0),complexD);
             }
@@ -211,7 +212,7 @@ public abstract class ComplexNDArrayTests {
             assertEquals(vec.length(),vecComplex.length());
             for(int j = 0; j < vec.length(); j++) {
                 IComplexNumber currComplex = vecComplex.getComplex(j);
-                double curr = vec.get(j);
+                double curr = vec.getFloat(j);
                 assertEquals(curr,currComplex.realComponent().doubleValue(),1e-1);
             }
             assertEquals(vec,vecComplex.getReal());
@@ -231,7 +232,7 @@ public abstract class ComplexNDArrayTests {
             assertEquals(vec.length(),vecComplex.length());
             for(int j = 0; j < vec.length(); j++) {
                 IComplexNumber currComplex = vecComplex.getComplex(j);
-                double curr = vec.get(j);
+                double curr = vec.getFloat(j);
                 assertEquals(curr,currComplex.realComponent().doubleValue(),1e-1);
             }
             assertEquals(vec,vecComplex.getReal());
@@ -375,7 +376,7 @@ public abstract class ComplexNDArrayTests {
 
     @Test
     public void testVectorInit() {
-        float[] data = Nd4j.linspace(1, 4, 4).data();
+        DataBuffer data = Nd4j.linspace(1, 4, 4).data();
         IComplexNDArray arr = Nd4j.createComplex(data, new int[]{4});
         assertEquals(true,arr.isRowVector());
         IComplexNDArray arr2 = Nd4j.createComplex(data, new int[]{1, 4});
@@ -535,7 +536,7 @@ public abstract class ComplexNDArrayTests {
 
     @Test
     public void testMmul() {
-        float[] data = Nd4j.linspace(1, 10, 10).data();
+        DataBuffer data = Nd4j.linspace(1, 10, 10).data();
         IComplexNDArray n = Nd4j.createComplex((Nd4j.create(data, new int[]{10})));
         IComplexNDArray transposed = n.transpose();
         assertEquals(true,n.isRowVector());
@@ -603,12 +604,14 @@ public abstract class ComplexNDArrayTests {
     @Test
     public void testLinearData() {
         float[] d = {1,0,2,0};
+        DataBuffer d3 = Nd4j.createBuffer(d);
         IComplexNDArray c = Nd4j.createComplex(d, new int[]{2});
-        assertTrue(Arrays.equals(d,c.data()));
+        assertEquals(d3,c.data());
 
         IComplexNDArray needsToBeFlattened = Nd4j.createComplex(Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2}));
         float[] d2 = {1,0,2,0,3,0,4,0};
-        assertTrue(Arrays.equals(d2,needsToBeFlattened.data()));
+        DataBuffer create = Nd4j.createBuffer(d2);
+        assertEquals(create,needsToBeFlattened.data());
 
         IComplexNDArray anotherOffsetTest = Nd4j.createComplex(
                 new double[]{
@@ -734,7 +737,7 @@ public abstract class ComplexNDArrayTests {
     public void testPutAndGet() {
         IComplexNDArray arr = Nd4j.createComplex(Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2}));
         assertEquals(4,arr.length());
-        assertEquals(8,arr.data().length);
+        assertEquals(8,arr.data().length());
         arr.put(1,1, Nd4j.scalar(5.0));
 
         IComplexNumber n1 = arr.getComplex(1, 1);
@@ -747,11 +750,11 @@ public abstract class ComplexNDArrayTests {
 
     @Test
     public void testGetReal() {
-        float[] data = Nd4j.linspace(1, 8, 8).data();
-        int[] shape = new int[]{1,8};
+        DataBuffer data = Nd4j.linspace(1, 8, 8).data();
+        int[] shape = new int[]{8};
         IComplexNDArray arr = Nd4j.createComplex(shape);
         for(int i = 0;i  < arr.length(); i++)
-            arr.put(i, Nd4j.scalar(data[i]));
+            arr.put(i, Nd4j.scalar(data.getFloat(i)));
         INDArray arr2 = Nd4j.create(data, shape);
         assertEquals(arr2,arr.getReal());
 

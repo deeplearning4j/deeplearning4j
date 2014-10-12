@@ -1,6 +1,7 @@
 package org.nd4j.linalg.jblas.complex;
 
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.BaseComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -304,5 +305,29 @@ public class ComplexNDArray extends BaseComplexNDArray {
 
     public ComplexNDArray(float[][] floats) {
         this(new NDArray(floats));
+    }
+
+    public ComplexNDArray(DataBuffer data) {
+        super(data);
+    }
+
+    public ComplexNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
+        super(data,shape,stride,offset);
+    }
+
+    public ComplexNDArray(IComplexNumber[] data, int[] shape, int[] stride, int offset, char ordering) {
+        super(data,shape,stride,offset,ordering);
+    }
+
+    public ComplexNDArray(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering) {
+        super(data,newDims,newStrides,offset,ordering);
+    }
+
+    public ComplexNDArray(DataBuffer data, int[] shape) {
+        super(data,shape);
+    }
+
+    public ComplexNDArray(DataBuffer data, int[] shape, int[] stride) {
+        super(data,shape,stride);
     }
 }

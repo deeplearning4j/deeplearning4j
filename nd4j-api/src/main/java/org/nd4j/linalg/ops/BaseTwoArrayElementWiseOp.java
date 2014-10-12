@@ -175,7 +175,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
             return c.getComplex(i);
         }
 
-        return other.get(i);
+        return other.getFloat(i);
     }
 
 

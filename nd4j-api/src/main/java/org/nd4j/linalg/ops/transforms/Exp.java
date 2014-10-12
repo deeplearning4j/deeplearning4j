@@ -1,6 +1,6 @@
 package org.nd4j.linalg.ops.transforms;
 
-import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.BaseElementWiseOp;
@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 
 /**
  * Exponential of an ndarray
+ * @author Adam Gibson
  */
 public class Exp extends BaseElementWiseOp {
     /**
@@ -27,15 +28,23 @@ public class Exp extends BaseElementWiseOp {
             return  ComplexUtil.exp(c);
         }
         else {
-            float val = (float) value;
-            if(val < 0) {
-                BigDecimal bigDecimal = BigDecimalMath.exp(BigDecimal.valueOf(val));
-                float retVal = bigDecimal.floatValue();
-                return retVal;
+            if(from.data().dataType().equals(DataBuffer.FLOAT)) {
+                float val = (float) value;
+                return (float) Math.exp(val);
             }
+            else {
+                double val = (double) value;
+                if (val < 0) {
+                    BigDecimal bigDecimal = BigDecimalMath.exp(BigDecimal.valueOf(val));
+                    double val2 = bigDecimal.doubleValue();
+                    return val2;
+                }
 
-            double exp = Math.expm1(val);
-            return (float) Math.expm1(val);
+                else
+                    return Math.exp(val);
+
+
+            }
 
         }
 

@@ -1,5 +1,6 @@
 package org.nd4j.linalg.ops.transforms;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -24,7 +25,12 @@ public class Floor extends BaseElementWiseOp {
             IComplexNumber c = (IComplexNumber) value;
             return Nd4j.scalar(ComplexUtil.floor(c));
         }
-        float val = (float) value;
-        return (float) Math.floor(val);
+        if(from.data().dataType().equals(DataBuffer.FLOAT)) {
+            float val = (float) value;
+            return (float) Math.floor(val);
+        }
+
+        double val = (double) value;
+        return Math.floor(val);
     }
 }

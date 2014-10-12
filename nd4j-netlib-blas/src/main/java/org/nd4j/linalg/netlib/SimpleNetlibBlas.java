@@ -3,6 +3,7 @@ package org.nd4j.linalg.netlib;
 import com.github.fommil.netlib.BLAS;
 import com.github.fommil.netlib.LAPACK;
 import org.jblas.NativeBlas;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -13,6 +14,8 @@ import org.nd4j.linalg.netlib.complex.ComplexDouble;
 import org.nd4j.linalg.netlib.complex.ComplexFloat;
 import org.netlib.util.intW;
 
+import javax.xml.crypto.Data;
+
 /**
  *
  * @author Adam Gibson
@@ -20,6 +23,37 @@ import org.netlib.util.intW;
  */
 public class SimpleNetlibBlas {
 
+
+    /**
+     * General matrix vector multiplication
+     * @param A
+     * @param B
+     * @param C
+     * @param alpha
+     * @param beta
+     * @return
+     */
+    public static INDArray gemv(INDArray A, INDArray B, INDArray C, double alpha, double beta) {
+        BLAS.getInstance().dgemv(
+                "N",
+                A.rows(),
+                A.columns(),
+                alpha,
+                A.data().asDouble(),
+                A.offset(),
+                A.rows(),
+                B.data().asDouble(),
+                B.offset(),
+                C.stride()[0],
+                beta,
+                C.data().asDouble(),
+                C.offset(),
+                C.stride()[0]);
+
+
+
+        return C;
+    }
 
 
 
@@ -38,14 +72,14 @@ public class SimpleNetlibBlas {
                 A.rows(),
                 A.columns(),
                 alpha,
-                A.data(),
+                A.data().asFloat(),
                 A.offset(),
                 A.rows(),
-                B.data(),
+                B.data().asFloat(),
                 B.offset(),
                 C.stride()[0],
                 beta,
-                C.data(),
+                C.data().asFloat(),
                 C.offset(),
                 C.stride()[0]);
 
@@ -67,29 +101,83 @@ public class SimpleNetlibBlas {
     public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexNumber a,IComplexNDArray C
             , IComplexNumber b) {
 
-        NativeBlas.cgemm(
-                'N',
-                'N',
-                C.rows(),
-                C.columns(),
-                A.columns(),
-                new ComplexFloat(a.realComponent().floatValue(), a.imaginaryComponent().floatValue()),
-                A.data(),
-                A.offset() / 2,
-                A.rows(),
-                B.data(),
-                B.offset() / 2,
-                B.rows(),
-                new ComplexFloat(b.realComponent().floatValue(), b.imaginaryComponent().floatValue())
-                ,
-                C.data(),
-                C.offset() / 2,
-                C.rows());
+        if(A.data().dataType().equals(DataBuffer.FLOAT))
+            NativeBlas.cgemm(
+                    'N',
+                    'N',
+                    C.rows(),
+                    C.columns(),
+                    A.columns(),
+                    new ComplexFloat(a.realComponent().floatValue(), a.imaginaryComponent().floatValue()),
+                    A.data().asFloat(),
+                    A.offset() / 2,
+                    A.rows(),
+                    B.data().asFloat(),
+                    B.offset() / 2,
+                    B.rows(),
+                    new ComplexFloat(b.realComponent().floatValue(), b.imaginaryComponent().floatValue())
+                    ,
+                    C.data().asFloat(),
+                    C.offset() / 2,
+                    C.rows());
+        else if(A.data().dataType().equals(DataBuffer.DOUBLE))
+            NativeBlas.zgemm(
+                    'N',
+                    'N',
+                    C.rows(),
+                    C.columns(),
+                    A.columns(),
+                    new ComplexDouble(a.realComponent().doubleValue(), a.imaginaryComponent().doubleValue()),
+                    A.data().asDouble(),
+                    A.offset() / 2,
+                    A.rows(),
+                    B.data().asDouble(),
+                    B.offset() / 2,
+                    B.rows(),
+                    new ComplexDouble(b.realComponent().doubleValue(), b.imaginaryComponent().doubleValue())
+                    ,
+                    C.data().asDouble(),
+                    C.offset() / 2,
+                    C.rows());
         return C;
 
     }
 
+    /**
+     * General matrix multiply
+     * @param A
+     * @param B
+     * @param C
+     * @param alpha
+     * @param beta
+     * @return
+     */
+    public static INDArray gemm(INDArray A, INDArray B, INDArray C,
+                                double alpha, double beta) {
 
+
+
+        BLAS.getInstance().dgemm(
+                "N",
+                "N",
+                C.rows(),
+                C.columns(),
+                A.columns(),
+                alpha,
+                A.data().asDouble(),
+                A.offset(),
+                A.rows()
+                , B.data().asDouble(),
+                B.offset(),
+                B.rows(),
+                beta,
+                C.data().asDouble(),
+                C.offset(),
+                C.rows());
+
+        return C;
+
+    }
     /**
      * General matrix multiply
      * @param A
@@ -111,14 +199,14 @@ public class SimpleNetlibBlas {
                 C.columns(),
                 A.columns(),
                 alpha,
-                A.data(),
+                A.data().asFloat(),
                 A.offset(),
                 A.rows()
-                , B.data(),
+                , B.data().asFloat(),
                 B.offset(),
                 B.rows(),
                 beta,
-                C.data(),
+                C.data().asFloat(),
                 C.offset(),
                 C.rows());
 
@@ -126,6 +214,70 @@ public class SimpleNetlibBlas {
 
     }
 
+    /**
+     * Calculate eigen values
+     * @param jobz
+     * @param range
+     * @param uplo
+     * @param a
+     * @param vl
+     * @param vu
+     * @param il
+     * @param iu
+     * @param abstol
+     * @param w
+     * @param z
+     * @param isuppz
+     * @return
+     */
+    public static int syevr(char jobz, char range, char uplo, INDArray a,
+                            double vl, int vu, int il, int iu, double abstol,
+                            INDArray w, INDArray z, int[] isuppz) {
+        int n = a.rows();
+        org.netlib.util.intW m = new intW(0);
+        org.netlib.util.intW info = new org.netlib.util.intW(0);
+
+        double[] work = new double[1];
+        int lwork = 0;
+        int[] iwork = new int[1];
+        int liwork = 0;
+
+
+        LAPACK.getInstance().dsyevr(
+                String.valueOf(jobz),
+                String.valueOf(range),
+                String.valueOf(uplo),
+                n,
+                a.data().asDouble(),
+                a.offset(),
+                a.rows(),
+                vl,
+                vu,
+                il,
+                iu,
+                abstol,
+                m,
+                w.data().asDouble(),
+                w.offset(),
+                z.data().asDouble(),
+                z.offset(),
+                z.rows(),
+                isuppz,
+                0,//suppZIdx
+                work,
+                0,//workOffset
+                lwork,
+                iwork,
+                0,//iworkoffset
+                liwork,
+                info
+        );
+
+
+
+        return info.val;
+
+    }
 
     /**
      * Calculate eigen values
@@ -161,7 +313,7 @@ public class SimpleNetlibBlas {
                 String.valueOf(range),
                 String.valueOf(uplo),
                 n,
-                a.data(),
+                a.data().asFloat(),
                 a.offset(),
                 a.rows(),
                 vl,
@@ -170,9 +322,9 @@ public class SimpleNetlibBlas {
                 iu,
                 abstol,
                 m,
-                w.data(),
+                w.data().asFloat(),
                 w.offset(),
-                z.data(),
+                z.data().asFloat(),
                 z.offset(),
                 z.rows(),
                 isuppz,
@@ -197,9 +349,19 @@ public class SimpleNetlibBlas {
      * @param A
      * @return
      */
-    public static float nrm2(IComplexNDArray A) {
-        float s = BLAS.getInstance().snrm2(A.length(), A.data(), 2, 1);
-        return s;
+    public static double nrm2(IComplexNDArray A) {
+        if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+            float s = BLAS.getInstance().snrm2(A.length(), A.data().asFloat(), 2, 1);
+            return s;
+        }
+        else if(A.data().dataType().equals(DataBuffer.DOUBLE)) {
+            double s = BLAS.getInstance().dnrm2(A.length(), A.data().asDouble(), 2, 1);
+            return s;
+        }
+
+        throw new IllegalArgumentException("Illegal data type");
+
+
     }
 
     /**
@@ -208,14 +370,21 @@ public class SimpleNetlibBlas {
      * @param y the destination
      */
     public static void copy(IComplexNDArray x, IComplexNDArray y) {
+        if(x.data().dataType().equals(DataBuffer.FLOAT))
 
-
-        BLAS.getInstance().scopy(
-                x.length(),
-                x.data(),
-                x.stride()[0],
-                y.data(),
-                y.stride()[0]);
+            BLAS.getInstance().scopy(
+                    x.length(),
+                    x.data().asFloat(),
+                    x.stride()[0],
+                    y.data().asFloat(),
+                    y.stride()[0]);
+        else
+            BLAS.getInstance().dcopy(
+                    x.length(),
+                    x.data().asDouble(),
+                    x.stride()[0],
+                    y.data().asDouble(),
+                    y.stride()[0]);
     }
 
 
@@ -225,7 +394,11 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static int iamax(IComplexNDArray x) {
-        return NativeBlas.icamax(x.length(), x.data(), x.offset(), 1) - 1;
+        if(x.data().dataType().equals(DataBuffer.FLOAT))
+            return NativeBlas.icamax(x.length(), x.data().asFloat(), x.offset(), 1) - 1;
+        else
+            return NativeBlas.izamax(x.length(), x.data().asDouble(), x.offset(), 1) - 1;
+
     }
 
     /**
@@ -233,9 +406,12 @@ public class SimpleNetlibBlas {
      * @param x
      * @return
      */
-    public static float asum(IComplexNDArray x) {
+    public static double asum(IComplexNDArray x) {
+        if(x.data().dataType().equals(DataBuffer.FLOAT))
+            return NativeBlas.scasum(x.length(), x.data().asFloat(), x.offset(), x.stride()[0]);
+        else
+            return NativeBlas.dzasum(x.length(), x.data().asDouble(), x.offset(), x.stride()[0]);
 
-        return NativeBlas.scasum(x.length(), x.data(), x.offset(), x.stride()[0]);
     }
 
 
@@ -246,14 +422,24 @@ public class SimpleNetlibBlas {
      */
     public static void swap(INDArray x, INDArray y) {
 
-        BLAS.getInstance().sswap(
-                x.length(),
-                x.data(),
-                x.offset(),
-                x.stride()[0],
-                y.data(),
-                y.offset(),
-                y.stride()[0]);
+        if(x.data().dataType().equals(DataBuffer.FLOAT))
+            BLAS.getInstance().sswap(
+                    x.length(),
+                    x.data().asFloat(),
+                    x.offset(),
+                    x.stride()[0],
+                    y.data().asFloat(),
+                    y.offset(),
+                    y.stride()[0]);
+        else
+            BLAS.getInstance().dswap(
+                    x.length(),
+                    x.data().asDouble(),
+                    x.offset(),
+                    x.stride()[0],
+                    y.data().asDouble(),
+                    y.offset(),
+                    y.stride()[0]);
 
     }
 
@@ -262,9 +448,15 @@ public class SimpleNetlibBlas {
      * @param x
      * @return
      */
-    public static float asum(INDArray x) {
-        float sum = BLAS.getInstance().sasum(x.length(), x.data(), x.offset(),x.stride()[0]);
-        return sum;
+    public static double asum(INDArray x) {
+        if(x.data().dataType().equals(DataBuffer.FLOAT)) {
+            float sum = BLAS.getInstance().sasum(x.length(), x.data().asFloat(), x.offset(), x.stride()[0]);
+            return sum;
+        }
+        else {
+            double sum = BLAS.getInstance().dasum(x.length(), x.data().asDouble(), x.offset(), x.stride()[0]);
+            return sum;
+        }
     }
 
     /**
@@ -272,9 +464,16 @@ public class SimpleNetlibBlas {
      * @param x
      * @return
      */
-    public static float nrm2(INDArray x) {
-        float normal2 = BLAS.getInstance().snrm2(x.length(), x.data(), x.offset(),x.stride()[0]);
-        return normal2;
+    public static double nrm2(INDArray x) {
+        if(x.data().dataType().equals(DataBuffer.FLOAT)) {
+            float normal2 = BLAS.getInstance().snrm2(x.length(), x.data().asFloat(), x.offset(),x.stride()[0]);
+            return normal2;
+        }
+        else {
+            double normal2 = BLAS.getInstance().dnrm2(x.length(), x.data().asDouble(), x.offset(), x.stride()[0]);
+            return normal2;
+        }
+
     }
 
     /**
@@ -284,12 +483,22 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static int iamax(INDArray x) {
-        int max =  BLAS.getInstance().isamax(
-                x.length(),
-                x.data(),
-                x.offset(),
-                x.stride()[0]);
-        return max;
+        if(x.data().dataType().equals(DataBuffer.FLOAT)) {
+            int max =  BLAS.getInstance().isamax(
+                    x.length(),
+                    x.data().asFloat(),
+                    x.offset(),
+                    x.stride()[0]);
+            return max;
+        }
+        else {
+            int max =  BLAS.getInstance().idamax(
+                    x.length(),
+                    x.data().asDouble(),
+                    x.offset(),
+                    x.stride()[0]);
+            return max;
+        }
 
     }
 
@@ -302,27 +511,51 @@ public class SimpleNetlibBlas {
     public static void axpy(float da, INDArray A, INDArray B) {
 
         if(A.ordering() == NDArrayFactory.C) {
+            if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+                BLAS.getInstance().saxpy(
+                        A.length(),
+                        da,
+                        A.data().asFloat(),
+                        A.offset(),
+                        A.stride()[0],
+                        B.data().asFloat(),
+                        B.offset(),
+                        B.stride()[0]);
+            }
+            else {
+                BLAS.getInstance().daxpy(
+                        A.length(),
+                        da,
+                        A.data().asDouble(),
+                        A.offset(),
+                        A.stride()[0],
+                        B.data().asDouble(),
+                        B.offset(),
+                        B.stride()[0]);
+            }
 
-            BLAS.getInstance().saxpy(
-                    A.length(),
-                    da,
-                    A.data(),
-                    A.offset(),
-                    A.stride()[0],
-                    B.data(),
-                    B.offset(),
-                    B.stride()[0]);
         }
         else {
-            BLAS.getInstance().saxpy(
-                    A.length(),
-                    da,
-                    A.data(),
-                    A.offset(),
-                    A.stride()[0],
-                    B.data(),
-                    B.offset(),
-                    B.stride()[0]);
+            if(A.data().dataType().equals(DataBuffer.FLOAT))
+                BLAS.getInstance().saxpy(
+                        A.length(),
+                        da,
+                        A.data().asFloat(),
+                        A.offset(),
+                        A.stride()[0],
+                        B.data().asFloat(),
+                        B.offset(),
+                        B.stride()[0]);
+            else
+                BLAS.getInstance().daxpy(
+                        A.length(),
+                        da,
+                        A.data().asDouble(),
+                        A.offset(),
+                        A.stride()[0],
+                        B.data().asDouble(),
+                        B.offset(),
+                        B.stride()[0]);
 
         }
 
@@ -338,8 +571,48 @@ public class SimpleNetlibBlas {
      * @param B
      */
     public static void axpy(IComplexNumber da, IComplexNDArray A, IComplexNDArray B) {
-        NativeBlas.caxpy(A.length(), new org.jblas.ComplexFloat(da.realComponent().floatValue(), da.imaginaryComponent().floatValue()), A.data(), A.offset(), 1, B.data(), B.offset(), 1);
+        if(A.data().dataType().equals(DataBuffer.FLOAT))
+            NativeBlas.caxpy(
+                    A.length(),
+                    new org.jblas.ComplexFloat(da.realComponent().floatValue(), da.imaginaryComponent().floatValue()),
+                    A.data().asFloat(),
+                    A.offset(),
+                    A.stride()[0],
+                    B.data().asFloat(),
+                    B.offset(),
+                    A.stride()[0]);
+        else
+            NativeBlas.zaxpy(
+                    A.length(),
+                    new org.jblas.ComplexDouble(da.realComponent().doubleValue(), da.imaginaryComponent().doubleValue()),
+                    A.data().asDouble(),
+                    A.offset(),
+                    A.stride()[0],
+                    B.data().asDouble(),
+                    B.offset(),
+                    B.stride()[0]);
 
+
+    }
+
+
+
+    /**
+     * Multiply the given ndarray
+     *  by alpha
+     * @param alpha
+     * @param x
+     * @return
+     */
+    public static INDArray scal(double alpha, INDArray x) {
+        BLAS.getInstance().dscal(
+                x.length(),
+                alpha,
+                x.data().asDouble(),
+                x.offset(),
+                x.stride()[0]);
+
+        return x;
 
     }
 
@@ -354,7 +627,7 @@ public class SimpleNetlibBlas {
         BLAS.getInstance().sscal(
                 x.length(),
                 alpha,
-                x.data(),
+                x.data().asFloat(),
                 x.offset(),
                 x.stride()[0]);
 
@@ -368,13 +641,23 @@ public class SimpleNetlibBlas {
      * @param y
      */
     public static void copy(INDArray x, INDArray y) {
-        BLAS.getInstance().scopy(x.length(),
-                x.data(),
-                x.offset(),
-                x.stride()[0],
-                y.data(),
-                y.offset(),
-                y.stride()[0]);
+        if(x.data().dataType().equals(DataBuffer.FLOAT))
+            BLAS.getInstance().scopy(x.length(),
+                    x.data().asFloat(),
+                    x.offset(),
+                    x.stride()[0],
+                    y.data().asFloat(),
+                    y.offset(),
+                    y.stride()[0]);
+        else
+            BLAS.getInstance().dcopy(
+                    x.length(),
+                    x.data().asDouble(),
+                    x.offset(),
+                    x.stride()[0],
+                    y.data().asDouble(),
+                    y.offset(),
+                    y.stride()[0]);
 
 
     }
@@ -385,17 +668,33 @@ public class SimpleNetlibBlas {
      * @param y
      * @return
      */
-    public static float dot(INDArray x, INDArray y) {
-        float ret =  BLAS.getInstance().sdot(
-                x.length(),
-                x.data(),
-                x.offset(),
-                x.stride()[0],
-                y.data(),
-                y.offset(),
-                y.stride()[0]);
+    public static double dot(INDArray x, INDArray y) {
+        if(x.data().dataType().equals(DataBuffer.FLOAT)) {
+            double ret =  BLAS.getInstance().sdot(
+                    x.length(),
+                    x.data().asFloat(),
+                    x.offset(),
+                    x.stride()[0],
+                    y.data().asFloat(),
+                    y.offset(),
+                    y.stride()[0]);
+            return ret;
 
-        return ret;
+        }
+        else {
+            double ret =  BLAS.getInstance().ddot(
+                    x.length(),
+                    x.data().asDouble(),
+                    x.offset(),
+                    x.stride()[0],
+                    y.data().asDouble(),
+                    y.offset(),
+                    y.stride()[0]);
+            return ret;
+
+        }
+
+
     }
 
 
@@ -406,11 +705,55 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static IComplexDouble dot(IComplexNDArray x, IComplexNDArray y) {
-        ComplexFloat f = (ComplexFloat) NativeBlas.cdotc(x.length(), x.data(), x.offset(), 1, y.data(), y.offset(), 1);
-        return new ComplexDouble(f.realComponent().doubleValue(),f.imaginaryComponent().doubleValue());
+        if(x.data().dataType().equals(DataBuffer.FLOAT)) {
+            ComplexFloat f = (ComplexFloat) NativeBlas.cdotc(
+                    x.length(),
+                    x.data().asFloat(),
+                    x.offset(),
+                    x.stride()[0] / 2,
+                    y.data().asFloat(),
+                    y.offset(),
+                    y.stride()[0] / 2);
+            return new ComplexDouble(f.realComponent().doubleValue(),f.imaginaryComponent().doubleValue());
 
+        }
+
+        else {
+            ComplexDouble f = (ComplexDouble) NativeBlas.zdotc(
+                    x.length(),
+                    x.data().asDouble(),
+                    x.offset(),
+                    x.stride()[0] / 2,
+                    y.data().asDouble(),
+                    y.offset(),
+                    y.stride()[0] / 2);
+            return new ComplexDouble(f.realComponent().doubleValue(),f.imaginaryComponent().doubleValue());
+
+        }
     }
 
+
+
+
+    public static INDArray ger(INDArray A, INDArray B, INDArray C, double alpha) {
+
+
+        // = alpha * A * transpose(B) + C
+        BLAS.getInstance().dger(
+                A.rows(),   // m
+                A.columns(),// n
+                alpha,      // alpha
+                A.data().asDouble(),        // d_A or x
+                A.rows(),   // incx
+                B.data().asDouble(),        // dB or y
+                B.rows(),   // incy
+                C.data().asDouble(),        // dC or A
+                C.rows()    // lda
+        );
+
+
+        return C;
+    }
 
 
     public static INDArray ger(INDArray A, INDArray B, INDArray C, float alpha) {
@@ -421,11 +764,11 @@ public class SimpleNetlibBlas {
                 A.rows(),   // m
                 A.columns(),// n
                 alpha,      // alpha
-                A.data(),        // d_A or x
+                A.data().asFloat(),        // d_A or x
                 A.rows(),   // incx
-                B.data(),        // dB or y
+                B.data().asFloat(),        // dB or y
                 B.rows(),   // incy
-                C.data(),        // dC or A
+                C.data().asFloat(),        // dC or A
                 C.rows()    // lda
         );
 
@@ -443,8 +786,30 @@ public class SimpleNetlibBlas {
      * @param y
      * @return
      */
-    public static IComplexFloat dotu(IComplexNDArray x, IComplexNDArray y) {
-        return new ComplexFloat(NativeBlas.cdotu(x.length(), x.data(), x.offset(), 1, y.data(), y.offset(), 1));
+    public static IComplexNumber dotu(IComplexNDArray x, IComplexNDArray y) {
+        if(x.data().dataType().equals(DataBuffer.FLOAT)) {
+            return new ComplexFloat(NativeBlas.cdotu(
+                    x.length(),
+                    x.data().asFloat(),
+                    x.offset(),
+                    x.stride()[0],
+                    y.data().asFloat(),
+                    y.offset(),
+                    y.stride()[0]));
+
+        }
+        else {
+            return new ComplexDouble(NativeBlas.zdotu(
+                    x.length(),
+                    x.data().asDouble(),
+                    x.offset(),
+                    x.stride()[0],
+                    y.data().asDouble(),
+                    y.offset(),
+                    y.stride()[0]));
+
+        }
+
     }
 
     /**
@@ -456,10 +821,34 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
-        NativeBlas.cgeru(a.rows(), a.columns(),
-                new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
-                x.data(), x.offset(), 1, y.data(), y.offset(), 1, a.data(),
-                a.offset(), a.rows());
+        if(x.data().dataType().equals(DataBuffer.FLOAT))
+            NativeBlas.cgeru(
+                    a.rows(),
+                    a.columns(),
+                    new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
+                    x.data().asFloat(),
+                    x.offset(),
+                    x.stride()[0],
+                    y.data().asFloat(),
+                    y.offset(),
+                    y.stride()[0],
+                    a.data().asFloat(),
+                    a.offset(),
+                    a.rows());
+        else
+            NativeBlas.zgeru(
+                    a.rows(),
+                    a.columns(),
+                    new ComplexDouble(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
+                    x.data().asDouble(),
+                    x.offset(),
+                    x.stride()[0],
+                    y.data().asDouble(),
+                    y.offset(),
+                    y.stride()[0],
+                    a.data().asDouble(),
+                    a.offset(),
+                    a.rows());
         return a;
     }
 
@@ -473,8 +862,35 @@ public class SimpleNetlibBlas {
      */
     public static IComplexNDArray gerc(IComplexNDArray x, IComplexNDArray y, IComplexNDArray a,
                                        IComplexDouble alpha) {
-        NativeBlas.cgerc(a.rows(), a.columns(), (ComplexFloat) alpha, x.data(), x.offset(), 1, y.data(), y.offset(), 1, a.data(),
-                a.offset(), a.rows());
+
+        if(x.data().dataType().equals(DataBuffer.FLOAT))
+            NativeBlas.cgerc(
+                    a.rows(),
+                    a.columns(),
+                    (ComplexFloat) alpha,
+                    x.data().asFloat(),
+                    x.offset(),
+                    x.stride()[0],
+                    y.data().asFloat(),
+                    y.offset(),
+                    y.stride()[0],
+                    a.data().asFloat(),
+                    a.offset(),
+                    a.rows());
+        else
+            NativeBlas.zgerc(
+                    a.rows(),
+                    a.columns(),
+                    (ComplexDouble) alpha,
+                    x.data().asDouble(),
+                    x.offset(),
+                    x.stride()[0],
+                    y.data().asDouble(),
+                    y.offset(),
+                    y.stride()[0],
+                    a.data().asDouble(),
+                    a.offset(),
+                    a.rows());
         return a;
     }
 
@@ -490,6 +906,20 @@ public class SimpleNetlibBlas {
         axpy(alpha,x,y);
     }
 
+    public static void axpy(double alpha, INDArray x, INDArray y) {
+        axpy((float) alpha,x,y);
+    }
+
+    /**
+     * Scale a complex ndarray
+     * @param alpha
+     * @param x
+     * @return
+     */
+    public static IComplexNDArray dscal(IComplexDouble alpha, IComplexNDArray x) {
+        NativeBlas.zscal(x.length(), (org.jblas.ComplexDouble) alpha, x.data().asDouble(), x.offset(), x.stride()[0]);
+        return x;
+    }
     /**
      * Scale a complex ndarray
      * @param alpha
@@ -497,7 +927,9 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static IComplexNDArray sscal(IComplexFloat alpha, IComplexNDArray x) {
-        NativeBlas.cscal(x.length(),(org.jblas.ComplexFloat) alpha,x.data(),x.offset(),x.stride()[0]);
+        NativeBlas.cscal(x.length(),(org.jblas.ComplexFloat) alpha,x.data().asFloat(),x.offset(),x.stride()[0]);
         return x;
     }
+
+
 }

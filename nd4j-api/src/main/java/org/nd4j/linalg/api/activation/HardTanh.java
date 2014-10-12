@@ -65,7 +65,7 @@ public class HardTanh extends BaseActivationFunction {
 
             for(int i = 0; i < linear.length(); i++) {
 
-                float val = linear.get(i);
+                float val = linear.getFloat(i);
                 if(val < -1 )
                     val = -1;
                 else if(val > 1)

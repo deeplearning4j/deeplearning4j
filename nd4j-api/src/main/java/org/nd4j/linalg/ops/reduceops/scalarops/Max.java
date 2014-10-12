@@ -13,7 +13,7 @@ public class Max extends BaseScalarOp {
 
     @Override
     public float accumulate(INDArray arr, int i, float soFar) {
-        float curr = arr.get(i);
+        float curr = arr.getFloat(i);
         return soFar > curr ? soFar : curr;
     }
 }

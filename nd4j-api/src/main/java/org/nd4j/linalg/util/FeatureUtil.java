@@ -54,7 +54,7 @@ public class FeatureUtil {
     public static void scaleByMax(INDArray toScale) {
         INDArray scale = toScale.max(1);
         for (int i = 0; i < toScale.rows(); i++) {
-            float scaleBy = scale.get(i);
+            float scaleBy = scale.getFloat(i);
             toScale.putRow(i, toScale.getRow(i).divi(scaleBy));
         }
     }

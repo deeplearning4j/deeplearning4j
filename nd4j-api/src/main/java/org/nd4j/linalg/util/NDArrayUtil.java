@@ -85,7 +85,7 @@ public class NDArrayUtil {
         INDArray centered =  arr;
         INDArray startIndex = currShape.sub(shapeMatrix).div(2);
         INDArray endIndex = startIndex.add(shapeMatrix);
-        arr = centered.get(NDArrayIndex.interval((int) startIndex.get(0), (int) startIndex.get(0)), NDArrayIndex.interval((int) startIndex.get(1), (int) endIndex.get(1)));
+        arr = centered.get(NDArrayIndex.interval((int) startIndex.getFloat(0), (int) startIndex.getFloat(0)), NDArrayIndex.interval((int) startIndex.getFloat(1), (int) endIndex.getFloat(1)));
 
 
 
@@ -206,7 +206,7 @@ public class NDArrayUtil {
             return nd;
 
         INDArray ret = Nd4j.create(targetShape);
-        System.arraycopy(nd.data(),0,ret.data(),0,nd.data().length);
+        System.arraycopy(nd.data(),0,ret.data(),0,nd.data().length());
         return ret;
 
     }

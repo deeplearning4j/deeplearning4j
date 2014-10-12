@@ -1,5 +1,6 @@
 package org.nd4j.linalg.ops.transforms;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -56,8 +57,8 @@ public class Transforms {
                     int zk = k / ds[0];
                     for(int l = 0; l < colIter; l++) {
                         int zl = l / ds[1];
-                        float num = input.get(new int[]{i, j, k, l});
-                        float zzGet = zz.get(new int[]{i, j, zk, zl});
+                        float num = input.getFloat(new int[]{i, j, k, l});
+                        float zzGet = zz.getFloat(new int[]{i, j, zk, zl});
                         zz.putScalar(new int[]{i,j,zk,zl},Math.max(num,zzGet));
                     }
                 }
@@ -123,8 +124,8 @@ public class Transforms {
 
 
         for (int i = 0; i < d.shape().length; i++) {
-            INDArray tmp = Nd4j.zeros(d.size(i) * (int) scale.get(i), 1);
-            int[] indices = ArrayUtil.range(0, (int) scale.get(i) * d.size(i),(int) scale.get(i));
+            INDArray tmp = Nd4j.zeros(d.size(i) * (int) scale.getFloat(i), 1);
+            int[] indices = ArrayUtil.range(0, (int) scale.getFloat(i) * d.size(i),(int) scale.getFloat(i));
             tmp.putScalar(indices, 1.0f);
             idx.put(i,
                     tmp.cumsum(Integer.MAX_VALUE).sum(Integer.MAX_VALUE));
@@ -170,9 +171,15 @@ public class Transforms {
      * @return the scaled ndarray
      */
     public static INDArray unitVec(INDArray toScale) {
-        float length = (float) toScale.norm2(Integer.MAX_VALUE).element();
-        if (length > 0)
-            return Nd4j.getBlasWrapper().scal(1.0f / length,toScale);
+        double length =  toScale.norm2(Integer.MAX_VALUE).getDouble(0);
+
+        if (length > 0) {
+            if(toScale.data().dataType().equals(DataBuffer.FLOAT))
+                return Nd4j.getBlasWrapper().scal(1.0f / (float) length,toScale);
+            else
+                return Nd4j.getBlasWrapper().scal(1.0f / length,toScale);
+
+        }
         return toScale;
     }
 

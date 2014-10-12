@@ -35,7 +35,7 @@ public class MaxOut extends BaseElementWiseOp {
 
         else {
             int max = Nd4j.getBlasWrapper().iamax(linear);
-            float maxNum = linear.get(max);
+            float maxNum = linear.getFloat(max);
             for(int i = 0; i < linear.length(); i++) {
                 from.putScalar(i,maxNum);
             }

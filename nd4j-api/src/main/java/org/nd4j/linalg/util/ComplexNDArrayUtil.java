@@ -103,12 +103,12 @@ public class ComplexNDArrayUtil {
         INDArray endIndex = startIndex.add(shapeMatrix);
         if (shapeMatrix.length() > 1) {
             //arr = arr.getScalar(RangeUtils.interval((int) startIndex.getScalar(0).element(), (int) endIndex.getScalar(0).element()), RangeUtils.interval((int) startIndex.getScalar(1).element(), (int) endIndex.getScalar(1).element()));
-            arr = Nd4j.createComplex(arr.get(NDArrayIndex.interval((int) startIndex.get(0),(int) endIndex.get(0)), NDArrayIndex.interval((int) startIndex.get(1), (int) endIndex.get(1))));
+            arr = Nd4j.createComplex(arr.get(NDArrayIndex.interval((int) startIndex.getFloat(0),(int) endIndex.getFloat(0)), NDArrayIndex.interval((int) startIndex.getFloat(1), (int) endIndex.getFloat(1))));
         }
         else {
-            IComplexNDArray ret = Nd4j.createComplex(new int[]{(int) shapeMatrix.get(0)});
-            int start = (int) startIndex.get(0);
-            int end = (int) endIndex.get(0);
+            IComplexNDArray ret = Nd4j.createComplex(new int[]{(int) shapeMatrix.getFloat(0)});
+            int start = (int) startIndex.getFloat(0);
+            int end = (int) endIndex.getFloat(0);
             int count = 0;
             for (int i = start; i < end; i++) {
                 ret.putScalar(count++, arr.getComplex(i));
@@ -233,7 +233,7 @@ public class ComplexNDArrayUtil {
             return nd;
 
         IComplexNDArray ret = Nd4j.createComplex(targetShape);
-        System.arraycopy(nd.data(), 0, ret.data(), 0, nd.data().length);
+        System.arraycopy(nd.data(), 0, ret.data(), 0, nd.data().length());
         return ret;
 
     }

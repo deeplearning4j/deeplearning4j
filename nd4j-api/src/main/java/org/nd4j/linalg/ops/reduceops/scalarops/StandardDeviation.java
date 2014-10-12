@@ -17,7 +17,7 @@ public class StandardDeviation extends BaseScalarOp {
         double[] test = new double[arr.length()];
         INDArray linear = arr.linearView();
         for(int i = 0; i < linear.length(); i++)
-            test[i] = linear.get(i);
+            test[i] = linear.getFloat(i);
         float std = (float) dev.evaluate(test);
         return std;
     }

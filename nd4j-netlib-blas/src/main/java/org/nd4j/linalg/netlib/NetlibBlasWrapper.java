@@ -1,12 +1,18 @@
 package org.nd4j.linalg.netlib;
 
+import com.github.fommil.netlib.BLAS;
 import com.github.fommil.netlib.LAPACK;
 import org.jblas.NativeBlas;
 import org.jblas.exceptions.SizeException;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.complex.IComplexDouble;
+import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.netlib.util.intW;
+
+import javax.xml.crypto.Data;
 
 import static org.jblas.util.Functions.log2;
 import static org.jblas.util.Functions.max;
@@ -28,6 +34,11 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     }
 
     @Override
+    public INDArray scal(double alpha, INDArray x) {
+        return null;
+    }
+
+    @Override
     public INDArray scal(float alpha, INDArray x) {
         SimpleNetlibBlas.scal(alpha, x);
         return x;
@@ -36,9 +47,14 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
 
     @Override
-    public IComplexNDArray scal(IComplexNumber alpha, IComplexNDArray x) {
+    public IComplexNDArray scal(IComplexFloat alpha, IComplexNDArray x) {
         return SimpleNetlibBlas.sscal(alpha.asFloat(), x);
 
+    }
+
+    @Override
+    public IComplexNDArray scal(IComplexDouble alpha, IComplexNDArray x) {
+        return null;
     }
 
     @Override
@@ -51,6 +67,11 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public IComplexNDArray copy(IComplexNDArray x, IComplexNDArray y) {
         SimpleNetlibBlas.copy(x, y);
         return y;
+    }
+
+    @Override
+    public INDArray axpy(double da, INDArray dx, INDArray dy) {
+        return null;
     }
 
     @Override
@@ -67,7 +88,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         return dy;
     }
 
-    public float dot(INDArray x, INDArray y) {
+    public double dot(INDArray x, INDArray y) {
 
         return SimpleNetlibBlas.dot(x, y);
     }
@@ -118,24 +139,52 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     }
 
     @Override
+    public INDArray gemv(double alpha, INDArray a, INDArray x, double beta, INDArray y) {
+        return SimpleNetlibBlas.gemv(a, x, y, alpha, beta);
+
+    }
+
+    @Override
     public INDArray gemv(float alpha, INDArray a, INDArray x, float beta, INDArray y) {
         return SimpleNetlibBlas.gemv(a, x, y, alpha, beta);
     }
 
     @Override
+    public INDArray ger(double alpha, INDArray x, INDArray y, INDArray a) {
+        return SimpleNetlibBlas.ger(x,y,a,alpha);
+    }
+
+    @Override
     public INDArray ger(float alpha, INDArray x, INDArray y, INDArray a) {
-        return null;
+        return SimpleNetlibBlas.ger(x,y,a,alpha);
+
+    }
+
+    @Override
+    public IComplexNDArray geru(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
+        return SimpleNetlibBlas.geru(alpha,x,y,a);
     }
 
 
     @Override
-    public IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
+    public IComplexNDArray geru(IComplexFloat alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
         return SimpleNetlibBlas.geru(alpha,x,y,a);
     }
 
     @Override
-    public IComplexNDArray gerc(IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
+    public IComplexNDArray gerc(IComplexFloat alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
         return SimpleNetlibBlas.gerc(x, y, a, alpha.asDouble());
+    }
+
+    @Override
+    public IComplexNDArray gerc(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
+        return SimpleNetlibBlas.gerc(x, y, a, alpha.asDouble());
+
+    }
+
+    @Override
+    public INDArray gemm(double alpha, INDArray a, INDArray b, double beta, INDArray c) {
+        return SimpleNetlibBlas.gemm(a, b, c, alpha, beta);
     }
 
     @Override
@@ -153,8 +202,44 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public INDArray gesv(INDArray a, int[] ipiv, INDArray b) {
+        //  public static native int sgesv(int n, int nrhs, float[] a, int aIdx, int lda, int[] ipiv, int ipivIdx, float[] b, int bIdx, int ldb);
+        intW work = new intW(0);
+        if(a.data().dataType().equals(DataBuffer.FLOAT)) {
+            LAPACK.getInstance().sgesv(
+                    a.rows(),
+                    b.columns(),
+                    a.data().asFloat(),
+                    a.offset(),
+                    a.rows(),
+                    ipiv,
+                    0,
+                    b.data().asFloat(),
+                    b.offset(),
+                    b.rows(),
+                    work
 
-        return null;
+
+            );
+            return b;
+        }
+        else {
+            LAPACK.getInstance().dgesv(
+                    a.rows(),
+                    b.columns(),
+                    a.data().asDouble(),
+                    a.offset(),
+                    a.rows(),
+                    ipiv,
+                    0,
+                    b.data().asDouble(),
+                    b.offset(),
+                    b.rows(),
+                    work
+
+
+            );
+            return b;
+        }
     }
 
     @Override
@@ -165,32 +250,101 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray sysv(char uplo, INDArray a, int[] ipiv, INDArray b) {
         org.netlib.util.intW info = new intW(0);
-        float[] work = new float[1];
         int lwork = 0;
-        LAPACK.getInstance().ssysv(
-                String.valueOf(uplo),
-                a.rows(),
-                b.columns(),
-                a.data(),
-                a.offset(),
-                a.rows(),
-                ipiv,
-                0,
-                b.data(),
-                b.offset(),
-                b.rows(),
-                work,
-                0,
-                lwork,
-                info
+        if(a.data().dataType().equals(DataBuffer.FLOAT)) {
+            float[] work = new float[1];
 
-        );
+            LAPACK.getInstance().ssysv(
+                    String.valueOf(uplo),
+                    a.rows(),
+                    b.columns(),
+                    a.data().asFloat(),
+                    a.offset(),
+                    a.rows(),
+                    ipiv,
+                    0,
+                    b.data().asFloat(),
+                    b.offset(),
+                    b.rows(),
+                    work,
+                    0,
+                    lwork,
+                    info
+
+            );
+        }
+        else {
+            double[] work = new double[1];
+
+            LAPACK.getInstance().dsysv(
+                    String.valueOf(uplo),
+                    a.rows(),
+                    b.columns(),
+                    a.data().asDouble(),
+                    a.offset(),
+                    a.rows(),
+                    ipiv,
+                    0,
+                    b.data().asDouble(),
+                    b.offset(),
+                    b.rows(),
+                    work,
+                    0,
+                    lwork,
+                    info
+
+            );
+        }
 
         return b;
     }
 
     @Override
     public int syev(char jobz, char uplo, INDArray a, INDArray w) {
+        intW info = new intW(0);
+        int lWork = a.rows() * 5;
+        if(a.data().dataType().equals(DataBuffer.FLOAT)) {
+            float[] work2 = new float[lWork];
+            LAPACK.getInstance().ssyev(
+                    String.valueOf(jobz),
+                    String.valueOf(uplo),
+                    a.rows(),
+                    a.data().asFloat(),
+                    a.rows(),
+                    w.data().asFloat(),
+                    work2,
+                    lWork,
+                    info
+            );
+        }
+        else {
+            double[] work2 = new double[lWork];
+            LAPACK.getInstance().dsyev(
+                    String.valueOf(jobz),
+                    String.valueOf(uplo),
+                    a.rows(),
+                    a.data().asDouble(),
+                    a.rows(),
+                    w.data().asDouble(),
+                    work2,
+                    lWork,
+                    info
+            );
+        }
+        return info.val;
+    }
+
+    @Override
+    public int syevx(char jobz,
+                     char range,
+                     char uplo,
+                     INDArray a,
+                     double vl,
+                     double vu,
+                     int il, int iu,
+                     double abstol,
+                     INDArray w,
+                     INDArray z) {
         return 0;
     }
 
@@ -208,33 +362,107 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         org.netlib.util.intW info = new intW(0);
 
 
-        float[] work = new float[1];
         int lwork = 0;
         int[] iwork = new int[1];
         int liwork = 0;
-        LAPACK.getInstance().ssyevd(
+        if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+            float[] work = new float[1];
 
-                String.valueOf(jobz),
-                String.valueOf(uplo),
-                n,
-                A.data(),
-                A.offset(),
-                A.rows(),
-                w.data(),
-                w.offset(),
-                work,
-                0,
-                lwork,
-                iwork,
-                0,
-                liwork,
-                info );
+            LAPACK.getInstance().ssyevd(
+
+                    String.valueOf(jobz),
+                    String.valueOf(uplo),
+                    n,
+                    A.data().asFloat(),
+                    A.offset(),
+                    A.rows(),
+                    w.data().asFloat(),
+                    w.offset(),
+                    work,
+                    0,
+                    lwork,
+                    iwork,
+                    0,
+                    liwork,
+                    info );
+        }
+
+        else {
+            double[] work = new double[1];
+
+            LAPACK.getInstance().dsyevd(
+
+                    String.valueOf(jobz),
+                    String.valueOf(uplo),
+                    n,
+                    A.data().asDouble(),
+                    A.offset(),
+                    A.rows(),
+                    w.data().asDouble(),
+                    w.offset(),
+                    work,
+                    0,
+                    lwork,
+                    iwork,
+                    0,
+                    liwork,
+                    info);
+        }
+
 
 
 
         return info.val;
     }
 
+
+
+    @Override
+    public int syevr(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol, INDArray w, INDArray z, int[] isuppz) {
+        int n = a.rows();
+        org.netlib.util.intW info = new intW(0);
+        org.netlib.util.intW m = new intW(0);
+        double[] work = new double[1];
+        int lwork = -1;
+        int[] iwork = new int[1];
+        int liwork = -1;
+
+
+        LAPACK.getInstance().dsyevr(
+                String.valueOf(jobz),
+                String.valueOf(range),
+                String.valueOf(uplo),
+                n,
+                a.data().asDouble(),
+                a.offset(),
+                a.rows(),
+                vl,
+                vu,
+                il,
+                iu,
+                abstol,
+                m,
+                w.data().asDouble(),
+                w.offset(),
+                z.data().asDouble(),
+                z.offset(),
+                z.rows(),
+                isuppz,
+                0,
+                work,
+                0,
+                lwork,
+                iwork,
+                liwork,
+                0,
+                info
+
+        );
+
+
+
+        return info.val;
+    }
     @Override
     public int syevr(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, float abstol, INDArray w, INDArray z, int[] isuppz) {
         int n = a.rows();
@@ -251,7 +479,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 String.valueOf(range),
                 String.valueOf(uplo),
                 n,
-                a.data(),
+                a.data().asFloat(),
                 a.offset(),
                 a.rows(),
                 vl,
@@ -260,9 +488,9 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 iu,
                 abstol,
                 m,
-                w.data(),
+                w.data().asFloat(),
                 w.offset(),
-                z.data(),
+                z.data().asFloat(),
                 z.offset(),
                 z.rows(),
                 isuppz,
@@ -288,52 +516,102 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int n = A.rows();
         int nrhs = B.columns();
         org.netlib.util.intW info = new intW(0);
-        LAPACK.getInstance().sposv(
-                String.valueOf(uplo),
-                n,
-                nrhs,
-                A.data(),
-                A.offset(),
-                A.rows(),
-                B.data(),
-                B.offset(),
-                B.rows(),
-                info
+        if(A.data().dataType().equals(DataBuffer.FLOAT))
+            LAPACK.getInstance().sposv(
+                    String.valueOf(uplo),
+                    n,
+                    nrhs,
+                    A.data().asFloat(),
+                    A.offset(),
+                    A.rows(),
+                    B.data().asFloat(),
+                    B.offset(),
+                    B.rows(),
+                    info
 
-        );
+            );
+        else
+            LAPACK.getInstance().dposv(
+                    String.valueOf(uplo),
+                    n,
+                    nrhs,
+                    A.data().asDouble(),
+                    A.offset(),
+                    A.rows(),
+                    B.data().asDouble(),
+                    B.offset(),
+                    B.rows(),
+                    info
+
+            );
 
     }
 
     @Override
     public int geev(char jobvl, char jobvr, INDArray A, INDArray WR, INDArray WI, INDArray VL, INDArray VR) {
-        float[] work = new float[A.rows() * 5];
         intW info = new intW(0);
         int lwork = A.rows() * 5;
 
-        LAPACK.getInstance().sgeev(
-                String.valueOf(jobvl),//jobvl
-                String.valueOf(jobvr),//jobvr
-                A.rows(),
-                A.data(),//n
-                A.offset(),//a
-                A.rows(),//
-                WR.data(),
-                WR.offset(),
-                WI.data(),
-                WI.offset(),
-                VL.data(),
-                VL.offset(),
-                A.rows(),
-                VR.data(),
-                VR.offset(),
-                A.rows(),
-                work,
-                0,
-                lwork,
-                info
+        if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+
+            float[] work = new float[A.rows() * 5];
+
+            LAPACK.getInstance().sgeev(
+                    String.valueOf(jobvl),//jobvl
+                    String.valueOf(jobvr),//jobvr
+                    A.rows(),
+                    A.data().asFloat(),//n
+                    A.offset(),//a
+                    A.rows(),//
+                    WR.data().asFloat(),
+                    WR.offset(),
+                    WI.data().asFloat(),
+                    WI.offset(),
+                    VL.data().asFloat(),
+                    VL.offset(),
+                    A.rows(),
+                    VR.data().asFloat(),
+                    VR.offset(),
+                    A.rows(),
+                    work,
+                    0,
+                    lwork,
+                    info
 
 
-        );
+            );
+        }
+
+        else {
+
+            double[] work = new double[A.rows() * 5];
+
+            LAPACK.getInstance().dgeev(
+                    String.valueOf(jobvl),//jobvl
+                    String.valueOf(jobvr),//jobvr
+                    A.rows(),
+                    A.data().asDouble(),//n
+                    A.offset(),//a
+                    A.rows(),//
+                    WR.data().asDouble(),
+                    WR.offset(),
+                    WI.data().asDouble(),
+                    WI.offset(),
+                    VL.data().asDouble(),
+                    VL.offset(),
+                    A.rows(),
+                    VR.data().asDouble(),
+                    VR.offset(),
+                    A.rows(),
+                    work,
+                    0,
+                    lwork,
+                    info
+
+
+            );
+        }
+
 
         return info.val;
     }
@@ -342,33 +620,62 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public int sygvd(int itype, char jobz, char uplo, INDArray A, INDArray B, INDArray W) {
         int lwork = getLWork(A.rows(),jobz);
         intW info = new intW(0);
-        float[] work = new float[lwork];
         int liwork = getLiWork(A.rows(),jobz);
 
         int[] iwork = new int[Math.max(1,liwork)];
+        if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+            float[] work = new float[lwork];
 
+            LAPACK.getInstance().ssygvd(
+                    itype,
+                    String.valueOf(jobz),
+                    String.valueOf(uplo),
+                    A.rows(),
+                    A.data().asFloat(),
+                    A.offset(),
+                    A.rows(),
+                    B.data().asFloat(),
+                    B.offset(),
+                    B.rows(),
+                    W.data().asFloat(),
+                    W.offset(),
+                    work,
+                    0,
+                    lwork,
+                    iwork,
+                    0,
+                    liwork,
+                    info
+            );
 
-        LAPACK.getInstance().ssygvd(
-                itype,
-                String.valueOf(jobz),
-                String.valueOf(uplo),
-                A.rows(),
-                A.data(),
-                A.offset(),
-                A.rows(),
-                B.data(),
-                B.offset(),
-                B.rows(),
-                W.data(),
-                W.offset(),
-                work,
-                0,
-                lwork,
-                iwork,
-                0,
-                liwork,
-                info
-        );
+        }
+
+        else {
+            double[] work = new double[lwork];
+
+            LAPACK.getInstance().dsygvd(
+                    itype,
+                    String.valueOf(jobz),
+                    String.valueOf(uplo),
+                    A.rows(),
+                    A.data().asDouble(),
+                    A.offset(),
+                    A.rows(),
+                    B.data().asDouble(),
+                    B.offset(),
+                    B.rows(),
+                    W.data().asDouble(),
+                    W.offset(),
+                    work,
+                    0,
+                    lwork,
+                    iwork,
+                    0,
+                    liwork,
+                    info
+            );
+
+        }
 
         return info.val;
     }
@@ -424,37 +731,76 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
         int lwork = 0;
         int[] iwork = new int[3 * minmn * nlvl + 11 * minmn];
-        float[] s = new float[minmn];
-        float[] work = new float[1];
-
-        intW rank = new intW(1);
-        intW info = new intW(0);
-
-        float rCond = -1f;
 
 
-        LAPACK.getInstance().sgelsd(
-                m,
-                n,
-                nrhs,
-                A.data(),
-                A.offset(),
-                A.rows(),
-                B.data(),
-                B.offset(),
-                B.rows(),
-                s,
-                0,
-                rCond,
-                rank,
-                work,
-                0,
-                lwork,
-                iwork,
-                0,
-                info
+        if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+            float[] s = new float[minmn];
+            float[] work = new float[1];
 
-        );
+            intW rank = new intW(1);
+            intW info = new intW(0);
+
+            float rCond = -1f;
+
+
+            LAPACK.getInstance().sgelsd(
+                    m,
+                    n,
+                    nrhs,
+                    A.data().asFloat(),
+                    A.offset(),
+                    A.rows(),
+                    B.data().asFloat(),
+                    B.offset(),
+                    B.rows(),
+                    s,
+                    0,
+                    rCond,
+                    rank,
+                    work,
+                    0,
+                    lwork,
+                    iwork,
+                    0,
+                    info
+
+            );
+        }
+
+        else {
+            double[] s = new double[minmn];
+            double[] work = new double[1];
+
+            intW rank = new intW(1);
+            intW info = new intW(0);
+
+            float rCond = -1f;
+
+
+            LAPACK.getInstance().dgelsd(
+                    m,
+                    n,
+                    nrhs,
+                    A.data().asDouble(),
+                    A.offset(),
+                    A.rows(),
+                    B.data().asDouble(),
+                    B.offset(),
+                    B.rows(),
+                    s,
+                    0,
+                    rCond,
+                    rank,
+                    work,
+                    0,
+                    lwork,
+                    iwork,
+                    0,
+                    info
+
+            );
+        }
+
 
 
 
@@ -465,26 +811,50 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public void geqrf(INDArray A, INDArray tau) {
 
 
-        float[] work = new float[1];
         int lwork = 0;
         intW status = new intW(0);
-        LAPACK.getInstance().sgeqrf(
-                A.rows(),
-                A.columns(),
-                A.data(),
-                A.offset(),
-                A.rows(),
-                tau.data(),
-                tau.offset(),
-                work,
-                0,
-                lwork,
-                status
+        if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+            float[] work = new float[1];
+
+            LAPACK.getInstance().sgeqrf(
+                    A.rows(),
+                    A.columns(),
+                    A.data().asFloat(),
+                    A.offset(),
+                    A.rows(),
+                    tau.data().asFloat(),
+                    tau.offset(),
+                    work,
+                    0,
+                    lwork,
+                    status
 
 
-        );
+            );
 
 
+        }
+        else {
+            double[] work = new double[1];
+
+            LAPACK.getInstance().dgeqrf(
+                    A.rows(),
+                    A.columns(),
+                    A.data().asDouble(),
+                    A.offset(),
+                    A.rows(),
+                    tau.data().asDouble(),
+                    tau.offset(),
+                    work,
+                    0,
+                    lwork,
+                    status
+
+
+            );
+
+
+        }
 
     }
 
@@ -492,28 +862,52 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public void ormqr(char side, char trans, INDArray A, INDArray tau, INDArray C) {
         int k = tau.length();
         intW status = new intW(0);
+        if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+            LAPACK.getInstance().sormqr(
+                    String.valueOf(side),
+                    String.valueOf(trans),
+                    C.rows(),
+                    C.columns(),
+                    k,
+                    A.data().asFloat(),
+                    A.offset(),
+                    A.data().asFloat(),
+                    tau.data().asFloat(),
+                    tau.offset(),
+                    C.data().asFloat(),
+                    C.rows(),
+                    status
 
-        LAPACK.getInstance().sormqr(
-                String.valueOf(side),
-                String.valueOf(trans),
-                C.rows(),
-                C.columns(),
-                k,
-                A.data(),
-                A.offset(),
-                A.data(),
-                tau.data(),
-                tau.offset(),
-                C.data(),
-                C.rows(),
-                status
+            );
+        }
+        else
+            LAPACK.getInstance().dormqr(
+                    String.valueOf(side),
+                    String.valueOf(trans),
+                    C.rows(),
+                    C.columns(),
+                    k,
+                    A.data().asDouble(),
+                    A.offset(),
+                    A.data().asDouble(),
+                    tau.data().asDouble(),
+                    tau.offset(),
+                    C.data().asDouble(),
+                    C.rows(),
+                    status
 
-        );
+            );
+
     }
 
     @Override
     public void dcopy(int n, float[] dx, int dxIdx, int incx, float[] dy, int dyIdx, int incy) {
 
+    }
+
+    @Override
+    public void saxpy(double alpha, INDArray x, INDArray y) {
+        SimpleNetlibBlas.axpy(alpha,x,y);
     }
 
     /**

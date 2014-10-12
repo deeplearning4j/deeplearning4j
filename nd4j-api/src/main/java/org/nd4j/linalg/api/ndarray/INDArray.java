@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ndarray;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -73,7 +74,11 @@ public interface INDArray extends Serializable {
      * @param value the value to insert
      * @return this
      */
-    public INDArray putScalar(int i,Number value);
+    public INDArray putScalar(int i, double value);
+
+    INDArray putScalar(int i, float value);
+
+    INDArray putScalar(int i, int value);
 
     /**
      * Insert the item at the specified indices
@@ -81,7 +86,7 @@ public interface INDArray extends Serializable {
      * @param value the number to insert
      * @return this
      */
-    public INDArray putScalar(int[] i,Number value);
+    public INDArray putScalar(int[] i, double value);
 
     /**
      * Returns an ndarray with 1 if the element is less than
@@ -100,6 +105,10 @@ public interface INDArray extends Serializable {
      * @return
      */
     public INDArray lti(Number other);
+
+    INDArray putScalar(int[] indexes, float value);
+
+    INDArray putScalar(int[] indexes, int value);
 
     /**
      * Returns an ndarray with 1 if the element is epsilon equals
@@ -135,7 +144,7 @@ public interface INDArray extends Serializable {
      * @return
      */
     public INDArray eqi(Number other);
-      /**
+    /**
      * Greater than boolean (copying)(
      * @param other
      * @return
@@ -635,10 +644,22 @@ public interface INDArray extends Serializable {
     public float distance1(INDArray other);
 
 
-
+    /**
+     * Put the elements of the ndarray
+     * in to the specified indices
+     * @param indices the indices to put the ndarray in to
+     * @param element the ndarray to put
+     * @return this ndarray
+     */
     public INDArray put(NDArrayIndex[] indices,INDArray element);
 
-
+    /**
+     * Put the elements of the ndarray
+     * in to the specified indices
+     * @param indices the indices to put the ndarray in to
+     * @param element the ndarray to put
+     * @return this ndarray
+     */
     public INDArray put(NDArrayIndex[] indices,Number element);
 
     /**
@@ -1045,18 +1066,31 @@ public interface INDArray extends Serializable {
     public INDArray getScalar(int[] indices);
 
 
+    int getInt(int... indices);
+
+    double getDouble(int... indices);
+
     /**
      * Returns the elements at the the specified indices
      * @param indices the indices to getScalar
      * @return the array with the specified elements
      */
-    public float get(int[] indices);
+    public float getFloat(int[] indices);
+
+    <E> E getElement(int i);
+
+    <E> E getElement(int i, int j);
+
+    double getDouble(int i);
+
+    double getDouble(int i, int j);
+
     /**
      * Return the item at the linear index i
      * @param i the index of the item to getScalar
      * @return the item at index j
      */
-    public float get(int i);
+    public float getFloat(int i);
 
     /**
      * Return the item at row i column j
@@ -1065,7 +1099,7 @@ public interface INDArray extends Serializable {
      * @param j the column to getScalar
      * @return the item at row i column j
      */
-    public float get(int i,int j);
+    public float getFloat(int i, int j);
 
 
 
@@ -1082,6 +1116,8 @@ public interface INDArray extends Serializable {
      */
     public INDArray ravel();
 
+
+    void setData(DataBuffer data);
 
     /**
      * Returns the number of slices in this ndarray
@@ -1274,22 +1310,10 @@ public interface INDArray extends Serializable {
      * Returns a linear double array representation of this ndarray
      * @return the linear double array representation of this ndarray
      */
-    public float[] data();
+    public DataBuffer data();
 
 
     void setData(float[] data);
-
-
-    /**
-     * Returns a linear float array representation of this ndarray
-     * @return the linear float array representation of this ndarray
-     */
-    public float[] floatData();
-
-
-
-
-
 
     public IComplexNDArray rdiv(IComplexNumber n);
 

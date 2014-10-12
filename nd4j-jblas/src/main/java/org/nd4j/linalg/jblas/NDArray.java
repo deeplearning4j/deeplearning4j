@@ -1,9 +1,10 @@
 package org.nd4j.linalg.jblas;
 
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.factory.Nd4j;
 import org.jblas.DoubleMatrix;
 
 
@@ -30,7 +31,17 @@ import java.util.*;
  * @author Adam Gibson
  */
 public class NDArray extends BaseNDArray {
+    public NDArray() {
+        super();
+    }
 
+    public NDArray(DataBuffer buffer) {
+        super(buffer);
+    }
+
+    public NDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
+        super(buffer, shape, stride, offset, ordering);
+    }
 
     public NDArray(double[][] data) {
         super(data);
@@ -233,12 +244,12 @@ public class NDArray extends BaseNDArray {
 
     public NDArray(DoubleMatrix doubleMatrix) {
         this(new int[]{doubleMatrix.rows,doubleMatrix.columns});
-        this.data = ArrayUtil.floatCopyOf(doubleMatrix.data);
+        this.data = Nd4j.createBuffer(doubleMatrix.data);
 
     }
 
     public NDArray(double[] data, int[] shape, int[] stride, int offset) {
-        this.data = ArrayUtil.floatCopyOf(data);
+        this.data = Nd4j.createBuffer(data);
         this.stride = stride;
         this.offset = offset;
         initShape(shape);
@@ -246,5 +257,14 @@ public class NDArray extends BaseNDArray {
 
     public NDArray(float[][] floats) {
         super(floats);
+    }
+
+    public NDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
+        super(data,shape,stride,offset);
+
+    }
+
+    public NDArray(DataBuffer data, int[] shape) {
+        super(data,shape);
     }
 }

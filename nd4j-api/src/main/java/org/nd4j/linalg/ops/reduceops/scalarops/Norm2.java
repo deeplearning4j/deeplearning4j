@@ -14,7 +14,7 @@ public class Norm2 extends BaseScalarOp {
 
     @Override
     public float accumulate(INDArray arr, int i, float soFar) {
-        float ret =  soFar + (float) Math.pow(arr.get(i),2);
+        float ret =  soFar + (float) Math.pow(arr.getFloat(i),2);
         if(i == arr.length() - 1)
             return (float) Math.sqrt(ret);
         return ret;

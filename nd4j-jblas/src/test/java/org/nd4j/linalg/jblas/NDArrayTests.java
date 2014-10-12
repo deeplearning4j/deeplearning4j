@@ -85,7 +85,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         verifyElements(dReshaped,nReshaped);
         DoubleMatrix d = dReshaped.transpose();
         INDArray n = nReshaped.transpose();
-        assertTrue(Arrays.equals(d.data,ArrayUtil.doubleCopyOf(n.data())));
+        assertTrue(Arrays.equals(d.data,n.data().asDouble()));
 
         verifyElements(d,n);
 
@@ -95,7 +95,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         INDArray other = Nd4j.create(copy,new int[]{25,10});
         verifyElements(d3,other);
         verifyElements(d3.transpose(),other.transpose());
-        assertTrue(Arrays.equals(d3.transpose().data,ArrayUtil.doubleCopyOf(other.transpose().data())));
+        assertTrue(Arrays.equals(d3.transpose().data,other.transpose().data().asDouble()));
         double[] toMMul = {0.003841338213533163,0.0,0.01873396337032318,0.0,0.0,0.028475480154156685,0.0,0.02141464874148369,0.0,0.02895500883460045,0.03538861125707626,0.0,0.01675591431558132,0.0,0.04823039844632149,0.0,0.008317765779793262,0.0,0.0388733372092247,0.0};
         DoubleMatrix dToMmul = new DoubleMatrix(2,10,toMMul);
         DoubleMatrix result = dToMmul.mmul(d3.transpose());
@@ -140,7 +140,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
     public void testNorm1() {
         DoubleMatrix norm1 = DoubleMatrix.linspace(1,8,8).reshape(2,4);
         INDArray norm1NDArray = Nd4j.linspace(1, 8, 8).reshape(2,4);
-        assertEquals(norm1.norm1(),norm1NDArray.norm1(Integer.MAX_VALUE).get(0),1e-1);
+        assertEquals(norm1.norm1(),norm1NDArray.norm1(Integer.MAX_VALUE).getFloat(0),1e-1);
     }
 
 
@@ -177,7 +177,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         INDArray linspace = Nd4j.linspace(1,4,4).reshape(2,2);
         INDArray row1 = linspace.getRow(0);
         INDArray row2 = linspace.getRow(1);
-        float dot = Nd4j.getBlasWrapper().dot(row1,row2);
+        double dot = Nd4j.getBlasWrapper().dot(row1,row2);
         assertEquals(11,dot,1e-1);
 
 
@@ -343,7 +343,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         for(int i = 0; i < d2.rows(); i++) {
             for(int j = 0; j < d2.columns(); j++) {
                 float test1 =  d[i][j];
-                float test2 = d2.get(i,j);
+                float test2 = d2.getFloat(i, j);
                 assertEquals(test1,test2,1e-6);
             }
         }
@@ -354,7 +354,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         if(d.isVector() && d2.isVector())
             for(int j = 0; j < d2.length(); j++) {
                 float test1 = (float) d.get(j);
-                float test2 =  d2.get(j);
+                float test2 =  d2.getFloat(j);
                 assertEquals(test1,test2,1e-6);
             }
 
@@ -362,7 +362,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
             for(int i = 0; i < d.rows; i++) {
                 for(int j = 0; j < d.columns; j++) {
                     float test1 = (float) d.get(i,j);
-                    float test2 = d2.get(i,j);
+                    float test2 = d2.getFloat(i, j);
                     assertEquals(test1,test2,1e-6);
                 }
             }

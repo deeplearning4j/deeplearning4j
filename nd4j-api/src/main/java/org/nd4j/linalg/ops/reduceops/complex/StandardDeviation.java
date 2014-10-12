@@ -17,7 +17,7 @@ public class StandardDeviation extends BaseScalarOp {
 
     public IComplexNumber std(IComplexNDArray arr) {
         org.apache.commons.math3.stat.descriptive.moment.StandardDeviation dev = new org.apache.commons.math3.stat.descriptive.moment.StandardDeviation();
-        double std = dev.evaluate(ArrayUtil.doubleCopyOf(arr.data()));
+        double std = dev.evaluate(arr.ravel().data().asDouble());
         return Nd4j.createDouble(std, 0);
     }
 

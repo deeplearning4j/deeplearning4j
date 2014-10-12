@@ -37,6 +37,8 @@
 
 package org.nd4j.linalg.factory;
 
+import org.nd4j.linalg.api.complex.IComplexDouble;
+import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -62,14 +64,17 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
      */
     public NDARRAY_TYPE swap(NDARRAY_TYPE x, NDARRAY_TYPE y);
 
+    INDArray scal(double alpha, INDArray x);
+
     /**
      * Compute x <- alpha * x (scale a matrix)
      */
     public NDARRAY_TYPE scal(float alpha, NDARRAY_TYPE x);
 
-    public IComplexNDArray scal(IComplexNumber alpha, IComplexNDArray x);
+    public IComplexNDArray scal(IComplexFloat alpha, IComplexNDArray x);
 
 
+    IComplexNDArray scal(IComplexDouble alpha, IComplexNDArray x);
 
     /**
      * Compute y <- x (copy a matrix)
@@ -77,6 +82,8 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
     public NDARRAY_TYPE copy(NDARRAY_TYPE x, NDARRAY_TYPE y);
 
     public IComplexNDArray copy(IComplexNDArray x, IComplexNDArray y);
+
+    INDArray axpy(double da, INDArray dx, INDArray dy);
 
     /**
      * Compute y <- alpha * x + y (elementwise addition)
@@ -88,7 +95,7 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
     /**
      * Compute x^T * y (dot product)
      */
-    public float dot(NDARRAY_TYPE x, NDARRAY_TYPE y);
+    public double dot(NDARRAY_TYPE x, NDARRAY_TYPE y);
     /**
      * Compute x^T * y (dot product)
      */
@@ -128,12 +135,18 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
      * BLAS Level 2
      */
 
+    INDArray gemv(double alpha, INDArray a,
+                  INDArray x, double beta, INDArray y);
+
     /**
      * Compute y <- alpha*op(a)*x + beta * y (general matrix vector
      * multiplication)
      */
     public NDARRAY_TYPE gemv(float alpha, NDARRAY_TYPE a,
                          NDARRAY_TYPE x, float beta, NDARRAY_TYPE y);
+
+    INDArray ger(double alpha, INDArray x,
+                 INDArray y, INDArray a);
 
     /**
      * Compute A <- alpha * x * y^T + A (general rank-1 update)
@@ -142,19 +155,28 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
                         NDARRAY_TYPE y, NDARRAY_TYPE a);
 
 
+    IComplexNDArray geru(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a);
+
     /**
      * Compute A <- alpha * x * y^T + A (general rank-1 update)
      */
-    public IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x,
+    public IComplexNDArray geru(IComplexFloat alpha, IComplexNDArray x,
                                 IComplexNDArray y, IComplexNDArray a);
     /**
      * Compute A <- alpha * x * y^H + A (general rank-1 update)
      */
-    public IComplexNDArray gerc(IComplexNumber alpha, IComplexNDArray x,
+    public IComplexNDArray gerc(IComplexFloat alpha, IComplexNDArray x,
                                 IComplexNDArray y, IComplexNDArray a);
+
+    IComplexNDArray gerc(IComplexDouble alpha, IComplexNDArray x,
+                         IComplexNDArray y, IComplexNDArray a);
+
     /***************************************************************************
      * BLAS Level 3
      */
+
+    INDArray gemm(double alpha, INDArray a,
+                  INDArray b, double beta, INDArray c);
 
     /**
      * Compute c <- a*b + beta * c (general matrix matrix
@@ -182,12 +204,19 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
                          NDARRAY_TYPE b);
 
     public int syev(char jobz, char uplo, NDARRAY_TYPE a, NDARRAY_TYPE w);
+
+    int syevx(char jobz, char range, char uplo, INDArray a,
+              double vl, double vu, int il, int iu, double abstol,
+              INDArray w, INDArray z);
+
     public int syevx(char jobz, char range, char uplo, NDARRAY_TYPE a,
                      float vl, float vu, int il, int iu, float abstol,
                      NDARRAY_TYPE w, NDARRAY_TYPE z);
 
     public int syevd(char jobz, char uplo, NDARRAY_TYPE A,
                      NDARRAY_TYPE w);
+
+    int syevr(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol, INDArray w, INDArray z, int[] isuppz);
 
     public int syevr(char jobz, char range, char uplo, NDARRAY_TYPE a,
                      float vl, float vu, int il, int iu, float abstol,
@@ -222,6 +251,8 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
 
 
     public  void dcopy(int n, float[] dx, int dxIdx, int incx, float[] dy, int dyIdx, int incy);
+
+    void saxpy(double alpha, INDArray x, INDArray y);
 
     /**
      * Abstraction over saxpy

@@ -1,8 +1,6 @@
 package org.nd4j.linalg.ops.reduceops.scalarops;
 
-import org.apache.commons.math3.stat.StatUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Return the variance of an ndarray
@@ -18,7 +16,7 @@ public class Variance extends BaseScalarOp {
 
     /**
      * Variance (see: apache commons)
-     * @param arr the ndarray to get the variance of
+     * @param arr the ndarray to getFloat the variance of
      * @return the variance for this ndarray
      */
     public float var(INDArray arr) {
@@ -27,7 +25,7 @@ public class Variance extends BaseScalarOp {
         float dev = 0.0f;
         float accum2 = 0.0f;
         for (int i = 0; i < arr.length(); i++) {
-            dev = arr.get(i) - mean;
+            dev = arr.getFloat(i) - mean;
             accum += dev * dev;
             accum2 += dev;
         }

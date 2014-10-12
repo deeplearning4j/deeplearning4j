@@ -1,15 +1,16 @@
 package org.nd4j.linalg.netlib;
 
 /**
- * Created by mjk on 8/23/14.
+ * NDArray for net lib blas
  *
- * @author mjk
  * @author Adam Gibson
  */
 
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.List;
@@ -17,8 +18,17 @@ import java.util.List;
 
 public class NetlibBlasNDArray extends BaseNDArray {
 
+    public NetlibBlasNDArray() {
+        super();
+    }
 
+    public NetlibBlasNDArray(DataBuffer buffer) {
+        super(buffer);
+    }
 
+    public NetlibBlasNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
+        super(buffer, shape, stride, offset, ordering);
+    }
 
     public NetlibBlasNDArray(double[][] data) {
         super(data);
@@ -34,7 +44,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
      */
     public NetlibBlasNDArray(float[] data, int[] shape, char ordering) {
         super(data, shape, ordering);
-        
+
 
     }
 
@@ -46,7 +56,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
      */
     public NetlibBlasNDArray(float[] data, int[] shape, int offset, char ordering) {
         super(data, shape, offset, ordering);
-        
+
 
     }
 
@@ -61,7 +71,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
      */
     public NetlibBlasNDArray(int[] shape, int[] stride, int offset, char ordering) {
         super(shape, stride, offset, ordering);
-        
+
     }
 
     /**
@@ -75,19 +85,19 @@ public class NetlibBlasNDArray extends BaseNDArray {
     public NetlibBlasNDArray(int[] shape, int[] stride, char ordering) {
 
         super(shape, stride, ordering);
-        
+
     }
 
     public NetlibBlasNDArray(int[] shape, int offset, char ordering) {
 
         super(shape, offset, ordering);
-        
+
     }
 
     public NetlibBlasNDArray(int[] shape) {
 
         super(shape);
-        
+
     }
 
     /**
@@ -99,7 +109,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
      */
     public NetlibBlasNDArray(int newRows, int newColumns, char ordering) {
         super(newRows, newColumns, ordering);
-        
+
     }
 
     /**
@@ -115,7 +125,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
     public NetlibBlasNDArray(List<INDArray> slices, int[] shape, char ordering) {
 
         super(slices, shape, ordering);
-        
+
     }
 
     /**
@@ -131,17 +141,17 @@ public class NetlibBlasNDArray extends BaseNDArray {
      */
     public NetlibBlasNDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
         super(slices, shape, stride, ordering);
-        
+
     }
 
     public NetlibBlasNDArray(float[] data, int[] shape, int[] stride, char ordering) {
         super(data, shape, stride, ordering);
-        
+
     }
 
     public NetlibBlasNDArray(float[] data, int[] shape, int[] stride, int offset, char ordering) {
         super(data, shape, stride, offset, ordering);
-        
+
     }
 
     /**
@@ -157,7 +167,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
     public NetlibBlasNDArray(float[] data, int[] shape, int offset) {
 
         super(data, shape, offset);
-        
+
     }
 
     /**
@@ -247,7 +257,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
     }
 
     public NetlibBlasNDArray(double[] data, int[] shape, int[] stride, int offset) {
-        this.data = ArrayUtil.floatCopyOf(data);
+        this.data = Nd4j.createBuffer(data);
         this.stride = stride;
         this.offset = offset;
         initShape(shape);
@@ -258,4 +268,15 @@ public class NetlibBlasNDArray extends BaseNDArray {
     }
 
 
+    public NetlibBlasNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
+        super(data,shape,stride,offset);
     }
+
+    public NetlibBlasNDArray(DataBuffer data, int[] shape) {
+        super(data,shape);
+    }
+
+    public NetlibBlasNDArray(DataBuffer buffer, int[] shape, int offset) {
+        super(buffer,shape,offset);
+    }
+}

@@ -26,9 +26,9 @@ public abstract class SoftMaxTest {
         INDArray columns = softMaxColumns.sum(0);
         INDArray rows = softMaxRows.sum(1);
         //softmax along columns: should be 1 in every cell ( note that there are 3 columns)
-        assertEquals(3,columns.sum(Integer.MAX_VALUE).get(0),1e-1);
+        assertEquals(3,columns.sum(Integer.MAX_VALUE).getFloat(0),1e-1);
         //softmax along rows: should be 1 in every cell (note that there are 2 rows
-        assertEquals(2,rows.sum(Integer.MAX_VALUE).get(0),1e-1);
+        assertEquals(2,rows.sum(Integer.MAX_VALUE).getFloat(0),1e-1);
 
     }
 
@@ -42,9 +42,9 @@ public abstract class SoftMaxTest {
         INDArray columns = softMaxColumns.sum(0);
         INDArray rows = softMaxRows.sum(1);
         //softmax along columns: should be 1 in every cell ( note that there are 3 columns)
-        assertEquals(3,columns.sum(Integer.MAX_VALUE).get(0),1e-1);
+        assertEquals(3,columns.sum(Integer.MAX_VALUE).getFloat(0),1e-1);
         //softmax along rows: should be 1 in every cell (note that there are 2 rows
-        assertEquals(2,rows.sum(Integer.MAX_VALUE).get(0),1e-1);
+        assertEquals(2,rows.sum(Integer.MAX_VALUE).getFloat(0),1e-1);
 
     }
 

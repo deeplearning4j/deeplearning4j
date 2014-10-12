@@ -68,7 +68,7 @@ public class Eigen {
      *
      * This is in reverse order of the matlab eig(A) call.
      *
-     * @param A the ndarray to get the eigen vectors for
+     * @param A the ndarray to getFloat the eigen vectors for
      * @return 2 arrays representing W (eigen vectors) and V (normalized eigen vectors)
      */
     public static IComplexNDArray[] eigenvectors(INDArray A) {

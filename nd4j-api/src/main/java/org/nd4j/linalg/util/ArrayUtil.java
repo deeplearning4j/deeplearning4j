@@ -63,7 +63,7 @@ public class ArrayUtil {
         n = n.linearView();
         int[] ret = new int[n.length()];
         for(int i = 0; i < n.length(); i++)
-            ret[i] = (int) n.get(i);
+            ret[i] = (int) n.getFloat(i);
         return ret;
     }
 

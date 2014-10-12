@@ -2,6 +2,7 @@ package org.nd4j.linalg.factory;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -105,6 +106,10 @@ public interface NDArrayFactory  {
      INDArray linspace(int lower,int upper,int num);
 
 
+    DataBuffer createBuffer(double[] concat);
+
+    DataBuffer createBuffer(float[] concat);
+
     /**
      * Returns a flattened ndarray with all of the elements in each ndarray
      * regardless of dimension
@@ -125,7 +130,7 @@ public interface NDArrayFactory  {
      INDArray toFlattened(int length,Iterator<? extends INDArray>...matrices);
 
 
-
+    DataBuffer createBuffer(DataBuffer[] buffers);
 
     /**
      * Returns a column vector where each entry is the nth bilinear
@@ -400,6 +405,24 @@ public interface NDArrayFactory  {
      IComplexNDArray createComplex(double[] data);
 
 
+
+
+    /**
+     * Creates a row vector with the data
+     * @param data the columns of the ndarray
+     * @return  the created ndarray
+     */
+    INDArray create(DataBuffer data);
+    /**
+     * Creates an ndarray with the specified data
+     * @param data the number of columns in the row vector
+     * @return ndarray
+     */
+    IComplexNDArray createComplex(DataBuffer data);
+
+
+
+
     /**
      * Creates a row vector with the specified number of columns
      * @param columns the columns of the ndarray
@@ -550,6 +573,19 @@ public interface NDArrayFactory  {
      */
      IComplexNDArray createComplex(float[] data,int rows,int columns,int[] stride,int offset);
 
+
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     * @param data the data to use with the ndarray
+     * @param rows the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride the stride for the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    IComplexNDArray createComplex(DataBuffer data,int rows,int columns,int[] stride,int offset);
+
     /**
      * Creates an ndarray with the specified shape
      * @param data  the data to use with the ndarray
@@ -559,7 +595,7 @@ public interface NDArrayFactory  {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-     INDArray create(float[] data,int rows,int columns,int[] stride,int offset);
+    INDArray create(DataBuffer data,int rows,int columns,int[] stride,int offset);
 
     /**
      * Creates a complex ndarray with the specified shape
@@ -569,8 +605,10 @@ public interface NDArrayFactory  {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-     IComplexNDArray createComplex(float[] data,int[] shape,int[] stride,int offset);
+    IComplexNDArray createComplex(DataBuffer data,int[] shape,int[] stride,int offset);
 
+
+    INDArray create(float[] data, int rows, int columns, int[] stride, int offset);
 
     /**
      * Creates a complex ndarray with the specified shape
@@ -722,6 +760,47 @@ public interface NDArrayFactory  {
      * @return the instance
      */
      INDArray create(double[] data,int[] shape,int[] stride,int offset);
+
+
+    /**
+     * Create an ndrray with the specified shape
+     * @param data the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @return the created ndarray
+     */
+    INDArray create(DataBuffer data,int[] shape);
+
+    /**
+     * Create an ndrray with the specified shape
+     * @param data the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @return the created ndarray
+     */
+    IComplexNDArray createComplex(DataBuffer data,int[] shape);
+
+
+    /**
+     * Create an ndrray with the specified shape
+     * @param data the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @return the created ndarray
+     */
+    IComplexNDArray createComplex(DataBuffer data,int[] shape,int[] stride);
+
+
+
+    /**
+     * Creates an ndarray with the specified shape
+     * @param shape the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    INDArray create(DataBuffer data,int[] shape,int[] stride,int offset);
+
+
+
 
     /**
      * Creates an ndarray with the specified shape
@@ -972,6 +1051,8 @@ public interface NDArrayFactory  {
     IComplexNDArray createComplex(double[] data, int[] shape, int offset, char ordering);
 
 
+    IComplexNDArray createComplex(DataBuffer buffer, int[] shape, int offset, char ordering);
+
     /**
      *
      * @param data
@@ -981,6 +1062,8 @@ public interface NDArrayFactory  {
      */
     IComplexNDArray createComplex(double[] data, int[] shape, int offset);
 
+
+    IComplexNDArray createComplex(DataBuffer buffer, int[] shape, int offset);
 
     INDArray create(float[] data, int[] shape, int offset);
 
@@ -999,4 +1082,14 @@ public interface NDArrayFactory  {
     IComplexNDArray complexFlatten(List<IComplexNDArray> flatten);
 
     IComplexNDArray complexFlatten(IComplexNDArray[] flatten);
+
+    INDArray create(DataBuffer buffer, int[] shape, int offset);
+
+    IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset);
+
+    INDArray create(int[] shape, char ordering);
+
+    INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering);
+
+    IComplexNDArray createComplex(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering);
 }

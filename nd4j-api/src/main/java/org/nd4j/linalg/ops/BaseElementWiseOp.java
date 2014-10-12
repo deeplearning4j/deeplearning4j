@@ -1,6 +1,7 @@
 package org.nd4j.linalg.ops;
 
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -55,8 +56,11 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
             c2.putScalar(i,transformed);
         }
         else {
-            float f =  apply(origin,getFromOrigin(origin,i),i);
-            origin.putScalar(i, f);
+            Number f =  apply(origin,getFromOrigin(origin,i),i);
+            if(origin.data().dataType().equals(DataBuffer.FLOAT))
+                origin.putScalar(i, f.floatValue());
+            else
+                origin.putScalar(i, f.doubleValue());
         }
 
     }
@@ -79,8 +83,11 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
                 throw new IllegalArgumentException("Unable to apply a non complex number to a real ndarray");
         }
         else {
-            float f = apply(origin,(float) valueToApply,i);
-            origin.putScalar(i,f);
+            Number f = apply(origin, valueToApply,i);
+            if(origin.data().dataType().equals(DataBuffer.FLOAT))
+                origin.putScalar(i,f.floatValue());
+            else
+                origin.putScalar(i,f.doubleValue());
         }
 
 
@@ -94,7 +101,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
             return c2.getComplex(i);
         }
 
-        return origin.get(i);
+        return origin.getFloat(i);
     }
 
     /**
@@ -125,7 +132,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
 
         else {
             for(int i = 0; i < linear.length(); i++) {
-                float apply = apply(linear,linear.get(i),i);
+                float apply = apply(linear,linear.getFloat(i),i);
                 from.putScalar(i,apply);
             }
         }

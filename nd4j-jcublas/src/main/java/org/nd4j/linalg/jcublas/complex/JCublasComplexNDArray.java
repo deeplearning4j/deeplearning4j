@@ -1,9 +1,7 @@
 package org.nd4j.linalg.jcublas.complex;
 
-import jcuda.Pointer;
-import jcuda.Sizeof;
-import jcuda.cuComplex;
-import jcuda.jcublas.JCublas;
+
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.BaseComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -20,7 +18,6 @@ import java.util.List;
  */
 public class JCublasComplexNDArray  extends BaseComplexNDArray {
 
-    private Pointer pointer,dataPointer;
 
     public JCublasComplexNDArray(int[] shape, int offset, char ordering) {
 
@@ -32,6 +29,10 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
 
         super(shape);
         
+    }
+
+    public JCublasComplexNDArray(float[] data, int[] shape, int[] stride, char ordering) {
+        super(data, shape, stride, ordering);
     }
 
 
@@ -129,6 +130,14 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
         
     }
 
+    public JCublasComplexNDArray(float[] data, int[] shape, int[] stride, int offset, Character order) {
+        super(data, shape, stride, offset, order);
+    }
+
+    public JCublasComplexNDArray(DataBuffer data) {
+        super(data);
+    }
+
     /**
      * Create an ndarray from the specified slices
      * and the given shape
@@ -168,6 +177,18 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
 
         super(newData, shape, stride);
         
+    }
+
+    public JCublasComplexNDArray(IComplexNumber[] newData, int[] shape, char ordering) {
+        super(newData, shape, ordering);
+    }
+
+    public JCublasComplexNDArray(float[] data, int[] shape, int[] stride) {
+        super(data, shape, stride);
+    }
+
+    public JCublasComplexNDArray(float[] data, int[] shape) {
+        super(data, shape);
     }
 
     /**
@@ -319,18 +340,50 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     }
 
 
-
-
-    private cuComplex[] jcublasData() {
-        cuComplex[] ret = new cuComplex[data.length / 2];
-        int count = 0;
-        for(int i = 0; i < data.length - 1; i+= 2) {
-            ret[count++] = cuComplex.cuCmplx(data[i],data[i + 1]);
-        }
-        return ret;
+    public JCublasComplexNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
+        super(data,shape,stride,offset);
     }
 
+    public JCublasComplexNDArray(IComplexNumber[] data, int[] shape, int[] stride, int offset, char ordering) {
+        super(data, shape, stride, offset, ordering);
+    }
 
+    public JCublasComplexNDArray(DataBuffer data, int[] shape) {
+        super(data, shape);
+    }
 
+    public JCublasComplexNDArray(IComplexNumber[] data, int[] shape, int[] stride, int offset) {
+        super(data, shape, stride, offset);
+    }
 
+    public JCublasComplexNDArray(IComplexNumber[] data, int[] shape, int offset, char ordering) {
+        super(data, shape, offset, ordering);
+    }
+
+    public JCublasComplexNDArray(DataBuffer buffer, int[] shape, int offset, char ordering) {
+        super(buffer, shape, offset, ordering);
+    }
+
+    public JCublasComplexNDArray(DataBuffer buffer, int[] shape, int offset) {
+        super(buffer, shape, offset);
+    }
+
+    public JCublasComplexNDArray() {
+    }
+
+    public JCublasComplexNDArray(DataBuffer data, int[] shape, int[] stride) {
+        super(data, shape, stride);
+    }
+
+    public JCublasComplexNDArray(float[] data) {
+        super(data);
+    }
+
+    public JCublasComplexNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
+        super(buffer, shape, stride, offset, ordering);
+    }
+
+    public JCublasComplexNDArray(float[] data, int[] shape, char ordering) {
+        super(data, shape, ordering);
+    }
 }
