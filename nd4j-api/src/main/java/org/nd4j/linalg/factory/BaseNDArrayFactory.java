@@ -56,6 +56,21 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     }
 
+    @Override
+    public INDArray rand(int[] shape, double min, double max, RandomGenerator rng) {
+        INDArray ret = create(shape);
+        INDArray linear = ret.linearView();
+        double r = max - min;
+        for(int i = 0; i < ret.length(); i++) {
+            linear.putScalar(i, r * rng.nextFloat() + min);
+        }
+        return ret;
+    }
+
+    @Override
+    public INDArray rand(int rows, int columns, double min, double max, RandomGenerator rng) {
+        return rand(new int[]{rows,columns},min,max,rng);
+    }
 
 
     /**
@@ -124,6 +139,12 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         }
 
     }
+
+    @Override
+    public INDArray create(int rows, int columns, char ordering) {
+        return  create(new int[]{rows,columns},ordering);
+    }
+
 
     @Override
     public  DataBuffer createBuffer(double[] concat) {
@@ -1692,5 +1713,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray create(float[] data, int[] shape, int offset) {
         return create(Nd4j.createBuffer(data),shape,offset);
     }
+
+
+
+
 
 }

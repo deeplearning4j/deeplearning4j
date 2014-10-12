@@ -24,11 +24,6 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         super(dtype,order);
     }
 
-    @Override
-    public DataBuffer createBuffer(DataBuffer[] buffers) {
-        return null;
-    }
-
     /**
      * Create float
      *
@@ -161,6 +156,42 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     public IComplexNDArray createComplex(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering) {
         return new JCublasComplexNDArray(data,newDims,newStrides,offset,ordering);
     }
+
+    @Override
+    public IComplexNDArray createComplex(float[] data, Character order) {
+        return new JCublasComplexNDArray(data,order);
+    }
+
+    @Override
+    public INDArray create(float[] data, int[] shape, int offset, Character order) {
+        return new JCublasNDArray(data,shape,offset,order);
+    }
+
+    @Override
+    public INDArray create(float[] data, int rows, int columns, int[] stride, int offset, char ordering) {
+        return new JCublasNDArray(data,new int[]{rows,columns},stride,offset,ordering);
+    }
+
+    @Override
+    public INDArray create(double[] data, int[] shape, char ordering) {
+        return new JCublasNDArray(data,shape,ordering);
+    }
+
+    @Override
+    public INDArray create(List<INDArray> list, int[] shape, char ordering) {
+        return new JCublasNDArray(list,shape,ordering);
+    }
+
+    @Override
+    public INDArray create(double[] data, int[] shape, int offset) {
+        return new JCublasNDArray(data,shape, (char) offset);
+    }
+
+    @Override
+    public INDArray create(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+        return new JCublasNDArray(data,shape,stride,offset,ordering);
+    }
+
 
     @Override
     public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int[] stride, int offset) {

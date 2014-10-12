@@ -3,6 +3,7 @@ package org.nd4j.linalg.jcublas;
 
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -282,5 +283,17 @@ public class JCublasNDArray extends BaseNDArray {
 
     public JCublasNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
         super(buffer, shape, stride, offset, ordering);
+    }
+
+    public JCublasNDArray(float[] data, char order) {
+        super(data,order);
+    }
+
+    public JCublasNDArray(double[] data, int[] shape, char ordering) {
+        this(new DoubleBuffer(data),shape,ordering);
+    }
+
+    public JCublasNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+        super(data,shape,stride,offset,ordering);
     }
 }

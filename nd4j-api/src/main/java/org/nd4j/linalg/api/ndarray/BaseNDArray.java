@@ -2,6 +2,8 @@ package org.nd4j.linalg.api.ndarray;
 
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
+import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -124,7 +126,7 @@ public abstract class BaseNDArray  implements INDArray {
      * @param ordering the ordering of the ndarray
      */
     public BaseNDArray(int[] shape, int[] stride, int offset, char ordering) {
-        this(new float[ArrayUtil.prod(shape)],shape,stride,offset,ordering);
+        this(Nd4j.createBuffer(ArrayUtil.prod(shape)),shape,stride,offset,ordering);
     }
 
 
@@ -248,6 +250,24 @@ public abstract class BaseNDArray  implements INDArray {
     public BaseNDArray(DataBuffer buffer, int[] shape, int offset) {
         this(buffer,shape,Nd4j.getStrides(shape),offset);
     }
+
+    public BaseNDArray(double[] data, int[] shape, char ordering) {
+        this(new DoubleBuffer(data),shape,ordering);
+    }
+
+    public BaseNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+        this(new DoubleBuffer(data),shape,stride,offset,ordering);
+    }
+
+    public BaseNDArray(float[] data, char order) {
+        this(new FloatBuffer(data),order);
+    }
+
+    public BaseNDArray(FloatBuffer floatBuffer, char order) {
+        this(floatBuffer,new int[]{floatBuffer.length()},Nd4j.getStrides(new int[]{floatBuffer.length()}),0,order);
+    }
+
+
 
     @Override
     public INDArray linearViewColumnOrder() {
@@ -1454,10 +1474,10 @@ public abstract class BaseNDArray  implements INDArray {
      * Returns the squared (Euclidean) distance.
      */
     @Override
-    public float squaredDistance(INDArray other) {
-        float sd = 0.0f;
+    public double squaredDistance(INDArray other) {
+        double sd = 0.0;
         for (int i = 0; i < length; i++) {
-            float d =  getFloat(i) -  other.getFloat(i);
+            double d =  getFloat(i) -  other.getDouble(i);
             sd += d * d;
         }
         return sd;
@@ -1467,16 +1487,16 @@ public abstract class BaseNDArray  implements INDArray {
      * Returns the (euclidean) distance.
      */
     @Override
-    public float distance2(INDArray other) {
-        return  (float) Math.sqrt(squaredDistance(other));
+    public double distance2(INDArray other) {
+        return   Math.sqrt(squaredDistance(other));
     }
 
     /**
      * Returns the (1-norm) distance.
      */
     @Override
-    public float distance1(INDArray other) {
-        return other.sub(this).sum(Integer.MAX_VALUE).getFloat(0);
+    public double distance1(INDArray other) {
+        return other.sub(this).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
@@ -2245,9 +2265,9 @@ public abstract class BaseNDArray  implements INDArray {
             INDArray temp = Nd4j.create(resultArray.shape(), ArrayUtil.calcStridesFortran(resultArray.shape()));
 
             if (otherArray.columns() == 1) {
-                Nd4j.getBlasWrapper().gemv(1.0f, this, otherArray, 0.0f, temp);
+                Nd4j.getBlasWrapper().gemv(1.0, this, otherArray, 0.0, temp);
             } else {
-                Nd4j.getBlasWrapper().gemm(1.0f, this, otherArray, 0.0f, temp);
+                Nd4j.getBlasWrapper().gemm(1.0, this, otherArray, 0.0, temp);
             }
 
             Nd4j.getBlasWrapper().copy(temp, resultArray);
@@ -2255,9 +2275,9 @@ public abstract class BaseNDArray  implements INDArray {
 
         } else {
             if (otherArray.columns() == 1)
-                Nd4j.getBlasWrapper().gemv(1.0f, this, otherArray, 0.0f, resultArray);
+                Nd4j.getBlasWrapper().gemv(1.0, this, otherArray, 0.0, resultArray);
             else
-                Nd4j.getBlasWrapper().gemm(1.0f, this, otherArray, 0.0f, resultArray);
+                Nd4j.getBlasWrapper().gemm(1.0, this, otherArray, 0.0, resultArray);
 
         }
         return resultArray;
@@ -2366,13 +2386,13 @@ public abstract class BaseNDArray  implements INDArray {
 
 
         if (result == this) {
-            Nd4j.getBlasWrapper().axpy(-1.0f, other, result);
+            Nd4j.getBlasWrapper().axpy(-1.0, other, result);
         } else if (result == other) {
-            Nd4j.getBlasWrapper().scal(-1.0f, result);
-            Nd4j.getBlasWrapper().axpy(1.0f, this, result);
+            Nd4j.getBlasWrapper().scal(-1.0, result);
+            Nd4j.getBlasWrapper().axpy(1.0, this, result);
         } else {
             Nd4j.getBlasWrapper().copy(this, result);
-            Nd4j.getBlasWrapper().axpy(-1.0f, other, result);
+            Nd4j.getBlasWrapper().axpy(-1.0, other, result);
         }
         return result;
     }
@@ -2406,9 +2426,9 @@ public abstract class BaseNDArray  implements INDArray {
 
 
         if (result == this) {
-            Nd4j.getBlasWrapper().axpy(1.0f, other, result);
+            Nd4j.getBlasWrapper().axpy(1.0, other, result);
         } else if (result == other) {
-            Nd4j.getBlasWrapper().axpy(1.0f, this, result);
+            Nd4j.getBlasWrapper().axpy(1.0, this, result);
         } else {
             /*SimpleBlas.copy(this, result);
             SimpleBlas.axpy(1.0, other, result);*/
@@ -3656,8 +3676,8 @@ public abstract class BaseNDArray  implements INDArray {
         //epsilon equals
         if(isScalar() && n.isScalar()) {
             if(data.dataType().equals(DataBuffer.FLOAT)) {
-                float val = getFloat(0);
-                float val2 = n.getFloat(0);
+                double val = getDouble(0);
+                double val2 = n.getDouble(0);
                 return Math.abs(val - val2) < 1e-6;
             }
             else {
@@ -3670,8 +3690,8 @@ public abstract class BaseNDArray  implements INDArray {
         else if(isVector() && n.isVector()) {
             for(int i = 0; i < length; i++) {
                 if(data.dataType().equals(DataBuffer.FLOAT)) {
-                    float curr = getFloat(i);
-                    float comp = n.getFloat(i);
+                    double curr = getDouble(i);
+                    double comp = n.getDouble(i);
                     if(Math.abs(curr - comp) > 1e-3)
                         return false;
                 }
@@ -4038,7 +4058,7 @@ public abstract class BaseNDArray  implements INDArray {
             StringBuilder sb = new StringBuilder();
             sb.append("[");
             for(int i = 0; i < length; i++) {
-                sb.append(getFloat(i));
+                sb.append(getDouble(i));
                 if(i < length - 1)
                     sb.append(" ,");
             }

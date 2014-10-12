@@ -2,6 +2,7 @@ package org.nd4j.linalg.ops.transforms;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.BaseElementWiseOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
@@ -23,9 +24,9 @@ public class Log extends BaseElementWiseOp {
         if(value instanceof IComplexNumber) {
             return ComplexUtil.abs((org.nd4j.linalg.api.complex.IComplexNumber) value);
         }
-        float ret = (float) Math.log((float) value);
-        if(Float.isNaN(ret) || Float.isInfinite(ret))
-            return 1e-6f;
+        double ret = Math.log( (double) value);
+        if(Double.isNaN(ret) || Double.isInfinite(ret))
+            return Nd4j.EPS_THRESHOLD;
         return ret;
     }
 }

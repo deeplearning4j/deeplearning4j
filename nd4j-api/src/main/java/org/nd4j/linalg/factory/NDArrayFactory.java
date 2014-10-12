@@ -1092,4 +1092,24 @@ public interface NDArrayFactory  {
     INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering);
 
     IComplexNDArray createComplex(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering);
+
+    INDArray rand(int rows, int columns, double min, double max, RandomGenerator rng);
+
+    IComplexNDArray createComplex(float[] data, Character order);
+
+    INDArray create(float[] data, int[] shape, int offset, Character order);
+
+    INDArray create(float[] data, int rows, int columns, int[] stride, int offset, char ordering);
+
+    INDArray create(double[] data, int[] shape, char ordering);
+
+    INDArray create(List<INDArray> list, int[] shape, char ordering);
+
+    INDArray create(double[] data, int[] shape, int offset);
+
+    INDArray create(double[] data, int[] shape, int[] stride, int offset, char ordering);
+
+    INDArray rand(int[] shape, double min, double max, RandomGenerator rng);
+
+    INDArray create(int rows, int columns, char ordering);
 }

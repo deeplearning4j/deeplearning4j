@@ -159,6 +159,41 @@ public class NetlibBlasNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
+    public IComplexNDArray createComplex(float[] data, Character order) {
+        return new ComplexNDArray(data,order);
+    }
+
+    @Override
+    public INDArray create(float[] data, int[] shape, int offset, Character order) {
+        return new NetlibBlasNDArray(data,shape,offset,order);
+    }
+
+    @Override
+    public INDArray create(float[] data, int rows, int columns, int[] stride, int offset, char ordering) {
+        return new NetlibBlasNDArray(data,new int[]{rows,columns},stride,offset,ordering);
+    }
+
+    @Override
+    public INDArray create(double[] data, int[] shape, char ordering) {
+        return new NetlibBlasNDArray(data,shape,ordering);
+    }
+
+    @Override
+    public INDArray create(List<INDArray> list, int[] shape, char ordering) {
+        return new NetlibBlasNDArray(list,shape,ordering);
+    }
+
+    @Override
+    public INDArray create(double[] data, int[] shape, int offset) {
+        return new NetlibBlasNDArray(data,shape, (char) offset);
+    }
+
+    @Override
+    public INDArray create(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+        return new NetlibBlasNDArray(data,shape,stride,offset,ordering);
+    }
+
+    @Override
     public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int[] stride, int offset) {
         return new ComplexNDArray(data,shape,stride,offset);
     }

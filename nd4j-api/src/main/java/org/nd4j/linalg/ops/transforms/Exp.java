@@ -34,11 +34,9 @@ public class Exp extends BaseElementWiseOp {
             }
             else {
                 double val = (double) value;
-                if (val < 0) {
-                    BigDecimal bigDecimal = BigDecimalMath.exp(BigDecimal.valueOf(val));
-                    double val2 = bigDecimal.doubleValue();
-                    return val2;
-                }
+                if (val < 0)
+                    return Math.expm1(val);
+
 
                 else
                     return Math.exp(val);
@@ -48,5 +46,15 @@ public class Exp extends BaseElementWiseOp {
 
         }
 
+    }
+
+
+    public  double exp(double val) {
+        final long tmp = (long) (1512775 * val) + 1072693248;
+        final long mantissa = tmp & 0x000FFFFF;
+        int error = (int) mantissa >> 7;   // remove chance of overflow
+        error = (int) (error - mantissa * mantissa) / 186; // subtract mantissa^2 * 64
+        // 64 / 186 = 1/2.90625
+        return Double.longBitsToDouble((tmp - error) << 32);
     }
 }

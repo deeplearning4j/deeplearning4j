@@ -352,4 +352,8 @@ public class ComplexNDArray extends BaseComplexNDArray {
     public ComplexNDArray(DataBuffer buffer, int[] shape, int offset) {
         super(buffer,shape,offset);
     }
+
+    public ComplexNDArray(float[] data, Character order) {
+        super(data,order);
+    }
 }

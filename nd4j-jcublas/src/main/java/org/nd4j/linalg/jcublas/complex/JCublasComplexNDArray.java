@@ -386,4 +386,9 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(float[] data, int[] shape, char ordering) {
         super(data, shape, ordering);
     }
+
+    public JCublasComplexNDArray(float[] data, Character order) {
+        super(data,order);
+    }
+
 }

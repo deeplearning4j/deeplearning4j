@@ -5,8 +5,6 @@ import static  org.nd4j.linalg.util.ArrayUtil.calcStrides;
 import static org.nd4j.linalg.util.ArrayUtil.calcStridesFortran;
 import static  org.nd4j.linalg.util.ArrayUtil.reverseCopy;
 
-import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
-
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.DimensionSlice;
@@ -239,6 +237,10 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     public BaseComplexNDArray(DataBuffer buffer, int[] shape, int offset) {
         this(buffer,shape,Nd4j.getComplexStrides(shape),offset,Nd4j.order());
+    }
+
+    public BaseComplexNDArray(float[] data, Character order) {
+        this(data,new int[]{data.length / 2},order);
     }
 
 
@@ -838,7 +840,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * Returns the squared (Euclidean) distance.
      */
     @Override
-    public float squaredDistance(INDArray other) {
+    public double squaredDistance(INDArray other) {
         float sd = 0.0f;
         for (int i = 0; i < length; i++) {
             IComplexNumber diff = (IComplexNumber) getScalar(i).sub(other.getScalar(i)).element();
@@ -852,7 +854,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * Returns the (euclidean) distance.
      */
     @Override
-    public float distance2(INDArray other) {
+    public double distance2(INDArray other) {
         return  (float) Math.sqrt(squaredDistance(other));
     }
 
@@ -860,7 +862,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * Returns the (1-norm) distance.
      */
     @Override
-    public float distance1(INDArray other) {
+    public double distance1(INDArray other) {
         float d = 0.0f;
         for (int i = 0; i < length; i++) {
             IComplexNumber n = (IComplexNumber) getScalar(i).sub(other.getScalar(i)).element();

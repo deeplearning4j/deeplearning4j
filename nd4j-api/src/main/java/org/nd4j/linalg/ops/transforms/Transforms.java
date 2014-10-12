@@ -57,8 +57,8 @@ public class Transforms {
                     int zk = k / ds[0];
                     for(int l = 0; l < colIter; l++) {
                         int zl = l / ds[1];
-                        float num = input.getFloat(new int[]{i, j, k, l});
-                        float zzGet = zz.getFloat(new int[]{i, j, zk, zl});
+                        double num = input.getDouble(new int[]{i, j, k, l});
+                        double zzGet = zz.getDouble(new int[]{i, j, zk, zl});
                         zz.putScalar(new int[]{i,j,zk,zl},Math.max(num,zzGet));
                     }
                 }
@@ -124,8 +124,8 @@ public class Transforms {
 
 
         for (int i = 0; i < d.shape().length; i++) {
-            INDArray tmp = Nd4j.zeros(d.size(i) * (int) scale.getFloat(i), 1);
-            int[] indices = ArrayUtil.range(0, (int) scale.getFloat(i) * d.size(i),(int) scale.getFloat(i));
+            INDArray tmp = Nd4j.zeros(d.size(i) * (int) scale.getDouble(i), 1);
+            int[] indices = ArrayUtil.range(0, (int) scale.getDouble(i) * d.size(i),(int) scale.getDouble(i));
             tmp.putScalar(indices, 1.0f);
             idx.put(i,
                     tmp.cumsum(Integer.MAX_VALUE).sum(Integer.MAX_VALUE));
@@ -175,7 +175,7 @@ public class Transforms {
 
         if (length > 0) {
             if(toScale.data().dataType().equals(DataBuffer.FLOAT))
-                return Nd4j.getBlasWrapper().scal(1.0f / (float) length,toScale);
+                return Nd4j.getBlasWrapper().scal(1.0f / (double) length,toScale);
             else
                 return Nd4j.getBlasWrapper().scal(1.0f / length,toScale);
 
@@ -306,10 +306,10 @@ public class Transforms {
         return exec(ndArray,LessThan.class,null);
     }
 
-    public static INDArray stabilize(INDArray ndArray,float k) {
+    public static INDArray stabilize(INDArray ndArray,double k) {
         return exec(ndArray,Stabilize.class,new Object[]{k});
     }
-    public static IComplexNDArray stabilize(IComplexNDArray ndArray,float k) {
+    public static IComplexNDArray stabilize(IComplexNDArray ndArray,double k) {
         return exec(ndArray,Stabilize.class,new Object[]{k});
     }
 
@@ -353,7 +353,7 @@ public class Transforms {
      * @param max
      * @return
      */
-    public static INDArray max(INDArray ndArray,float max) {
+    public static INDArray max(INDArray ndArray,double max) {
         return exec(ndArray,Max.class,new Object[]{max});
     }
 
@@ -363,7 +363,7 @@ public class Transforms {
      * @param max the value to compare
      * @return
      */
-    public static IComplexNDArray max(IComplexNDArray ndArray,float max) {
+    public static IComplexNDArray max(IComplexNDArray ndArray,double max) {
         return exec(ndArray,Max.class,null);
     }
     public static IComplexNDArray max(IComplexNDArray ndArray) {

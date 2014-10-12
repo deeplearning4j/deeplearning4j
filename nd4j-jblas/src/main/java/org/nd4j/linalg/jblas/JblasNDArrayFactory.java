@@ -1,7 +1,9 @@
 package org.nd4j.linalg.jblas;
 
 
+import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -185,6 +187,44 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
         return new ComplexNDArray(data,newDims,newStrides,offset,ordering);
 
     }
+
+
+
+    @Override
+    public IComplexNDArray createComplex(float[] data, Character order) {
+        return new ComplexNDArray(data, order);
+    }
+
+    @Override
+    public INDArray create(float[] data, int[] shape, int offset, Character order) {
+        return new NDArray(data,shape,offset,order);
+    }
+
+    @Override
+    public INDArray create(float[] data, int rows, int columns, int[] stride, int offset, char ordering) {
+        return new NDArray(data,new int[]{rows,columns},stride,offset,ordering);
+    }
+
+    @Override
+    public INDArray create(double[] data, int[] shape, char ordering) {
+        return new NDArray(new DoubleBuffer(data),shape,ordering);
+    }
+
+    @Override
+    public INDArray create(List<INDArray> list, int[] shape, char ordering) {
+        return new NDArray(list,shape,ordering);
+    }
+
+    @Override
+    public INDArray create(double[] data, int[] shape, int offset) {
+        return new NDArray(new DoubleBuffer(data),shape,offset);
+    }
+
+    @Override
+    public INDArray create(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+        return new NDArray(new DoubleBuffer(data),shape,stride,offset,ordering);
+    }
+
 
     /**
      * Creates an ndarray with the specified shape

@@ -47,7 +47,7 @@ public class Nd4j {
     public final static IComplexNumber UNIT;
     public final static IComplexNumber ZERO;
     public final static IComplexNumber NEG_UNIT;
-    public static float EPS_THRESHOLD = 1e-12f;
+    public static double EPS_THRESHOLD = 1e-12f;
 
 
     static {
@@ -91,8 +91,10 @@ public class Nd4j {
      * @return the buffer to create
      */
     public static DataBuffer createBuffer(long length) {
-        if(dataType().equals(DataBuffer.FLOAT))
+        if(dataType().equals(DataBuffer.FLOAT)) {
             return createBuffer(new float[(int) length]);
+
+        }
          return createBuffer(new double[(int) length]);
     }
 
@@ -185,44 +187,44 @@ public class Nd4j {
             INDArray indexVector = indices.vectorAlongDimension(i,dimension);
 
             final IComplexNumber[] data = new IComplexNumber[vec.length()];
-            final Float[] index = new Float[vec.length()];
+            final Double[] index = new Double[vec.length()];
 
             for(int j = 0; j < vec.length(); j++) {
                 data[j] = vec.getComplex(j);
-                index[j] = (float) j;
+                index[j] = (double) j;
 
             }
 
 
             if(ascending)
-                Arrays.sort(index,new Comparator<Float>() {
+                Arrays.sort(index,new Comparator<Double>() {
                     @Override
-                    public int compare(Float o1, Float o2) {
-                        int idx1 = (int) o1.floatValue();
-                        int idx2 = (int) o2.floatValue();
+                    public int compare(Double o1, Double o2) {
+                        int idx1 = (int) o1.doubleValue();
+                        int idx2 = (int) o2.doubleValue();
 
-                        return Float.compare(
-                                data[idx1].absoluteValue().floatValue(),
-                                data[idx2].absoluteValue().floatValue());
+                        return Double.compare(
+                                data[idx1].absoluteValue().doubleValue(),
+                                data[idx2].absoluteValue().doubleValue());
                     }
                 });
 
             else
-                Arrays.sort(index,new Comparator<Float>() {
+                Arrays.sort(index,new Comparator<Double>() {
                     @Override
-                    public int compare(Float o1, Float o2) {
-                        int idx1 = (int) o1.floatValue();
-                        int idx2 = (int) o2.floatValue();
+                    public int compare(Double o1, Double o2) {
+                        int idx1 = (int) o1.doubleValue();
+                        int idx2 = (int) o2.doubleValue();
 
-                        return -Float.compare(
-                                data[idx1].absoluteValue().floatValue(),
-                                data[idx2].absoluteValue().floatValue());
+                        return -Double.compare(
+                                data[idx1].absoluteValue().doubleValue(),
+                                data[idx2].absoluteValue().doubleValue());
                     }
                 });
 
 
             for(int j = 0; j < vec.length(); j++) {
-                vec.putScalar(j, data[(int) index[j].floatValue()]);
+                vec.putScalar(j, data[(int) index[j].doubleValue()]);
                 indexVector.putScalar(j,index[j]);
             }
 
@@ -250,12 +252,12 @@ public class Nd4j {
         for(int i = 0; i < ndarray.vectorsAlongDimension(dimension); i++) {
             INDArray vec = ndarray.vectorAlongDimension(i,dimension);
             INDArray indexVector = indices.vectorAlongDimension(i,dimension);
-            final Float[] data = new Float[vec.length()];
-            final Float[] index = new Float[vec.length()];
+            final Double[] data = new Double[vec.length()];
+            final Double[] index = new Double[vec.length()];
 
             for(int j = 0; j < vec.length(); j++) {
-                data[j] = vec.getFloat(j);
-                index[j] = (float) j;
+                data[j] = vec.getDouble(j);
+                index[j] = (double) j;
             }
 
             /**
@@ -264,18 +266,18 @@ public class Nd4j {
              * This allows us to retain the indices
              * and how they were rearranged.
              */
-            Arrays.sort(index,new Comparator<Float>() {
+            Arrays.sort(index,new Comparator<Double>() {
                 @Override
-                public int compare(Float o1, Float o2) {
-                    int o = (int) o1.floatValue();
-                    int oo2 = (int) o2.floatValue();
-                    return Float.compare(data[o],data[oo2]);
+                public int compare(Double o1, Double o2) {
+                    int o = (int) o1.doubleValue();
+                    int oo2 = (int) o2.doubleValue();
+                    return Double.compare(data[o],data[oo2]);
                 }
             });
 
             if(ascending)
                 for(int j = 0; j < vec.length(); j++) {
-                    vec.putScalar(j, data[(int) index[j].floatValue()]);
+                    vec.putScalar(j, data[(int) index[j].doubleValue()]);
                     indexVector.putScalar(j,index[j]);
                 }
             else {
@@ -283,7 +285,7 @@ public class Nd4j {
                 for(int j = 0; j < vec.length(); j++) {
                     int currCount2 = count;
                     count--;
-                    vec.putScalar(j, data[(int) index[currCount2].floatValue()]);
+                    vec.putScalar(j, data[(int) index[currCount2].doubleValue()]);
                     indexVector.putScalar(j,index[currCount2]);
                 }
             }
@@ -313,9 +315,9 @@ public class Nd4j {
                 Arrays.sort(data,new Comparator<IComplexNumber>() {
                     @Override
                     public int compare(IComplexNumber o1, IComplexNumber o2) {
-                        return Float.compare(
-                                o1.asFloat().absoluteValue().floatValue(),
-                                o2.asFloat().absoluteValue().floatValue());
+                        return Double.compare(
+                                o1.asFloat().absoluteValue().doubleValue(),
+                                o2.asFloat().absoluteValue().doubleValue());
                     }
                 });
 
@@ -323,9 +325,9 @@ public class Nd4j {
                 Arrays.sort(data,new Comparator<IComplexNumber>() {
                     @Override
                     public int compare(IComplexNumber o1, IComplexNumber o2) {
-                        return -Float.compare(
-                                o1.asFloat().absoluteValue().floatValue(),
-                                o2.asFloat().absoluteValue().floatValue());
+                        return -Double.compare(
+                                o1.asFloat().absoluteValue().doubleValue(),
+                                o2.asFloat().absoluteValue().doubleValue());
                     }
                 });
 
@@ -346,7 +348,7 @@ public class Nd4j {
     public static INDArray sort(INDArray ndarray,int dimension,boolean ascending) {
         for(int i = 0; i < ndarray.vectorsAlongDimension(dimension); i++) {
             INDArray vec = ndarray.vectorAlongDimension(i,dimension);
-            float[] data = new float[vec.length()];
+            double[] data = new double[vec.length()];
             for(int j = 0; j < vec.length(); j++) {
                 data[j] = vec.getFloat(j);
             }
@@ -526,7 +528,7 @@ public class Nd4j {
     private static INDArray loadRow(String[] data) {
         INDArray ret = Nd4j.create(data.length);
         for(int i = 0; i < data.length; i++) {
-            ret.putScalar(i,Float.parseFloat(data[i]));
+            ret.putScalar(i,Double.parseDouble(data[i]));
         }
 
         return ret;
@@ -554,12 +556,12 @@ public class Nd4j {
         if(!type.equals("real"))
             throw new IllegalArgumentException("Trying to read in a complex ndarray");
 
-        if(dataType.equals("float")) {
-            float[] data = ArrayUtil.readFloat(ArrayUtil.prod(shape),dis);
+        if(dataType.equals("double")) {
+            double[] data = ArrayUtil.readDouble(ArrayUtil.prod(shape), dis);
             return create(data,shape,stride,0);
         }
 
-        float[] data = ArrayUtil.readFloat(ArrayUtil.prod(shape),dis);
+        double[] data = ArrayUtil.readDouble(ArrayUtil.prod(shape), dis);
         return create(data,shape,stride,0);
     }
 
@@ -581,7 +583,7 @@ public class Nd4j {
 
         dataOutputStream.writeUTF("real");
 
-        if(dataType().equals("float"))
+        if(dataType().equals("double"))
             ArrayUtil.write(arr.data().asFloat(),dataOutputStream);
         else
             ArrayUtil.write(arr.data().asDouble(),dataOutputStream);
@@ -621,8 +623,8 @@ public class Nd4j {
         if(!type.equals("complex"))
             throw new IllegalArgumentException("Trying to read in a real ndarray");
 
-        if(dataType.equals("float")) {
-            float[] data = ArrayUtil.readFloat(ArrayUtil.prod(shape),dis);
+        if(dataType.equals("double")) {
+            double[] data = ArrayUtil.readDouble(ArrayUtil.prod(shape),dis);
             return createComplex(data,shape,stride,0);
         }
 
@@ -647,7 +649,7 @@ public class Nd4j {
 
         dataOutputStream.writeUTF("complex");
 
-        if(dataType().equals("float"))
+        if(dataType().equals("double"))
             ArrayUtil.write(arr.data().asDouble(),dataOutputStream);
         else
             ArrayUtil.write(arr.data().asFloat(),dataOutputStream);
@@ -685,22 +687,22 @@ public class Nd4j {
     }
 
     /**
-     * Create float
+     * Create double
      * @param real real component
      * @param imag imag component
      * @return
      */
     public static IComplexFloat createComplexNumber(Number real,Number imag) {
-        return INSTANCE.createFloat(real.floatValue(),imag.floatValue());
+        return INSTANCE.createFloat(real.floatValue(), imag.floatValue());
     }
     /**
-     * Create float
+     * Create double
      * @param real real component
      * @param imag imag component
      * @return
      */
     public static IComplexFloat createFloat(float real,float imag) {
-        return INSTANCE.createFloat(real,imag);
+        return INSTANCE.createFloat(real, imag);
     }
 
 
@@ -733,7 +735,7 @@ public class Nd4j {
      * @param rng the rng to use
      * @return a drandom matrix of the specified shape and range
      */
-    public static INDArray rand(int[] shape,float min,float max,RandomGenerator rng) {
+    public static INDArray rand(int[] shape,double min,double max,RandomGenerator rng) {
         return INSTANCE.rand(shape,min,max,rng);
     }
 
@@ -746,7 +748,7 @@ public class Nd4j {
      * @param rng the rng to use
      * @return a drandom matrix of the specified shape and range
      */
-    public static INDArray rand(int rows, int columns,float min,float max,RandomGenerator rng) {
+    public static INDArray rand(int rows, int columns,double min,double max,RandomGenerator rng) {
         return INSTANCE.rand(rows,columns,min,max,rng);
     }
 
@@ -1069,7 +1071,7 @@ public class Nd4j {
      * @param data the columns of the ndarray
      * @return  the created ndarray
      */
-    public static INDArray create(double[] data,char order) {
+    public static INDArray create(float[] data,char order) {
         return INSTANCE.create(data);
     }
 
@@ -1078,7 +1080,7 @@ public class Nd4j {
      * @param data the columns of the ndarray
      * @return  the created ndarray
      */
-    public static INDArray create(float[] data,char order) {
+    public static INDArray create(double[] data,char order) {
         return INSTANCE.create(data);
     }
 
@@ -1119,7 +1121,7 @@ public class Nd4j {
      * @param data the columns of the ndarray
      * @return  the created ndarray
      */
-    public static INDArray create(double[] data) {
+    public static INDArray create(float[] data) {
         return create(data,order());
     }
 
@@ -1128,7 +1130,7 @@ public class Nd4j {
      * @param data the columns of the ndarray
      * @return  the created ndarray
      */
-    public static INDArray create(float[] data) {
+    public static INDArray create(double[] data) {
         return create(data,order());
     }
 
@@ -1137,11 +1139,14 @@ public class Nd4j {
      * @param data the number of columns in the row vector
      * @return ndarray
      */
-    public static IComplexNDArray createComplex(double[] data) {
+    public static IComplexNDArray createComplex(float[] data) {
         return createComplex(data, Nd4j.order());
 
     }
 
+    private static IComplexNDArray createComplex(float[] data, Character order) {
+        return INSTANCE.createComplex(data,order);
+    }
 
 
     /**
@@ -1173,7 +1178,7 @@ public class Nd4j {
     public static boolean hasInvalidNumber(INDArray num) {
         INDArray linear = num.linearView();
         for(int i = 0;i < linear.length(); i++) {
-            if(Float.isInfinite(linear.getFloat(i)) || Float.isNaN(linear.getFloat(i)))
+            if(Double.isInfinite(linear.getFloat(i)) || Double.isNaN(linear.getFloat(i)))
                 return true;
         }
         return false;
@@ -1442,7 +1447,7 @@ public class Nd4j {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(float[] data,int[] shape,int[] stride,int offset) {
+    public static IComplexNDArray createComplex(double[] data,int[] shape,int[] stride,int offset) {
         return INSTANCE.createComplex(data, shape, stride, offset);
     }
 
@@ -1456,7 +1461,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(float[] data,int[] shape,int[] stride,int offset) {
+    public static INDArray create(double[] data,int[] shape,int[] stride,int offset) {
         return INSTANCE.create(data,shape,stride,offset);
     }
 
@@ -1487,7 +1492,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return the created ndarray
      */
-    public static IComplexNDArray createComplex(double[] data,int[] shape) {
+    public static IComplexNDArray createComplex(float[] data,int[] shape) {
         return INSTANCE.createComplex(data,shape);
     }
 
@@ -1497,7 +1502,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return the created ndarray
      */
-    public static IComplexNDArray createComplex(float[] data,int[] shape) {
+    public static IComplexNDArray createComplex(double[] data,int[] shape) {
         return INSTANCE.createComplex(data,shape);
     }
 
@@ -1510,7 +1515,7 @@ public class Nd4j {
      * @param stride the stride for the ndarray
      * @return the created ndarray
      */
-    public static IComplexNDArray createComplex(double[] data,int[] shape,int[] stride) {
+    public static IComplexNDArray createComplex(float[] data,int[] shape,int[] stride) {
         return INSTANCE.createComplex(data, shape, stride);
     }
 
@@ -1521,7 +1526,7 @@ public class Nd4j {
      * @param stride the stride for the ndarray
      * @return the created ndarray
      */
-    public static IComplexNDArray createComplex(float[] data,int[] shape,int[] stride) {
+    public static IComplexNDArray createComplex(double[] data,int[] shape,int[] stride) {
         return INSTANCE.createComplex(data,shape,stride);
     }
 
@@ -1562,7 +1567,7 @@ public class Nd4j {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(double[] data,int[] shape,int[] stride,int offset) {
+    public static IComplexNDArray createComplex(float[] data,int[] shape,int[] stride,int offset) {
         return INSTANCE.createComplex(data,shape,stride,offset);
     }
 
@@ -1574,8 +1579,8 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(double[] data,int[] shape,int offset) {
-        return create(data, shape, offset, Nd4j.order());
+    public static INDArray create(float[] data,int[] shape,int offset) {
+        return INSTANCE.create(data, shape, offset, Nd4j.order());
     }
 
 
@@ -1596,7 +1601,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(double[] data,int[] shape,int[] stride,int offset) {
+    public static INDArray create(float[] data,int[] shape,int[] stride,int offset) {
         return INSTANCE.create(data,shape,stride,offset);
     }
 
@@ -1801,7 +1806,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the scalar nd array
      */
-    public static INDArray scalar(float value,int offset) {
+    public static INDArray scalar(double value,int offset) {
         return INSTANCE.scalar(value,offset);
     }
 
@@ -1811,7 +1816,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the scalar nd array
      */
-    public static INDArray scalar(double value,int offset) {
+    public static INDArray scalar(float value,int offset) {
         return INSTANCE.scalar(value,offset);
 
     }
@@ -1832,7 +1837,7 @@ public class Nd4j {
      * @param value the value of the scalar
     =     * @return the scalar nd array
      */
-    public static INDArray scalar(float value) {
+    public static INDArray scalar(double value) {
         return INSTANCE.scalar(value);
     }
 
@@ -1841,7 +1846,7 @@ public class Nd4j {
      * @param value the value of the scalar
     =     * @return the scalar nd array
      */
-    public static INDArray scalar(double value) {
+    public static INDArray scalar(float value) {
         return INSTANCE.scalar(value);
     }
 
@@ -2005,7 +2010,7 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(float[] data,int rows,int columns,int[] stride,int offset,char ordering) {
-        return INSTANCE.create(data, rows, columns, stride, offset);
+        return INSTANCE.create(data, rows, columns, stride, offset,ordering);
     }
 
 
@@ -2019,7 +2024,7 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(float[] data,int[] shape,int[] stride,int offset,char ordering) {
-        return INSTANCE.createComplex(data, shape, stride, offset);
+        return INSTANCE.createComplex(data, shape, stride, offset,ordering);
     }
 
 
@@ -2032,7 +2037,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(float[] data,int[] shape,int[] stride,int offset,char ordering) {
+    public static INDArray create(double[] data,int[] shape,int[] stride,int offset,char ordering) {
         return INSTANCE.create(data,shape,stride,offset,ordering);
     }
 
@@ -2044,7 +2049,7 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(double[] data,int[] shape,char ordering) {
-        return  INSTANCE.create(data,shape);
+        return  INSTANCE.create(data,shape,ordering);
     }
 
     /**
@@ -2054,17 +2059,7 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(float[] data,int[] shape,char ordering) {
-        return INSTANCE.create(data,shape);
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     * @param data the data to use with tne ndarray
-     * @param shape the shape of the ndarray
-     * @return the created ndarray
-     */
-    public static IComplexNDArray createComplex(double[] data,int[] shape,char ordering) {
-        return INSTANCE.createComplex(data,shape);
+        return INSTANCE.create(data,shape,ordering);
     }
 
     /**
@@ -2074,21 +2069,20 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static IComplexNDArray createComplex(float[] data,int[] shape,char ordering) {
-        return INSTANCE.createComplex(data,shape);
+        return INSTANCE.createComplex(data,shape,ordering);
     }
-
-
 
     /**
      * Create an ndrray with the specified shape
      * @param data the data to use with tne ndarray
      * @param shape the shape of the ndarray
-     * @param stride the stride for the ndarray
      * @return the created ndarray
      */
-    public static IComplexNDArray createComplex(double[] data,int[] shape,int[] stride,char ordering) {
-        return INSTANCE.createComplex(data, shape, stride);
+    public static IComplexNDArray createComplex(double[] data,int[] shape,char ordering) {
+        return INSTANCE.createComplex(data,shape,ordering);
     }
+
+
 
     /**
      * Create an ndrray with the specified shape
@@ -2098,7 +2092,18 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static IComplexNDArray createComplex(float[] data,int[] shape,int[] stride,char ordering) {
-        return INSTANCE.createComplex(data,shape,stride);
+        return INSTANCE.createComplex(data, shape, stride,ordering);
+    }
+
+    /**
+     * Create an ndrray with the specified shape
+     * @param data the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @return the created ndarray
+     */
+    public static IComplexNDArray createComplex(double[] data,int[] shape,int[] stride,char ordering) {
+        return INSTANCE.createComplex(data,shape,stride,ordering);
     }
 
 
@@ -2150,8 +2155,8 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(double[] data,int[] shape,int[] stride,int offset,char ordering) {
-        return INSTANCE.create(data,shape,stride,offset);
+    public static INDArray create(float[] data,int[] shape,int[] stride,int offset,char ordering) {
+        return INSTANCE.create(data,shape,stride,offset,ordering);
     }
 
 
@@ -2161,7 +2166,7 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(List<INDArray> list,int[] shape,char ordering) {
-        return INSTANCE.create(list,shape);
+        return INSTANCE.create(list,shape,ordering);
     }
 
 
@@ -2290,7 +2295,7 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int rows,int columns,char ordering) {
-        return INSTANCE.create(rows,columns);
+        return INSTANCE.create(rows,columns,ordering);
     }
 
 
@@ -2315,7 +2320,7 @@ public class Nd4j {
     }
 
 
-    public static IComplexNDArray createComplex(double[] data, int[] ints, int offset, char ordering) {
+    public static IComplexNDArray createComplex(float[] data, int[] ints, int offset, char ordering) {
         return INSTANCE.createComplex(data,ints,ArrayUtil.calcStrides(ints,2),offset,ordering);
     }
 
@@ -2323,15 +2328,15 @@ public class Nd4j {
         return createComplex(data, shape, offset, Nd4j.order());
     }
 
-    public static INDArray create(float[] data, int[] shape, int offset) {
+    public static INDArray create(double[] data, int[] shape, int offset) {
         return INSTANCE.create(data,shape,offset);
     }
 
-    public static IComplexNDArray createComplex(float[] data, int[] ints, int offset, char ordering) {
+    public static IComplexNDArray createComplex(double[] data, int[] ints, int offset, char ordering) {
         return INSTANCE.createComplex(data,ints,offset,ordering);
     }
 
-    public static IComplexNDArray createComplex(float[] dim) {
+    public static IComplexNDArray createComplex(double[] dim) {
         return INSTANCE.createComplex(dim,new int[]{1,dim.length / 2});
     }
 
@@ -2339,8 +2344,8 @@ public class Nd4j {
         return INSTANCE.createComplex(data,shape,offset);
     }
 
-    public static INDArray create(float[][] floats) {
-        return INSTANCE.create(floats);
+    public static INDArray create(float[][] doubles) {
+        return INSTANCE.create(doubles);
     }
 
     public static IComplexNDArray complexLinSpace(int i, int i1, int i2) {

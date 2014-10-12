@@ -50,7 +50,7 @@ public class Pow extends BaseElementWiseOp {
             IComplexNumber n = (IComplexNumber) value;
             return ComplexUtil.pow(n,power);
         }
-        float d = (float) value;
-        return (float) Math.pow(d,power);
+        double d = (double) value;
+        return  Math.pow(d,power);
     }
 }

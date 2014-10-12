@@ -491,6 +491,13 @@ public class ArrayUtil {
             dos.writeDouble(data[i]);
     }
 
+    public static double[] readDouble(int length,DataInputStream dis) throws IOException {
+        double[] ret = new double[length];
+        for(int i = 0; i < length; i++)
+            ret[i] = dis.readDouble();
+        return ret;
+    }
+
 
     public static float[] readFloat(int length,DataInputStream dis) throws IOException {
         float[] ret = new float[length];

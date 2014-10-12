@@ -11,6 +11,9 @@ import org.nd4j.linalg.ops.BaseElementWiseOp;
  */
 public class Max extends BaseElementWiseOp {
     private Number max = 0;
+    public Max(Double max) {
+        this.max = max;
+    }
 
     public Max(Float max) {
         this.max = max;
@@ -38,7 +41,7 @@ public class Max extends BaseElementWiseOp {
             return num.set(max,num.imaginaryComponent());
         }
 
-        float val = (float) value;
-        return (float) Math.max(max.doubleValue(),val);
+        double val = (double) value;
+        return  Math.max(max.doubleValue(),val);
     }
 }

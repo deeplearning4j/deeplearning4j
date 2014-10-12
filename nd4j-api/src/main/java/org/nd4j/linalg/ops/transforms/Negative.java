@@ -23,7 +23,7 @@ public class Negative extends BaseElementWiseOp {
             return ComplexUtil.neg((org.nd4j.linalg.api.complex.IComplexNumber) value);
         }
         else {
-            float val = (float) value;
+            double val = (double) value;
             return -val;
         }
     }

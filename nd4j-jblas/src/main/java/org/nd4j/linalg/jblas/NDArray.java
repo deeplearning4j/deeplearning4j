@@ -2,6 +2,7 @@ package org.nd4j.linalg.jblas;
 
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -266,5 +267,9 @@ public class NDArray extends BaseNDArray {
 
     public NDArray(DataBuffer data, int[] shape) {
         super(data,shape);
+    }
+
+    public NDArray(DoubleBuffer buffer, int[] shape, int offset) {
+        super(buffer,shape,offset);
     }
 }

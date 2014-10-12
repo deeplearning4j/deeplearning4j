@@ -132,7 +132,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
 
         else {
             for(int i = 0; i < linear.length(); i++) {
-                float apply = apply(linear,linear.getFloat(i),i);
+                double apply = apply(linear,linear.getDouble(i),i);
                 from.putScalar(i,apply);
             }
         }
