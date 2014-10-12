@@ -270,6 +270,8 @@ public class Tsne {
             throw new IllegalStateException("weird");
         }
 
+        INDArray otherD = null;
+
 
         INDArray p = d2p(D,perplexity,tolerance);
 
