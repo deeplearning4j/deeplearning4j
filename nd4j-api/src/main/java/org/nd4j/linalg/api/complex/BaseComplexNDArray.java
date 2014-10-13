@@ -872,24 +872,56 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     @Override
-    public INDArray put(NDArrayIndex[] indices, INDArray element) {
-        IComplexNDArray get = get(indices);
-        IComplexNDArray linear = get.linearView();
-        IComplexNDArray element2 = element instanceof  IComplexNDArray ? (IComplexNDArray) element : Nd4j.createComplex(element);
-        if(element.isScalar()) {
-            for(int i = 0; i < linear.length(); i++) {
-                linear.putScalar(i,element2.getComplex(0));
+    public IComplexNDArray put(NDArrayIndex[] indices, INDArray element) {
+        if(Indices.isContiguous(indices)) {
+            IComplexNDArray get = get(indices);
+            IComplexNDArray linear = get.linearView();
+            IComplexNDArray imag = element instanceof   IComplexNDArray ? (IComplexNDArray) element : Nd4j.createComplex(element);
+            IComplexNDArray elementLinear = imag.linearView();
+            if(element.isScalar()) {
+                for(int i = 0; i < linear.length(); i++) {
+                    linear.putScalar(i,elementLinear.getComplex(0));
+                }
             }
+
+            if(Shape.shapeEquals(element.shape(),get.shape()) || element.length() <= get.length()) {
+                for(int i = 0; i < elementLinear.length(); i++) {
+                    linear.putScalar(i,elementLinear.getComplex(i));
+                }
+            }
+
+
         }
 
-        if(Shape.shapeEquals(element.shape(),get.shape()) || element.length() <= get.length()) {
-            IComplexNDArray elementLinear = element2.linearView();
+        else {
+            if(isVector()) {
+                assert indices.length == 1 : "Indices must only be of length 1.";
+                assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
+                assert indices[0].length() == element.length() : "Number of specified elements in index does not match length of element.";
+                int[] assign = indices[0].indices();
+                IComplexNDArray imag = element instanceof   IComplexNDArray ? (IComplexNDArray) element : Nd4j.createComplex(element);
+                IComplexNDArray elementLinear = imag.linearView();
 
-            for(int i = 0; i < elementLinear.length(); i++) {
-                linear.putScalar(i,elementLinear.getComplex(i));
+                for(int i = 0; i < element.length(); i++) {
+                    putScalar(assign[i],elementLinear.getComplex(i));
+                }
+
+                return this;
+
             }
-        }
 
+            if(element.isVector())
+                slice(indices[0].indices()[0]).put(Arrays.copyOfRange(indices,1,indices.length),element);
+
+
+            else {
+                for(int i = 0; i < element.slices(); i++) {
+                    INDArray slice = slice(indices[0].indices()[i]);
+                    slice.put(Arrays.copyOfRange(indices,1,indices.length),element.slice(i));
+                }
+            }
+
+        }
 
         return this;
     }
@@ -2336,6 +2368,26 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         if(ArrayUtil.prod(shape) > length())
             return this;
 
+        //no stride will help here, need to do manually
+
+        if(!Indices.isContiguous(indexes)) {
+            IComplexNDArray ret = Nd4j.createComplex(shape);
+            if(ret.isVector() && isVector()) {
+                int[] indices = indexes[0].indices();
+                for(int i = 0; i < ret.length(); i++) {
+                    ret.putScalar(i,getComplex(indices[i]));
+                }
+
+                return ret;
+            }
+            for(int i = 0; i < ret.slices(); i++) {
+                IComplexNDArray putSlice = slice(i).get(Arrays.copyOfRange(indexes,1,indexes.length));
+                ret.putSlice(i,putSlice);
+
+            }
+
+            return ret;
+        }
 
         int[] strides = ordering == 'f' ? ArrayUtil.calcStridesFortran(shape,2) :  ArrayUtil.copy(stride());
 
