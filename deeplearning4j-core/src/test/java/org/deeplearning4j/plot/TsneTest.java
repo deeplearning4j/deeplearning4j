@@ -1,6 +1,7 @@
 package org.deeplearning4j.plot;
 
 import org.apache.commons.io.IOUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -15,6 +16,7 @@ import java.util.List;
 public class TsneTest {
 
     @Test
+    @Ignore
     public void testTsne() throws Exception {
         Tsne calculation = new Tsne.Builder().setMaxIter(200).usePca(false).setSwitchMomentumIteration(20)
                 .normalize(true).useAdaGrad(true).learningRate(500f).perplexity(20f).minGain(1e-1f)
