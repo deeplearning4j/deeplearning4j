@@ -2982,9 +2982,16 @@ public abstract class BaseNDArray  implements INDArray {
             return Nd4j.create(data, new int[]{shape[0]}, offset);
         if(isMatrix()) {
             INDArray reverse = Nd4j.create(new int[]{shape[1],shape[0]});
+            toString();
             for (int i = 0; i < rows; i++) {
                 for (int j = 0; j < columns; j++) {
-                    reverse.putScalar(new int[]{j, i}, getFloat(i, j));
+                    double d = getDouble(i,j);
+                    Double d2 = Double.valueOf(d);
+                    if(data.dataType().equals(DataBuffer.FLOAT))
+                        reverse.putScalar(new int[]{j, i}, d);
+                    else
+                        reverse.putScalar(new int[]{j, i}, d);
+
                 }
             }
 
@@ -3581,13 +3588,13 @@ public abstract class BaseNDArray  implements INDArray {
 
         int[] strides =  null;
         if(Shape.isVector(shape)) {
-           strides =  ordering == NDArrayFactory.FORTRAN  ?
+            strides =  ordering == NDArrayFactory.FORTRAN  ?
                     ArrayUtil.reverseCopy(stride()) :
                     ArrayUtil.copy(stride());
         }
 
         else
-             strides = ArrayUtil.copy(stride());
+            strides = ArrayUtil.copy(stride());
 
         if(offsets.length != shape.length)
             offsets = Arrays.copyOfRange(offsets,0,shape.length);
@@ -4057,10 +4064,19 @@ public abstract class BaseNDArray  implements INDArray {
         else if(isVector()) {
             StringBuilder sb = new StringBuilder();
             sb.append("[");
-            for(int i = 0; i < length; i++) {
+            int numElementsToPrint = Nd4j.MAX_ELEMENTS_PER_SLICE < 0 ? length : Nd4j.MAX_SLICES_TO_PRINT;
+            for(int i = 0; i < numElementsToPrint; i++) {
                 sb.append(getDouble(i));
                 if(i < length - 1)
                     sb.append(" ,");
+            }
+            if(numElementsToPrint != length) {
+                sb.append(" ,...,");
+                for(int i = length - 1; i > length - numElementsToPrint; i--) {
+                    sb.append(getDouble(i));
+                    if(i < length - 1)
+                        sb.append(" ,");
+                }
             }
 
             sb.append("]\n");
@@ -4074,11 +4090,22 @@ public abstract class BaseNDArray  implements INDArray {
         sb.append("[");
         if (length > 0) {
             sb.append(slice(0).toString());
-            for (int i = 1; i < slices(); i++) {
+            int slices = Nd4j.MAX_SLICES_TO_PRINT > 0 ? Nd4j.MAX_SLICES_TO_PRINT : slices();
+            for (int i = 1; i < slices; i++) {
                 sb.append(slice(i).toString());
                 if(i < length - 1)
                     sb.append(" ,");
 
+            }
+
+            if(slices != slices()) {
+                for(int i = slices() - slices; i < slices(); i++) {
+                    if(i >= slices())
+                        break;
+                    sb.append(slice(i).toString());
+                    if(i < length - 1)
+                        sb.append(" ,");
+                }
             }
         }
         sb.append("]\n");

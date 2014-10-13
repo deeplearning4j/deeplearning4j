@@ -1378,7 +1378,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(int[] shape,int[] stride,int offset) {
-        return create(new float[ArrayUtil.prod(shape)],shape,stride,offset);
+        return create(Nd4j.createBuffer(shape),shape,stride,offset);
 
     }
 
