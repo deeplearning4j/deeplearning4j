@@ -19,6 +19,12 @@ public interface INDArray extends Serializable {
 
 
     /**
+     * Return the major stride for an ndarray
+     * @return the major stride for an ndarray
+     */
+    int majorStride();
+
+    /**
      * Returns a linear view reference of shape
      * 1,length(ndarray)
      * @return the linear view of this ndarray

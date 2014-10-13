@@ -1921,6 +1921,8 @@ public class Nd4j {
      * @return the strides for the given shape and order
      */
     public static int[] getStrides(int[] shape,char order) {
+        if(Shape.isRowVectorShape(shape) && shape.length > 1)
+            shape = new int[] {shape[1]};
         if(order == NDArrayFactory.FORTRAN)
             return ArrayUtil.calcStridesFortran(shape);
         return ArrayUtil.calcStrides(shape);

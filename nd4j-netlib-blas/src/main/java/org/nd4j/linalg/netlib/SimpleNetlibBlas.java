@@ -44,11 +44,11 @@ public class SimpleNetlibBlas {
                 A.rows(),
                 B.data().asDouble(),
                 B.offset(),
-                C.stride()[0],
+                C.majorStride(),
                 beta,
                 C.data().asDouble(),
                 C.offset(),
-                C.stride()[0]);
+                C.majorStride());
 
 
 
@@ -77,11 +77,11 @@ public class SimpleNetlibBlas {
                 A.rows(),
                 B.data().asFloat(),
                 B.offset(),
-                C.stride()[0],
+                C.majorStride(),
                 beta,
                 C.data().asFloat(),
                 C.offset(),
-                C.stride()[0]);
+                C.majorStride());
 
 
 
@@ -375,16 +375,16 @@ public class SimpleNetlibBlas {
             BLAS.getInstance().scopy(
                     x.length(),
                     x.data().asFloat(),
-                    x.stride()[0],
+                    x.majorStride(),
                     y.data().asFloat(),
-                    y.stride()[0]);
+                    y.majorStride());
         else
             BLAS.getInstance().dcopy(
                     x.length(),
                     x.data().asDouble(),
-                    x.stride()[0],
+                    x.majorStride(),
                     y.data().asDouble(),
-                    y.stride()[0]);
+                    y.majorStride());
     }
 
 
@@ -408,9 +408,9 @@ public class SimpleNetlibBlas {
      */
     public static double asum(IComplexNDArray x) {
         if(x.data().dataType().equals(DataBuffer.FLOAT))
-            return NativeBlas.scasum(x.length(), x.data().asFloat(), x.offset(), x.stride()[0]);
+            return NativeBlas.scasum(x.length(), x.data().asFloat(), x.offset(), x.majorStride());
         else
-            return NativeBlas.dzasum(x.length(), x.data().asDouble(), x.offset(), x.stride()[0]);
+            return NativeBlas.dzasum(x.length(), x.data().asDouble(), x.offset(), x.majorStride());
 
     }
 
@@ -427,19 +427,19 @@ public class SimpleNetlibBlas {
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.stride()[0],
+                    x.majorStride(),
                     y.data().asFloat(),
                     y.offset(),
-                    y.stride()[0]);
+                    y.majorStride());
         else
             BLAS.getInstance().dswap(
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.stride()[0],
+                    x.majorStride(),
                     y.data().asDouble(),
                     y.offset(),
-                    y.stride()[0]);
+                    y.majorStride());
 
     }
 
@@ -450,11 +450,11 @@ public class SimpleNetlibBlas {
      */
     public static double asum(INDArray x) {
         if(x.data().dataType().equals(DataBuffer.FLOAT)) {
-            float sum = BLAS.getInstance().sasum(x.length(), x.data().asFloat(), x.offset(), x.stride()[0]);
+            float sum = BLAS.getInstance().sasum(x.length(), x.data().asFloat(), x.offset(), x.majorStride());
             return sum;
         }
         else {
-            double sum = BLAS.getInstance().dasum(x.length(), x.data().asDouble(), x.offset(), x.stride()[0]);
+            double sum = BLAS.getInstance().dasum(x.length(), x.data().asDouble(), x.offset(), x.majorStride());
             return sum;
         }
     }
@@ -466,11 +466,11 @@ public class SimpleNetlibBlas {
      */
     public static double nrm2(INDArray x) {
         if(x.data().dataType().equals(DataBuffer.FLOAT)) {
-            float normal2 = BLAS.getInstance().snrm2(x.length(), x.data().asFloat(), x.offset(),x.stride()[0]);
+            float normal2 = BLAS.getInstance().snrm2(x.length(), x.data().asFloat(), x.offset(),x.majorStride());
             return normal2;
         }
         else {
-            double normal2 = BLAS.getInstance().dnrm2(x.length(), x.data().asDouble(), x.offset(), x.stride()[0]);
+            double normal2 = BLAS.getInstance().dnrm2(x.length(), x.data().asDouble(), x.offset(), x.majorStride());
             return normal2;
         }
 
@@ -488,7 +488,7 @@ public class SimpleNetlibBlas {
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.stride()[0]);
+                    x.majorStride());
             return max;
         }
         else {
@@ -496,7 +496,7 @@ public class SimpleNetlibBlas {
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.stride()[0]);
+                    x.majorStride());
             return max;
         }
 
@@ -517,10 +517,10 @@ public class SimpleNetlibBlas {
                         da,
                         A.data().asFloat(),
                         A.offset(),
-                        A.stride()[0],
+                        A.majorStride(),
                         B.data().asFloat(),
                         B.offset(),
-                        B.stride()[0]);
+                        B.majorStride());
             }
             else {
                 BLAS.getInstance().daxpy(
@@ -528,10 +528,10 @@ public class SimpleNetlibBlas {
                         da,
                         A.data().asDouble(),
                         A.offset(),
-                        A.stride()[0],
+                        A.majorStride(),
                         B.data().asDouble(),
                         B.offset(),
-                        B.stride()[0]);
+                        B.majorStride());
             }
 
         }
@@ -542,20 +542,20 @@ public class SimpleNetlibBlas {
                         da,
                         A.data().asFloat(),
                         A.offset(),
-                        A.stride()[0],
+                        A.majorStride(),
                         B.data().asFloat(),
                         B.offset(),
-                        B.stride()[0]);
+                        B.majorStride());
             else
                 BLAS.getInstance().daxpy(
                         A.length(),
                         da,
                         A.data().asDouble(),
                         A.offset(),
-                        A.stride()[0],
+                        A.majorStride(),
                         B.data().asDouble(),
                         B.offset(),
-                        B.stride()[0]);
+                        B.majorStride());
 
         }
 
@@ -577,20 +577,20 @@ public class SimpleNetlibBlas {
                     new org.jblas.ComplexFloat(da.realComponent().floatValue(), da.imaginaryComponent().floatValue()),
                     A.data().asFloat(),
                     A.offset(),
-                    A.stride()[0],
+                    A.majorStride(),
                     B.data().asFloat(),
                     B.offset(),
-                    A.stride()[0]);
+                    A.majorStride());
         else
             NativeBlas.zaxpy(
                     A.length(),
                     new org.jblas.ComplexDouble(da.realComponent().doubleValue(), da.imaginaryComponent().doubleValue()),
                     A.data().asDouble(),
                     A.offset(),
-                    A.stride()[0],
+                    A.majorStride(),
                     B.data().asDouble(),
                     B.offset(),
-                    B.stride()[0]);
+                    B.majorStride());
 
 
     }
@@ -610,7 +610,7 @@ public class SimpleNetlibBlas {
                 alpha,
                 x.data().asDouble(),
                 x.offset(),
-                x.stride()[0]);
+                x.majorStride());
 
         return x;
 
@@ -629,7 +629,7 @@ public class SimpleNetlibBlas {
                 alpha,
                 x.data().asFloat(),
                 x.offset(),
-                x.stride()[0]);
+                x.majorStride());
 
         return x;
 
@@ -645,19 +645,19 @@ public class SimpleNetlibBlas {
             BLAS.getInstance().scopy(x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.stride()[0],
+                    x.majorStride(),
                     y.data().asFloat(),
                     y.offset(),
-                    y.stride()[0]);
+                    y.majorStride());
         else
             BLAS.getInstance().dcopy(
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.stride()[0],
+                    x.majorStride(),
                     y.data().asDouble(),
                     y.offset(),
-                    y.stride()[0]);
+                    y.majorStride());
 
 
     }
@@ -674,10 +674,10 @@ public class SimpleNetlibBlas {
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.stride()[0],
+                    x.majorStride(),
                     y.data().asFloat(),
                     y.offset(),
-                    y.stride()[0]);
+                    y.majorStride());
             return ret;
 
         }
@@ -686,10 +686,10 @@ public class SimpleNetlibBlas {
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.stride()[0],
+                    x.majorStride(),
                     y.data().asDouble(),
                     y.offset(),
-                    y.stride()[0]);
+                    y.majorStride());
             return ret;
 
         }
@@ -710,10 +710,10 @@ public class SimpleNetlibBlas {
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.stride()[0] / 2,
+                    x.majorStride() / 2,
                     y.data().asFloat(),
                     y.offset(),
-                    y.stride()[0] / 2);
+                    y.majorStride() / 2);
             return new ComplexDouble(f.realComponent().doubleValue(),f.imaginaryComponent().doubleValue());
 
         }
@@ -723,10 +723,10 @@ public class SimpleNetlibBlas {
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.stride()[0] / 2,
+                    x.majorStride() / 2,
                     y.data().asDouble(),
                     y.offset(),
-                    y.stride()[0] / 2);
+                    y.majorStride() / 2);
             return new ComplexDouble(f.realComponent().doubleValue(),f.imaginaryComponent().doubleValue());
 
         }
@@ -792,10 +792,10 @@ public class SimpleNetlibBlas {
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.stride()[0],
+                    x.majorStride(),
                     y.data().asFloat(),
                     y.offset(),
-                    y.stride()[0]));
+                    y.majorStride()));
 
         }
         else {
@@ -803,10 +803,10 @@ public class SimpleNetlibBlas {
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.stride()[0],
+                    x.majorStride(),
                     y.data().asDouble(),
                     y.offset(),
-                    y.stride()[0]));
+                    y.majorStride()));
 
         }
 
@@ -828,10 +828,10 @@ public class SimpleNetlibBlas {
                     new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
                     x.data().asFloat(),
                     x.offset(),
-                    x.stride()[0],
+                    x.majorStride(),
                     y.data().asFloat(),
                     y.offset(),
-                    y.stride()[0],
+                    y.majorStride(),
                     a.data().asFloat(),
                     a.offset(),
                     a.rows());
@@ -842,10 +842,10 @@ public class SimpleNetlibBlas {
                     new ComplexDouble(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
                     x.data().asDouble(),
                     x.offset(),
-                    x.stride()[0],
+                    x.majorStride(),
                     y.data().asDouble(),
                     y.offset(),
-                    y.stride()[0],
+                    y.majorStride(),
                     a.data().asDouble(),
                     a.offset(),
                     a.rows());
@@ -870,10 +870,10 @@ public class SimpleNetlibBlas {
                     (ComplexFloat) alpha,
                     x.data().asFloat(),
                     x.offset(),
-                    x.stride()[0],
+                    x.majorStride(),
                     y.data().asFloat(),
                     y.offset(),
-                    y.stride()[0],
+                    y.majorStride(),
                     a.data().asFloat(),
                     a.offset(),
                     a.rows());
@@ -884,10 +884,10 @@ public class SimpleNetlibBlas {
                     (ComplexDouble) alpha,
                     x.data().asDouble(),
                     x.offset(),
-                    x.stride()[0],
+                    x.majorStride(),
                     y.data().asDouble(),
                     y.offset(),
-                    y.stride()[0],
+                    y.majorStride(),
                     a.data().asDouble(),
                     a.offset(),
                     a.rows());
@@ -917,7 +917,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static IComplexNDArray dscal(IComplexDouble alpha, IComplexNDArray x) {
-        NativeBlas.zscal(x.length(), (org.jblas.ComplexDouble) alpha, x.data().asDouble(), x.offset(), x.stride()[0]);
+        NativeBlas.zscal(x.length(), (org.jblas.ComplexDouble) alpha, x.data().asDouble(), x.offset(), x.majorStride());
         return x;
     }
     /**
@@ -927,7 +927,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static IComplexNDArray sscal(IComplexFloat alpha, IComplexNDArray x) {
-        NativeBlas.cscal(x.length(),(org.jblas.ComplexFloat) alpha,x.data().asFloat(),x.offset(),x.stride()[0]);
+        NativeBlas.cscal(x.length(),(org.jblas.ComplexFloat) alpha,x.data().asFloat(),x.offset(),x.majorStride());
         return x;
     }
 

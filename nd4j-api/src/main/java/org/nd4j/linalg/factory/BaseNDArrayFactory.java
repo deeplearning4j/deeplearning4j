@@ -1003,6 +1003,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
         final INDArray ret = Nd4j.create(rows,cols);
+        ret.toString();
         final AtomicInteger i = new AtomicInteger(0);
         for(INDArray a : arrs) {
             a.iterateOverAllColumns(new SliceOp() {
@@ -1014,7 +1015,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
                 @Override
                 public void operate(INDArray nd) {
                     for(int j = 0; j < nd.length(); j++) {
-                        ret.putScalar(i.get(), nd.getFloat(j));
+                        ret.putScalar(i.get(), nd.getDouble(j));
 
                     }
                     i.incrementAndGet();

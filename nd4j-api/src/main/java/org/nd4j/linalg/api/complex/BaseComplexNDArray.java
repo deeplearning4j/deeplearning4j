@@ -248,7 +248,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         INDArray linear = real.linearView();
         IComplexNDArray thisLinear = linearView();
         for(int i = 0; i < linear.length(); i++) {
-            thisLinear.putScalar(i, Nd4j.createComplexNumber(linear.getFloat(i),0));
+            thisLinear.putScalar(i, Nd4j.createComplexNumber(linear.getDouble(i),0));
         }
     }
 
@@ -671,7 +671,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             INDArray otherLinear =  other.linearView();
             for(int i = 0; i < linear.length(); i++) {
                 linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue()
-                        < otherLinear.getFloat(i) ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+                        < otherLinear.getDouble(i) ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
             }
         }
 
@@ -698,7 +698,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             INDArray otherLinear =  other.linearView();
             for(int i = 0; i < linear.length(); i++) {
                 linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue()
-                        == otherLinear.getFloat(i) ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+                        == otherLinear.getDouble(i) ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
             }
         }
 
@@ -725,7 +725,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             INDArray otherLinear =  other.linearView();
             for(int i = 0; i < linear.length(); i++) {
                 linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue()
-                        != otherLinear.getFloat(i) ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+                        != otherLinear.getDouble(i) ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
             }
         }
 
@@ -752,7 +752,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             INDArray otherLinear =  other.linearView();
             for(int i = 0; i < linear.length(); i++) {
                 linear.putScalar(i,linear.getComplex(i).absoluteValue().floatValue()
-                        > otherLinear.getFloat(i) ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
+                        > otherLinear.getDouble(i) ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0));
             }
         }
         return this;
@@ -939,13 +939,13 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNDArray putSlice(int slice, IComplexNDArray put) {
         if(isScalar()) {
             assert put.isScalar() : "Invalid dimension. Can only insert a scalar in to another scalar";
-            put(0,put.getFloat(0));
+            putScalar(0, put.getDouble(0));
             return this;
         }
 
         else if(isVector()) {
             assert put.isScalar() : "Invalid dimension on insertion. Can only insert scalars input vectors";
-            put(slice,put.getFloat(0));
+            putScalar(slice, put.getDouble(0));
             return this;
         }
 
@@ -956,14 +956,14 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         IComplexNDArray view = slice(slice);
 
         if(put.isScalar())
-            put(slice,put.getFloat(0));
+            putScalar(slice, put.getDouble(0));
         else if(put.isVector())
             for(int i = 0; i < put.length(); i++)
                 view.putScalar(i, put.getComplex(i));
         else if(put.shape().length == 2)
             for(int i = 0; i < put.rows(); i++)
                 for(int j = 0; j < put.columns(); j++)
-                    view.put(i,j,put.getFloat(i, j));
+                    view.put(i,j,put.getDouble(i, j));
 
         else {
 
@@ -1294,7 +1294,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     //getFromOrigin one result along one dimension based on the given offset
     public DimensionSlice vectorForDimensionAndOffset(int dimension, int offset) {
         if(isScalar() && dimension == 0 && offset == 0)
-            return new DimensionSlice(false, Nd4j.complexScalar(getFloat(offset)),new int[]{offset});
+            return new DimensionSlice(false, Nd4j.complexScalar(getDouble(offset)),new int[]{offset});
 
 
             //need whole vector
@@ -1307,7 +1307,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             }
 
             else if(dimension == 1) {
-                return new DimensionSlice(false, Nd4j.complexScalar(getFloat(offset)),new int[]{offset});
+                return new DimensionSlice(false, Nd4j.complexScalar(getDouble(offset)),new int[]{offset});
             }
 
             else
@@ -1596,10 +1596,15 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
 
-
-
-
-
+    @Override
+    public int majorStride() {
+        if(offset == 0)
+            return super.majorStride();
+        else {
+            //stride already taken in to account once by offset
+            return super.majorStride() / 2;
+        }
+    }
 
     /**
      * Inserts the element at the specified index
@@ -1823,7 +1828,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                     IComplexNDArray copyFrom = vectorAlongDimension(i,0);
                     IComplexNDArray copyTo = newCopy.vectorAlongDimension(i,0);
                     for(int j = 0; j < copyFrom.length(); j++) {
-                        copyTo.putScalar(j,copyFrom.getFloat(i));
+                        copyTo.putScalar(j,copyFrom.getDouble(i));
                     }
                 }
             }
@@ -2396,7 +2401,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         }
         else {
             for(int i = 0; i < r.length(); i++)
-                r.putScalar(i,Nd4j.createDouble(toPut.getFloat(i),0));
+                r.putScalar(i,Nd4j.createDouble(toPut.getDouble(i),0));
         }
 
         return this;
@@ -2424,7 +2429,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         }
         else {
             for(int i = 0; i < r.length(); i++)
-                r.putScalar(i,Nd4j.createDouble(toPut.getFloat(i),0));
+                r.putScalar(i,Nd4j.createDouble(toPut.getDouble(i),0));
 
         }
 
@@ -2477,7 +2482,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             put(i,n);
         }
         else
-            put(i,element.getFloat(0));
+            putScalar(i, element.getDouble(0));
         return this;
     }
 
@@ -3027,7 +3032,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             INDArray otherLinear = other.linearView();
             INDArray linear = linearView();
             for(int i = 0; i < resultLinear.length(); i++) {
-                resultLinear.putScalar(i,otherLinear.getFloat(i) + linear.getFloat(i));
+                resultLinear.putScalar(i,otherLinear.getDouble(i) + linear.getDouble(i));
             }
 
         }
@@ -4045,32 +4050,29 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         if (isScalar()) {
             return element().toString();
         }
-        else if(isMatrix()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append('[');
-            for(int i = 0; i < rows; i++) {
-                sb.append('[');
-                for(int j = 0; j < columns; j++) {
-                    sb.append(getComplex(i,j));
-                    if(j < columns - 1)
-                        sb.append(',');
-                }
-                sb.append(']');
-
-            }
-
-            sb.append("]\n");
-            return sb.toString();
-        }
 
 
         else if(isVector()) {
             StringBuilder sb = new StringBuilder();
             sb.append("[");
-            for(int i = 0; i < length; i++) {
+            int numElementsToPrint = Nd4j.MAX_ELEMENTS_PER_SLICE < 0 ? length : Nd4j.MAX_SLICES_TO_PRINT;
+            if(numElementsToPrint > length)
+                numElementsToPrint = length;
+            for(int i = 0; i < numElementsToPrint; i++) {
+                if(i >= length)
+                    break;
                 sb.append(getComplex(i));
                 if(i < length - 1)
-                    sb.append(',');
+                    sb.append(" ,");
+            }
+
+            if(numElementsToPrint != length) {
+                sb.append(" , ... ,");
+                for(int i = length - numElementsToPrint; i < length; i++) {
+                    sb.append(getComplex(i));
+                    if(i < length - 1)
+                        sb.append(" ,");
+                }
             }
 
             sb.append("]\n");
@@ -4084,11 +4086,24 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         sb.append("[");
         if (length > 0) {
             sb.append(slice(0).toString());
-            for (int i = 1; i < slices(); i++) {
+            int slices = Nd4j.MAX_SLICES_TO_PRINT > 0 ? Nd4j.MAX_SLICES_TO_PRINT : slices();
+            if(slices > slices())
+                slices = slices();
+            for (int i = 1; i < slices; i++) {
                 sb.append(slice(i).toString());
                 if(i < length - 1)
-                    sb.append(',');
+                    sb.append(" ,");
 
+            }
+
+            if(slices != slices()) {
+                for(int i = slices() - slices; i < slices(); i++) {
+                    //assume after
+                    sb.append(",");
+                    sb.append(slice(i).toString());
+                    if(i < length - 1)
+                        sb.append(" ,");
+                }
             }
         }
         sb.append("]\n");

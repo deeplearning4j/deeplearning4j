@@ -1,5 +1,6 @@
 package org.nd4j.linalg.ops.transforms;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -21,14 +22,14 @@ public class Sigmoid extends BaseElementWiseOp {
     public Object apply(INDArray from,Object input, int i) {
         if (input instanceof IComplexNumber) {
             IComplexNumber number = (IComplexNumber) input;
-            float arg = number.complexArgument().floatValue();
-            float sigArg = 1 / 1 + ((float) Math.exp(-arg)) - 1 + .5f;
-            float ret = (float) Math.exp(sigArg);
+            double arg = number.complexArgument().doubleValue();
+            double sigArg = 1 / 1 + (FastMath.exp(-arg)) - 1 + .5f;
+            double ret =  Math.exp(sigArg);
             return Nd4j.createDouble(ret, 0);
 
         } else {
-            float inputf = (float) input;
-            float val = 1 / (1 + (float) Math.exp(-inputf));
+            double inputf = (double) input;
+            double val = 1 / (1 + FastMath.exp(-inputf));
             return val;
         }
     }

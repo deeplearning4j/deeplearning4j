@@ -739,6 +739,7 @@ public abstract class NDArrayTests {
 
 
 
+        
 
 
     }
@@ -1057,7 +1058,7 @@ public abstract class NDArrayTests {
         INDArray twoByTwo = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray toAdd = Nd4j.create(new float[]{1, 2}, new int[]{2, 1});
         twoByTwo.addiColumnVector(toAdd);
-        INDArray assertion = Nd4j.create(new float[]{2, 4, 4, 6}, new int[]{2, 2});
+        INDArray assertion = Nd4j.create(new float[]{2, 3,5, 6}, new int[]{2, 2});
         assertEquals(assertion,twoByTwo);
 
 

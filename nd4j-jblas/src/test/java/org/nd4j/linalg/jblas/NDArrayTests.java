@@ -269,10 +269,10 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
     @Test
     public void testRowVectorOps() {
         if(Nd4j.factory().order() ==  NDArrayFactory.C) {
-            INDArray twoByTwo = Nd4j.create(new float[]{1, 3, 2, 4}, new int[]{2, 2});
-            INDArray toAdd = Nd4j.create(new float[]{1, 2}, new int[]{2});
+            INDArray twoByTwo = Nd4j.create(new double[]{1, 3, 2, 4}, new int[]{2, 2});
+            INDArray toAdd = Nd4j.create(new double[]{1, 2}, new int[]{2});
             twoByTwo.addiRowVector(toAdd);
-            INDArray assertion = Nd4j.create(new float[]{2, 5,3, 6}, new int[]{2, 2});
+            INDArray assertion = Nd4j.create(new double[]{2, 5,3, 6}, new int[]{2, 2});
             assertEquals(assertion,twoByTwo);
 
         }
