@@ -1,5 +1,6 @@
 package org.nd4j.linalg.indexing;
 
+import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -13,24 +14,23 @@ import java.util.Arrays;
 public class NDArrayIndex {
 
     private int[] indices = new int[1];
-
+    private boolean isInterval = false;
 
 
 
 
 
     public NDArrayIndex(int[] indices) {
-        if(indices.length > 0)
-            this.indices = indices;
-        else
-            this.indices = new int[1];
+        this.indices = indices;
 
     }
 
 
 
     public int end() {
-        return indices[indices.length - 1];
+        if(indices != null && indices.length > 0)
+            return indices[indices.length - 1];
+        return 0;
     }
 
     public int offset() {
@@ -112,13 +112,33 @@ public class NDArrayIndex {
 
         }
         else if(index.isVector()) {
-           int[] indices = ArrayUtil.toInts(index);
+            int[] indices = ArrayUtil.toInts(index);
             return new NDArrayIndex[]{new NDArrayIndex(indices)};
         }
 
 
         throw new IllegalArgumentException("Passed in ndarray must be a matrix or a vector");
 
+    }
+
+    public boolean isInterval() {
+        return isInterval;
+    }
+
+    public void setInterval(boolean isInterval) {
+        this.isInterval = isInterval;
+    }
+
+    /**
+     * Concatneate all of the given indices in to one
+     * @param indexes the indexes to concatneate
+     * @return the merged indices
+     */
+    public static NDArrayIndex concat(NDArrayIndex...indexes) {
+        int[][] indices = new int[indexes.length][];
+        for(int i = 0; i < indexes.length; i++)
+            indices[i] = indexes[i].indices();
+        return new NDArrayIndex(Ints.concat(indices));
     }
 
     /**
@@ -141,7 +161,9 @@ public class NDArrayIndex {
      */
     public static NDArrayIndex interval(int begin,int end,boolean inclusive) {
         assert begin <= end : "Beginning index in range must be less than end";
-        return new NDArrayIndex(ArrayUtil.range(begin,inclusive ?  end + 1 : end));
+        NDArrayIndex ret =  new NDArrayIndex(ArrayUtil.range(begin,inclusive ?  end + 1 : end));
+        ret.isInterval = true;
+        return ret;
     }
 
 

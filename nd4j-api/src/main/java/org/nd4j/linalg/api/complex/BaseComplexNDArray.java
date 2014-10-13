@@ -885,7 +885,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         if(Shape.shapeEquals(element.shape(),get.shape()) || element.length() <= get.length()) {
             IComplexNDArray elementLinear = element2.linearView();
 
-            for(int i = 0; i < linear.length(); i++) {
+            for(int i = 0; i < elementLinear.length(); i++) {
                 linear.putScalar(i,elementLinear.getComplex(i));
             }
         }

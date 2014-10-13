@@ -1515,7 +1515,7 @@ public abstract class BaseNDArray  implements INDArray {
         if(Shape.shapeEquals(element.shape(),get.shape()) || element.length() <= get.length()) {
             INDArray elementLinear = element.linearView();
 
-            for(int i = 0; i < linear.length(); i++) {
+            for(int i = 0; i < elementLinear.length(); i++) {
                 linear.putScalar(i,elementLinear.getDouble(i));
             }
         }
@@ -1638,6 +1638,8 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray subArray(int[] offsets, int[] shape,int[] stride) {
         int n = shape.length;
+        if(shape.length < 1)
+            return Nd4j.create(Nd4j.createBuffer(shape));
         if (offsets.length != n)
             throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
         if (shape.length != n)

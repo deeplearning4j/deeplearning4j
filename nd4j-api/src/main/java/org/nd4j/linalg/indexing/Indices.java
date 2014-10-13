@@ -149,12 +149,15 @@ public class Indices {
         int[] ret = new int[indices.length];
         for(int i = 0; i < ret.length; i++) {
             int[] currIndices = indices[i].indices();
-
-            int end  = currIndices[currIndices.length - 1] + 1;
+            if(currIndices.length < 1)
+                continue;
+            int end  = currIndices[currIndices.length - 1];
             if(end > shape[i])
                 end = shape[i] - 1;
             int begin = currIndices[0];
-            ret[i]  = indices[i].indices().length;
+
+            ret[i]  = indices[i].isInterval() ? Math.abs(end - begin) :
+                    indices[i].indices().length;
         }
 
         List<Integer> nonZeros = new ArrayList<>();

@@ -69,6 +69,8 @@ public class ArrayUtil {
 
 
     public static int prod(int[] mult) {
+        if(mult.length < 1)
+            return 0;
         int ret = 1;
         for(int i = 0; i < mult.length; i++)
             ret *= mult[i];
@@ -277,6 +279,8 @@ public class ArrayUtil {
      * @return the int array with a length equal to absoluteValue(from - to)
      */
     public static int[] range(int from,int to) {
+        if(from == to)
+            return new int[0];
         return range(from,to,1);
     }
 

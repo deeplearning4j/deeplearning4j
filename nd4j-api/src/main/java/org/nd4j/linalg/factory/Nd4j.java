@@ -2403,4 +2403,8 @@ public class Nd4j {
     public static IComplexNDArray createComplex(DataBuffer data, int[] shape) {
         return INSTANCE.createComplex(data,shape);
     }
+
+    public static INDArray create(DataBuffer buffer) {
+        return INSTANCE.create(buffer);
+    }
 }

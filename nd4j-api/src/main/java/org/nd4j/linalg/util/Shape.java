@@ -41,7 +41,7 @@ public class Shape {
      * @return whether the given shape is a vector
      */
     public static boolean isVector(int[] shape) {
-        if(shape.length > 2)
+        if(shape.length > 2 || shape.length < 1)
             return false;
         else {
             int len = ArrayUtil.prod(shape);
