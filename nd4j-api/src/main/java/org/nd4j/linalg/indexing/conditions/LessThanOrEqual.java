@@ -17,11 +17,11 @@ public class LessThanOrEqual extends BaseCondition {
 
     @Override
     public Boolean apply(Number input) {
-        return input.floatValue() <= value.floatValue();
+        return input.floatValue() <= value.doubleValue();
     }
 
     @Override
     public Boolean apply(IComplexNumber input) {
-        return input.absoluteValue().floatValue() <= complexNumber.absoluteValue().floatValue();
+        return input.absoluteValue().floatValue() <= complexNumber.absoluteValue().doubleValue();
     }
 }

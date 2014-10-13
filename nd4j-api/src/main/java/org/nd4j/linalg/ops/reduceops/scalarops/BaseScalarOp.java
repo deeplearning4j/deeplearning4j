@@ -22,8 +22,13 @@ public abstract class BaseScalarOp implements ScalarOp {
     public Double apply(INDArray input) {
         INDArray doNDArray = input.isVector() ? input : input.linearView();
         double start = startingValue;
-        for(int i = 0; i < doNDArray.length(); i++)
-            start = accumulate(doNDArray,i,start);
+        for(int i = 0; i < doNDArray.length(); i++) {
+            start = accumulate(doNDArray, i, start);
+            if(Double.isNaN(start))
+                throw new IllegalStateException("Something has gone horribly wrong. " +
+                        "NaN found at index " + i + " " +
+                        "the causing value was " + doNDArray.getDouble(i));
+        }
         return start;
     }
 

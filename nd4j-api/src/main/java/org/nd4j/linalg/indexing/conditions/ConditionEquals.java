@@ -3,7 +3,8 @@ package org.nd4j.linalg.indexing.conditions;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 
 /**
- * Created by agibsonccc on 10/9/14.
+ * Returns true when all of the conditions equal each other
+ * @author Adam Gibson
  */
 public class ConditionEquals implements Condition {
 

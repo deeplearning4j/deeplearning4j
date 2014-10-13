@@ -3,7 +3,9 @@ package org.nd4j.linalg.indexing.conditions;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 
 /**
- * Created by agibsonccc on 10/9/14.
+ * An or between 2 conditions.
+ *
+ * @author Adam Gibson
  */
 public class Or implements Condition {
 
