@@ -43,20 +43,20 @@ import static org.nd4j.linalg.ops.transforms.Transforms.max;
 public class Tsne {
 
     private int maxIter = 1000;
-    private double realMin = 1e-12f;
-    private double initialMomentum = 0.5f;
-    private double finalMomentum = 0.8f;
-    private  double minGain = 1e-2f;
+    private double realMin = 1e-12;
+    private double initialMomentum = 0.5;
+    private double finalMomentum = 0.8;
+    private  double minGain = 1e-2;
     private double momentum = initialMomentum;
     private int switchMomentumIteration = 100;
     private boolean normalize = true;
     private boolean usePca = false;
     private int stopLyingIteration = 250;
-    private double tolerance = 1e-5f;
-    private double learningRate = 1e-1f;
+    private double tolerance = 1e-5;
+    private double learningRate = 1e-1;
     private AdaGrad adaGrad;
     private boolean useAdaGrad = true;
-    private double perplexity = 30f;
+    private double perplexity = 30;
     private INDArray gains,yIncs;
 
     private String commandTemplate = "python /tmp/tsne.py --path %s --ndims %d --perplexity %.3f --initialdims %s --labels %s";
@@ -155,14 +155,13 @@ public class Tsne {
      * co-occurrences
      * @param d the data to convert
      * @param u the perplexity of the model
-     * @param tolerance the tolerance for convergence
      * @return the probabilities of co-occurrence
      */
-    public INDArray d2p(final INDArray d,final double u,final double tolerance) {
+    public INDArray d2p(final INDArray d,final double u) {
         int n = d.rows();
         final INDArray p = zeros(n, n);
         final INDArray beta =  ones(n, 1);
-        final double logU = (double) Math.log(u);
+        final double logU =  Math.log(u);
         log.info("Calculating probabilities of data similarities..");
 
         for(int i = 0; i < n; i++) {
@@ -171,10 +170,11 @@ public class Tsne {
             final int j = i;
             double betaMin = Float.NEGATIVE_INFINITY;
             double betaMax = Float.POSITIVE_INFINITY;
+            NDArrayIndex[] range = new NDArrayIndex[]{
+                    NDArrayIndex.concat(NDArrayIndex.interval(0, i),NDArrayIndex.interval(i + 1, d.columns()))};
 
-            INDArray row = d.slice(j).get(NDArrayIndex.interval(1, d.columns()));
+            INDArray row = d.slice(j).get(range);
             Pair<INDArray,INDArray> pair =  hBeta(row,beta.getDouble(j));
-
             INDArray hDiff = pair.getFirst().sub(logU);
             int tries = 0;
 
@@ -183,43 +183,43 @@ public class Tsne {
             while(BooleanIndexing.and(abs(hDiff), Conditions.greaterThan(tolerance)) && tries < 50) {
                 //if hdiff > 0
                 if(BooleanIndexing.and(hDiff,Conditions.greaterThan(0))) {
-                    betaMin = beta.getDouble(j);
                     if(Double.isInfinite(betaMax))
-                        beta.putScalar(j,beta.getDouble(j) * 2);
+                        beta.putScalar(j,beta.getDouble(j) * 2.0);
                     else
-                        beta.putScalar(j,(beta.getDouble(j) + betaMax) / 2);
+                        beta.putScalar(j,(beta.getDouble(j) + betaMax) / 2.0);
+                    betaMin = beta.getDouble(j);
                 }
                 else {
-                    betaMax = beta.getDouble(j);
                     if(Double.isInfinite(betaMin))
-                        beta.putScalar(j,beta.getDouble(j) / 2);
+                        beta.putScalar(j,beta.getDouble(j) / 2.0);
                     else
-                        beta.putScalar(j,(beta.getDouble(j) + betaMin) / 2);
+                        beta.putScalar(j,(beta.getDouble(j) + betaMin) / 2.0);
+                    betaMax = beta.getDouble(j);
                 }
 
-                pair = hBeta(d.slice(j).get(NDArrayIndex.interval(1, d.columns())),beta.getDouble(j));
+                pair = hBeta(row,beta.getDouble(j));
                 hDiff = pair.getFirst().subi(logU);
                 tries++;
             }
 
-            p.slice(j).put(new NDArrayIndex[]{NDArrayIndex.interval(1, d.columns())}, pair.getSecond());
+            p.slice(j).put(range,pair.getSecond());
+
         }
 
+        log.info("Mean value of sigma " + sqrt(beta.rdiv(1)).mean(Integer.MAX_VALUE));
+        BooleanIndexing.applyWhere(p,Conditions.isNan(),new Value(realMin));
 
         //set 0 along the diagonal
-        doAlongDiagonal(p,new Function<Number, Number>() {
-            @Override
-            public Number apply(Number input) {
-                return 0;
-            }
-        });
+        INDArray permute = p.transpose();
 
-        INDArray pOut = p.add(p.transpose());
-        pOut.divi(p.sum(Integer.MAX_VALUE));
+
+
+        INDArray pOut = p.add(permute);
+        BooleanIndexing.applyWhere(pOut,Conditions.isNan(),new Value(realMin));
+
+        pOut.divi(pOut.sum(Integer.MAX_VALUE));
         pOut = Transforms.max(pOut, 1e-12f);
         //ensure no nans
-        BooleanIndexing.applyWhere(pOut,Conditions.isNan(),new Value(realMin));
-        log.info("Mean value of sigma " + sqrt(beta.rdiv(1).mean(Integer.MAX_VALUE)));
         return pOut;
 
     }
@@ -273,7 +273,7 @@ public class Tsne {
         INDArray otherD = null;
 
 
-        INDArray p = d2p(D,perplexity,tolerance);
+        INDArray p = d2p(D,perplexity);
 
 
         //lie for better local minima
@@ -313,6 +313,7 @@ public class Tsne {
             gains = ones(y.shape());
 
 
+
         //Student-t distribution
         //also un normalized q
         INDArray qu = y.mmul(
@@ -321,6 +322,8 @@ public class Tsne {
                 .addiRowVector(sumY).transpose()
                 .addiRowVector(sumY)
                 .addi(1).rdivi(1);
+
+        int n = y.rows();
 
         //set diagonal to zero
         doAlongDiagonal(qu,new Zero());
@@ -333,19 +336,15 @@ public class Tsne {
         INDArray PQ = p.sub(q);
 
         INDArray yGrads = Nd4j.create(y.shape());
-        for(int i = 0; i < yGrads.columns(); i++) {
-            //dY[i,:] = np.sum(np.tile(PQ[:,i] * num[:,i], (no_dims, 1)).T * (Y[i,:] - Y), 0)
-            INDArray toTile = PQ.getRow(i).mul(qu.getRow(i));
-            INDArray tiledTranspose = Nd4j.tile(toTile, new int[]{y.columns(), 1}).transpose();
-            INDArray yBroadCast = y.getColumn(i).broadcast(y.shape());
-            INDArray mul = tiledTranspose.mul(yBroadCast).sub(y);
-            INDArray sum1 = mul.sum(0);
+        for(int i = 0; i < n; i++) {
+            INDArray sum1 = Nd4j.tile(PQ.getRow(i).mul(qu.getRow(i)), new int[]{y.columns(), 1})
+                    .transpose().mul(y.getRow(i).broadcast(y.shape()).sub(y)).sum(0);
             yGrads.putRow(i, sum1);
         }
 
-        gains = gains.add(.2f)
-                .mul(yGrads.cond(Conditions.greaterThan(0)).neq(yIncs.cond(Conditions.greaterThan(0))))
-                .add(gains.mul(0.8f).mul(yGrads.cond(Conditions.greaterThan(0)).eq(yIncs.cond(Conditions.greaterThan(0)))));
+        gains = gains.add(.2)
+                .muli(yGrads.cond(Conditions.greaterThan(0)).neqi(yIncs.cond(Conditions.greaterThan(0))))
+                .addi(gains.mul(0.8).muli(yGrads.cond(Conditions.greaterThan(0)).eqi(yIncs.cond(Conditions.greaterThan(0)))));
 
         BooleanIndexing.applyWhere(
                 gains,
@@ -374,7 +373,6 @@ public class Tsne {
         INDArray yIncs = costGradient.getSecond();
         log.info("Cost at iteration " + i + " was " + costGradient.getFirst());
         y.addi(yIncs);
-        //np.tile(np.mean(Y, 0), (n, 1))
         y.addi(yIncs).subiRowVector(y.mean(0));
         y.subi(Nd4j.tile(y.mean(0), new int[]{y.rows(), 1}));
     }

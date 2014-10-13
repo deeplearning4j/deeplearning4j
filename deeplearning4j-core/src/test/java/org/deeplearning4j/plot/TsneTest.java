@@ -17,7 +17,7 @@ public class TsneTest {
     @Test
     public void testTsne() throws Exception {
         Tsne calculation = new Tsne.Builder().setMaxIter(200).usePca(false).setSwitchMomentumIteration(20)
-                .normalize(false).useAdaGrad(false).learningRate(500f).perplexity(20f).minGain(1e-2f)
+                .normalize(true).useAdaGrad(true).learningRate(500f).perplexity(20f).minGain(1e-1f)
                 .build();
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
         File f = resource.getFile();
