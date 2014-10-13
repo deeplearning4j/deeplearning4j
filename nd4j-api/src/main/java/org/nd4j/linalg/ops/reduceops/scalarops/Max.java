@@ -8,12 +8,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class Max extends BaseScalarOp {
     public Max() {
-        super(Float.MIN_VALUE);
+        super(Double.MIN_VALUE);
     }
 
     @Override
-    public float accumulate(INDArray arr, int i, float soFar) {
-        float curr = arr.getFloat(i);
+    public double accumulate(INDArray arr, int i, double soFar) {
+        double curr = arr.getDouble(i);
         return soFar > curr ? soFar : curr;
     }
 }

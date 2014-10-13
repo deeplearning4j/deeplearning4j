@@ -18,17 +18,17 @@ public class MultiplyOp extends BaseTwoArrayElementWiseOp {
     }
 
     @Override
-    protected IComplexNumber realComplex(float real, IComplexNumber other) {
+    protected IComplexNumber realComplex(double real, IComplexNumber other) {
         return Nd4j.createDouble(real * other.realComponent().doubleValue(), other.complexArgument().doubleValue());
     }
 
     @Override
-    protected IComplexNumber complexReal(IComplexNumber origin, float secondValue) {
+    protected IComplexNumber complexReal(IComplexNumber origin, double secondValue) {
         return origin.mul(secondValue);
     }
 
     @Override
-    protected float realReal(float firstElement, float secondElement) {
+    protected double realReal(double firstElement, double secondElement) {
         return firstElement * secondElement;
     }
 }

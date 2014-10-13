@@ -12,24 +12,24 @@ public class StandardDeviation extends BaseScalarOp {
         super(0);
     }
 
-    public float std(INDArray arr) {
+    public double std(INDArray arr) {
         org.apache.commons.math3.stat.descriptive.moment.StandardDeviation dev = new org.apache.commons.math3.stat.descriptive.moment.StandardDeviation();
         double[] test = new double[arr.length()];
         INDArray linear = arr.linearView();
         for(int i = 0; i < linear.length(); i++)
-            test[i] = linear.getFloat(i);
-        float std = (float) dev.evaluate(test);
+            test[i] = linear.getDouble(i);
+        double std =  dev.evaluate(test);
         return std;
     }
 
    
     @Override
-    public Float apply(INDArray input) {
+    public Double apply(INDArray input) {
         return std(input);
     }
 
     @Override
-    public float accumulate(INDArray arr, int i, float soFar) {
+    public double accumulate(INDArray arr, int i, double soFar) {
         return 0;
     }
 }

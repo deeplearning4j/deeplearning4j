@@ -16,21 +16,21 @@ public class Variance extends BaseScalarOp {
 
     /**
      * Variance (see: apache commons)
-     * @param arr the ndarray to getFloat the variance of
+     * @param arr the ndarray to getDouble the variance of
      * @return the variance for this ndarray
      */
-    public float var(INDArray arr) {
-        float mean = new Mean().apply(arr);
-        float accum = 0.0f;
-        float dev = 0.0f;
-        float accum2 = 0.0f;
+    public double var(INDArray arr) {
+        double mean = new Mean().apply(arr);
+        double accum = 0.0f;
+        double dev = 0.0f;
+        double accum2 = 0.0f;
         for (int i = 0; i < arr.length(); i++) {
-            dev = arr.getFloat(i) - mean;
+            dev = arr.getDouble(i) - mean;
             accum += dev * dev;
             accum2 += dev;
         }
 
-        float len = arr.length();
+        double len = arr.length();
         //bias corrected
         return  (accum - (accum2 * accum2 / len)) / (len - 1.0f);
 
@@ -40,12 +40,12 @@ public class Variance extends BaseScalarOp {
 
 
     @Override
-    public Float apply(INDArray input) {
+    public Double apply(INDArray input) {
         return  var(input);
     }
 
     @Override
-    public float accumulate(INDArray arr, int i, float soFar) {
+    public double accumulate(INDArray arr, int i, double soFar) {
         return 0;
     }
 }

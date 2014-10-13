@@ -9,25 +9,25 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public abstract class BaseScalarOp implements ScalarOp {
 
-    protected float startingValue;
+    protected double startingValue;
 
 
-    public BaseScalarOp(float startingValue) {
+    public BaseScalarOp(double startingValue) {
         this.startingValue = startingValue;
     }
 
 
 
     @Override
-    public Float apply(INDArray input) {
+    public Double apply(INDArray input) {
         INDArray doNDArray = input.isVector() ? input : input.linearView();
-        float start = startingValue;
+        double start = startingValue;
         for(int i = 0; i < doNDArray.length(); i++)
             start = accumulate(doNDArray,i,start);
         return start;
     }
 
-    public abstract float accumulate(INDArray arr,int i,float soFar);
+    public abstract double accumulate(INDArray arr,int i,double soFar);
 
 
 }

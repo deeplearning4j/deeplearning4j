@@ -58,7 +58,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
         else {
             Number f =  apply(origin,getFromOrigin(origin,i),i);
             if(origin.data().dataType().equals(DataBuffer.FLOAT))
-                origin.putScalar(i, f.floatValue());
+                origin.putScalar(i, f.doubleValue());
             else
                 origin.putScalar(i, f.doubleValue());
         }
@@ -85,7 +85,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
         else {
             Number f = apply(origin, valueToApply,i);
             if(origin.data().dataType().equals(DataBuffer.FLOAT))
-                origin.putScalar(i,f.floatValue());
+                origin.putScalar(i,f.doubleValue());
             else
                 origin.putScalar(i,f.doubleValue());
         }

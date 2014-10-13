@@ -39,7 +39,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
                 c2.putScalar(i,number);
             }
             else {
-                float f = (float)  apply(from,  scalarValue, i);
+                double f = (double)  apply(from,  scalarValue, i);
                 destination.putScalar(i,f);
             }
 
@@ -52,7 +52,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
                 c2.putScalar(i,n);
             }
 
-            float f = (float) apply(from,getOther(other,i),i);
+            double f = (double) apply(from,getOther(other,i),i);
             destination.putScalar(i,f);
 
         }
@@ -193,7 +193,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
 
             //real + complex
             else {
-                float element = (float) origin;
+                double element = (double) origin;
                 return realComplex(element,otherValue);
 
             }
@@ -205,15 +205,15 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
             //complex + real
             if(origin instanceof IComplexNumber) {
                 IComplexNumber firstValue = (IComplexNumber) origin;
-                float realValue = (float) value;
+                double realValue = (double) value;
                 return complexReal(firstValue,realValue);
 
             }
 
             //both normal
             else {
-                float firstElement = (float) origin;
-                float secondElement = (float) value;
+                double firstElement = (double) origin;
+                double secondElement = (double) value;
                 return realReal(firstElement,secondElement);
             }
 
@@ -224,11 +224,11 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
 
     protected abstract IComplexNumber complexComplex(IComplexNumber num1,IComplexNumber num2);
 
-    protected abstract IComplexNumber realComplex(float real,IComplexNumber other);
+    protected abstract IComplexNumber realComplex(double real,IComplexNumber other);
 
-    protected abstract IComplexNumber complexReal(IComplexNumber origin,float secondValue);
+    protected abstract IComplexNumber complexReal(IComplexNumber origin,double secondValue);
 
-    protected abstract float realReal(float firstElement,float secondElement);
+    protected abstract double realReal(double firstElement,double secondElement);
 
     /**
      * The transformation for a given value
