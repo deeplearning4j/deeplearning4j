@@ -739,7 +739,7 @@ public abstract class NDArrayTests {
 
 
 
-        
+
 
 
     }
@@ -1065,6 +1065,31 @@ public abstract class NDArrayTests {
 
     }
 
+    @Test
+    public void testGetNonContiguous() {
+        INDArray create = Nd4j.linspace(1,6,6).reshape(2,3);
+        NDArrayIndex[] indices = new NDArrayIndex[2];
+        indices[0] = NDArrayIndex.interval(0,1);
+        indices[1] = new NDArrayIndex(new int[]{0,2});
+
+        INDArray assertion = Nd4j.create(new double[]{1,3});
+        assertEquals(create.get(indices),assertion);
+        INDArray assertion2 = Nd4j.create(new double[]{4, 7});
+        create.put(indices,Nd4j.create(new double[]{4,7}));
+        assertEquals(assertion2,create.get(indices));
+
+        INDArray multiRowAssign = Nd4j.create(new double[]{5,6,7,8},new int[]{2,2});
+        NDArrayIndex[] index2 = new NDArrayIndex[]{
+            NDArrayIndex.interval(0,2,true),
+            new NDArrayIndex(0,2)
+        };
+
+        create.put(index2,multiRowAssign);
+
+        INDArray get = create.get(index2);
+        assertEquals(multiRowAssign,get);
+
+    }
 
     @Test
     public void testMeans() {

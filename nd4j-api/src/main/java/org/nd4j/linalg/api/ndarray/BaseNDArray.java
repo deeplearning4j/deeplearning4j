@@ -1067,8 +1067,14 @@ public abstract class BaseNDArray  implements INDArray {
         }
 
         else if(isVector()) {
-            assert put.isScalar() : "Invalid dimension on insertion. Can only insert scalars input vectors";
-            put(slice,put.getScalar(0));
+            assert put.isScalar() || put.isVector() &&
+                    put.length() == length() : "Invalid dimension on insertion. Can only insert scalars input vectors";
+            if(put.isScalar())
+                put(slice,put.getScalar(0));
+            else
+                for(int i = 0; i < length(); i++)
+                    putScalar(i,put.getDouble(i));
+
             return this;
         }
 
@@ -1504,22 +1510,52 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray put(NDArrayIndex[] indices, INDArray element) {
-        INDArray get = get(indices);
-        INDArray linear = get.linearView();
-        if(element.isScalar()) {
-            for(int i = 0; i < linear.length(); i++) {
-                linear.putScalar(i,element.getDouble(0));
+        if(Indices.isContiguous(indices)) {
+            INDArray get = get(indices);
+            INDArray linear = get.linearView();
+            if(element.isScalar()) {
+                for(int i = 0; i < linear.length(); i++) {
+                    linear.putScalar(i,element.getDouble(0));
+                }
             }
+
+            if(Shape.shapeEquals(element.shape(),get.shape()) || element.length() <= get.length()) {
+                INDArray elementLinear = element.linearView();
+
+                for(int i = 0; i < elementLinear.length(); i++) {
+                    linear.putScalar(i,elementLinear.getDouble(i));
+                }
+            }
+
+
         }
 
-        if(Shape.shapeEquals(element.shape(),get.shape()) || element.length() <= get.length()) {
-            INDArray elementLinear = element.linearView();
+        else {
+            if(isVector()) {
+                assert indices.length == 1 : "Indices must only be of length 1.";
+                assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
+                assert indices[0].length() == element.length() : "Number of specified elements in index does not match length of element.";
+                int[] assign = indices[0].indices();
+                for(int i = 0; i < element.length(); i++) {
+                    putScalar(assign[i],element.getDouble(i));
+                }
 
-            for(int i = 0; i < elementLinear.length(); i++) {
-                linear.putScalar(i,elementLinear.getDouble(i));
+                return this;
+
             }
-        }
 
+            if(element.isVector())
+                slice(indices[0].indices()[0]).put(Arrays.copyOfRange(indices,1,indices.length),element);
+
+
+            else {
+                for(int i = 0; i < element.slices(); i++) {
+                    INDArray slice = slice(indices[0].indices()[i]);
+                    slice.put(Arrays.copyOfRange(indices,1,indices.length),element.slice(i));
+                }
+            }
+
+        }
 
         return this;
     }
@@ -1630,6 +1666,8 @@ public abstract class BaseNDArray  implements INDArray {
     public int slices() {
         if(shape.length < 1)
             return 0;
+        else if(isVector())
+            return 1;
         return shape[0];
     }
 
@@ -3586,11 +3624,35 @@ public abstract class BaseNDArray  implements INDArray {
         indexes = Indices.adjustIndices(shape(),indexes);
 
 
+
+
         int[] offsets =  Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(),indexes);
+        //no stride will help here, need to do manually
+        if(!Indices.isContiguous(indexes)) {
+            INDArray ret = Nd4j.create(shape);
+            if(ret.isVector() && isVector()) {
+                int[] indices = indexes[0].indices();
+                for(int i = 0; i < ret.length(); i++) {
+                    ret.putScalar(i,getDouble(indices[i]));
+                }
+
+                return ret;
+            }
+            for(int i = 0; i < ret.slices(); i++) {
+                INDArray putSlice = slice(i).get(Arrays.copyOfRange(indexes,1,indexes.length));
+                ret.putSlice(i,putSlice);
+
+            }
+
+            return ret;
+        }
 
         if(ArrayUtil.prod(shape) > length())
             return this;
+
+
+
 
         int[] strides =  null;
         if(Shape.isVector(shape)) {
@@ -3977,7 +4039,7 @@ public abstract class BaseNDArray  implements INDArray {
                 newStride,
                 offset,
                 ordering == NDArrayFactory.C
-                 ? NDArrayFactory.FORTRAN : NDArrayFactory.C);
+                        ? NDArrayFactory.FORTRAN : NDArrayFactory.C);
 
 
 

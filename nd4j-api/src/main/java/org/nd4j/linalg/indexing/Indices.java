@@ -125,8 +125,57 @@ public class Indices {
 
         return ArrayUtil.toArray(nonZeros);
     }
+    /**
+     * Returns whether the indices are contiguous by one or not
+     * @param indexes the indices to test
+     * @return whether the indices are contiguous by one or not
+     */
+    public static boolean isContiguous(NDArrayIndex...indexes) {
+        return isContiguous(1,indexes);
+    }
 
+    /**
+     * Returns whether indices are contiguous
+     * by a certain amount or not
+     * @param indexes the indices to test
+     * @param diff the difference considered to be contiguous
+     * @return whether the given indices are contiguous or not
+     */
+    public static boolean isContiguous(int diff,NDArrayIndex...indexes) {
+        if(indexes.length < 1)
+            return true;
+        boolean contiguous = isContiguous(indexes[0].indices(),diff);
+        for(int i = 1; i < indexes.length; i++)
+            contiguous = contiguous && isContiguous(indexes[i].indices(),diff);
 
+        return contiguous;
+    }
+    /**
+     * Returns whether the indices are contiguous by one or not
+     * @param indices the indices to test
+     * @return whether the indices are contiguous by one or not
+     */
+    public static boolean isContiguous(int[] indices) {
+        return isContiguous(indices,1);
+    }
+
+    /**
+     * Returns whether indices are contiguous
+     * by a certain amount or not
+     * @param indices the indices to test
+     * @param diff the difference considered to be contiguous
+     * @return whether the given indices are contiguous or not
+     */
+    public static boolean isContiguous(int[] indices,int diff) {
+        if(indices.length < 1)
+            return true;
+        for(int i = 1; i < indices.length; i++) {
+            if(Math.abs(indices[i] - indices[i - 1]) > diff)
+                return false;
+        }
+
+        return true;
+    }
 
     /**
      * Calculate the shape for the given set of indices.
