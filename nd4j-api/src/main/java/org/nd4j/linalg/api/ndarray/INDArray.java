@@ -1302,7 +1302,7 @@ public interface INDArray extends Serializable {
      * @param shape the new shape of this ndarray
      * @return the broadcasted ndarray
      */
-    INDArray broadcast(int[] shape);
+    INDArray broadcast(int...shape);
 
 
     /**

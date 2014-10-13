@@ -16,11 +16,11 @@ public class GreaterThan extends  BaseCondition {
 
     @Override
     public Boolean apply(Number input) {
-        return input.floatValue() > value.floatValue();
+        return input.doubleValue() > value.doubleValue();
     }
 
     @Override
     public Boolean apply(IComplexNumber input) {
-        return input.absoluteValue().floatValue() > complexNumber.absoluteValue().floatValue();
+        return input.absoluteValue().doubleValue() > complexNumber.absoluteValue().doubleValue();
     }
 }

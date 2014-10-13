@@ -1298,12 +1298,14 @@ public abstract class NDArrayTests {
             assertEquals(n,broadCasted.getRow(i));
         }
 
-        INDArray broadCast2 = broadCasted.getRow(0).broadcast(new int[]{5,4});
+        INDArray broadCast2 = broadCasted.getRow(0).broadcast(5,4);
         assertEquals(broadCasted,broadCast2);
 
-        INDArray linearView = broadCasted.linearView();
-        log.info("Linear view " + linearView);
 
+        INDArray columnBroadcast =  n.transpose().broadcast(4,5);
+        for(int i = 0; i < columnBroadcast.columns(); i++) {
+            assertEquals(columnBroadcast.getColumn(i),n.transpose());
+        }
     }
 
 

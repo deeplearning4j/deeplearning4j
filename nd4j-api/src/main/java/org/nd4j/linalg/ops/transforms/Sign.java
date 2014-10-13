@@ -13,7 +13,7 @@ public class Sign extends BaseElementWiseOp {
     /**
      * The transformation for a given value (a scalar ndarray)
      *
-     * @param value the value to applyTransformToOrigin (a scalar ndarray)
+     * @param value the value to apply (a scalar ndarray)
      * @param i     the index of the element being acted upon
      * @return the transformed value based on the input
      */
@@ -26,17 +26,17 @@ public class Sign extends BaseElementWiseOp {
             else if(n.realComponent().doubleValue() < 0)
                 return Nd4j.createDouble(-1,0);
             else {
-                float val = (float) apply(from,n.imaginaryComponent().doubleValue(),i);
+                double val = (double) apply(from,n.imaginaryComponent().doubleValue(),i);
                 return Nd4j.createDouble(val,0);
             }
         }
         else {
-            float n = (float) value;
+            double n = (double) value;
             if(n < 0)
-                return (float) -1;
+                return (double) -1;
             else if(n > 0)
-                return (float) 1;
-            return (float) 0;
+                return (double) 1;
+            return (double) 0;
         }
 
     }

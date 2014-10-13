@@ -154,7 +154,7 @@ public class Nd4j {
         INDArray imagLinear = imag.linearView();
         IComplexNDArray retLinear = ret.linearView();
         for(int i = 0; i < ret.length(); i++) {
-            retLinear.putScalar(i,Nd4j.createComplexNumber(realLinear.getFloat(i),imagLinear.getFloat(i)));
+            retLinear.putScalar(i,Nd4j.createComplexNumber(realLinear.getDouble(i),imagLinear.getDouble(i)));
         }
 
         return ret;
@@ -352,7 +352,7 @@ public class Nd4j {
             INDArray vec = ndarray.vectorAlongDimension(i,dimension);
             double[] data = new double[vec.length()];
             for(int j = 0; j < vec.length(); j++) {
-                data[j] = vec.getFloat(j);
+                data[j] = vec.getDouble(j);
             }
 
             Arrays.sort(data);
@@ -467,7 +467,7 @@ public class Nd4j {
             StringBuffer sb = new StringBuffer();
             INDArray row = write.getRow(i);
             for(int j = 0; j < row.columns(); j++) {
-                sb.append(row.getFloat(j));
+                sb.append(row.getDouble(j));
                 sb.append(split);
             }
             sb.append("\n");
@@ -760,7 +760,7 @@ public class Nd4j {
      * the matrix if a vector is passed in, if a matrix is returns the kth diagonal
      * in the matrix
      * @param x the diagonal values
-     * @param k the kth diagonal to getFloat
+     * @param k the kth diagonal to getDouble
      * @return new matrix
      */
     public static IComplexNDArray diag(IComplexNDArray x,int k) {
@@ -799,7 +799,7 @@ public class Nd4j {
      * the matrix if a vector is passed in, if a matrix is returns the kth diagonal
      * in the matrix
      * @param x the diagonal values
-     * @param k the kth diagonal to getFloat
+     * @param k the kth diagonal to getDouble
      * @return new matrix
      */
     public static INDArray diag(INDArray x,int k) {
@@ -811,7 +811,7 @@ public class Nd4j {
             INDArray xLinear = x.linearView();
 
             for (int i = 0; i < x.length(); i++)
-                m.put(i, i, xLinear.getFloat(i));
+                m.put(i, i, xLinear.getDouble(i));
 
             return m;
 
@@ -821,7 +821,7 @@ public class Nd4j {
             int vectorLength = x.rows() - k;
             INDArray ret = Nd4j.create(new int[]{vectorLength,1});
             for(int i = 0; i < vectorLength; i++) {
-                ret.putScalar(i,x.getFloat(i, i));
+                ret.putScalar(i,x.getDouble(i, i));
             }
 
             return ret;
@@ -869,7 +869,7 @@ public class Nd4j {
     public static void doAlongDiagonal(INDArray x,Function<Number,Number> func) {
         if(x.isMatrix())
             for(int i = 0; i < x.rows(); i++)
-                x.put(i,i,func.apply(x.getFloat(i, i)));
+                x.put(i,i,func.apply(x.getDouble(i, i)));
     }
 
     /**
@@ -1180,7 +1180,7 @@ public class Nd4j {
     public static boolean hasInvalidNumber(INDArray num) {
         INDArray linear = num.linearView();
         for(int i = 0;i < linear.length(); i++) {
-            if(Double.isInfinite(linear.getFloat(i)) || Double.isNaN(linear.getFloat(i)))
+            if(Double.isInfinite(linear.getDouble(i)) || Double.isNaN(linear.getDouble(i)))
                 return true;
         }
         return false;
