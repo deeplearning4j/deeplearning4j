@@ -264,7 +264,7 @@ public class Word2Vec implements Persistable {
         final AtomicLong latch = new AtomicLong(0);
 
 
-        ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+       // ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
         log.info("Processing sentences...");
         if(getSentenceIter() != null && getSentenceIter().hasNext())
@@ -275,10 +275,10 @@ public class Word2Vec implements Persistable {
                     if(sentence == null)
                         continue;
 
+                    trainSentence(sentence);
+               /*     service.execute(new Runnable() {
 
-                    service.execute(new Runnable() {
-
-                        /**
+                        *//**
                          * When an object implementing interface <code>Runnable</code> is used
                          * to create a thread, starting the thread causes the object's
                          * <code>run</code> method to be called in that separately executing
@@ -288,12 +288,12 @@ public class Word2Vec implements Persistable {
                          * take any action whatsoever.
                          *
                          * @see Thread#run()
-                         */
+                         *//*
                         @Override
                         public void run() {
                             trainSentence(sentence);
                         }
-                    });
+                    });*/
 
                     //sentenceActor.tell(new SentenceMessage(sentence,latch),sentenceActor);
                     numSentencesProcessed.incrementAndGet();
@@ -306,12 +306,12 @@ public class Word2Vec implements Persistable {
             }
 
 
-        try {
+        /*try {
             service.shutdown();
             service.awaitTermination(1, TimeUnit.DAYS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-        }
+        }*/
 
 
         if(docIter != null && docIter.hasNext())
@@ -585,8 +585,11 @@ public class Word2Vec implements Persistable {
      * @param sentence the list of vocab words to train on
      */
     public void trainSentence(final List<VocabWord> sentence) {
+        if(g == null)
+            g = new XorShift1024StarRandomGenerator(seed);
+
         for(int i = 0; i < sentence.size(); i++)
-            skipGram(i, sentence);
+            skipGram(i, sentence, (int) g.nextDouble() % window);
     }
 
 
@@ -595,14 +598,11 @@ public class Word2Vec implements Persistable {
      * @param i
      * @param sentence
      */
-    public void skipGram(int i,List<VocabWord> sentence) {
+    public void skipGram(int i,List<VocabWord> sentence, int b) {
         final VocabWord word = sentence.get(i);
         if(word == null)
             return;
-        if(g == null)
-            g = new XorShift1024StarRandomGenerator(seed);
 
-        int b = g.nextInt(window);
         int end =  window * 2 + 1 - b;
 
         for(int a = b; a < end; a++) {

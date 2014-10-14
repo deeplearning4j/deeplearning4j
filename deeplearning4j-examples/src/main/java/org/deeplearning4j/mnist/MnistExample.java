@@ -34,7 +34,7 @@ public class MnistExample {
                 .momentum(5e-1f)
                 .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
-                .learningRate(1e-1f).nIn(784).nOut(3).build();
+                .learningRate(1e-1f).nIn(784).nOut(10).build();
 
 
         DBN d = new DBN.Builder().configure(conf)
