@@ -39,6 +39,12 @@ Contents
 
 * Warning messages will appear at the top of the screen. If IntelliJ prompts you to add an SDK, choose JDK.
 
+###ND4J
+
+* You'll want to install ND4J, the linear-algebra library powering DL4J, in the same root directory as DL4J itself like so:
+
+	git clone https://github.com/SkymindIO/nd4j.git
+
 ### Maven
 
 * To check if you have Maven on your machine, type this in the terminal/cmd:
@@ -49,9 +55,9 @@ Contents
 
          c:\Programs\maven\bin\..
 
-* If you don't have Maven, you can follow the installation instructions on Maven's ["getting started" page](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html). Finally, run this command:
+* If you don't have Maven, you can follow the installation instructions on Maven's ["getting started" page](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html). Finally, run this command in both the ND4J and DL4J folders:
 
-         mvn clean install -DskipTests
+         mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
 * After you run "mvn clean", a compressed tar file with a name similar to "deeplearning4j-dist-bin.tar.gz" will be installed in the local folder (This is where you will find the jar files and it's where compiling happens.):
 
@@ -86,10 +92,10 @@ Add these POM coordinates to your project:
          </dependency>
 
 * For natural-language processing (NLP), add this dependency to your POM file:
-         
-         <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-scaleout-akka-word2vec</artifactId>
+        
+	 <dependency>
+       	    <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-nlp/artifactId>
             <version>0.0.3.2</version>
          </dependency>
 
