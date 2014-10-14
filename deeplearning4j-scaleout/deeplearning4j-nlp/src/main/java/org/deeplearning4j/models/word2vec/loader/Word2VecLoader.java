@@ -67,6 +67,8 @@ public class Word2VecLoader {
 
 
                 INDArray row = Nd4j.create(vectors);
+               if(word == null || word.isEmpty())
+                   continue;
                 cache.addWordToIndex(cache.numWords(),word);
                 cache.putVector(word, row);
                 cache.putVocabWord(word,new VocabWord(1,word));
