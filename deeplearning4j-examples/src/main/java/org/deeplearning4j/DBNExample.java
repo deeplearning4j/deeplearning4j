@@ -34,7 +34,7 @@ public class DBNExample {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(5e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.uniform(gen, 784, 10))
                 .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT).rng(gen)
                 .learningRate(1e-1f).nIn(784).nOut(d2.numOutcomes()).build();
 
 

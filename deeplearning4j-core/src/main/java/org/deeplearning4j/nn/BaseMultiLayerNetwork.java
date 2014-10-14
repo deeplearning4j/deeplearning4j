@@ -1084,12 +1084,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         int curr = 0;
         for(int i = 0; i < layers.length; i++) {
             int layerLength = layers[i].getW().length() + layers[i].getB().length();
-            INDArray subMatrix = param.get(NDArrayIndex.interval(curr,curr + layerLength));
-            INDArray weightPortion = subMatrix.get(NDArrayIndex.interval(0,layers[i].getW().length()));
+            INDArray subMatrix = param.get(NDArrayIndex.interval(curr,curr + layerLength + 1));
+            INDArray weightPortion = subMatrix.get(NDArrayIndex.interval(0,layers[i].getW().length() + 1));
 
             int beginHBias = layers[i].getW().length();
             int endHbias = subMatrix.length();
-            INDArray hBiasPortion = subMatrix.get(NDArrayIndex.interval(beginHBias,endHbias));
+            INDArray hBiasPortion = subMatrix.get(NDArrayIndex.interval(beginHBias,endHbias + 1));
             int layerLengthSum = weightPortion.length() + hBiasPortion.length();
             if(layerLengthSum != layerLength) {
                 if(hBiasPortion.length() != layers[i].getB().length())
@@ -1098,6 +1098,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                     throw new IllegalStateException("Weight portion on layer " + i + " was off");
 
             }
+
             ret.add(new Pair<>(weightPortion.reshape(layers[i].getW().rows(),layers[i].getW().columns()),hBiasPortion.reshape(layers[i].getB().rows(),layers[i].getB().columns())));
             curr += layerLength;
         }
