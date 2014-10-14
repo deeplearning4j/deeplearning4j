@@ -81,7 +81,7 @@ public class DBNTest {
                 .momentum(5e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.uniform(gen,784,10))
                 .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
-                .learningRate(1e-1f).nIn(784).nOut(3).build();
+                .learningRate(1e-1f).nIn(784).nOut(10).build();
 
         List<NeuralNetConfiguration> confs = new ArrayList<>();
         DBN d = new DBN.Builder().configure(conf).layerWiseCOnfiguration(confs)
@@ -93,7 +93,6 @@ public class DBNTest {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         fetcher.fetch(20);
         DataSet d2 = fetcher.next();
-        d2.filterAndStrip(new int[]{2,3,4});
 
         d.fit(d2);
 
