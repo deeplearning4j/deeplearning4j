@@ -30,13 +30,12 @@ public class Exp extends BaseElementWiseOp {
         }
         else {
             if(from.data().dataType().equals(DataBuffer.FLOAT)) {
-                float val = (float) value;
-                return (float) Math.exp(val);
+                double val = (double) value;
+                return FastMath.exp(val);
             }
             else {
                 double val = (double) value;
                 if (val < 0) {
-                    //BigDecimal d = BigDecimal.valueOf(val);
                     double ret = FastMath.exp(val);
                     return  ret;
                 }

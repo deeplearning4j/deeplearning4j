@@ -40,7 +40,7 @@ public abstract class LossFunctionTests {
     public void testRMseXent() {
         INDArray in = Nd4j.create(new float[][]{{1, 2}, {3, 4}});
         INDArray out = Nd4j.create(new float[][]{{5, 6}, {7, 8}});
-        float diff = LossFunctions.score(in, LossFunctions.LossFunction.RMSE_XENT,out,0,false);
+        double diff = LossFunctions.score(in, LossFunctions.LossFunction.RMSE_XENT,out,0,false);
         assertEquals(8,diff,1e-1);
     }
 

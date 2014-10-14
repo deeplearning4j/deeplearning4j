@@ -14,7 +14,11 @@ import org.nd4j.linalg.ops.BaseElementWiseOp;
  * @author Adam Gibson
  */
 public class Stabilize extends BaseElementWiseOp {
-    private float k = 1;
+    private double k = 1;
+
+    public Stabilize(Double k) {
+        this.k = k;
+    }
 
     public Stabilize(Float k) {
         this.k = k;
@@ -48,11 +52,11 @@ public class Stabilize extends BaseElementWiseOp {
 
         }
         else {
-            float curr = (float) value;
+            double curr =  (double) value;
             if(curr * k > -cutOff)
-                return (float) -cutOff / k;
+                return  -cutOff / k;
             else if(curr * k < cutOff)
-                return (float) cutOff / k;
+                return  cutOff / k;
 
         }
 

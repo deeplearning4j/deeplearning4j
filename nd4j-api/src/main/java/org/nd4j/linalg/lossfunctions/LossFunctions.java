@@ -43,10 +43,10 @@ public class LossFunctions {
      * @param useRegularization  whether to use regularization
      * @return the score for the given parameters
      */
-    public static float score(INDArray labels,LossFunction lossFunction,INDArray output,double l2,boolean useRegularization) {
+    public static double score(INDArray labels,LossFunction lossFunction,INDArray output,double l2,boolean useRegularization) {
         assert !Nd4j.hasInvalidNumber(output) : "Invalid output on labels. Must not contain nan or infinite numbers.";
 
-        float ret = 0.0f;
+        double ret = 0.0f;
         double reg = 0.5 * l2;
         INDArray z = output;
         assert labels.length() == output.length() : "Output and labels must be same length";
@@ -55,34 +55,34 @@ public class LossFunctions {
                 INDArray xEntLogZ2 = Transforms.log(z.dup());
                 INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
                 INDArray xEntOneMinusLogOneMinusZ2 = Transforms.log(z).rsubi(1);
-                ret = - labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).mul(xEntOneMinusLogOneMinusZ2).sum(1).sum(Integer.MAX_VALUE).getFloat(0) / labels.rows();
+                ret = - labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).mul(xEntOneMinusLogOneMinusZ2).sum(1).sum(Integer.MAX_VALUE).getDouble(0) / labels.rows();
                 break;
             case MCXENT:
                 INDArray columnSums = labels.mul(log(z));
-                ret = - columnSums.sum(1).sum(Integer.MAX_VALUE).getFloat(0) / labels.rows();
+                ret = - columnSums.sum(1).sum(Integer.MAX_VALUE).getDouble(0) / labels.rows();
                 break;
             case XENT:
                 INDArray xEntLogZ =  log(z);
                 INDArray xEntOneMinusLabelsOut = labels.rsub(1);
                 INDArray xEntOneMinusLogOneMinusZ =  log(z).rsubi(1);
-                ret = -labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).mul(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).getFloat(0) / labels.rows();
+                ret = -labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).mul(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).getDouble(0) / labels.rows();
                 break;
             case RMSE_XENT:
                 INDArray rmseXentDiff = labels.sub(z);
                 INDArray squaredrmseXentDiff = pow(rmseXentDiff,2);
                 INDArray sqrt = sqrt(squaredrmseXentDiff);
-                ret =   sqrt.sum(1).sum(Integer.MAX_VALUE).getFloat(0) / labels.rows();
+                ret =   sqrt.sum(1).sum(Integer.MAX_VALUE).getDouble(0) / labels.rows();
                 break;
             case MSE:
                 INDArray mseDelta = labels.sub(z);
-                ret = 0.5f *   pow(mseDelta, 2).sum(1).sum(Integer.MAX_VALUE).getFloat(0) / labels.rows();
+                ret = 0.5f *   pow(mseDelta, 2).sum(1).sum(Integer.MAX_VALUE).getDouble(0) / labels.rows();
                 break;
             case EXPLL:
                 INDArray expLLLogZ = log(z);
-                ret =  -   z.sub(labels.mul(expLLLogZ)).sum(1).sum(Integer.MAX_VALUE).getFloat(0) / labels.rows();
+                ret =  -   z.sub(labels.mul(expLLLogZ)).sum(1).sum(Integer.MAX_VALUE).getDouble(0) / labels.rows();
                 break;
             case SQUARED_LOSS:
-                ret = (float)  pow(labels.sub(z), 2).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
+                ret = (double)  pow(labels.sub(z), 2).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
 
 
         }
@@ -103,7 +103,7 @@ public class LossFunctions {
      * @param W the weight matrix of the neural network
      * @return the reconstruction cross entropy for the given parameters
      */
-    public static float reconEntropy(INDArray input,INDArray hBias,INDArray vBias,INDArray W,ActivationFunction activationFunction) {
+    public static double reconEntropy(INDArray input,INDArray hBias,INDArray vBias,INDArray W,ActivationFunction activationFunction) {
         INDArray preSigH = input.mmul(W).addRowVector(hBias);
         INDArray sigH = activationFunction.apply(preSigH);
         assert !Nd4j.hasInvalidNumber(sigH);
@@ -121,7 +121,7 @@ public class LossFunctions {
         INDArray rows = inner.sum(1);
         INDArray mean = rows.mean(Integer.MAX_VALUE);
 
-        float ret = (float) mean.element();
+        double ret = (double) mean.element();
 
         ret /= input.rows();
 

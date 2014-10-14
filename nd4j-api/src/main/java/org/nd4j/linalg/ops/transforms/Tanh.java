@@ -27,8 +27,8 @@ public class Tanh extends BaseElementWiseOp {
             return ComplexUtil.tanh(element);
         }
         else  {
-            float d = (float) value;
-            return  (float)  FastMath.tanh(d);
+            double d = (double) value;
+            return   FastMath.tanh(d);
         }
     }
 }

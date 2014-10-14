@@ -21,14 +21,14 @@ public class EqualTo extends BaseElementWiseOp {
     @Override
     public Object apply(INDArray from,Object value, int i) {
         Object curr = getFromOrigin(from,i);
-        float originValue = (float) (curr instanceof IComplexNumber ? ((IComplexNumber) curr).absoluteValue() : (float) curr);
-        float otherValue = (float) (value instanceof IComplexNumber ? ((IComplexNumber) value).absoluteValue() : (float) value);
+        double originValue = (double) (curr instanceof IComplexNumber ? ((IComplexNumber) curr).absoluteValue() : (double) curr);
+        double otherValue = (double) (value instanceof IComplexNumber ? ((IComplexNumber) value).absoluteValue() : (double) value);
         if(originValue == otherValue) {
             if(value instanceof IComplexNumber) {
                return Nd4j.createDouble(1, 0);
             }
             else
-                return (float) 1;
+                return (double) 1;
 
 
         }
@@ -37,7 +37,7 @@ public class EqualTo extends BaseElementWiseOp {
                 return  Nd4j.createDouble(0, 0);
 
             else
-                return (float) 0;
+                return (double) 0;
 
 
         }

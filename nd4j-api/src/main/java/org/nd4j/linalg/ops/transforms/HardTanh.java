@@ -28,19 +28,19 @@ public class HardTanh extends BaseElementWiseOp {
         if(value instanceof IComplexNumber) {
             IComplexNumber element = (IComplexNumber) value;
             IComplexNumber ret = ComplexUtil.tanh(element);
-            if(ret.realComponent().floatValue() < -1)
-                ret.set(-1,ret.imaginaryComponent().floatValue());
-            if(ret.realComponent().floatValue() > 1)
-                ret.set(1,ret.imaginaryComponent().floatValue());
+            if(ret.realComponent().doubleValue() < -1)
+                ret.set(-1,ret.imaginaryComponent().doubleValue());
+            if(ret.realComponent().doubleValue() > 1)
+                ret.set(1,ret.imaginaryComponent().doubleValue());
             return Nd4j.scalar(ret);
         }
         else  {
-            float d = (float) value;
-            float ret = (float) Math.tanh(d);
+            double d = (double) value;
+            double ret = (double) Math.tanh(d);
             if(ret < -1)
                 return -1;
             else if(ret > 1)
-                return (float)  1;
+                return (double)  1;
             else
                 return ret;
         }

@@ -24,8 +24,8 @@ public class Round extends BaseElementWiseOp {
             return ComplexUtil.round((org.nd4j.linalg.api.complex.IComplexNumber) value);
         }
         else {
-            float val = (float) value;
-            return (float)  Math.round(val);
+            double val = (double) value;
+            return (double)  Math.round(val);
         }
 
     }
