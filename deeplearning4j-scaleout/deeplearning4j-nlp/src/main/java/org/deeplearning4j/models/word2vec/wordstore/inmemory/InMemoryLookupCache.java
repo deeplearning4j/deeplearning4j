@@ -39,9 +39,9 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     private int vectorLength = 50;
     private transient RandomGenerator rng = new XorShift64StarRandomGenerator(123);
     private AtomicInteger totalWordOccurrences = new AtomicInteger(0);
-    private float lr = 1e-1f;
-    float[] expTable = new float[1000];
-    static float MAX_EXP = 6;
+    private double lr = 1e-1f;
+    double[] expTable = new double[1000];
+    static double MAX_EXP = 6;
 
     public InMemoryLookupCache(int vectorLength) {
         this(vectorLength,true);
@@ -67,7 +67,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     }
 
 
-    public InMemoryLookupCache(int vectorLength,boolean useAdaGrad,float lr,RandomGenerator gen) {
+    public InMemoryLookupCache(int vectorLength,boolean useAdaGrad,double lr,RandomGenerator gen) {
         this.vectorLength = vectorLength;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
@@ -78,7 +78,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
     }
 
-    public InMemoryLookupCache(int vectorLength,boolean useAdaGrad,float lr) {
+    public InMemoryLookupCache(int vectorLength,boolean useAdaGrad,double lr) {
            this(vectorLength,useAdaGrad,lr,new XorShift64StarRandomGenerator(123));
 
 
@@ -88,7 +88,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
     private void initExpTable() {
         for (int i = 0; i < expTable.length; i++) {
-            float tmp =  (float) Math.exp((i / (float) expTable.length * 2 - 1) * MAX_EXP);
+            double tmp =  (double) Math.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
             expTable[i]  = tmp / (tmp + 1);
         }
     }
@@ -108,7 +108,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         INDArray work = Nd4j.create(vectorLength);
 
 
-        float avgChange = 0.0f;
+        double avgChange = 0.0f;
 
 
 
@@ -126,14 +126,14 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
                 continue;
 
 
-            int idx = (int) ((dot + MAX_EXP) * ((float) expTable.length / MAX_EXP / 2.0));
+            int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
             if(idx >= expTable.length)
                 continue;
             
             //score
-            float f =  expTable[idx];
+            double f =  expTable[idx];
             //gradient
-            float g = (1 - code - f) * this.lr;
+            double g = (1 - code - f) * this.lr;
 
             avgChange += g;
 
@@ -171,7 +171,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public void resetWeights() {
-        syn0  = Nd4j.rand(new int[]{vocabs.size(),vectorLength},rng).subi(0.5f).divi((float) vectorLength);
+        syn0  = Nd4j.rand(new int[]{vocabs.size(),vectorLength},rng).subi(0.5).divi((double) vectorLength);
         syn1 = Nd4j.create(syn0.shape());
 
     }

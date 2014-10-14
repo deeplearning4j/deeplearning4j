@@ -194,9 +194,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     public void setParams(INDArray params) {
         assert params.length() == numParams() : "Illegal number of parameters passed in, must be of length " + numParams();
         int weightLength = conf.getnIn() * conf.getnOut();
-        INDArray weights = params.get(NDArrayIndex.interval(0,weightLength));
-        INDArray vBias = params.get(NDArrayIndex.interval(weightLength, weightLength + conf.getnIn()));
-        INDArray hBias = params.get(NDArrayIndex.interval(weightLength + conf.getnIn(), weightLength + conf.getnIn() + conf.getnOut()));
+        INDArray weights = params.get(NDArrayIndex.interval(0,weightLength + 1));
+        INDArray vBias = params.get(NDArrayIndex.interval(weightLength, weightLength + conf.getnIn() + 1));
+        INDArray hBias = params.get(NDArrayIndex.interval(weightLength + conf.getnIn(), weightLength + conf.getnIn() + conf.getnOut() + 1));
         setW(weights.reshape(conf.getnIn(),conf.getnOut()));
         setvBias(vBias.dup());
         sethBias(hBias.dup());
@@ -389,9 +389,19 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     @Override
     public double score() {
         if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                return  LossFunctions.score(input,conf.getLossFunction(),transform(input),conf.getL2(),conf.isUseRegularization());
+                return  LossFunctions.score(
+                        input,
+                        conf.getLossFunction(),
+                        transform(input),
+                        conf.getL2(),
+                        conf.isUseRegularization());
         else {
-            return -LossFunctions.reconEntropy(input,hBias,vBias,W,conf.getActivationFunction());
+            return -LossFunctions.reconEntropy(
+                    input,
+                    hBias,
+                    vBias,
+                    W,
+                    conf.getActivationFunction());
         }
     }
 

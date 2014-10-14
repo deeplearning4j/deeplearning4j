@@ -163,8 +163,12 @@ public class Word2Vec implements Persistable {
         if(vec == null)
             return new ArrayList<>();
         Counter<String> distances = new Counter<>();
+
         for(String s : cache.words()) {
-            double sim = similarity(word,s);
+            if(s.equals(word))
+                continue;
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(vec,otherVec);
             distances.incrementCount(s, sim);
         }
 
@@ -202,7 +206,7 @@ public class Word2Vec implements Persistable {
             wordsEntrys.add(v);
             return;
         }
-        double min = Float.MAX_VALUE;
+        double min = Double.MAX_VALUE;
         int minOffe = 0;
         int minIndex = -1;
         for (int i = 0; i < topNSize; i++) {
@@ -386,7 +390,7 @@ public class Word2Vec implements Persistable {
      * @return
      */
     public List<VocabWord> trainSentence(String sentence) {
-        if(sentence.isEmpty())
+        if(sentence == null || sentence.isEmpty())
             return new ArrayList<>();
 
         Tokenizer tokenizer = tokenizerFactory.create(sentence);
@@ -572,7 +576,7 @@ public class Word2Vec implements Persistable {
      * Create a tsne plot
      */
     public void plotTsne() {
-       cache.plotVocab();
+        cache.plotVocab();
     }
 
 
@@ -599,10 +603,9 @@ public class Word2Vec implements Persistable {
             g = new XorShift1024StarRandomGenerator(seed);
 
         int b = g.nextInt(window);
-        int start = Math.max(0, i - window - b);
-        int end = i + window + 1 - b;
+        int end =  window * 2 + 1 - b;
 
-        for(int a = start; a < end; a++) {
+        for(int a = b; a < end; a++) {
             if(a != window) {
                 int c = i - window + a;
                 if(c >= 0 && c < sentence.size()) {
@@ -669,8 +672,8 @@ public class Word2Vec implements Persistable {
         if(word.equals(word2))
             return 1.0;
 
-        INDArray vector = getWordVectorMatrixNormalized(word);
-        INDArray vector2 = getWordVectorMatrixNormalized(word2);
+        INDArray vector = Transforms.unitVec(getWordVectorMatrix(word));
+        INDArray vector2 = Transforms.unitVec(getWordVectorMatrix(word2));
         if(vector == null || vector2 == null)
             return -1;
         return  Nd4j.getBlasWrapper().dot(vector,vector2);
@@ -801,7 +804,7 @@ public class Word2Vec implements Persistable {
         private TokenizerFactory tokenizerFactory;
         private VocabCache vocabCache;
         private DocumentIterator docIter;
-        private float lr = 2.5e-1f;
+        private double lr = 2.5e-1;
         private int iterations = 5;
         private long seed = 123;
 
@@ -816,7 +819,7 @@ public class Word2Vec implements Persistable {
         }
 
 
-        public Builder learningRate(float lr) {
+        public Builder learningRate(double lr) {
             this.lr = lr;
             return this;
         }
