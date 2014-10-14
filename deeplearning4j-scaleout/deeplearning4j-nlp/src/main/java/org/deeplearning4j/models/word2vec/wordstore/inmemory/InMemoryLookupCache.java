@@ -2,6 +2,7 @@ package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
 import it.unimi.dsi.util.XorShift64StarRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -88,8 +89,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
     private void initExpTable() {
         for (int i = 0; i < expTable.length; i++) {
-            double tmp =  (double) Math.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
-            expTable[i]  = tmp / (tmp + 1);
+            double tmp =   FastMath.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
+            expTable[i]  = tmp / (tmp + 1.0);
         }
     }
 

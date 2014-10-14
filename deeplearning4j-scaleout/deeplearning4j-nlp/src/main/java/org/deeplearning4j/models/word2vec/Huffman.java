@@ -29,6 +29,8 @@ public class Huffman {
         int[] parentNode = new int[words.size() * 2 + 1];
         int a = 0;
 
+
+
         while (a < words.size()) {
             count[a] = (long) words.get(a).getWordFrequency();
             a++;
@@ -40,6 +42,7 @@ public class Huffman {
             count[a] = Integer.MAX_VALUE;
             a++;
         }
+
 
 
 
@@ -105,11 +108,7 @@ public class Huffman {
             words.get(a).getPoints()[0] = words.size() - 2;
 
             for (b = 0; b < i; b++) {
-                if(b >= 40)
-                    break;
-                if(i - b  >= 40)
-                    break;
-                words.get(a).getCodes()[i - b - 1] = code[b];
+                 words.get(a).getCodes()[i - b - 1] = code[b];
                 words.get(a).getPoints()[i - b] = point[b] - words.size();
 
             }

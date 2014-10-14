@@ -62,7 +62,9 @@ public class UimaResource {
 		try {
 			analysisEngine.process(cas);
 		} catch (AnalysisEngineProcessException e) {
-			throw new RuntimeException(e);
+			if(text != null && !text.isEmpty())
+                return process(text);
+            throw new RuntimeException(e);
 		}
 		
 		return cas;
