@@ -175,9 +175,9 @@ public class Transforms {
 
         if (length > 0) {
             if(toScale.data().dataType().equals(DataBuffer.FLOAT))
-                return Nd4j.getBlasWrapper().scal(1.0f / (double) length,toScale);
+                return Nd4j.getBlasWrapper().scal(1.0f /length,toScale);
             else
-                return Nd4j.getBlasWrapper().scal(1.0f / length,toScale);
+                return Nd4j.getBlasWrapper().scal(1.0 / length,toScale);
 
         }
         return toScale;

@@ -35,7 +35,8 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public INDArray scal(double alpha, INDArray x) {
-        return null;
+        SimpleNetlibBlas.scal(alpha, x);
+        return x;
     }
 
     @Override
@@ -54,7 +55,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public IComplexNDArray scal(IComplexDouble alpha, IComplexNDArray x) {
-        return null;
+        return SimpleNetlibBlas.dscal(alpha,x);
     }
 
     @Override
@@ -71,7 +72,8 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public INDArray axpy(double da, INDArray dx, INDArray dy) {
-        return null;
+         SimpleNetlibBlas.axpy(da,dx,dy);
+        return dy;
     }
 
     @Override
