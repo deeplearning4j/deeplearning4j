@@ -64,7 +64,7 @@ public class FilterRenderer {
         for (int i = 0; i < equiv.length; i++) {
 
             //equiv[i] = (int) Math.round( MatrixUtils.getElement(render_data, i) );
-            equiv[i] = (int) Math.round( (float) render_data.getScalar(i).element() * 256 );
+            equiv[i] = (int) Math.round( (double) render_data.getScalar(i).element() * 256 );
             log.debug( "> " + equiv[i] );
 
         }
@@ -79,11 +79,11 @@ public class FilterRenderer {
 
 
 
-    public int computeHistogramBucketIndex(float min, float stepSize, float value, int numberBins) {
+    public int computeHistogramBucketIndex(double min, double stepSize, double value, int numberBins) {
 
         for ( int x = 0; x < numberBins; x++ ) {
 
-            float tmp = (x * stepSize) + min;
+            double tmp = (x * stepSize) + min;
 
             if ( value >= tmp && value <= (tmp + stepSize) ) {
                 return x;
@@ -105,7 +105,7 @@ public class FilterRenderer {
      * @param numberBins
      * @return
      */
-    public int computeHistogramBucketIndexAlt(float min, float stepSize, float value, int numberBins) {
+    public int computeHistogramBucketIndexAlt(double min, double stepSize, double value, int numberBins) {
 
 
         //	log.debug("pre round: val: " + value + ", delta on min: " + (value - min) + ", bin-calc: " + ((value - min) / stepSize));
@@ -120,7 +120,7 @@ public class FilterRenderer {
 		/*
 		for ( int x = 0; x < numberBins; x++ ) {
 
-			float tmp = (x * stepSize) + min;
+			double tmp = (x * stepSize) + min;
 
 			if ( value <= tmp ) {
 				return x;
@@ -132,20 +132,20 @@ public class FilterRenderer {
 
     }
 
-    public static float round(float unrounded, int precision, int roundingMode)
+    public static double round(double unrounded, int precision, int roundingMode)
     {
         BigDecimal bd = new BigDecimal(unrounded);
         BigDecimal rounded = bd.setScale(precision, roundingMode);
-        return rounded.floatValue();
+        return rounded.doubleValue();
     }
 
-    private String buildBucketLabel(int bucketIndex, float stepSize, float min) {
+    private String buildBucketLabel(int bucketIndex, double stepSize, double min) {
 
         //log.debug( "label> min " + min + ", stepSize: " + stepSize );
 
         //log.debug("bucketIndex > " + bucketIndex);
 
-        float val = min + (bucketIndex * stepSize);
+        double val = min + (bucketIndex * stepSize);
         String ret = "" + round(val, 2, BigDecimal.ROUND_HALF_UP);
 
         //log.debug("label-ret: " + val);
@@ -171,11 +171,11 @@ public class FilterRenderer {
 
         Map<Integer, Integer> mapHistory = new TreeMap<>();
 
-        float min = (float) data.min(Integer.MAX_VALUE).element();
-        float max = (float) data.max(Integer.MAX_VALUE).element();
+        double min = (double) data.min(Integer.MAX_VALUE).element();
+        double max = (double) data.max(Integer.MAX_VALUE).element();
 
-        float range = max - min;
-        float stepSize = range / numberBins;
+        double range = max - min;
+        double stepSize = range / numberBins;
 
 		/*
 		log.debug( "min: " + min );
@@ -190,7 +190,7 @@ public class FilterRenderer {
 
             for (int col = 0; col < data.columns(); col++ ) {
 
-                float matrix_value = (float) data.getScalar( row, col ).element();
+                double matrix_value = (double) data.getScalar( row, col ).element();
 
                 // at this point we need round values into bins
 
@@ -247,11 +247,11 @@ public class FilterRenderer {
 
         Map<Integer, Integer> mapHistory = this.generateHistogramBuckets( data, numberBins );
 
-        float min = (float) data.min(Integer.MAX_VALUE).element(); //data.getFromOrigin(0, 0);
-        float max = (float) data.max(Integer.MAX_VALUE).element(); //data.getFromOrigin(0, 0);
+        double min = (double) data.min(Integer.MAX_VALUE).element(); //data.getFromOrigin(0, 0);
+        double max = (double) data.max(Integer.MAX_VALUE).element(); //data.getFromOrigin(0, 0);
 
-        float range = max - min;
-        float stepSize = range / numberBins;
+        double range = max - min;
+        double stepSize = range / numberBins;
 
 
         int xOffset = 50;
@@ -275,8 +275,8 @@ public class FilterRenderer {
         //g2d.fill(new Rectangle(x, y, width, height));
 
         //     int barWidth = Math.max(MIN_BAR_WIDTH,
-        //             (int) Math.floor((float) graphWidth
-        //             / (float) mapHistory.size()));
+        //             (int) Math.floor((double) graphWidth
+        //             / (double) mapHistory.size()));
         int barWidth = BAR_WIDTH;
 
         //       log.debug("width = " + graphWidth + "; size = "
@@ -292,18 +292,18 @@ public class FilterRenderer {
 
         //log.debug( "max-value: " + maxValue );
 
-        float plotAreaHeight = (graphHeight + yOffset);
+        double plotAreaHeight = (graphHeight + yOffset);
 
-        float yScaleStepSize = plotAreaHeight / 4;
+        double yScaleStepSize = plotAreaHeight / 4;
 
-        float yLabelStepSize = (float)maxValue / 4.0f;
+        double yLabelStepSize = (double)maxValue / 4.0f;
 
         for ( int yStep = 0; yStep < 5; yStep++ ) {
 
-            float curLabel = yStep * yLabelStepSize ;
+            double curLabel = yStep * yLabelStepSize ;
 
-            int curY = (graphHeight + yOffset) - Math.round(((float) (curLabel)
-                    / (float) maxValue) * (graphHeight + yOffset - 20));
+            long curY = (int) (graphHeight + yOffset) - Math.round(( (int) (curLabel)
+                    / (double) maxValue) * (graphHeight + yOffset - 20));
 
             //log.debug( "curY: " + curY );
 
@@ -320,25 +320,25 @@ public class FilterRenderer {
 
 
 
-            int value = mapHistory.get(key);
+            long value = mapHistory.get(key);
 
             String bucket_label = this.buildBucketLabel(key, stepSize, min);
 
-            int barHeight = Math.round(((float) value
-                    / (float) maxValue) * (graphHeight + yOffset - 20));
+            long barHeight = Math.round(((double) value
+                    / (double) maxValue) * (graphHeight + yOffset - 20));
 
             //g2d.setColor(new Color(key, key, key));
             g2d.setColor(Color.BLUE);
 
-            int yPos = graphHeight + yOffset - barHeight;
+            long yPos = graphHeight + yOffset - barHeight;
 
             //            Rectangle2D bar = new Rectangle2D.Float(
             //                  xPos, yPos, barWidth, barHeight);
 
             //g2d.fill(bar);
-            g2d.fillRect(xPos, yPos, barWidth, barHeight);
+            g2d.fillRect((int) xPos, (int) yPos, (int) barWidth, (int) barHeight);
             g2d.setColor(Color.DARK_GRAY);
-            g2d.drawRect(xPos, yPos, barWidth, barHeight);
+            g2d.drawRect((int) xPos, (int) yPos, (int) barWidth, (int) barHeight);
 
             g2d.setColor(Color.BLACK);
             g2d.drawString(bucket_label, xPos + ((barWidth / 2) - 10), barHeight + 20 + yPos);
@@ -381,7 +381,7 @@ public class FilterRenderer {
 
 
 
-        float approx = (float) numberCols / (float) patchesPerRow;
+        double approx = (double) numberCols / (double) patchesPerRow;
         int numPatchRows = (int) Math.round(approx);
         if(numPatchRows < 1)
             numPatchRows = 1;
@@ -417,8 +417,8 @@ public class FilterRenderer {
 
             INDArray column = data.getColumn(col);
 
-            float col_max = (float) column.min(Integer.MAX_VALUE).element();
-            float col_min = (float) column.max(Integer.MAX_VALUE).element();
+            double col_max = (double) column.min(Integer.MAX_VALUE).element();
+            double col_min = (double) column.max(Integer.MAX_VALUE).element();
 
             // now reshape the column into the shape of the filter patch
 
@@ -429,8 +429,8 @@ public class FilterRenderer {
 
             for (int i = 0; i < column.length(); i++) {
 
-                //float patch_normal = ( column.getFromOrigin(i) - min ) / ( max - min + 0.000001 );
-                float patch_normal = ( (float) column.getScalar(i).element() - col_min ) / ( col_max - col_min + 0.000001f );
+                //double patch_normal = ( column.getFromOrigin(i) - min ) / ( max - min + 0.000001 );
+                double patch_normal = ( (double) column.getScalar(i).element() - col_min ) / ( col_max - col_min + 0.000001f );
                 equiv[i] = (int) (255 * patch_normal);
 
             }
@@ -505,14 +505,14 @@ public class FilterRenderer {
         WritableRaster r = img.getRaster();
         int[] equiv = new int[ activation_data.length() ];
 
-        float max = 0.1f * scale; //MatrixUtils.max(render_data);
-        float min = -0.1f * scale; //MatrixUtils.min(render_data);
-        float range = max - min;
+        double max = 0.1f * scale; //MatrixUtils.max(render_data);
+        double min = -0.1f * scale; //MatrixUtils.min(render_data);
+        double range = max - min;
 
 
         for (int i = 0; i < equiv.length; i++) {
 
-            equiv[i] =  Math.round((float) activation_data.getScalar(i).element() * 255 );
+            equiv[i] = (int) Math.round(activation_data.getDouble(i) * 255 );
 
         }
 
