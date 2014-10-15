@@ -273,7 +273,6 @@ public class Word2Vec implements Persistable {
                     if(sentence == null)
                         continue;
 
-                    trainSentence(sentence);
                     service.execute(new Runnable() {
 
                         /**
