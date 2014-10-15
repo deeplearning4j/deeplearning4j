@@ -120,7 +120,6 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
         }
 
         //dot product
-        double dot = g.mul(line).sum(Integer.MAX_VALUE).getDouble(0);
         slope = Nd4j.getBlasWrapper().dot(g, line);
         logger.debug("slope = " + slope);
 
