@@ -62,7 +62,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray linear = ret.linearView();
         double r = max - min;
         for(int i = 0; i < ret.length(); i++) {
-            linear.putScalar(i, r * rng.nextFloat() + min);
+            linear.putScalar(i, r * rng.nextDouble() + min);
         }
         return ret;
     }
@@ -126,7 +126,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public DataBuffer createBuffer(DataBuffer[] buffers) {
         assertAllSameType(buffers);
         if(buffers[0].dataType().equals(DataBuffer.DOUBLE)) {
-           double[][] ret = new double[buffers.length][];
+            double[][] ret = new double[buffers.length][];
             for(int i = 0; i < ret.length; i++)
                 ret[i] = buffers[i].asDouble();
             return createBuffer(Doubles.concat(ret));
@@ -485,8 +485,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int rows,int columns,long seed) {
-
-        return randn(new int[]{rows,columns}, new MersenneTwister(seed));
+        return rand(new int[]{rows,columns}, new MersenneTwister(seed));
     }
     /**
      * Create a random ndarray with the given shape using
@@ -547,10 +546,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int[] shape,RealDistribution r) {
-        INDArray ret = create(new int[]{1,ArrayUtil.prod(shape)});
+        INDArray ret = create(shape);
+        INDArray linear = ret.linearView();
         for(int i = 0; i < ret.length(); i++)
-            ret.put(i, Nd4j.scalar(r.sample()));
-        return ret.reshape(shape);
+            linear.putScalar(i, r.sample());
+        return ret;
     }
     /**
      * Create a random ndarray with the given shape using the given rng
@@ -560,10 +560,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int[] shape,RandomGenerator r) {
-        INDArray ret = create(new int[]{1,ArrayUtil.prod(shape)});
+        INDArray ret = create(shape);
+        INDArray linear = ret.linearView();
         for(int i = 0; i < ret.length(); i++)
-            ret.putScalar(i,r.nextFloat());
-        return ret.reshape(shape);
+            linear.putScalar(i,r.nextDouble());
+        return ret;
     }
 
     /**
@@ -596,10 +597,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray randn(int[] shape,RandomGenerator r) {
-        INDArray ret = create(new int[]{1,ArrayUtil.prod(shape)});
+        INDArray ret = create(shape);
+        INDArray linear = ret.linearView();
         for(int i = 0; i < ret.length(); i++)
-            ret.put(i, Nd4j.scalar(r.nextGaussian()));
-        return ret.reshape(shape);
+            linear.putScalar(i, r.nextGaussian());
+        return ret;
     }
 
     /**

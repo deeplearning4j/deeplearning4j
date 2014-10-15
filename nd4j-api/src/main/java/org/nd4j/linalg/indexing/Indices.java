@@ -205,7 +205,7 @@ public class Indices {
                 end = shape[i] - 1;
             int begin = currIndices[0];
 
-            ret[i]  = indices[i].isInterval() ? Math.abs(end - begin) :
+            ret[i]  = indices[i].isInterval() ? Math.abs(end - begin) + 1 :
                     indices[i].indices().length;
         }
 

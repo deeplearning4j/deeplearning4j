@@ -844,8 +844,9 @@ public abstract class BaseNDArray  implements INDArray {
     public INDArray rsubi(Number n, INDArray result) {
         INDArray linear = linearView();
         INDArray resultLinear = result.linearView();
+        double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, n.floatValue() - linear.getDouble(i));
+            resultLinear.putScalar(i, val - linear.getDouble(i));
         }
         return result;
     }
@@ -859,8 +860,9 @@ public abstract class BaseNDArray  implements INDArray {
     public INDArray divi(Number n, INDArray result) {
         INDArray linear = linearView();
         INDArray resultLinear = result.linearView();
+        double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, linear.getDouble(i) / n.floatValue());
+            resultLinear.putScalar(i, linear.getDouble(i) / val);
         }
         return result;
     }
@@ -874,8 +876,9 @@ public abstract class BaseNDArray  implements INDArray {
     public INDArray muli(Number n, INDArray result) {
         INDArray linear = linearView();
         INDArray resultLinear = result.linearView();
+        double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, linear.getDouble(i) * n.floatValue());
+            resultLinear.putScalar(i, linear.getDouble(i) * val);
         }
         return result;
     }
@@ -889,8 +892,9 @@ public abstract class BaseNDArray  implements INDArray {
     public INDArray subi(Number n, INDArray result) {
         INDArray linear = linearView();
         INDArray resultLinear = result.linearView();
+        double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, linear.getDouble(i) - n.floatValue());
+            resultLinear.putScalar(i, linear.getDouble(i) - val);
         }
         return result;
     }
@@ -904,8 +908,9 @@ public abstract class BaseNDArray  implements INDArray {
     public INDArray addi(Number n, INDArray result) {
         INDArray linear = linearView();
         INDArray resultLinear = result.linearView();
+        double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, linear.getDouble(i) + n.floatValue());
+            resultLinear.putScalar(i, linear.getDouble(i) + val);
         }
         return result;
     }
@@ -4138,26 +4143,21 @@ public abstract class BaseNDArray  implements INDArray {
         else if(isVector()) {
             StringBuilder sb = new StringBuilder();
             sb.append("[");
-            int numElementsToPrint = Nd4j.MAX_ELEMENTS_PER_SLICE < 0 ? length : Nd4j.MAX_SLICES_TO_PRINT;
-            if(numElementsToPrint > length)
-                numElementsToPrint = length;
-            for(int i = 0; i < numElementsToPrint; i++) {
-                if(i >= length)
-                    break;
+            int numElementsToPrint = Nd4j.MAX_ELEMENTS_PER_SLICE < 0 ? length : Nd4j.MAX_ELEMENTS_PER_SLICE;
+            for(int i = 0; i < length; i++) {
                 sb.append(getDouble(i));
                 if(i < length - 1)
                     sb.append(" ,");
-            }
-
-            if(numElementsToPrint != length) {
-                sb.append(" , ... ,");
-                for(int i = length - numElementsToPrint; i < length; i++) {
-                    sb.append(getDouble(i));
-                    if(i < length - 1)
-                        sb.append(" ,");
+                if(i >= numElementsToPrint) {
+                    int numElementsLeft = length - i;
+                    //set towards the end of the buffer
+                    if(numElementsLeft > numElementsToPrint) {
+                        i += numElementsLeft - numElementsToPrint - 1;
+                        sb.append(" ,... ,");
+                    }
                 }
-            }
 
+            }
             sb.append("]\n");
             return sb.toString();
         }
@@ -4179,15 +4179,7 @@ public abstract class BaseNDArray  implements INDArray {
 
             }
 
-            if(slices != slices()) {
-                for(int i = slices() - slices; i < slices(); i++) {
-                    //assume after
-                    sb.append(",");
-                    sb.append(slice(i).toString());
-                    if(i < length - 1)
-                        sb.append(" ,");
-                }
-            }
+
         }
         sb.append("]\n");
         return sb.toString();

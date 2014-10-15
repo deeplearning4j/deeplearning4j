@@ -6,6 +6,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.jblas.complex.ComplexDouble;
 import org.nd4j.linalg.jblas.complex.ComplexFloat;
@@ -37,6 +38,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray swap(INDArray x, INDArray y) {
         //NativeBlas.dswap(x.length(), x.data(), 0, 1, y.data(), 0, 1);
+        DataTypeValidation.assertSameDataType(x,y);
         if(x.data().dataType().equals(DataBuffer.FLOAT))
             JavaBlas.rswap(
                     x.length(),
@@ -63,6 +65,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public INDArray scal(double alpha, INDArray x) {
+        DataTypeValidation.assertDouble(x);
         NativeBlas.dscal(x.length(), alpha, x.data().asDouble(), x.offset(), x.majorStride());
         return x;
     }
@@ -72,12 +75,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public INDArray scal(float alpha, INDArray x) {
+        DataTypeValidation.assertFloat(x);
         NativeBlas.sscal(x.length(), alpha, x.data().asFloat(), x.offset(), x.majorStride());
         return x;
     }
 
     @Override
     public IComplexNDArray scal(IComplexFloat alpha, IComplexNDArray x) {
+        DataTypeValidation.assertFloat(x);
         NativeBlas.cscal(x.length(),
                 new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
                 x.data().asFloat(), x.offset(), x.majorStride());
@@ -86,6 +91,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public IComplexNDArray scal(IComplexDouble alpha, IComplexNDArray x) {
+        DataTypeValidation.assertDouble(x);
         NativeBlas.zscal(x.length(),
                 new ComplexDouble(alpha.realComponent().doubleValue(), alpha.imaginaryComponent().doubleValue()),
                 x.data().asDouble(), x.offset(), x.majorStride());
@@ -101,6 +107,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public INDArray copy(INDArray x, INDArray y) {
+        DataTypeValidation.assertSameDataType(x,y);
         if(x.data().dataType().equals(DataBuffer.DOUBLE))
             JavaBlas.rcopy(
                     x.length(),
@@ -125,6 +132,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public IComplexNDArray copy(IComplexNDArray x, IComplexNDArray y) {
+        DataTypeValidation.assertSameDataType(x,y);
         if(x.data().dataType().equals(DataBuffer.DOUBLE))
             NativeBlas.dcopy(
                     x.length(),
@@ -154,6 +162,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray axpy(double da, INDArray dx, INDArray dy) {
         assert dx.length() == dy.length() : "Dx length must be the same as dy length";
+        DataTypeValidation.assertDouble(dx,dy);
         JavaBlas.raxpy(
                 dx.length(),
                 da,
@@ -174,7 +183,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public INDArray axpy(float da, INDArray dx, INDArray dy) {
         //NativeBlas.daxpy(dx.length(), da, dx.data(), 0, 1, dy.data(), 0, 1);
         assert dx.length() == dy.length() : "Dx length must be the same as dy length";
-        dx.toString();
+        DataTypeValidation.assertFloat(dx,dy);
         JavaBlas.raxpy(
                 dx.length(),
                 da,
@@ -190,6 +199,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public IComplexNDArray axpy(IComplexNumber da, IComplexNDArray dx, IComplexNDArray dy) {
+        DataTypeValidation.assertSameDataType(dx,dy);
         if(da instanceof IComplexFloat)
             NativeBlas.caxpy(
                     dx.length(),
@@ -227,6 +237,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public double dot(INDArray x, INDArray y) {
         //return NativeBlas.ddot(x.length(), x.data(), 0, 1, y.data(), 0, 1);
+        DataTypeValidation.assertSameDataType(x,y);
         if(x.data().dataType().equals(DataBuffer.FLOAT))
             return JavaBlas.rdot(
                     x.length(),
@@ -256,6 +267,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public IComplexNumber dotc(IComplexNDArray x, IComplexNDArray y) {
+        DataTypeValidation.assertSameDataType(x,y);
         if(x.data().dataType().equals(DataBuffer.FLOAT))
             return new ComplexFloat(NativeBlas.cdotc(
                     x.length(),
@@ -282,6 +294,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public IComplexNumber dotu(IComplexNDArray x, IComplexNDArray y) {
+        DataTypeValidation.assertSameDataType(x,y);
         if(x.data().dataType().equals(DataBuffer.FLOAT))
             return new ComplexFloat(NativeBlas.cdotu(
                     x.length(),
@@ -446,7 +459,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray gemv(double alpha, INDArray a,
                          INDArray x, double beta, INDArray y) {
-
+        DataTypeValidation.assertDouble(a,x,y);
         if (beta == 0.0) {
             for (int j = 0; j < a.columns(); j++) {
                 double xj = x.getDouble(j);
@@ -476,7 +489,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray gemv(float alpha, INDArray a,
                          INDArray x, float beta, INDArray y) {
-
+        DataTypeValidation.assertFloat(a,x,y);
         if (beta == 0.0) {
             for (int j = 0; j < a.columns(); j++) {
                 double xj = x.getFloat(j);
@@ -507,6 +520,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray ger(double alpha, INDArray x,
                         INDArray y, INDArray a) {
+        DataTypeValidation.assertDouble(x,y,a);
         NativeBlas.dger(
                 a.rows(),
                 a.columns(),
@@ -530,6 +544,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray ger(float alpha, INDArray x,
                         INDArray y, INDArray a) {
+        DataTypeValidation.assertFloat(x,y,a);
         NativeBlas.sger(
                 a.rows(),
                 a.columns(),
@@ -557,6 +572,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public IComplexNDArray geru(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
+        DataTypeValidation.assertDouble(x,y,a);
         NativeBlas.zgeru(
                 a.rows(),
                 a.columns(),
@@ -582,6 +598,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public IComplexNDArray geru(IComplexFloat alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
+        DataTypeValidation.assertFloat(x,y,a);
         NativeBlas.cgeru(
                 a.rows(),
                 a.columns(),
@@ -606,6 +623,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public IComplexNDArray gerc(IComplexDouble alpha, IComplexNDArray x,
                                 IComplexNDArray y, IComplexNDArray a) {
+        DataTypeValidation.assertDouble(x,y,a);
         NativeBlas.zgerc(
                 a.rows(),
                 a.columns(),
@@ -628,6 +646,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public IComplexNDArray gerc(IComplexFloat alpha, IComplexNDArray x,
                                 IComplexNDArray y, IComplexNDArray a) {
+        DataTypeValidation.assertFloat(x,y,a);
         NativeBlas.cgerc(
                 a.rows(),
                 a.columns(),
@@ -657,6 +676,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray gemm(double alpha, INDArray a,
                          INDArray b, double beta, INDArray c) {
+        DataTypeValidation.assertDouble(a,b,c);
         NativeBlas.dgemm(
                 'N',
                 'N',
@@ -685,6 +705,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray gemm(float alpha, INDArray a,
                          INDArray b, float beta, INDArray c) {
+        DataTypeValidation.assertFloat(a,b,c);
         NativeBlas.sgemm(
                 'N',
                 'N',
@@ -710,6 +731,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta, IComplexNDArray c) {
+        DataTypeValidation.assertSameDataType(a,b,c);
         if(a.data().dataType().equals(DataBuffer.FLOAT))
             NativeBlas.cgemm(
                     'N',
@@ -759,6 +781,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray gesv(INDArray a, int[] ipiv,
                          INDArray b) {
+        DataTypeValidation.assertSameDataType(a,b);
         int info = -1;
         if(a.data().dataType().equals(DataBuffer.FLOAT)) {
             info = NativeBlas.sgesv(
@@ -806,6 +829,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray sysv(char uplo, INDArray a, int[] ipiv,
                          INDArray b) {
+        DataTypeValidation.assertSameDataType(a,b);
         int info = -1;
         if(a.data().dataType().equals(DataBuffer.FLOAT)) {
             info = NativeBlas.ssysv(
@@ -849,6 +873,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public int syev(char jobz, char uplo, INDArray a, INDArray w) {
         int info = -1;
+        DataTypeValidation.assertSameDataType(a,w);
         if(a.data().dataType().equals(DataBuffer.FLOAT)) {
             info = NativeBlas.ssyev(
                     jobz,
@@ -890,6 +915,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public int syevx(char jobz, char range, char uplo, INDArray a,
                      double vl, double vu, int il, int iu, double abstol,
                      INDArray w, INDArray z) {
+        DataTypeValidation.assertDouble(a,w,z);
         int n = a.rows();
         int[] iwork = new int[5 * n];
         int[] ifail = new int[n];
@@ -920,6 +946,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public int syevx(char jobz, char range, char uplo, INDArray a,
                      float vl, float vu, int il, int iu, float abstol,
                      INDArray w, INDArray z) {
+        DataTypeValidation.assertFloat(a,w,z);
         int n = a.rows();
         int[] iwork = new int[5 * n];
         int[] ifail = new int[n];
@@ -948,7 +975,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public int syevd(char jobz, char uplo, INDArray A,
                      INDArray w) {
         int n = A.rows();
-
+        DataTypeValidation.assertSameDataType(A,w);
         int info = -1;
         if(A.data().dataType().equals(DataBuffer.FLOAT)) {
             info = NativeBlas.ssyevd(
@@ -992,7 +1019,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                      INDArray w, INDArray z, int[] isuppz) {
         int n = a.rows();
         int[] m = new int[1];
-
+        DataTypeValidation.assertFloat(a,w,z);
         int info = -1;
         if(w.data().dataType().equals(DataBuffer.FLOAT)) {
             info =  NativeBlas.ssyevr(
@@ -1057,6 +1084,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int n = A.rows();
         int nrhs = B.columns();
         int info = -1;
+        DataTypeValidation.assertSameDataType(A,B);
         if(A.data().dataType().equals(DataBuffer.FLOAT))
             info = NativeBlas.sposv(
                     uplo,
@@ -1096,6 +1124,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         assert VR.columns() == n;
         int ldvl = VL.rows();
         int ldvr = VR.rows();
+        DataTypeValidation.assertSameDataType(A,WR,WI,VL,VR);
         if(Character.toLowerCase(jobvl) == 'v')
             assert ldvl >= n;
 
@@ -1146,6 +1175,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public int sygvd(int itype, char jobz, char uplo, INDArray A, INDArray B, INDArray W) {
         int info = -1;
+        DataTypeValidation.assertSameDataType(A,B,W);
         if(A.data().dataType().equals(DataBuffer.DOUBLE)) {
             info = NativeBlas.dsygvd(
                     itype,
@@ -1214,7 +1244,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int nrhs = B.columns();
         int minmn = min(m, n);
         int maxmn = max(m, n);
-
+        DataTypeValidation.assertSameDataType(A,B);
         if (B.rows() < maxmn) {
             throw new SizeException("Result matrix B must be padded to contain the solution matrix X!");
         }
@@ -1285,6 +1315,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public void geqrf(INDArray A, INDArray tau) {
+        DataTypeValidation.assertSameDataType(A,tau);
         if(A.data().dataType().equals(DataBuffer.FLOAT)) {
             int info = NativeBlas.sgeqrf(
                     A.rows(),
@@ -1314,6 +1345,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public void ormqr(char side, char trans, INDArray A, INDArray tau, INDArray C) {
         int k = tau.length();
+        DataTypeValidation.assertSameDataType(A,tau,C);
         if(A.data().dataType().equals(DataBuffer.FLOAT)) {
             int info = NativeBlas.sormqr(
                     side,
@@ -1362,7 +1394,8 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public void saxpy(double alpha, INDArray x, INDArray y) {
-         JavaBlas.raxpy(
+        DataTypeValidation.assertDouble(x,y);
+        JavaBlas.raxpy(
                 x.length(),
                 alpha,
                 x.data().asDouble(),
@@ -1383,6 +1416,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public void saxpy(float alpha, INDArray x, INDArray y) {
+        DataTypeValidation.assertFloat(x,y);
         JavaBlas.raxpy(
                 x.length(),
                 alpha,

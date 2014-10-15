@@ -13,7 +13,7 @@ public abstract class BlasWrapperTests {
 
     @Test
     public void axpyTest() {
-        INDArray a = Nd4j.getBlasWrapper().axpy(1,Nd4j.ones(3),Nd4j.ones(3));
+        INDArray a = Nd4j.getBlasWrapper().axpy(1.0,Nd4j.ones(3),Nd4j.ones(3));
         INDArray a2 = Nd4j.create(new float[]{2,2,2});
         assertEquals(a2,a);
 
@@ -23,6 +23,16 @@ public abstract class BlasWrapperTests {
         Nd4j.getBlasWrapper().axpy(1,row,result);
         assertEquals(Nd4j.create(new float[]{3,6}),result);
 
+
+
+    }
+
+    @Test
+    public void testAxpyFortran() {
+        Nd4j.factory().setOrder('f');
+        INDArray threeByFour = Nd4j.linspace(1,12,12).reshape(3,4);
+        INDArray row = threeByFour.getRow(1);
+        Nd4j.getBlasWrapper().axpy(2.0,row,row);
     }
 
 
