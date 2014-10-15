@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
 import it.unimi.dsi.util.XorShift64StarRandomGenerator;
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Counter;
@@ -12,15 +13,15 @@ import org.deeplearning4j.util.Index;
 import org.deeplearning4j.util.SerializationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -43,6 +44,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     private double lr = 1e-1f;
     double[] expTable = new double[1000];
     static double MAX_EXP = 6;
+    private long seed = 123;
 
     public InMemoryLookupCache(int vectorLength) {
         this(vectorLength,true);
@@ -62,7 +64,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
 
     public InMemoryLookupCache(int vectorLength,boolean useAdaGrad) {
-       this(vectorLength,useAdaGrad,0.025f,new XorShift64StarRandomGenerator(123));
+        this(vectorLength,useAdaGrad,0.025f,new XorShift64StarRandomGenerator(123));
 
 
     }
@@ -80,7 +82,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     }
 
     public InMemoryLookupCache(int vectorLength,boolean useAdaGrad,double lr) {
-           this(vectorLength,useAdaGrad,lr,new XorShift64StarRandomGenerator(123));
+        this(vectorLength,useAdaGrad,lr,new XorShift64StarRandomGenerator(123));
 
 
 
@@ -103,13 +105,14 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     @Override
     public  void iterate(VocabWord w1, VocabWord w2) {
         //current word vector
-        INDArray syn0 = this.syn0.slice(w2.getIndex());
+        INDArray l1 = this.syn0.slice(w2.getIndex());
 
         //error for current word and context
-        INDArray work = Nd4j.create(vectorLength);
+        INDArray neu1e = Nd4j.create(vectorLength);
 
 
         double avgChange = 0.0f;
+
 
 
 
@@ -121,7 +124,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
             INDArray syn1 = this.syn1.slice(point);
 
 
-            double dot = Nd4j.getBlasWrapper().dot(syn0,syn1);
+            double dot = Nd4j.getBlasWrapper().dot(l1,syn1);
 
             if(dot < -MAX_EXP || dot >= MAX_EXP)
                 continue;
@@ -130,7 +133,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
             int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
             if(idx >= expTable.length)
                 continue;
-            
+
             //score
             double f =  expTable[idx];
             //gradient
@@ -138,9 +141,10 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
             avgChange += g;
 
-            Nd4j.getBlasWrapper().axpy(g, syn1, work);
-            Nd4j.getBlasWrapper().axpy(g, syn0, syn1);
+            Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
+            Nd4j.getBlasWrapper().axpy(g, l1, syn1);
         }
+
 
 
 
@@ -148,10 +152,9 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
 
         if(useAdaGrad)
-            Nd4j.getBlasWrapper().axpy(avgChange,work,syn0);
+            Nd4j.getBlasWrapper().axpy(avgChange,neu1e,l1);
         else
-            Nd4j.getBlasWrapper().axpy(1,work,syn0);
-
+            Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
     }
 
 
@@ -172,7 +175,9 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public void resetWeights() {
-        syn0  = Nd4j.rand(new int[]{vocabs.size(),vectorLength},rng).subi(0.5).divi((double) vectorLength);
+        this.rng = new MersenneTwister(seed);
+
+        syn0  = Nd4j.rand(new int[]{vocabs.size(),vectorLength},rng).subi(0.5).divi(vectorLength);
         syn1 = Nd4j.create(syn0.shape());
 
     }
@@ -308,7 +313,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         if(vector == null)
             throw new IllegalArgumentException("No null vectors allowed");
         int idx = indexOf(word);
-        syn0.putRow(idx,vector);
+        syn0.slice(idx).assign(vector);
 
     }
 
@@ -320,7 +325,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     public INDArray vector(String word) {
         if(word == null)
             return null;
-        return syn0.getRow(indexOf(word));
+        return syn0.slice(indexOf(word));
     }
 
     /**

@@ -82,7 +82,7 @@ public class Word2Vec implements Persistable {
     private List<String> stopWords;
     private boolean shouldReset = true;
     //number of iterations to run
-    private int numIterations = 5;
+    private int numIterations = 1;
     public final static String UNK = "UNK";
     private long seed = 123;
 
@@ -796,7 +796,7 @@ public class Word2Vec implements Persistable {
 
 
     public static class Builder {
-        private int minWordFrequency = 5;
+        private int minWordFrequency = 1;
         private int layerSize = 50;
         private SentenceIterator iter;
         private List<String> stopWords = StopWords.getStopWords();
@@ -912,6 +912,7 @@ public class Word2Vec implements Persistable {
                 ret.minWordFrequency = minWordFrequency;
                 ret.numIterations = iterations;
                 ret.seed = seed;
+                ret.numIterations = iterations;
 
                 try {
                     if (tokenizerFactory == null)
