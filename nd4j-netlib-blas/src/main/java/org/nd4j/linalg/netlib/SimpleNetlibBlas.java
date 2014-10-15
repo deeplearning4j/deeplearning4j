@@ -508,6 +508,48 @@ public class SimpleNetlibBlas {
 
     }
 
+
+
+    /**
+     * Add and scale by the given scalar da
+     * @param da
+     * @param A
+     * @param B
+     */
+    public static void axpy(double da, INDArray A, INDArray B) {
+        DataTypeValidation.assertDouble(A,B);
+        if(A.ordering() == NDArrayFactory.C) {
+
+            BLAS.getInstance().daxpy(
+                    A.length(),
+                    da,
+                    A.data().asDouble(),
+                    A.offset(),
+                    A.majorStride(),
+                    B.data().asDouble(),
+                    B.offset(),
+                    B.majorStride());
+
+
+        }
+        else {
+
+            BLAS.getInstance().daxpy(
+                    A.length(),
+                    da,
+                    A.data().asDouble(),
+                    A.offset(),
+                    A.majorStride(),
+                    B.data().asDouble(),
+                    B.offset(),
+                    B.majorStride());
+
+        }
+
+
+
+    }
+
     /**
      * Add and scale by the given scalar da
      * @param da
@@ -515,34 +557,22 @@ public class SimpleNetlibBlas {
      * @param B
      */
     public static void axpy(float da, INDArray A, INDArray B) {
-       DataTypeValidation.assertFloat(A,B);
+        DataTypeValidation.assertFloat(A,B);
         if(A.ordering() == NDArrayFactory.C) {
-            if(A.data().dataType().equals(DataBuffer.FLOAT)) {
-                BLAS.getInstance().saxpy(
-                        A.length(),
-                        da,
-                        A.data().asFloat(),
-                        A.offset(),
-                        A.majorStride(),
-                        B.data().asFloat(),
-                        B.offset(),
-                        B.majorStride());
-            }
-            else {
-                BLAS.getInstance().daxpy(
-                        A.length(),
-                        da,
-                        A.data().asDouble(),
-                        A.offset(),
-                        A.majorStride(),
-                        B.data().asDouble(),
-                        B.offset(),
-                        B.majorStride());
-            }
+            BLAS.getInstance().saxpy(
+                    A.length(),
+                    da,
+                    A.data().asFloat(),
+                    A.offset(),
+                    A.majorStride(),
+                    B.data().asFloat(),
+                    B.offset(),
+                    B.majorStride());
+
+
 
         }
         else {
-            if(A.data().dataType().equals(DataBuffer.FLOAT))
                 BLAS.getInstance().saxpy(
                         A.length(),
                         da,
@@ -552,16 +582,7 @@ public class SimpleNetlibBlas {
                         B.data().asFloat(),
                         B.offset(),
                         B.majorStride());
-            else
-                BLAS.getInstance().daxpy(
-                        A.length(),
-                        da,
-                        A.data().asDouble(),
-                        A.offset(),
-                        A.majorStride(),
-                        B.data().asDouble(),
-                        B.offset(),
-                        B.majorStride());
+
 
         }
 
@@ -577,7 +598,7 @@ public class SimpleNetlibBlas {
      * @param B
      */
     public static void axpy(IComplexNumber da, IComplexNDArray A, IComplexNDArray B) {
-       DataTypeValidation.assertSameDataType(A,B);
+        DataTypeValidation.assertSameDataType(A,B);
         if(A.data().dataType().equals(DataBuffer.FLOAT))
             NativeBlas.caxpy(
                     A.length(),
@@ -612,7 +633,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static INDArray scal(double alpha, INDArray x) {
-         DataTypeValidation.assertDouble(x);
+        DataTypeValidation.assertDouble(x);
         BLAS.getInstance().dscal(
                 x.length(),
                 alpha,
@@ -680,7 +701,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static double dot(INDArray x, INDArray y) {
-       DataTypeValidation.assertSameDataType(x,y);
+        DataTypeValidation.assertSameDataType(x,y);
         if(x.data().dataType().equals(DataBuffer.FLOAT)) {
             double ret =  BLAS.getInstance().sdot(
                     x.length(),
@@ -750,7 +771,7 @@ public class SimpleNetlibBlas {
 
     public static INDArray ger(INDArray A, INDArray B, INDArray C, double alpha) {
 
-       DataTypeValidation.assertDouble(A,B,C);
+        DataTypeValidation.assertDouble(A,B,C);
         // = alpha * A * transpose(B) + C
         BLAS.getInstance().dger(
                 A.rows(),   // m
@@ -910,20 +931,8 @@ public class SimpleNetlibBlas {
     }
 
 
-    /**
-     * Simpler version of saxpy
-     * taking in to account the parameters of the ndarray
-     * @param alpha the alpha to scale by
-     * @param x the x
-     * @param y the y
-     */
-    public static void saxpy(float alpha, INDArray x, INDArray y) {
-        axpy(alpha,x,y);
-    }
 
-    public static void axpy(double alpha, INDArray x, INDArray y) {
-        axpy((float) alpha,x,y);
-    }
+
 
     /**
      * Scale a complex ndarray

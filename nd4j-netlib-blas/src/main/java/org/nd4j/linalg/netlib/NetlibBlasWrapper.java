@@ -921,7 +921,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public void saxpy(float alpha, INDArray x, INDArray y) {
-        SimpleNetlibBlas.saxpy(alpha, x, y);
+        SimpleNetlibBlas.axpy(alpha, x, y);
     }
 
 
