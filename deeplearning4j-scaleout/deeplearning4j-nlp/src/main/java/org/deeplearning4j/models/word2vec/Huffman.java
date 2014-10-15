@@ -98,9 +98,8 @@ public class Huffman {
                 point[i] = b;
                 i++;
                 b = parentNode[b];
-                if(i >= 40)
-                    break;
-            } while(b != words.size() * 2 - 2 && i < 40);
+
+            } while(b != words.size() * 2 - 2 && i < 39);
 
 
             words.get(a).setCodeLength(i);
