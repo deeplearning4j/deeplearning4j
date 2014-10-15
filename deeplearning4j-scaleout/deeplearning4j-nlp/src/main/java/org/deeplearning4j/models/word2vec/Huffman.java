@@ -87,9 +87,8 @@ public class Huffman {
             binary[min2i] = 1;
         }
         // Now assign binary code to each vocabulary word
-        int i = 0;
-        a = 0;
-        int b = 0;
+        int i ;
+        int b;
         // Now assign binary code to each vocabulary word
         for (a = 0; a < words.size(); a++) {
             b = a;
@@ -108,7 +107,7 @@ public class Huffman {
             words.get(a).getPoints()[0] = words.size() - 2;
 
             for (b = 0; b < i; b++) {
-                 words.get(a).getCodes()[i - b - 1] = code[b];
+                words.get(a).getCodes()[i - b - 1] = code[b];
                 words.get(a).getPoints()[i - b] = point[b] - words.size();
 
             }
