@@ -264,7 +264,7 @@ public class Word2Vec implements Persistable {
         final AtomicLong latch = new AtomicLong(0);
 
 
-       // ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+        ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
         log.info("Processing sentences...");
         if(getSentenceIter() != null && getSentenceIter().hasNext())
@@ -276,9 +276,9 @@ public class Word2Vec implements Persistable {
                         continue;
 
                     trainSentence(sentence);
-               /*     service.execute(new Runnable() {
+                    service.execute(new Runnable() {
 
-                        *//**
+                        /**
                          * When an object implementing interface <code>Runnable</code> is used
                          * to create a thread, starting the thread causes the object's
                          * <code>run</code> method to be called in that separately executing
@@ -288,12 +288,12 @@ public class Word2Vec implements Persistable {
                          * take any action whatsoever.
                          *
                          * @see Thread#run()
-                         *//*
+                         */
                         @Override
                         public void run() {
                             trainSentence(sentence);
                         }
-                    });*/
+                    });
 
                     //sentenceActor.tell(new SentenceMessage(sentence,latch),sentenceActor);
                     numSentencesProcessed.incrementAndGet();
@@ -305,13 +305,13 @@ public class Word2Vec implements Persistable {
                     sentenceIter.reset();
             }
 
-
-        /*try {
-            service.shutdown();
-            service.awaitTermination(1, TimeUnit.DAYS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }*/
+//
+//        /*try {
+//            service.shutdown();
+//            service.awaitTermination(1, TimeUnit.DAYS);
+//        } catch (InterruptedException e) {
+//            Thread.currentThread().interrupt();
+//        }*/
 
 
         if(docIter != null && docIter.hasNext())
