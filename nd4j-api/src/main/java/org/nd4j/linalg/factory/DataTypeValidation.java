@@ -18,10 +18,13 @@ public class DataTypeValidation {
     }
 
     public static void assertDouble(INDArray d) {
-        assert d.data().dataType().equals(DataBuffer.DOUBLE);
+        if(!d.data().dataType().equals(DataBuffer.DOUBLE))
+            throw new IllegalStateException("Given ndarray does not have data type double");
     }
     public static void assertFloat(INDArray d2) {
-        assert d2.data().dataType().equals(DataBuffer.FLOAT);
+        if(!d2.data().dataType().equals(DataBuffer.FLOAT)) {
+            throw new IllegalStateException("Given ndarray does not have data type float");
+        }
     }
 
     public static void assertSameDataType(INDArray...indArrays) {

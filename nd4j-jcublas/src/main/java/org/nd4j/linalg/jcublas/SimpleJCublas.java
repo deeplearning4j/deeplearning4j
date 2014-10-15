@@ -9,11 +9,13 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
 import org.springframework.core.io.ClassPathResource;
 
+import javax.xml.crypto.Data;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -107,6 +109,7 @@ public class SimpleJCublas {
      * @param to the to pointer (DO NOT AUGMENT WITH OFFSET: THIS IS TAKEN CARE OF FOR YOU)
      */
     public static void getData(JCublasNDArray arr,Pointer from,Pointer to) {
+
         //p is typically the data vector which is strided access
         if(arr.length() == arr.data().length())
             JCublas.cublasGetVector(
@@ -265,7 +268,7 @@ public class SimpleJCublas {
      */
     public static INDArray gemv(INDArray A, INDArray B, INDArray C, double alpha, double beta) {
 
-
+        DataTypeValidation.assertDouble(A,B,C);
         JCublas.cublasInit();
 
         JCublasNDArray cA = (JCublasNDArray) A;
@@ -308,7 +311,7 @@ public class SimpleJCublas {
      */
     public static INDArray gemv(INDArray A, INDArray B, INDArray C, float alpha, float beta) {
 
-
+        DataTypeValidation.assertFloat(A,B,C);
         JCublas.cublasInit();
 
         JCublasNDArray cA = (JCublasNDArray) A;
@@ -351,6 +354,7 @@ public class SimpleJCublas {
      */
     public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexNumber a,IComplexNDArray C
             , IComplexDouble b) {
+        DataTypeValidation.assertSameDataType(A,B,C);
 
         JCublas.cublasInit();
 
@@ -400,7 +404,7 @@ public class SimpleJCublas {
      */
     public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexNumber a,IComplexNDArray C
             , IComplexFloat b) {
-
+        DataTypeValidation.assertFloat(A,B,C);
         JCublas.cublasInit();
 
         JCublasComplexNDArray cA = (JCublasComplexNDArray) A;
@@ -450,7 +454,7 @@ public class SimpleJCublas {
     public static INDArray gemm(INDArray A, INDArray B, INDArray C,
                                 double alpha, double beta) {
 
-
+        DataTypeValidation.assertDouble(A,B,C);
         JCublas.cublasInit();
 
         JCublasNDArray cA = (JCublasNDArray) A;
@@ -497,7 +501,7 @@ public class SimpleJCublas {
      */
     public static INDArray gemm(INDArray A, INDArray B, INDArray C,
                                 float alpha, float beta) {
-
+        DataTypeValidation.assertFloat(A,B,C);
 
         JCublas.cublasInit();
 
@@ -564,7 +568,7 @@ public class SimpleJCublas {
      * @param y the destination
      */
     public static void copy(IComplexNDArray x, IComplexNDArray y) {
-
+        DataTypeValidation.assertSameDataType(x,y);
         JCublas.cublasInit();
 
         JCublasComplexNDArray xC = (JCublasComplexNDArray) x;
@@ -651,6 +655,8 @@ public class SimpleJCublas {
      * @param y
      */
     public static void swap(INDArray x, INDArray y) {
+
+        DataTypeValidation.assertSameDataType(x,y);
         JCublas.cublasInit();
 
         JCublasNDArray xC = (JCublasNDArray) x;
@@ -690,15 +696,21 @@ public class SimpleJCublas {
      * @param x
      * @return
      */
-    public static float asum(INDArray x) {
+    public static double asum(INDArray x) {
         JCublas.cublasInit();
         JCublasNDArray xC = (JCublasNDArray) x;
         Pointer xCPointer = alloc(xC);
+        if(x.data().dataType().equals(DataBuffer.FLOAT)) {
+            float sum = JCublas.cublasSasum(x.length(), xCPointer,1);
+            free(xCPointer);
+            return sum;
+        }
+        else {
+            double sum = JCublas.cublasDasum(x.length(),xCPointer,1);
+            free(xCPointer);
+            return sum;
+        }
 
-
-        float sum = JCublas.cublasSasum(x.length(), xCPointer,1);
-        free(xCPointer);
-        return sum;
     }
 
     /**
@@ -753,7 +765,7 @@ public class SimpleJCublas {
      */
     public static void axpy(float da, INDArray A, INDArray B) {
         JCublas.cublasInit();
-
+        DataTypeValidation.assertFloat(A,B);
         JCublasNDArray xA = (JCublasNDArray) A;
         JCublasNDArray xB = (JCublasNDArray) B;
 
@@ -795,6 +807,8 @@ public class SimpleJCublas {
      * @param B
      */
     public static void axpy(IComplexFloat da, IComplexNDArray A, IComplexNDArray B) {
+        DataTypeValidation.assertFloat(A,B);
+
         JCublasComplexNDArray aC = (JCublasComplexNDArray) A;
         JCublasComplexNDArray bC = (JCublasComplexNDArray) B;
 
@@ -826,6 +840,8 @@ public class SimpleJCublas {
      * @param B
      */
     public static void axpy(IComplexDouble da, IComplexNDArray A, IComplexNDArray B) {
+        DataTypeValidation.assertDouble(A,B);
+
         JCublasComplexNDArray aC = (JCublasComplexNDArray) A;
         JCublasComplexNDArray bC = (JCublasComplexNDArray) B;
 
@@ -859,6 +875,8 @@ public class SimpleJCublas {
      * @return
      */
     public static INDArray scal(double alpha, INDArray x) {
+        DataTypeValidation.assertDouble(x);
+
         JCublas.cublasInit();
         JCublasNDArray xC = (JCublasNDArray) x;
 
@@ -882,6 +900,8 @@ public class SimpleJCublas {
      * @return
      */
     public static INDArray scal(float alpha, INDArray x) {
+
+        DataTypeValidation.assertFloat(x);
         JCublas.cublasInit();
         JCublasNDArray xC = (JCublasNDArray) x;
 
@@ -903,6 +923,8 @@ public class SimpleJCublas {
      * @param y
      */
     public static void copy(INDArray x, INDArray y) {
+        DataTypeValidation.assertSameDataType(x,y);
+
         JCublasNDArray xC = (JCublasNDArray) x;
         JCublasNDArray yC = (JCublasNDArray) y;
 
@@ -943,6 +965,7 @@ public class SimpleJCublas {
      * @return
      */
     public static float dot(INDArray x, INDArray y) {
+        DataTypeValidation.assertSameDataType(x,y);
         JCublas.cublasInit();
 
         JCublasNDArray xC = (JCublasNDArray) x;
@@ -964,7 +987,7 @@ public class SimpleJCublas {
 
 
     public static IComplexDouble dot(IComplexNDArray x, IComplexNDArray y) {
-
+        DataTypeValidation.assertSameDataType(x,y);
         JCublas.cublasInit();
 
         JCublasComplexNDArray aC = (JCublasComplexNDArray) x;
@@ -988,7 +1011,7 @@ public class SimpleJCublas {
 
 
     public static INDArray ger(INDArray A, INDArray B, INDArray C, double alpha) {
-
+        DataTypeValidation.assertDouble(A,B,C);
         JCublas.cublasInit();
         // = alpha * A * transpose(B) + C
         JCublasNDArray aC = (JCublasNDArray) A;
@@ -1021,7 +1044,7 @@ public class SimpleJCublas {
 
 
     public static INDArray ger(INDArray A, INDArray B, INDArray C, float alpha) {
-
+        DataTypeValidation.assertFloat(A,B,C);
         JCublas.cublasInit();
         // = alpha * A * transpose(B) + C
         JCublasNDArray aC = (JCublasNDArray) A;
@@ -1061,7 +1084,7 @@ public class SimpleJCublas {
      */
     public static IComplexNDArray scal(IComplexFloat alpha, IComplexNDArray x) {
         JCublasComplexNDArray xC = (JCublasComplexNDArray) x;
-
+        DataTypeValidation.assertFloat(x);
         JCublas.cublasInit();
 
         Pointer xCPointer = alloc(xC);
@@ -1089,7 +1112,7 @@ public class SimpleJCublas {
      */
     public static IComplexNDArray scal(IComplexDouble alpha, IComplexNDArray x) {
         JCublasComplexNDArray xC = (JCublasComplexNDArray) x;
-
+        DataTypeValidation.assertDouble(x);
         JCublas.cublasInit();
 
         Pointer xCPointer = alloc(xC);
@@ -1116,6 +1139,8 @@ public class SimpleJCublas {
      * @return
      */
     public static IComplexDouble dotu(IComplexNDArray x, IComplexNDArray y) {
+
+        DataTypeValidation.assertSameDataType(x,y);
         JCublasComplexNDArray xC = (JCublasComplexNDArray) x;
         JCublasComplexNDArray yC = (JCublasComplexNDArray) y;
 
@@ -1150,6 +1175,8 @@ public class SimpleJCublas {
                                        IComplexNDArray B,
                                        IComplexNDArray C, IComplexDouble Alpha) {
         // = alpha * A * tranpose(B) + C
+
+        DataTypeValidation.assertDouble(A,B,C);
 
         JCublasComplexNDArray aC = (JCublasComplexNDArray) A;
         JCublasComplexNDArray bC = (JCublasComplexNDArray) B;
@@ -1192,6 +1219,7 @@ public class SimpleJCublas {
      */
     public static IComplexNDArray gerc(IComplexNDArray A, IComplexNDArray B, IComplexNDArray C,
                                        IComplexFloat Alpha) {
+        DataTypeValidation.assertFloat(A,B,C);
         // = alpha * A * tranpose(B) + C
         JCublasComplexNDArray aC = (JCublasComplexNDArray) A;
         JCublasComplexNDArray bC = (JCublasComplexNDArray) B;
@@ -1236,6 +1264,8 @@ public class SimpleJCublas {
     public static IComplexNDArray geru(IComplexNDArray A,
                                        IComplexNDArray B,
                                        IComplexNDArray C, IComplexFloat Alpha) {
+
+        DataTypeValidation.assertFloat(A,B,C);
         // = alpha * A * tranpose(B) + C
 
         JCublasComplexNDArray aC = (JCublasComplexNDArray) A;
@@ -1279,6 +1309,8 @@ public class SimpleJCublas {
      */
     public static IComplexNDArray gerc(IComplexNDArray A, IComplexNDArray B, IComplexNDArray C,
                                        IComplexDouble Alpha) {
+
+        DataTypeValidation.assertDouble(A,B,C);
         // = alpha * A * tranpose(B) + C
         JCublasComplexNDArray aC = (JCublasComplexNDArray) A;
         JCublasComplexNDArray bC = (JCublasComplexNDArray) B;
@@ -1320,6 +1352,7 @@ public class SimpleJCublas {
      * @param y the y
      */
     public static void axpy(double alpha, INDArray x, INDArray y) {
+        DataTypeValidation.assertDouble(x,y);
         JCublas.cublasInit();
         JCublasNDArray xC = (JCublasNDArray) x;
         JCublasNDArray yC = (JCublasNDArray) y;
@@ -1342,6 +1375,7 @@ public class SimpleJCublas {
      * @param y the y
      */
     public static void saxpy(float alpha, INDArray x, INDArray y) {
+        DataTypeValidation.assertFloat(x,y);
         JCublas.cublasInit();
         JCublasNDArray xC = (JCublasNDArray) x;
         JCublasNDArray yC = (JCublasNDArray) y;

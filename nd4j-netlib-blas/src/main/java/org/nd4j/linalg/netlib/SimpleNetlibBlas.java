@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.netlib.complex.ComplexDouble;
 import org.nd4j.linalg.netlib.complex.ComplexFloat;
@@ -67,6 +68,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static INDArray gemv(INDArray A, INDArray B, INDArray C, float alpha, float beta) {
+        DataTypeValidation.assertFloat(A,B,C);
         BLAS.getInstance().sgemv(
                 "N",
                 A.rows(),
@@ -100,7 +102,7 @@ public class SimpleNetlibBlas {
      */
     public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexNumber a,IComplexNDArray C
             , IComplexNumber b) {
-
+        DataTypeValidation.assertSameDataType(A,B,C);
         if(A.data().dataType().equals(DataBuffer.FLOAT))
             NativeBlas.cgemm(
                     'N',
@@ -156,7 +158,7 @@ public class SimpleNetlibBlas {
                                 double alpha, double beta) {
 
 
-
+        DataTypeValidation.assertDouble(A,B,C);
         BLAS.getInstance().dgemm(
                 "N",
                 "N",
@@ -190,7 +192,7 @@ public class SimpleNetlibBlas {
     public static INDArray gemm(INDArray A, INDArray B, INDArray C,
                                 float alpha, float beta) {
 
-
+        DataTypeValidation.assertFloat(A,B,C);
 
         BLAS.getInstance().sgemm(
                 "N",
@@ -233,6 +235,8 @@ public class SimpleNetlibBlas {
     public static int syevr(char jobz, char range, char uplo, INDArray a,
                             double vl, int vu, int il, int iu, double abstol,
                             INDArray w, INDArray z, int[] isuppz) {
+
+        DataTypeValidation.assertDouble(a,w,z);
         int n = a.rows();
         org.netlib.util.intW m = new intW(0);
         org.netlib.util.intW info = new org.netlib.util.intW(0);
@@ -298,6 +302,7 @@ public class SimpleNetlibBlas {
     public static int syevr(char jobz, char range, char uplo, INDArray a,
                             float vl, int vu, int il, int iu, float abstol,
                             INDArray w, INDArray z, int[] isuppz) {
+        DataTypeValidation.assertFloat(a,w,z);
         int n = a.rows();
         org.netlib.util.intW m = new intW(0);
         org.netlib.util.intW info = new org.netlib.util.intW(0);
@@ -370,6 +375,7 @@ public class SimpleNetlibBlas {
      * @param y the destination
      */
     public static void copy(IComplexNDArray x, IComplexNDArray y) {
+        DataTypeValidation.assertSameDataType(x,y);
         if(x.data().dataType().equals(DataBuffer.FLOAT))
 
             BLAS.getInstance().scopy(
@@ -421,7 +427,7 @@ public class SimpleNetlibBlas {
      * @param y
      */
     public static void swap(INDArray x, INDArray y) {
-
+        DataTypeValidation.assertSameDataType(x,y);
         if(x.data().dataType().equals(DataBuffer.FLOAT))
             BLAS.getInstance().sswap(
                     x.length(),
@@ -509,7 +515,7 @@ public class SimpleNetlibBlas {
      * @param B
      */
     public static void axpy(float da, INDArray A, INDArray B) {
-
+       DataTypeValidation.assertFloat(A,B);
         if(A.ordering() == NDArrayFactory.C) {
             if(A.data().dataType().equals(DataBuffer.FLOAT)) {
                 BLAS.getInstance().saxpy(
@@ -571,6 +577,7 @@ public class SimpleNetlibBlas {
      * @param B
      */
     public static void axpy(IComplexNumber da, IComplexNDArray A, IComplexNDArray B) {
+       DataTypeValidation.assertSameDataType(A,B);
         if(A.data().dataType().equals(DataBuffer.FLOAT))
             NativeBlas.caxpy(
                     A.length(),
@@ -605,6 +612,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static INDArray scal(double alpha, INDArray x) {
+         DataTypeValidation.assertDouble(x);
         BLAS.getInstance().dscal(
                 x.length(),
                 alpha,
@@ -624,6 +632,8 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static INDArray scal(float alpha, INDArray x) {
+        DataTypeValidation.assertFloat(x);
+
         BLAS.getInstance().sscal(
                 x.length(),
                 alpha,
@@ -641,6 +651,7 @@ public class SimpleNetlibBlas {
      * @param y
      */
     public static void copy(INDArray x, INDArray y) {
+        DataTypeValidation.assertSameDataType(x,y);
         if(x.data().dataType().equals(DataBuffer.FLOAT))
             BLAS.getInstance().scopy(x.length(),
                     x.data().asFloat(),
@@ -669,6 +680,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static double dot(INDArray x, INDArray y) {
+       DataTypeValidation.assertSameDataType(x,y);
         if(x.data().dataType().equals(DataBuffer.FLOAT)) {
             double ret =  BLAS.getInstance().sdot(
                     x.length(),
@@ -705,6 +717,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static IComplexDouble dot(IComplexNDArray x, IComplexNDArray y) {
+        DataTypeValidation.assertSameDataType(x,y);
         if(x.data().dataType().equals(DataBuffer.FLOAT)) {
             ComplexFloat f = (ComplexFloat) NativeBlas.cdotc(
                     x.length(),
@@ -737,7 +750,7 @@ public class SimpleNetlibBlas {
 
     public static INDArray ger(INDArray A, INDArray B, INDArray C, double alpha) {
 
-
+       DataTypeValidation.assertDouble(A,B,C);
         // = alpha * A * transpose(B) + C
         BLAS.getInstance().dger(
                 A.rows(),   // m
@@ -757,7 +770,7 @@ public class SimpleNetlibBlas {
 
 
     public static INDArray ger(INDArray A, INDArray B, INDArray C, float alpha) {
-
+        DataTypeValidation.assertFloat(A,B,C);
 
         // = alpha * A * transpose(B) + C
         BLAS.getInstance().sger(
@@ -787,6 +800,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static IComplexNumber dotu(IComplexNDArray x, IComplexNDArray y) {
+        DataTypeValidation.assertSameDataType(x,y);
         if(x.data().dataType().equals(DataBuffer.FLOAT)) {
             return new ComplexFloat(NativeBlas.cdotu(
                     x.length(),
@@ -821,6 +835,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
+        DataTypeValidation.assertSameDataType(x,y,a);
         if(x.data().dataType().equals(DataBuffer.FLOAT))
             NativeBlas.cgeru(
                     a.rows(),
@@ -862,7 +877,7 @@ public class SimpleNetlibBlas {
      */
     public static IComplexNDArray gerc(IComplexNDArray x, IComplexNDArray y, IComplexNDArray a,
                                        IComplexDouble alpha) {
-
+        DataTypeValidation.assertDouble(x,y,a);
         if(x.data().dataType().equals(DataBuffer.FLOAT))
             NativeBlas.cgerc(
                     a.rows(),
@@ -927,6 +942,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static IComplexNDArray sscal(IComplexFloat alpha, IComplexNDArray x) {
+        DataTypeValidation.assertFloat(x);
         NativeBlas.cscal(x.length(),(org.jblas.ComplexFloat) alpha,x.data().asFloat(),x.offset(),x.majorStride());
         return x;
     }
