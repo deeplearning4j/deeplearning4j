@@ -24,10 +24,7 @@ public abstract class BaseScalarOp implements ScalarOp {
         double start = startingValue;
         for(int i = 0; i < doNDArray.length(); i++) {
             start = accumulate(doNDArray, i, start);
-            if(Double.isNaN(start))
-                throw new IllegalStateException("Something has gone horribly wrong. " +
-                        "NaN found at index " + i + " " +
-                        "the causing value was " + doNDArray.getDouble(i));
+            
         }
         return start;
     }
