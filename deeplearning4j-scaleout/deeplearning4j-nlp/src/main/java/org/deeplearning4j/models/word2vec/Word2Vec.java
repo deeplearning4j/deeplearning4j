@@ -8,7 +8,6 @@ import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -16,7 +15,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.google.common.util.concurrent.AtomicDouble;
 
 import it.unimi.dsi.util.XorShift1024StarRandomGenerator;
-import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.word2vec.actor.*;
@@ -305,13 +303,13 @@ public class Word2Vec implements Persistable {
                     sentenceIter.reset();
             }
 
-//
-//        /*try {
-//            service.shutdown();
-//            service.awaitTermination(1, TimeUnit.DAYS);
-//        } catch (InterruptedException e) {
-//            Thread.currentThread().interrupt();
-//        }*/
+
+        try {
+            service.shutdown();
+            service.awaitTermination(1, TimeUnit.DAYS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
 
         if(docIter != null && docIter.hasNext())
