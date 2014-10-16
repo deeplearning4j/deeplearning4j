@@ -9,6 +9,7 @@ import org.apache.uima.util.CasPool;
 import org.deeplearning4j.text.annotator.SentenceAnnotator;
 import org.deeplearning4j.text.annotator.StemmerAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
+import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizer.UimaTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.uima.UimaResource;
@@ -28,7 +29,7 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 	private UimaResource uimaResource;
 	private boolean checkForLabel;
 	private static AnalysisEngine defaultAnalysisEngine;
-
+    private TokenPreProcess preProcess;
 
 	public UimaTokenizerFactory() throws ResourceInitializationException {
 		this(defaultAnalysisEngine(),true);
@@ -75,7 +76,9 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 	public  Tokenizer create(String toTokenize) {
 		if(toTokenize == null || toTokenize.isEmpty())
 			throw new IllegalArgumentException("Unable to proceed; on sentence to tokenize");
-		return new UimaTokenizer(toTokenize,uimaResource,checkForLabel);
+		Tokenizer ret =  new UimaTokenizer(toTokenize,uimaResource,checkForLabel);
+        ret.setTokenPreProcessor(preProcess);
+        return ret;
 	}
 
 
@@ -106,9 +109,13 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 
 	@Override
 	public Tokenizer create(InputStream toTokenize) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException();
 	}
+
+    @Override
+    public void setTokenPreProcessor(TokenPreProcess preProcessor) {
+        this.preProcess = preProcessor;
+    }
 
 
 }
