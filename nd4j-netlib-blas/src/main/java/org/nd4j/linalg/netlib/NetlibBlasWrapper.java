@@ -2,6 +2,8 @@ package org.nd4j.linalg.netlib;
 
 import com.github.fommil.netlib.BLAS;
 import com.github.fommil.netlib.LAPACK;
+import org.jblas.ComplexDouble;
+import org.jblas.ComplexFloat;
 import org.jblas.NativeBlas;
 import org.jblas.exceptions.SizeException;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -10,6 +12,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.DataTypeValidation;
 import org.netlib.util.intW;
 
 import javax.xml.crypto.Data;
@@ -72,7 +75,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public INDArray axpy(double da, INDArray dx, INDArray dy) {
-         SimpleNetlibBlas.axpy(da,dx,dy);
+        SimpleNetlibBlas.axpy(da,dx,dy);
         return dy;
     }
 
@@ -201,6 +204,55 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         SimpleNetlibBlas.gemm(a, b, alpha, c, beta);
         return c;
     }
+
+
+    @Override
+    public IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a, IComplexNDArray x, IComplexDouble beta, IComplexNDArray y) {
+        DataTypeValidation.assertDouble(a, x, y);
+        if(y.isScalar())
+            return y.putScalar(0,dotc(a,x));
+        NativeBlas.zgemv(
+                'N',
+                a.rows(),
+                a.columns(),
+                (ComplexDouble) alpha,
+                a.data().asDouble(),
+                a.blasOffset(),
+                a.rows(),
+                x.data().asDouble(),
+                x.offset(),
+                x.secondaryStride(),
+                (ComplexDouble) beta,
+                y.data().asDouble(),
+                y.blasOffset(),
+                y.secondaryStride()
+        );
+        return y;
+
+    }
+
+    @Override
+    public IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y) {
+        DataTypeValidation.assertDouble(a,x,y);
+        NativeBlas.cgemv(
+                'N',
+                a.rows(),
+                a.columns(),
+                (ComplexFloat) alpha,
+                a.data().asFloat(),
+                a.blasOffset(),
+                a.rows(),
+                x.data().asFloat(),
+                x.offset(),
+                x.secondaryStride(),
+                (ComplexFloat) beta,
+                y.data().asFloat(),
+                y.blasOffset(),
+                y.secondaryStride()
+        );
+        return y;
+    }
+
 
     @Override
     public INDArray gesv(INDArray a, int[] ipiv, INDArray b) {

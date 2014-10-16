@@ -52,7 +52,7 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
      */
     @Override
     public IComplexFloat asFloat() {
-        return null;
+        return new ComplexFloat((float) real(),(float) imag());
     }
 
     /**

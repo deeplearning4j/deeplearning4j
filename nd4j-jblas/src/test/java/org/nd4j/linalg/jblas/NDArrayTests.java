@@ -70,7 +70,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         INDArray row = Nd4j.create(new float[]{1,2,3});
         float alpha = 1f;
         INDArray matrix = Nd4j.create(new float[]{1,2,3,4,5,6},new int[]{2,3});
-        INDArray row1 = matrix.getRow(1);
+        INDArray row1 = matrix.slice(1);
         Nd4j.getBlasWrapper().axpy(alpha,row,row1);
         INDArray answer = Nd4j.create(new float[]{3,6,9});
         assertEquals(answer,row1);
@@ -100,7 +100,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         DoubleMatrix dToMmul = new DoubleMatrix(2,10,toMMul);
         DoubleMatrix result = dToMmul.mmul(d3.transpose());
         float[] toMmul2 = ArrayUtil.floatCopyOf(toMMul);
-        INDArray toMMulF = Nd4j.create(toMmul2,new int[]{2,10});
+        INDArray toMMulF = Nd4j.create(toMMul,new int[]{2,10});
 
 
 

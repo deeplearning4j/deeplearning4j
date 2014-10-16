@@ -343,6 +343,106 @@ public class SimpleJCublas {
     }
 
 
+
+
+
+
+    /**
+     * General matrix vector
+     * @param A
+     * @param B
+     * @param a
+     * @param C
+     * @param b
+     * @return
+     */
+    public static IComplexNDArray gemv(IComplexNDArray A, IComplexNDArray B, IComplexDouble a,IComplexNDArray C
+            , IComplexDouble b) {
+        DataTypeValidation.assertSameDataType(A,B,C);
+
+        JCublas.cublasInit();
+
+        JCublasComplexNDArray cA = (JCublasComplexNDArray) A;
+        JCublasComplexNDArray cB = (JCublasComplexNDArray) B;
+        JCublasComplexNDArray cC = (JCublasComplexNDArray) C;
+
+        Pointer cAPointer = alloc(cA);
+        Pointer cBPointer = alloc(cB);
+        Pointer cCPointer = alloc(cC);
+
+
+        cuDoubleComplex alpha = cuDoubleComplex.cuCmplx(a.realComponent().doubleValue(),b.imaginaryComponent().doubleValue());
+        cuDoubleComplex beta = cuDoubleComplex.cuCmplx(b.realComponent().doubleValue(),b.imaginaryComponent().doubleValue());
+
+        JCublas.cublasZgemv(
+                'n', //trans
+                A.rows(),  // m
+                A.rows(), // n
+                alpha,
+                cAPointer, // A
+                A.rows(),  // lda
+                cBPointer, // x
+                B.secondaryStride(), // ldb
+                beta,  // beta
+                cCPointer, // y
+                C.secondaryStride()); // ldc
+
+
+        getData(cC,cCPointer,Pointer.to(cC.data().asDouble()));
+        free(cAPointer,cBPointer,cCPointer);
+
+        return C;
+
+    }
+
+    /**
+     * General matrix vector
+     * @param A
+     * @param B
+     * @param a
+     * @param C
+     * @param b
+     * @return
+     */
+    public static IComplexNDArray gemv(IComplexNDArray A, IComplexNDArray B, IComplexFloat a,IComplexNDArray C
+            , IComplexFloat b) {
+        DataTypeValidation.assertFloat(A,B,C);
+        JCublas.cublasInit();
+
+        JCublasComplexNDArray cA = (JCublasComplexNDArray) A;
+        JCublasComplexNDArray cB = (JCublasComplexNDArray) B;
+        JCublasComplexNDArray cC = (JCublasComplexNDArray) C;
+
+        Pointer cAPointer = alloc(cA);
+        Pointer cBPointer = alloc(cB);
+        Pointer cCPointer = alloc(cC);
+
+
+        cuComplex alpha = cuComplex.cuCmplx(a.realComponent().floatValue(),b.imaginaryComponent().floatValue());
+        cuComplex beta = cuComplex.cuCmplx(b.realComponent().floatValue(),b.imaginaryComponent().floatValue());
+
+        JCublas.cublasCgemv(
+                'n', //trans
+                A.rows(),  // m
+                A.rows(), // n
+                alpha,
+                cAPointer, // A
+                A.rows(),  // lda
+                cBPointer, // x
+                cB.secondaryStride(), // ldb
+                beta,  // beta
+                cCPointer, // y
+                cC.secondaryStride()); // ldc
+
+
+        getData(cC,cCPointer,Pointer.to(cC.data().asFloat()));
+        free(cAPointer,cBPointer,cCPointer);
+
+        return C;
+
+    }
+
+
     /**
      * General matrix multiply
      * @param A
@@ -352,7 +452,7 @@ public class SimpleJCublas {
      * @param b
      * @return
      */
-    public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexNumber a,IComplexNDArray C
+    public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexDouble a,IComplexNDArray C
             , IComplexDouble b) {
         DataTypeValidation.assertSameDataType(A,B,C);
 
@@ -402,7 +502,7 @@ public class SimpleJCublas {
      * @param b
      * @return
      */
-    public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexNumber a,IComplexNDArray C
+    public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexFloat a,IComplexNDArray C
             , IComplexFloat b) {
         DataTypeValidation.assertFloat(A,B,C);
         JCublas.cublasInit();

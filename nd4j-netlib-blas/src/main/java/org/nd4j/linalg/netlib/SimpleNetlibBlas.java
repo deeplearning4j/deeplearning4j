@@ -122,7 +122,7 @@ public class SimpleNetlibBlas {
                     C.data().asFloat(),
                     C.offset() / 2,
                     C.rows());
-        else if(A.data().dataType().equals(DataBuffer.DOUBLE))
+        else if(A.data().dataType().equals(DataBuffer.DOUBLE)) {
             NativeBlas.zgemm(
                     'N',
                     'N',
@@ -141,6 +141,7 @@ public class SimpleNetlibBlas {
                     C.data().asDouble(),
                     C.offset() / 2,
                     C.rows());
+        }
         return C;
 
     }
@@ -740,27 +741,27 @@ public class SimpleNetlibBlas {
     public static IComplexDouble dot(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x,y);
         if(x.data().dataType().equals(DataBuffer.FLOAT)) {
-            ComplexFloat f = (ComplexFloat) NativeBlas.cdotc(
+            ComplexFloat f = new ComplexFloat(NativeBlas.cdotc(
                     x.length(),
                     x.data().asFloat(),
-                    x.offset(),
-                    x.majorStride() / 2,
+                    x.blasOffset(),
+                    x.secondaryStride(),
                     y.data().asFloat(),
-                    y.offset(),
-                    y.majorStride() / 2);
+                    y.blasOffset(),
+                    y.secondaryStride()));
             return new ComplexDouble(f.realComponent().doubleValue(),f.imaginaryComponent().doubleValue());
 
         }
 
         else {
-            ComplexDouble f = (ComplexDouble) NativeBlas.zdotc(
+            ComplexDouble f = new ComplexDouble(NativeBlas.zdotc(
                     x.length(),
                     x.data().asDouble(),
-                    x.offset(),
-                    x.majorStride() / 2,
+                    x.blasOffset(),
+                    x.secondaryStride(),
                     y.data().asDouble(),
-                    y.offset(),
-                    y.majorStride() / 2);
+                    y.blasOffset(),
+                    y.secondaryStride()));
             return new ComplexDouble(f.realComponent().doubleValue(),f.imaginaryComponent().doubleValue());
 
         }

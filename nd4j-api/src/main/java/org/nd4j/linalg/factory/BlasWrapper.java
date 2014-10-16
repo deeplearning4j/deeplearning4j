@@ -154,6 +154,10 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
     public NDARRAY_TYPE ger(float alpha, NDARRAY_TYPE x,
                             NDARRAY_TYPE y, NDARRAY_TYPE a);
 
+    IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a,
+                  IComplexNDArray x, IComplexDouble beta, IComplexNDArray y);
+
+    IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y);
 
     IComplexNDArray geru(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a);
 

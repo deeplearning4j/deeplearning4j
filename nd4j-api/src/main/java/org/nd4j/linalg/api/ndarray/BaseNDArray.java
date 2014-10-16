@@ -70,8 +70,8 @@ public abstract class BaseNDArray  implements INDArray {
         this.data = buffer;
         if(ArrayUtil.prod(shape) > buffer.length())
             throw new IllegalArgumentException("Shape must be <= buffer length");
-        initShape(shape);
         this.stride = stride;
+        initShape(shape);
         this.offset = offset;
         this.ordering = ordering;
 
@@ -419,6 +419,16 @@ public abstract class BaseNDArray  implements INDArray {
         return stride[0];
     }
 
+    @Override
+    public int secondaryStride() {
+        if(stride.length >= 2) {
+            if(ordering == NDArrayFactory.C)
+                return stride[1];
+            else
+                return majorStride();
+        }
+        return majorStride();
+    }
 
     /**
      * Returns the number of possible vectors for a given dimension
@@ -1075,7 +1085,7 @@ public abstract class BaseNDArray  implements INDArray {
             assert put.isScalar() || put.isVector() &&
                     put.length() == length() : "Invalid dimension on insertion. Can only insert scalars input vectors";
             if(put.isScalar())
-                put(slice,put.getScalar(0));
+                putScalar(slice,put.getDouble(0));
             else
                 for(int i = 0; i < length(); i++)
                     putScalar(i,put.getDouble(i));
@@ -1671,9 +1681,7 @@ public abstract class BaseNDArray  implements INDArray {
     public int slices() {
         if(shape.length < 1)
             return 0;
-        else if(isVector())
-            return 1;
-        return shape[0];
+         return shape[0];
     }
 
 
@@ -2300,7 +2308,17 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray otherArray =  other;
         INDArray resultArray =  result;
 
+        if(other.shape().length > 2) {
+            for(int i = 0; i < other.slices(); i++) {
+                result.putSlice(i,slice(i).mmul(other.slice(i)));
+            }
+
+            return result;
+
+        }
         LinAlgExceptions.assertMultiplies(this,other);
+
+
 
         if (other.isScalar()) {
             return muli(otherArray.getDouble(0), resultArray);
@@ -3644,11 +3662,20 @@ public abstract class BaseNDArray  implements INDArray {
 
                 return ret;
             }
-            for(int i = 0; i < ret.slices(); i++) {
-                INDArray putSlice = slice(i).get(Arrays.copyOfRange(indexes,1,indexes.length));
-                ret.putSlice(i,putSlice);
+            if(!ret.isVector()) {
+                //overrides when shouldn't
+                for(int i = 0; i < ret.slices(); i++) {
+                    INDArray putSlice = slice(i).get(Arrays.copyOfRange(indexes,1,indexes.length));
+                    ret.putSlice(i,putSlice);
+
+                }
+            }
+            else {
+                INDArray putSlice = slice(0).get(Arrays.copyOfRange(indexes,1,indexes.length));
+                ret.putSlice(0,putSlice);
 
             }
+
 
             return ret;
         }

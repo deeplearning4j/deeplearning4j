@@ -44,19 +44,19 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    1,
+                    x.secondaryStride(),
                     y.data().asFloat(),
                     y.offset(),
-                    1);
+                    y.secondaryStride());
         else
             JavaBlas.rswap(
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    1,
+                    x.secondaryStride(),
                     y.data().asDouble(),
                     y.offset(),
-                    1);
+                    y.secondaryStride());
         return y;
     }
 
@@ -66,7 +66,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray scal(double alpha, INDArray x) {
         DataTypeValidation.assertDouble(x);
-        NativeBlas.dscal(x.length(), alpha, x.data().asDouble(), x.offset(), x.majorStride());
+        NativeBlas.dscal(x.length(), alpha, x.data().asDouble(), x.offset(), x.secondaryStride());
         return x;
     }
 
@@ -76,7 +76,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray scal(float alpha, INDArray x) {
         DataTypeValidation.assertFloat(x);
-        NativeBlas.sscal(x.length(), alpha, x.data().asFloat(), x.offset(), x.majorStride());
+        NativeBlas.sscal(x.length(), alpha, x.data().asFloat(), x.offset(), x.secondaryStride());
         return x;
     }
 
@@ -85,7 +85,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         DataTypeValidation.assertFloat(x);
         NativeBlas.cscal(x.length(),
                 new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
-                x.data().asFloat(), x.offset(), x.majorStride());
+                x.data().asFloat(), x.offset(), x.secondaryStride());
         return x;
     }
 
@@ -94,7 +94,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         DataTypeValidation.assertDouble(x);
         NativeBlas.zscal(x.length(),
                 new ComplexDouble(alpha.realComponent().doubleValue(), alpha.imaginaryComponent().doubleValue()),
-                x.data().asDouble(), x.offset(), x.majorStride());
+                x.data().asDouble(), x.offset(), x.secondaryStride());
         return x;
     }
 
@@ -113,19 +113,19 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.majorStride(),
+                    x.secondaryStride(),
                     y.data().asDouble(),
                     y.offset(),
-                    y.majorStride());
+                    y.secondaryStride());
         else
             JavaBlas.rcopy(
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.majorStride(),
+                    x.secondaryStride(),
                     y.data().asFloat(),
                     y.offset(),
-                    y.majorStride());
+                    y.secondaryStride());
 
         return y;
     }
@@ -138,19 +138,19 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.majorStride(),
+                    x.secondaryStride(),
                     y.data().asDouble(),
                     y.offset(),
-                    y.majorStride());
+                    y.secondaryStride());
         else
             NativeBlas.scopy(
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.majorStride(),
+                    x.secondaryStride(),
                     y.data().asFloat(),
                     y.offset(),
-                    y.majorStride());
+                    y.secondaryStride());
         return y;
     }
 
@@ -168,10 +168,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 da,
                 dx.data().asDouble(),
                 dx.offset(),
-                dx.majorStride(),
+                dx.secondaryStride(),
                 dy.data().asDouble(),
                 dy.offset(),
-                dy.majorStride());
+                dy.secondaryStride());
 
         return dy;
     }
@@ -189,10 +189,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 da,
                 dx.data().asFloat(),
                 dx.offset(),
-                dx.majorStride(),
+                dx.secondaryStride(),
                 dy.data().asFloat(),
                 dy.offset(),
-                dy.majorStride());
+                dy.secondaryStride());
 
         return dy;
     }
@@ -207,10 +207,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                             da.imaginaryComponent().floatValue()),
                     dx.data().asFloat(),
                     dx.offset(),
-                    dx.majorStride(),
+                    dx.secondaryStride(),
                     dy.data().asFloat(),
                     dy.offset(),
-                    dy.majorStride());
+                    dy.secondaryStride());
         else if(da instanceof IComplexDouble)
             NativeBlas.zaxpy(
                     dx.length(),
@@ -220,10 +220,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     ),
                     dx.data().asDouble(),
                     dx.offset(),
-                    dx.majorStride(),
+                    dx.secondaryStride(),
                     dy.data().asDouble(),
                     dy.offset(),
-                    dy.majorStride());
+                    dy.secondaryStride());
 
 
         return dy;
@@ -243,19 +243,19 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.majorStride(),
+                    x.secondaryStride(),
                     y.data().asFloat(),
                     y.offset(),
-                    y.majorStride());
+                    y.secondaryStride());
         else if(x.data().dataType().equals(DataBuffer.DOUBLE)) {
             return JavaBlas.rdot(
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.majorStride(),
+                    x.secondaryStride(),
                     y.data().asDouble(),
                     y.offset(),
-                    y.majorStride());
+                    y.secondaryStride());
         }
 
         throw new IllegalStateException("Illegal data type");
@@ -272,20 +272,21 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
             return new ComplexFloat(NativeBlas.cdotc(
                     x.length(),
                     x.data().asFloat(),
-                    x.offset() / 2,
-                    x.majorStride(),
+                    x.blasOffset(),
+                    x.secondaryStride(),
                     y.data().asFloat(),
-                    y.offset() / 2,
-                    y.majorStride()));
+                    y.blasOffset(),
+                    y.secondaryStride()));
         else if(x.data().dataType().equals(DataBuffer.DOUBLE))
-            return new ComplexDouble(NativeBlas.zdotc(
+            return new ComplexDouble(
+                    NativeBlas.zdotc(
                     x.length(),
                     x.data().asDouble(),
-                    x.offset() / 2,
-                    x.majorStride(),
+                    x.blasOffset(),
+                    x.secondaryStride(),
                     y.data().asDouble(),
-                    y.offset() / 2,
-                    y.majorStride()));
+                    y.blasOffset(),
+                    y.secondaryStride()));
         throw new IllegalStateException("Illegal data type");
     }
 
@@ -299,20 +300,20 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
             return new ComplexFloat(NativeBlas.cdotu(
                     x.length(),
                     x.data().asFloat(),
-                    x.offset() / 2,
-                    x.majorStride(),
+                    x.offset() ,
+                    x.secondaryStride(),
                     y.data().asFloat(),
                     y.offset(),
-                    y.majorStride()));
+                    y.secondaryStride()));
         if(x.data().dataType().equals(DataBuffer.DOUBLE))
             return new ComplexDouble(NativeBlas.zdotu(
                     x.length(),
                     x.data().asDouble(),
-                    x.offset() / 2,
-                    x.majorStride(),
+                    x.offset(),
+                    x.secondaryStride(),
                     y.data().asDouble(),
-                    y.offset() / 2,
-                    y.majorStride()));
+                    y.offset(),
+                    y.secondaryStride()));
         throw new IllegalStateException("Illegal data type");
     }
 
@@ -326,14 +327,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.majorStride());
+                    x.secondaryStride());
 
         if(x.data().dataType().equals(DataBuffer.DOUBLE))
             return NativeBlas.dnrm2(
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.majorStride());
+                    x.secondaryStride());
 
         throw new IllegalStateException("Illegal data type");
 
@@ -346,13 +347,13 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.majorStride());
+                    x.secondaryStride());
         else if(x.data().dataType().equals(DataBuffer.DOUBLE))
             return NativeBlas.dznrm2(
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.majorStride());
+                    x.secondaryStride());
 
         throw new IllegalStateException("Illegal data type");
 
@@ -369,13 +370,13 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.majorStride());
+                    x.secondaryStride());
         if(x.data().dataType().equals(DataBuffer.DOUBLE))
             return NativeBlas.dasum(
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.majorStride());
+                    x.secondaryStride());
         throw new IllegalStateException("Illegal data type");
 
     }
@@ -387,7 +388,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     x.length(),
                     x.data().asFloat(),
                     x.offset() / 2,
-                    x.majorStride());
+                    x.secondaryStride());
 
         }
         else if(x.data().dataType().equals(DataBuffer.DOUBLE)) {
@@ -395,7 +396,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     x.length(),
                     x.data().asDouble(),
                     x.offset() / 2,
-                    x.majorStride());
+                    x.secondaryStride());
 
         }
 
@@ -414,13 +415,13 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.majorStride()) - 1;
+                    x.secondaryStride()) - 1;
         else if(x.data().dataType().equals(DataBuffer.DOUBLE)) {
             return NativeBlas.izamax(
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.majorStride()) - 1;
+                    x.secondaryStride()) - 1;
 
         }
         throw new IllegalStateException("Illegal data type");
@@ -561,7 +562,51 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         return a;
     }
 
+    @Override
+    public IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a, IComplexNDArray x, IComplexDouble beta, IComplexNDArray y) {
+        DataTypeValidation.assertDouble(a,x,y);
+        if(y.isScalar())
+            return y.putScalar(0,dotc(a,x));
+        NativeBlas.zgemv(
+                'N',
+                 a.rows(),
+                a.columns(),
+                (ComplexDouble) alpha,
+                a.data().asDouble(),
+                a.blasOffset(),
+                a.rows(),
+                x.data().asDouble(),
+                x.offset(),
+                x.secondaryStride(),
+                (ComplexDouble) beta,
+                y.data().asDouble(),
+                y.blasOffset(),
+                y.secondaryStride()
+        );
+        return y;
+    }
 
+    @Override
+    public IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y) {
+        DataTypeValidation.assertDouble(a,x,y);
+        NativeBlas.cgemv(
+                'N',
+                a.rows(),
+                a.columns(),
+                (ComplexFloat) alpha,
+                a.data().asFloat(),
+                a.blasOffset(),
+                a.rows(),
+                x.data().asFloat(),
+                x.offset(),
+                x.secondaryStride(),
+                (ComplexFloat) beta,
+                y.data().asFloat(),
+                y.blasOffset(),
+                y.secondaryStride()
+        );
+        return y;
+    }
 
     /**
      * Compute A <- alpha * x * y^T + A (general rank-1 update)
@@ -677,6 +722,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public INDArray gemm(double alpha, INDArray a,
                          INDArray b, double beta, INDArray c) {
         DataTypeValidation.assertDouble(a,b,c);
+        if(a.shape().length > 2) {
+            for(int i = 0; i < a.slices(); i++) {
+                c.putSlice(i,a.slice(i).mmul(b.slice(i)));
+            }
+
+            return c;
+        }
+
         NativeBlas.dgemm(
                 'N',
                 'N',
@@ -706,6 +759,15 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public INDArray gemm(float alpha, INDArray a,
                          INDArray b, float beta, INDArray c) {
         DataTypeValidation.assertFloat(a,b,c);
+        if(a.shape().length > 2) {
+            for(int i = 0; i < a.slices(); i++) {
+                c.putSlice(i,a.slice(i).mmul(b.slice(i)));
+            }
+
+            return c;
+        }
+
+
         NativeBlas.sgemm(
                 'N',
                 'N',
@@ -741,14 +803,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     a.columns(),
                     new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
                     a.data().asFloat(),
-                    a.offset() / 2,
+                    a.blasOffset(),
                     a.rows(),
                     b.data().asFloat(),
-                    b.offset() / 2,
+                    b.blasOffset(),
                     b.rows(),
                     new ComplexFloat(beta.realComponent().floatValue(), beta.imaginaryComponent().floatValue())
                     , c.data().asFloat(),
-                    c.offset() / 2,
+                    c.blasOffset(),
                     c.rows());
         else
             NativeBlas.zgemm(
@@ -759,14 +821,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     a.columns(),
                     new ComplexDouble(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
                     a.data().asDouble(),
-                    a.offset() / 2,
+                    a.blasOffset(),
                     a.rows(),
                     b.data().asDouble(),
-                    b.offset() / 2,
+                    b.blasOffset(),
                     b.rows(),
                     new ComplexDouble(beta.realComponent().floatValue(), beta.imaginaryComponent().floatValue())
                     , c.data().asDouble(),
-                    c.offset() / 2,
+                    c.blasOffset(),
                     c.rows());
         return c;
 
@@ -1400,10 +1462,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 alpha,
                 x.data().asDouble(),
                 x.offset(),
-                x.majorStride(),
+                x.secondaryStride(),
                 y.data().asDouble(),
                 y.offset(),
-                y.majorStride());
+                y.secondaryStride());
 
     }
 
@@ -1422,10 +1484,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 alpha,
                 x.data().asFloat(),
                 x.offset(),
-                x.majorStride(),
+                x.secondaryStride(),
                 y.data().asFloat(),
                 y.offset(),
-                y.majorStride());
+                y.secondaryStride());
 
     }
 

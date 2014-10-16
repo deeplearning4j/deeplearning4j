@@ -12,6 +12,13 @@ import org.nd4j.linalg.ops.reduceops.Ops;
  */
 public interface IComplexNDArray extends INDArray {
     /**
+     * For blas operations, this is the offset / 2
+     * when offset is > 0
+     * @return the blas offset
+     */
+   int blasOffset();
+
+    /**
      * Returns a linear view reference of shape
      * length(ndarray),1
      *

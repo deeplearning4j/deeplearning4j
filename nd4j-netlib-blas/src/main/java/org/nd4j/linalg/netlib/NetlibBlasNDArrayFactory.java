@@ -243,7 +243,7 @@ public class NetlibBlasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset) {
-        return new ComplexNDArray(ArrayUtil.floatCopyOf(data),shape,stride,offset);
+        return new ComplexNDArray(Nd4j.createBuffer(data),shape,stride,offset);
     }
 
     /**

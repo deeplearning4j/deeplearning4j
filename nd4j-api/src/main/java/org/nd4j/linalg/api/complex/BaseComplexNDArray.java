@@ -53,13 +53,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     public BaseComplexNDArray(DataBuffer buffer,int[] shape,int[] stride,int offset,char ordering) {
         super(buffer,shape,stride,offset,ordering);
-        this.data = buffer;
-        initShape(new int[]{1,buffer.length()});
-        this.stride = stride;
-        this.offset = offset;
-        this.ordering = ordering;
-        initShape(shape);
-
     }
 
     /**
@@ -74,13 +67,13 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     public BaseComplexNDArray(int[] shape, int offset, char ordering) {
-        this(new float[ArrayUtil.prod(shape) * 2],
+        this(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2),
                 shape, Nd4j.getComplexStrides(shape, ordering),
                 offset,ordering);
     }
 
     public BaseComplexNDArray(int[] shape) {
-        this(new float[ArrayUtil.prod(shape) * 2],shape, Nd4j.getComplexStrides(shape));
+        this(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2),shape, Nd4j.getComplexStrides(shape));
     }
 
 
@@ -90,7 +83,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     public BaseComplexNDArray(int[] shape, char ordering) {
-        this(new float[ArrayUtil.prod(shape) * 2],shape, Nd4j.getComplexStrides(shape, ordering),ordering);
+        this(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2),shape, Nd4j.getComplexStrides(shape, ordering),0,ordering);
     }
 
 
@@ -262,6 +255,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     @Override
+    public int blasOffset() {
+        return offset > 0 ? offset() / 2 : offset();
+    }
+
+    @Override
     public IComplexNDArray linearViewColumnOrder() {
         return Nd4j.createComplex(data,new int[]{length,1},offset());
     }
@@ -277,7 +275,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         if(isVector())
             return this;
         if(linearView == null)
-            linearView = Nd4j.createComplex(data, new int[]{1, length}, offset());
+            linearView = Nd4j.createComplex(data, new int[]{1, length},stride(), offset());
         return (IComplexNDArray) linearView;
     }
 
@@ -1634,7 +1632,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             return super.majorStride();
         else {
             //stride already taken in to account once by offset
-            return super.majorStride() / 2;
+            return super.majorStride();
         }
     }
 
@@ -1699,7 +1697,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray slice(int slice) {
-        int offset = this.offset + (slice * stride[0]);
+        int offset = this.offset + (slice * majorStride());
 
         IComplexNDArray ret;
         if (shape.length == 0)
@@ -1731,7 +1729,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                 throw new IllegalArgumentException("Offset index is > data.length");
             ret = Nd4j.createComplex(data,
                     Arrays.copyOfRange(shape, 1, shape.length),
-                    Arrays.copyOfRange(stride, 1, stride.length),
+                    Arrays.copyOfRange(stride,1,stride.length),
                     offset, ordering);
         }
         return ret;
@@ -1968,17 +1966,65 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray put(NDArrayIndex[] indices, IComplexNumber element) {
-        return null;
+        return put(indices,Nd4j.scalar(element));
     }
 
     @Override
     public IComplexNDArray put(NDArrayIndex[] indices, IComplexNDArray element) {
-        return null;
+        if(Indices.isContiguous(indices)) {
+            IComplexNDArray get = get(indices);
+            IComplexNDArray linear = get.linearView();
+            if(element.isScalar()) {
+                for(int i = 0; i < linear.length(); i++) {
+                    linear.putScalar(i,element.getComplex(0));
+                }
+            }
+
+            if(Shape.shapeEquals(element.shape(),get.shape()) || element.length() <= get.length()) {
+                IComplexNDArray elementLinear = element.linearView();
+
+                for(int i = 0; i < elementLinear.length(); i++) {
+                    linear.putScalar(i,elementLinear.getComplex(i));
+                }
+            }
+
+
+        }
+
+        else {
+            if(isVector()) {
+                assert indices.length == 1 : "Indices must only be of length 1.";
+                assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
+                assert indices[0].length() == element.length() : "Number of specified elements in index does not match length of element.";
+                int[] assign = indices[0].indices();
+                for(int i = 0; i < element.length(); i++) {
+                    putScalar(assign[i],element.getComplex(i));
+                }
+
+                return this;
+
+            }
+
+            if(element.isVector())
+                slice(indices[0].indices()[0]).put(Arrays.copyOfRange(indices,1,indices.length),element);
+
+
+            else {
+                for(int i = 0; i < element.slices(); i++) {
+                    INDArray slice = slice(indices[0].indices()[i]);
+                    slice.put(Arrays.copyOfRange(indices,1,indices.length),element.slice(i));
+                }
+            }
+
+        }
+
+        return this;
     }
 
     @Override
     public IComplexNDArray put(NDArrayIndex[] indices, Number element) {
-        return null;
+        return put(indices,Nd4j.scalar(element));
+
     }
 
     @Override
@@ -2534,7 +2580,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             put(i,n);
         }
         else
-            putScalar(i, element.getDouble(0));
+            putScalar(i, Nd4j.createDouble(element.getDouble(0),0.0));
         return this;
     }
 
@@ -2886,41 +2932,64 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray mmuli(INDArray other, INDArray result) {
-        if (other.isScalar())
-            return muli(other.getScalar(0), result);
+
+
+        IComplexNDArray otherArray = (IComplexNDArray) other;
+        IComplexNDArray resultArray = (IComplexNDArray) result;
+
+        if(other.shape().length > 2) {
+            for(int i = 0; i < other.slices(); i++) {
+                resultArray.putSlice(i,slice(i).mmul(otherArray.slice(i)));
+            }
+
+            return resultArray;
+
+        }
 
 
         LinAlgExceptions.assertMultiplies(this,other);
 
+        if (other.isScalar()) {
+            return muli(otherArray.getDouble(0), resultArray);
+        }
+        if (isScalar()) {
+            return otherArray.muli(getDouble(0), resultArray);
+        }
 
-        IComplexNDArray otherArray = Nd4j.createComplex(other);
-        IComplexNDArray resultArray = Nd4j.createComplex(result);
-
-
-
+        /* check sizes and resize if necessary */
+        //assertMultipliesWith(other);
 
 
         if (result == this || result == other) {
-			/* actually, blas cannot do multiplications in-place. Therefore, we will fake by
-			 * allocating a temporary object on the side and copy the result later.
-			 */
+            /* actually, blas cannot do multiplications in-place. Therefore, we will fake by
+             * allocating a temporary object on the side and copy the result later.
+             */
+            IComplexNDArray temp = Nd4j.createComplex(resultArray.shape(), ArrayUtil.calcStridesFortran(resultArray.shape()));
 
-            IComplexNDArray temp = Nd4j.createComplex(resultArray.shape(), ArrayUtil.calcStrides(resultArray.shape()));
-            Nd4j.getBlasWrapper().gemm(Nd4j.createFloat(1, 0), this, otherArray, Nd4j.createFloat(0, 0), temp);
+            if (otherArray.columns() == 1) {
+                Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), temp);
+            } else {
+                Nd4j.getBlasWrapper().gemm(1.0, this, otherArray, 0.0, temp);
+            }
 
             Nd4j.getBlasWrapper().copy(temp, resultArray);
 
+
+        } else {
+            if (otherArray.columns() == 1)
+                Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), resultArray);
+            else
+                Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), resultArray);
+
         }
-        else {
-            IComplexNDArray thisInput =  this;
-            Nd4j.getBlasWrapper().gemm(Nd4j.createFloat(1, 0), thisInput, otherArray, Nd4j.createFloat(0, 0), resultArray);
-        }
-
-
-
-
-
         return resultArray;
+
+
+    }
+
+    @Override
+    public int secondaryStride() {
+        return super.secondaryStride()/ 2;
     }
 
     /**
@@ -4107,26 +4176,21 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         else if(isVector()) {
             StringBuilder sb = new StringBuilder();
             sb.append("[");
-            int numElementsToPrint = Nd4j.MAX_ELEMENTS_PER_SLICE < 0 ? length : Nd4j.MAX_SLICES_TO_PRINT;
-            if(numElementsToPrint > length)
-                numElementsToPrint = length;
-            for(int i = 0; i < numElementsToPrint; i++) {
-                if(i >= length)
-                    break;
+            int numElementsToPrint = Nd4j.MAX_ELEMENTS_PER_SLICE < 0 ? length : Nd4j.MAX_ELEMENTS_PER_SLICE;
+            for(int i = 0; i < length; i++) {
                 sb.append(getComplex(i));
                 if(i < length - 1)
                     sb.append(" ,");
-            }
-
-            if(numElementsToPrint != length) {
-                sb.append(" , ... ,");
-                for(int i = length - numElementsToPrint; i < length; i++) {
-                    sb.append(getComplex(i));
-                    if(i < length - 1)
-                        sb.append(" ,");
+                if(i >= numElementsToPrint) {
+                    int numElementsLeft = length - i;
+                    //set towards the end of the buffer
+                    if(numElementsLeft > numElementsToPrint) {
+                        i += numElementsLeft - numElementsToPrint - 1;
+                        sb.append(" ,... ,");
+                    }
                 }
-            }
 
+            }
             sb.append("]\n");
             return sb.toString();
         }
@@ -4148,15 +4212,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
             }
 
-            if(slices != slices()) {
-                for(int i = slices() - slices; i < slices(); i++) {
-                    //assume after
-                    sb.append(",");
-                    sb.append(slice(i).toString());
-                    if(i < length - 1)
-                        sb.append(" ,");
-                }
-            }
+
         }
         sb.append("]\n");
         return sb.toString();

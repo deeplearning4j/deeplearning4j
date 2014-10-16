@@ -112,7 +112,7 @@ public class ComplexNDArrayTests extends org.nd4j.linalg.api.test.ComplexNDArray
 
 
     @Test
-    public void testTwoByTwoMmul() {
+    public void testTwoByTwoMmulJblas() {
         Nd4j.factory().setOrder('f');
         ComplexDoubleMatrix oneThroughForJblas = new ComplexDoubleMatrix(DoubleMatrix.linspace(1,4,4).reshape(2,2));
         ComplexDoubleMatrix fiveThroughEightJblas = new ComplexDoubleMatrix(DoubleMatrix.linspace(5,8,4).reshape(2,2));

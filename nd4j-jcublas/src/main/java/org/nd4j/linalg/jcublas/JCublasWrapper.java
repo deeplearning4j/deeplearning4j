@@ -60,7 +60,8 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public INDArray axpy(double da, INDArray dx, INDArray dy) {
-        return null;
+        SimpleJCublas.axpy(da,dx,dy);
+        return dy;
     }
 
     @Override
@@ -135,7 +136,8 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public INDArray gemv(double alpha, INDArray a, INDArray x, double beta, INDArray y) {
-        return null;
+        SimpleJCublas.gemv(a,x,y,alpha,beta);
+        return y;
     }
 
     @Override
@@ -145,17 +147,27 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public INDArray ger(double alpha, INDArray x, INDArray y, INDArray a) {
-        return null;
+        return SimpleJCublas.ger(x,y,a,alpha);
     }
 
     @Override
     public INDArray ger(float alpha, INDArray x, INDArray y, INDArray a) {
+        return SimpleJCublas.ger(x,y,a,alpha);
+    }
+
+    @Override
+    public IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a, IComplexNDArray x, IComplexDouble beta, IComplexNDArray y) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y) {
         return null;
     }
 
     @Override
     public IComplexNDArray geru(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
 
@@ -171,12 +183,13 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public IComplexNDArray gerc(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
-        return null;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public INDArray gemm(double alpha, INDArray a, INDArray b, double beta, INDArray c) {
-        return null;
+        return SimpleJCublas.gemm(a,b,c,alpha,beta);
     }
 
     @Override
@@ -189,27 +202,29 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta, IComplexNDArray c) {
         if(beta instanceof IComplexDouble)
-            SimpleJCublas.gemm(a,b,(IComplexDouble) alpha,c,(IComplexDouble) beta);
+            SimpleJCublas.gemm(a,b,alpha.asDouble(),c,beta.asDouble());
         else
-            SimpleJCublas.gemm(a,b,(IComplexFloat) alpha,c,(IComplexFloat) beta);
+            SimpleJCublas.gemm(a,b,alpha.asFloat(),c,beta.asFloat());
 
         return c;
     }
 
     @Override
     public INDArray gesv(INDArray a, int[] ipiv, INDArray b) {
+        throw new UnsupportedOperationException();
 
-        return null;
     }
 
     @Override
     public void checkInfo(String name, int info) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public INDArray sysv(char uplo, INDArray a, int[] ipiv, INDArray b) {
-        return null;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -219,12 +234,14 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public int syevx(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, float abstol, INDArray w, INDArray z) {
-        return 0;
+        throw new UnsupportedOperationException();
+
     }
 
     //@Override
     public int syevx(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol, INDArray w, INDArray z) {
-        return 0;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -234,52 +251,60 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public int syevr(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, float abstol, INDArray w, INDArray z, int[] isuppz) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     //@Override
     public int syevr(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol, INDArray w, INDArray z, int[] isuppz) {
-        return 0;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public void posv(char uplo, INDArray A, INDArray B) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public int geev(char jobvl, char jobvr, INDArray A, INDArray WR, INDArray WI, INDArray VL, INDArray VR) {
-        return 0;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public int sygvd(int itype, char jobz, char uplo, INDArray A, INDArray B, INDArray W) {
-        return 0;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public void gelsd(INDArray A, INDArray B) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public void geqrf(INDArray A, INDArray tau) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public void ormqr(char side, char trans, INDArray A, INDArray tau, INDArray C) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public void dcopy(int n, float[] dx, int dxIdx, int incx, float[] dy, int dyIdx, int incy) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public void saxpy(double alpha, INDArray x, INDArray y) {
-
+        SimpleJCublas.axpy(alpha,x,y);
     }
 
     /**

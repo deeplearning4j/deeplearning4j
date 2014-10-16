@@ -318,8 +318,8 @@ public class Nd4j {
                     @Override
                     public int compare(IComplexNumber o1, IComplexNumber o2) {
                         return Double.compare(
-                                o1.asFloat().absoluteValue().doubleValue(),
-                                o2.asFloat().absoluteValue().doubleValue());
+                                o1.asDouble().absoluteValue().doubleValue(),
+                                o2.asDouble().absoluteValue().doubleValue());
                     }
                 });
 
@@ -328,8 +328,8 @@ public class Nd4j {
                     @Override
                     public int compare(IComplexNumber o1, IComplexNumber o2) {
                         return -Double.compare(
-                                o1.asFloat().absoluteValue().doubleValue(),
-                                o2.asFloat().absoluteValue().doubleValue());
+                                o1.asDouble().absoluteValue().doubleValue(),
+                                o2.asDouble().absoluteValue().doubleValue());
                     }
                 });
 
@@ -2310,7 +2310,7 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(int[] shape,char ordering) {
-        return INSTANCE.createComplex(shape);
+        return INSTANCE.createComplex(createBuffer(ArrayUtil.prod(shape) * 2),shape,0,ordering);
     }
 
 

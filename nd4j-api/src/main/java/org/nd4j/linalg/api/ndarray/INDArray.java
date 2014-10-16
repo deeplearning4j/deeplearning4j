@@ -17,7 +17,12 @@ import java.util.List;
  */
 public interface INDArray extends Serializable {
 
-
+    /**
+     * Return the second stride for an ndarray.
+     * Think of this as the stride for the next element in a column.
+     * @return the secondary stride for an ndarray
+     */
+    int secondaryStride();
     /**
      * Return the major stride for an ndarray
      * @return the major stride for an ndarray
