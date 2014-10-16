@@ -71,9 +71,9 @@ public abstract class BaseNDArray  implements INDArray {
         if(ArrayUtil.prod(shape) > buffer.length())
             throw new IllegalArgumentException("Shape must be <= buffer length");
         this.stride = stride;
-        initShape(shape);
         this.offset = offset;
         this.ordering = ordering;
+        initShape(shape);
 
     }
 
@@ -422,8 +422,11 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public int secondaryStride() {
         if(stride.length >= 2) {
-            if(ordering == NDArrayFactory.C)
+            if(ordering == NDArrayFactory.C) {
+              if(isColumnVector())
+                  return majorStride();
                 return stride[1];
+            }
             else
                 return majorStride();
         }
@@ -1906,22 +1909,14 @@ public abstract class BaseNDArray  implements INDArray {
      */
     protected INDArray doColumnWise(INDArray columnVector,char operation) {
         asserColumnVector(columnVector);
-        INDArray columnBroadcasted = columnVector.broadcast(shape());
-        INDArray columnBroadCastedLinear = columnBroadcasted.linearViewColumnOrder();
-        INDArray thisLinear = ravel();
+        for(int i = 0; i < columns(); i++) {
+            INDArray slice = slice(i,0);
+            switch(operation) {
 
-        switch(operation) {
-            case 'a' : thisLinear.addi(columnBroadCastedLinear); break;
-            case 's' : thisLinear.subi(columnBroadCastedLinear); break;
-            case 'm' : thisLinear.muli(columnBroadCastedLinear); break;
-            case 'd' : thisLinear.divi(columnBroadCastedLinear); break;
-        }
-
-        int count = 0;
-        for(int i = 0; i < vectorsAlongDimension(1); i++) {
-            INDArray vec = vectorAlongDimension(i,1);
-            for(int j = 0; j < vec.length(); j++) {
-                vec.putScalar(j,thisLinear.getDouble(count++));
+                case 'a' : slice.addi(columnVector); break;
+                case 's' : slice.subi(columnVector); break;
+                case 'm' : slice.muli(columnVector); break;
+                case 'd' : slice.divi(columnVector); break;
             }
         }
 
@@ -1950,14 +1945,16 @@ public abstract class BaseNDArray  implements INDArray {
      */
     protected INDArray doRowWise(INDArray rowVector,char operation) {
         assertRowVector(rowVector);
-        INDArray broadcasted = rowVector.broadcast(shape());
-        INDArray broadCastedLinear = broadcasted.linearView();
-        switch(operation) {
-            case 'a' : linearView().addi(broadCastedLinear); break;
-            case 's' : linearView().subi(broadCastedLinear); break;
-            case 'm' : linearView().muli(broadCastedLinear); break;
-            case 'd' : linearView().divi(broadCastedLinear); break;
+        for(int i = 0; i < rows(); i++) {
+            switch(operation) {
+
+                case 'a' : slice(i).addi(rowVector); break;
+                case 's' : slice(i).subi(rowVector); break;
+                case 'm' : slice(i).muli(rowVector); break;
+                case 'd' : slice(i).divi(rowVector); break;
+            }
         }
+
 
         return this;
 
@@ -3729,14 +3726,8 @@ public abstract class BaseNDArray  implements INDArray {
 
 
         int[] strides =  null;
-        if(Shape.isVector(shape)) {
-            strides =  ordering == NDArrayFactory.FORTRAN  ?
-                    ArrayUtil.reverseCopy(stride()) :
-                    ArrayUtil.copy(stride());
-        }
 
-        else
-            strides = ArrayUtil.copy(stride());
+        strides = ArrayUtil.copy(stride());
 
         if(offsets.length != shape.length)
             offsets = Arrays.copyOfRange(offsets,0,shape.length);

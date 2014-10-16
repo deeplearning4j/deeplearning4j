@@ -1,6 +1,5 @@
 package org.nd4j.linalg.ops.transforms;
 
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.BaseElementWiseOp;
@@ -15,7 +14,7 @@ public class Sqrt extends BaseElementWiseOp {
     /**
      * The transformation for a given value (a scalar ndarray)
      *
-     * @param value the value to applyTransformToOrigin (a scalar ndarray)
+     * @param value the value to transform (a scalar ndarray)
      * @param i     the index of the element being acted upon
      * @return the transformed value based on the input
      */
@@ -24,8 +23,7 @@ public class Sqrt extends BaseElementWiseOp {
         if(value instanceof IComplexNumber) {
             return ComplexUtil.sqrt((org.nd4j.linalg.api.complex.IComplexNumber) value);
         }
-        if(from.data().dataType().equals(DataBuffer.FLOAT))
-            return (float) Math.sqrt((float) value);
+
         return Math.sqrt((double) value);
     }
 }
