@@ -262,13 +262,7 @@ public class Tsne {
 
 
         //output
-        //INDArray y = randn(X.rows(),nDims,new MersenneTwister(123)).muli(1e-3f);
-        INDArray y = null;
-        try {
-            y = Nd4j.readTxt("/home/agibsonccc/Desktop/y.txt"," ");
-        } catch (IOException e) {
-            throw new IllegalStateException("weird");
-        }
+        INDArray y = randn(X.rows(),nDims,new MersenneTwister(123)).muli(1e-3f);
 
         INDArray otherD = null;
 
