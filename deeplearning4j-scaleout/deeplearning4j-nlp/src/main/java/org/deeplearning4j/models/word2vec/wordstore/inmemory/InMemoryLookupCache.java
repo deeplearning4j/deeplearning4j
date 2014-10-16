@@ -119,7 +119,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         for(int i = 0; i < w1.getCodeLength(); i++) {
             int code = w1.getCodes()[i];
             int point = w1.getPoints()[i];
-
+            if(point >= syn0.rows())
+                throw new IllegalStateException("Illegal point " + point);
             //other word vector
             INDArray syn1 = this.syn1.slice(point);
 

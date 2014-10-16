@@ -1,15 +1,13 @@
 package org.deeplearning4j.text.documentiterator;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.LineIterator;
 
 /**
  * Iterate over files
@@ -19,6 +17,7 @@ import org.apache.commons.io.FileUtils;
 public class FileDocumentIterator implements DocumentIterator {
 
     private Iterator<File> iter;
+    private LineIterator lineIterator;
     private File rootDir;
 
     public FileDocumentIterator(String path) {
@@ -29,10 +28,16 @@ public class FileDocumentIterator implements DocumentIterator {
     public FileDocumentIterator(File path) {
         if(path.isFile())  {
             iter = Arrays.asList(path).iterator();
+            try {
+                lineIterator = FileUtils.lineIterator(path);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             this.rootDir = path;
         }
         else {
             iter = FileUtils.iterateFiles(path, null, true);
+
             this.rootDir = path;
         }
 
@@ -42,8 +47,15 @@ public class FileDocumentIterator implements DocumentIterator {
     @Override
     public InputStream nextDocument() {
         try {
-            return new BufferedInputStream(new FileInputStream(iter.next()));
-        } catch (FileNotFoundException e) {
+            if(lineIterator != null && !lineIterator.hasNext()) {
+                File next = iter.next();
+                lineIterator.close();
+                lineIterator = FileUtils.lineIterator(next);
+
+            }
+
+            return new BufferedInputStream(IOUtils.toInputStream(lineIterator.nextLine()));
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
