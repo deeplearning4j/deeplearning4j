@@ -63,7 +63,6 @@ public class Word2Vec implements Persistable {
     private int sample = 1;
     //learning rate
     private AtomicDouble alpha = new AtomicDouble(0.025);
-    public final static double MIN_ALPHA =  0.001;
     //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
     private int minWordFrequency = 5;
     //context to use for gathering word frequencies
@@ -337,7 +336,7 @@ public class Word2Vec implements Persistable {
                     });
                     futures.add(f);
                     numSentencesProcessed.incrementAndGet();
-                    if (numSentencesProcessed.get() % 100 == 0)
+                    if (numSentencesProcessed.get() % 1000 == 0)
                         log.info("Num sentences processed " + numSentencesProcessed.get());
                     while(futures.size() > 100) {
                         Set<Future<?>> remove = new HashSet<>();
