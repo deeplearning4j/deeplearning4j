@@ -11,6 +11,7 @@ Contents
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
     * <a href="#next">Running Examples</a>
+    * <a href="#trouble">Troubleshooting</a>
 
 ### <a name="all">All Operating Systems</a>
 
@@ -150,8 +151,12 @@ If you're using IntelliJ as your IDE, this should be taken care of already.
 
 ### <a name="next">Next Steps: Running Examples</a>
 
-Follow our [**MNIST tutorial**](../rbm-mnist-tutorial.html) and try [running a few examples](../quickstart.html). 
+Follow our [**MNIST tutorial**](../mnist-tutorial.html) and try [running a few examples](../quickstart.html). 
 
-If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html).
+If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html). 
 
 For a deeper dive, check out our [Github repo](https://github.com/agibsonccc/java-deeplearning) or access the core through [Maven](http://maven.apache.org/download.cgi).
+
+### <a name="trouble">Troubleshooting</a>
+
+* If you have installed DL4J in the past and now see the examples throwing errors, run a git clone on [ND4J](http://nd4j.org/getstarted.html) in the same root directory as DL4J; run a clean Maven install within ND4J; install DL4J again; run a clean Maven install within DL4J, and see if that fixes things.
