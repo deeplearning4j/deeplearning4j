@@ -9,7 +9,10 @@ import java.io.InputStream;
  *
  */
 public interface DocumentIterator {
-	/**
+
+
+
+    /**
 	 * Get the next document
 	 * @return the input stream for the next document
 	 */
