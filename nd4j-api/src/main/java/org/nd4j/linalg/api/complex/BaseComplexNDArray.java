@@ -2964,12 +2964,19 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             /* actually, blas cannot do multiplications in-place. Therefore, we will fake by
              * allocating a temporary object on the side and copy the result later.
              */
-            IComplexNDArray temp = Nd4j.createComplex(resultArray.shape(), ArrayUtil.calcStridesFortran(resultArray.shape()));
+            IComplexNDArray temp = Nd4j.createComplex(resultArray.shape(), ArrayUtil.calcStridesFortran(resultArray.shape(),2));
 
             if (otherArray.columns() == 1) {
-                Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), temp);
+                if(data.dataType().equals(DataBuffer.DOUBLE))
+                    Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), temp);
+                else
+                    Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asFloat(),this,otherArray,Nd4j.ZERO.asFloat(),temp);
             } else {
-                Nd4j.getBlasWrapper().gemm(1.0, this, otherArray, 0.0, temp);
+                if(data.dataType().equals(DataBuffer.DOUBLE))
+                    Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asDouble(), this, otherArray,Nd4j.ZERO.asDouble(), temp);
+                else
+                    Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asFloat(),this,otherArray,Nd4j.ZERO.asFloat(),temp);
+
             }
 
             Nd4j.getBlasWrapper().copy(temp, resultArray);
@@ -2977,9 +2984,15 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
         } else {
             if (otherArray.columns() == 1)
-                Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), resultArray);
+                if(data.dataType().equals(DataBuffer.DOUBLE))
+                    Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), resultArray);
+                else
+                    Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asFloat(),this,otherArray,Nd4j.ZERO.asFloat(),resultArray);
             else
+            if(data.dataType().equals(DataBuffer.FLOAT))
                 Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), resultArray);
+            else
+                Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asFloat(),this,otherArray,Nd4j.ZERO.asFloat(),resultArray);
 
         }
         return resultArray;
@@ -3100,8 +3113,15 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         if (result == this)
             Nd4j.getBlasWrapper().axpy(Nd4j.NEG_UNIT, cOther, cResult);
         else if (result == other) {
-            Nd4j.getBlasWrapper().scal(Nd4j.NEG_UNIT.asDouble(), cResult);
-            Nd4j.getBlasWrapper().axpy(Nd4j.UNIT, this, cResult);
+            if(data.dataType().equals(DataBuffer.DOUBLE)) {
+                Nd4j.getBlasWrapper().scal(Nd4j.NEG_UNIT.asDouble(), cResult);
+                Nd4j.getBlasWrapper().axpy(Nd4j.UNIT, this, cResult);
+            }
+            else {
+                Nd4j.getBlasWrapper().scal(Nd4j.NEG_UNIT.asFloat(), cResult);
+                Nd4j.getBlasWrapper().axpy(Nd4j.UNIT, this, cResult);
+            }
+
         }
         else {
             Nd4j.getBlasWrapper().copy(this, result);

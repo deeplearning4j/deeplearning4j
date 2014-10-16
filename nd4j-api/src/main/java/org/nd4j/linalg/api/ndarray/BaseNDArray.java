@@ -1681,7 +1681,7 @@ public abstract class BaseNDArray  implements INDArray {
     public int slices() {
         if(shape.length < 1)
             return 0;
-         return shape[0];
+        return shape[0];
     }
 
 
@@ -2338,9 +2338,15 @@ public abstract class BaseNDArray  implements INDArray {
             INDArray temp = Nd4j.create(resultArray.shape(), ArrayUtil.calcStridesFortran(resultArray.shape()));
 
             if (otherArray.columns() == 1) {
-                Nd4j.getBlasWrapper().gemv(1.0, this, otherArray, 0.0, temp);
+                if(data.dataType().equals(DataBuffer.DOUBLE))
+                    Nd4j.getBlasWrapper().gemv(1.0, this, otherArray, 0.0, temp);
+                else
+                    Nd4j.getBlasWrapper().gemv(1.0f,this,otherArray,0.0f,temp);
             } else {
-                Nd4j.getBlasWrapper().gemm(1.0, this, otherArray, 0.0, temp);
+                if(data.dataType().equals(DataBuffer.DOUBLE))
+                    Nd4j.getBlasWrapper().gemm(1.0, this, otherArray, 0.0, temp);
+                else
+                    Nd4j.getBlasWrapper().gemm(1.0f,this,otherArray,0.0f,temp);
             }
 
             Nd4j.getBlasWrapper().copy(temp, resultArray);
@@ -2348,10 +2354,16 @@ public abstract class BaseNDArray  implements INDArray {
 
         } else {
             if (otherArray.columns() == 1)
-                Nd4j.getBlasWrapper().gemv(1.0, this, otherArray, 0.0, resultArray);
-            else
-                Nd4j.getBlasWrapper().gemm(1.0, this, otherArray, 0.0, resultArray);
-
+                if(data.dataType().equals(DataBuffer.DOUBLE))
+                    Nd4j.getBlasWrapper().gemv(1.0, this, otherArray, 0.0, resultArray);
+                else
+                    Nd4j.getBlasWrapper().gemv(1.0f,this,otherArray,0.0f,resultArray);
+            else {
+                if(data.dataType().equals(DataBuffer.DOUBLE))
+                    Nd4j.getBlasWrapper().gemm(1.0, this, otherArray, 0.0, resultArray);
+                else
+                    Nd4j.getBlasWrapper().gemm(1.0f,this,otherArray,0.0f,resultArray);
+            }
         }
         return resultArray;
     }
@@ -2459,13 +2471,32 @@ public abstract class BaseNDArray  implements INDArray {
 
 
         if (result == this) {
-            Nd4j.getBlasWrapper().axpy(-1.0, other, result);
-        } else if (result == other) {
-            Nd4j.getBlasWrapper().scal(-1.0, result);
-            Nd4j.getBlasWrapper().axpy(1.0, this, result);
-        } else {
-            Nd4j.getBlasWrapper().copy(this, result);
-            Nd4j.getBlasWrapper().axpy(-1.0, other, result);
+            if(data.dataType().equals(DataBuffer.DOUBLE))
+                Nd4j.getBlasWrapper().axpy(-1.0, other, result);
+            else
+                Nd4j.getBlasWrapper().axpy(-1.0f,other,result);
+        }
+        else if (result == other) {
+            if(data.dataType().equals(DataBuffer.DOUBLE)) {
+                Nd4j.getBlasWrapper().scal(-1.0, result);
+                Nd4j.getBlasWrapper().axpy(1.0, this, result);
+            }
+            else {
+                Nd4j.getBlasWrapper().scal(-1.0f, result);
+                Nd4j.getBlasWrapper().axpy(1.0f, this, result);
+            }
+        }
+
+        else {
+            if(data.dataType().equals(DataBuffer.FLOAT)) {
+                Nd4j.getBlasWrapper().copy(this, result);
+                Nd4j.getBlasWrapper().axpy(-1.0f, other, result);
+            }
+            else {
+                Nd4j.getBlasWrapper().copy(this, result);
+                Nd4j.getBlasWrapper().axpy(-1.0, other, result);
+            }
+
         }
         return result;
     }
@@ -2499,12 +2530,23 @@ public abstract class BaseNDArray  implements INDArray {
 
 
         if (result == this) {
-            Nd4j.getBlasWrapper().axpy(1.0, other, result);
-        } else if (result == other) {
-            Nd4j.getBlasWrapper().axpy(1.0, this, result);
-        } else {
-            /*SimpleBlas.copy(this, result);
-            SimpleBlas.axpy(1.0, other, result);*/
+            if(data.dataType().equals(DataBuffer.DOUBLE))
+                Nd4j.getBlasWrapper().axpy(1.0, other, result);
+
+
+            else
+                Nd4j.getBlasWrapper().axpy(1.0f,other,result);
+
+        }
+
+        else if (result == other) {
+            if(data.dataType().equals(DataBuffer.DOUBLE))
+                Nd4j.getBlasWrapper().axpy(1.0, this, result);
+            else
+                Nd4j.getBlasWrapper().axpy(1.0f,this,result);
+        }
+        else {
+
             INDArray resultLinear = result.linearView();
             INDArray otherLinear = other.linearView();
             INDArray linear = linearView();
