@@ -13,6 +13,7 @@ import org.deeplearning4j.text.annotator.SentenceAnnotator;
 import org.deeplearning4j.text.annotator.StemmerAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
 import org.deeplearning4j.text.tokenization.tokenizer.PosUimaTokenizer;
+import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 
 /**
@@ -24,18 +25,19 @@ import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
  */
 public class PosUimaTokenizerFactory implements TokenizerFactory {
 
-	private AnalysisEngine tokenizer;
-	private Collection<String> allowedPoSTags;
+    private AnalysisEngine tokenizer;
+    private Collection<String> allowedPoSTags;
+    private TokenPreProcess tokenPreProcess;
 
 
     public PosUimaTokenizerFactory(Collection<String> allowedPoSTags) {
-             this(defaultAnalysisEngine(),allowedPoSTags);
+        this(defaultAnalysisEngine(),allowedPoSTags);
     }
 
-	public PosUimaTokenizerFactory(AnalysisEngine tokenizer,Collection<String> allowedPosTags) {
-		this.tokenizer = tokenizer;
-		this.allowedPoSTags = allowedPosTags;
-	}
+    public PosUimaTokenizerFactory(AnalysisEngine tokenizer,Collection<String> allowedPosTags) {
+        this.tokenizer = tokenizer;
+        this.allowedPoSTags = allowedPosTags;
+    }
 
 
     public static AnalysisEngine defaultAnalysisEngine()  {
@@ -51,16 +53,22 @@ public class PosUimaTokenizerFactory implements TokenizerFactory {
     }
 
 
-	@Override
-	public Tokenizer create(String toTokenize) {
-		return new PosUimaTokenizer(toTokenize,tokenizer,allowedPoSTags);
-	}
+    @Override
+    public Tokenizer create(String toTokenize) {
+        PosUimaTokenizer t =  new PosUimaTokenizer(toTokenize,tokenizer,allowedPoSTags);
+        t.setTokenPreProcessor(tokenPreProcess);
+        return t;
+    }
 
-	@Override
-	public Tokenizer create(InputStream toTokenize) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public Tokenizer create(InputStream toTokenize) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setTokenPreProcessor(TokenPreProcess preProcessor) {
+        this.tokenPreProcess = preProcessor;
+    }
 
 
 }

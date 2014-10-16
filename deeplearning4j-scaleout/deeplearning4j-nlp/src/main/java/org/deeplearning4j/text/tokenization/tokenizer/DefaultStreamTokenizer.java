@@ -1,6 +1,5 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
 import java.util.ArrayList;

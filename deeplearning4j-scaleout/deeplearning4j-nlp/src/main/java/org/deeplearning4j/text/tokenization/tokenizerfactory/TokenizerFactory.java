@@ -2,6 +2,7 @@ package org.deeplearning4j.text.tokenization.tokenizerfactory;
 
 import java.io.InputStream;
 
+import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 
 /**
@@ -24,9 +25,13 @@ public interface TokenizerFactory {
 	 * @return
 	 */
 	Tokenizer create(InputStream toTokenize);
-	
-	
-	
+
+    /**
+     * Sets a token pre processor to be used
+     * with every tokenizer
+     * @param preProcessor the token pre processor to use
+     */
+	void setTokenPreProcessor(TokenPreProcess preProcessor);
 	
 	
 	
