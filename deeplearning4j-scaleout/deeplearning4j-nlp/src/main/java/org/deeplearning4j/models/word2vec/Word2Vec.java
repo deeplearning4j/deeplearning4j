@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -292,7 +293,6 @@ public class Word2Vec implements Persistable {
                         }
                     });
 
-                    //sentenceActor.tell(new SentenceMessage(sentence,latch),sentenceActor);
                     numSentencesProcessed.incrementAndGet();
                     if(numSentencesProcessed.get() % 100 == 0)
                         log.info("Num sentences processed " + numSentencesProcessed.get());
@@ -303,27 +303,51 @@ public class Word2Vec implements Persistable {
             }
 
 
-        try {
-            service.shutdown();
-            service.awaitTermination(1, TimeUnit.DAYS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
 
 
+       int processors = Runtime.getRuntime().availableProcessors();
         if(docIter != null && docIter.hasNext())
             for(int iter = 0; iter < numIterations; iter++) {
+                List<Future<?>> futures = new ArrayList<>();
                 while (docIter != null && docIter.hasNext()) {
-                    InputStream is = docIter.nextDocument();
-                    trainSentence(is);
+                    final InputStream is = docIter.nextDocument();
+
+                    Future<?> f = service.submit(new Runnable() {
+
+                        /**
+                         * When an object implementing interface <code>Runnable</code> is used
+                         * to create a thread, starting the thread causes the object's
+                         * <code>run</code> method to be called in that separately executing
+                         * thread.
+                         * <p/>
+                         * The general contract of the method <code>run</code> is that it may
+                         * take any action whatsoever.
+                         *
+                         * @see Thread#run()
+                         */
+                        @Override
+                        public void run() {
+                            trainSentence(is);
+                            try {
+                                is.close();
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    });
+                    futures.add(f);
                     numSentencesProcessed.incrementAndGet();
                     if (numSentencesProcessed.get() % 100 == 0)
                         log.info("Num sentences processed " + numSentencesProcessed.get());
-                    try {
-                        is.close();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+                    while(futures.size() > 100) {
+                        Set<Future<?>> remove = new HashSet<>();
+                        for(Future<?> f2 : futures) {
+                            if(f2.isDone())
+                                remove.add(f2);
+                        }
+                        futures.removeAll(remove);
                     }
+
 
                 }
 
@@ -334,7 +358,12 @@ public class Word2Vec implements Persistable {
             }
 
 
-
+        try {
+            service.shutdown();
+            service.awaitTermination(1, TimeUnit.DAYS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
 
         while(latch.get() > 0) {
@@ -362,7 +391,6 @@ public class Word2Vec implements Persistable {
     public List<VocabWord> trainSentence(InputStream is) {
         Tokenizer tokenizer = tokenizerFactory.create(is);
         List<VocabWord> sentence2 = new ArrayList<>();
-
         while(tokenizer.hasMoreTokens()) {
             String next = tokenizer.nextToken();
             if(stopWords.contains(next))
@@ -371,7 +399,6 @@ public class Word2Vec implements Persistable {
             if(word == null)
                 continue;
 
-            sentence2.add(word);
 
         }
 
@@ -477,12 +504,6 @@ public class Word2Vec implements Persistable {
         log.info("Resetting weights");
         if(shouldReset)
             resetWeights();
-        InMemoryLookupCache l = (InMemoryLookupCache) cache;
-        try {
-            Nd4j.writeTxt(l.getSyn0(),"/home/agibsonccc/Desktop/syn0test-java.txt"," ");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
     }
 
