@@ -221,6 +221,8 @@ public class Tsne {
         }
 
 
+        d.data().flush();
+
         log.info("Mean value of sigma " + sqrt(beta.rdiv(1)).mean(Integer.MAX_VALUE));
         BooleanIndexing.applyWhere(p,Conditions.isNan(),new Value(realMin));
 
