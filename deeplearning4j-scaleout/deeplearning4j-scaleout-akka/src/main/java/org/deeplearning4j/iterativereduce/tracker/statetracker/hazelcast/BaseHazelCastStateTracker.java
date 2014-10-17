@@ -12,6 +12,8 @@ import org.apache.commons.compress.utils.IOUtils;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.util.PortTaken;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.*;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.datasetcache.LocalDataSetCache;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.workretriever.LocalWorkRetriever;
 import org.nd4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.optimize.OutputLayerTrainingEvaluator;
@@ -558,6 +560,13 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
         this(connectionString,"worker",DEFAULT_HAZELCAST_PORT);
     }
 
+    /**
+     *
+     * @param connectionString
+     * @param type
+     * @param stateTrackerPort
+     * @throws Exception
+     */
     public BaseHazelCastStateTracker(String connectionString,String type,int stateTrackerPort) throws Exception {
         log.info("Setting up hazelcast with type " + type + " connection string " + connectionString + " and port " + stateTrackerPort);
 
@@ -583,6 +592,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
 
 
             h = Hazelcast.newHazelcastInstance(config);
+
             h.getCluster().addMembershipListener(new MembershipListener() {
 
                 @Override
@@ -604,6 +614,9 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
                 }
 
             });
+
+
+
         }
 
         else if(type.equals("master") && PortTaken.portTaken(stateTrackerPort))
@@ -656,6 +669,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
         patienceIncrease = h.getAtomicReference(PATIENCE_INCREASE);
         numBatches = h.getAtomicReference(NUM_BATCHES_SO_FAR_RAN);
 
+
         //applyTransformToDestination defaults only when master, otherwise, overrides previous values
         if(type.equals("master")) {
             begunTraining.set(false);
@@ -673,6 +687,10 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
             validationEpochs.set((int) Math.min(10,patience() / 2));
             numBatches.set(0);
         }
+
+        workRetriever = new LocalWorkRetriever(h);
+        cache = new LocalDataSetCache(".",h);
+
 
 
     }
@@ -738,9 +756,23 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
         heartbeatConfig.setName(HEART_BEAT);
         conf.addMapConfig(heartbeatConfig);
 
-        MapConfig workerEnabledConifg = new MapConfig();
-        workerEnabledConifg.setName(WORKER_ENABLED);
-        conf.addMapConfig(workerEnabledConifg);
+        MapConfig workerEnabledConfig = new MapConfig();
+        workerEnabledConfig.setName(WORKER_ENABLED);
+        conf.addMapConfig(workerEnabledConfig);
+
+        MapConfig dataSetCache = new MapConfig();
+        dataSetCache.setName(LocalDataSetCache.DATA_SET_MAP);
+        conf.addMapConfig(dataSetCache);
+
+
+        MapConfig fileUpdateSaver = new MapConfig();
+        fileUpdateSaver.setName(org.deeplearning4j.iterativereduce.tracker.statetracker.updatesaver.LocalFileUpdateSaver.UPDATE_SAVER);
+        conf.addMapConfig(fileUpdateSaver);
+
+
+        MapConfig workRetriever = new MapConfig();
+        workRetriever.setName(LocalWorkRetriever.WORK_RETRIEVER);
+        conf.addMapConfig(workRetriever);
 
         return conf;
 

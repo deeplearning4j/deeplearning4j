@@ -1,6 +1,5 @@
 package org.deeplearning4j.plot;
 
-import com.google.common.base.Function;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.math3.random.MersenneTwister;
@@ -17,10 +16,8 @@ import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.indexing.functions.Zero;
 import org.nd4j.linalg.learning.AdaGrad;
 
-import static org.nd4j.linalg.factory.Nd4j.diag;
 import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -32,6 +29,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 
 import static org.nd4j.linalg.ops.transforms.Transforms.max;
@@ -163,48 +163,63 @@ public class Tsne {
         final INDArray beta =  ones(n, 1);
         final double logU =  Math.log(u);
         log.info("Calculating probabilities of data similarities..");
-
+        ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         for(int i = 0; i < n; i++) {
             if(i % 500 == 0)
                 log.info("Handled " + i + " records");
             final int j = i;
-            double betaMin = Float.NEGATIVE_INFINITY;
-            double betaMax = Float.POSITIVE_INFINITY;
-            NDArrayIndex[] range = new NDArrayIndex[]{
-                    NDArrayIndex.concat(NDArrayIndex.interval(0, i),NDArrayIndex.interval(i + 1, d.columns()))};
+            service.submit(new Runnable() {
+                @Override
+                public void run() {
+                    double betaMin = Float.NEGATIVE_INFINITY;
+                    double betaMax = Float.POSITIVE_INFINITY;
+                    NDArrayIndex[] range = new NDArrayIndex[]{
+                            NDArrayIndex.concat(NDArrayIndex.interval(0, j),NDArrayIndex.interval(j + 1, d.columns()))};
 
-            INDArray row = d.slice(j).get(range);
-            Pair<INDArray,INDArray> pair =  hBeta(row,beta.getDouble(j));
-            INDArray hDiff = pair.getFirst().sub(logU);
-            int tries = 0;
+                    INDArray row = d.slice(j).get(range);
+                    Pair<INDArray,INDArray> pair =  hBeta(row,beta.getDouble(j));
+                    INDArray hDiff = pair.getFirst().sub(logU);
+                    int tries = 0;
 
 
-            //while hdiff > tolerance
-            while(BooleanIndexing.and(abs(hDiff), Conditions.greaterThan(tolerance)) && tries < 50) {
-                //if hdiff > 0
-                if(BooleanIndexing.and(hDiff,Conditions.greaterThan(0))) {
-                    if(Double.isInfinite(betaMax))
-                        beta.putScalar(j,beta.getDouble(j) * 2.0);
-                    else
-                        beta.putScalar(j,(beta.getDouble(j) + betaMax) / 2.0);
-                    betaMin = beta.getDouble(j);
+                    //while hdiff > tolerance
+                    while(BooleanIndexing.and(abs(hDiff), Conditions.greaterThan(tolerance)) && tries < 50) {
+                        //if hdiff > 0
+                        if(BooleanIndexing.and(hDiff,Conditions.greaterThan(0))) {
+                            if(Double.isInfinite(betaMax))
+                                beta.putScalar(j,beta.getDouble(j) * 2.0);
+                            else
+                                beta.putScalar(j,(beta.getDouble(j) + betaMax) / 2.0);
+                            betaMin = beta.getDouble(j);
+                        }
+                        else {
+                            if(Double.isInfinite(betaMin))
+                                beta.putScalar(j,beta.getDouble(j) / 2.0);
+                            else
+                                beta.putScalar(j,(beta.getDouble(j) + betaMin) / 2.0);
+                            betaMax = beta.getDouble(j);
+                        }
+
+                        pair = hBeta(row,beta.getDouble(j));
+                        hDiff = pair.getFirst().subi(logU);
+                        tries++;
+                    }
+
+                    p.slice(j).put(range,pair.getSecond());
+
                 }
-                else {
-                    if(Double.isInfinite(betaMin))
-                        beta.putScalar(j,beta.getDouble(j) / 2.0);
-                    else
-                        beta.putScalar(j,(beta.getDouble(j) + betaMin) / 2.0);
-                    betaMax = beta.getDouble(j);
-                }
-
-                pair = hBeta(row,beta.getDouble(j));
-                hDiff = pair.getFirst().subi(logU);
-                tries++;
-            }
-
-            p.slice(j).put(range,pair.getSecond());
+            });
 
         }
+
+
+        try {
+            service.shutdown();
+            service.awaitTermination(1, TimeUnit.DAYS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
 
         log.info("Mean value of sigma " + sqrt(beta.rdiv(1)).mean(Integer.MAX_VALUE));
         BooleanIndexing.applyWhere(p,Conditions.isNan(),new Value(realMin));
@@ -218,7 +233,7 @@ public class Tsne {
         BooleanIndexing.applyWhere(pOut,Conditions.isNan(),new Value(realMin));
 
         pOut.divi(pOut.sum(Integer.MAX_VALUE));
-        pOut = Transforms.max(pOut, 1e-12f);
+        BooleanIndexing.applyWhere(pOut,Conditions.lessThan(1e-12),new Value(1e-12));
         //ensure no nans
         return pOut;
 
@@ -262,9 +277,9 @@ public class Tsne {
 
 
         //output
-        INDArray y = randn(X.rows(),nDims,new MersenneTwister(123)).muli(1e-3f);
 
-        INDArray otherD = null;
+        INDArray y = randn(X.rows(),nDims,new MersenneTwister(123)).muli(1e-3f);
+        y.data().flush();
 
 
         INDArray p = d2p(D,perplexity);
@@ -326,7 +341,7 @@ public class Tsne {
 
         // normalize to get probabilities
         INDArray  q =  max(qu.div(qu.sum(Integer.MAX_VALUE)), realMin);
-
+        qu.data().flush();
         INDArray PQ = p.sub(q);
 
         INDArray yGrads = Nd4j.create(y.shape());
