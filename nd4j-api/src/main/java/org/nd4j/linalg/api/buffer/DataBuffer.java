@@ -128,4 +128,9 @@ public interface DataBuffer extends Serializable {
      */
     DataBuffer dup();
 
+    /**
+     * Flush the data buffer
+     */
+    void flush();
+
 }

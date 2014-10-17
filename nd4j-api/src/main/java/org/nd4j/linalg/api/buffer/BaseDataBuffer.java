@@ -1,6 +1,9 @@
 package org.nd4j.linalg.api.buffer;
 
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Base class for a data buffer handling basic byte operations among other things.
@@ -9,6 +12,12 @@ import java.nio.ByteBuffer;
 public abstract  class BaseDataBuffer implements DataBuffer {
 
     protected int length;
+    //memory mapped file
+    protected String path;
+    protected RandomAccessFile memoryMappedBuffer;
+    public static final int MAPPING_SIZE = 1 << 30;
+    protected final List<ByteBuffer> mappings = new ArrayList<>();
+
 
     protected BaseDataBuffer(int length) {
         this.length = length;

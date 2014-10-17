@@ -3,7 +3,11 @@ package org.nd4j.linalg.api.buffer;
 
 import com.google.common.primitives.Bytes;
 
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
 import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * Double buffer implementation of data buffer
@@ -48,6 +52,18 @@ public class DoubleBuffer extends BaseDataBuffer {
 
     @Override
     public double[] asDouble() {
+        if(buffer == null) {
+            buffer = new double[length];
+            for(int i = 0; i < length; i++) {
+                buffer[i] = getDouble(i);
+            }
+            try {
+                mappings.clear();
+                memoryMappedBuffer.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return buffer;
     }
 
@@ -67,34 +83,49 @@ public class DoubleBuffer extends BaseDataBuffer {
 
     @Override
     public double getDouble(int i) {
-        return buffer[i];
+        if(buffer != null)
+            return buffer[i];
+        else {
+            long p = i * 8;
+            int mapN = (int) (p / MAPPING_SIZE);
+            int offN = (int) (p % MAPPING_SIZE);
+            return mappings.get(mapN).getDouble(offN);
+        }
     }
 
     @Override
     public float getFloat(int i) {
-        return (float) buffer[i];
+        return (float) getDouble(i);
     }
 
     @Override
     public Number getNumber(int i) {
-        return buffer[i];
+        return (int) getDouble(i);
     }
 
 
 
     @Override
     public void put(int i, float element) {
-        buffer[i] = element;
+        put(i,(double) element);
+
     }
 
     @Override
     public void put(int i, double element) {
-        buffer[i] = element;
+        if(buffer != null)
+            buffer[i] = element;
+        else {
+            long p = i * 8;
+            int mapN = (int) (p / MAPPING_SIZE);
+            int offN = (int) (p % MAPPING_SIZE);
+            mappings.get(mapN).putDouble(offN, element);
+        }
     }
 
     @Override
     public void put(int i, int element) {
-        buffer[i] = element;
+        put(i,element);
     }
 
 
@@ -108,6 +139,30 @@ public class DoubleBuffer extends BaseDataBuffer {
     @Override
     public DataBuffer dup() {
         return new DoubleBuffer(buffer);
+    }
+
+    @Override
+    public void flush() {
+        path = UUID.randomUUID().toString();
+       if(memoryMappedBuffer != null)
+           return;
+        try {
+            memoryMappedBuffer = new RandomAccessFile(path,"rw");
+            long size = 8L * length;
+            for (long offset = 0; offset < size; offset += MAPPING_SIZE) {
+                long size2 = Math.min(size - offset, MAPPING_SIZE);
+                mappings.add(memoryMappedBuffer.getChannel().map(FileChannel.MapMode.READ_WRITE, offset, size2));
+            }
+        } catch (IOException e) {
+            try {
+                memoryMappedBuffer.close();
+            } catch (IOException e1) {
+                throw new RuntimeException(e);
+            }
+            throw new RuntimeException(e);
+        }
+
+        buffer = null;
     }
 
     @Override

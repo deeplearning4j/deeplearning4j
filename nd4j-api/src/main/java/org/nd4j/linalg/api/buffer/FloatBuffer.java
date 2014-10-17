@@ -2,7 +2,11 @@ package org.nd4j.linalg.api.buffer;
 
 import com.google.common.primitives.Bytes;
 
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
 import java.util.Arrays;
+import java.util.UUID;
 
 /**
  *  Data buffer for floats
@@ -19,7 +23,7 @@ public class FloatBuffer extends BaseDataBuffer {
     }
     public FloatBuffer(float[] buffer) {
         super(buffer.length);
-        this.buffer = Arrays.copyOf(buffer, buffer.length);
+        this.buffer = Arrays.copyOf(buffer,buffer.length);
     }
 
     @Override
@@ -39,14 +43,26 @@ public class FloatBuffer extends BaseDataBuffer {
 
     @Override
     public float[] asFloat() {
-       return buffer;
+        if(buffer == null) {
+            buffer = new float[length];
+            for(int i = 0; i < length; i++) {
+                buffer[i] = getFloat(i);
+            }
+            try {
+                mappings.clear();
+                memoryMappedBuffer.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return buffer;
     }
 
     @Override
     public double[] asDouble() {
         double[] ret = new double[length];
         for(int i = 0; i < ret.length; i++) {
-            ret[i] =  buffer[i];
+            ret[i] = (double) buffer[i];
         }
         return ret;
     }
@@ -67,34 +83,49 @@ public class FloatBuffer extends BaseDataBuffer {
 
     @Override
     public double getDouble(int i) {
-        return buffer[i];
+        if(buffer != null)
+            return buffer[i];
+        else {
+            long p = i * 8;
+            int mapN = (int) (p / MAPPING_SIZE);
+            int offN = (int) (p % MAPPING_SIZE);
+            return mappings.get(mapN).getDouble(offN);
+        }
     }
 
     @Override
     public float getFloat(int i) {
-        return buffer[i];
+        return (float) getDouble(i);
     }
 
     @Override
     public Number getNumber(int i) {
-        return buffer[i];
+        return (int) getDouble(i);
     }
 
 
 
     @Override
     public void put(int i, float element) {
-        buffer[i] = element;
+        put(i,(double) element);
+
     }
 
     @Override
     public void put(int i, double element) {
-        buffer[i] = (float) element;
+        if(buffer != null)
+            buffer[i] = (float) element;
+        else {
+            long p = i * 8;
+            int mapN = (int) (p / MAPPING_SIZE);
+            int offN = (int) (p % MAPPING_SIZE);
+            mappings.get(mapN).putDouble(offN, element);
+        }
     }
 
     @Override
     public void put(int i, int element) {
-        buffer[i] = element;
+        put(i,element);
     }
 
 
@@ -111,6 +142,30 @@ public class FloatBuffer extends BaseDataBuffer {
     }
 
     @Override
+    public void flush() {
+        path = UUID.randomUUID().toString();
+        if(memoryMappedBuffer != null)
+            return;
+        try {
+            memoryMappedBuffer = new RandomAccessFile(path,"rw");
+            long size = 8L * length;
+            for (long offset = 0; offset < size; offset += MAPPING_SIZE) {
+                long size2 = Math.min(size - offset, MAPPING_SIZE);
+                mappings.add(memoryMappedBuffer.getChannel().map(FileChannel.MapMode.READ_WRITE, offset, size2));
+            }
+        } catch (IOException e) {
+            try {
+                memoryMappedBuffer.close();
+            } catch (IOException e1) {
+                throw new RuntimeException(e);
+            }
+            throw new RuntimeException(e);
+        }
+
+        buffer = null;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof FloatBuffer)) return false;
@@ -124,6 +179,6 @@ public class FloatBuffer extends BaseDataBuffer {
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(buffer);
+        return buffer != null ? Arrays.hashCode(buffer) : 0;
     }
 }
