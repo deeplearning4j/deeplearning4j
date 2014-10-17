@@ -155,6 +155,7 @@ public class FloatBuffer extends BaseDataBuffer {
             }
         } catch (IOException e) {
             try {
+                if(memoryMappedBuffer != null)
                 memoryMappedBuffer.close();
             } catch (IOException e1) {
                 throw new RuntimeException(e);
@@ -165,6 +166,20 @@ public class FloatBuffer extends BaseDataBuffer {
         buffer = null;
     }
 
+    @Override
+    public void destroy() {
+        if(buffer != null)
+            buffer = null;
+        if(memoryMappedBuffer != null) {
+            try {
+                this.mappings.clear();
+                this.memoryMappedBuffer.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+
+            }
+        }
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

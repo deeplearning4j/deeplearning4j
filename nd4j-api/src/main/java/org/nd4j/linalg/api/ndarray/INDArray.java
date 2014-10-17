@@ -259,6 +259,11 @@ public interface INDArray extends Serializable {
      */
     public INDArray negi();
 
+    /**
+     * Reverse division
+     * @param n
+     * @return
+     */
     public INDArray rdiv(Number n);
 
     /**
@@ -268,11 +273,21 @@ public interface INDArray extends Serializable {
      */
     public INDArray rdivi(Number n);
 
+    /**
+     * Reverse subtraction with duplicates
+     * @param n
+     * @return
+     */
     public INDArray rsub(Number n);
 
     public INDArray rsubi(Number n);
 
 
+    /**
+     * Division by a number
+     * @param n
+     * @return
+     */
     public INDArray div(Number n);
 
     /**
@@ -740,6 +755,35 @@ public interface INDArray extends Serializable {
     public INDArray divRowVector(INDArray rowVector);
 
 
+
+    /**
+     * In place reverse divison of a column vector
+     * @param columnVector the column vector to add
+     * @return the result of the addition
+     */
+    public INDArray rdiviColumnVector(INDArray columnVector);
+    /**
+     * In place reverse division of a column vector
+     * @param columnVector the column vector to add
+     * @return the result of the addition
+     */
+    public INDArray rdivColumnVector(INDArray columnVector);
+
+    /**
+     * In place addition of a column vector
+     * @param rowVector the column vector to add
+     * @return the result of the addition
+     */
+    public INDArray rdiviRowVector(INDArray rowVector);
+    /**
+     * In place addition of a column vector
+     * @param rowVector the column vector to add
+     * @return the result of the addition
+     */
+    public INDArray rdivRowVector(INDArray rowVector);
+
+
+
     /**
      * In place addition of a column vector
      * @param columnVector the column vector to add
@@ -768,6 +812,32 @@ public interface INDArray extends Serializable {
 
 
 
+
+    /**
+     * In place addition of a column vector
+     * @param columnVector the column vector to add
+     * @return the result of the addition
+     */
+    public INDArray rsubiColumnVector(INDArray columnVector);
+    /**
+     * In place addition of a column vector
+     * @param columnVector the column vector to add
+     * @return the result of the addition
+     */
+    public INDArray rsubColumnVector(INDArray columnVector);
+
+    /**
+     * In place addition of a column vector
+     * @param rowVector the column vector to add
+     * @return the result of the addition
+     */
+    public INDArray rsubiRowVector(INDArray rowVector);
+    /**
+     * In place addition of a column vector
+     * @param rowVector the column vector to add
+     * @return the result of the addition
+     */
+    public INDArray rsubRowVector(INDArray rowVector);
 
     /**
      * In place addition of a column vector

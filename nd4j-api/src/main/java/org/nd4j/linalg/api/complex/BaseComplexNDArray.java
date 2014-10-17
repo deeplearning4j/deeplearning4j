@@ -808,7 +808,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray subi(Number n, INDArray result) {
-        return subi(Nd4j.createFloat(n.floatValue(), 0), result);
+        return subi(Nd4j.createDouble(n.doubleValue(), 0), result);
     }
 
     @Override
@@ -832,7 +832,83 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return ret;
     }
 
+    @Override
+    public IComplexNDArray rsubRowVector(INDArray rowVector) {
+        return dup().rsubiRowVector(rowVector);
+    }
 
+    @Override
+    public IComplexNDArray rsubiRowVector(INDArray rowVector) {
+        return doRowWise(rowVector, 't');
+    }
+
+    @Override
+    public IComplexNDArray rsubColumnVector(INDArray columnVector) {
+        return dup().rsubiColumnVector(columnVector);
+    }
+
+    @Override
+    public IComplexNDArray rsubiColumnVector(INDArray columnVector) {
+        return doColumnWise(columnVector, 'h');
+    }
+
+    @Override
+    public IComplexNDArray rdivRowVector(INDArray rowVector) {
+        return dup().rdiviRowVector(rowVector);
+    }
+
+    @Override
+    public IComplexNDArray rdiviRowVector(INDArray rowVector) {
+        return doRowWise(rowVector, 't');
+    }
+
+    @Override
+    public IComplexNDArray rdivColumnVector(INDArray columnVector) {
+        return dup().rdiviColumnVector(columnVector);
+    }
+
+    @Override
+    public IComplexNDArray rdiviColumnVector(INDArray columnVector) {
+        return doColumnWise(columnVector,'t');
+    }
+
+    @Override
+    protected IComplexNDArray doRowWise(INDArray rowVector, char operation) {
+        assertRowVector(rowVector);
+        for(int i = 0; i < rows(); i++) {
+            switch(operation) {
+
+                case 'a' : getRow(i).addi(rowVector); break;
+                case 's' : getRow(i).subi(rowVector); break;
+                case 'm' : getRow(i).muli(rowVector); break;
+                case 'd' : getRow(i).divi(rowVector); break;
+                case 'h' : getRow(i).rsubi(rowVector); break;
+                case 't' : getRow(i).rdivi(rowVector); break;
+            }
+        }
+
+
+        return this;
+    }
+
+    @Override
+    protected IComplexNDArray doColumnWise(INDArray columnVector, char operation) {
+        asserColumnVector(columnVector);
+        for(int i = 0; i < columns(); i++) {
+            IComplexNDArray slice = slice(i,0);
+            switch(operation) {
+
+                case 'a' : slice.addi(columnVector); break;
+                case 's' : slice.subi(columnVector); break;
+                case 'm' : slice.muli(columnVector); break;
+                case 'd' : slice.divi(columnVector); break;
+                case 'h' : slice.rsubi(columnVector); break;
+                case 't' : slice.rdivi(columnVector);  break;
+            }
+        }
+
+        return this;
+    }
 
     /**
      * Returns the squared (Euclidean) distance.
@@ -853,7 +929,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public double distance2(INDArray other) {
-        return  (float) Math.sqrt(squaredDistance(other));
+        return   Math.sqrt(squaredDistance(other));
     }
 
     /**

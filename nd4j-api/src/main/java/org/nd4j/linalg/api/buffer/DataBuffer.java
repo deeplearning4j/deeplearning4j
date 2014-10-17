@@ -133,4 +133,9 @@ public interface DataBuffer extends Serializable {
      */
     void flush();
 
+    /**
+     * Clears this buffer
+     */
+    void destroy();
+
 }

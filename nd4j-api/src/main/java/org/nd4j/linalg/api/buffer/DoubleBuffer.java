@@ -144,8 +144,8 @@ public class DoubleBuffer extends BaseDataBuffer {
     @Override
     public void flush() {
         path = UUID.randomUUID().toString();
-       if(memoryMappedBuffer != null)
-           return;
+        if(memoryMappedBuffer != null)
+            return;
         try {
             memoryMappedBuffer = new RandomAccessFile(path,"rw");
             long size = 8L * length;
@@ -155,7 +155,8 @@ public class DoubleBuffer extends BaseDataBuffer {
             }
         } catch (IOException e) {
             try {
-                memoryMappedBuffer.close();
+                if(memoryMappedBuffer != null)
+                    memoryMappedBuffer.close();
             } catch (IOException e1) {
                 throw new RuntimeException(e);
             }
@@ -163,6 +164,21 @@ public class DoubleBuffer extends BaseDataBuffer {
         }
 
         buffer = null;
+    }
+
+    @Override
+    public void destroy() {
+        if(buffer != null)
+            buffer = null;
+       if(memoryMappedBuffer != null) {
+           try {
+               this.memoryMappedBuffer.close();
+              mappings.clear();
+           } catch (IOException e) {
+               throw new RuntimeException(e);
+
+           }
+       }
     }
 
     @Override

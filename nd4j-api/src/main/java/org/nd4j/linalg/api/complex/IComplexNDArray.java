@@ -283,6 +283,30 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray rsubi(IComplexNumber n, INDArray result);
 
 
+    @Override
+    IComplexNDArray rdiviColumnVector(INDArray columnVector);
+
+    @Override
+    IComplexNDArray rdivColumnVector(INDArray columnVector);
+
+    @Override
+    IComplexNDArray rdiviRowVector(INDArray rowVector);
+
+    @Override
+    IComplexNDArray rdivRowVector(INDArray rowVector);
+
+    @Override
+    IComplexNDArray rsubiColumnVector(INDArray columnVector);
+
+    @Override
+    IComplexNDArray rsubColumnVector(INDArray columnVector);
+
+    @Override
+    IComplexNDArray rsubiRowVector(INDArray rowVector);
+
+    @Override
+    IComplexNDArray rsubRowVector(INDArray rowVector);
+
     IComplexNDArray div(IComplexNumber n, INDArray result);
 
 

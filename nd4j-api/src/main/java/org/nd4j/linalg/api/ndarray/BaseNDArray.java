@@ -1903,6 +1903,8 @@ public abstract class BaseNDArray  implements INDArray {
      * s : subtract
      * m : multiply
      * d : divide
+     * h : reverse subtraction
+     * t : reverse division
      * @param columnVector the column  vector
      * @param operation the operation
      * @return
@@ -1917,6 +1919,8 @@ public abstract class BaseNDArray  implements INDArray {
                 case 's' : slice.subi(columnVector); break;
                 case 'm' : slice.muli(columnVector); break;
                 case 'd' : slice.divi(columnVector); break;
+                case 'h' : slice.rsubi(columnVector); break;
+                case 't' : slice.rdivi(columnVector);  break;
             }
         }
 
@@ -1939,6 +1943,9 @@ public abstract class BaseNDArray  implements INDArray {
      * s : subtract
      * m : multiply
      * d : divide
+     *  h : reverse subtraction
+     * t : reverse division
+
      * @param rowVector the row vector
      * @param operation the operation
      * @return
@@ -1952,6 +1959,8 @@ public abstract class BaseNDArray  implements INDArray {
                 case 's' : getRow(i).subi(rowVector); break;
                 case 'm' : getRow(i).muli(rowVector); break;
                 case 'd' : getRow(i).divi(rowVector); break;
+                case 'h' : getRow(i).rsubi(rowVector); break;
+                case 't' : getRow(i).rdivi(rowVector); break;
             }
         }
 
@@ -1960,6 +1969,45 @@ public abstract class BaseNDArray  implements INDArray {
 
     }
 
+    @Override
+    public INDArray rdiviColumnVector(INDArray columnVector) {
+        return doColumnWise(columnVector,'t');
+    }
+
+    @Override
+    public INDArray rdivColumnVector(INDArray columnVector) {
+        return dup().rdiviColumnVector(columnVector);
+    }
+
+    @Override
+    public INDArray rdiviRowVector(INDArray rowVector) {
+        return doRowWise(rowVector,'t');
+    }
+
+    @Override
+    public INDArray rdivRowVector(INDArray rowVector) {
+        return dup().rdiviRowVector(rowVector);
+    }
+
+    @Override
+    public INDArray rsubiColumnVector(INDArray columnVector) {
+        return doColumnWise(columnVector,'h');
+    }
+
+    @Override
+    public INDArray rsubColumnVector(INDArray columnVector) {
+        return dup().rsubiColumnVector(columnVector);
+    }
+
+    @Override
+    public INDArray rsubiRowVector(INDArray rowVector) {
+        return doRowWise(rowVector,'h');
+    }
+
+    @Override
+    public INDArray rsubRowVector(INDArray rowVector) {
+        return dup().rsubiRowVector(rowVector);
+    }
 
     /**
      * Inserts the element at the specified index
