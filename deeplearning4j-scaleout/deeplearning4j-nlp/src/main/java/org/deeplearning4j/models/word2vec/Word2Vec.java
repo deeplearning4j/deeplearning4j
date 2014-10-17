@@ -304,7 +304,6 @@ public class Word2Vec implements Persistable {
 
 
 
-       int processors = Runtime.getRuntime().availableProcessors();
         if(docIter != null && docIter.hasNext())
             for(int iter = 0; iter < numIterations; iter++) {
                 List<Future<?>> futures = new ArrayList<>();
