@@ -125,7 +125,7 @@ public class FloatBuffer extends BaseDataBuffer {
 
     @Override
     public void put(int i, int element) {
-        put(i,element);
+        put(i,(int) element);
     }
 
 

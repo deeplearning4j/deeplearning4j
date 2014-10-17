@@ -1948,10 +1948,10 @@ public abstract class BaseNDArray  implements INDArray {
         for(int i = 0; i < rows(); i++) {
             switch(operation) {
 
-                case 'a' : slice(i).addi(rowVector); break;
-                case 's' : slice(i).subi(rowVector); break;
-                case 'm' : slice(i).muli(rowVector); break;
-                case 'd' : slice(i).divi(rowVector); break;
+                case 'a' : getRow(i).addi(rowVector); break;
+                case 's' : getRow(i).subi(rowVector); break;
+                case 'm' : getRow(i).muli(rowVector); break;
+                case 'd' : getRow(i).divi(rowVector); break;
             }
         }
 

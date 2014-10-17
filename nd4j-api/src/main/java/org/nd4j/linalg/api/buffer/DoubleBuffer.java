@@ -125,7 +125,7 @@ public class DoubleBuffer extends BaseDataBuffer {
 
     @Override
     public void put(int i, int element) {
-        put(i,element);
+        put(i,(double ) element);
     }
 
 
