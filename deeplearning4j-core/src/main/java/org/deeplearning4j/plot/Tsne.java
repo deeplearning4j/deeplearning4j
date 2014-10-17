@@ -220,7 +220,7 @@ public class Tsne {
             Thread.currentThread().interrupt();
         }
 
-
+        //dont need data in memory after
         d.data().flush();
 
         log.info("Mean value of sigma " + sqrt(beta.rdiv(1)).mean(Integer.MAX_VALUE));
@@ -278,6 +278,8 @@ public class Tsne {
                 .addiRowVector(sumX);
 
 
+        //flush inputs after done
+        X.data().flush();
         //output
 
         INDArray y = randn(X.rows(),nDims,new MersenneTwister(123)).muli(1e-3f);
