@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
 import static org.nd4j.linalg.factory.Nd4j.*;
@@ -23,10 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -40,7 +38,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.max;
  * Tsne calculation
  * @author Adam Gibson
  */
-public class Tsne {
+public class Tsne implements Serializable {
 
     private int maxIter = 1000;
     private double realMin = 1e-12;
@@ -59,6 +57,7 @@ public class Tsne {
     private double perplexity = 30;
     private INDArray gains,yIncs;
     private INDArray y;
+    private transient IterationListener iterationListener;
 
     private String commandTemplate = "python /tmp/tsne.py --path %s --ndims %d --perplexity %.3f --initialdims %s --labels %s";
 
@@ -282,9 +281,9 @@ public class Tsne {
         //flush inputs after done
         X.data().flush();
         //output
+        if(y == null)
+            y = randn(X.rows(),nDims,new MersenneTwister(123)).muli(1e-3f);
 
-        y = randn(X.rows(),nDims,new MersenneTwister(123)).muli(1e-3f);
-        //y.data().flush();
 
 
         INDArray p = d2p(D,perplexity);
@@ -305,12 +304,15 @@ public class Tsne {
 
 
         for(int i = 0; i < maxIter; i++) {
-            step(y,p,i);
+            step(p,i);
 
             if(i == switchMomentumIteration)
                 momentum = finalMomentum;
             if(i == stopLyingIteration)
                 p.divi(4);
+
+            if(iterationListener != null)
+                iterationListener.iterationDone(i);
 
         }
 
@@ -319,7 +321,7 @@ public class Tsne {
 
 
     /* compute the gradient given the current solution, the probabilities and the constant */
-    private Pair<Double,INDArray> gradient(INDArray y,INDArray p) {
+    private Pair<Double,INDArray> gradient(INDArray p) {
         INDArray sumY =  pow(y, 2).sum(1);
         if(yIncs == null)
             yIncs =  zeros(y.shape());
@@ -351,7 +353,7 @@ public class Tsne {
 
         INDArray yGrads = Nd4j.create(y.shape());
         for(int i = 0; i < n; i++) {
-                  INDArray sum1 = Nd4j.tile(PQ.getRow(i).mul(qu.getRow(i)), new int[]{y.columns(), 1})
+            INDArray sum1 = Nd4j.tile(PQ.getRow(i).mul(qu.getRow(i)), new int[]{y.columns(), 1})
                     .transpose().mul(y.getRow(i).broadcast(y.shape()).sub(y)).sum(0);
             yGrads.putRow(i, sum1);
         }
@@ -381,14 +383,20 @@ public class Tsne {
         return new Pair<>(cost,yIncs);
     }
 
-
-    public void step(INDArray y,INDArray p,int i) {
-        Pair<Double,INDArray> costGradient = gradient(y,p);
+    /**
+     * An individual iteration
+     * @param p the probabilities that certain points
+     *          are near each other
+     * @param i the iteration (primarily for debugging purposes)
+     */
+    public void step(INDArray p,int i) {
+        Pair<Double,INDArray> costGradient = gradient(p);
         INDArray yIncs = costGradient.getSecond();
         log.info("Cost at iteration " + i + " was " + costGradient.getFirst());
         y.addi(yIncs);
         y.addi(yIncs).subiRowVector(y.mean(0));
         y.subi(Nd4j.tile(y.mean(0), new int[]{y.rows(), 1}));
+
     }
 
 
@@ -402,7 +410,7 @@ public class Tsne {
      */
     public void plot(INDArray matrix,int nDims,int initialDims,List<String> labels) throws IOException {
 
-        y = calculate(matrix,nDims,perplexity);
+        calculate(matrix,nDims,perplexity);
 
 
         String path = writeMatrix(y);
@@ -446,6 +454,18 @@ public class Tsne {
 
     public INDArray getY() {
         return y;
+    }
+
+    public void setY(INDArray y) {
+        this.y = y;
+    }
+
+    public IterationListener getIterationListener() {
+        return iterationListener;
+    }
+
+    public void setIterationListener(IterationListener iterationListener) {
+        this.iterationListener = iterationListener;
     }
 
     public static class Builder {

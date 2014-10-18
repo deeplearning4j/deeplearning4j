@@ -5,7 +5,7 @@ import org.deeplearning4j.berkeley.Triple;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.optimize.api.NeuralNetEpochListener;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.util.OptimizerMatrix;
@@ -36,7 +36,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
     private static Logger log = LoggerFactory.getLogger(StochasticHessianFree.class);
     /* decay, current gradient/direction/current point in vector space,preCondition on conjugate gradient,current parameters */
     private INDArray ch,gradient,xi;
-    private NeuralNetEpochListener listener;
+    private IterationListener listener;
     private double pi = 0.5f;
     private double decrease = 0.99f;
     private double boost = 1.0f / decrease;
@@ -53,13 +53,13 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
     }
 
-    public StochasticHessianFree(OptimizableByGradientValueMatrix function, NeuralNetEpochListener listener,BaseMultiLayerNetwork network) {
+    public StochasticHessianFree(OptimizableByGradientValueMatrix function, IterationListener listener,BaseMultiLayerNetwork network) {
         this(function, 0.01f,network);
         this.listener = listener;
 
     }
 
-    public StochasticHessianFree(OptimizableByGradientValueMatrix function, double initialStepSize, NeuralNetEpochListener listener,BaseMultiLayerNetwork network) {
+    public StochasticHessianFree(OptimizableByGradientValueMatrix function, double initialStepSize, IterationListener listener,BaseMultiLayerNetwork network) {
         this(function,initialStepSize,network);
         this.listener = listener;
 

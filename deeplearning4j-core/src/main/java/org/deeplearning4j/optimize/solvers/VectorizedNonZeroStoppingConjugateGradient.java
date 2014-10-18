@@ -18,7 +18,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.deeplearning4j.optimize.api.LineOptimizerMatrix;
-import org.deeplearning4j.optimize.api.NeuralNetEpochListener;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.util.OptimizerMatrix;
@@ -51,7 +51,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
     double gradientTolerance = 1e-5f;
     int maxIterations = 10000;
     private String myName = "";
-    private NeuralNetEpochListener listener;
+    private IterationListener listener;
 
     // The state of a conjugate gradient search
     double fp, gg, gam, dgg, step, fret;
@@ -75,13 +75,13 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 
     }
 
-    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function,NeuralNetEpochListener listener) {
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function,IterationListener listener) {
         this(function, 0.01f);
         this.listener = listener;
 
     }
 
-    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, double initialStepSize,NeuralNetEpochListener listener) {
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, double initialStepSize,IterationListener listener) {
         this(function,initialStepSize);
         this.listener = listener;
 
