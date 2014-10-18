@@ -7,14 +7,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.nd4j.linalg.learning.AdaGrad;
-import org.deeplearning4j.optimize.api.NeuralNetEpochListener;
+import org.deeplearning4j.optimize.api.IterationListener;
 /**
  * Single layer neural network, this is typically one that has 
  * the objective function of reconstruction the input: also called feature detectors
  * @author Adam Gibson
  *
  */
-public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochListener,Model {
+public interface NeuralNetwork extends Serializable,Cloneable,IterationListener,Model {
 
 
 
@@ -101,7 +101,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
     public Pair<INDArray,INDArray> sampleVisibleGivenHidden(INDArray h);
 
 
-    void iterationDone(int epoch);
+    void iterationDone(int iteration);
 
 
     /**

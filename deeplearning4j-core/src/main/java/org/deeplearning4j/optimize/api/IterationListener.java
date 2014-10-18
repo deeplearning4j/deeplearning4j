@@ -6,11 +6,11 @@ package org.deeplearning4j.optimize.api;
  * @author Adam Gibson
  *
  */
-public interface NeuralNetEpochListener  {
+public interface IterationListener {
 	/**
 	 * Event listener for each iteration
-	 * @param epoch
+	 * @param iteration
 	 */
-	void iterationDone(int epoch);
+	void iterationDone(int iteration);
 	
 }

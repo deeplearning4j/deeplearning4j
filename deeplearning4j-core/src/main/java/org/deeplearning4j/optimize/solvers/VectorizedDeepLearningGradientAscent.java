@@ -3,7 +3,7 @@ package org.deeplearning4j.optimize.solvers;
 
 import org.deeplearning4j.exception.InvalidStepException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.optimize.api.NeuralNetEpochListener;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.util.OptimizerMatrix;
@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 
 
-    private NeuralNetEpochListener listener;
+    private IterationListener listener;
     boolean converged = false;
     OptimizableByGradientValueMatrix optimizable;
     private double maxStep = 1.0f;
@@ -45,13 +45,13 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 
     }
 
-    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function,NeuralNetEpochListener listener) {
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function,IterationListener listener) {
         this(function, 0.01f);
         this.listener = listener;
 
     }
 
-    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function, double initialStepSize,NeuralNetEpochListener listener) {
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function, double initialStepSize,IterationListener listener) {
         this(function,initialStepSize);
         this.listener = listener;
 
