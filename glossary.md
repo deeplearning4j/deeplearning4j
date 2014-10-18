@@ -23,8 +23,11 @@ Also known as an error matrix or contingency table. Confusions matrices allow yo
 ###<a name="etl">ETL</a>
 Extract, transform, load: Data is loaded from disk into memory with the proper transforms such as [binarization](#binarization) and [normalization](#normalization).
 
+###<a name="f1">f1 Score</a>
+The f1 score is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It’s basically the probability that your net’s guesses are correct.
+
 ### <a name="feedforwardneuralnetwork">Feed-Forward Network</a>
-A neural network that takes the initial input and triggers the [activation](#activation) of each layer of the network.
+A neural network that takes the initial input and triggers the [activation](#activation) of each layer of the network successively, without circulating. Feed-forward nets contrast with recurrent and recursive nets.
 
 ### <a name="gaussian">Gaussian Distribution</a>
 A Gaussian, or [normal](https://en.wikipedia.org/wiki/Normal_distribution), distribution, is a continuous probability distribution that represents the probability that any given observation will occur on different points of a range. Visually, it resembles what's usually called a Bell curve. 
