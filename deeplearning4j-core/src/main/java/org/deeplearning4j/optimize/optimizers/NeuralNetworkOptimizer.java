@@ -5,14 +5,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.google.common.primitives.Floats;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
-import org.deeplearning4j.optimize.api.NeuralNetEpochListener;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
 import org.deeplearning4j.optimize.solvers.VectorizedDeepLearningGradientAscent;
 import org.deeplearning4j.optimize.solvers.VectorizedNonZeroStoppingConjugateGradient;
@@ -27,7 +26,7 @@ import org.slf4j.LoggerFactory;
  * @author Adam Gibson
  *
  */
-public abstract class NeuralNetworkOptimizer implements OptimizableByGradientValueMatrix,Serializable,NeuralNetEpochListener {
+public abstract class NeuralNetworkOptimizer implements OptimizableByGradientValueMatrix,Serializable,IterationListener {
 
 
 
@@ -105,11 +104,11 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     }
 
     @Override
-    public void iterationDone(int iterationDone) {
+    public void iterationDone(int iteration) {
         int plotEpochs = network.conf().getRenderWeightsEveryNumEpochs();
         if(plotEpochs <= 0)
             return;
-        if(iterationDone % plotEpochs == 0) {
+        if(iteration % plotEpochs == 0) {
             plotter.plotNetworkGradient(network,network.getGradient(extraParams),100);
         }
 

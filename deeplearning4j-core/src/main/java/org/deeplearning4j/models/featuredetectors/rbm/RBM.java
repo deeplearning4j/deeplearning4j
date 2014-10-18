@@ -441,11 +441,11 @@ public  class RBM extends BaseNeuralNetwork {
     }
 
     @Override
-    public void iterationDone(int epoch) {
+    public void iterationDone(int iteration) {
         int plotEpochs = conf.getRenderWeightsEveryNumEpochs();
         if(plotEpochs <= 0)
             return;
-        if(epoch % plotEpochs == 0 || epoch == 0) {
+        if(iteration % plotEpochs == 0 || iteration == 0) {
             NeuralNetPlotter plotter = new NeuralNetPlotter();
             plotter.plotNetworkGradient(this,this.getGradient(new Object[]{1,0.001,1000}),getInput().rows());
         }

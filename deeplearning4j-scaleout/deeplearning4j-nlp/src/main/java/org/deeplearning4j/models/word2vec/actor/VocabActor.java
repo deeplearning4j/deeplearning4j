@@ -56,7 +56,7 @@ public class VocabActor extends UntypedActor {
 			work.getCount().incrementAndGet();
 			String sentence = work.getWork();
 
-			if(sentence.isEmpty()) {
+			if(sentence.isEmpty() || sentence.length() <= 2) {
 				work.countDown();
 				return;
 			}
@@ -64,6 +64,8 @@ public class VocabActor extends UntypedActor {
 
 			while(t.hasMoreTokens())  {
 				String token = t.nextToken();
+                if(token.length() < 2)
+                    continue;
 				if(stopWords.contains(token))
 					token = "STOP";
 				cache.incrementWordCount(token);
