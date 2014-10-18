@@ -58,6 +58,7 @@ public class Tsne {
     private boolean useAdaGrad = true;
     private double perplexity = 30;
     private INDArray gains,yIncs;
+    private INDArray y;
 
     private String commandTemplate = "python /tmp/tsne.py --path %s --ndims %d --perplexity %.3f --initialdims %s --labels %s";
 
@@ -282,8 +283,8 @@ public class Tsne {
         X.data().flush();
         //output
 
-        INDArray y = randn(X.rows(),nDims,new MersenneTwister(123)).muli(1e-3f);
-        y.data().flush();
+        y = randn(X.rows(),nDims,new MersenneTwister(123)).muli(1e-3f);
+        //y.data().flush();
 
 
         INDArray p = d2p(D,perplexity);
@@ -345,12 +346,12 @@ public class Tsne {
 
         // normalize to get probabilities
         INDArray  q =  max(qu.div(qu.sum(Integer.MAX_VALUE)), realMin);
-        qu.data().flush();
+
         INDArray PQ = p.sub(q);
 
         INDArray yGrads = Nd4j.create(y.shape());
         for(int i = 0; i < n; i++) {
-            INDArray sum1 = Nd4j.tile(PQ.getRow(i).mul(qu.getRow(i)), new int[]{y.columns(), 1})
+                  INDArray sum1 = Nd4j.tile(PQ.getRow(i).mul(qu.getRow(i)), new int[]{y.columns(), 1})
                     .transpose().mul(y.getRow(i).broadcast(y.shape()).sub(y)).sum(0);
             yGrads.putRow(i, sum1);
         }
@@ -401,7 +402,7 @@ public class Tsne {
      */
     public void plot(INDArray matrix,int nDims,int initialDims,List<String> labels) throws IOException {
 
-        INDArray y = calculate(matrix,nDims,perplexity);
+        y = calculate(matrix,nDims,perplexity);
 
 
         String path = writeMatrix(y);
@@ -441,6 +442,10 @@ public class Tsne {
 
         bos.close();
         return filePath;
+    }
+
+    public INDArray getY() {
+        return y;
     }
 
     public static class Builder {

@@ -13,9 +13,7 @@ import org.deeplearning4j.util.Index;
 import org.deeplearning4j.util.SerializationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ArrayUtil;
+
 
 
 import java.io.File;
@@ -33,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class InMemoryLookupCache implements VocabCache,Serializable {
 
     private Index wordIndex = new Index();
-    private boolean useAdaGrad = true;
+    private boolean useAdaGrad = false;
     private Counter<String> wordFrequencies = Util.parallelCounter();
     private Map<String,VocabWord> vocabs = new ConcurrentHashMap<>();
     private Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
@@ -326,7 +324,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     public INDArray vector(String word) {
         if(word == null)
             return null;
-        return syn0.slice(indexOf(word));
+        return syn0.getRow(indexOf(word));
     }
 
     /**

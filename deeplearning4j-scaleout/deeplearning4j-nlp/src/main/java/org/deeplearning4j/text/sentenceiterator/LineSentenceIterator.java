@@ -14,21 +14,15 @@ public class LineSentenceIterator extends BaseSentenceIterator {
 
     private InputStream file;
     private LineIterator iter;
+    private File f;
 
 
-    public LineSentenceIterator(InputStream is) {
-          try {
-            this.file = is;
-            iter = IOUtils.lineIterator(this.file,"UTF-8");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     public LineSentenceIterator(File f) {
         if (!f.exists() || !f.isFile())
             throw new IllegalArgumentException("Please specify an existing file");
         try {
+            this.f = f;
             this.file = new BufferedInputStream(new FileInputStream(f));
             iter = IOUtils.lineIterator(this.file,"UTF-8");
         } catch (IOException e) {
@@ -53,6 +47,11 @@ public class LineSentenceIterator extends BaseSentenceIterator {
     @Override
     public void reset() {
         try {
+            if(file != null)
+                file.close();
+            if(iter != null)
+                iter.close();
+            this.file = new BufferedInputStream(new FileInputStream(f));
             iter = IOUtils.lineIterator(this.file,"UTF-8");
         } catch (IOException e) {
             throw new RuntimeException(e);
