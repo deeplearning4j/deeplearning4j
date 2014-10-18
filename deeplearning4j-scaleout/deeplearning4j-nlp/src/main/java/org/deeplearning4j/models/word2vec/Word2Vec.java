@@ -243,9 +243,10 @@ public class Word2Vec implements Persistable {
 
 
 
-        buildVocab();
+        boolean loaded =  buildVocab();
         //save vocab after building
-        cache.saveVocab();
+        if(!loaded)
+            cache.saveVocab();
         if(stopWords == null)
             readStopWords();
 
@@ -265,95 +266,93 @@ public class Word2Vec implements Persistable {
         ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
         log.info("Processing sentences...");
-        if(getSentenceIter() != null && getSentenceIter().hasNext())
-            for(int i = 0; i < numIterations; i++) {
-                while(getSentenceIter() != null && getSentenceIter().hasNext()) {
+        for(int i = 0; i < numIterations; i++) {
+            while(getSentenceIter() != null && getSentenceIter().hasNext()) {
 
-                    final String sentence = sentenceIter.nextSentence();
-                    if(sentence == null)
-                        continue;
+                final String sentence = sentenceIter.nextSentence();
+                if(sentence == null)
+                    continue;
 
-                    service.execute(new Runnable() {
+                service.execute(new Runnable() {
 
-                        /**
-                         * When an object implementing interface <code>Runnable</code> is used
-                         * to create a thread, starting the thread causes the object's
-                         * <code>run</code> method to be called in that separately executing
-                         * thread.
-                         * <p/>
-                         * The general contract of the method <code>run</code> is that it may
-                         * take any action whatsoever.
-                         *
-                         * @see Thread#run()
-                         */
-                        @Override
-                        public void run() {
-                            trainSentence(sentence);
-                        }
-                    });
-
-                    numSentencesProcessed.incrementAndGet();
-                    if(numSentencesProcessed.get() % 100 == 0)
-                        log.info("Num sentences processed " + numSentencesProcessed.get());
-                }
-
-                if(sentenceIter != null)
-                    sentenceIter.reset();
-            }
-
-
-
-
-        if(docIter != null && docIter.hasNext())
-            for(int iter = 0; iter < numIterations; iter++) {
-                List<Future<?>> futures = new ArrayList<>();
-                while (docIter != null && docIter.hasNext()) {
-                    final InputStream is = docIter.nextDocument();
-
-                    Future<?> f = service.submit(new Runnable() {
-
-                        /**
-                         * When an object implementing interface <code>Runnable</code> is used
-                         * to create a thread, starting the thread causes the object's
-                         * <code>run</code> method to be called in that separately executing
-                         * thread.
-                         * <p/>
-                         * The general contract of the method <code>run</code> is that it may
-                         * take any action whatsoever.
-                         *
-                         * @see Thread#run()
-                         */
-                        @Override
-                        public void run() {
-                            trainSentence(is);
-                            try {
-                                is.close();
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    });
-                    futures.add(f);
-                    numSentencesProcessed.incrementAndGet();
-                    if (numSentencesProcessed.get() % 1000 == 0)
-                        log.info("Num sentences processed " + numSentencesProcessed.get());
-                    while(futures.size() > 100) {
-                        Set<Future<?>> remove = new HashSet<>();
-                        for(Future<?> f2 : futures) {
-                            if(f2.isDone())
-                                remove.add(f2);
-                        }
-                        futures.removeAll(remove);
+                    /**
+                     * When an object implementing interface <code>Runnable</code> is used
+                     * to create a thread, starting the thread causes the object's
+                     * <code>run</code> method to be called in that separately executing
+                     * thread.
+                     * <p/>
+                     * The general contract of the method <code>run</code> is that it may
+                     * take any action whatsoever.
+                     *
+                     * @see Thread#run()
+                     */
+                    @Override
+                    public void run() {
+                        trainSentence(sentence);
                     }
+                });
+
+                numSentencesProcessed.incrementAndGet();
+                if(numSentencesProcessed.get() % 100 == 0)
+                    log.info("Num sentences processed " + numSentencesProcessed.get());
+            }
+
+            if(sentenceIter != null)
+                sentenceIter.reset();
+        }
 
 
+
+
+        for(int iter = 0; iter < numIterations; iter++) {
+            List<Future<?>> futures = new ArrayList<>();
+            while (docIter != null && docIter.hasNext()) {
+                final InputStream is = docIter.nextDocument();
+
+                Future<?> f = service.submit(new Runnable() {
+
+                    /**
+                     * When an object implementing interface <code>Runnable</code> is used
+                     * to create a thread, starting the thread causes the object's
+                     * <code>run</code> method to be called in that separately executing
+                     * thread.
+                     * <p/>
+                     * The general contract of the method <code>run</code> is that it may
+                     * take any action whatsoever.
+                     *
+                     * @see Thread#run()
+                     */
+                    @Override
+                    public void run() {
+                        trainSentence(is);
+                        try {
+                            is.close();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                });
+                futures.add(f);
+                numSentencesProcessed.incrementAndGet();
+                if (numSentencesProcessed.get() % 1000 == 0)
+                    log.info("Num sentences processed " + numSentencesProcessed.get());
+                while(futures.size() > 100) {
+                    Set<Future<?>> remove = new HashSet<>();
+                    for(Future<?> f2 : futures) {
+                        if(f2.isDone())
+                            remove.add(f2);
+                    }
+                    futures.removeAll(remove);
                 }
-
-                if(docIter != null)
-                    docIter.reset();
 
 
             }
+
+            if(docIter != null)
+                docIter.reset();
+
+
+        }
 
 
         try {
@@ -509,14 +508,14 @@ public class Word2Vec implements Persistable {
     /**
      * Builds the vocabulary for training
      */
-    public void buildVocab() {
+    public boolean buildVocab() {
         readStopWords();
 
         if(cache.vocabExists()) {
             log.info("Loading vocab...");
             cache.loadVocab();
             cache.resetWeights();
-            return;
+            return true;
         }
 
         if(trainingSystem == null)
@@ -585,6 +584,7 @@ public class Word2Vec implements Persistable {
 
         setup();
 
+        return false;
     }
 
 
