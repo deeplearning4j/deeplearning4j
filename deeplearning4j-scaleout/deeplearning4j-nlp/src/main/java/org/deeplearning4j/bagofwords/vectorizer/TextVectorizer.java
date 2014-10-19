@@ -37,6 +37,8 @@ public interface TextVectorizer extends Vectorizer {
      */
     DataSet vectorize(String text,String label);
 
+    void fit();
+
     /**
      *
      * @param input the text to vectorize
