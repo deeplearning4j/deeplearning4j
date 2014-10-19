@@ -26,7 +26,7 @@ Contents
 
 * You'll need to install ND4J, the linear-algebra library powering DL4J, in the same root directory as DL4J itself (say, your Desktop...), like so:
 
-	git clone https://github.com/SkymindIO/nd4j.git
+         git clone https://github.com/SkymindIO/nd4j.git
 
 ### IntelliJ
 
@@ -82,20 +82,20 @@ Add these POM coordinates to your project:
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-core</artifactId>
 			<version>0.0.3.2</version>
-	 </dependency>
-
-		//For multithreaded/clustering support, add this dependency to your POM file
-
+         </dependency>
+         
+         //For multithreaded/clustering support, add this dependency to your POM file
+         
          <dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-scaleout-akka</artifactId>
 			<version>0.0.3.2</version>
          </dependency>
-
+         
 		// For natural-language processing (NLP), add this dependency to your POM file
-        
-	 <dependency>
-       	    <groupId>org.deeplearning4j</groupId>
+		
+         <dependency>
+            <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-nlp/artifactId>
             <version>0.0.3.2</version>
          </dependency>
