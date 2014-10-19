@@ -29,7 +29,8 @@ public class BagOfWordsVectorizerTest {
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
         List<String> labels = Arrays.asList("label1", "label2");
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-        TextVectorizer vectorizer = new BagOfWordsVectorizer(iter,tokenizerFactory,labels);
+        TextVectorizer vectorizer = new BagOfWordsVectorizer.Builder()
+                .tokenize(tokenizerFactory).iterate(iter).labels(labels).build();
         DataSet vectorized = vectorizer.vectorize();
         assertEquals(4,vectorized.numInputs());
         assertEquals(2,vectorized.numOutcomes());

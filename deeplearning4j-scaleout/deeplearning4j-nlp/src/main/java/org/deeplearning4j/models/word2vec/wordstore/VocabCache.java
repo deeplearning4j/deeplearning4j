@@ -174,4 +174,45 @@ public interface VocabCache  {
      */
     int numWords();
 
+
+    /**
+     * Count of documents a word appeared in
+     * @param word the number of documents the word appeared in
+     * @return
+     */
+    int docAppearedIn(String word);
+
+    /**
+     * Increment the document count
+     * @param word the word to increment by
+     * @param howMuch
+     */
+    void incrementDocCount(String word,int howMuch);
+
+
+    /**
+     * Set the count for the number of documents the word appears in
+     * @param word the word to set the count for
+     * @param count the count of the word
+     */
+    void setCountForDoc(String word,int count);
+
+    /**
+     * Returns the total of number of documents encountered in the corpus
+     * @return the total number of docs in the corpus
+     */
+    int totalNumberOfDocs();
+
+
+    /**
+     * Increment the doc count
+     */
+    void incrementTotalDocCount();
+
+    /**
+     * Increment the doc count
+     * @param  by the number to increment by
+     */
+    void incrementTotalDocCount(int by);
+
 }

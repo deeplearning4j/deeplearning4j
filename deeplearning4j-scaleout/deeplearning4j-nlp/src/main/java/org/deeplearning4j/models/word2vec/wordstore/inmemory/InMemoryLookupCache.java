@@ -33,6 +33,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     private Index wordIndex = new Index();
     private boolean useAdaGrad = false;
     private Counter<String> wordFrequencies = Util.parallelCounter();
+    private Counter<String> docFrequencies = Util.parallelCounter();
     private Map<String,VocabWord> vocabs = new ConcurrentHashMap<>();
     private Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
     private INDArray syn0,syn1;
@@ -43,6 +44,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     double[] expTable = new double[1000];
     static double MAX_EXP = 6;
     private long seed = 123;
+    private int numDocs = 0;
 
     public InMemoryLookupCache(int vectorLength) {
         this(vectorLength,true);
@@ -367,6 +369,36 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     @Override
     public synchronized int numWords() {
         return vocabs.size();
+    }
+
+    @Override
+    public int docAppearedIn(String word) {
+        return (int) docFrequencies.getCount(word);
+    }
+
+    @Override
+    public void incrementDocCount(String word, int howMuch) {
+        docFrequencies.incrementCount(word, howMuch);
+    }
+
+    @Override
+    public void setCountForDoc(String word, int count) {
+        docFrequencies.setCount(word, count);
+    }
+
+    @Override
+    public int totalNumberOfDocs() {
+        return numDocs;
+    }
+
+    @Override
+    public void incrementTotalDocCount() {
+        numDocs++;
+    }
+
+    @Override
+    public void incrementTotalDocCount(int by) {
+       numDocs += by;
     }
 
     @Override
