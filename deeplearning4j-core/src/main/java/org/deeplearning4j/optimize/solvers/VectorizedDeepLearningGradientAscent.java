@@ -132,7 +132,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
             boolean calledEpochDone = false;
             // Ensure step not too large
             optimizable.setCurrentIteration(iterations);
-            double sum = (double) xi.norm2(Integer.MAX_VALUE).element();
+            double sum = (double) xi.norm2(Integer.MAX_VALUE).getDouble(0);
             if (sum > stpmax) {
                 logger.info ("*** Step 2-norm "+sum+" greater than max " + stpmax + "  Scaling...");
                 xi.muli(stpmax / sum);

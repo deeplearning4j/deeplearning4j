@@ -22,7 +22,7 @@ public class TsneExample {
         List<String> list = new ArrayList<>();
         for(int i = 0; i < d2.numExamples(); i++)
             list.add(String.valueOf(d2.get(i).outcome()));
-        tsne.plot(d2.getFeatureMatrix(),2,28,list);
+        tsne.plot(d2.getFeatureMatrix(),2,list);
     }
 
 

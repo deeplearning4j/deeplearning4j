@@ -357,7 +357,7 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
-
+        fit(new org.nd4j.linalg.dataset.DataSet(examples,labels));
     }
 
     /**
@@ -368,7 +368,10 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
     @Override
     public void fit(DataSet data) {
         this.input = data.getFeatureMatrix();
-        finetune(data.getLabels(), defaultConfiguration.getLr(),defaultConfiguration.getNumIterations());
+        INDArray labels = data.getLabels();
+        double lr = layerWiseConfigurations.get(0).getLr();
+        int iterations = layerWiseConfigurations.get(0).getNumIterations();
+        finetune(labels, lr,iterations);
     }
 
     /**
@@ -657,7 +660,12 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
             e.setLineSearchBackProp(encoder.isLineSearchBackProp());
             e.setForceNumEpochs(shouldForceEpochs);
 
+            List<NeuralNetConfiguration> confs = new ArrayList<>();
+            for(int i = 0; i <  e.layers.length; i++)
+                confs.add(e.layers[i].conf());
 
+            e.setLayerWiseConfigurations(confs);
+            e.setDefaultConfiguration(confs.get(0));
 
             e.dimensionCheck();
 

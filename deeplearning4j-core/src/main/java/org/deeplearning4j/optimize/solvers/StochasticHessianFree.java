@@ -97,7 +97,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
         //x0 is ch
         INDArray r = network.getBackPropRGradient(x0).subi(b);
         INDArray y = r.div(preCon);
-        double deltaNew = (double) r.mul(y).sum(Integer.MAX_VALUE).element();
+        double deltaNew =  r.mul(y).sum(Integer.MAX_VALUE).getDouble(0);
         INDArray p = y.neg();
         //initial x
         INDArray x = x0;
@@ -110,7 +110,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
             INDArray Ap = network.getBackPropRGradient(p);
             //log.info("Ap sum at iteration " + iterationCount + " is " + Ap.sum());
             //think Ax + b, this is the curvature
-            double pAp = (double) Ap.mul(p).sum(Integer.MAX_VALUE).element();
+            double pAp =  Ap.mul(p).sum(Integer.MAX_VALUE).getDouble(0);
             if(pAp < 0) {
                 log.info("Negative slope: " + pAp + " breaking");
             }
@@ -133,7 +133,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
             INDArray rNew = r.add(Ap.mul(alpha));
             INDArray yNew = rNew.div(preCon);
             double deltaOld = deltaNew;
-            deltaNew = (double) rNew.mul(yNew).sum(Integer.MAX_VALUE).element();
+            deltaNew =  rNew.mul(yNew).sum(Integer.MAX_VALUE).getDouble(0);
             double beta = deltaNew / deltaOld;
             p = yNew.neg().add(p.mul(beta));
 
@@ -173,7 +173,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
                 log.info("Iteration " + j + " on line search with current rate of " + rate);
             }
             //converged
-            if(newScore <= (double) gradient.mul(p).mul(score + c * rate).sum(Integer.MAX_VALUE).element()) {
+            if(newScore <=   gradient.mul(p).mul(score + c * rate).sum(Integer.MAX_VALUE).getDouble(0)) {
                 break;
             }
             else {

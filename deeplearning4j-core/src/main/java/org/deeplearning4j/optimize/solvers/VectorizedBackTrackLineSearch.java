@@ -108,11 +108,11 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
         if (logger.isDebugEnabled()) {
             logger.trace ("ENTERING BACKTRACK\n");
             logger.trace("Entering BackTrackLnSrch, value="+fold+",\ndirection.oneNorm:"
-                    +	line.norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+ FastMath.max(Float.NEGATIVE_INFINITY,(double) Transforms.abs(line).max(Integer.MAX_VALUE).element()));
+                    +	line.norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+ FastMath.max(Float.NEGATIVE_INFINITY,Transforms.abs(line).max(Integer.MAX_VALUE).getDouble(0)));
         }
 
         LinAlgExceptions.assertValidNum(g);
-        double sum = (double) line.norm2(Integer.MAX_VALUE).element();
+        double sum = line.norm2(Integer.MAX_VALUE).getDouble(0);
         if(sum > stpmax) {
             logger.warn("attempted step too big. scaling: sum= " + sum +
                     ", stpmax= "+ stpmax);
@@ -251,7 +251,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
     {
 
         for (int i = 0; i < x.length(); i++) {
-            double comp = Math.abs ((double) x.getScalar(i).element() - (double) xold.getScalar(i).element());
+            double comp = Math.abs ( x.getDouble(i) -  xold.getDouble(i));
             if ( comp > absTolx) {
                 return false;
             }
