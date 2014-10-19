@@ -60,7 +60,7 @@ These tools will generate the visualizations that allow you to debug your neural
 
 * Throughout the training, you should see some numeral-images pop up in small windows in the upper left hand corner of your screen. Those are the reconstructions that prove your net actually works, and they look similar to these. 
 
-![Alt text](../img/two.png)![Alt text](../img/nine.png)![Alt text](../img/three.png)![Alt text](../img/one.png)
+![Alt text](../img/two.png)[Alt text](../img/nine.png)[Alt text](../img/three.png)[Alt text](../img/one.png)
 
 The way to judge whether your net has successfully learned the dataset is to look at the visualizations. They should gradually come to resemble handwritten numerals. Once they do, your net has been successfully trained, and that's what you need for deep learning to be worth anything.
 
