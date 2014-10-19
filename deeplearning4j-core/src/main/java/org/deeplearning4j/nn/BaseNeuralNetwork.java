@@ -208,7 +208,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     @Override
     public void backProp(double lr,int iterations,Object[] extraParams) {
-        double currRecon = squaredLoss();
+        double currRecon = LossFunctions.score(input, LossFunctions.LossFunction.SQUARED_LOSS,this.transform(input),conf.getL2(),conf.isUseRegularization());
         boolean train = true;
         NeuralNetwork revert = clone();
         while(train) {
@@ -216,7 +216,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 break;
 
 
-            double newRecon = this.squaredLoss();
+            double newRecon = LossFunctions.score(input, LossFunctions.LossFunction.SQUARED_LOSS,this.transform(input),conf.getL2(),conf.isUseRegularization());
             //prevent weights from exploding too far in either direction, we want this as close to zero as possible
             if(newRecon > currRecon || currRecon < 0 && newRecon < currRecon) {
                 update((BaseNeuralNetwork) revert);
@@ -646,15 +646,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
 
-    public double squaredLoss() {
-        INDArray squaredDiff = pow(transform(input).sub(input),2);
-        double loss = (double) squaredDiff.sum(Integer.MAX_VALUE).element() / input.rows();
-        if(conf.isUseRegularization()) {
-            loss += 0.5 * conf.getL2() * (double) pow(W,2).sum(Integer.MAX_VALUE).element();
-        }
-
-        return loss;
-    }
 
 
 

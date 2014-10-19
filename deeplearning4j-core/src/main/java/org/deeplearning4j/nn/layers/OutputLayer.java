@@ -324,7 +324,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
                 return input.transpose().mmul(pow(labels.sub(z),2));
 
 
-
         }
 
         throw new IllegalStateException("Invalid loss function");

@@ -6,8 +6,10 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.plot.Tsne;
+import org.deeplearning4j.plot.dropwizard.RenderApplication;
 import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.util.Index;
 import org.deeplearning4j.util.SerializationUtils;
@@ -65,6 +67,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
     public InMemoryLookupCache(int vectorLength,boolean useAdaGrad) {
         this(vectorLength,useAdaGrad,0.025f,new XorShift64StarRandomGenerator(123));
+        addWordToIndex(0, Word2Vec.UNK);
+        wordIndex.add(Word2Vec.UNK);
 
 
     }
@@ -418,9 +422,15 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
             for(String s : words()) {
                 plot.add(s);
             }
-            tsne.plot(syn0,2,syn0.shape()[1],plot);
+            tsne.plot(syn0, 2, plot);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+
+        try {
+            RenderApplication.main(null);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -437,7 +447,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
             for(String s : words()) {
                 plot.add(s);
             }
-            tsne.plot(syn0,2,syn0.shape()[1],plot);
+            tsne.plot(syn0,2,plot);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
