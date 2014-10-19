@@ -117,7 +117,8 @@ public class BagOfWordsVectorizer implements TextVectorizer {
         return new DataSet(input,labelMatrix);
     }
 
-    private void process() {
+    @Override
+    public void fit() {
         while(sentenceIter.hasNext()) {
             Tokenizer tokenizer = tokenizerFactory.create(sentenceIter.nextSentence());
             List<String> tokens = tokenizer.getTokens();
@@ -148,7 +149,7 @@ public class BagOfWordsVectorizer implements TextVectorizer {
 
     @Override
     public DataSet vectorize() {
-        process();
+        fit();
         sentenceIter.reset();
         List<DataSet> ret = new ArrayList<>();
         while(sentenceIter.hasNext()) {
