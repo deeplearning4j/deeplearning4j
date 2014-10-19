@@ -22,6 +22,12 @@ Contents
          git clone https://github.com/agibsonccc/java-deeplearning
          cd java-deeplearning
 
+###ND4J
+
+* You'll need to install ND4J, the linear-algebra library powering DL4J, in the same root directory as DL4J itself (say, your Desktop...), like so:
+
+	git clone https://github.com/SkymindIO/nd4j.git
+
 ### IntelliJ
 
 * To work with DL4J code, you should download the Java IDE IntelliJ. A free, community edition is available [here](http://www.jetbrains.com/idea/download/).
@@ -40,12 +46,6 @@ Contents
 
 * Warning messages will appear at the top of the screen. If IntelliJ prompts you to add an SDK, choose JDK.
 
-###ND4J
-
-* You'll want to install ND4J, the linear-algebra library powering DL4J, in the same root directory as DL4J itself like so:
-
-	git clone https://github.com/SkymindIO/nd4j.git
-
 ### Maven
 
 * To check if you have Maven on your machine, type this in the terminal/cmd:
@@ -56,11 +56,11 @@ Contents
 
          c:\Programs\maven\bin\..
 
-* If you don't have Maven, you can follow the installation instructions on Maven's ["getting started" page](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html). Finally, run this command in both the ND4J and DL4J folders:
+* If you don't have Maven, you can follow the installation instructions on Maven's ["getting started" page](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html). Finally, **run this command in both the ND4J and DL4J folders**:
 
          mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
-* After you run "mvn clean", a compressed tar file with a name similar to "deeplearning4j-dist-bin.tar.gz" will be installed in the local folder (This is where you will find the jar files and it's where compiling happens.):
+* After you run a "mvn clean install", a compressed tar file with a name similar to "deeplearning4j-dist-bin.tar.gz" will be installed in the local folder (This is where you will find the jar files and it's where compiling happens.):
 
 		*/java-deeplearning/deeplearning4j-distribution/target
 	
@@ -82,9 +82,9 @@ Add these POM coordinates to your project:
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-core</artifactId>
 			<version>0.0.3.2</version>
-		 </dependency>
+	 </dependency>
 
-* For multithreaded/clustering support, add this dependency to your POM file:
+		//For multithreaded/clustering support, add this dependency to your POM file
 
          <dependency>
 			<groupId>org.deeplearning4j</groupId>
@@ -92,7 +92,7 @@ Add these POM coordinates to your project:
 			<version>0.0.3.2</version>
          </dependency>
 
-* For natural-language processing (NLP), add this dependency to your POM file:
+		// For natural-language processing (NLP), add this dependency to your POM file
         
 	 <dependency>
        	    <groupId>org.deeplearning4j</groupId>
@@ -137,7 +137,7 @@ If you're using IntelliJ as your IDE, this should be taken care of already.
 
 ### <a name="osx">OSX</a>
 
-* Jblas is already installed on OSX. 
+* Jblas is already installed on OSX.  
 
 ### <a name="windows">Windows</a>
 
