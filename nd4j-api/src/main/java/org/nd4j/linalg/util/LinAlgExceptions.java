@@ -35,7 +35,7 @@ public class LinAlgExceptions {
     public static void assertValidNum(INDArray n) {
         n = n.ravel();
         for(int i = 0; i < n.length(); i++) {
-            double d = (double) n.getScalar(i).element();
+            double d =  n.getDouble(i);
             assert !(Double.isNaN(d) || Double.isInfinite(d)) : "Found infinite or nan";
 
         }

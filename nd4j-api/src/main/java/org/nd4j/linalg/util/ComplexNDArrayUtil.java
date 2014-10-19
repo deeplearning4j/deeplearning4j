@@ -77,7 +77,7 @@ public class ComplexNDArrayUtil {
     public static IComplexNDArray expi(IComplexNDArray toExp) {
         IComplexNDArray flattened = toExp.ravel();
         for (int i = 0; i < flattened.length(); i++) {
-            IComplexNumber n = (IComplexNumber) flattened.getScalar(i).element();
+            IComplexNumber n = flattened.getComplex(i);
             flattened.put(i, Nd4j.scalar(ComplexUtil.exp(n)));
         }
         return flattened.reshape(toExp.shape());
@@ -102,7 +102,6 @@ public class ComplexNDArrayUtil {
         INDArray startIndex = currShape.sub(shapeMatrix).divi(Nd4j.scalar(2));
         INDArray endIndex = startIndex.add(shapeMatrix);
         if (shapeMatrix.length() > 1) {
-            //arr = arr.getScalar(RangeUtils.interval((int) startIndex.getScalar(0).element(), (int) endIndex.getScalar(0).element()), RangeUtils.interval((int) startIndex.getScalar(1).element(), (int) endIndex.getScalar(1).element()));
             arr = Nd4j.createComplex(arr.get(NDArrayIndex.interval((int) startIndex.getFloat(0),(int) endIndex.getFloat(0)), NDArrayIndex.interval((int) startIndex.getFloat(1), (int) endIndex.getFloat(1))));
         }
         else {
@@ -164,7 +163,7 @@ public class ComplexNDArrayUtil {
                             if (list.size() == numRequired)
                                 return Nd4j.createComplex(list.toArray(new IComplexDouble[0]), targetShape);
 
-                            list.add((IComplexDouble) row.getScalar(j).element());
+                            list.add(row.getComplex(j).asDouble());
                         }
                     }
                 } else if (dimension == 1) {
@@ -174,7 +173,7 @@ public class ComplexNDArrayUtil {
                             if (list.size() == numRequired)
                                 return Nd4j.createComplex(list.toArray(new IComplexDouble[0]), targetShape);
 
-                            list.add((IComplexDouble) row.getScalar(j).element());
+                            list.add(row.getComplex(j).asDouble());
                         }
                     }
                 } else
@@ -258,101 +257,6 @@ public class ComplexNDArrayUtil {
 
 
 
-
-
-    /**
-     * Does slice wise ops on matrices and
-     * returns the aggregate results in one matrix
-     *
-     * @param op  the operation to perform
-     * @param arr the array  to do operations on
-     * @return the slice wise operations
-     */
-    public static IComplexNDArray doSliceWise(MatrixOp op, IComplexNDArray arr) {
-        int columns = isColumnOp(op) ? arr.columns() : arr.rows();
-        int[] shape = {arr.slices(), columns};
-
-        IComplexNDArray ret = Nd4j.createComplex(shape);
-
-        for (int i = 0; i < arr.slices(); i++) {
-            switch (op) {
-                case COLUMN_SUM:
-                    ret.putSlice(i, arr.slice(i).sum(1));
-                    break;
-                case COLUMN_MEAN:
-                    ret.putSlice(i, arr.slice(i).mean(1));
-                    break;
-                case ROW_SUM:
-                    ret.putSlice(i, arr.slice(i).sum(0));
-                    break;
-                case ROW_MEAN:
-                    ret.putSlice(i, arr.slice(i).mean(0));
-                    break;
-            }
-        }
-
-
-        return ret;
-    }
-
-
-    /**
-     * Execute an element wise operation over the whole array
-     * @param op the operation to execute
-     * @param arr the array to perform operations on
-     * @return the result over the whole nd array
-     */
-    public static Object doSliceWise(ScalarOp op, IComplexNDArray arr) {
-        arr = arr.reshape(new int[]{1,arr.length()});
-
-        if(op == ScalarOp.NORM_1) {
-            return Nd4j.getBlasWrapper().asum(arr);
-        }
-
-        else if(op == ScalarOp.NORM_2) {
-            return (Nd4j.getBlasWrapper().nrm2(arr));
-
-        }
-
-        else if(op == ScalarOp.NORM_MAX) {
-            int i = Nd4j.getBlasWrapper().iamax(arr);
-            return arr.getScalar(i).element();
-        }
-
-        IComplexDouble s = Nd4j.createDouble(0.0, 0);
-        for (int i = 0; i < arr.length(); i++) {
-            IComplexDouble curr = (IComplexDouble) arr.getScalar(i).element();
-
-            switch (op) {
-                case SUM:
-                    s.addi(curr);
-                    break;
-                case MEAN:
-                    s.addi(curr);
-                    break;
-                case MAX:
-                    if (curr.absoluteValue().doubleValue() > s.absoluteValue().doubleValue())
-                        s.set(curr.realComponent().doubleValue(), curr.imaginaryComponent().doubleValue());
-                    break;
-                case MIN:
-                    if (curr.absoluteValue().doubleValue() < s.absoluteValue().doubleValue())
-                        s.set(curr.realComponent().doubleValue(), curr.imaginaryComponent().doubleValue());
-                case PROD:
-                    s.muli(curr);
-                    break;
-
-
-            }
-
-
-        }
-
-        if(op == ScalarOp.MEAN)
-            s.divi(arr.length());
-
-
-        return s;
-    }
 
 
 

@@ -82,7 +82,7 @@ public class LossFunctions {
                 ret =  -   z.sub(labels.mul(expLLLogZ)).sum(1).sum(Integer.MAX_VALUE).getDouble(0) / labels.rows();
                 break;
             case SQUARED_LOSS:
-                ret = (double)  pow(labels.sub(z), 2).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
+                ret =  pow(labels.sub(z), 2).sum(1).sum(Integer.MAX_VALUE).getDouble(0) / labels.rows();
 
 
         }
@@ -121,7 +121,7 @@ public class LossFunctions {
         INDArray rows = inner.sum(1);
         INDArray mean = rows.mean(Integer.MAX_VALUE);
 
-        double ret = (double) mean.element();
+        double ret = mean.getDouble(0);
 
         ret /= input.rows();
 

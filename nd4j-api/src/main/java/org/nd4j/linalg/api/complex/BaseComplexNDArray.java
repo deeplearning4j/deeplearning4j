@@ -915,12 +915,25 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public double squaredDistance(INDArray other) {
-        float sd = 0.0f;
+        double sd = 0.0;
+        if(other instanceof IComplexNDArray) {
+            IComplexNDArray n = (IComplexNDArray) other;
+            IComplexNDArray nLinear = n.linearView();
+
+            for (int i = 0; i < length; i++) {
+                IComplexNumber diff =  linearView().getComplex(i).sub(nLinear.getComplex(i));
+                double d = (double) diff.absoluteValue();
+                sd += d * d;
+            }
+            return sd;
+        }
         for (int i = 0; i < length; i++) {
-            IComplexNumber diff = (IComplexNumber) getScalar(i).sub(other.getScalar(i)).element();
+            INDArray linear = other.linearView();
+            IComplexNumber diff =  linearView().getComplex(i).sub(linear.getDouble(i));
             double d = (double) diff.absoluteValue();
             sd += d * d;
         }
+
         return sd;
     }
 
@@ -938,8 +951,20 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public double distance1(INDArray other) {
         float d = 0.0f;
+        if(other instanceof  IComplexNDArray) {
+            IComplexNDArray n2 = (IComplexNDArray) other;
+            IComplexNDArray n2Linear = n2.linearView();
+            for (int i = 0; i < length; i++) {
+                IComplexNumber n =  getComplex(i).sub(n2Linear.getComplex(i));
+                d += n.absoluteValue().doubleValue();
+            }
+            return d;
+        }
+
+        INDArray linear = other.linearView();
+
         for (int i = 0; i < length; i++) {
-            IComplexNumber n = (IComplexNumber) getScalar(i).sub(other.getScalar(i)).element();
+            IComplexNumber n =  linearView().getComplex(i).sub(linear.getDouble(i));
             d += n.absoluteValue().doubleValue();
         }
         return d;
@@ -1631,7 +1656,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * Assigns the given matrix (put) to the specified slice
      *
      * @param slice the slice to assign
-     * @param put   the slice to applyTransformToDestination
+     * @param put   the slice to put
      * @return this for chainability
      */
     @Override
@@ -1652,20 +1677,29 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         assertSlice(put,slice);
 
 
-        INDArray view = slice(slice);
+        IComplexNDArray view = slice(slice);
 
         if(put.isScalar())
             put(slice,put.getScalar(0));
         else if(put.isVector())
             for(int i = 0; i < put.length(); i++)
                 view.put(i,put.getScalar(i));
-        else if(put.shape().length == 2)
+        else if(put.shape().length == 2) {
+            if(put instanceof IComplexNDArray) {
+                IComplexNDArray complexPut = (IComplexNDArray) put;
+                for(int i = 0; i < put.rows(); i++)
+                    for(int j = 0; j < put.columns(); j++)
+                       view.putScalar(i,j,complexPut.getComplex(i, j));
+
+
+            }
+
             for(int i = 0; i < put.rows(); i++)
-                for(int j = 0; j < put.columns(); j++) {
-                    view.put(i,j, Nd4j.scalar((IComplexNumber) put.getScalar(i, j).element()));
+                for(int j = 0; j < put.columns(); j++)
+                    view.putScalar(i,j,Nd4j.createDouble(put.getDouble(i, j),0.0));
 
-                }
 
+        }
         else {
 
             assert put.slices() == view.slices() : "Slices must be equivalent.";
@@ -1731,7 +1765,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             ix += indices[i] * stride[i];
 
         if(element instanceof IComplexNDArray) {
-            IComplexNumber element2 = (IComplexNumber) element.element();
+            IComplexNumber element2 = ((IComplexNDArray) element).getComplex(0);
             data.put(ix, element2.realComponent().doubleValue());
             data.put(ix + 1,element2.imaginaryComponent().doubleValue());
         }
@@ -2200,16 +2234,16 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         if(isVector()) {
             IComplexNumber s = Nd4j.createDouble(0, 0);
             for (int i = 0; i < length; i++) {
-                s .addi((IComplexNumber) getScalar(i).element());
+                s .addi(getComplex(i));
                 putScalar(i, s);
             }
         }
 
         else if(dimension == Integer.MAX_VALUE || dimension == shape.length - 1) {
             IComplexNDArray flattened = ravel().dup();
-            IComplexNumber prevVal = (IComplexNumber) flattened.getScalar(0).element();
+            IComplexNumber prevVal =  flattened.getComplex(0);
             for(int i = 1; i < flattened.length(); i++) {
-                IComplexNumber d = prevVal.add((IComplexNumber) flattened.getScalar(i).element());
+                IComplexNumber d = prevVal.add((flattened.getComplex(i)));
                 flattened.putScalar(i,d);
                 prevVal = d;
             }
@@ -3678,10 +3712,10 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     public IComplexNumber max() {
         IComplexNDArray reshape = ravel();
-        IComplexNumber max = (IComplexNumber) reshape.getScalar(0).element();
+        IComplexNumber max = reshape.getComplex(0);
 
         for(int i = 1; i < reshape.length(); i++) {
-            IComplexNumber curr = (IComplexNumber) reshape.getScalar(i).element();
+            IComplexNumber curr =  reshape.getComplex(i);
             double val = curr.realComponent().doubleValue();
             if(val > curr.realComponent().doubleValue())
                 max = curr;
@@ -3693,9 +3727,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     public IComplexNumber min() {
         IComplexNDArray reshape = ravel();
-        IComplexNumber min = (IComplexNumber) reshape.getScalar(0).element();
+        IComplexNumber min = (IComplexNumber) reshape.getComplex(0);
         for(int i = 1; i < reshape.length(); i++) {
-            IComplexNumber curr = (IComplexNumber) reshape.getScalar(i).element();
+            IComplexNumber curr =  reshape.getComplex(i);
             double val = curr.realComponent().doubleValue();
             if(val < curr.realComponent().doubleValue())
                 min = curr;

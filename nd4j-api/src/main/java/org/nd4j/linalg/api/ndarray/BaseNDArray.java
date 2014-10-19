@@ -3243,7 +3243,7 @@ public abstract class BaseNDArray  implements INDArray {
 
         }
         else if(isVector()) {
-            return Nd4j.scalar((double) sum(Integer.MAX_VALUE).element() / length());
+            return Nd4j.scalar(sum(Integer.MAX_VALUE).getDouble(0) / length());
         }
         else {
             int[] shape = ArrayUtil.removeIndex(shape(),dimension);
