@@ -17,8 +17,9 @@ import com.google.common.util.concurrent.AtomicDouble;
 
 import it.unimi.dsi.util.XorShift1024StarRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
+import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.models.word2vec.actor.*;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -36,10 +37,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.Props;
-import akka.routing.RoundRobinPool;
 
 
 /**
@@ -518,69 +516,12 @@ public class Word2Vec implements Persistable {
             return true;
         }
 
-        if(trainingSystem == null)
-            trainingSystem = ActorSystem.create();
-
-
-
-
-
-        final AtomicLong semaphore = new AtomicLong(System.currentTimeMillis());
-        final AtomicInteger queued = new AtomicInteger(0);
-
-        final ActorRef vocabActor = trainingSystem.actorOf(
-                new RoundRobinPool(Runtime.getRuntime().availableProcessors()).props(
-                        Props.create(VocabActor.class,tokenizerFactory,cache,layerSize,stopWords,semaphore,minWordFrequency)));
-
-		/* all words; including those not in the actual ending index */
-
-        final AtomicInteger latch = new AtomicInteger(0);
-
-        while(docIter != null && docIter.hasNext()) {
-            InputStream is = docIter.nextDocument();
-
-            vocabActor.tell(new StreamWork(is,latch),vocabActor);
-
-            queued.incrementAndGet();
-            if(queued.get() % 10000 == 0)
-                log.info("Sent " + queued);
-
-
-        }
-
-
-        while(getSentenceIter() != null && getSentenceIter().hasNext()) {
-            String sentence = getSentenceIter().nextSentence();
-            if(sentence == null)
-                break;
-            vocabActor.tell(new VocabWork(latch,sentence), vocabActor);
-            queued.incrementAndGet();
-            if(queued.get() % 10000 == 0)
-                log.info("Sent " + queued);
-
-
-        }
-
-
-
-
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-
-
-        while(latch.get() > 0) {
-            log.info("Building vocab...");
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
+        //vectorizer will handle setting up vocab meta data
+        TextVectorizer vectorizer = new TfidfVectorizer.Builder()
+                .cache(cache).iterate(docIter).iterate(sentenceIter)
+                .minWords(minWordFrequency).stopWords(stopWords)
+                .tokenize(tokenizerFactory).build();
+        vectorizer.fit();
 
         setup();
 

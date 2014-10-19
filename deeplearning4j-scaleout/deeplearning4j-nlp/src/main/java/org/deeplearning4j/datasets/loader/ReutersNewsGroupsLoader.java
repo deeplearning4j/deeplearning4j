@@ -43,10 +43,12 @@ public class ReutersNewsGroupsLoader extends BaseDataFetcher {
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
 
         if(tfidf)
-            this.textVectorizer = new TfidfVectorizer(iter,tokenizerFactory,labels);
+            this.textVectorizer = new TfidfVectorizer.Builder()
+                    .iterate(iter).labels(labels).tokenize(tokenizerFactory).build();
 
         else
-            this.textVectorizer = new BagOfWordsVectorizer(iter,tokenizerFactory,labels);
+            this.textVectorizer = new BagOfWordsVectorizer.Builder()
+                    .iterate(iter).labels(labels).tokenize(tokenizerFactory).build();
 
         load = this.textVectorizer.vectorize();
     }
