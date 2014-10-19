@@ -266,6 +266,11 @@ public class TfidfVectorizer implements TextVectorizer {
     }
 
     @Override
+    public void fit() {
+        process();
+    }
+
+    @Override
     public DataSet vectorize(File input, String label) {
         try {
             return vectorize(FileUtils.readFileToString(input),label);
