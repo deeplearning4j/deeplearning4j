@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# MNIST for deep-belief networks
+# MNIST for Deep-Belief Networks
 
 MNIST is a good place to begin exploring image recognition. 
 
