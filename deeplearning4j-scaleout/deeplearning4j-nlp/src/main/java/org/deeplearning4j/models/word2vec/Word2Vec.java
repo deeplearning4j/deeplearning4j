@@ -74,7 +74,6 @@ public class Word2Vec implements Persistable {
     private int words = 0;
     private int allWordsCount = 0;
     private AtomicInteger numSentencesProcessed = new AtomicInteger(0);
-    private static ActorSystem trainingSystem;
     private List<String> stopWords;
     private boolean shouldReset = true;
     //number of iterations to run
@@ -235,12 +234,6 @@ public class Word2Vec implements Persistable {
      * Train the model
      */
     public void fit(){
-        if(trainingSystem == null)
-            trainingSystem = ActorSystem.create();
-
-
-
-
         boolean loaded =  buildVocab();
         //save vocab after building
         if(!loaded)
@@ -256,7 +249,6 @@ public class Word2Vec implements Persistable {
         if(docIter != null)
             docIter.reset();
 
-        trainingSystem.shutdown();
 
         final AtomicLong latch = new AtomicLong(0);
 
@@ -371,7 +363,6 @@ public class Word2Vec implements Persistable {
         }
 
 
-        trainingSystem.shutdown();
 
     }
 

@@ -11,6 +11,7 @@
 		<cleartk.version>2.0.0</cleartk.version>
 		<spring.version>3.2.5.RELEASE</spring.version>
 		<netty.version>3.8.0.Final</netty.version>
+        <dropwizard.version>0.7.0</dropwizard.version>
 
 	</properties>
 
@@ -85,5 +86,25 @@
 			<artifactId>cleartk-opennlp-tools</artifactId>
 			<version>${cleartk.version}</version>
 		</dependency>
+
+
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-assets</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-views-mustache</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-views-freemarker</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
 	</dependencies>
 </project>

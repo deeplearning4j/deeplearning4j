@@ -404,53 +404,39 @@ public class Tsne implements Serializable {
      * Plot tsne
      * @param matrix the matrix to plot
      * @param nDims the number
-     * @param initialDims
      * @param labels
      * @throws IOException
      */
-    public void plot(INDArray matrix,int nDims,int initialDims,List<String> labels) throws IOException {
+    public void plot(INDArray matrix,int nDims,List<String> labels) throws IOException {
 
         calculate(matrix,nDims,perplexity);
 
+        BufferedWriter write = new BufferedWriter(new FileWriter(new File("coords.csv"),true));
 
-        String path = writeMatrix(y);
-        String labelPath = UUID.randomUUID().toString();
-
-        File f = new File(labelPath);
-        FileUtils.writeLines(f,labels);
-        String command = String.format(commandTemplate,path,nDims,perplexity,initialDims,labelPath);
-        Process is = Runtime.getRuntime().exec(command);
-
-        log.info("Std out " + IOUtils.readLines(is.getInputStream()).toString());
-        log.error(IOUtils.readLines(is.getErrorStream()).toString());
-
-    }
-
-
-
-
-    protected String writeMatrix(INDArray matrix) throws IOException {
-        String filePath = System.getProperty("java.io.tmpdir") + File.separator +  UUID.randomUUID().toString();
-        File write = new File(filePath);
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(write,true));
-        write.deleteOnExit();
-        for(int i = 0; i < matrix.rows(); i++) {
-            INDArray row = matrix.getRow(i);
+        for(int i = 0; i < y.rows(); i++) {
+            String word = labels.get(i);
+            if(word == null)
+                continue;
             StringBuffer sb = new StringBuffer();
-            for(int j = 0; j < row.length(); j++) {
-                sb.append(String.format("%.10f", row.getDouble(j)));
-                if(j < row.length() - 1)
+            INDArray wordVector = y.getRow(i);
+            for(int j = 0; j < wordVector.length(); j++) {
+                sb.append(wordVector.getDouble(j));
+                if(j < wordVector.length() - 1)
                     sb.append(",");
             }
+
+            sb.append(word);
+            sb.append(" ");
+
             sb.append("\n");
-            String line = sb.toString();
-            bos.write(line.getBytes());
-            bos.flush();
+            write.write(sb.toString());
+
         }
 
-        bos.close();
-        return filePath;
+        write.flush();
+        write.close();
     }
+
 
     public INDArray getY() {
         return y;

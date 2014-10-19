@@ -164,7 +164,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             fp = fret;
 
             // This termination provided by McCallum
-            double twoNorm = (double) xi.norm2(Integer.MAX_VALUE).element();
+            double twoNorm =  xi.norm2(Integer.MAX_VALUE).getDouble(0);
             if (twoNorm < gradientTolerance) {
                 logger.info("ConjugateGradient converged: gradient two norm " + twoNorm + ", less than "
                         + gradientTolerance);
