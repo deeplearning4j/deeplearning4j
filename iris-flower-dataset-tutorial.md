@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# DBNs = Classifiers
+# IRIS Classifed With a Deep-Belief Net
 
 Deep-belief networks are multi-class classifiers. Given many inputs belonging to various classes, a DBN can first learn from a small training set, and then classify unlabeled data according to those various classes. It can take in one input and decide which label should be applied to its data record. 
 
