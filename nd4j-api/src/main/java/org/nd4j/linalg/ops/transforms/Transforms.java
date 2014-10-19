@@ -20,13 +20,6 @@ public class Transforms {
 
 
 
-    public static INDArray neg(INDArray ndArray) {
-        return exec(ndArray,Negative.class,null);
-    }
-    public static IComplexNDArray neg(IComplexNDArray ndArray) {
-        return exec(ndArray,Negative.class,null);
-    }
-
 
     /**
      * Max pooling
@@ -183,13 +176,23 @@ public class Transforms {
         return toScale;
     }
 
+
+
+    public static INDArray neg(INDArray ndArray) {
+        return neg(ndArray,true);
+    }
+    public static IComplexNDArray neg(IComplexNDArray ndArray) {
+       return neg(ndArray,true);
+    }
+
+
     /**
      * Binary matrix of whether the number at a given index is equal
      * @param ndArray
      * @return
      */
     public static INDArray eq(INDArray ndArray) {
-        return exec(ndArray,EqualTo.class,null);
+       return eq(ndArray,true);
 
     }
 
@@ -199,7 +202,7 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray eq(IComplexNDArray ndArray) {
-        return exec(ndArray,EqualTo.class,null);
+        return eq(ndArray,true);
     }
 
     /**
@@ -208,7 +211,7 @@ public class Transforms {
      * @return
      */
     public static INDArray neq(INDArray ndArray) {
-        return exec(ndArray,NotEqualTo.class,null);
+        return neq(ndArray,true);
 
     }
 
@@ -218,7 +221,7 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray neq(IComplexNDArray ndArray) {
-        return exec(ndArray,NotEqualTo.class,null);
+        return neq(ndArray,true);
     }
 
 
@@ -229,7 +232,7 @@ public class Transforms {
      * @return
      */
     public static INDArray floor(INDArray ndArray) {
-        return exec(ndArray,Floor.class,null);
+        return floor(ndArray,true);
 
     }
 
@@ -239,7 +242,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sign(IComplexNDArray toSign) {
-        return exec(toSign,Sign.class,null);
+        return sign(toSign,true);
     }
 
     /**
@@ -248,7 +251,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sign(INDArray toSign) {
-        return exec(toSign,Sign.class,null);
+        return sign(toSign,true);
     }
 
 
@@ -258,7 +261,7 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray floor(IComplexNDArray ndArray) {
-        return exec(ndArray,Floor.class,null);
+        return floor(ndArray,true);
     }
 
 
@@ -271,7 +274,7 @@ public class Transforms {
      * @return
      */
     public static INDArray gt(INDArray ndArray) {
-        return exec(ndArray,GreaterThan.class,null);
+        return gt(ndArray,true);
     }
 
 
@@ -282,7 +285,7 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray gt(IComplexNDArray ndArray) {
-        return exec(ndArray,GreaterThan.class,null);
+        return gt(ndArray,true);
     }
 
 
@@ -293,7 +296,7 @@ public class Transforms {
      * @return
      */
     public static INDArray lt(INDArray ndArray) {
-        return exec(ndArray,LessThan.class,null);
+        return lt(ndArray,true);
 
     }
 
@@ -303,14 +306,14 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray lt(IComplexNDArray ndArray) {
-        return exec(ndArray,LessThan.class,null);
+        return lt(ndArray,true);
     }
 
     public static INDArray stabilize(INDArray ndArray,double k) {
-        return exec(ndArray,Stabilize.class,new Object[]{k});
+        return stabilize(ndArray,k,true);
     }
     public static IComplexNDArray stabilize(IComplexNDArray ndArray,double k) {
-        return exec(ndArray,Stabilize.class,new Object[]{k});
+        return stabilize(ndArray,k,true);
     }
 
 
@@ -318,33 +321,35 @@ public class Transforms {
 
 
     public static INDArray abs(INDArray ndArray) {
-        return exec(ndArray,Abs.class,null);
+        return abs(ndArray,true);
+
 
     }
     public static IComplexNDArray abs(IComplexNDArray ndArray) {
-        return exec(ndArray,Abs.class,null);
+        return abs(ndArray,true);
     }
 
     public static INDArray exp(INDArray ndArray) {
-        return exec(ndArray,Exp.class,null);
+        return exp(ndArray,true);
     }
     public static IComplexNDArray exp(IComplexNDArray ndArray) {
-        return exec(ndArray,Exp.class,null);
+        return exp(ndArray,true);
     }
     public static INDArray hardTanh(INDArray ndArray) {
-        return exec(ndArray,HardTanh.class,null);
+        return hardTanh(ndArray,true);
+
     }
     public static IComplexNDArray hardTanh(IComplexNDArray ndArray) {
-        return exec(ndArray,HardTanh.class,null);
+        return hardTanh(ndArray,true);
     }
     public static INDArray identity(INDArray ndArray) {
-        return exec(ndArray,Identity.class,null);
+        return identity(ndArray,true);
     }
     public static IComplexNDArray identity(IComplexNDArray ndArray) {
-        return exec(ndArray,Identity.class,null);
+        return identity(ndArray,true);
     }
     public static INDArray max(INDArray ndArray) {
-        return exec(ndArray,Max.class,null);
+        return max(ndArray,true);
     }
 
     /**
@@ -354,7 +359,7 @@ public class Transforms {
      * @return
      */
     public static INDArray max(INDArray ndArray,double max) {
-        return exec(ndArray,Max.class,new Object[]{max});
+        return max(ndArray,max,true);
     }
 
     /**
@@ -364,53 +369,319 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray max(IComplexNDArray ndArray,double max) {
-        return exec(ndArray,Max.class,null);
+        return max(ndArray,max,true);
     }
     public static IComplexNDArray max(IComplexNDArray ndArray) {
-        return exec(ndArray,Max.class,null);
+        return max(ndArray,true);
     }
     public static INDArray pow(INDArray ndArray,Number power) {
-        return exec(ndArray,Pow.class,new Object[]{power});
+        return pow(ndArray,power,true);
+
     }
     public static IComplexNDArray pow(IComplexNDArray ndArray,IComplexNumber power) {
-        return exec(ndArray,Pow.class,new Object[]{power});
+        return pow(ndArray,power,true);
     }
     public static INDArray round(INDArray ndArray) {
-        return exec(ndArray,Round.class,null);
+        return round(ndArray,true);
     }
     public static IComplexNDArray round(IComplexNDArray ndArray) {
-        return exec(ndArray,Round.class,null);
+        return round(ndArray,true);
     }
     public static INDArray sigmoid(INDArray ndArray) {
-        return exec(ndArray,Sigmoid.class,null);
+        return sigmoid(ndArray,true);
     }
     public static IComplexNDArray sigmoid(IComplexNDArray ndArray) {
-        return exec(ndArray,Sigmoid.class,null);
+        return sigmoid(ndArray,true);
     }
     public static INDArray sqrt(INDArray ndArray) {
-        return exec(ndArray,Sqrt.class,null);
+        return sqrt(ndArray,true);
     }
     public static IComplexNDArray sqrt(IComplexNDArray ndArray) {
-        return exec(ndArray,Sqrt.class,null);
+        return sqrt(ndArray,true);
     }
     public static INDArray tanh(INDArray ndArray) {
-        return exec(ndArray,Tanh.class,null);
+        return tanh(ndArray,true);
     }
     public static IComplexNDArray tanh(IComplexNDArray ndArray) {
-        return exec(ndArray,Tanh.class,null);
+        return tanh(ndArray,true);
     }
     public static INDArray log(INDArray ndArray) {
-        return exec(ndArray,Log.class,null);
+        return log(ndArray,true);
     }
     public static IComplexNDArray log(IComplexNDArray ndArray) {
-        return exec(ndArray,Log.class,null);
+        return log(ndArray,true);
     }
 
 
-    private static INDArray exec(INDArray indArray,Class<? extends BaseElementWiseOp> clazz,Object[] extraArgs) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Binary matrix of whether the number at a given index is equal
+     * @param ndArray
+     * @return
+     */
+    public static INDArray eq(INDArray ndArray,boolean dup) {
+        return exec(ndArray,EqualTo.class,null,dup);
+
+    }
+
+    /**
+     * Binary matrix of whether the number at a given index is equal
+     * @param ndArray
+     * @return
+     */
+    public static IComplexNDArray eq(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,EqualTo.class,null,dup);
+    }
+
+    /**
+     * Binary matrix of whether the number at a given index is equal
+     * @param ndArray
+     * @return
+     */
+    public static INDArray neq(INDArray ndArray,boolean dup) {
+        return exec(ndArray,NotEqualTo.class,null,dup);
+
+    }
+
+    /**
+     * Binary matrix of whether the number at a given index is equal
+     * @param ndArray
+     * @return
+     */
+    public static IComplexNDArray neq(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,NotEqualTo.class,null,dup);
+    }
+
+
+
+    /**
+     * Binary matrix of whether the number at a given index is greater than
+     * @param ndArray
+     * @return
+     */
+    public static INDArray floor(INDArray ndArray,boolean dup) {
+        return exec(ndArray,Floor.class,null,dup);
+
+    }
+
+    /**
+     * Signum function of this ndarray
+     * @param toSign
+     * @return
+     */
+    public static INDArray sign(IComplexNDArray toSign,boolean dup) {
+        return exec(toSign,Sign.class,null,dup);
+    }
+
+    /**
+     * Signum function of this ndarray
+     * @param toSign
+     * @return
+     */
+    public static INDArray sign(INDArray toSign,boolean dup) {
+        return exec(toSign,Sign.class,null,dup);
+    }
+
+
+    /**
+     * Binary matrix of whether the number at a given index is equal
+     * @param ndArray
+     * @return
+     */
+    public static IComplexNDArray floor(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,Floor.class,null,dup);
+    }
+
+
+
+
+
+    /**
+     * Binary matrix of whether the number at a given index is equal
+     * @param ndArray
+     * @return
+     */
+    public static INDArray gt(INDArray ndArray,boolean dup) {
+        return exec(ndArray,GreaterThan.class,null,dup);
+    }
+
+
+
+    /**
+     * Binary matrix of whether the number at a given index is equal
+     * @param ndArray
+     * @return
+     */
+    public static IComplexNDArray gt(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,GreaterThan.class,null,dup);
+    }
+
+
+
+    /**
+     * Binary matrix of whether the number at a given index is equal
+     * @param ndArray
+     * @return
+     */
+    public static INDArray lt(INDArray ndArray,boolean dup) {
+        return exec(ndArray,LessThan.class,null,dup);
+
+    }
+
+    /**
+     * Binary matrix of whether the number at a given index is equal
+     * @param ndArray
+     * @return
+     */
+    public static IComplexNDArray lt(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,LessThan.class,null,dup);
+    }
+
+    public static INDArray stabilize(INDArray ndArray,double k,boolean dup) {
+        return exec(ndArray,Stabilize.class,new Object[]{k},dup);
+    }
+    public static IComplexNDArray stabilize(IComplexNDArray ndArray,double k,boolean dup) {
+        return exec(ndArray,Stabilize.class,new Object[]{k},dup);
+    }
+
+
+
+
+
+    public static INDArray abs(INDArray ndArray,boolean dup) {
+        return exec(ndArray,Abs.class,null,dup);
+
+    }
+    public static IComplexNDArray abs(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,Abs.class,null,dup);
+    }
+
+    public static INDArray exp(INDArray ndArray,boolean dup) {
+        return exec(ndArray,Exp.class,null,dup);
+    }
+    public static IComplexNDArray exp(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,Exp.class,null,dup);
+    }
+    public static INDArray hardTanh(INDArray ndArray,boolean dup) {
+        return exec(ndArray,HardTanh.class,null,dup);
+    }
+    public static IComplexNDArray hardTanh(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,HardTanh.class,null,dup);
+    }
+    public static INDArray identity(INDArray ndArray,boolean dup) {
+        return exec(ndArray,Identity.class,null,dup);
+    }
+    public static IComplexNDArray identity(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,Identity.class,null,dup);
+    }
+    public static INDArray max(INDArray ndArray,boolean dup) {
+        return exec(ndArray,Max.class,null,dup);
+    }
+
+    /**
+     * Max function
+     * @param ndArray
+     * @param max
+     * @return
+     */
+    public static INDArray max(INDArray ndArray,double max,boolean dup) {
+        return exec(ndArray,Max.class,new Object[]{max},dup);
+    }
+
+    /**
+     * Max function
+     * @param ndArray the ndarray to take the max function of
+     * @param max the value to compare
+     * @return
+     */
+    public static IComplexNDArray max(IComplexNDArray ndArray,double max,boolean dup) {
+        return exec(ndArray,Max.class,null,dup);
+    }
+    public static IComplexNDArray max(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,Max.class,null,dup);
+    }
+    public static INDArray pow(INDArray ndArray,Number power,boolean dup) {
+        return exec(ndArray,Pow.class,new Object[]{power},dup);
+    }
+    public static IComplexNDArray pow(IComplexNDArray ndArray,IComplexNumber power,boolean dup) {
+        return exec(ndArray,Pow.class,new Object[]{power},dup);
+    }
+    public static INDArray round(INDArray ndArray,boolean dup) {
+        return exec(ndArray,Round.class,null,dup);
+    }
+    public static IComplexNDArray round(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,Round.class,null,dup);
+    }
+    public static INDArray sigmoid(INDArray ndArray,boolean dup) {
+        return exec(ndArray,Sigmoid.class,null,dup);
+    }
+    public static IComplexNDArray sigmoid(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,Sigmoid.class,null,dup);
+    }
+    public static INDArray sqrt(INDArray ndArray,boolean dup) {
+        return exec(ndArray,Sqrt.class,null,dup);
+    }
+    public static IComplexNDArray sqrt(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,Sqrt.class,null,dup);
+    }
+    public static INDArray tanh(INDArray ndArray,boolean dup) {
+        return exec(ndArray,Tanh.class,null,dup);
+    }
+    public static IComplexNDArray tanh(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,Tanh.class,null,dup);
+    }
+    public static INDArray log(INDArray ndArray,boolean dup) {
+        return exec(ndArray,Log.class,null,dup);
+    }
+    public static IComplexNDArray log(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,Log.class,null,dup);
+    }
+
+
+
+    public static INDArray neg(INDArray ndArray,boolean dup) {
+        return exec(ndArray,Negative.class,null,dup);
+    }
+    public static IComplexNDArray neg(IComplexNDArray ndArray,boolean dup) {
+        return exec(ndArray,Negative.class,null,dup);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private static INDArray exec(INDArray indArray,Class<? extends BaseElementWiseOp> clazz,Object[] extraArgs,boolean dup) {
 
         ElementWiseOp ops = new ArrayOps().
-                from(indArray.dup())
+                from(dup ? indArray.dup() : indArray)
                 .op(clazz)
                 .extraArgs(extraArgs)
                 .build();
@@ -419,10 +690,10 @@ public class Transforms {
         return ops.from();
     }
 
-    private static IComplexNDArray exec(IComplexNDArray indArray,Class<? extends BaseElementWiseOp> clazz,Object[] extraArgs) {
+    private static IComplexNDArray exec(IComplexNDArray indArray,Class<? extends BaseElementWiseOp> clazz,Object[] extraArgs,boolean dup) {
 
         ElementWiseOp ops = new ArrayOps().
-                from(indArray.dup())
+                from(dup ? indArray.dup() : indArray)
                 .op(clazz)
                 .extraArgs(extraArgs)
                 .build();
