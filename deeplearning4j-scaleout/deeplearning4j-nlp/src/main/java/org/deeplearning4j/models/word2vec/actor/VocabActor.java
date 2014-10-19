@@ -1,7 +1,9 @@
 package org.deeplearning4j.models.word2vec.actor;
 
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.compress.utils.IOUtils;
@@ -49,7 +51,9 @@ public class VocabActor extends UntypedActor {
 
 	@Override
 	public void onReceive(Object message) throws Exception {
-		if(message  instanceof VocabWork) {
+        Set<String> encountered = new HashSet<>();
+
+        if(message  instanceof VocabWork) {
 			VocabWork work = (VocabWork) message;
 			if(work.getWork() == null || work.getWork().isEmpty())
 				return;
@@ -61,7 +65,6 @@ public class VocabActor extends UntypedActor {
 				return;
 			}
 			Tokenizer t = tokenizer.create(sentence);
-
 			while(t.hasMoreTokens())  {
 				String token = t.nextToken();
                 if(token.length() < 2)
@@ -69,6 +72,10 @@ public class VocabActor extends UntypedActor {
 				if(stopWords.contains(token))
 					token = "STOP";
 				cache.incrementWordCount(token);
+                if(!encountered.contains(token)) {
+                    cache.incrementDocCount(token,1);
+                    encountered.add(token);
+                }
 				//note that for purposes of word frequency, the
 				//internal vocab and the final vocab
 				//at the class level contain the same references
@@ -117,7 +124,14 @@ public class VocabActor extends UntypedActor {
 				if(stopWords.contains(token))
 					token = "STOP";
 				cache.incrementWordCount(token);
-				//note that for purposes of word frequency, the
+
+
+                if(!encountered.contains(token)) {
+                    cache.incrementDocCount(token,1);
+                    encountered.add(token);
+                }
+
+                //note that for purposes of word frequency, the
 				//internal vocab and the final vocab
 				//at the class level contain the same references
 				if(!Util.matchesAnyStopWord(stopWords,token) && token != null && !token.isEmpty()) {
