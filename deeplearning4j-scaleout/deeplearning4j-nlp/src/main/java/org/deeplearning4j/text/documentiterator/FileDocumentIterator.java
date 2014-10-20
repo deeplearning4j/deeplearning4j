@@ -62,13 +62,7 @@ public class FileDocumentIterator implements DocumentIterator {
 
 
             }
-            else if(lineIterator == null) {
-                try {
-                    lineIterator = FileUtils.lineIterator(path);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+           
 
             return new BufferedInputStream(IOUtils.toInputStream(lineIterator.nextLine()));
         } catch (Exception e) {
