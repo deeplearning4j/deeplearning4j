@@ -27,7 +27,7 @@ public class TsneTest {
         ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
         List<String> labelsList = IOUtils.readLines(labels.getInputStream());
 
-        calculation.plot(data,2,28, labelsList);
+        calculation.plot(data,2, labelsList);
     }
 
 
