@@ -11,6 +11,19 @@
         <version>7</version>
     </parent>
 
+    <distributionManagement>
+        <snapshotRepository>
+            <id>sonatype-nexus-snapshots</id>
+            <name>Sonatype Nexus snapshot repository</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>nexus-releases</id>
+            <name>Nexus Release Repository</name>
+            <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
 
     <profiles>
         <profile>
@@ -209,14 +222,7 @@
     </pluginManagement>
 </build>
 
-<distributionManagement>
-<repository>
-    <id>nexus-releases</id>
-    <name>Nexus Release Repository</name>
-    <url>https://oss.sonatype.org/content/repositories/releases</url>
-</repository>
 
-</distributionManagement>
 
 <dependencyManagement>
 <dependencies>
