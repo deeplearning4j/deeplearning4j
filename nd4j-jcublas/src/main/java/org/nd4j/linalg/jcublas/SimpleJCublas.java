@@ -238,7 +238,7 @@ public class SimpleJCublas {
         if(ndarray.length() == ndarray.data().length())
             JCublas.cublasSetVector(
                     ndarray.length(),
-                    Sizeof.FLOAT,
+                    size(ndarray),
                     toData,
                     1,
                     ret,
@@ -246,7 +246,7 @@ public class SimpleJCublas {
         else
             JCublas.cublasSetVector(
                     ndarray.length(),
-                    Sizeof.FLOAT,
+                    size(ndarray),
                     toData,
                     ndarray.majorStride(),
                     ret,

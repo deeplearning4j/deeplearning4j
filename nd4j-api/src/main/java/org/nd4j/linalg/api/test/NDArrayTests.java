@@ -629,7 +629,7 @@ public abstract class NDArrayTests {
     public void testMmul() {
 
         Nd4j.factory().setOrder('c');
-
+        Nd4j.dtype = "double";
         DataBuffer data = Nd4j.linspace(1, 10, 10).data();
         INDArray n = Nd4j.create(data, new int[]{10});
         INDArray transposed = n.transpose();
@@ -1087,8 +1087,8 @@ public abstract class NDArrayTests {
 
         INDArray multiRowAssign = Nd4j.create(new double[]{5,6,7,8},new int[]{2,2});
         NDArrayIndex[] index2 = new NDArrayIndex[]{
-            NDArrayIndex.interval(0,2),
-            new NDArrayIndex(0,2)
+                NDArrayIndex.interval(0,2),
+                new NDArrayIndex(0,2)
         };
 
         create.put(index2,multiRowAssign);
