@@ -36,7 +36,7 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
      *
      * @param is    the input stream to read from
      * @param label the label to assign
-     * @return a dataset with a applyTransformToDestination of weights(relative to impl; could be word counts or tfidf scores)
+     * @return a dataset with a transform of weights(relative to impl; could be word counts or tfidf scores)
      */
     @Override
     public DataSet vectorize(InputStream is, String label) {
@@ -55,7 +55,7 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
      *
      * @param text  the text to vectorize
      * @param label the label of the text
-     * @return a dataset with a applyTransformToDestination of weights(relative to impl; could be word counts or tfidf scores)
+     * @return a dataset with a transform of weights(relative to impl; could be word counts or tfidf scores)
      */
     @Override
     public DataSet vectorize(String text, String label) {
