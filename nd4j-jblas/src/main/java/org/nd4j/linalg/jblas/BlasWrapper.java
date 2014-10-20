@@ -417,7 +417,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     x.offset(),
                     x.secondaryStride()) - 1;
         else if(x.data().dataType().equals(DataBuffer.DOUBLE)) {
-            return NativeBlas.izamax(
+            return NativeBlas.idamax(
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),

@@ -278,7 +278,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
     public int outcome() {
         if(this.numExamples() > 1)
             throw new IllegalStateException("Unable to derive outcome for dataset greater than one row");
-       return Nd4j.getBlasWrapper().iamax(getLabels());
+        return Nd4j.getBlasWrapper().iamax(getLabels());
     }
 
 
@@ -390,7 +390,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
         //map examples
         for(int i = 0; i < filtered.numExamples(); i++)  {
             int o2 = filtered.get(i).outcome();
-            int outcome = labelMap.get(o2);
+            Integer outcome = labelMap.get(o2);
             newLabels.add(outcome);
 
         }

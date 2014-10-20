@@ -52,6 +52,7 @@ public class Nd4j {
     public static int MAX_ELEMENTS_PER_SLICE = 3;
     public static int MAX_SLICES_TO_PRINT = 3;
 
+
     static {
         try {
             ClassPathResource c = new ClassPathResource(LINALG_PROPS);

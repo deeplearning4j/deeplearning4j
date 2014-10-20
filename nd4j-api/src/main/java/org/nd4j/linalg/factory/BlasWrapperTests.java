@@ -19,9 +19,9 @@ public abstract class BlasWrapperTests {
 
         INDArray matrix = Nd4j.linspace(1,4,4).reshape(2,2);
         INDArray row = matrix.getRow(1);
-        INDArray result = Nd4j.create(new float[]{1,2});
-        Nd4j.getBlasWrapper().axpy(1,row,result);
-        assertEquals(Nd4j.create(new float[]{3,6}),result);
+        INDArray result = Nd4j.create(new double[]{1,2});
+        Nd4j.getBlasWrapper().axpy(1.0,row,result);
+        assertEquals(Nd4j.create(new double[]{3,6}),result);
 
 
 

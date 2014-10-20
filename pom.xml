@@ -26,7 +26,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.4</version>
+                        <version>1.5</version>
                         <configuration>
                             <passphrase>${gpg.passphrase}</passphrase>
                         </configuration>
@@ -213,7 +213,7 @@
 <repository>
     <id>nexus-releases</id>
     <name>Nexus Release Repository</name>
-    <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    <url>https://oss.sonatype.org/content/repositories/releases</url>
 </repository>
 </distributionManagement>
 
