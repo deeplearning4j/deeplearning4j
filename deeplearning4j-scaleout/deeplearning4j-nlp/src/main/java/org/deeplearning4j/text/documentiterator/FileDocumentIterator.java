@@ -8,6 +8,8 @@ import java.util.Iterator;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Iterate over files
@@ -19,6 +21,7 @@ public class FileDocumentIterator implements DocumentIterator {
     private Iterator<File> iter;
     private LineIterator lineIterator;
     private File rootDir;
+    private static Logger log  = LoggerFactory.getLogger(FileDocumentIterator.class);
 
     public FileDocumentIterator(String path) {
         this(new File(path));
@@ -67,7 +70,8 @@ public class FileDocumentIterator implements DocumentIterator {
 
                 return new BufferedInputStream(IOUtils.toInputStream(lineIterator.nextLine()));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+           log.warn("Error reading input stream...this is just a warning..Going to return",e);
+            return null;
         }
 
         return null;
