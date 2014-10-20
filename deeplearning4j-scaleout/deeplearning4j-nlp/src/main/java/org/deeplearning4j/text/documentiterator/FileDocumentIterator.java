@@ -49,7 +49,7 @@ public class FileDocumentIterator implements DocumentIterator {
     }
 
     @Override
-    public InputStream nextDocument() {
+    public synchronized  InputStream nextDocument() {
         try {
             if(lineIterator != null && !lineIterator.hasNext()) {
                 File next = iter.next();
@@ -63,16 +63,19 @@ public class FileDocumentIterator implements DocumentIterator {
 
             }
 
+            if(lineIterator.hasNext())
 
-            return new BufferedInputStream(IOUtils.toInputStream(lineIterator.nextLine()));
+                return new BufferedInputStream(IOUtils.toInputStream(lineIterator.nextLine()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+        return null;
     }
 
     @Override
-    public boolean hasNext() {
-        return iter.hasNext();
+    public synchronized boolean hasNext() {
+        return iter.hasNext() || lineIterator != null && lineIterator.hasNext();
     }
 
     @Override
