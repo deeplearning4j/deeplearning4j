@@ -62,7 +62,7 @@ public class FileDocumentIterator implements DocumentIterator {
 
 
             }
-           
+
 
             return new BufferedInputStream(IOUtils.toInputStream(lineIterator.nextLine()));
         } catch (Exception e) {
