@@ -5,6 +5,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,16 +27,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
     protected static ExecutorService dimensionThreads;
 
 
-    static {
-        dimensionThreads = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                if(!getThreads().isShutdown())
-                    getThreads().shutdown();
-            }
-        }));
-    }
+
 
     public static  synchronized ExecutorService getThreads() {
         return dimensionThreads;
@@ -46,7 +38,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
     /**
      * Apply the transformation at from[i]
      *
-     * @param i the index of the element to applyTransformToOrigin
+     * @param i the index of the element to apply the transform to
      */
     @Override
     public void applyTransformToOrigin(INDArray origin,int i) {
@@ -57,10 +49,13 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
         }
         else {
             Number f =  apply(origin,getFromOrigin(origin,i),i);
+            double val = f.doubleValue();
+            if(Double.isNaN(val) || Double.isInfinite(val))
+                val = Nd4j.EPS_THRESHOLD;
             if(origin.data().dataType().equals(DataBuffer.FLOAT))
-                origin.putScalar(i, f.doubleValue());
+                origin.putScalar(i, val);
             else
-                origin.putScalar(i, f.doubleValue());
+                origin.putScalar(i, val);
         }
 
     }
@@ -84,10 +79,13 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
         }
         else {
             Number f = apply(origin, valueToApply,i);
+            double val = f.doubleValue();
+            if(Double.isNaN(val) || Double.isInfinite(val))
+                val = Nd4j.EPS_THRESHOLD;
             if(origin.data().dataType().equals(DataBuffer.FLOAT))
-                origin.putScalar(i,f.doubleValue());
+                origin.putScalar(i,val);
             else
-                origin.putScalar(i,f.doubleValue());
+                origin.putScalar(i,val);
         }
 
 
@@ -101,7 +99,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
             return c2.getComplex(i);
         }
 
-        return origin.getFloat(i);
+        return origin.getDouble(i);
     }
 
     /**
@@ -133,6 +131,8 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
         else {
             for(int i = 0; i < linear.length(); i++) {
                 double apply = apply(linear,linear.getDouble(i),i);
+                if(Double.isInfinite(apply) || Double.isInfinite(apply))
+                    apply = Nd4j.EPS_THRESHOLD;
                 from.putScalar(i,apply);
             }
         }

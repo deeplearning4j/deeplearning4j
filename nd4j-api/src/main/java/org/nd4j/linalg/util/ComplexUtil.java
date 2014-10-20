@@ -83,6 +83,8 @@ public class ComplexUtil {
      */
     public static IComplexNumber pow(IComplexNumber num,IComplexNumber power) {
         Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).pow(new Complex(power.realComponent().doubleValue(),power.imaginaryComponent().doubleValue()));
+        if(c.isNaN())
+            c = new Complex(Nd4j.EPS_THRESHOLD,0.0);
         return Nd4j.createDouble(c.getReal(), c.getImaginary());
 
     }
@@ -95,6 +97,8 @@ public class ComplexUtil {
      */
     public static IComplexNumber pow(IComplexNumber num,double power) {
         Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).pow(power);
+        if(c.isNaN())
+            c = new Complex(Nd4j.EPS_THRESHOLD,0.0);
         return Nd4j.createDouble(c.getReal(), c.getImaginary());
 
     }
