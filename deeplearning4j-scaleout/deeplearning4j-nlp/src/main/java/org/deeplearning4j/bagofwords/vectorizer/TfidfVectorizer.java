@@ -18,6 +18,7 @@ import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.List;
 
@@ -26,7 +27,7 @@ import java.util.List;
  * Turns a applyTransformToDestination of documents in to a tfidf bag of words
  * @author Adam Gibson
  */
-public class TfidfVectorizer extends BaseTextVectorizer {
+public class TfidfVectorizer extends BaseTextVectorizer implements Serializable {
 
 
     protected TfidfVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator, List<String> labels) {
