@@ -80,6 +80,7 @@ public class Word2Vec implements Persistable {
     private int numIterations = 1;
     public final static String UNK = "UNK";
     private long seed = 123;
+    private boolean saveVocab = false;
 
     public Word2Vec() {}
 
@@ -236,7 +237,7 @@ public class Word2Vec implements Persistable {
     public void fit(){
         boolean loaded =  buildVocab();
         //save vocab after building
-        if(!loaded)
+        if(!loaded && saveVocab)
             cache.saveVocab();
         if(stopWords == null)
             readStopWords();
@@ -354,7 +355,7 @@ public class Word2Vec implements Persistable {
 
 
         while(latch.get() > 0) {
-            log.info("Waiting on sentences...Num processed so far " + numSentencesProcessed.get()+ " with latch count at " + latch.get());
+            log.info("Waiting on sentences...Num processed so far " + numSentencesProcessed.get() + " with latch count at " + latch.get());
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
@@ -536,6 +537,9 @@ public class Word2Vec implements Persistable {
         if(g == null)
             g = new XorShift1024StarRandomGenerator(seed);
 
+        if(sentence.isEmpty())
+            return;
+
         for(int i = 0; i < sentence.size(); i++)
             skipGram(i, sentence, (int) g.nextDouble() % window);
     }
@@ -548,7 +552,7 @@ public class Word2Vec implements Persistable {
      */
     public void skipGram(int i,List<VocabWord> sentence, int b) {
         final VocabWord word = sentence.get(i);
-        if(word == null)
+        if(word == null || sentence.isEmpty())
             return;
 
         int end =  window * 2 + 1 - b;
@@ -755,6 +759,12 @@ public class Word2Vec implements Persistable {
         private double lr = 2.5e-1;
         private int iterations = 5;
         private long seed = 123;
+        private boolean saveVocab = false;
+
+        public Builder saveVocab(boolean saveVocab){
+            this.saveVocab = saveVocab;
+            return this;
+        }
 
         public Builder seed(long seed) {
             this.seed = seed;
@@ -830,6 +840,7 @@ public class Word2Vec implements Persistable {
                 ret.numIterations = iterations;
                 ret.minWordFrequency = minWordFrequency;
                 ret.seed = seed;
+                ret.saveVocab = saveVocab;
 
                 try {
                     if (tokenizerFactory == null)
@@ -861,6 +872,7 @@ public class Word2Vec implements Persistable {
                 ret.numIterations = iterations;
                 ret.seed = seed;
                 ret.numIterations = iterations;
+                ret.saveVocab = saveVocab;
 
                 try {
                     if (tokenizerFactory == null)

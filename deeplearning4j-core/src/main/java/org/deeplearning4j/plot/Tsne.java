@@ -431,6 +431,7 @@ public class Tsne implements Serializable {
                     sb.append(",");
             }
 
+            sb.append(",");
             sb.append(word);
             sb.append(" ");
 
@@ -459,6 +460,8 @@ public class Tsne implements Serializable {
     public void setIterationListener(IterationListener iterationListener) {
         this.iterationListener = iterationListener;
     }
+
+
 
     public static class Builder {
         private int maxIter = 1000;

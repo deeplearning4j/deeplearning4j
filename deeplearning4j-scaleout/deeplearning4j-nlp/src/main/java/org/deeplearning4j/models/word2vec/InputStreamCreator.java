@@ -9,6 +9,9 @@ import java.io.Serializable;
 public interface InputStreamCreator extends Serializable {
 
 
-
+    /**
+     * Create an input stream
+     * @return
+     */
     public InputStream create();
 }
