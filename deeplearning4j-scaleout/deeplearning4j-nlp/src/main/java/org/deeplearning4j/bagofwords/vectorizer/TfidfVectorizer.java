@@ -29,6 +29,7 @@ import java.util.List;
  */
 public class TfidfVectorizer extends BaseTextVectorizer implements Serializable {
 
+    public TfidfVectorizer(){}
 
     protected TfidfVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator, List<String> labels) {
         super(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator, labels);
