@@ -38,6 +38,8 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     protected SentenceIterator sentenceIterator;
     private static Logger log = LoggerFactory.getLogger(BaseTextVectorizer.class);
 
+    public BaseTextVectorizer(){}
+
     protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels) {
         this.cache = cache;
         this.tokenizerFactory = tokenizerFactory;
