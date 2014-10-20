@@ -37,7 +37,11 @@ public class FileDocumentIterator implements DocumentIterator {
         }
         else {
             iter = FileUtils.iterateFiles(path, null, true);
-
+            try {
+                lineIterator = FileUtils.lineIterator(iter.next());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             this.rootDir = path;
         }
 
@@ -55,8 +59,15 @@ public class FileDocumentIterator implements DocumentIterator {
                     lineIterator.close();
                     lineIterator = FileUtils.lineIterator(next);
                 }
-                    
 
+
+            }
+            else if(lineIterator == null) {
+                try {
+                    lineIterator = FileUtils.lineIterator(path);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             return new BufferedInputStream(IOUtils.toInputStream(lineIterator.nextLine()));
