@@ -51,7 +51,7 @@ public class Tsne implements Serializable {
     private boolean usePca = false;
     private int stopLyingIteration = 250;
     private double tolerance = 1e-5;
-    private double learningRate = 1e-1;
+    private double learningRate = 500;
     private AdaGrad adaGrad;
     private boolean useAdaGrad = true;
     private double perplexity = 30;
@@ -287,7 +287,7 @@ public class Tsne implements Serializable {
 
 
         INDArray p = d2p(D,perplexity);
-
+        D.data().flush();
 
         //lie for better local minima
         p.muli(4);
@@ -347,7 +347,13 @@ public class Tsne implements Serializable {
 
 
         // normalize to get probabilities
-        INDArray  q =  max(qu.div(qu.sum(Integer.MAX_VALUE)), realMin);
+        INDArray  q =  qu.div(qu.sum(Integer.MAX_VALUE));
+
+        BooleanIndexing.applyWhere(
+                q,
+                Conditions.lessThan(realMin),
+                new Value(realMin));
+
 
         INDArray PQ = p.sub(q);
 
@@ -379,7 +385,7 @@ public class Tsne implements Serializable {
         yIncs.muli(momentum).subi(gradChange);
 
 
-        double cost = p.mul(log(p.div(q))).sum(Integer.MAX_VALUE).getDouble(0);
+        double cost = p.mul(log(p.div(q),false)).sum(Integer.MAX_VALUE).getDouble(0);
         return new Pair<>(cost,yIncs);
     }
 

@@ -51,6 +51,11 @@ public class FileDocumentIterator implements DocumentIterator {
                 File next = iter.next();
                 lineIterator.close();
                 lineIterator = FileUtils.lineIterator(next);
+                while(!lineIterator.hasNext()) {
+                    lineIterator.close();
+                    lineIterator = FileUtils.lineIterator(next);
+                }
+                    
 
             }
 
