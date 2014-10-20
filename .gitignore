@@ -15,6 +15,7 @@ README.md~
 *.bin
 *.out
 *~
+*.iml
 .pydevproject
 release.properties
 .idea/
