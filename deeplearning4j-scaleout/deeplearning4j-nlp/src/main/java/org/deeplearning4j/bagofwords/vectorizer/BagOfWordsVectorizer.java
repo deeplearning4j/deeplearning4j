@@ -25,6 +25,8 @@ import java.util.List;
 public class BagOfWordsVectorizer extends BaseTextVectorizer {
 
 
+    public BagOfWordsVectorizer(){}
+
     protected BagOfWordsVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels) {
         super(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels);
     }
