@@ -116,6 +116,8 @@ public class VocabActor extends UntypedActor {
         else if(message instanceof StreamWork) {
             StreamWork work = (StreamWork) message;
             InputStream is = work.getIs();
+            if(is == null)
+                return;
             boolean tryRead = false;
             try {
                 if(is.available() > 0) {
