@@ -1,6 +1,7 @@
 package org.deeplearning4j.text.documentiterator;
 
 import java.io.InputStream;
+import java.io.Serializable;
 
 
 /**
@@ -8,7 +9,7 @@ import java.io.InputStream;
  * @author Adam Gibson
  *
  */
-public interface DocumentIterator {
+public interface DocumentIterator extends Serializable {
 
 
 

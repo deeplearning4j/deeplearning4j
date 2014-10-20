@@ -4,6 +4,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.routing.RoundRobinPool;
+import org.deeplearning4j.models.word2vec.InputStreamCreator;
 import org.deeplearning4j.models.word2vec.StreamWork;
 import org.deeplearning4j.models.word2vec.VocabWork;
 import org.deeplearning4j.models.word2vec.actor.VocabActor;
@@ -69,9 +70,13 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         final AtomicInteger latch = new AtomicInteger(0);
 
         while(docIter != null && docIter.hasNext()) {
-            InputStream is = docIter.nextDocument();
 
-            vocabActor.tell(new StreamWork(is,latch),vocabActor);
+            vocabActor.tell(new StreamWork(new InputStreamCreator() {
+                @Override
+                public InputStream create() {
+                    return docIter.nextDocument();
+                }
+            },latch),vocabActor);
 
             queued.incrementAndGet();
             if(queued.get() % 10000 == 0)

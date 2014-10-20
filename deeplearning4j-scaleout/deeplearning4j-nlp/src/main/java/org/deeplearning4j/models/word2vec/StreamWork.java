@@ -5,20 +5,17 @@ import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class StreamWork implements Serializable {
-	private InputStream is;
+	private InputStreamCreator is;
 	private AtomicInteger count = new AtomicInteger(0);
 
 
-	public StreamWork(InputStream is, AtomicInteger count) {
+	public StreamWork(InputStreamCreator is, AtomicInteger count) {
 		super();
 		this.is = is;
 		this.count = count;
 	}
 	public InputStream getIs() {
-		return is;
-	}
-	public void setIs(InputStream is) {
-		this.is = is;
+		return is.create();
 	}
 	public AtomicInteger getCount() {
 		return count;
