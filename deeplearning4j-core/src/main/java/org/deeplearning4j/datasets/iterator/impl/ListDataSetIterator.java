@@ -49,16 +49,7 @@ public class ListDataSetIterator implements DataSetIterator {
 
 	@Override
 	public synchronized DataSet next() {
-		int end = curr + batch;
-		List<DataSet> r = new ArrayList<DataSet>();
-		if(end >= list.size())
-			end = list.size();
-		for(; curr < end; curr++) {
-			r.add(list.get(curr));
-		}
-		
-		DataSet d = DataSet.merge(r);
-		return d;
+		return next(batch);
 	}
 
 	@Override
