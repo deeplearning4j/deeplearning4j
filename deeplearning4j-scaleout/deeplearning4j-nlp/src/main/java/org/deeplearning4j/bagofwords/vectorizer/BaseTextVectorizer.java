@@ -73,12 +73,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
 
         while(docIter != null && docIter.hasNext()) {
 
-            vocabActor.tell(new StreamWork(new InputStreamCreator() {
-                @Override
-                public InputStream create() {
-                    return docIter.nextDocument();
-                }
-            },latch),vocabActor);
+            vocabActor.tell(new StreamWork(new DefaultInputStreamCreator(docIter),latch),vocabActor);
 
             queued.incrementAndGet();
             if(queued.get() % 10000 == 0)

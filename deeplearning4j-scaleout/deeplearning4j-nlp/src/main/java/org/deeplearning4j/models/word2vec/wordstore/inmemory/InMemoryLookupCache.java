@@ -13,14 +13,13 @@ import org.deeplearning4j.plot.dropwizard.RenderApplication;
 import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.util.Index;
 import org.deeplearning4j.util.SerializationUtils;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 
 
-
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -145,9 +144,14 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
             double g = (1 - code - f) * this.lr;
 
             avgChange += g;
-
-            Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
-            Nd4j.getBlasWrapper().axpy(g, l1, syn1);
+            if(syn0.data().dataType().equals(DataBuffer.DOUBLE)) {
+                Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
+                Nd4j.getBlasWrapper().axpy(g, l1, syn1);
+            }
+            else {
+                Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
+                Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
+            }
         }
 
 
@@ -156,10 +160,22 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         avgChange /=  w1.getCodes().length;
 
 
-        if(useAdaGrad)
-            Nd4j.getBlasWrapper().axpy(avgChange,neu1e,l1);
-        else
-            Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
+        if(useAdaGrad) {
+            if(syn0.data().dataType().equals(DataBuffer.DOUBLE))
+                Nd4j.getBlasWrapper().axpy(avgChange,neu1e,l1);
+            else
+                Nd4j.getBlasWrapper().axpy((float) avgChange,neu1e,l1);
+
+
+        }
+        else {
+            if(syn0.data().dataType().equals(DataBuffer.DOUBLE))
+                Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
+
+            else
+                Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
+
+        }
     }
 
 
@@ -402,7 +418,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
     @Override
     public void incrementTotalDocCount(int by) {
-       numDocs += by;
+        numDocs += by;
     }
 
     @Override
@@ -461,6 +477,37 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         this.vectorLength = cache.vectorLength;
         this.wordFrequencies = cache.wordFrequencies;
         this.wordIndex = cache.wordIndex;
+
+    }
+
+    public static void writeTsneFormat(Word2Vec vec,INDArray tsne,File csv) throws Exception {
+        BufferedWriter write = new BufferedWriter(new FileWriter(csv));
+        int words = 0;
+        InMemoryLookupCache l = (InMemoryLookupCache) vec.getCache();
+        for(int i = 0; i < tsne.rows(); i++) {
+            String word = l.wordAtIndex(i);
+            if(word == null)
+                continue;
+            StringBuffer sb = new StringBuffer();
+            INDArray wordVector = tsne.getRow(i);
+            for(int j = 0; j < wordVector.length(); j++) {
+                sb.append(wordVector.getDouble(j));
+                if(j < wordVector.length() - 1)
+                    sb.append(",");
+            }
+            sb.append(",");
+            sb.append(word);
+            sb.append(" ");
+
+            sb.append("\n");
+            write.write(sb.toString());
+
+        }
+
+        System.out.println("Wrote " + words + " with size of " + vec.getLayerSize());
+        write.flush();
+        write.close();
+
 
     }
 

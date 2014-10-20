@@ -54,7 +54,7 @@ public class FileDocumentIterator implements DocumentIterator {
     @Override
     public synchronized  InputStream nextDocument() {
         try {
-            if(lineIterator != null && !lineIterator.hasNext()) {
+            if(lineIterator != null && !lineIterator.hasNext() && iter.hasNext()) {
                 File next = iter.next();
                 lineIterator.close();
                 lineIterator = FileUtils.lineIterator(next);
