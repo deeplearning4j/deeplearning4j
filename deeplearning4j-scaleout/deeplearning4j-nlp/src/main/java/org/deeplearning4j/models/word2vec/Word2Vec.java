@@ -357,7 +357,7 @@ public class Word2Vec implements Persistable {
         while(latch.get() > 0) {
             log.info("Waiting on sentences...Num processed so far " + numSentencesProcessed.get() + " with latch count at " + latch.get());
             try {
-                Thread.sleep(10000);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
