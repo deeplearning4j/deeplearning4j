@@ -2,10 +2,7 @@ package org.deeplearning4j.text.invertedindex;
 
 import org.deeplearning4j.models.word2vec.VocabWord;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -41,7 +38,7 @@ public class DefaultInvertedIndex implements InvertedIndex {
     public void addWordToDoc(int doc, VocabWord word) {
        List<VocabWord> wordsForDoc = docToWord.get(doc);
         if(wordsForDoc == null) {
-            wordsForDoc = new CopyOnWriteArrayList<>();
+            wordsForDoc = Collections.synchronizedList(new ArrayList<VocabWord>());
             docToWord.put(doc,wordsForDoc);
         }
 
