@@ -76,9 +76,14 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
             vocabActor.tell(new StreamWork(new DefaultInputStreamCreator(docIter),latch),vocabActor);
 
             queued.incrementAndGet();
-            if(queued.get() % 10000 == 0)
+            if(queued.get() % 10000 == 0) {
                 log.info("Sent " + queued);
-
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();;
+                }
+            }
 
         }
 
@@ -89,20 +94,19 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
                 break;
             vocabActor.tell(new VocabWork(latch,sentence), vocabActor);
             queued.incrementAndGet();
-            if(queued.get() % 10000 == 0)
+            if(queued.get() % 10000 == 0) {
                 log.info("Sent " + queued);
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();;
+                }
+            }
 
 
         }
 
 
-
-
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
 
 
 
