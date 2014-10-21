@@ -113,6 +113,8 @@ public class VocabActor extends UntypedActor {
 
             while(t.hasMoreTokens())  {
                 String token = t.nextToken();
+                if(token == null || token.isEmpty())
+                    break;
                 processToken(token,encountered,document);
 
             }
