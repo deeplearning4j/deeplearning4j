@@ -47,7 +47,7 @@ public class DefaultInvertedIndex implements InvertedIndex {
         if(docList != null)
             docList.add(doc);
         else {
-            docList = new CopyOnWriteArrayList<>();
+            docList = Collections.synchronizedList(new ArrayList<Integer>());
             docList.add(doc);
             wordToDocs.put(word,docList);
         }
