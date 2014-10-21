@@ -258,12 +258,8 @@ public class Word2Vec implements Persistable {
 
         log.info("Processing sentences...");
         for(int i = 0; i < numIterations; i++) {
-            while(getSentenceIter() != null && getSentenceIter().hasNext()) {
-
-                final String sentence = sentenceIter.nextSentence();
-                if(sentence == null)
-                    continue;
-
+            for(int j = 0; j < vectorizer.index().numDocuments();j++) {
+                final int k = j;
                 service.execute(new Runnable() {
 
                     /**
@@ -279,7 +275,7 @@ public class Word2Vec implements Persistable {
                      */
                     @Override
                     public void run() {
-                        trainSentence(sentence);
+                        trainSentence(vectorizer.index().document(k));
                     }
                 });
 
@@ -288,62 +284,8 @@ public class Word2Vec implements Persistable {
                     log.info("Num sentences processed " + numSentencesProcessed.get());
             }
 
-            if(sentenceIter != null)
-                sentenceIter.reset();
         }
 
-
-
-
-        for(int iter = 0; iter < numIterations; iter++) {
-            List<Future<?>> futures = new ArrayList<>();
-            while (docIter != null && docIter.hasNext()) {
-                final InputStream is = docIter.nextDocument();
-
-                Future<?> f = service.submit(new Runnable() {
-
-                    /**
-                     * When an object implementing interface <code>Runnable</code> is used
-                     * to create a thread, starting the thread causes the object's
-                     * <code>run</code> method to be called in that separately executing
-                     * thread.
-                     * <p/>
-                     * The general contract of the method <code>run</code> is that it may
-                     * take any action whatsoever.
-                     *
-                     * @see Thread#run()
-                     */
-                    @Override
-                    public void run() {
-                        trainSentence(is);
-                        try {
-                            is.close();
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                });
-                futures.add(f);
-                numSentencesProcessed.incrementAndGet();
-                if (numSentencesProcessed.get() % 1000 == 0)
-                    log.info("Num sentences processed " + numSentencesProcessed.get());
-                while(futures.size() > 100) {
-                    Set<Future<?>> remove = new HashSet<>();
-                    for(Future<?> f2 : futures) {
-                        if(f2.isDone())
-                            remove.add(f2);
-                    }
-                    futures.removeAll(remove);
-                }
-
-
-            }
-
-            if(docIter != null)
-                docIter.reset();
-
-
-        }
 
 
         try {

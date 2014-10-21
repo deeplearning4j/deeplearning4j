@@ -82,7 +82,7 @@ public class VocabActor extends UntypedActor {
                 processToken(token,encountered,document);
             }
             index.addWordsToDoc(index.numDocuments(),document);
-
+            numWordsEncountered.set(numWordsEncountered.get() + document.size());
             work.countDown();
 
             lastUpdate.getAndSet(System.currentTimeMillis());
@@ -119,6 +119,7 @@ public class VocabActor extends UntypedActor {
 
             //adds the words to the document after all of them have bene processed
             index.addWordsToDoc(index.numDocuments(),document);
+            numWordsEncountered.set(numWordsEncountered.get() + document.size());
 
             IOUtils.closeQuietly(is);
             work.countDown();
