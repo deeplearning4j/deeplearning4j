@@ -37,7 +37,6 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import akka.actor.ActorSystem;
 
 
 /**
@@ -65,14 +64,10 @@ public class Word2Vec implements Persistable {
     private int minWordFrequency = 5;
     //context to use for gathering word frequencies
     private int window = 5;
-    private int trainWordsCount = 0;
     //number of neurons per layer
     private int layerSize = 50;
     private transient  RandomGenerator g;
     private static Logger log = LoggerFactory.getLogger(Word2Vec.class);
-    private int size = 0;
-    private int words = 0;
-    private int allWordsCount = 0;
     private AtomicInteger numSentencesProcessed = new AtomicInteger(0);
     private List<String> stopWords;
     private boolean shouldReset = true;
@@ -81,6 +76,11 @@ public class Word2Vec implements Persistable {
     public final static String UNK = "UNK";
     private long seed = 123;
     private boolean saveVocab = false;
+    private double minLearningRate = 0.01;
+    private AtomicInteger numWordsSoFar = new AtomicInteger(0);
+
+    private TextVectorizer vectorizer;
+
 
     public Word2Vec() {}
 
@@ -509,7 +509,7 @@ public class Word2Vec implements Persistable {
         }
 
         //vectorizer will handle setting up vocab meta data
-        TextVectorizer vectorizer = new TfidfVectorizer.Builder()
+        vectorizer = new TfidfVectorizer.Builder()
                 .cache(cache).iterate(docIter).iterate(sentenceIter)
                 .minWords(minWordFrequency).stopWords(stopWords)
                 .tokenize(tokenizerFactory).build();
@@ -537,8 +537,16 @@ public class Word2Vec implements Persistable {
         if(g == null)
             g = new XorShift1024StarRandomGenerator(seed);
 
+        numWordsSoFar.getAndAdd(sentence.size());
+        if(numWordsSoFar.get() % 10000 == 0) {
+            alpha.set(Math.max(minLearningRate,alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) vectorizer.numWordsEncountered()))));
+            log.info("Num words so far " + numWordsSoFar.get() + " out of " + vectorizer.numWordsEncountered() + " alpha is " + alpha.get());
+        }
+
         if(sentence.isEmpty())
             return;
+
+
 
         for(int i = 0; i < sentence.size(); i++)
             skipGram(i, sentence, (int) g.nextDouble() % window);
@@ -664,15 +672,12 @@ public class Word2Vec implements Persistable {
         try {
             ObjectInputStream ois = new ObjectInputStream(is);
             Word2Vec vec = (Word2Vec) ois.readObject();
-            this.allWordsCount = vec.allWordsCount;
             this.alpha = vec.alpha;
             this.minWordFrequency = vec.minWordFrequency;
             this.numSentencesProcessed = vec.numSentencesProcessed;
             this.sample = vec.sample;
-            this.size = vec.size;
             this.stopWords = vec.stopWords;
             this.topNSize = vec.topNSize;
-            this.trainWordsCount = vec.trainWordsCount;
             this.window = vec.window;
 
         }catch(Exception e) {
@@ -699,9 +704,6 @@ public class Word2Vec implements Persistable {
 
 
 
-    public int getWords() {
-        return words;
-    }
 
 
 

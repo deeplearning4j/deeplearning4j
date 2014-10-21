@@ -33,7 +33,7 @@ public class Word2VecLoader {
      * @return the loaded model
      * @throws IOException
      */
-	public static Word2Vec loadGoogleBinary(String path) throws IOException {
+    public static Word2Vec loadGoogleBinary(String path) throws IOException {
         DataInputStream dis = null;
         BufferedInputStream bis = null;
         double len = 0;
@@ -67,11 +67,12 @@ public class Word2VecLoader {
 
 
                 INDArray row = Nd4j.create(vectors);
-               if(word == null || word.isEmpty())
-                   continue;
+                if(word == null || word.isEmpty())
+                    continue;
                 cache.addWordToIndex(cache.numWords(),word);
                 cache.putVector(word, row);
-                cache.putVocabWord(word,new VocabWord(1,word));
+                cache.addToken(new VocabWord(1,word));
+                cache.putVocabWord(word);
                 dis.read();
             }
         }
@@ -86,7 +87,7 @@ public class Word2VecLoader {
         ret.setLayerSize(size);
         return ret;
 
-	}
+    }
 
 
 

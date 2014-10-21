@@ -3,6 +3,8 @@ package org.deeplearning4j.bagofwords.vectorizer;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
+import org.deeplearning4j.text.invertedindex.DefaultInvertedIndex;
+import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -19,7 +21,13 @@ public abstract class Builder {
     protected DocumentIterator docIter;
     protected SentenceIterator sentenceIterator;
     protected List<String> labels;
+    protected InvertedIndex index = new DefaultInvertedIndex();
 
+
+    public Builder index(InvertedIndex index){
+        this.index = index;
+        return this;
+    }
 
     public Builder labels(List<String> labels) {
         this.labels = labels;
