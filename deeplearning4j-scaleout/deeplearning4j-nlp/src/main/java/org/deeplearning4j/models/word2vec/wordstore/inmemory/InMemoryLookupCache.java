@@ -36,6 +36,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     private Counter<String> wordFrequencies = Util.parallelCounter();
     private Counter<String> docFrequencies = Util.parallelCounter();
     private Map<String,VocabWord> vocabs = new ConcurrentHashMap<>();
+    private Map<String,VocabWord> tokens = new ConcurrentHashMap<>();
     private Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
     private INDArray syn0,syn1;
     private int vectorLength = 50;
@@ -223,12 +224,14 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     @Override
     public  synchronized void incrementWordCount(String word, int increment) {
         wordFrequencies.incrementCount(word,1);
-        if(containsWord(word)) {
-            VocabWord word2 = wordFor(word);
-            word2.increment(increment);
 
-
-        }
+        VocabWord token;
+        if(hasToken(word))
+            token = tokenFor(word);
+        else
+            token = new VocabWord(increment,word);
+        //token and word in vocab will be same reference
+        token.increment(increment);
         totalWordOccurrences.set(totalWordOccurrences.get() + increment);
 
 
@@ -371,13 +374,15 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
     /**
      * @param word
-     * @param vocabWord
      */
     @Override
-    public synchronized void putVocabWord(String word, VocabWord vocabWord) {
-        addWordToIndex(vocabWord.getIndex(),word);
-        vocabs.put(word,vocabWord);
-        wordIndex.add(word,vocabWord.getIndex());
+    public synchronized void putVocabWord(String word) {
+        VocabWord token = tokenFor(word);
+        addWordToIndex(token.getIndex(),word);
+        if(!hasToken(word))
+            throw new IllegalStateException("Unable to add token " + word + " when not already a token");
+        vocabs.put(word,token);
+        wordIndex.add(word,token.getIndex());
 
     }
 
@@ -419,6 +424,26 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     @Override
     public void incrementTotalDocCount(int by) {
         numDocs += by;
+    }
+
+    @Override
+    public Collection<VocabWord> tokens() {
+        return tokens.values();
+    }
+
+    @Override
+    public void addToken(VocabWord word) {
+        tokens.put(word.getWord(),word);
+    }
+
+    @Override
+    public VocabWord tokenFor(String word) {
+        return tokens.get(word);
+    }
+
+    @Override
+    public boolean hasToken(String token) {
+        return tokenFor(token) != null;
     }
 
     @Override
@@ -477,6 +502,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         this.vectorLength = cache.vectorLength;
         this.wordFrequencies = cache.wordFrequencies;
         this.wordIndex = cache.wordIndex;
+        this.tokens = cache.tokens;
+
 
     }
 

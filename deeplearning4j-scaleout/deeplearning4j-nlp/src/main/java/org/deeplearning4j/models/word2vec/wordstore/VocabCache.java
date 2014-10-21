@@ -161,16 +161,18 @@ public interface VocabCache  {
      */
     void addWordToIndex(int index,String word);
 
+
     /**
-     *
-     * @param word
-     * @param vocabWord
+     * Inserts the word as a vocab word
+     * (it gets the vocab word from the internal token store).
+     * Note that the index must be set on the token.
+     * @param word the word to add to the vocab
      */
-    void putVocabWord(String word,VocabWord vocabWord);
+    void putVocabWord(String word);
 
     /**
      * Returns the number of words in the cache
-     * @return the number of words in the cahce
+     * @return the number of words in the cache
      */
     int numWords();
 
@@ -214,5 +216,37 @@ public interface VocabCache  {
      * @param  by the number to increment by
      */
     void incrementTotalDocCount(int by);
+
+    /**
+     * All of the tokens in the cache, (not necessarily apart of the vocab)
+     * @return the tokens for this cache
+     */
+    Collection<VocabWord> tokens();
+
+
+    /**
+     * Adds a token
+     * to the cache
+     * @param word the word to add
+     */
+    void addToken(VocabWord word);
+
+    /**
+     * Returns the token (again not necessarily in the vocab)
+     * for this word
+     * @param word the word to get the token for
+     * @return the vocab word for this token
+     */
+    VocabWord tokenFor(String word);
+
+    /**
+     * Returns whether the cache
+     * contains this token or not
+     * @param token the token to tes
+     * @return whether the token exists in
+     * the cache or not
+     *
+     */
+    boolean hasToken(String token);
 
 }

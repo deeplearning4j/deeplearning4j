@@ -37,6 +37,11 @@ public class TfIdfVectorizerTest {
         vectorizer.fit();
         VocabWord word = vectorizer.vocab().wordFor("This");
         assumeNotNull(word);
+
+        assertEquals(word,vectorizer.vocab().tokenFor("This"));
+
+        assertEquals(2,vectorizer.index().documents(word).size());
+
     }
 
 
