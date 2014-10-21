@@ -12,6 +12,7 @@
 		<spring.version>3.2.5.RELEASE</spring.version>
 		<netty.version>3.8.0.Final</netty.version>
         <dropwizard.version>0.7.0</dropwizard.version>
+        <lucene.version>4.10.1</lucene.version>
 
 	</properties>
 
@@ -40,6 +41,21 @@
 
 
 	<dependencies>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-analyzers-common</artifactId>
+            <version>${lucene.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-core</artifactId>
+            <version>${lucene.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-queryparser</artifactId>
+            <version>${lucene.version}</version>
+        </dependency>
 		<dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-scaleout-akka</artifactId>
