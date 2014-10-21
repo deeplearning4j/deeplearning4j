@@ -5,6 +5,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
+import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,8 +32,8 @@ public class TfidfVectorizer extends BaseTextVectorizer implements Serializable 
 
     public TfidfVectorizer(){}
 
-    protected TfidfVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator, List<String> labels) {
-        super(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator, labels);
+    protected TfidfVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator, List<String> labels,InvertedIndex index) {
+        super(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator, labels,index);
     }
 
     private double tfidfWord(String word) {
@@ -119,7 +120,7 @@ public class TfidfVectorizer extends BaseTextVectorizer implements Serializable 
 
         public TextVectorizer build() {
 
-            return new TfidfVectorizer(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels);
+            return new TfidfVectorizer(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels,index);
 
         }
 

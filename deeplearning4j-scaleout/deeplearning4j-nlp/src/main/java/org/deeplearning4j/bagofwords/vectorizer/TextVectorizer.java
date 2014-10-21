@@ -5,6 +5,7 @@ import java.io.File;
 
 import org.deeplearning4j.datasets.vectorizer.Vectorizer;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.deeplearning4j.util.Index;
@@ -59,4 +60,15 @@ public interface TextVectorizer extends Vectorizer {
      */
     INDArray transform(String text);
 
+    /**
+     * Returns the number of words encountered so far
+     * @return the number of words encountered so far
+     */
+    int numWordsEncountered();
+
+    /**
+     * Inverted index
+     * @return the inverted index for this vectorizer
+     */
+    InvertedIndex index();
 }

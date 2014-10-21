@@ -4,6 +4,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.uima.util.FileUtils;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
+import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -27,8 +28,8 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
 
     public BagOfWordsVectorizer(){}
 
-    protected BagOfWordsVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels) {
-        super(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels);
+    protected BagOfWordsVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index) {
+        super(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels,index);
     }
 
     /**
@@ -117,7 +118,7 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
 
         @Override
         public TextVectorizer build() {
-            return new BagOfWordsVectorizer(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels);
+            return new BagOfWordsVectorizer(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels,index);
 
         }
     }

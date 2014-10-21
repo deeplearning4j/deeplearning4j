@@ -10,6 +10,8 @@ import org.deeplearning4j.models.word2vec.VocabWork;
 import org.deeplearning4j.models.word2vec.actor.VocabActor;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
+import org.deeplearning4j.text.invertedindex.DefaultInvertedIndex;
+import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.util.Index;
@@ -36,11 +38,13 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     protected DocumentIterator docIter;
     protected List<String> labels;
     protected SentenceIterator sentenceIterator;
+    private AtomicInteger numWordsEncountered =  new AtomicInteger(0);
     private static Logger log = LoggerFactory.getLogger(BaseTextVectorizer.class);
+    private InvertedIndex index = new DefaultInvertedIndex();
 
     public BaseTextVectorizer(){}
 
-    protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels) {
+    protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index) {
         this.cache = cache;
         this.tokenizerFactory = tokenizerFactory;
         this.stopWords = stopWords;
@@ -49,6 +53,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         this.docIter = docIter;
         this.sentenceIterator = sentenceIterator;
         this.labels = labels;
+        this.index = index;
     }
 
     @Override
@@ -65,7 +70,15 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
 
         final ActorRef vocabActor = trainingSystem.actorOf(
                 new RoundRobinPool(Runtime.getRuntime().availableProcessors()).props(
-                        Props.create(VocabActor.class, tokenizerFactory, cache, layerSize, stopWords, semaphore, minWordFrequency)));
+                        Props.create(
+                                VocabActor.class,
+                                tokenizerFactory,
+                                cache,
+                                stopWords,
+                                semaphore,
+                                minWordFrequency,
+                                numWordsEncountered,
+                                index)));
 
 		/* all words; including those not in the actual ending index */
 
@@ -107,15 +120,14 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         }
 
 
-
-
-
-        while(latch.get() > 0) {
-            log.info("Building vocab...");
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+        boolean done = false;
+        while(!done) {
+            long sys = System.currentTimeMillis();
+            long curr = semaphore.get();
+            long diff = Math.abs(sys - curr);
+            if(diff > 10000) {
+                log.info("Done working");
+                done = true;
             }
         }
 
@@ -186,6 +198,13 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         this.cache = cache;
     }
 
+    @Override
+    public int numWordsEncountered() {
+        return numWordsEncountered.get();
+    }
 
-
+    @Override
+    public InvertedIndex index() {
+        return index;
+    }
 }

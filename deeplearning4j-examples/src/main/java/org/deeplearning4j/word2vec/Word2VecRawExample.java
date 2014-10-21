@@ -57,7 +57,7 @@ public class Word2VecRawExample {
             }
         });
 
-        InMemoryLookupCache cache = new InMemoryLookupCache(50,false);
+        InMemoryLookupCache cache = new InMemoryLookupCache(100,false);
         Word2Vec vec = new Word2Vec.Builder()
                 .minWordFrequency(1)
                 .vocabCache(cache).iterations(5).learningRate(25e-2)
