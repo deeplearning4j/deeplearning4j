@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Created by agibsonccc on 10/21/14.
@@ -39,14 +40,17 @@ public class DefaultInvertedIndex implements InvertedIndex {
     @Override
     public void addWordToDoc(int doc, VocabWord word) {
        List<VocabWord> wordsForDoc = docToWord.get(doc);
-        if(wordsForDoc == null)
-            wordsForDoc = new ArrayList<>();
+        if(wordsForDoc == null) {
+            wordsForDoc = new CopyOnWriteArrayList<>();
+            docToWord.put(doc,wordsForDoc);
+        }
+
         wordsForDoc.add(word);
         List<Integer> docList = wordToDocs.get(word);
         if(docList != null)
             docList.add(doc);
         else {
-            docList = new ArrayList<>();
+            docList = new CopyOnWriteArrayList<>();
             docList.add(doc);
             wordToDocs.put(word,docList);
         }
