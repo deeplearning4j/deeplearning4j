@@ -56,7 +56,22 @@ public class DefaultInvertedIndex implements InvertedIndex {
 
     @Override
     public void addWordsToDoc(int doc, List<VocabWord> words) {
-      for(VocabWord word : words)
-          addWordToDoc(doc,word);
+        List<VocabWord> wordsForDoc = docToWord.get(doc);
+        if(wordsForDoc == null) {
+            wordsForDoc = words;
+            docToWord.put(doc,wordsForDoc);
+        }
+
+       for(VocabWord word : words) {
+           List<Integer> docList = wordToDocs.get(word);
+           if(docList != null)
+               docList.add(doc);
+           else {
+               docList = new CopyOnWriteArrayList<>();
+               docList.add(doc);
+               wordToDocs.put(word,docList);
+           }
+       }
+
     }
 }
