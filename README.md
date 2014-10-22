@@ -14,10 +14,10 @@ Download a release
 ===========================
 
 Normal development distribution:
-https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-distribution/0.0.3.2-SNAPSHOT/
+https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-distribution/0.0.3.2-SNAPSHOT-SNAPSHOT/
 
 Examples distribution:
-https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/
+https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT-SNAPSHOT/
 
 
 
@@ -80,7 +80,7 @@ Initial deployment instructions:
           <dependency>
                     <groupId>org.nd4j</groupId>
                      <artifactId>nd4j-jcublas</artifactId>
-                      <version>0.0.3.2</version>
+                      <version>0.0.3.2-SNAPSHOT</version>
                    </dependency>
 
 Bugs/Feature Requests
@@ -112,7 +112,7 @@ Installation
        <dependency>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-core</artifactId>
-         <version>0.0.3.2</version>
+         <version>0.0.3.2-SNAPSHOT</version>
       </dependency>
 
 ## Scaleout for multithreaded methods and clustering
@@ -120,7 +120,7 @@ Installation
         <dependency>
          <groupId>org.deeplearning4j</groupId>
            <artifactId>deeplearning4j-scaleout-akka</artifactId>
-         <version>0.0.3.2</version>
+         <version>0.0.3.2-SNAPSHOT</version>
         </dependency>
 
 ## Text analysis
@@ -128,5 +128,5 @@ Installation
          <dependency>
            <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-nlp/artifactId>
-             <version>0.0.3.2</version>
+             <version>0.0.3.2-SNAPSHOT</version>
           </dependency>
