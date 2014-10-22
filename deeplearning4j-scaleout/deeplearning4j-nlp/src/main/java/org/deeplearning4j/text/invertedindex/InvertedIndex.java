@@ -55,6 +55,10 @@ public interface InvertedIndex extends Serializable {
     void addWordsToDoc(int doc,List<VocabWord> words);
 
 
+    /**
+     * Finishes saving data
+     */
+    void finish();
 
 
 }

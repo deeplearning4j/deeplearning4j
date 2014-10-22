@@ -21,7 +21,7 @@ public abstract class Builder {
     protected DocumentIterator docIter;
     protected SentenceIterator sentenceIterator;
     protected List<String> labels;
-    protected InvertedIndex index = new DefaultInvertedIndex();
+    protected InvertedIndex index;
 
 
     public Builder index(InvertedIndex index){
