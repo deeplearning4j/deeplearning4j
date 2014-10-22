@@ -252,13 +252,16 @@ public class Word2Vec implements Persistable {
 
 
         final AtomicLong latch = new AtomicLong(0);
-
+        final List<List<VocabWord>> docs = new ArrayList<>();
+        for(int i = 0; i < vectorizer.index().numDocuments(); i++)
+            docs.add(vectorizer.index().document(i));
 
         ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
-
         log.info("Processing sentences...");
         for(int i = 0; i < numIterations; i++) {
-            for(int j = 0; j < vectorizer.index().numDocuments();j++) {
+            int numDocs = vectorizer.index().numDocuments();
+            log.info("Training on " + numDocs);
+            for(int j = 0; j < numDocs;j++) {
                 final int k = j;
                 service.execute(new Runnable() {
 
@@ -275,7 +278,7 @@ public class Word2Vec implements Persistable {
                      */
                     @Override
                     public void run() {
-                        trainSentence(vectorizer.index().document(k));
+                        trainSentence(docs.get(k),k);
                     }
                 });
 
@@ -332,7 +335,7 @@ public class Word2Vec implements Persistable {
         }
 
 
-        trainSentence(sentence2);
+        trainSentence(sentence2,0);
         return sentence2;
     }
 
@@ -362,7 +365,7 @@ public class Word2Vec implements Persistable {
         }
 
 
-        trainSentence(sentence2);
+        trainSentence(sentence2,0);
         return sentence2;
     }
 
@@ -475,14 +478,14 @@ public class Word2Vec implements Persistable {
      * Train on a list of vocab words
      * @param sentence the list of vocab words to train on
      */
-    public void trainSentence(final List<VocabWord> sentence) {
+    public void trainSentence(final List<VocabWord> sentence,int doc) {
         if(g == null)
             g = new XorShift1024StarRandomGenerator(seed);
 
         numWordsSoFar.getAndAdd(sentence.size());
-        if(numWordsSoFar.get() % 10000 == 0) {
-            alpha.set(Math.max(minLearningRate,alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) vectorizer.numWordsEncountered()))));
-            log.info("Num words so far " + numWordsSoFar.get() + " out of " + vectorizer.numWordsEncountered() + " alpha is " + alpha.get());
+        if(doc % 1000 == 0) {
+            alpha.set(Math.max(minLearningRate,alpha.get() * (1 - (1.0 * (double) doc / (double) vectorizer.index().numDocuments()))));
+            log.info("Num words so far " + numWordsSoFar.get() + " alpha is " + alpha.get());
         }
 
         if(sentence.isEmpty())

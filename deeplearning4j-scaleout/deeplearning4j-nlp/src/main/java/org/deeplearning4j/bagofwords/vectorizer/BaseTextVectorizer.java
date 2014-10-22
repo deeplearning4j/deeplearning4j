@@ -12,6 +12,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.invertedindex.DefaultInvertedIndex;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
+import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.util.Index;
@@ -40,7 +41,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     protected SentenceIterator sentenceIterator;
     private AtomicInteger numWordsEncountered =  new AtomicInteger(0);
     private static Logger log = LoggerFactory.getLogger(BaseTextVectorizer.class);
-    private InvertedIndex index = new DefaultInvertedIndex();
+    private InvertedIndex index;
 
     public BaseTextVectorizer(){}
 
@@ -54,6 +55,8 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         this.sentenceIterator = sentenceIterator;
         this.labels = labels;
         this.index = index;
+        if(index == null)
+            this.index = new LuceneInvertedIndex(cache);
     }
 
     @Override
@@ -131,6 +134,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
             }
         }
 
+        index.finish();
         trainingSystem.shutdown();
 
 
