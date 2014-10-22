@@ -60,7 +60,7 @@ public class Word2VecRawExample {
         InMemoryLookupCache cache = new InMemoryLookupCache(100,false);
         Word2Vec vec = new Word2Vec.Builder()
                 .minWordFrequency(1)
-                .vocabCache(cache).iterations(5).learningRate(25e-2)
+                .vocabCache(cache).iterations(5).learningRate(2.5e-2)
                 .iterate(iter).tokenizerFactory(t).build();
         vec.fit();
 

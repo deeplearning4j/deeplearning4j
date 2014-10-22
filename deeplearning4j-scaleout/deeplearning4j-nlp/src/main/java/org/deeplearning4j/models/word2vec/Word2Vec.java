@@ -155,7 +155,28 @@ public class Word2Vec implements Persistable {
      * @return the top n words
      */
     public Collection<String> wordsNearest(String word,int n) {
-        INDArray vec = this.getWordVectorMatrix(word);
+        INDArray vec = Transforms.unitVec(this.getWordVectorMatrix(word));
+
+
+       if(cache instanceof  InMemoryLookupCache) {
+           InMemoryLookupCache l = (InMemoryLookupCache) cache;
+           INDArray syn0 = l.getSyn0();
+           INDArray weights = syn0.norm2(0).rdivi(1).muli(vec);
+           INDArray distances = syn0.mulRowVector(weights).sum(1);
+           INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+           INDArray sort = sorted[0];
+           List<String> ret = new ArrayList<>();
+           if(n > sort.length())
+               n = sort.length();
+
+           for(int i = 0; i < n; i++)
+               ret.add(cache.wordAtIndex(sort.getInt(i)));
+
+
+
+           return ret;
+       }
+
         if(vec == null)
             return new ArrayList<>();
         Counter<String> distances = new Counter<>();
