@@ -74,4 +74,9 @@ public class DefaultInvertedIndex implements InvertedIndex {
        }
 
     }
+
+    @Override
+    public void finish() {
+
+    }
 }

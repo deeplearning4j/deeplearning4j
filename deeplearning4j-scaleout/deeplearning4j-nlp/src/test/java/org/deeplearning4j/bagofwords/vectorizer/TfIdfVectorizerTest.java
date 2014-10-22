@@ -17,6 +17,7 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -40,7 +41,10 @@ public class TfIdfVectorizerTest {
 
         assertEquals(word,vectorizer.vocab().tokenFor("This"));
 
-        assertEquals(2,vectorizer.index().documents(word).size());
+
+        Collection<Integer> docs = vectorizer.index().allDocs();
+        assertEquals(2,docs.size());
+        assertEquals(2, vectorizer.index().documents(word).size());
 
     }
 
