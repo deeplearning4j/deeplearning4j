@@ -6,10 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -78,7 +75,6 @@ public class Word2Vec implements Persistable {
     private boolean saveVocab = false;
     private double minLearningRate = 0.01;
     private AtomicInteger numWordsSoFar = new AtomicInteger(0);
-
     private TextVectorizer vectorizer;
 
 
@@ -273,13 +269,14 @@ public class Word2Vec implements Persistable {
 
 
         final AtomicLong latch = new AtomicLong(0);
-        final List<List<VocabWord>> docs = new ArrayList<>();
-        for(int i = 0; i < vectorizer.index().numDocuments(); i++)
-            docs.add(vectorizer.index().document(i));
+        //final List<List<VocabWord>> docs = new CopyOnWriteArrayList<>();
+        //for(int i = 0; i < vectorizer.index().numDocuments(); i++)
+         //   docs.add(vectorizer.index().document(i));
 
         ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
         log.info("Processing sentences...");
         for(int i = 0; i < numIterations; i++) {
+            log.info("Iteration " + (i + 1));
             int numDocs = vectorizer.index().numDocuments();
             log.info("Training on " + numDocs);
             for(int j = 0; j < numDocs;j++) {
@@ -299,15 +296,18 @@ public class Word2Vec implements Persistable {
                      */
                     @Override
                     public void run() {
-                        trainSentence(docs.get(k),k);
+                        trainSentence(vectorizer.index().document(k),k);
                     }
                 });
 
                 numSentencesProcessed.incrementAndGet();
+
                 if(numSentencesProcessed.get() % 100 == 0)
                     log.info("Num sentences processed " + numSentencesProcessed.get());
             }
 
+            //reset for the iteration
+            numSentencesProcessed.set(0);
         }
 
 
@@ -502,7 +502,8 @@ public class Word2Vec implements Persistable {
     public void trainSentence(final List<VocabWord> sentence,int doc) {
         if(g == null)
             g = new XorShift1024StarRandomGenerator(seed);
-
+        if(sentence == null)
+            return;
         numWordsSoFar.getAndAdd(sentence.size());
         if(doc % 1000 == 0) {
             alpha.set(Math.max(minLearningRate,alpha.get() * (1 - (1.0 * (double) doc / (double) vectorizer.index().numDocuments()))));
@@ -536,6 +537,14 @@ public class Word2Vec implements Persistable {
                 int c = i - window + a;
                 if(c >= 0 && c < sentence.size()) {
                     VocabWord lastWord = sentence.get(c);
+                    int numTries = 0;
+                    while(lastWord == null) {
+                        lastWord = sentence.get(c);
+                        numTries++;
+                    }
+                    if(numTries >= 3)
+                        throw new IllegalStateException("Unable to get word from sentence");
+
                     iterate(word,lastWord);
                 }
             }
