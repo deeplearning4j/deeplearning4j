@@ -1293,8 +1293,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     public void finetune(INDArray labels, double lr, int iterations) {
         this.labels = labels;
-        getOutputLayer().setLabels(labels);
-        feedForward();
         if (labels != null)
             this.labels = labels;
         optimizer = new MultiLayerNetworkOptimizer(this, lr);
