@@ -19,6 +19,7 @@ import org.deeplearning4j.util.Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,15 +31,15 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public abstract class BaseTextVectorizer implements TextVectorizer {
 
-    protected VocabCache cache;
+    protected transient VocabCache cache;
     protected static ActorSystem trainingSystem;
-    protected TokenizerFactory tokenizerFactory;
+    protected transient TokenizerFactory tokenizerFactory;
     protected List<String> stopWords;
     private int layerSize = 0;
     protected int minWordFrequency = 5;
-    protected DocumentIterator docIter;
+    protected transient DocumentIterator docIter;
     protected List<String> labels;
-    protected SentenceIterator sentenceIterator;
+    protected transient SentenceIterator sentenceIterator;
     private AtomicInteger numWordsEncountered =  new AtomicInteger(0);
     private static Logger log = LoggerFactory.getLogger(BaseTextVectorizer.class);
     private InvertedIndex index;
@@ -56,7 +57,8 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         this.labels = labels;
         this.index = index;
         if(index == null)
-            this.index = new LuceneInvertedIndex(cache);
+            this.index = new LuceneInvertedIndex.Builder().indexDir(new File("word2vec-index"))
+                   .cache(cache).build();
     }
 
     @Override
