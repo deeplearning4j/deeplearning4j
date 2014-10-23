@@ -57,6 +57,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
     ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
     protected boolean isDone = false;
     protected Cancellable forceNextPhase,clearStateWorkers;
+    private boolean began = false;
 
     /**
      * Creates the master and the workers with this given conf
@@ -249,30 +250,8 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
             Thread.sleep(30000);
         }
 
-        if(stateTracker.isPretrain() && stateTracker.currentJobs().isEmpty()) {
-            log.info("Switching to finetune mode");
-            stateTracker.moveToFinetune();
-            SerializationUtils.saveObject(masterResults.get(), new File("pretrain-model.bin"));
 
-
-            while(masterResults == null) {
-                masterResults = getMasterResults();
-            }
-
-
-            mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.BATCH,
-                    ResetMessage.getInstance() ), getSelf());
-            mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.BATCH,
-                    MoreWorkMessage.getInstance() ), getSelf());
-
-
-
-            batchActor.tell(ResetMessage.getInstance(), getSelf());
-            batchActor.tell(MoreWorkMessage.getInstance(), getSelf());
-
-        }
-
-        else if(stateTracker.currentJobs().isEmpty()) {
+        if(stateTracker.currentJobs().isEmpty()) {
             isDone = true;
             stateTracker.finish();
             log.info("Done training!");

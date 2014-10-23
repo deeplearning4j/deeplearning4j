@@ -107,7 +107,7 @@ public class StateTrackerDropWizardResource extends Application<HazelCastConf>  
     @Path("/model.ser")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public Response getFile() throws Exception {
-        Updateable<?> u = (Updateable<?>) stateTracker.getCurrent();
+        Updateable<?> u =  stateTracker.getCurrent();
         File file = new File("savedmodel.ser");
         SerializationUtils.saveObject(u.get(), file);
         return Response.ok(file, MediaType.APPLICATION_OCTET_STREAM)
