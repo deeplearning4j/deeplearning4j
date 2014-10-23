@@ -23,7 +23,7 @@ public class LuceneInvertedIndexTest {
         cache.addWordToIndex(1,"hello2");
         cache.putVocabWord("hello");
         cache.putVocabWord("hello2");
-        InvertedIndex index = new LuceneInvertedIndex(cache);
+        InvertedIndex index = new LuceneInvertedIndex(cache,true);
         index.addWordsToDoc(0, Arrays.asList(cache.wordFor("hello"),cache.wordFor("hello2")));
         index.addWordsToDoc(1, Arrays.asList(cache.wordFor("hello"),cache.wordFor("hello2")));
         index.finish();
