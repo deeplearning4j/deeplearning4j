@@ -20,9 +20,8 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Lucene based inverted index
@@ -30,22 +29,26 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class LuceneInvertedIndex implements InvertedIndex {
-    private  Directory dir;
-    private IndexReader reader;
-    private   Analyzer analyzer;
-    private IndexSearcher searcher;
-    private IndexWriter writer;
-    private  IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, analyzer);
+    private transient  Directory dir;
+    private transient IndexReader reader;
+    private   transient Analyzer analyzer;
+    private transient IndexSearcher searcher;
+    private  transient IndexWriter writer;
+    private  transient IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, analyzer);
     private VocabCache vocabCache;
     public final static String WORD_FIELD = "word";
     private int numDocs = 0;
-    public LuceneInvertedIndex(VocabCache vocabCache) {
+    private Map<Integer,List<VocabWord>> words = new HashMap<>();
+    private boolean cache = true;
+
+    public LuceneInvertedIndex(VocabCache vocabCache,boolean cache) {
         try {
             index("word2vec-index",true);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         this.vocabCache = vocabCache;
+        this.cache = cache;
     }
 
 
@@ -53,7 +56,10 @@ public class LuceneInvertedIndex implements InvertedIndex {
 
     @Override
     public List<VocabWord> document(int index) {
-        List<VocabWord> ret = new ArrayList<>();
+        if(cache)
+            return words.get(index);
+
+        List<VocabWord> ret = new CopyOnWriteArrayList<>();
         try {
             Document doc = reader.document(index);
 
@@ -72,7 +78,7 @@ public class LuceneInvertedIndex implements InvertedIndex {
     @Override
     public List<Integer> documents(VocabWord vocabWord) {
         try {
-           TermQuery query = new TermQuery(new Term(WORD_FIELD,vocabWord.getWord()));
+            TermQuery query = new TermQuery(new Term(WORD_FIELD,vocabWord.getWord()));
 
 
             TopDocs topdocs = searcher.search(query,Integer.MAX_VALUE);
@@ -98,6 +104,7 @@ public class LuceneInvertedIndex implements InvertedIndex {
         int ret = 0;
         try {
 
+            initReader();
             ret = reader.numDocs();
 
         }catch(Exception e) {
@@ -118,6 +125,7 @@ public class LuceneInvertedIndex implements InvertedIndex {
     public void addWordToDoc(int doc, VocabWord word) {
         Field f = new TextField(WORD_FIELD,word.getWord(),Field.Store.YES);
         try {
+            initReader();
 
             Document doc2 = searcher.doc(doc);
             if(doc2 != null)
@@ -131,6 +139,23 @@ public class LuceneInvertedIndex implements InvertedIndex {
 
         } catch (IOException e) {
             e.printStackTrace();
+        }
+
+        initReader();
+
+    }
+
+
+    private void initReader() {
+        if(reader == null) {
+            try {
+                writer.commit();
+                reader = DirectoryReader.open(dir);
+                searcher = new IndexSearcher(reader);
+            }catch(Exception e) {
+                throw new RuntimeException(e);
+            }
+
         }
 
     }
@@ -148,8 +173,9 @@ public class LuceneInvertedIndex implements InvertedIndex {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-
+        if(cache)
+            this.words.put(doc,words);
+        initReader();
 
 
     }
@@ -163,15 +189,8 @@ public class LuceneInvertedIndex implements InvertedIndex {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if(reader == null) {
-            try {
-                reader = DirectoryReader.open(dir);
-                searcher = new IndexSearcher(reader);
-            }catch(Exception e) {
-                throw new RuntimeException(e);
-            }
 
-        }
+        initReader();
         numDocs = reader.numDocs();
 
     }
@@ -211,15 +230,7 @@ public class LuceneInvertedIndex implements InvertedIndex {
         // you're done adding documents to it):
         //
         // writer.forceMerge(1);
-        if(reader == null) {
-            try {
-                reader = DirectoryReader.open(dir);
-                searcher = new IndexSearcher(reader);
-            }catch(Exception e) {
-                throw new RuntimeException(e);
-            }
-
-        }
+        initReader();
 
 
 
@@ -236,7 +247,23 @@ public class LuceneInvertedIndex implements InvertedIndex {
         private  IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_4_10_0, analyzer);
         private VocabCache vocabCache;
         private List<String> stopWords = StopWords.getStopWords();
+        private boolean cache = true;
 
+
+        public Builder cacheDocsInMemory(boolean cache) {
+            this.cache = cache;
+            return this;
+        }
+
+        public Builder indexDir(File indexDir) {
+            this.indexDir = indexDir;
+            return this;
+        }
+
+        public Builder cache(VocabCache cache) {
+            this.vocabCache = cache;
+            return this;
+        }
 
         public Builder stopWords(List<String> stopWords) {
             this.stopWords = stopWords;
@@ -268,7 +295,7 @@ public class LuceneInvertedIndex implements InvertedIndex {
             try {
                 if(analyzer == null)
                     analyzer  = new StandardAnalyzer(new InputStreamReader(new ByteArrayInputStream(StringUtils.join(stopWords,"\n").getBytes())));
-                if(indexDir != null && dir == null)
+                if(indexDir != null && dir != null)
                     throw new IllegalStateException("Please define only a directory or a file directory");
                 if(iwc == null)
                     iwc = new IndexWriterConfig(Version.LATEST, analyzer);
@@ -289,19 +316,12 @@ public class LuceneInvertedIndex implements InvertedIndex {
                 ret.vocabCache = vocabCache;
                 ret.dir = dir;
                 ret.writer = writer;
-                if(reader == null) {
-                    try {
-                        reader = DirectoryReader.open(dir);
-                        searcher = new IndexSearcher(reader);
-                    }catch(Exception e) {
-                        throw new RuntimeException(e);
-                    }
-
-                }
+                ret.cache = cache;
 
                 ret.reader = reader;
                 ret.searcher = searcher;
                 ret.analyzer = analyzer;
+                ret.vocabCache = vocabCache;
 
             }catch(Exception e) {
 
