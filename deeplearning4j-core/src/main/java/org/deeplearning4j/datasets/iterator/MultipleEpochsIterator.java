@@ -29,7 +29,21 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public DataSet next(int num) {
-        return iter.next(num);
+        if(!iter.hasNext()) {
+            if(passes < numPasses) {
+                passes++;
+                batch = 0;
+                log.info("Epoch " + passes + " batch " + batch);
+                iter.reset();
+
+            }
+        }
+        batch++;
+
+        DataSet next = iter.next(num);
+        if(preProcessor != null)
+            preProcessor.preProcess(next);
+        return next;
     }
 
     /**
@@ -121,7 +135,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public boolean hasNext() {
-        return iter.hasNext() || passes < numPasses;
+        return iter.hasNext() && passes < numPasses;
     }
 
     /**
@@ -147,6 +161,9 @@ public class MultipleEpochsIterator implements DataSetIterator {
             preProcessor.preProcess(next);
         return next;
     }
+
+
+
 
     /**
      * Removes from the underlying collection the last element returned

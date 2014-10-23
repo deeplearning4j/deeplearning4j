@@ -918,6 +918,8 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
 
     @Override
     public Job jobFor(String id) {
+        if(done.get())
+            return null;
         IAtomicReference<Job> j = h.getAtomicReference("job-" + id);
         if(j.isNull() || isCurrentlyJob(id))
             return null;

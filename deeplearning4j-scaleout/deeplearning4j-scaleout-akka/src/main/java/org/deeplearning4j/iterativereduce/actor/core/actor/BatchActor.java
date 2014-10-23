@@ -139,14 +139,6 @@ public class BatchActor extends UntypedActor {
                         stateTracker.workerData()), mediator);
             }
             else if(!iter.hasNext()) {
-                int iterations = stateTracker.runPreTrainIterations();
-                if (iterations < conf.getNumPasses()) {
-                    stateTracker.incrementNumTimesPreTrainRan();
-                    iter.reset();
-                    log.info("Next pretrain iteration " + stateTracker.numTimesPreTrainRun() + " out of " + stateTracker.runPreTrainIterations());
-                }
-
-                else
                     mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
                             DoneMessage.getInstance()), mediator);
             }
