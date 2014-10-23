@@ -178,25 +178,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
             d.scale();
         if(d.getFeatureMatrix() == null || d.getLabels() == null)
             throw new IllegalStateException("Input cant be null");
-
-        if(tracker.isPretrain()) {
-            log.info("Worker " + id + " pretraining");
-            network.pretrain(d.getFeatureMatrix(), conf.getDeepLearningParams());
-        }
-
-        else {
-
-            network.setInput(d.getFeatureMatrix());
-            log.info("Worker " + id + " finetune");
-            if(tracker.testSet() != null) {
-                TrainingEvaluator eval = tracker.create(network);
-                network.finetune(d.getLabels(), conf.getConf().getFinetuneLearningRate(), conf.getConf().getFinetuneEpochs(),eval);
-
-            }
-            else
-                network.finetune(d.getLabels(), conf.getConf().getFinetuneLearningRate(), conf.getConf().getFinetuneEpochs(),null);
-
-        }
+        network.setLabels(d.getLabels());
+        network.fit(d);
 
         //job is delegated, clear so as not to cause redundancy
         try {

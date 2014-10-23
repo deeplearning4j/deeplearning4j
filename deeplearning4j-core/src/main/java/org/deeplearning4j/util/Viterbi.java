@@ -65,14 +65,14 @@ public class Viterbi implements Persistable {
         INDArray assigned = V.getRow(0);
         assigned.assign(logPCorrect - logStates);
         V.putRow(0,assigned);
-        V.put(0, (int) outcomeSequence.getScalar(0).element(), Nd4j.scalar(logPCorrect - logStates));
+        V.put(0,  (int) outcomeSequence.getDouble(0), logPCorrect - logStates);
         for(int t = 1; t < frames; t++) {
             for(int k = 0; k < states; k++) {
                 INDArray rowLogProduct = rowOfLogTransitionMatrix(k).add(V.getRow(t  - 1));
                 int maxVal = Nd4j.getBlasWrapper().iamax(rowLogProduct);
-                double argMax = (double) rowLogProduct.max(Integer.MAX_VALUE).element();
+                double argMax =  rowLogProduct.max(Integer.MAX_VALUE).getDouble(0);
                 V.put(t,k,argMax);
-                int element = (int) outcomeSequence.getScalar(t).element();
+                int element = (int) outcomeSequence.getDouble(t);
                 if(k == element)
                     V.put(t,k,logPCorrect + maxVal);
                 else
@@ -85,11 +85,11 @@ public class Viterbi implements Persistable {
         INDArray rectified = Nd4j.zeros(frames);
         rectified.put(rectified.length() - 1,V.getRow(frames - 1).max(Integer.MAX_VALUE));
         for(int t = rectified.length() - 2; t > 0; t--) {
-            rectified.put(t,pointers.getScalar(t + 1,(int) rectified.getScalar(t + 1).element()));
+            rectified.putScalar(t,pointers.getDouble(t + 1,(int) rectified.getDouble(t + 1)));
         }
 
 
-        return new Pair<>((Double) V.getRow(frames - 1).max(Integer.MAX_VALUE).element(),rectified);
+        return new Pair<>(V.getRow(frames - 1).max(Integer.MAX_VALUE).getDouble(0),rectified);
     }
 
     private INDArray rowOfLogTransitionMatrix(int k) {

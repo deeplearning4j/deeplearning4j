@@ -225,6 +225,9 @@ public class Conf implements Serializable,Cloneable {
         this.useBackProp = useBackProp;
     }
 
+    public List<NeuralNetConfiguration> getLayerConfigs() {
+        return layerConfigs;
+    }
 
     /**
      * Corruption level of 0.3 and learning rate of 0.01
@@ -248,23 +251,10 @@ public class Conf implements Serializable,Cloneable {
      * @return the initialized network
      */
     public BaseMultiLayerNetwork init() {
-        if(getMultiLayerClazz().isAssignableFrom(DBN.class)) {
-            return new DBN.Builder().configure(conf).layerWiseCOnfiguration(layerConfigs)
-            .withClazz(getMultiLayerClazz()).lineSearchBackProp(isLineSearchBackProp())
-                    .hiddenLayerSizes(getLayerSizes())
-                    .build();
-
-
-
-        }
-
-        else {
-            return  new BaseMultiLayerNetwork.Builder<>().withClazz(getMultiLayerClazz())
-                    .hiddenLayerSizes(getLayerSizes())
-                     .lineSearchBackProp(isLineSearchBackProp())
-                    .build();
-
-        }
+        return  new BaseMultiLayerNetwork.Builder<>().withClazz(getMultiLayerClazz())
+                .hiddenLayerSizes(getLayerSizes()).configure(conf)
+                .lineSearchBackProp(isLineSearchBackProp())
+                .build();
     }
 
 
