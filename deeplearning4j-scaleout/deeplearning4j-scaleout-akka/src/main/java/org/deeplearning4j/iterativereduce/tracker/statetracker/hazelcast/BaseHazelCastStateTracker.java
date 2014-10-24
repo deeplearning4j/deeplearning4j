@@ -1042,7 +1042,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
             done.set(true);
             updateSaver().cleanup();
         }catch(Exception e) {
-            log.warn("Hazelcast already shutdown...done() being applyTransformToDestination is pointless");
+            log.warn("Hazelcast already shutdown...done() being called is pointless");
         }
     }
 
