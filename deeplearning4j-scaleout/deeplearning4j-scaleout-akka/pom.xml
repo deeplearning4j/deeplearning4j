@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-scaleout</artifactId>
-		<version>0.0.3.3-SNAPSHOT</version>
+		<version>0.0.3.2.1</version>
 	</parent>
 	<artifactId>deeplearning4j-scaleout-akka</artifactId>
 	<name>deeplearning4j-scaleout-akka</name>
@@ -16,7 +16,7 @@
 		<spring.version>3.2.5.RELEASE</spring.version>
 		<dropwizard.version>0.7.0</dropwizard.version>
 		<jackson.version>2.3.2</jackson.version>
-        <nd4j.version>0.0.3.6-SNAPSHOT</nd4j.version>
+        <nd4j.version>0.0.3.5.1</nd4j.version>
 	</properties>
 	<dependencyManagement>
 
