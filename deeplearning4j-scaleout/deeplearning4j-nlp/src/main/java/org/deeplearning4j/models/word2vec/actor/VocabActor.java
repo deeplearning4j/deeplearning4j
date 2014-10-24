@@ -142,6 +142,9 @@ public class VocabActor extends UntypedActor {
     protected void processToken(String token,Set<String> encountered,List<VocabWord> words) {
         if(stopWords.contains(token))
             token = "STOP";
+        if(token.isEmpty())
+            return;
+
         cache.incrementWordCount(token);
 
 

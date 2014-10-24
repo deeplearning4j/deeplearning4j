@@ -1,10 +1,13 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
-import java.io.StreamTokenizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
+/**
+ * Default tokenizer
+ * @author Adam Gibson
+ */
 public class DefaultTokenizer implements Tokenizer {
 
 	public DefaultTokenizer(String tokens) {
@@ -12,7 +15,7 @@ public class DefaultTokenizer implements Tokenizer {
 	}
 	
 	private StringTokenizer tokenizer;
-	
+	private TokenPreProcess tokenPreProcess;
 	
 	@Override
 	public boolean hasMoreTokens() {
@@ -26,12 +29,15 @@ public class DefaultTokenizer implements Tokenizer {
 
 	@Override
 	public String nextToken() {
-		return tokenizer.nextToken();
+		String base =  tokenizer.nextToken();
+        if(tokenPreProcess != null)
+            base = tokenPreProcess.preProcess(base);
+        return base;
 	}
 
 	@Override
 	public List<String> getTokens() {
-		List<String> tokens = new ArrayList<String>();
+		List<String> tokens = new ArrayList<>();
 		while(hasMoreTokens()) {
 			tokens.add(nextToken());
 		}
@@ -40,7 +46,7 @@ public class DefaultTokenizer implements Tokenizer {
 
 	@Override
 	public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
-		// TODO Auto-generated method stub
+		this.tokenPreProcess = tokenPreProcessor;
 		
 	}
 	
