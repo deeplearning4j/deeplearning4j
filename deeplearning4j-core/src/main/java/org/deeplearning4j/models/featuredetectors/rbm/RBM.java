@@ -504,7 +504,7 @@ public  class RBM extends BaseNeuralNetwork {
 
 
     /**
-     * Note: k is the first input in params.
+     * Note: k is the first input iken params.
      */
     @Override
     public void fit(INDArray input,
