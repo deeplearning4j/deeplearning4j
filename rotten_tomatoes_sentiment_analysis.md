@@ -141,7 +141,7 @@ We focus on sub-contexts for sentiment analysis, because context and subcontexts
 
 The vectorization code to capture context is already written, allowing us to concentrate on the high-level logic of word vectors matched to sub-contexts, and then on benchmarking the accuracy of our models.
 
-Before we do a deeper dive into these approaches, we'll have to explain and define some terms used in the rest of the tutorial.
+Before we do a deeper dive into these approaches, we'll have to define and explain some terms.
 
 ### Bag of Words (BoW)
 
@@ -169,18 +169,15 @@ When you create a machine-learning model, you need to vectorize the data, becaus
 
 Vectorization is the process of breaking unstructured data up into a set of features, each of them distinct aspects of the raw data. Each feature is a vector in itself. The two representations we focus on here are word vectors (context, one vector per word which captures its proximity to other words around it) and word count vectors (document level, no context, captures the presence or absence of a word).
 
-When we iterate over a dataset, we retrieve data in a certain order, and often from multiple locations. If multiple locations are involved, we want to make data pipeline retrieval for each potential end point isolated and testable. We do that with a DataFetcher.
+When we iterate over a dataset, we retrieve data in a certain order, often from multiple locations. If multiple locations are involved, we want to make the data pipeline retrieval process for each potential end point isolated and testable. We do that with a DataFetcher.
 
 ### DataFetcher
 
-As its name implies, a DataFetcher handles data retrieval. Data may live in any number of places including AWS, your file system, or even just mysql. When you do feature vector composition from different sources, you want to ensure these aspects of a data pipeline are isolated. With this in mind, let's look at how to fetch data from a csv and parse it.
-
-We will be building a data fetcher to do this.
+As its name implies, a DataFetcher handles data retrieval. Data may live on Amazon Web Services, your local file system, or MySQL. The DataFetcher handles feature vector composition with a process specific to each data source. With this in mind, let's fetch data from a CSV and parse it.
 
 ## CSV Processing
 
-As part of deeplearning4j for handling of csv values we have a wonderful csv library that allows us to do the following:
-
+Deeplearning4j a csv library that allows us to handle CSV values in the following way:
 
         CSV csv1 = CSV.separator('\t')
                 .ignoreLeadingWhiteSpace().skipLines(1)
@@ -192,29 +189,19 @@ As part of deeplearning4j for handling of csv values we have a wonderful csv lib
             }
         });
 
-csv here is a file object.
+In the above code snippet, CSV is a file object.
 
+The callback lets us access the data. Our goal is to collect the text and create a corpus. In our callback, we want to grab the text, and treat each line as a document. Due to the nature of this dataset, we'll just create a list of the documents since it won't use too much memory. 
 
-
-The callback then will allow us ot get access to the data. Our goal then will be to collect the text and create what amounts to a corpus.
-
-In our call back, we will want to grab the text and treat each line as a document.
-
-Due to the nature of the beast, we will just create a list of the documents since there's not that much in memory. 
-
-According to kaggle, competition we will be classifying phrases. Therefore, this is what we will be saving in to the list at each individal row.
-
+The Kaggle competition is about classifying phrases. So we'll be saving each phrase as a row in a list.
 
 That leads us to a class with an abstract data type called a text retriever that contains the following:
 
 Map<String,Pair<String,String>> mapping the phrase id, to the content and the associated label.
 
-
-
 The body of our csv parser in procRow earlier will then be:
 
             pair.put(values[0],new Pair<>(values[2],values[3]));
-
 
 This is our map of phrases to text and label.
 
