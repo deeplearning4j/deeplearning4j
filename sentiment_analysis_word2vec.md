@@ -2,15 +2,6 @@
 layout: default
 ---
 
-<!-- DataTables CSS -->
-<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.3/css/jquery.dataTables.css">
-  
-<!-- jQuery -->
-<script type="text/javascript" charset="utf8" src="//code.jquery.com/jquery-1.10.2.min.js"></script>
-  
-<!-- DataTables -->
-<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.3/js/jquery.dataTables.js"></script>
-
 # Movie Review Sentiment Analysis 
 
 In this blog post, we're going to walk through a sentiment analysis of movie reviews using the Rotten Tomatoes dataset. 
