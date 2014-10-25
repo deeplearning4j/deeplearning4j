@@ -98,11 +98,15 @@ The command 'head' should output the following table:
     </tbody>
 </table>
 
-Let's walk through this. We have a SentenceID of 1 in every row, which means we are dealing with the same sentence throughout. The entire sentence is presented as a phrase in Row 2, Column 3. Each subsequent phrase shown is Column 3 is a subset of that original sentence. 
+Let's walk through this. 
 
-Our table is a partial preview of the sentence's subsets, and it stops short of presenting the phrases that constitute the second half of the sentence. In addition, this is a supervised dataset, so each phrase has been assigned a sentiment label by a real, live human being. 
+Two columns describe the sentence: PhraseID and SentenceID. A PhraseID is a sub-window that takes just one piece of a larger passage, such that each sub-window of a sentence is an example of a "context." 
 
-The sentiment labels are:
+In the table above, we have a SentenceID of 1 in every row, which means we are dealing with the same sentence throughout. The entire sentence is presented as a phrase in Row 2, Column 3. Each subsequent phrase shown is Column 3 is a subset of that original sentence: the sub-windows. 
+
+Our table is only a partial preview of the sentence's subsets, as it happens to end before presenting the phrases that constitute the second half of the sentence. 
+
+This is a supervised dataset, each sub-window has been assigned a label denoting its sentiment by a real, live human being. Here's a table mapping sentiment to numeric labels:
 
 | Label |  Sentiment |
 |:----------:|:-------------:|
@@ -112,24 +116,24 @@ The sentiment labels are:
 | 3 |    somewhat positive   |
 | 4 | positive |
 
-This happens to be quite nuanced: many sentiment analysis problems are binary classifications; that is, 1 or 0, positive or negative, with no finer gradations.
+This label system is fairly nuanced: many sentiment analysis problems are binary classifications; that is, 1 or 0, positive or negative, with no finer gradations.
 
 In our preview of Sentence 1, the sentence itself has been assigned the label of "somewhat negative," which is appropriate, given the second half of the sentence is critical of the film in question. The first half is not critical, however, and its subphrases have all been labeled "neutral," or 2. 
 
 From Kaggle:
 
-*The dataset is comprised of tab-separated files with phrases from the Rotten Tomatoes dataset. The train/test split has been preserved for the purposes of benchmarking, but the sentences have been shuffled from their original order. Each Sentence has been parsed into many phrases by the Stanford parser. Each phrase has a PhraseId. Each sentence has a SentenceId. Phrases that are repeated (such as short/common words) are only included once in the data.
+*The dataset is comprised of tab-separated files with phrases from the Rotten Tomatoes dataset. The train/test split has been preserved for the purposes of benchmarking, but the sentences have been shuffled from their original order. Each Sentence has been parsed into many phrases by the Stanford parser. Each phrase has a PhraseId. Each sentence has a SentenceId. Phrases that are repeated (such as short/common words) are only included once in the data.*
 
-* train.tsv contains the phrases and their associated sentiment labels. We have additionally provided a SentenceId so that you can track which phrases belong to a single sentence.
+* *train.tsv contains the phrases and their associated sentiment labels. We have additionally provided a SentenceId so that you can track which phrases belong to a single sentence.*
 
-* test.tsv contains just phrases. You must assign a sentiment label to each phrase.*
+* *test.tsv contains just phrases. You must assign a sentiment label to each phrase.*
 
-Let's introduce the methods we will be using in this blog post.
+Now we'll introduce the methods used in this analysis.
 
-Dataset - How to initially tackle the problem
+Dataset - How to Approach the Problem
 ================================
 
-We notice 2 columns describing the sentence. The phrase and the sentence id. A phrase id is a sub window we use to break up the text such that each sub window of a sentence is an example of a "context". Each of these sub contexts has a possible label. We are going to want to build tools to break these in to contexts mapping by sentence id.
+We want to build tools to break these into contexts, mapping by SentenceID.
 
 For DBNs, we will be building a simple moving window and labeling each window where the span has a particular label.
 
