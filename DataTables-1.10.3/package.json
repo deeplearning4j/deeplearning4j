@@ -1,0 +1,34 @@
+{
+	"name": "DataTables",
+	"version": "1.10.3",
+	"title": "DataTables",
+	"author": {
+		"name": "Allan Jardine",
+		"url": "http://sprymedia.co.uk"
+	},
+	"licenses": [
+		{
+			"type": "MIT",
+			"url": "http://datatables.net/license"
+		}
+	],
+	"dependencies": {
+		"jquery": ">=1.7"
+	},
+	"description": "DataTables enhances HTML tables with the ability to sort, filter and page the data in the table very easily. It provides a comprehensive API and set of configuration options, allowing you to consume data from virtually any data source.",
+	"keywords": [
+		"DataTables",
+		"DataTable",
+		"table",
+		"grid",
+		"filter",
+		"sort",
+		"page",
+		"internationalisable"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/DataTables/DataTables.git"
+	},
+	"homepage": "http://datatables.net"
+}
