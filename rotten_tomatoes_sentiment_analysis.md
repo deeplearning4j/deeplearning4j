@@ -177,7 +177,7 @@ As its name implies, a DataFetcher handles data retrieval. Data may live on Amaz
 
 ## CSV Processing
 
-Deeplearning4j a csv library that allows us to handle CSV values in the following way:
+Deeplearning4j has a CSV library that allows us to handle CSV values in the following way:
 
         CSV csv1 = CSV.separator('\t')
                 .ignoreLeadingWhiteSpace().skipLines(1)
@@ -191,31 +191,25 @@ Deeplearning4j a csv library that allows us to handle CSV values in the followin
 
 In the above code snippet, CSV is a file object.
 
-The callback lets us access the data. Our goal is to collect the text and create a corpus. In our callback, we want to grab the text, and treat each line as a document. Due to the nature of this dataset, we'll just create a list of the documents since it won't use too much memory. 
+The callback lets us access the data. Our goal is to collect the text and create what amounts to a corpus. In the callback, where we're passing in CSVReadProc as an argument to the read method, we want to grab the text and treat each line as a document. Due to the nature of this dataset, we'll just create a list of  documents since it won't use too much memory. 
 
-The Kaggle competition is about classifying phrases. So we'll be saving each phrase as a row in a list.
+Since the Kaggle competition is about classifying phrases, we'll be saving each phrase as a row in the list. 
 
-That leads us to a class with an abstract data type called a text retriever that contains the following:
+That leads us to a class with an abstract data type called a TextRetriever that contains the following:
 
-Map<String,Pair<String,String>> mapping the phrase id, to the content and the associated label.
+            Map<String,Pair<String,String>> //mapping the phraseID to the content and the associated label.
 
-The body of our csv parser in procRow earlier will then be:
+The body of our CSV parser in procRow, cited above, will then be:
 
             pair.put(values[0],new Pair<>(values[2],values[3]));
 
 This is our map of phrases to text and label.
 
-We can use this information generally without coupling this to any particular implementation of our classifier. Let's now test this.
+We can use this process without coupling it to any particular implementation of our classifier. Now let's test it.
 
- 
-
-
-Testing
-=============================================
-
+## Testing
 
 Being consistent with our separation of concerns and testing, let's build a unit test for this.
-
 
 Since our dataset is on our class path, we can use a few neat tricks to retrieve it. Deeplearning4j leverages spring for a few reflection utilities as well as 
 
