@@ -291,29 +291,29 @@ Just a few lines, but let's break them down into their components.
 * The iterator. We built it earlier to track where we are currently when iterating over the data. It also associates a string with a dataseet. 
 * The count vectorizer. This is the workhorse. Let's load the data in to memory with vectorize and iterate as necessary. 
 
-This process is **RAM-intensive**, so don't run it unless you've got a fairly robust server. (I'll run these benchmarks for you here.) In addition, pruning words from your vocabulary based on TF-IDF will give you a good approximation of your data, but here we'll pretend like we're using the whole dataset. (ND4J only supports dense matrices for the mpoment, though we're working ways to handle sparse formats.) Since ND4J is a Blas-focused framework, that is what we will be supporting for now. 
+The process above is **RAM-intensive**, so only run it on a fairly robust server. (TK WHERE ARE THE BENCHMARKS? I'll run these benchmarks for you here.) 
 
-So what exactly have we done so far? We wrote something that could parse CSVs, take the text, map it to labels and iterate through it to produce a matrix.
+Pruning words from your vocabulary based on TF-IDF gives a good approximation of your data, but we'll skip over that step here. TK WHY? (ND4J only supports dense matrices for the moment, though we're working ways to handle sparse formats.) Since ND4J is a Blas-focused framework, that's what we'll be supporting. 
 
-In the process, we built a key component: the vocabulary. It has around 17,000 words. For bag of words matrices, this will produce a sparse representation of 150,000 rows by 17,000 columns, one column per word.
+So what exactly have we done so far? We wrote code to parse CSVs, take the text, map it to labels and iterate through it to produce a matrix. In the process, we built a key component: the vocabulary. It has around 17,000 words. For bag-of-words matrices, this produces a sparse representation of 150,000 rows by 17,000 columns, one column per word.
 
-Bag of Words doesn't give us a lot to work with. Below, we'll have to see how the DBN classifier does.
+Bag of Words doesn't give us a lot to work with. After we explore Word2vec, we'll see how the DBN classifier does with both.
 
 ## Word Vectors
 
-It's time to turn away from *word-count vectors* and toward *word vectors*. Remember, word vectors are used to featurize  textual contexts**. We use the Viterbi algorithm with voting on moving windows for document classification.
+Let's set *word-count vectors* aside and consider *word vectors*. Remember, word vectors are used to **featurize  textual contexts**. We use the [Viterbi algorithm](https://en.wikipedia.org/wiki/Viterbi_algorithm) with voting on moving windows for document classification.
 
-First, since this is a word-vector-based approach, we're going to use Word2vec, and as we do that, we'll look at how well it trains. Unlike Bag of Words, where features are deterministic (), Word2vec is a form of neural net, which means dealing with prbabilities and training coefficients. Remember, Wordvec represents word usage, and usage is a matter of probability rather than lockstep rules.
+Since this is a word-vector-based approach, we're going to use Word2vec, and while we're at it, we'll look at how well it trains. Unlike Bag of Words, where features are deterministic (rules based), Word2vec is a form of neural net, which means we're dealing with probabilities and training coefficients. Remember, Word2vec represents word usage, and usage is a matter of probability rather than of lockstep rules.
 
 Since seeing is understanding, we use D3 to visualize the 16,000-word vocabulary. We use an algorithm called t-SNE to gauge the proximity of words to other words. Doing that let's us ensure that the word clusters themselves are coherent.
 
 TK: Add Renders
 
-Word vectors are used in sequential applications of text. They can be used in document classification with a proper ensemble  method (voting) as well by optimizing for a maximum likelihood estimator over the windows and labels.
+Word vectors are useful with sequential applications for text. They can be used in document classification with a proper ensemble method (voting) as well with optimizing for a maximum likelihood estimator over the windows and labels.
 
 So what does Word2vec look like in code?
 
-The key snippet is here:
+The key code snippet is here:
 
     Word2vec vec = new Word2Vec.Builder().iterate(iter).tokenizerFactory(factory)
                 .learningRate(1e-3).vocabCache(new InMemoryLookupCache(300))
@@ -328,94 +328,3 @@ You'll notice we specify a document iterator, a tokenizer factory and a learning
 * cache: this is where all of our metadata about vocabulary is stored including word vectors, tfidf scores, document frequencies as well as where doucments occurred.
 * layer size: this is the number of features per word
 * window size: the window size for iterating over text, this is how long of contexts to train on.
-
-//CUT HERE
-
-## Moving-Window DBN
-
-So what is a moving window and how do we do it? A moving window is a sliding window over text such that we take a portion of the text of a certain size and classify that as one example.
-
-Think of this very similar to the concept of ngrams.
-
-An example moving window of 3:
-
-Sentence:
-
-The cat sat on the mat.
-
-    The cat
-    The cat sat
-    sat on the
-    on the mat
-    the mat .
-    mat .
-
-Notice I append and prepend padding to the text. I do this in Deeplearning4j as well.
-
-In code, this would look like:
-
-    List<Window> windows = Windows.windows("The cat sat on the mat.",3);
-
-Note the second parameter, this is the window size.
-
-In our case, each window becomes an example. What we want to do is do a look up for each token in the window and use that to create an example feature vector. 
-
-This window would then have a label.
-
-Afterwards, we will have a sequence of labels. From there, we will use viterbi which optimizes sequence prediction of labels treating them aas individual events.
-
-
-This is actually pretty easy to do relative to the work we've already done.
-
-    while(iter.hasNext()) {
-            DataSet next = iter.next();
-            d.fit(next);
-               Pair<Double,INDArray> labels =  v.decode(next.getLabels());
-    }
-
-Just train the likelihoods of the labels along with the data sets and you will get one classification for each phrase as follows.
-
-Use labels.getFirst() to get the overall vote and most likely sequence.
-
-## Recursive Neural Tensor Networks
-
-Another way of doing sequential text classification is recursive neural tensor networks. This requires our 
-sentence be parsed in to a tree. The leaves are individual words with higher level nodes comprising contexts.
-
-Of course this also means our vectorization strategy is slightly different. Given below:
-
-    TreeVectorizer vectorizer = new TreeVectorizer(new TreeParser());
-        while(iter.hasNext()) {
-            List<Tree> trees = vectorizer.getTreesWithLabels(iter.nextSentence(),iter.currentLabel(), Arrays.asList("0","1","2","3","4"));
-            t.fit(trees);
-    }
-
-Going line by line, all we are doing here is creating a tree vectorizer which knows hw to handle word vectors and tree parsing.
-
-We require a sentence iterator for iterating over the text instead of the windows. The vectors and probabilities are derived from the neural network itself.
-
-Notice here that we pass in the sentence, the current label (note that the sentence is "label aware"0 and the list of possible lables. 
-
-This is for creating the outcome matrices.
-
-## Evaluation and Classification
-
-Next we will be getting in to the classification and evaluation. What we've explained up to this point is the vectorization strategies involved with each method. 
-
-For classification and the like, each neural net natrually is going to classify relative to the examples. In a dbn, this is the windows, and in RNTNs, this is going to be individual nodes of the tree represented by the context.
-
-Our overall goal, is to classify phrases, we do this by aggregating the contexts and essentially voting on the results based on the likelihoods of different contexts having a particular label.
-
-I will be keeping each of these examples side by side so we can evaluate them on the same terms (F1 scores) while talking about their minute differences in classification and testing. This is a great way to keep the overall goal in mind while not getting lost in the minute details of each model.
-
-Our evaluation metric is going to be the F1 score. This is typically used in multinomial classification problems.
-
-This will tell us (relative to precision and recall) how well our classifier did based on a true set of labels and a held out test set.
-
-First we are going to need to load the test set. Luckily, we can reuse all of the work we did for training. Data pipelines should always be reproducible for both training and testing (mainly for consistency).
-
-For our first 2 methods, we will be using the evaluation class which handles evaluation of our outcome matrices.
-
-For the RNTN, we will need to use a slightly different technique that scores each indivdial node of a tree.
-
-This is consistent with our examples where we needed to vectorize the recursive net differently than the feed forward examples (both bag of words AND moving window).
