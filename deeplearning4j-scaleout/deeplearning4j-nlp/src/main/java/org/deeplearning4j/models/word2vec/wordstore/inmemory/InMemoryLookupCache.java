@@ -15,7 +15,6 @@ import org.deeplearning4j.util.Index;
 import org.deeplearning4j.util.SerializationUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 
 
@@ -108,6 +107,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public  void iterate(VocabWord w1, VocabWord w2) {
+       if(w2.getIndex() < 0)
+          return;
         //current word vector
         INDArray l1 = this.syn0.slice(w2.getIndex());
 
@@ -123,7 +124,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         for(int i = 0; i < w1.getCodeLength(); i++) {
             int code = w1.getCodes()[i];
             int point = w1.getPoints()[i];
-            if(point >= syn0.rows())
+            if(point >= syn0.rows() || point < 0)
                 throw new IllegalStateException("Illegal point " + point);
             //other word vector
             INDArray syn1 = this.syn1.slice(point);
