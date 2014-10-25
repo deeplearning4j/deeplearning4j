@@ -134,8 +134,8 @@ Now we'll introduce the methods used here.
 
 We want to build tools to break the sentences in the reviews into sub-windows or contexts, grouping them by their SentenceID.
 
-* For deep-belief networks (DBNs), we'll build a simple moving window and label each window within a sentence by sentiment.
-* For recursive neural tensor networks (RNTNs), we'll demonstrate how to label trees as sub-contexts. Each sub-node of the tree matches a span that also has a particular label.
+* For deep-belief networks (DBNs), we'll build a simple moving window and label each window within a sentence by sentiment. We'll be using a sequence moving window approach with the Viterbi algorithm to label phrases. This is similar to the approach used by Ronan Collobert et al in the paper [Natural Language Processing (Almost) From Scratch](https://static.googleusercontent.com/media/research.google.com/en/us/pubs/archive/35671.pdf). The features are word vectors, explained below.
+* For recursive neural tensor networks (RNTNs), we'll demonstrate how to label trees as sub-contexts. Each sub-node of the tree matches a span that also has a particular label. [Created by Richard Socher et al](http://nlp.stanford.edu/~socherr/EMNLP2013_RNTN.pdf), a recursive neural tensor network is a tree-parsing algorithm in which neural nets are attached to the individual nodes on a binary tree. The leaves of the tree are word vectors. 
 
 We focus on sub-contexts for sentiment analysis, because context and subcontexts, not isolated words, are what capture sentiment signals best. 
 
@@ -151,42 +151,24 @@ With Bag of Words, a document is the atomic unit of text. BoW doesn't dig deeper
 
 A slightly more sophisticated version of BoW is "term frequency–inverse document frequency," or TF-IDF, which lends weight to a single term's frequency within a given document, while discounting terms that are common to all documents (a, the, and, etc.). The number of columns in the feature vector will vary with the size of the vocabulary. This produces a very sparse feature set, with a lot of 0s for the words that do not appear in the document, a positive real numbers for those that do. 
 
-## Moving-Window DBNs
+Let's do a deeper dive in to each of these approaches now. First we will establish some common ground terms that we will use for the rest of the tutorial. 
 
-We'll be using a sequence moving window approach with the Viterbi algorithm to label phrases. This is similar to the approach used by Ronan Collobert et al in the paper [Natural Language Processing (Almost) From Scratch](https://static.googleusercontent.com/media/research.google.com/en/us/pubs/archive/35671.pdf). The features are word vectors, explained below.
+First, we need to explain on a few concepts.
 
-## Recursive Neural Tensor Networks
+### NLP Pipelines
 
-Created by Richard Socher et al, a recursive neural tensor network is a tree-parsing algorithm in which neural nets are attached to the individual nodes on a binary tree. The leaves of the tree are word vectors. 
+NLP pipelines pre-process text into a format you can use for classification with a neural net. We will be doing two things: breaking things up into documents, then following up by computing a vocabulary. This will be used for Bag of Words as well as word vectors.
 
-Let's do a deeper dive in to each of these approaches now. First we will establish some common ground terms that we will use for the rest of the tutorial.
+### Vocabulary Computation
 
-First, we need to elaborate on a few concepts.
+This is composed of the unique set of words in a corpus (a text dataset). With Deeplearning4j, we supply tools for computation of many of these things. We will be computing each of these differently.
 
-NLP Pipelines
-=============================================
-
-NLP Pipelines are how you pre process text in to a known format that you can use for classification. We will be doing 2 things, first breaking things up in to documents, and then following up by computing a vocab.
-
-This will be used for bag of words as well as word vectors.
-
-
-
-Vocab Computation
-================================================
-
-This is composed of the unique set of words in a corpus (a textual dataset) With deeplearning4j, we supply tools for computation of many of these things. We will be computing each of these differently.
-
-Breaking out the corpus
-===================================
+### Breaking Out the Corpus
 
 As of right now, each of our phrases is still in a csv. Let's work on parsing out the text in to a more raw form. We will do this by implementing stepping through the creation of a dataset iterator that will give us a reproducible data pipeline that can be tested.
 
-
-
 DataSetIterator
 ===========================================
-
 
 When you are creating a machine learning model, you need to vectorize the data in some way. Vectorization is the process of breaking up unstructured data in to a set of features. The features are a vector (sound familiar?) The 2 representations we will be focusing on here are word vectors(context, vector per word) and word count vectors (document level, no context).
 
