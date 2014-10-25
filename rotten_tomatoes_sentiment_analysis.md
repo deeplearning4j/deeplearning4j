@@ -355,16 +355,16 @@ Sentence:
 
 The cat sat on the mat.
 
-<s> The cat
-The cat sat
-sat on the
-on the mat
-the mat .
-mat . <s>
+    The cat
+    The cat sat
+    sat on the
+    on the mat
+    the mat .
+    mat .
 
-Notice I append and prepend padding to the text. I do this in deeplearning4j as well.
+Notice I append and prepend padding to the text. I do this in Deeplearning4j as well.
 
-In code this would look like:
+In code, this would look like:
 
     List<Window> windows = Windows.windows("The cat sat on the mat.",3);
 
