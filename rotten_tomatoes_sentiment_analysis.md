@@ -207,7 +207,7 @@ That's how we map phrases and labels, and we can use it without coupling it to a
 
 ## Testing
 
-Given that we're separating concerns and testing, let's build a unit test. Since our dataset is on our class path, we have a few neat tricks to retrieve it. Deeplearning4j leverages Spring for a few reflection utilities as well as a more robust TK of classpath discovery of components. With that in mind our test will looking like the following:
+Given that we're separating concerns and testing, let's build a unit test. Since our dataset is on our class path, we have a few neat tricks to retrieve it. Deeplearning4j leverages Spring for a few reflection utilities as well as a more robust version of classpath discovery of components. With that in mind our test will looking like the following:
 
     @Test
     public void testRetrieval() throws  Exception {
@@ -227,24 +227,24 @@ Our goal is to build a set of abstractions that we can think of as components, a
 
 With many problems, you want to test multiple methods of classification to determine which works best (or use several of them in a so-called ensemble that works better than any one method alone).
 
-## SentenceIterator
+## Sentence Iterator
 
-Now that we have basic CSV processing, let's make this into something resembling a data pipeline. A sentence iterator will help create a semblance of a corpus. In this particular case, a "sentence" is actually a document. WHY? TK So what does this look like? 
+Now that we have basic CSV processing, let's make this into the beginnings of a data pipeline. A sentence iterator will help create a corpus that will lay the groundwork for further processing later. In this particular case, each sentence serves as a "document" in the corpus. 
 
-Our documents have labels, because the data is supervised, and we're implementing a label-aware sentence iterator. The core concept of a sentence iterator is it knows where it is in the corpus, and will always be able to retrieve the next sentence and tell us when it's done. This is a lot of responsibility, we will want to be able to isolate these functions. The core bits of logic are here:
+So what does this corpus look like? 
+
+Our documents have labels, because the data is supervised, and we're implementing a label-aware sentence iterator. The core concept of a sentence iterator is that **it knows where it is in the corpus, will always be able to retrieve the next sentence and can tell us when it's done**. That's a lot of responsibility, so we'll isolate these functions. The core bits of logic are here:
  
     private List<String> phrases;
     private List<String> labels;
     private int currRecord;
     private SentencePreProcessor preProcessor;
 
-Our goal is to keep track of which sentence we're on and the current label. We do this with the currRecord position. We use the text retriever that we built earlier to retrieve the data.
+Our goal is to keep track of which sentence we're on as well as the current label. We do that with the currRecord position, and we use the text retriever that we built earlier to retrieve the data. This separates the responsibilities of data retrieval and iteration.
 
-This separates the responsibility of data retrieval and iteration which encourages good practice in software engineering.
+Here are the code's juicy parts:
 
-The juicy parts:
-
- try {
+        try {
             TextRetriever retriever = new TextRetriever();
             this.phrases = retriever.phrases();
             this.labels = retriever.labels();
@@ -252,12 +252,9 @@ The juicy parts:
             e.printStackTrace();
         }
 
-
-Whoa that was easy. That gives us exactly what we need to iterate over. What's nice is we've wrapped this in a nicer interface that is standard across any data pipeline you will build with
-deeplearning4j.
+Pretty easy. It gives us exactly what we need to iterate over, and we've wrapped it in an interface that's standard across any data pipeline you build with Deeplearning4j.
 
 The test:
-
 
     @Test
     public void testIter() {
@@ -268,105 +265,70 @@ The test:
         assertTrue(!sentence.isEmpty());
     }
 
+This will verify that one of our building blocks works, so now we can worry about higher-level concepts like word vectors and Bag of Words. Let's build a BoW DataFetcher first. (It's easier than you think.)
 
-
-
-
-
-Now we know one of our building blocks works. Now we can worry about higher level concepts like word vectors and bag of words.
-
-
-
-Let's build a bag of words datafetcher first. This will be easier than we think.
-
-public class RottenTomatoesBagOfWordsDataFetcher extends BaseDataFetcher {
-
+    public class RottenTomatoesBagOfWordsDataFetcher extends BaseDataFetcher {
     private LabelAwareSentenceIterator iter;
     private BagOfWordsVectorizer countVectorizer;
     private TokenizerFactory factory = new DefaultTokenizerFactory();
     private DataSet data;
-
+        
     public RottenTomatoesBagOfWordsDataFetcher() {
         iter = new RottenTomatoesLabelAwareSentenceIterator();
         countVectorizer = new BagOfWordsVectorizer(iter,factory, Arrays.asList("0", "1", "2", "3", "4"));
         data = countVectorizer.vectorize();
-
     }
-
-
+        
     @Override
     public void fetch(int numExamples) {
         //set the current dataset
         curr = data.get(ArrayUtil.range(cursor,numExamples));
-
+    }    
     }
-}
 
+Just a few lines, but let's break them down into their components. 
 
+* The iterator. We built it earlier to track where we are currently when iterating over the data. It also associates a string with a dataseet. 
+* The count vectorizer. This is the workhorse. Let's load the data in to memory with vectorize and iterate as necessary. 
 
-As we can see, only a few lines. You'll notice a few components, let's break this down a bit.
-One is the iterator, we built this earlier to track where we are currently when iterating over the data, this also associates a string with a dataseet.
+This is **RAM-intensive**, so don't run it unless you're on a fairly robust server. (I'll run these benchmarks for you here.)
 
-Next is the count vectorizer, this is the workhorse, let's load the data in to memory with vectorize and iterate as necessary.
-
-
-Note that this WILL be ram intensive and I wouldn't recommend running this part unless you're on a fairly beefy server. I will run these benchmarks for you here.
-
-
-I would recommend pruning words from your vocab via tfidf to get a good approximation of your data, here I will use the whole dataset for simplicity though.
+I recommend pruning words from your vocab via TF-IDF to get a good approximation of your data, here I will use the whole dataset for simplicity though.
 
 Unfortunately, this is due to a limitation in nd4j only supporting dense matrices, we will be working on sparse formats at a later date.
 
-As nd4j is a blas focused framework initially, that is what we will be supporting for now. With that in mind, let's move forward.
+As ND4J is a Blas-focused framework initially, that is what we will be supporting for now. With that in mind, let's move forward.
 
 So what exactly did we do here? 
 
 We wrote something that could parse csvs, take the text, map it to a label, and then iterate through it producing a matrix.
 
-
 One key component we built is a vocab. This vocab has around 17k words in it. For bag of words matrices, this will be a sparse representation of 150k x 17k.
 
 Not a lot of bang for our buck here. We'lll have to see how the classifier (DBN) does.
 
+## Word Vectors
 
-
-
-Word Vectors
-=============================================================
-
-Let's play around with word vectors now. Remember, word vectors are used for featurization of textual contexts. We will end up using the viterbi algorithm with voting on moving window
-
-for document classification here.
-
-
+Let's play around with word vectors now. Remember, word vectors are used for featurization of textual contexts. We will end up using the viterbi algorithm with voting on moving window for document classification here.
 
 Firstly, since this is a word vector based approach we are going to be using word2vec. We are going to want to dig in to how well word2vec trains.
 
 Unlike bag of words where features are deterministic, word vectors are a form of neural net which means training coefficients.
 
+One thing that will help is to visualize everything. Let's visualize the 16000 word vocab with d3. This will also involve an algorithm called t-SNE to see the proximity of words to other words. We need to ensure that the words themselves are coherent.
 
+TK: Add Renders
 
-One thing that will help is to visualize everything. Let's visualize the 16000 word vocab with d3. This will also involve an algorithm called tsne
-
-to see the proximity of words to other words. We need to ensure that the words themselves are coherent.
-
-
-
-
-TK: Renders
-
-Word vectors are used in sequential applications of text. They can be used in document classification with a proper ensemble (voting) method as well
-by optimizing for a maximum likelihood estimator over the windows and labels.
+Word vectors are used in sequential applications of text. They can be used in document classification with a proper ensemble (voting) method as well by optimizing for a maximum likelihood estimator over the windows and labels.
 
 So what does word2vec look like in code?
 
 The key snippet is here:
 
- Word2vec vec = new Word2Vec.Builder().iterate(iter).tokenizerFactory(factory)
+    Word2vec vec = new Word2Vec.Builder().iterate(iter).tokenizerFactory(factory)
                 .learningRate(1e-3).vocabCache(new InMemoryLookupCache(300))
                 .layerSize(300).windowSize(5).build();
- vec.fit();
-
+    vec.fit();
 
 Explaining this a bit, you'll notice we specify a document iterator, a tokenizer factory, a learning rate, among other things.
 
@@ -379,18 +341,11 @@ cache: this is where all of our metadata about vocabulary is stored including wo
 layer size: this is the number of features per word
 window size: the window size for iterating over text, this is how long of contexts to train on.
 
-Remember wordvec represents word usage.
+Remember, Wordvec represents word usage.
 
+## Moving-Window DBN
 
-
-
-
-
-
-Moving Window DBN
-=========================================================
-
-SO what is a moving window and how do we do it? A moving window is a sliding window over text such that we take a portion of the text of a certain size and classify that as one example.
+So what is a moving window and how do we do it? A moving window is a sliding window over text such that we take a portion of the text of a certain size and classify that as one example.
 
 Think of this very similar to the concept of ngrams.
 
@@ -411,7 +366,7 @@ Notice I append and prepend padding to the text. I do this in deeplearning4j as 
 
 In code this would look like:
 
-List<Window> windows = Windows.windows("The cat sat on the mat.",3);
+    List<Window> windows = Windows.windows("The cat sat on the mat.",3);
 
 Note the second parameter, this is the window size.
 
@@ -424,102 +379,55 @@ Afterwards, we will have a sequence of labels. From there, we will use viterbi w
 
 This is actually pretty easy to do relative to the work we've already done.
 
-
-
- while(iter.hasNext()) {
+    while(iter.hasNext()) {
             DataSet next = iter.next();
             d.fit(next);
                Pair<Double,INDArray> labels =  v.decode(next.getLabels());
-
-}
-
+    }
 
 Just train the likelihoods of the labels along with the data sets and you will get one classification for each phrase as follows.
+
 Use labels.getFirst() to get the overall vote and most likely sequence.
 
-
-Recursive Neural Tensor Networks
-========================================================================
-
+## Recursive Neural Tensor Networks
 
 Another way of doing sequential text classification is recursive neural tensor networks. This requires our 
 sentence be parsed in to a tree. The leaves are individual words with higher level nodes comprising contexts.
 
 Of course this also means our vectorization strategy is slightly different. Given below:
- TreeVectorizer vectorizer = new TreeVectorizer(new TreeParser());
 
+    TreeVectorizer vectorizer = new TreeVectorizer(new TreeParser());
         while(iter.hasNext()) {
             List<Tree> trees = vectorizer.getTreesWithLabels(iter.nextSentence(),iter.currentLabel(), Arrays.asList("0","1","2","3","4"));
             t.fit(trees);
- }
-
+    }
 
 Going line by line, all we are doing here is creating a tree vectorizer which knows hw to handle word vectors and tree parsing.
 
-We require a sentence iterator for iterating over the text instead of the windows. The vectors and probabilities 
-
-are dervied from the neural network itself.
+We require a sentence iterator for iterating over the text instead of the windows. The vectors and probabilities are derived from the neural network itself.
 
 Notice here that we pass in the sentence, the current label (note that the sentence is "label aware"0 and the list of possible lables. 
 
 This is for creating the outcome matrices.
 
-
-
-Evaluation and Classification
-==========================================================================
-
+## Evaluation and Classification
 
 Next we will be getting in to the classification and evaluation. What we've explained up to this point is the vectorization strategies involved with each method. 
 
-For classification and the like, each neural net natrually is going to classify relative to the examples. In a dbn, this is the windows, and in RNTNs, this is going to be
+For classification and the like, each neural net natrually is going to classify relative to the examples. In a dbn, this is the windows, and in RNTNs, this is going to be individual nodes of the tree represented by the context.
 
-individual nodes of the tree represented by the context.
+Our overall goal, is to classify phrases, we do this by aggregating the contexts and essentially voting on the results based on the likelihoods of different contexts having a particular label.
 
-Our overall goal, is to classify phrases, we do this by aggregating the contexts and essentially voting on the results based on the likelihoods of different contexts
-
-having a particular label.
-
-
-
-I will be keeping each of these examples side by side so we can evaluate them on the same terms (F1 scores) while talking about their minute differences
-
-in classification and testing. This is a great way to keep the overall goal in mind while not getting lost in the minute details of each model.
+I will be keeping each of these examples side by side so we can evaluate them on the same terms (F1 scores) while talking about their minute differences in classification and testing. This is a great way to keep the overall goal in mind while not getting lost in the minute details of each model.
 
 Our evaluation metric is going to be the F1 score. This is typically used in multinomial classification problems.
 
-
 This will tell us (relative to precision and recall) how well our classifier did based on a true set of labels and a held out test set.
 
-
-First we are going to need to load the test set. Luckily, we can reuse all of the work we did for training. Data pipelines should always be 
-
-reproducible for both training and testing (mainly for consistency)
-
-
-
-
+First we are going to need to load the test set. Luckily, we can reuse all of the work we did for training. Data pipelines should always be reproducible for both training and testing (mainly for consistency).
 
 For our first 2 methods, we will be using the evaluation class which handles evaluation of our outcome matrices.
 
 For the RNTN, we will need to use a slightly different technique that scores each indivdial node of a tree.
 
-This is consistent with our examples where we needed to vectorize the recursive net differently than the feed forward examples (both bag of words AND moving window)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+This is consistent with our examples where we needed to vectorize the recursive net differently than the feed forward examples (both bag of words AND moving window).
