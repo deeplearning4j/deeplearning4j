@@ -153,7 +153,7 @@ A slightly more sophisticated version of BoW is "term frequency–inverse docume
 
 ### Natural-Language Processing (NLP) Pipelines
 
-NLP pipelines pre-process text into a format you can use for classification with a neural net. We'll be doing two things: breaking the dataset into documents, then computing a vocabulary. This will be used for Bag of Words as well as word vectors. 
+NLP pipelines pre-process text into a format you can use for classification with a neural net. We'll be doing two things: breaking the dataset into documents, then computing a vocabulary. This will be used for Bag of Words (word count vectors) as well as word vectors, which include context. 
 
 ### Vocabulary Computation
 
@@ -165,20 +165,19 @@ In the Kaggle data, each phrase is in a CSV. We need to parse the text into a di
 
 ### DataSetIterator
 
-When you are creating a machine-learning model, you need to vectorize the data in some way. Vectorization is the process of breaking up unstructured data in to a set of features. The features are a vector (sound familiar?) The 2 representations we will be focusing on here are word vectors(context, vector per word) and word count vectors (document level, no context).
+When you create a machine-learning model, you need to vectorize the data, because vectors are what machine-learning algorithms understand. 
 
-One component I like breaking out is the idea of the data retrieval. When we iterate over  a dataset, there is an order from which we will be returning things. Data can live in multiple locations though. If this is the case, we want the data pipeline retrieval for each potential end point to be isolated and testable. This is represented in something called a datafetcher.
+Vectorization is the process of breaking unstructured data up into a set of features, each of them distinct aspects of the raw data. Each feature is a vector in itself. The two representations we focus on here are word vectors (context, one vector per word which captures its proximity to other words around it) and word count vectors (document level, no context, captures the presence or absence of a word).
 
-DataFetcher
-==========================================
+When we iterate over a dataset, we retrieve data in a certain order, and often from multiple locations. If multiple locations are involved, we want to make data pipeline retrieval for each potential end point isolated and testable. We do that with a DataFetcher.
 
-A Data fetcher handles data retrieval. Data may live in any number of places including AWS, your file system, or even just mysql. When you do feature vector composition from different sources,
-you want to ensure these aspects of a data pipeline are isolated. With this in mind, let's look at how to fetch data from a csv and parse it.
+### DataFetcher
+
+As its name implies, a DataFetcher handles data retrieval. Data may live in any number of places including AWS, your file system, or even just mysql. When you do feature vector composition from different sources, you want to ensure these aspects of a data pipeline are isolated. With this in mind, let's look at how to fetch data from a csv and parse it.
 
 We will be building a data fetcher to do this.
 
-CSV Processing
-==========================================
+## CSV Processing
 
 As part of deeplearning4j for handling of csv values we have a wonderful csv library that allows us to do the following:
 
