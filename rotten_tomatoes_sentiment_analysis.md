@@ -137,13 +137,13 @@ We want to build tools to break the sentences in the reviews into sub-windows or
 * For deep-belief networks (DBNs), we'll build a simple moving window and label each window within a sentence by sentiment. We'll be using a sequence moving window approach with the Viterbi algorithm to label phrases. This is similar to the approach used by Ronan Collobert et al in the paper [Natural Language Processing (Almost) From Scratch](https://static.googleusercontent.com/media/research.google.com/en/us/pubs/archive/35671.pdf). The features are word vectors, explained below.
 * For recursive neural tensor networks (RNTNs), we'll demonstrate how to label trees as sub-contexts. Each sub-node of the tree matches a span that also has a particular label. [Created by Richard Socher et al](http://nlp.stanford.edu/~socherr/EMNLP2013_RNTN.pdf), a recursive neural tensor network is a tree-parsing algorithm in which neural nets are attached to the individual nodes on a binary tree. The leaves of the tree are word vectors. 
 
-We focus on sub-contexts for sentiment analysis, because context and subcontexts, not isolated words, are what capture sentiment signals best. 
+We focus on sub-contexts for sentiment analysis, because context and subcontexts, not isolated words, are what capture sentiment signals best. A context including "not" or "no" will nullify a positive word, requiring a negative label. We need to be able to capture this sentiment in our feature space. 
 
-A context including "not" or "no" will nullify a positive word, requiring a negative label. We need to be able to capture this sentiment in our feature space. 
+The vectorization code to capture context is already written, allowing us to concentrate on the high-level logic of word vectors matched to sub-contexts, and then on benchmarking the accuracy of our models.
 
-The vectorization code to capture context is already written, so we'll focus on the high-level logic of word vectors matched to sub-contexts, and then on benchmarking the accuracy of our models.
+Before we do a deeper dive into these approaches, we'll have to explain and define some terms used in the rest of the tutorial.
 
-## Bag of Words (BoW)
+### Bag of Words (BoW)
 
 Bag of Words is the baseline representation used in a lot of natural-language processing tasks. It's useful at the "document" level, but not at the level of sentences and their subsets.
 
@@ -151,43 +151,31 @@ With Bag of Words, a document is the atomic unit of text. BoW doesn't dig deeper
 
 A slightly more sophisticated version of BoW is "term frequency–inverse document frequency," or TF-IDF, which lends weight to a single term's frequency within a given document, while discounting terms that are common to all documents (a, the, and, etc.). The number of columns in the feature vector will vary with the size of the vocabulary. This produces a very sparse feature set, with a lot of 0s for the words that do not appear in the document, a positive real numbers for those that do. 
 
-Let's do a deeper dive in to each of these approaches now. First we will establish some common ground terms that we will use for the rest of the tutorial. 
+### Natural-Language Processing (NLP) Pipelines
 
-First, we need to explain on a few concepts.
-
-### NLP Pipelines
-
-NLP pipelines pre-process text into a format you can use for classification with a neural net. We will be doing two things: breaking things up into documents, then following up by computing a vocabulary. This will be used for Bag of Words as well as word vectors.
+NLP pipelines pre-process text into a format you can use for classification with a neural net. We'll be doing two things: breaking the dataset into documents, then computing a vocabulary. This will be used for Bag of Words as well as word vectors. 
 
 ### Vocabulary Computation
 
-This is composed of the unique set of words in a corpus (a text dataset). With Deeplearning4j, we supply tools for computation of many of these things. We will be computing each of these differently.
+A textual dataset is known as a corpus, and the vocabulary of a corpus consists of the unique set of words that the corpus's documents contain. Deeplearning4j has tools to compute vocabulary in different ways. HOW? TK
 
 ### Breaking Out the Corpus
 
-As of right now, each of our phrases is still in a csv. Let's work on parsing out the text in to a more raw form. We will do this by implementing stepping through the creation of a dataset iterator that will give us a reproducible data pipeline that can be tested.
+In the Kaggle data, each phrase is in a CSV. We need to parse the text into a different form. We do that with a dataset iterator, which gives you a reproducible and testable data pipeline.
 
-DataSetIterator
-===========================================
+### DataSetIterator
 
-When you are creating a machine learning model, you need to vectorize the data in some way. Vectorization is the process of breaking up unstructured data in to a set of features. The features are a vector (sound familiar?) The 2 representations we will be focusing on here are word vectors(context, vector per word) and word count vectors (document level, no context).
-
+When you are creating a machine-learning model, you need to vectorize the data in some way. Vectorization is the process of breaking up unstructured data in to a set of features. The features are a vector (sound familiar?) The 2 representations we will be focusing on here are word vectors(context, vector per word) and word count vectors (document level, no context).
 
 One component I like breaking out is the idea of the data retrieval. When we iterate over  a dataset, there is an order from which we will be returning things. Data can live in multiple locations though. If this is the case, we want the data pipeline retrieval for each potential end point to be isolated and testable. This is represented in something called a datafetcher.
 
 DataFetcher
 ==========================================
 
-
 A Data fetcher handles data retrieval. Data may live in any number of places including AWS, your file system, or even just mysql. When you do feature vector composition from different sources,
 you want to ensure these aspects of a data pipeline are isolated. With this in mind, let's look at how to fetch data from a csv and parse it.
 
-
-
-
 We will be building a data fetcher to do this.
-
-
 
 CSV Processing
 ==========================================
