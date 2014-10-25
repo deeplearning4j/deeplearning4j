@@ -104,16 +104,15 @@ Our table is a partial preview of the sentence's subsets, and it stops short of 
 
 The sentiment labels are:
 
-| Label    |   Sentiment   |
-|----------|:-------------:|
+| Label |  Sentiment |
+|:----------:|:-------------:|
 |  0 |  negative |
 |  1 |    somewhat negative   |
 | 2 | neutral |
 | 3 |    somewhat positive   |
 | 4 | positive |
 
-
-This happens to be quite nuanced: many sentiment analysis problems are binary classifications; i.e. 1 or 0, positive or negative.
+This happens to be quite nuanced: many sentiment analysis problems are binary classifications; that is, 1 or 0, positive or negative, with no finer gradations.
 
 In our preview of Sentence 1, the sentence itself has been assigned the label of "somewhat negative," which is appropriate, given the second half of the sentence is critical of the film in question. The first half is not critical, however, and its subphrases have all been labeled "neutral," or 2. 
 
@@ -132,30 +131,17 @@ Let's introduce the methods we will be using in this blog post.
 Dataset - How to initially tackle the problem
 ================================
 
-We notice 2 columns describing the sentence. The phrase and the sentence id. A phrase id is a sub window we use to break up the text such that each sub window of a 
-sentence is an example of a "context". Each of these sub contexts has a possible label. We are going to want to build tools to break these in to contexts mapping by sentence id.
+We notice 2 columns describing the sentence. The phrase and the sentence id. A phrase id is a sub window we use to break up the text such that each sub window of a sentence is an example of a "context". Each of these sub contexts has a possible label. We are going to want to build tools to break these in to contexts mapping by sentence id.
 
-For dbns, we will be building a simple moving window and labeling each window where the span has a particular label.
+For DBNs, we will be building a simple moving window and labeling each window where the span has a particular label.
 
-For Recursive Neural Tensor Networks, I will demonstrate how to label trees as sub contexts. Each sub node of the tree matches a span which 
-
-also has a particular label.
+For Recursive Neural Tensor Networks, I will demonstrate how to label trees as sub contexts. Each sub node of the tree matches a span which also has a particular label.
 
 The reason we focus on sub contexts for sentiment analysis comes down to the fact that context and subcontexts are what capture sentiment.
 
-The simple is a negation of a positive word. We want to be able to capture this in our feature space. This is why we will focus on word vectors
+The simple is a negation of a positive word. We want to be able to capture this in our feature space. This is why we will focus on word vectors for our sentiment analysis.
 
-for our sentiment analysis.
-
-Luckily, the vectorization code is already written for this and we can just focus on the high level logic of word vectors matched to sub contexts and 
-
-benchmarking the models.
-
-
-
-
-
-
+Luckily, the vectorization code is already written for this and we can just focus on the high level logic of word vectors matched to sub contexts and benchmarking the models.
 
 Bag of Words
 ===============================
