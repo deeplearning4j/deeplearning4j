@@ -197,11 +197,11 @@ Since the Kaggle competition is about classifying phrases, we'll be saving each 
 
 That leads us to a class with an abstract data type called a TextRetriever that contains the following:
 
-            Map<String,Pair<String,String>> //mapping the phraseID to the content and the associated label.
+    Map<String,Pair<String,String>> //mapping the phraseID to the content and the associated label.
 
 The body of our CSV parser in procRow, cited above, will then be:
 
-            pair.put(values[0],new Pair<>(values[2],values[3]));
+    pair.put(values[0],new Pair<>(values[2],values[3]));
 
 That's how we map phrases and labels, and we can use it without coupling it to any particular implementation of our classifier. Now let's test it.
 
