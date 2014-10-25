@@ -65,7 +65,6 @@ public class Word2Vec implements Persistable {
     private int layerSize = 50;
     private transient  RandomGenerator g;
     private static Logger log = LoggerFactory.getLogger(Word2Vec.class);
-    private AtomicInteger numSentencesProcessed = new AtomicInteger(0);
     private List<String> stopWords;
     private boolean shouldReset = true;
     //number of iterations to run
@@ -74,7 +73,6 @@ public class Word2Vec implements Persistable {
     private long seed = 123;
     private boolean saveVocab = false;
     private double minLearningRate = 0.01;
-    private AtomicInteger numWordsSoFar = new AtomicInteger(0);
     private TextVectorizer vectorizer;
 
 
@@ -154,24 +152,27 @@ public class Word2Vec implements Persistable {
         INDArray vec = Transforms.unitVec(this.getWordVectorMatrix(word));
 
 
-       if(cache instanceof  InMemoryLookupCache) {
-           InMemoryLookupCache l = (InMemoryLookupCache) cache;
-           INDArray syn0 = l.getSyn0();
-           INDArray weights = syn0.norm2(0).rdivi(1).muli(vec);
-           INDArray distances = syn0.mulRowVector(weights).sum(1);
-           INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
-           INDArray sort = sorted[0];
-           List<String> ret = new ArrayList<>();
-           if(n > sort.length())
-               n = sort.length();
+        if(cache instanceof  InMemoryLookupCache) {
+            InMemoryLookupCache l = (InMemoryLookupCache) cache;
+            INDArray syn0 = l.getSyn0();
+            INDArray weights = syn0.norm2(0).rdivi(1).muli(vec);
+            INDArray distances = syn0.mulRowVector(weights).sum(1);
+            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+            INDArray sort = sorted[0];
+            List<String> ret = new ArrayList<>();
+            VocabWord word2 = cache.wordFor(word);
+            if(n > sort.length())
+                n = sort.length();
+            //there will be a redundant word
+            for(int i = 0; i < n + 1; i++) {
+                if(sort.getInt(i) == word2.getIndex())
+                    continue;
+                ret.add(cache.wordAtIndex(sort.getInt(i)));
+            }
 
-           for(int i = 0; i < n; i++)
-               ret.add(cache.wordAtIndex(sort.getInt(i)));
 
-
-
-           return ret;
-       }
+            return ret;
+        }
 
         if(vec == null)
             return new ArrayList<>();
@@ -251,157 +252,73 @@ public class Word2Vec implements Persistable {
     /**
      * Train the model
      */
-    public void fit(){
-        boolean loaded =  buildVocab();
+    public void fit() {
+        boolean loaded = buildVocab();
         //save vocab after building
-        if(!loaded && saveVocab)
+        if (!loaded && saveVocab)
             cache.saveVocab();
-        if(stopWords == null)
+        if (stopWords == null)
             readStopWords();
 
 
         log.info("Training word2vec multithreaded");
 
-        if(sentenceIter != null)
+        if (sentenceIter != null)
             sentenceIter.reset();
-        if(docIter != null)
+        if (docIter != null)
             docIter.reset();
 
 
-        final AtomicLong latch = new AtomicLong(0);
-        //final List<List<VocabWord>> docs = new CopyOnWriteArrayList<>();
-        //for(int i = 0; i < vectorizer.index().numDocuments(); i++)
-         //   docs.add(vectorizer.index().document(i));
-
-        ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+        final ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+        final Collection<Integer> docs = vectorizer.index().allDocs();
+        final List<Callable<Void>> futures = new ArrayList<>();
         log.info("Processing sentences...");
-        for(int i = 0; i < numIterations; i++) {
-            log.info("Iteration " + (i + 1));
-            Collection<Integer> docs = vectorizer.index().allDocs();
-            log.info("Training on " + docs.size());
-            List<Future<?>> list = new ArrayList<>();
-            for(int j : docs) {
-                final int k = j;
-                Future<?> f = service.submit(new Runnable() {
+        for (int i = 0; i < numIterations; i++) {
+            futures.add(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    final AtomicInteger numSentencesProcessed = new AtomicInteger(0);
+                    final AtomicDouble d = new AtomicDouble(alpha.doubleValue());
+                    log.info("Training on " + docs.size());
 
-                    /**
-                     * When an object implementing interface <code>Runnable</code> is used
-                     * to create a thread, starting the thread causes the object's
-                     * <code>run</code> method to be called in that separately executing
-                     * thread.
-                     * <p/>
-                     * The general contract of the method <code>run</code> is that it may
-                     * take any action whatsoever.
-                     *
-                     * @see Thread#run()
-                     */
-                    @Override
-                    public void run() {
-                        trainSentence(vectorizer.index().document(k),k);
+                    for (int j : docs) {
+                        final int k = j;
+                        service.submit(new Callable<Void>() {
+
+
+                            @Override
+                            public Void call() {
+                                trainSentence(vectorizer.index().document(k), k,numSentencesProcessed,d);
+                                return null;
+                            }
+                        });
+
+
+
                     }
-                });
 
-                numSentencesProcessed.incrementAndGet();
+                    return null;
 
-                if(numSentencesProcessed.get() % 100 == 0)
-                    log.info("Num sentences processed " + numSentencesProcessed.get());
-                list.add(f);
-            }
 
-            //reset for the iteration
-            numSentencesProcessed.set(0);
-            for(Future<?> f : list) {
-                try {
-                    f.get();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
                 }
-            }
+            });
 
         }
 
 
-
-
         try {
+            List<Future<Void>> f2 =  service.invokeAll(futures);
             service.shutdown();
-            service.awaitTermination(1, TimeUnit.DAYS);
-        } catch (InterruptedException e) {
+            while(!service.isTerminated())
+                Thread.sleep(1000);
+
+        } catch (Exception e) {
             Thread.currentThread().interrupt();
         }
 
 
-        while(latch.get() > 0) {
-            log.info("Waiting on sentences...Num processed so far " + numSentencesProcessed.get() + " with latch count at " + latch.get());
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
-
-
     }
 
-
-
-
-    /**
-     * Train on the given sentence returning a list of vocab words
-     * @param is the sentence to fit on
-     * @return
-     */
-    public List<VocabWord> trainSentence(InputStream is) {
-        Tokenizer tokenizer = tokenizerFactory.create(is);
-        List<VocabWord> sentence2 = new ArrayList<>();
-        while(tokenizer.hasMoreTokens()) {
-            String next = tokenizer.nextToken();
-            if(stopWords.contains(next))
-                next = UNK;
-            VocabWord word = cache.wordFor(next);
-            if(word == null)
-                continue;
-
-
-        }
-
-
-        trainSentence(sentence2,0);
-        return sentence2;
-    }
-
-
-    /**
-     * Train on the given sentence returning a list of vocab words
-     * @param sentence the sentence to fit on
-     * @return
-     */
-    public List<VocabWord> trainSentence(String sentence) {
-        if(sentence == null || sentence.isEmpty())
-            return new ArrayList<>();
-
-        Tokenizer tokenizer = tokenizerFactory.create(sentence);
-        List<VocabWord> sentence2 = new ArrayList<>();
-
-        while(tokenizer.hasMoreTokens()) {
-            String next = tokenizer.nextToken();
-            if(stopWords.contains(next))
-                next = UNK;
-            VocabWord word = cache.wordFor(next);
-            if(word == null)
-                continue;
-
-            sentence2.add(word);
-
-        }
-
-
-        trainSentence(sentence2,0);
-        return sentence2;
-    }
 
 
     /**
@@ -512,7 +429,7 @@ public class Word2Vec implements Persistable {
      * Train on a list of vocab words
      * @param sentence the list of vocab words to train on
      */
-    public void trainSentence(final List<VocabWord> sentence,int doc) {
+    public void trainSentence(final List<VocabWord> sentence,int doc,AtomicInteger numWordsSoFar,AtomicDouble alpha) {
         if(g == null)
             g = new XorShift1024StarRandomGenerator(seed);
         if(sentence == null || sentence.isEmpty())
@@ -664,7 +581,6 @@ public class Word2Vec implements Persistable {
             Word2Vec vec = (Word2Vec) ois.readObject();
             this.alpha = vec.alpha;
             this.minWordFrequency = vec.minWordFrequency;
-            this.numSentencesProcessed = vec.numSentencesProcessed;
             this.sample = vec.sample;
             this.stopWords = vec.stopWords;
             this.topNSize = vec.topNSize;
