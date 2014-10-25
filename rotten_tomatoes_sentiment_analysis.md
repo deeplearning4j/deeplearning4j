@@ -17,17 +17,17 @@ In this blog post, we're going to walk through a sentiment analysis of movie rev
 
 You'll need to download the dataset from Kaggle (registration required):
 
-          https://www.kaggle.com/c/sentiment-analysis-on-movie-reviews/data
+    https://www.kaggle.com/c/sentiment-analysis-on-movie-reviews/data
 
 The dataset is split into a training set and a test set already, which makes our lives easier.  Let's download the data and load it into our nets. 
 
 Go ahead and unzip it:
 
-          unzip train.tsv.zip
+    unzip train.tsv.zip
 
 In our folder we see a train.tsv file. What does the data look like? A one-word command will show us.
 
-          head train.tsv
+    head train.tsv
 
 The command 'head' should output the following table:
 
