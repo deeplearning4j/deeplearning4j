@@ -282,9 +282,7 @@ Just a few lines, but let's break them down into their components.
 * The iterator. We built it earlier to track where we are currently when iterating over the data. It also associates a string with a dataseet. 
 * The count vectorizer. This is the workhorse. Let's load the data in to memory with vectorize and iterate as necessary. 
 
-The process above is **RAM-intensive**, so only run it on a fairly robust server. (TK WHERE ARE THE BENCHMARKS? I'll run these benchmarks for you here.) 
-
-Pruning words from your vocabulary based on TF-IDF gives a good approximation of your data, but we'll skip over that step here. TK WHY? (ND4J only supports dense matrices for the moment, though we're working ways to handle sparse formats.) Since ND4J is a Blas-focused framework, that's what we'll be supporting. 
+*N.B.: The process above is **RAM-intensive**, so only run it on a fairly robust server. Pruning words from your vocabulary based on TF-IDF gives a good approximation of your data, but we'll skip over that step here. (ND4J only supports dense matrices for the moment, though we're working ways to handle sparse formats.) Since ND4J is a Blas-focused framework, that's what we'll be supporting.* 
 
 So what exactly have we done so far? We wrote code to parse CSVs, take the text, map it to labels and iterate through it to produce a matrix. In the process, we built a key component: the vocabulary. It has around 17,000 words. For bag-of-words matrices, this produces a sparse representation of 150,000 rows by 17,000 columns, one column per word.
 
