@@ -291,37 +291,27 @@ Just a few lines, but let's break them down into their components.
 * The iterator. We built it earlier to track where we are currently when iterating over the data. It also associates a string with a dataseet. 
 * The count vectorizer. This is the workhorse. Let's load the data in to memory with vectorize and iterate as necessary. 
 
-This is **RAM-intensive**, so don't run it unless you're on a fairly robust server. (I'll run these benchmarks for you here.)
+This process is **RAM-intensive**, so don't run it unless you've got a fairly robust server. (I'll run these benchmarks for you here.) In addition, pruning words from your vocabulary based on TF-IDF will give you a good approximation of your data, but here we'll pretend like we're using the whole dataset. (ND4J only supports dense matrices for the mpoment, though we're working ways to handle sparse formats.) Since ND4J is a Blas-focused framework, that is what we will be supporting for now. 
 
-I recommend pruning words from your vocab via TF-IDF to get a good approximation of your data, here I will use the whole dataset for simplicity though.
+So what exactly have we done so far? We wrote something that could parse CSVs, take the text, map it to labels and iterate through it to produce a matrix.
 
-Unfortunately, this is due to a limitation in nd4j only supporting dense matrices, we will be working on sparse formats at a later date.
+In the process, we built a key component: the vocabulary. It has around 17,000 words. For bag of words matrices, this will produce a sparse representation of 150,000 rows by 17,000 columns, one column per word.
 
-As ND4J is a Blas-focused framework initially, that is what we will be supporting for now. With that in mind, let's move forward.
-
-So what exactly did we do here? 
-
-We wrote something that could parse csvs, take the text, map it to a label, and then iterate through it producing a matrix.
-
-One key component we built is a vocab. This vocab has around 17k words in it. For bag of words matrices, this will be a sparse representation of 150k x 17k.
-
-Not a lot of bang for our buck here. We'lll have to see how the classifier (DBN) does.
+Bag of Words doesn't give us a lot to work with. Below, we'll have to see how the DBN classifier does.
 
 ## Word Vectors
 
-Let's play around with word vectors now. Remember, word vectors are used for featurization of textual contexts. We will end up using the viterbi algorithm with voting on moving window for document classification here.
+It's time to turn away from *word-count vectors* and toward *word vectors*. Remember, word vectors are used to featurize  textual contexts**. We use the Viterbi algorithm with voting on moving windows for document classification.
 
-Firstly, since this is a word vector based approach we are going to be using word2vec. We are going to want to dig in to how well word2vec trains.
+First, since this is a word-vector-based approach, we're going to use Word2vec, and as we do that, we'll look at how well it trains. Unlike Bag of Words, where features are deterministic (), Word2vec is a form of neural net, which means dealing with prbabilities and training coefficients. Remember, Wordvec represents word usage, and usage is a matter of probability rather than lockstep rules.
 
-Unlike bag of words where features are deterministic, word vectors are a form of neural net which means training coefficients.
-
-One thing that will help is to visualize everything. Let's visualize the 16000 word vocab with d3. This will also involve an algorithm called t-SNE to see the proximity of words to other words. We need to ensure that the words themselves are coherent.
+Since seeing is understanding, we use D3 to visualize the 16,000-word vocabulary. We use an algorithm called t-SNE to gauge the proximity of words to other words. Doing that let's us ensure that the word clusters themselves are coherent.
 
 TK: Add Renders
 
-Word vectors are used in sequential applications of text. They can be used in document classification with a proper ensemble (voting) method as well by optimizing for a maximum likelihood estimator over the windows and labels.
+Word vectors are used in sequential applications of text. They can be used in document classification with a proper ensemble  method (voting) as well by optimizing for a maximum likelihood estimator over the windows and labels.
 
-So what does word2vec look like in code?
+So what does Word2vec look like in code?
 
 The key snippet is here:
 
@@ -330,18 +320,16 @@ The key snippet is here:
                 .layerSize(300).windowSize(5).build();
     vec.fit();
 
-Explaining this a bit, you'll notice we specify a document iterator, a tokenizer factory, a learning rate, among other things.
+You'll notice we specify a document iterator, a tokenizer factory and a learning rate, among other things. In the second part of this walkthrough, we'll go over these parameters as they apply to a deep-belief network:
 
-I will go over each of these parameters now:
+* iter: DocumentIterator this is our raw textual pipeline
+* factory: our tokenizer factory, handles tokenizing text
+* learning rate: step size
+* cache: this is where all of our metadata about vocabulary is stored including word vectors, tfidf scores, document frequencies as well as where doucments occurred.
+* layer size: this is the number of features per word
+* window size: the window size for iterating over text, this is how long of contexts to train on.
 
-iter: DocumentIterator this is our raw textual pipeline
-factory: our tokenizer factory, handles tokenizing text
-learning rate: step size
-cache: this is where all of our metadata about vocabulary is stored including word vectors, tfidf scores, document frequencies as well as where doucments occurred.
-layer size: this is the number of features per word
-window size: the window size for iterating over text, this is how long of contexts to train on.
-
-Remember, Wordvec represents word usage.
+//CUT HERE
 
 ## Moving-Window DBN
 
