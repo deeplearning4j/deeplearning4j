@@ -11,21 +11,22 @@ layout: default
 <!-- DataTables -->
 <script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.3/js/jquery.dataTables.js"></script>
 
-In this blog post, we are going to walk through how to do sentiment analysis on movie reviews with the Rotten Tomatoes dataset. 
+# Movie Review Sentiment Analysis 
 
-You'll need to download the dataset from this page (Kaggle registration required):
+In this blog post, we are going to walk through a sentiment analysis of movie reviews using the Rotten Tomatoes dataset. 
+
+You'll need to download the dataset from Kaggle (registration required):
 
 		https://www.kaggle.com/c/sentiment-analysis-on-movie-reviews/data
 
 The dataset is split into a training set and a test set already, which makes our lives easier.  Let's download the data and load it into our nets. 
 
-Go ahead and unzip it. I prefer command line:
-            
-        unzip train.tsv.zip
+Go ahead and unzip it:
+                unzip train.tsv.zip
 
-In our folder we see a train.tsv file. What does the data look like? A one-word commanbd will show us.
+In our folder we see a train.tsv file. What does the data look like? A one-word command will show us.
 
-        head train.tsv
+                head train.tsv
 
 The command 'head' should output the following table:
 
@@ -97,6 +98,21 @@ The command 'head' should output the following table:
     </tbody>
 </table>
 
+Let's walk through this. We have a SentenceID of 1 in every row, which means we are dealing with the same sentence throughout. The entire sentence is presented as a phrase in Row 2, Column 3. Each subsequent phrase shown is Column 3 is a subset of that original sentence. 
+
+Our table is a partial preview of the sentence's subsets, and it stops short of presenting the phrases that constitute the second half of the sentence. In addition, this is a supervised dataset, so each phrase has been assigned a sentiment label by a real, live human being. 
+
+The sentiment labels are:
+
+0 - negative
+1 - somewhat negative
+2 - neutral
+3 - somewhat positive
+4 - positive
+
+This happens to be quite nuanced: many sentiment analysis problems are binary classifications; i.e. 1 or 0, positive or negative.
+
+In our preview of Sentence 1, the sentence itself has been assigned the label of "somewhat negative," which is appropriate, given the second half of the sentence is critical of the film in question. The first half is not critical, however, and its subphrases have all been labeled "neutral," or 2. 
 
 From Kaggle:
 
@@ -107,18 +123,6 @@ From Kaggle:
 
 
 test.tsv contains just phrases. You must assign a sentiment label to each phrase.
-The sentiment labels are:
-
-0 - negative
-1 - somewhat negative
-2 - neutral
-3 - somewhat positive
-4 - positive
-
-
-
-Very fine grained. Many sentiment analysis problems are binary classifications.
-
 
 Let's introduce the methods we will be using in this blog post.
 
