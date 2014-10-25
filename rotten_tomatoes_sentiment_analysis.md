@@ -203,22 +203,11 @@ The body of our CSV parser in procRow, cited above, will then be:
 
             pair.put(values[0],new Pair<>(values[2],values[3]));
 
-This is our map of phrases to text and label.
-
-We can use this process without coupling it to any particular implementation of our classifier. Now let's test it.
+That's how we map phrases and labels, and we can use it without coupling it to any particular implementation of our classifier. Now let's test it.
 
 ## Testing
 
-Being consistent with our separation of concerns and testing, let's build a unit test for this.
-
-Since our dataset is on our class path, we can use a few neat tricks to retrieve it. Deeplearning4j leverages spring for a few reflection utilities as well as 
-
-for more robust of classpath discovery of components. With that in mind our test will looking like the following:
-
-
-
-
-
+Given that we're separating concerns and testing, let's build a unit test. Since our dataset is on our class path, we have a few neat tricks to retrieve it. Deeplearning4j leverages Spring for a few reflection utilities as well as a more robust TK of classpath discovery of components. With that in mind our test will looking like the following:
 
     @Test
     public void testRetrieval() throws  Exception {
@@ -226,17 +215,9 @@ for more robust of classpath discovery of components. With that in mind our test
         Pair<String,String> phrase2 = data.get("2");
         assertEquals("A series of escapades demonstrating the adage that what is good for the goose",phrase2.getFirst());
         assertEquals("2",phrase2.getSecond());
-
     }
 
-
-
-
-One thing we might want to do though (later on) is to get things like just phrases or just labels. Let's make this something easy to do for ourselves later. Our goal is to build a set of abstractions that we can think in terms of components and not individual steps.
-
-
-For brevity, I will just show the associated test and let it speak for itself:
-
+Our goal is to build a set of abstractions that we can think of as components, and not as individual steps. (One thing we might want to do later is get only phrases, or only labels.) For brevity, I'll let the associated test speak for itself:
 
    @Test
     public void testNumPhrasesAndLabels() {
@@ -244,35 +225,24 @@ For brevity, I will just show the associated test and let it speak for itself:
         assertEquals(NUM_TRAINING_EXAMPLES,retriever.labels().size());
     }
 
+With many problems, you want to test multiple methods of classification to determine which works best (or use several of them in a so-called ensemble that works better than any one method alone).
 
-In many problems, we will often want to test multiple methods of classifiation to know what one works well (or even use all of them for an ensemble which will always be better anyways)
+## SentenceIterator
 
+Now that we have basic CSV processing, let's make this into something resembling a data pipeline. A sentence iterator will help create a semblance of a corpus. In this particular case, a "sentence" is actually a document. WHY? TK So what does this look like? 
 
-
-Sentence Iterator
-===================================
-
-Now that we have our basic csv processing, let's start to turn this in to something that vaguely resembles a data pipeline. One thing that gives us a semblance of a corpus is this idea of a sentence iterator. In our case a sentence is a document. So what does this look like? 
-
-We will be implementing a label aware sentence iterator. This gives us a concept of supervised learning where a document has a label. The core concept of a sentence iterator, is it know where it is in the corpus and will always be able to give us the next sentence and also tell us when its done. This is a lot of responsibility, we will want to be able to isolate this.
-
-The core bits of logic are here:
+Our documents have labels, because the data is supervised, and we're implementing a label-aware sentence iterator. The core concept of a sentence iterator is it knows where it is in the corpus, and will always be able to retrieve the next sentence and tell us when it's done. This is a lot of responsibility, we will want to be able to isolate these functions. The core bits of logic are here:
  
     private List<String> phrases;
     private List<String> labels;
     private int currRecord;
     private SentencePreProcessor preProcessor;
 
-
-
-Our goal is to keep track of which sentence we are on and the current label. We do this with the curr record position. We use the text retriever we built earlier for retrieval of data.
+Our goal is to keep track of which sentence we're on and the current label. We do this with the currRecord position. We use the text retriever that we built earlier to retrieve the data.
 
 This separates the responsibility of data retrieval and iteration which encourages good practice in software engineering.
 
-
-
 The juicy parts:
-
 
  try {
             TextRetriever retriever = new TextRetriever();
