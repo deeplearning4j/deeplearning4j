@@ -128,63 +128,43 @@ From Kaggle:
 
 * *test.tsv contains just phrases. You must assign a sentiment label to each phrase.*
 
-Now we'll introduce the methods used in this analysis.
+Now we'll introduce the methods used here.
 
-Dataset - How to Approach the Problem
-================================
+## Dataset: How to Approach the Problem
 
-We want to build tools to break these into contexts, mapping by SentenceID.
+We want to build tools to break the sentences in the reviews into sub-windows or contexts, grouping them by their SentenceID.
 
-For DBNs, we will be building a simple moving window and labeling each window where the span has a particular label.
+* For deep-belief networks (DBNs), we'll build a simple moving window and label each window within a sentence by sentiment.
+* For recursive neural tensor networks (RNTNs), we'll demonstrate how to label trees as sub-contexts. Each sub-node of the tree matches a span that also has a particular label.
 
-For Recursive Neural Tensor Networks, I will demonstrate how to label trees as sub contexts. Each sub node of the tree matches a span which also has a particular label.
+We focus on sub-contexts for sentiment analysis, because context and subcontexts, not isolated words, are what capture sentiment signals best. 
 
-The reason we focus on sub contexts for sentiment analysis comes down to the fact that context and subcontexts are what capture sentiment.
+A context including "not" or "no" will nullify a positive word, requiring a negative label. We need to be able to capture this sentiment in our feature space. 
 
-The simple is a negation of a positive word. We want to be able to capture this in our feature space. This is why we will focus on word vectors for our sentiment analysis.
+The vectorization code to capture context is already written, so we'll focus on the high-level logic of word vectors matched to sub-contexts, and then on benchmarking the accuracy of our models.
 
-Luckily, the vectorization code is already written for this and we can just focus on the high level logic of word vectors matched to sub contexts and benchmarking the models.
+## Bag of Words (BoW)
 
-Bag of Words
-===============================
+Bag of Words is the baseline representation used in a lot of natural-language processing tasks. It's useful at the "document" level, but not at the level of sentences and their subsets.
 
-This is a pretty traditional baseline. A bag of words is a representation used in a lot of natural language processing tasks. This is meant to be used at the "document" level.
+With Bag of Words, a document is the atomic unit of text. BoW doesn't dig deeper. It retains no context for individual words or phrases within the document. Bag of Words is essentially a word count contained in a vector. 
 
-A document in this case is an individual unit of text that does not retain context and is typically the tfidf or the count of the words where present in the vector. The
+A slightly more sophisticated version of BoW is "term frequency–inverse document frequency," or TF-IDF, which lends weight to a single term's frequency within a given document, while discounting terms that are common to all documents (a, the, and, etc.). The number of columns in the feature vector will vary with the size of the vocabulary. This produces a very sparse feature set, with a lot of 0s for the words that do not appear in the document, a positive real numbers for those that do. 
 
-number of columns in the feature vector is relative to the vocab.
+## Moving-Window DBNs
 
-This is a very sparse feature set (lots of zeros)
+We'll be using a sequence moving window approach with the Viterbi algorithm to label phrases. This is similar to the approach used by Ronan Collobert et al in the paper [Natural Language Processing (Almost) From Scratch](https://static.googleusercontent.com/media/research.google.com/en/us/pubs/archive/35671.pdf). The features are word vectors, explained below.
 
+## Recursive Neural Tensor Networks
 
-
-
-Moving Window DBN
-=========================================
-
-We will be using a sequence moving window approach with the viterbi algorithm to identify classes. This is similar to the approach used by collobert et. al in nlp almost from scratch.
-
-The features we will be using with this are word vectors (explained later)
-
-
-Recursive Neural Tensor Networks
-===========================================
-
-
-Done by socher et. al, this is a tree parsing algorithm where the neural nets are attached individual nodes of a binary tree. The leaves are word vectors.
-
-
-
-
+Created by Richard Socher et al, a recursive neural tensor network is a tree-parsing algorithm in which neural nets are attached to the individual nodes on a binary tree. The leaves of the tree are word vectors. 
 
 Let's do a deeper dive in to each of these approaches now. First we will establish some common ground terms that we will use for the rest of the tutorial.
 
-First, we need to motivate a few concepts.
+First, we need to elaborate on a few concepts.
 
 NLP Pipelines
 =============================================
-
-
 
 NLP Pipelines are how you pre process text in to a known format that you can use for classification. We will be doing 2 things, first breaking things up in to documents, and then following up by computing a vocab.
 
