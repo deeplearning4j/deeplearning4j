@@ -219,7 +219,7 @@ Given that we're separating concerns and testing, let's build a unit test. Since
 
 Our goal is to build a set of abstractions that we can think of as components, and not as individual steps. (One thing we might want to do later is get only phrases, or only labels.) For brevity, I'll let the associated test speak for itself:
 
-   @Test
+    @Test
     public void testNumPhrasesAndLabels() {
         assertEquals(NUM_TRAINING_EXAMPLES,retriever.phrases().size());
         assertEquals(NUM_TRAINING_EXAMPLES,retriever.labels().size());
