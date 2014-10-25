@@ -277,11 +277,12 @@ public class Word2Vec implements Persistable {
         log.info("Processing sentences...");
         for(int i = 0; i < numIterations; i++) {
             log.info("Iteration " + (i + 1));
-            int numDocs = vectorizer.index().numDocuments();
-            log.info("Training on " + numDocs);
-            for(int j = 0; j < numDocs;j++) {
+            Collection<Integer> docs = vectorizer.index().allDocs();
+            log.info("Training on " + docs.size());
+            List<Future<?>> list = new ArrayList<>();
+            for(int j : docs) {
                 final int k = j;
-                service.execute(new Runnable() {
+                Future<?> f = service.submit(new Runnable() {
 
                     /**
                      * When an object implementing interface <code>Runnable</code> is used
@@ -304,11 +305,23 @@ public class Word2Vec implements Persistable {
 
                 if(numSentencesProcessed.get() % 100 == 0)
                     log.info("Num sentences processed " + numSentencesProcessed.get());
+                list.add(f);
             }
 
             //reset for the iteration
             numSentencesProcessed.set(0);
+            for(Future<?> f : list) {
+                try {
+                    f.get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+
         }
+
 
 
 
@@ -502,16 +515,18 @@ public class Word2Vec implements Persistable {
     public void trainSentence(final List<VocabWord> sentence,int doc) {
         if(g == null)
             g = new XorShift1024StarRandomGenerator(seed);
-        if(sentence == null)
+        if(sentence == null || sentence.isEmpty())
             return;
-        numWordsSoFar.getAndAdd(sentence.size());
-        if(doc % 1000 == 0) {
+
+        if(sentence.isEmpty())
+            return;
+
+        numWordsSoFar.incrementAndGet();
+        if(numWordsSoFar.get() % 1000 == 0) {
             alpha.set(Math.max(minLearningRate,alpha.get() * (1 - (1.0 * (double) doc / (double) vectorizer.index().numDocuments()))));
             log.info("Num words so far " + numWordsSoFar.get() + " alpha is " + alpha.get());
         }
 
-        if(sentence.isEmpty())
-            return;
 
 
 

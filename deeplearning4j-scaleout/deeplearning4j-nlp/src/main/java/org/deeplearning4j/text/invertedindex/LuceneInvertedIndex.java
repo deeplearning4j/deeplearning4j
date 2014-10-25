@@ -15,6 +15,7 @@ import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.stopwords.StopWords;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -38,12 +39,12 @@ public class LuceneInvertedIndex implements InvertedIndex {
     private VocabCache vocabCache;
     public final static String WORD_FIELD = "word";
     private int numDocs = 0;
-    private Map<Integer,List<VocabWord>> words = new HashMap<>();
+    private List<List<VocabWord>> words = new CopyOnWriteArrayList<>();
     private boolean cache = true;
 
     public LuceneInvertedIndex(VocabCache vocabCache,boolean cache) {
         try {
-            index("word2vec-index",true);
+            index("word2vec-index",cache);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -115,6 +116,12 @@ public class LuceneInvertedIndex implements InvertedIndex {
 
     @Override
     public Collection<Integer> allDocs() {
+       if(cache){
+           List<Integer> ret = new ArrayList<>();
+           for(int i = 0; i < words.size(); i++)
+               ret.add(i);
+           return ret;
+       }
         List<Integer> docIds = new ArrayList<>();
         for(int i = 0; i < reader.maxDoc(); i++)
             docIds.add(i);
@@ -174,7 +181,7 @@ public class LuceneInvertedIndex implements InvertedIndex {
             throw new RuntimeException(e);
         }
         if(cache)
-            this.words.put(doc,words);
+           this.words.add(words);
         initReader();
 
 
