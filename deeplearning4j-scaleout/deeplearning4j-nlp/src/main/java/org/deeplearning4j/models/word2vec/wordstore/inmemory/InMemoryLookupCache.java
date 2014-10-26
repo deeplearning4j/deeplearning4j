@@ -508,36 +508,9 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
     }
 
-    public static void writeTsneFormat(Word2Vec vec,INDArray tsne,File csv) throws Exception {
-        BufferedWriter write = new BufferedWriter(new FileWriter(csv));
-        int words = 0;
-        InMemoryLookupCache l = (InMemoryLookupCache) vec.getCache();
-        for(int i = 0; i < tsne.rows(); i++) {
-            String word = l.wordAtIndex(i);
-            if(word == null)
-                continue;
-            StringBuffer sb = new StringBuffer();
-            INDArray wordVector = tsne.getRow(i);
-            for(int j = 0; j < wordVector.length(); j++) {
-                sb.append(wordVector.getDouble(j));
-                if(j < wordVector.length() - 1)
-                    sb.append(",");
-            }
-            sb.append(",");
-            sb.append(word);
-            sb.append(" ");
-
-            sb.append("\n");
-            write.write(sb.toString());
-
-        }
-
-        System.out.println("Wrote " + words + " with size of " + vec.getLayerSize());
-        write.flush();
-        write.close();
 
 
-    }
+
 
     public RandomGenerator getRng() {
         return rng;
