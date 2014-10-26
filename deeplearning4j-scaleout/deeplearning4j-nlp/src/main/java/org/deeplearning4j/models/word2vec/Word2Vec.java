@@ -52,9 +52,10 @@ public class Word2Vec implements Persistable {
     private transient SentenceIterator sentenceIter;
     private transient DocumentIterator docIter;
     private transient VocabCache cache;
-
+    private int batchSize = 1000;
     private int topNSize = 40;
     private int sample = 1;
+    private int totalWords = 1;
     //learning rate
     private AtomicDouble alpha = new AtomicDouble(0.025);
     //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
@@ -74,6 +75,7 @@ public class Word2Vec implements Persistable {
     private boolean saveVocab = false;
     private double minLearningRate = 0.01;
     private TextVectorizer vectorizer;
+    private int learningRateDecayWords = 10000;
 
 
     public Word2Vec() {}
@@ -271,43 +273,60 @@ public class Word2Vec implements Persistable {
 
         final ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
         final Collection<Integer> docs = vectorizer.index().allDocs();
-        final List<Callable<Void>> futures = new ArrayList<>();
+
+        final AtomicInteger numSentencesProcessed = new AtomicInteger(0);
+
+        for(int j : docs)
+           totalWords += vectorizer.index().document(j).size();
+        totalWords *= numIterations;
+
+
         log.info("Processing sentences...");
+
+        final List<Future<?>> futures2 = new ArrayList<>();
         for (int i = 0; i < numIterations; i++) {
-            futures.add(new Callable<Void>() {
-                @Override
-                public Void call() {
-                    final AtomicInteger numSentencesProcessed = new AtomicInteger(0);
-                    final AtomicDouble d = new AtomicDouble(alpha.doubleValue());
-                    log.info("Training on " + docs.size());
-
-                    for (int j : docs) {
-                        final int k = j;
-                        service.submit(new Callable<Void>() {
+            log.info("Training on " + docs.size());
+            final List<VocabWord> docMiniBatch = new CopyOnWriteArrayList<>();
+            final List<List<VocabWord>> minibatches = new ArrayList<>();
+            for (int j : docs) {
+                final int k = j;
+                docMiniBatch.addAll(vectorizer.index().document(k));
+                if(docMiniBatch.size() >= batchSize) {
+                    minibatches.add(new ArrayList<>(docMiniBatch));
 
 
-                            @Override
-                            public Void call() {
-                                trainSentence(vectorizer.index().document(k), k,numSentencesProcessed,d);
-                                return null;
-                            }
-                        });
-
-
-
-                    }
-
-                    return null;
-
-
+                    docMiniBatch.clear();
                 }
-            });
+
+            }
+
+
+            for(final List<VocabWord> batch : minibatches) {
+                futures2.add(service.submit(new Callable<Void>() {
+
+
+                    @Override
+                    public Void call() {
+                        trainSentence(batch, numSentencesProcessed);
+                        docMiniBatch.clear();
+                        return null;
+                    }
+                }));
+            }
+
+
+
 
         }
 
 
+
+
+
         try {
-            List<Future<Void>> f2 =  service.invokeAll(futures);
+
+            for(Future<?> f : futures2)
+                f.get();
             service.shutdown();
             while(!service.isTerminated())
                 Thread.sleep(1000);
@@ -429,19 +448,16 @@ public class Word2Vec implements Persistable {
      * Train on a list of vocab words
      * @param sentence the list of vocab words to train on
      */
-    public void trainSentence(final List<VocabWord> sentence,int doc,AtomicInteger numWordsSoFar,AtomicDouble alpha) {
+    public void trainSentence(final List<VocabWord> sentence,AtomicInteger numWordsSoFar) {
         if(g == null)
             g = new XorShift1024StarRandomGenerator(seed);
         if(sentence == null || sentence.isEmpty())
             return;
 
-        if(sentence.isEmpty())
-            return;
-
-        numWordsSoFar.incrementAndGet();
-        if(numWordsSoFar.get() % 1000 == 0) {
-            alpha.set(Math.max(minLearningRate,alpha.get() * (1 - (1.0 * (double) doc / (double) vectorizer.index().numDocuments()))));
-            log.info("Num words so far " + numWordsSoFar.get() + " alpha is " + alpha.get());
+        numWordsSoFar.set(numWordsSoFar.get() + sentence.size());
+        if(numWordsSoFar.get() % learningRateDecayWords == 0) {
+            alpha.set(Math.max(minLearningRate,alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) totalWords))));
+            log.info("Num words so far " + numWordsSoFar.get() + " alpha is " + alpha.get() + " out of " + totalWords);
         }
 
 
@@ -668,6 +684,18 @@ public class Word2Vec implements Persistable {
         private int iterations = 5;
         private long seed = 123;
         private boolean saveVocab = false;
+        private int batchSize = 1000;
+        private int learningRateDecayWords = 10000;
+
+        public Builder learningRateDecayWords(int learningRateDecayWords) {
+            this.learningRateDecayWords = learningRateDecayWords;
+            return this;
+        }
+
+        public Builder batchSize(int batchSize) {
+            this.batchSize = batchSize;
+            return this;
+        }
 
         public Builder saveVocab(boolean saveVocab){
             this.saveVocab = saveVocab;
@@ -749,7 +777,7 @@ public class Word2Vec implements Persistable {
                 ret.minWordFrequency = minWordFrequency;
                 ret.seed = seed;
                 ret.saveVocab = saveVocab;
-
+                ret.batchSize = batchSize;
                 try {
                     if (tokenizerFactory == null)
                         tokenizerFactory = new UimaTokenizerFactory();
@@ -781,7 +809,7 @@ public class Word2Vec implements Persistable {
                 ret.seed = seed;
                 ret.numIterations = iterations;
                 ret.saveVocab = saveVocab;
-
+                ret.batchSize = batchSize;
                 try {
                     if (tokenizerFactory == null)
                         tokenizerFactory = new UimaTokenizerFactory();

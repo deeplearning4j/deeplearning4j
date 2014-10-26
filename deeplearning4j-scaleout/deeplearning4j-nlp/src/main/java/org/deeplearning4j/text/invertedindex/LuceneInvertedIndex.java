@@ -57,9 +57,18 @@ public class LuceneInvertedIndex implements InvertedIndex {
 
     @Override
     public List<VocabWord> document(int index) {
-        if(cache)
-            return words.get(index);
+        if(cache) {
+            List<VocabWord> ret = words.get(index);
+            List<VocabWord> ret2 = new ArrayList<>();
+            //remove all non vocab words
+            for(VocabWord word : ret) {
+                if(vocabCache.containsWord(word.getWord()))
+                    ret2.add(word);
+            }
 
+           
+            return ret2;
+        }
         List<VocabWord> ret = new CopyOnWriteArrayList<>();
         try {
             Document doc = reader.document(index);
@@ -169,36 +178,67 @@ public class LuceneInvertedIndex implements InvertedIndex {
 
     @Override
     public void addWordsToDoc(int doc, List<VocabWord> words) {
-        Document d = new Document();
-
-        for(VocabWord word : words) {
-            d.add(new TextField(WORD_FIELD, word.getWord() ,Field.Store.YES));
-        }
-        try {
-            writer.addDocument(d,analyzer);
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
         if(cache)
-           this.words.add(words);
-        initReader();
+            this.words.add(words);
+
+        else {
+            Document d = new Document();
+
+            for(VocabWord word : words) {
+                d.add(new TextField(WORD_FIELD, word.getWord() ,Field.Store.YES));
+            }
+            try {
+                writer.addDocument(d,analyzer);
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            initReader();
+        }
+
+
 
 
     }
 
     @Override
     public void finish() {
-        try {
+         if(cache) {
+             Thread t = new Thread(new Runnable(){
+                 public void run() {
+                     try {
+                         dir = FSDirectory.open(new File("word2vec-index"));
+                         writer = new IndexWriter(dir, iwc);
+                         writer.forceMerge(1);
+                         writer.commit();
 
-            writer.forceMerge(1);
-            writer.commit();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+                         initReader();
+                         numDocs = reader.numDocs();
+                     } catch (IOException e) {
+                         e.printStackTrace();
+                     }
 
-        initReader();
-        numDocs = reader.numDocs();
+
+                 }
+             });
+
+             //t.start();
+         }
+
+        else {
+             try {
+
+                 writer.forceMerge(1);
+                 writer.commit();
+             } catch (IOException e) {
+                 e.printStackTrace();
+             }
+
+             initReader();
+             numDocs = reader.numDocs();
+
+         }
 
     }
 
@@ -307,7 +347,7 @@ public class LuceneInvertedIndex implements InvertedIndex {
                 if(iwc == null)
                     iwc = new IndexWriterConfig(Version.LATEST, analyzer);
 
-                if(indexDir != null) {
+                if(indexDir != null && !cache) {
                     if(!indexDir.exists())
                         indexDir.mkdirs();
                     dir = FSDirectory.open(indexDir);
@@ -331,7 +371,7 @@ public class LuceneInvertedIndex implements InvertedIndex {
                 ret.vocabCache = vocabCache;
 
             }catch(Exception e) {
-
+              throw new RuntimeException(e);
             }
 
             return ret;
