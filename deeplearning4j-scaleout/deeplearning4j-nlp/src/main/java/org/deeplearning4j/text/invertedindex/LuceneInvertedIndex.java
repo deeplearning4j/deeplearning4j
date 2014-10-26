@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Lucene based inverted index
@@ -41,7 +43,7 @@ public class LuceneInvertedIndex implements InvertedIndex {
     private int numDocs = 0;
     private List<List<VocabWord>> words = new CopyOnWriteArrayList<>();
     private boolean cache = true;
-
+    private transient ExecutorService indexManager;
     public LuceneInvertedIndex(VocabCache vocabCache,boolean cache) {
         try {
             index("word2vec-index",cache);
@@ -50,10 +52,13 @@ public class LuceneInvertedIndex implements InvertedIndex {
         }
         this.vocabCache = vocabCache;
         this.cache = cache;
+        indexManager = Executors.newFixedThreadPool(1);
     }
 
 
-    private LuceneInvertedIndex(){}
+    private LuceneInvertedIndex(){
+        indexManager = Executors.newFixedThreadPool(1);
+    }
 
     @Override
     public List<VocabWord> document(int index) {
@@ -66,9 +71,11 @@ public class LuceneInvertedIndex implements InvertedIndex {
                     ret2.add(word);
             }
 
-           
+
             return ret2;
         }
+
+
         List<VocabWord> ret = new CopyOnWriteArrayList<>();
         try {
             Document doc = reader.document(index);
@@ -125,12 +132,13 @@ public class LuceneInvertedIndex implements InvertedIndex {
 
     @Override
     public Collection<Integer> allDocs() {
-       if(cache){
-           List<Integer> ret = new ArrayList<>();
-           for(int i = 0; i < words.size(); i++)
-               ret.add(i);
-           return ret;
-       }
+        if(cache){
+            List<Integer> ret = new ArrayList<>();
+            for(int i = 0; i < words.size(); i++)
+                ret.add(i);
+            return ret;
+        }
+
         List<Integer> docIds = new ArrayList<>();
         for(int i = 0; i < reader.maxDoc(); i++)
             docIds.add(i);
@@ -177,18 +185,42 @@ public class LuceneInvertedIndex implements InvertedIndex {
     }
 
     @Override
-    public void addWordsToDoc(int doc, List<VocabWord> words) {
-        if(cache)
+    public void addWordsToDoc(int doc,final List<VocabWord> words) {
+        if (cache) {
             this.words.add(words);
+            indexManager.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if(writer == null) {
+                            index("word2vec-path", true);
+                        }
+                        Document d = new Document();
 
-        else {
+                        for (VocabWord word : words) {
+                            d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
+                        }
+
+                        writer.addDocument(d, analyzer);
+
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    initReader();
+                }
+            });
+
+
+        } else {
+
             Document d = new Document();
 
-            for(VocabWord word : words) {
-                d.add(new TextField(WORD_FIELD, word.getWord() ,Field.Store.YES));
+            for (VocabWord word : words) {
+                d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
             }
             try {
-                writer.addDocument(d,analyzer);
+                writer.addDocument(d, analyzer);
 
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -196,49 +228,49 @@ public class LuceneInvertedIndex implements InvertedIndex {
 
             initReader();
         }
-
-
-
-
     }
+
+
 
     @Override
     public void finish() {
-         if(cache) {
-             Thread t = new Thread(new Runnable(){
-                 public void run() {
-                     try {
-                         dir = FSDirectory.open(new File("word2vec-index"));
-                         writer = new IndexWriter(dir, iwc);
-                         writer.forceMerge(1);
-                         writer.commit();
+        if(cache) {
+            indexManager.execute(new Runnable(){
+                public void run() {
+                    try {
+                        if(dir == null)
+                            dir = FSDirectory.open(new File("word2vec-index"));
+                        if(writer == null)
+                            writer = new IndexWriter(dir, iwc);
+                        writer.forceMerge(1);
+                        writer.commit();
 
-                         initReader();
-                         numDocs = reader.numDocs();
-                     } catch (IOException e) {
-                         e.printStackTrace();
-                     }
+                        initReader();
+                        numDocs = reader.numDocs();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
 
-                 }
-             });
+                }
+            });
 
-             //t.start();
-         }
+
+        }
 
         else {
-             try {
+            try {
 
-                 writer.forceMerge(1);
-                 writer.commit();
-             } catch (IOException e) {
-                 e.printStackTrace();
-             }
+                writer.forceMerge(1);
+                writer.commit();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
-             initReader();
-             numDocs = reader.numDocs();
+            initReader();
+            numDocs = reader.numDocs();
 
-         }
+        }
 
     }
 
@@ -371,7 +403,7 @@ public class LuceneInvertedIndex implements InvertedIndex {
                 ret.vocabCache = vocabCache;
 
             }catch(Exception e) {
-              throw new RuntimeException(e);
+                throw new RuntimeException(e);
             }
 
             return ret;
