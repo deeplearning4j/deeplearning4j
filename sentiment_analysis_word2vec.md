@@ -298,7 +298,7 @@ Let's set *word-count vectors* aside and consider *word vectors*. Remember, word
 
 Since this is a word-vector-based approach, we're going to use Word2vec, and while we're at it, we'll look at how well it trains. Unlike Bag of Words, where features are deterministic (rules based), Word2vec is an actual neural net that processes data for other neural nets, which means we're dealing with probabilities and training coefficients. Remember, Word2vec represents word usage, and usage is a matter of probabilities rather than of lockstep rules.
 
-Since seeing is understanding, we use D3 to visualize the 16,000-word vocabulary. We use an algorithm called t-SNE to gauge the proximity of words to other words. Doing that let's us ensure that the word clusters themselves are coherent.
+Since seeing is understanding, we use D3 to visualize the 16,000-word vocabulary. We use an algorithm called t-SNE to gauge the proximity of words to other words. Doing that lets us ensure that the word clusters themselves are coherent.
 
 TK: Add Renders
 
