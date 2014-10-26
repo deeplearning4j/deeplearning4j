@@ -316,6 +316,6 @@ You'll notice we specify a document iterator, a tokenizer factory, a learning ra
 * iter: DocumentIterator this is our raw textual pipeline
 * factory: our tokenizer factory, handles tokenizing text
 * learning rate: step size
-* cache: this is where all of our metadata about vocabulary is stored including word vectors, tfidf scores, document frequencies as well as where doucments occurred.
+* cache: this is where all of our metadata about vocabulary is stored including word vectors, tfidf scores, document frequencies as well as where documents occurred.
 * layer size: this is the number of features per word
 * window size: the window size for iterating over text, this is how long of contexts to train on.
