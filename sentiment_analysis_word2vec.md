@@ -12,11 +12,11 @@ You'll need to download the dataset from Kaggle (registration required):
 
 The dataset is split into a training set and a test set already, which makes our lives easier.  Let's download the data and load it into our nets. 
 
-Go ahead and unzip it:
+You'll probably want to gather the files in a new folder, cd into it, then unzip the training set:
 
     unzip train.tsv.zip
 
-In our folder we see a train.tsv file. What does the data look like? A one-word command will show us.
+In the new folder, we see a train.tsv file. What does the data look like? Just type this one-word command:
 
     head train.tsv
 
@@ -91,9 +91,9 @@ The command 'head' should output the following table:
 
 Let's walk through this. 
 
-Two columns describe the sentence: PhraseID and SentenceID. A PhraseID is a sub-window that takes just one piece of a larger passage, such that each sub-window of a sentence is an example of a "context." 
+Two columns describe the sentence: PhraseID and SentenceID. A PhraseID is a sub-window that takes just one piece of a larger passage, such that each sub-window of a sentence is an example of a "context"; i.e. usually a group of words together.  
 
-In the table above, we have a SentenceID of 1 in every row, which means we are dealing with the same sentence throughout. The entire sentence is presented as a phrase in Row 2, Column 3. Each subsequent phrase shown is Column 3 is a subset of that original sentence: the sub-windows. 
+In the table above, we have a SentenceID of 1 in every row, which means we are dealing with the same sentence throughout. The entire sentence is presented as a single phrase in Row 2, Column 3. Each subsequent phrase shown is Column 3 is a subset of that original sentence: the sub-windows by which we measure sentiment at a more granular level. 
 
 Our table is only a partial preview of the sentence's subsets, as it happens to end before presenting the phrases that constitute the second half of the sentence. 
 
@@ -119,50 +119,54 @@ From Kaggle:
 
 * *test.tsv contains just phrases. You must assign a sentiment label to each phrase.*
 
-Now we'll introduce the methods used here.
+On to the next step.
 
 ## Dataset: How to Approach the Problem
 
 We want to build tools to break the sentences in the reviews into sub-windows or contexts, grouping them by their SentenceID.
 
-* For deep-belief networks (DBNs), we'll build a simple moving window and label each window within a sentence by sentiment. We'll be using a sequence moving window approach with the Viterbi algorithm to label phrases. This is similar to the approach used by Ronan Collobert et al in the paper [Natural Language Processing (Almost) From Scratch](https://static.googleusercontent.com/media/research.google.com/en/us/pubs/archive/35671.pdf). The features are word vectors, explained below.
-* For recursive neural tensor networks (RNTNs), we'll demonstrate how to label trees as sub-contexts. Each sub-node of the tree matches a span that also has a particular label. [Created by Richard Socher et al](http://nlp.stanford.edu/~socherr/EMNLP2013_RNTN.pdf), a recursive neural tensor network is a tree-parsing algorithm in which neural nets are attached to the individual nodes on a binary tree. The leaves of the tree are word vectors. 
+* For deep-belief networks (DBNs), we'll build a simple moving window and label each window within a sentence by sentiment. We'll be using a "sequence moving window" approach with the Viterbi algorithm to label phrases. This is similar to the approach used by Ronan Collobert et al in the paper [Natural Language Processing (Almost) From Scratch](https://static.googleusercontent.com/media/research.google.com/en/us/pubs/archive/35671.pdf). The features are word vectors, which will be explained below.
+* For recursive neural tensor networks (RNTNs), another type of neural net, we'll demonstrate how to label trees as sub-contexts. Each sub-node of the tree matches a span, or sub-window, that also has a particular label. [Created by Richard Socher et al](http://nlp.stanford.edu/~socherr/EMNLP2013_RNTN.pdf), a recursive neural tensor network is a tree-parsing algorithm in which neural nets are attached to the individual nodes on a binary tree. The leaves of the tree are word vectors. 
 
-We focus on sub-contexts for sentiment analysis, because context and subcontexts, not isolated words, are what capture sentiment signals best. A context including "not" or "no" will nullify a positive word, requiring a negative label. We need to be able to capture this sentiment in our feature space. 
+We focus on sub-contexts for sentiment analysis because context and subcontexts, not isolated words, are what capture sentiment signals best. A context including "not" or "no" will nullify a positive word, requiring a negative label for the whole word group. We need to be able to capture this sentiment in our feature space, otherwise it is nearly useless. 
 
-The vectorization code to capture context is already written, allowing us to concentrate on the high-level logic of word vectors matched to sub-contexts, and then on benchmarking the accuracy of our models.
+The vectorization code to capture context is already written, allowing us to concentrate on the high-level logic of word vectors matched to sub-contexts, and then turn our attention to benchmarking the accuracy of our models.
 
-Before we do a deeper dive into these approaches, we'll have to define and explain some terms.
+## Definitions
+
+Before we dive into these approaches, let's define some terms.
 
 ### Bag of Words (BoW)
 
-Bag of Words is the baseline representation used in a lot of natural-language processing tasks. It's useful at the "document" level, but not at the level of sentences and their subsets.
+Bag of Words is the baseline representation used in many natural-language processing tasks. It's useful at the "document" level, but not at the level of sentences and their subsets.
 
 With Bag of Words, a document is the atomic unit of text. BoW doesn't dig deeper. It retains no context for individual words or phrases within the document. Bag of Words is essentially a word count contained in a vector. 
 
-A slightly more sophisticated version of BoW is "term frequency–inverse document frequency," or TF-IDF, which lends weight to a single term's frequency within a given document, while discounting terms that are common to all documents (a, the, and, etc.). The number of columns in the feature vector will vary with the size of the vocabulary. This produces a very sparse feature set, with a lot of 0s for the words that do not appear in the document, a positive real numbers for those that do. 
+A slightly more sophisticated version of BoW is "term frequency–inverse document frequency," or TF-IDF. TF-IDF lends weight to a single term's frequency within a given document, while discounting terms that are common to all documents (e.g. a, the, and, Ignatz). Just kidding -- not Ignatz. The number of columns in the feature vector will vary with the size of the vocabulary, but you will have one column per word. This produces a very sparse feature set, with a lot of 0s for words that do not appear in the document, and a few positive real numbers for those that do. 
 
 ### Natural-Language Processing (NLP) Pipelines
 
-NLP pipelines pre-process text into a format you can use for classification with a neural net. We'll be doing two things: breaking the dataset into documents, then computing a vocabulary. This will be used for Bag of Words (word count vectors) as well as word vectors, which include context. 
+NLP pipelines pre-process text into a format you can use for classification with a neural net. We'll be doing two things: breaking the dataset into documents, then computing a vocabulary. This will be used for Bag of Words (word-count vectors) as well as word vectors, which include context. 
+
+Word-count vectors and word vectors are two radically different things, which represent two different approaches to NLP, so don't confuse the two terms even though they are similar. Word-count vectors contain only the count of each word that appears; word vectors capture contexts; the words surrounding a word. In machine learning, a word's meaning is usually determined by looking at the words around it. 
 
 ### Vocabulary Computation
 
-A textual dataset is known as a corpus, and the vocabulary of a corpus consists of the unique set of words that the corpus's documents contain. Deeplearning4j has tools to compute vocabulary in different ways. HOW? TK
+A textual dataset is known as a corpus, and the vocabulary of a corpus consists of the unique set of words that the corpus's documents contain. Deeplearning4j has tools to compute vocabulary in different ways. 
 
 ### Breaking Out the Corpus
 
-In the Kaggle data, each phrase is in a CSV. We need to parse the text into a different form. We do that with a dataset iterator, which gives you a reproducible and testable data pipeline.
+In the Kaggle data, each phrase is held in a CSV. We need to parse the text into a different form. We do that with a DatasetIterator, which will give you a reproducible and testable data pipeline.
 
 ### DataSetIterator
 
 When you create a machine-learning model, you need to vectorize the data, because vectors are what machine-learning algorithms understand. 
 
-Vectorization is the process of breaking unstructured data up into a set of features, each of them distinct aspects of the raw data. Each feature is a vector in itself. The two representations we focus on here are word vectors (context, one vector per word which captures its proximity to other words around it) and word count vectors (document level, no context, captures the presence or absence of a word).
-
-When we iterate over a dataset, we retrieve data in a certain order, often from multiple locations. If multiple locations are involved, we want to make the data pipeline retrieval process for each potential end point isolated and testable. We do that with a DataFetcher.
+Vectorization is the process of breaking unstructured data up into a set of features, each of them distinct aspects of the raw data, and then converting every feature into a column of numbers. That is, each feature is a vector in itself. Again, the two feature representations are word vectors (context, one vector per word to capture its proximity to other words around it) and word-count vectors (document level, no context, captures the presence or absence of words).
 
 ### DataFetcher
+
+When we iterate over a dataset, we retrieve data in a certain order. That data is often taken from multiple locations. So we want to make the data pipeline retrieval process for each potential end point isolated and testable, and we can do that with a DataFetcher.
 
 As its name implies, a DataFetcher handles data retrieval. Data may live on Amazon Web Services, your local file system, or MySQL. The DataFetcher handles feature vector composition with a process specific to each data source. With this in mind, let's fetch data from a CSV and parse it.
 
@@ -182,7 +186,7 @@ Deeplearning4j has a CSV library that allows us to handle CSV values in the foll
 
 In the above code snippet, CSV is a file object.
 
-The callback lets us access the data. Our goal is to collect the text and create what amounts to a corpus. In the callback, where we're passing in CSVReadProc as an argument to the read method, we want to grab the text and treat each line as a document. Due to the nature of this dataset, we'll just create a list of  documents since it won't use too much memory. 
+The callback lets us access the data. Our goal is to collect the text and create what amounts to a corpus. In the callback, where we're passing in CSVReadProc as an argument to the read method, we want to grab the text and treat each line as a document (that's the job of procRow, or "process row"). Due to the nature of this dataset, we'll just create a list of  documents. 
 
 Since the Kaggle competition is about classifying phrases, we'll be saving each phrase as a row in the list. 
 
@@ -198,7 +202,7 @@ That's how we map phrases and labels, and we can use it without coupling it to a
 
 ## Testing
 
-Given that we're separating concerns and testing, let's build a unit test. Since our dataset is on our class path, we have a few neat tricks to retrieve it. Deeplearning4j leverages Spring for a few reflection utilities as well as a more robust version of classpath discovery of components. With that in mind our test will looking like the following:
+Given that we're separating concerns and testing, we'll build a unit test. Since our dataset is on our class path, we have a few neat tricks to retrieve it. Deeplearning4j uses Spring for a few reflection utilities as well as a more robust version of the classpath discovery of components. With that in mind, our test looks like the following:
 
     @Test
     public void testRetrieval() throws  Exception {
@@ -216,7 +220,7 @@ Our goal is to build a set of abstractions that we can think of as components, a
         assertEquals(NUM_TRAINING_EXAMPLES,retriever.labels().size());
     }
 
-With many problems, you want to test multiple methods of classification to determine which works best (or use several of them in a so-called ensemble that works better than any one method alone).
+With many problems, you want to test multiple methods of classification to determine which works best (or use several of them in a so-called ensemble that performs better than any one method alone).
 
 ## Sentence Iterator
 
@@ -225,11 +229,11 @@ Now that we have basic CSV processing, let's make this into the beginnings of a 
 So what does this corpus look like? 
 
 Our documents have labels, because the data is supervised, and we're implementing a label-aware sentence iterator. The core concept of a sentence iterator is that **it knows where it is in the corpus, will always be able to retrieve the next sentence and can tell us when it's done**. That's a lot of responsibility, so we'll isolate these functions. The core bits of logic are here:
- 
-    private List<String> phrases;
-    private List<String> labels;
-    private int currRecord;
-    private SentencePreProcessor preProcessor;
+
+        private List<String> phrases;
+        private List<String> labels;
+        private int currRecord;
+        private SentencePreProcessor preProcessor;
 
 Our goal is to keep track of which sentence we're on as well as the current label. We do that with the currRecord position, and we use the text retriever that we built earlier to retrieve the data. This separates the responsibilities of data retrieval and iteration.
 
@@ -251,7 +255,7 @@ The test:
     public void testIter() {
         LabelAwareSentenceIterator iter = new RottenTomatoesLabelAwareSentenceIterator();
         assertTrue(iter.hasNext());
-        //due to the nature of a hashmap internally, may not be the same everytime
+        //due to the nature of a hashmap internally, this may not be the same everytime
         String sentence = iter.nextSentence();
         assertTrue(!sentence.isEmpty());
     }
@@ -266,33 +270,33 @@ This will verify that one of our building blocks works, so now we can worry abou
         
     public RottenTomatoesBagOfWordsDataFetcher() {
         iter = new RottenTomatoesLabelAwareSentenceIterator();
-        countVectorizer = new BagOfWordsVectorizer(iter,factory, Arrays.asList("0", "1", "2", "3", "4"));
+        countVectorizer = new BagOfWordsVectorizer(iter, factory, Arrays.asList("0", "1", "2", "3", "4"));
         data = countVectorizer.vectorize();
     }
         
     @Override
     public void fetch(int numExamples) {
         //set the current dataset
-        curr = data.get(ArrayUtil.range(cursor,numExamples));
+        curr = data.get(ArrayUtil.range(cursor, numExamples));
     }    
     }
 
-Just a few lines, but let's break them down into their components. 
+Just a few lines, but we'll break them down into their components. 
 
-* The iterator. We built it earlier to track where we are currently when iterating over the data. It also associates a string with a dataseet. 
-* The count vectorizer. This is the workhorse. Let's load the data in to memory with vectorize and iterate as necessary. 
+* The iterator. We built it earlier to track where we are currently when iterating over the data. It associates a string with a dataseet. 
+* The count vectorizer. This is the workhorse for Bag of Words. Let's load the data in to memory with vectorize, and iterate as necessary. 
 
 *N.B.: The process above is **RAM-intensive**, so only run it on a fairly robust server. Pruning words from your vocabulary based on TF-IDF gives a good approximation of your data, but we'll skip over that step here. (ND4J only supports dense matrices for the moment, though we're working ways to handle sparse formats.) Since ND4J is a Blas-focused framework, that's what we'll be supporting.* 
 
-So what exactly have we done so far? We wrote code to parse CSVs, take the text, map it to labels and iterate through it to produce a matrix. In the process, we built a key component: the vocabulary. It has around 17,000 words. For bag-of-words matrices, this produces a sparse representation of 150,000 rows by 17,000 columns, one column per word.
+So what exactly have we done so far? We wrote code to parse CSVs, take the text, map it to labels and iterate through it to produce a matrix. In the process, we built a key component: the vocabulary. It has around 17,500 words and 150,000 sentences. For bag-of-words matrices, this produces a sparse representation of 150,000 rows by 17,000 columns, one column per word. Not a toy matrix...
 
-Bag of Words doesn't give us a lot to work with. After we explore Word2vec, we'll see how the DBN classifier does with both.
+That said, Bag of Words doesn't give us a lot to work with, because we're just checking boxes to see if words are there. After we explore Word2vec, we'll see how the DBN classifier performs with both.
 
 ## Word Vectors
 
-Let's set *word-count vectors* aside and consider *word vectors*. Remember, word vectors are used to **featurize  textual contexts**. We use the [Viterbi algorithm](https://en.wikipedia.org/wiki/Viterbi_algorithm) with voting on moving windows for document classification.
+Let's set *word-count vectors* aside and consider *word vectors*. Remember, word vectors serve to **featurize  textual contexts**. We use the [Viterbi algorithm](https://en.wikipedia.org/wiki/Viterbi_algorithm) with voting on moving windows for document classification.
 
-Since this is a word-vector-based approach, we're going to use Word2vec, and while we're at it, we'll look at how well it trains. Unlike Bag of Words, where features are deterministic (rules based), Word2vec is a form of neural net, which means we're dealing with probabilities and training coefficients. Remember, Word2vec represents word usage, and usage is a matter of probability rather than of lockstep rules.
+Since this is a word-vector-based approach, we're going to use Word2vec, and while we're at it, we'll look at how well it trains. Unlike Bag of Words, where features are deterministic (rules based), Word2vec is an actual neural net that processes data for other neural nets, which means we're dealing with probabilities and training coefficients. Remember, Word2vec represents word usage, and usage is a matter of probabilities rather than of lockstep rules.
 
 Since seeing is understanding, we use D3 to visualize the 16,000-word vocabulary. We use an algorithm called t-SNE to gauge the proximity of words to other words. Doing that let's us ensure that the word clusters themselves are coherent.
 
@@ -300,16 +304,14 @@ TK: Add Renders
 
 Word vectors are useful with sequential applications for text. They can be used in document classification with a proper ensemble method (voting) as well with optimizing for a maximum likelihood estimator over the windows and labels.
 
-So what does Word2vec look like in code?
-
-The key code snippet is here:
+So what does Word2vec look like in code? The key code snippet is here:
 
     Word2vec vec = new Word2Vec.Builder().iterate(iter).tokenizerFactory(factory)
                 .learningRate(1e-3).vocabCache(new InMemoryLookupCache(300))
                 .layerSize(300).windowSize(5).build();
     vec.fit();
 
-You'll notice we specify a document iterator, a tokenizer factory and a learning rate, among other things. In the second part of this walkthrough, we'll go over these parameters as they apply to a deep-belief network:
+You'll notice we specify a document iterator, a tokenizer factory, a learning rate, layer size and window size, among other things. In the second part of this walkthrough, we'll go over these parameters as they apply to a deep-belief network:
 
 * iter: DocumentIterator this is our raw textual pipeline
 * factory: our tokenizer factory, handles tokenizing text
