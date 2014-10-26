@@ -2,7 +2,7 @@
 layout: default
 ---
 
-# Movie Review Sentiment Analysis 
+# Movie Review Sentiment Analysis With Word2Vec, DBNs and RNTNs
 
 In this blog post, we're going to walk through a sentiment analysis of movie reviews using the Rotten Tomatoes dataset. 
 
