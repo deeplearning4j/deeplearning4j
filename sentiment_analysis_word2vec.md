@@ -307,8 +307,8 @@ Word vectors are useful with sequential applications for text. They can be used 
 So what does Word2vec look like in code? The key code snippet is here:
 
     Word2vec vec = new Word2Vec.Builder().iterate(iter).tokenizerFactory(factory)
-                .learningRate(1e-3).vocabCache(new InMemoryLookupCache(300))
-                .layerSize(300).windowSize(5).build();
+        .learningRate(1e-3).vocabCache(new InMemoryLookupCache(300))
+        .layerSize(300).windowSize(5).build();
     vec.fit();
 
 You'll notice we specify a document iterator, a tokenizer factory, a learning rate, layer size and window size, among other things. In the second part of this walkthrough, we'll go over these parameters as they apply to a deep-belief network:
