@@ -8,10 +8,9 @@ import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+
 
 import com.google.common.util.concurrent.AtomicDouble;
-
 import it.unimi.dsi.util.XorShift1024StarRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
@@ -28,7 +27,6 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactor
 import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
-import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.slf4j.Logger;
@@ -278,7 +276,7 @@ public class Word2Vec implements Persistable {
         final AtomicInteger numSentencesProcessed = new AtomicInteger(0);
 
         for(int j : docs)
-           totalWords += vectorizer.index().document(j).size();
+            totalWords += vectorizer.index().document(j).size();
         totalWords *= numIterations;
 
 
@@ -488,35 +486,12 @@ public class Word2Vec implements Persistable {
                 int c = i - window + a;
                 if(c >= 0 && c < sentence.size()) {
                     VocabWord lastWord = sentence.get(c);
-                    int numTries = 0;
-                    while(lastWord == null) {
-                        lastWord = sentence.get(c);
-                        numTries++;
-                    }
-                    if(numTries >= 3)
-                        throw new IllegalStateException("Unable to get word from sentence");
-
                     iterate(word,lastWord);
                 }
             }
         }
 
     }
-
-    public Map<String,INDArray> toVocabFloat() {
-        Map<String,INDArray> ret = new HashMap<>();
-        for(int i = 0; i < cache.numWords(); i++) {
-            String word = cache.wordAtIndex(i);
-            ret.put(word,getWordVectorMatrix(word));
-        }
-
-        return ret;
-
-    }
-
-
-
-
 
     /**
      * Train the word vector
