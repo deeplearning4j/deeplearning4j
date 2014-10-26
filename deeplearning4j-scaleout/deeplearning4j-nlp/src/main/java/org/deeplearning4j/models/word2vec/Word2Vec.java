@@ -56,6 +56,7 @@ public class Word2Vec implements Persistable {
     private int topNSize = 40;
     private int sample = 1;
     private int totalWords = 1;
+    private AtomicInteger rateOfChange = new AtomicInteger(0);
     //learning rate
     private AtomicDouble alpha = new AtomicDouble(0.025);
     //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
@@ -455,7 +456,9 @@ public class Word2Vec implements Persistable {
             return;
 
         numWordsSoFar.set(numWordsSoFar.get() + sentence.size());
-        if(numWordsSoFar.get() % learningRateDecayWords == 0) {
+        rateOfChange.set(rateOfChange.get() + sentence.size());
+        if(rateOfChange.get() >=  learningRateDecayWords) {
+            rateOfChange.set(0);
             alpha.set(Math.max(minLearningRate,alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) totalWords))));
             log.info("Num words so far " + numWordsSoFar.get() + " alpha is " + alpha.get() + " out of " + totalWords);
         }
