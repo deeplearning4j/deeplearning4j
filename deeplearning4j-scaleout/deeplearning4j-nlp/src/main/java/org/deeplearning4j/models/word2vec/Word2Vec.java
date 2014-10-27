@@ -423,10 +423,11 @@ public class Word2Vec implements Persistable {
         }
 
         //vectorizer will handle setting up vocab meta data
-        vectorizer = new TfidfVectorizer.Builder()
-                .cache(cache).iterate(docIter).iterate(sentenceIter)
-                .minWords(minWordFrequency).stopWords(stopWords)
-                .tokenize(tokenizerFactory).build();
+        if(vectorizer == null)
+            vectorizer = new TfidfVectorizer.Builder()
+                    .cache(cache).iterate(docIter).iterate(sentenceIter)
+                    .minWords(minWordFrequency).stopWords(stopWords)
+                    .tokenize(tokenizerFactory).build();
         vectorizer.fit();
 
         setup();
@@ -664,6 +665,12 @@ public class Word2Vec implements Persistable {
         private boolean saveVocab = false;
         private int batchSize = 1000;
         private int learningRateDecayWords = 10000;
+        private TextVectorizer textVectorizer;
+
+        public Builder vectorizer(TextVectorizer textVectorizer) {
+            this.textVectorizer = textVectorizer;
+            return this;
+        }
 
         public Builder learningRateDecayWords(int learningRateDecayWords) {
             this.learningRateDecayWords = learningRateDecayWords;
@@ -749,6 +756,7 @@ public class Word2Vec implements Persistable {
                 ret.layerSize = layerSize;
                 ret.window = window;
                 ret.alpha.set(lr);
+                ret.vectorizer = textVectorizer;
                 ret.stopWords = stopWords;
                 ret.setCache(vocabCache);
                 ret.numIterations = iterations;
@@ -778,6 +786,7 @@ public class Word2Vec implements Persistable {
                 ret.layerSize = layerSize;
                 ret.sentenceIter = iter;
                 ret.window = window;
+                ret.vectorizer = textVectorizer;
                 ret.stopWords = stopWords;
                 ret.minWordFrequency = minWordFrequency;
                 ret.setCache(vocabCache);
