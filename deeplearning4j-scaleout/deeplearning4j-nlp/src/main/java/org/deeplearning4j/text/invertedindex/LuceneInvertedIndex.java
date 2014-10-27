@@ -26,6 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Lucene based inverted index
@@ -49,6 +50,7 @@ public class LuceneInvertedIndex implements InvertedIndex {
     private AtomicBoolean indexBeingCreated = new AtomicBoolean(false);
     private static Logger log = LoggerFactory.getLogger(LuceneInvertedIndex.class);
     public final static String INDEX_PATH = "word2vec-index";
+    private AtomicLong finishedCalled;
 
 
 
@@ -98,6 +100,8 @@ public class LuceneInvertedIndex implements InvertedIndex {
 
         List<VocabWord> ret = new CopyOnWriteArrayList<>();
         try {
+            initReader();
+
             Document doc = reader.document(index);
 
             String[] values = doc.getValues(WORD_FIELD);
@@ -158,6 +162,8 @@ public class LuceneInvertedIndex implements InvertedIndex {
                 ret.add(i);
             return ret;
         }
+
+
 
         List<Integer> docIds = new ArrayList<>();
         for(int i = 0; i < reader.maxDoc(); i++)
@@ -301,6 +307,15 @@ public class LuceneInvertedIndex implements InvertedIndex {
 
                 writer.forceMerge(1);
                 writer.commit();
+
+                while(writer.hasPendingMerges() || writer.hasUncommittedChanges()) {
+                    try {
+                        Thread.sleep(10000);
+                        log.info("Waiting on writer....");
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -308,7 +323,15 @@ public class LuceneInvertedIndex implements InvertedIndex {
             initReader();
             numDocs = reader.numDocs();
 
+            try {
+                reader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
         }
+
+        finishedCalled = new AtomicLong(System.currentTimeMillis());
 
     }
 
