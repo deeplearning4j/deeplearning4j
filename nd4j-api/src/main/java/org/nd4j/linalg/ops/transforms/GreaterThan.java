@@ -22,8 +22,8 @@ public class GreaterThan extends BaseElementWiseOp {
     @Override
     public Object apply(INDArray from,Object value, int i) {
         Object curr = getFromOrigin(from,i);
-        double originValue = (Double) (curr instanceof IComplexNDArray ? ((IComplexNumber) curr).absoluteValue() : (double) curr);
-        double otherValue = (Double) (value instanceof IComplexNDArray ? ((IComplexNumber) value).absoluteValue() : (double) value);
+        double originValue = (double) (curr instanceof IComplexNDArray ? ((IComplexNumber) curr).absoluteValue() : (double) curr);
+        double otherValue = (double) (value instanceof IComplexNDArray ? ((IComplexNumber) value).absoluteValue() : (double) value);
         if(originValue > otherValue) {
             if(value instanceof IComplexNumber) {
                 return  Nd4j.createDouble(1, 0);

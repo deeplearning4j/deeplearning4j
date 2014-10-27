@@ -922,7 +922,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
             for (int i = 0; i < length; i++) {
                 IComplexNumber diff =  linearView().getComplex(i).sub(nLinear.getComplex(i));
-                double d = (Double) diff.absoluteValue();
+                double d = (double) diff.absoluteValue();
                 sd += d * d;
             }
             return sd;
@@ -930,7 +930,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         for (int i = 0; i < length; i++) {
             INDArray linear = other.linearView();
             IComplexNumber diff =  linearView().getComplex(i).sub(linear.getDouble(i));
-            double d = (Double) diff.absoluteValue();
+            double d = (double) diff.absoluteValue();
             sd += d * d;
         }
 
