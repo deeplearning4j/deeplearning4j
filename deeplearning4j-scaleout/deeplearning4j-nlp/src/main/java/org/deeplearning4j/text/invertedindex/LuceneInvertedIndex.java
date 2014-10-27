@@ -4,7 +4,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
@@ -15,7 +14,8 @@ import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.stopwords.StopWords;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -25,6 +25,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Lucene based inverted index
@@ -32,6 +33,7 @@ import java.util.concurrent.Executors;
  * @author Adam Gibson
  */
 public class LuceneInvertedIndex implements InvertedIndex {
+
     private transient  Directory dir;
     private transient IndexReader reader;
     private   transient Analyzer analyzer;
@@ -44,9 +46,27 @@ public class LuceneInvertedIndex implements InvertedIndex {
     private List<List<VocabWord>> words = new CopyOnWriteArrayList<>();
     private boolean cache = true;
     private transient ExecutorService indexManager;
+    private AtomicBoolean indexBeingCreated = new AtomicBoolean(false);
+    private static Logger log = LoggerFactory.getLogger(LuceneInvertedIndex.class);
+    public final static String INDEX_PATH = "word2vec-index";
+
+
+
     public LuceneInvertedIndex(VocabCache vocabCache,boolean cache) {
         try {
-            index("word2vec-index",cache);
+            index(INDEX_PATH,cache);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        this.vocabCache = vocabCache;
+        this.cache = cache;
+        indexManager = Executors.newFixedThreadPool(1);
+    }
+
+
+    public LuceneInvertedIndex(VocabCache vocabCache,boolean cache,String indexPath) {
+        try {
+            index(indexPath,cache);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -192,8 +212,12 @@ public class LuceneInvertedIndex implements InvertedIndex {
                 @Override
                 public void run() {
                     try {
-                        if(writer == null) {
-                            index("word2vec-path", true);
+                        if (writer == null) {
+                            if(!indexBeingCreated.get())
+                                index("word2vec-path", true);
+                            else {
+                                waitOnWriter();
+                            }
                         }
                         Document d = new Document();
 
@@ -232,16 +256,30 @@ public class LuceneInvertedIndex implements InvertedIndex {
 
 
 
+    private void waitOnWriter() {
+        while(writer == null) {
+            try {
+                Thread.sleep(1000);
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
     @Override
     public void finish() {
         if(cache) {
-            indexManager.execute(new Runnable(){
+            indexManager.execute(new Runnable() {
                 public void run() {
                     try {
-                        if(dir == null)
-                            dir = FSDirectory.open(new File("word2vec-index"));
-                        if(writer == null)
-                            writer = new IndexWriter(dir, iwc);
+                        if (dir == null)
+                            dir = FSDirectory.open(new File(INDEX_PATH));
+                        if (writer == null)
+                            if(!indexBeingCreated.get())
+                                writer = new IndexWriter(dir, iwc);
+                            else
+                                waitOnWriter();
                         writer.forceMerge(1);
                         writer.commit();
 
@@ -298,8 +336,18 @@ public class LuceneInvertedIndex implements InvertedIndex {
         //
         iwc.setRAMBufferSizeMB(5000);
         dir = FSDirectory.open(dir2);
-
-        writer = new IndexWriter(dir, iwc);
+        if(!indexBeingCreated.get()) {
+            indexBeingCreated.set(true);
+            writer = new IndexWriter(dir, iwc);
+        }
+        while(writer == null) {
+            try {
+                Thread.sleep(10000);
+                log.info("Waiting on index creation...");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
         //indexDocs(writer, docDir);
 
         // NOTE: if you want to maximize search performance,
