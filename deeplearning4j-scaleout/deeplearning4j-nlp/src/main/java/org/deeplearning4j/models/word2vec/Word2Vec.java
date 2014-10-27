@@ -272,7 +272,20 @@ public class Word2Vec implements Persistable {
 
         final ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
         final Collection<Integer> docs = vectorizer.index().allDocs();
-
+        int tries = 0;
+        while(docs.isEmpty()) {
+            if(tries >= 3)
+                throw new IllegalStateException("Unable to train, no documents found");
+            else {
+                log.warn("No documents found...waiting 10 seconds on try " + tries);
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                tries++;
+            }
+        }
         final AtomicInteger numSentencesProcessed = new AtomicInteger(0);
 
         for(int j : docs)
