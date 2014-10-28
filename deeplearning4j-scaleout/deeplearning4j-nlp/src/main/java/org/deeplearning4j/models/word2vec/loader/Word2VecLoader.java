@@ -2,7 +2,6 @@ package org.deeplearning4j.models.word2vec.loader;
 
 import java.io.*;
 import java.util.*;
-import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -12,10 +11,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
-import org.deeplearning4j.util.Index;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Loads word 2 vec models
@@ -48,7 +43,7 @@ public class Word2VecLoader {
             words = Integer.parseInt(readString(dis));
             size = Integer.parseInt(readString(dis));
 
-            cache = new InMemoryLookupCache(size,words);
+            cache = new InMemoryLookupCache.Builder().vectorLength(size).build();
 
             String word;
             float[] vectors = null;
@@ -227,7 +222,9 @@ public class Word2VecLoader {
      */
     public static InMemoryLookupCache loadTxt(File path) throws FileNotFoundException {
         BufferedReader write = new BufferedReader(new FileReader(path));
-        InMemoryLookupCache l = new InMemoryLookupCache(100,false);
+        InMemoryLookupCache l = new InMemoryLookupCache.Builder().vectorLength(100)
+                .useAdaGrad(false)
+                .build();
 
 
         LineIterator iter = IOUtils.lineIterator(write);

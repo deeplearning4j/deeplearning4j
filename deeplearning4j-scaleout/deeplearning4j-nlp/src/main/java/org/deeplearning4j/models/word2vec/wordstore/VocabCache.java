@@ -5,6 +5,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.models.word2vec.VocabWord;
 
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A VocabCache handles the storage of information needed for the word2vec look up table.
@@ -47,6 +48,16 @@ public interface VocabCache  {
      * @param w2 the second word to iterate on
      */
     void iterate(VocabWord w1,VocabWord w2);
+
+
+
+    /**
+     * Iterate on the given 2 vocab words
+     * @param w1 the first word to iterate on
+     * @param w2 the second word to iterate on
+     * @param nextRandom nextRandom for sampling
+     */
+    void iterateSample(VocabWord w1,VocabWord w2,AtomicLong nextRandom);
 
     /**
      * Returns all of the words in the vocab
@@ -248,5 +259,13 @@ public interface VocabCache  {
      *
      */
     boolean hasToken(String token);
+
+
+    /**
+     * Sets the learning rate
+     * @param lr
+     */
+    void setLearningRate(double lr);
+
 
 }
