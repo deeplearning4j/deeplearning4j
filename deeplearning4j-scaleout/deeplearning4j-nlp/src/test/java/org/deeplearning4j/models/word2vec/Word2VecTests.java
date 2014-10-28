@@ -3,6 +3,7 @@ package org.deeplearning4j.models.word2vec;
 import static org.junit.Assert.*;
 
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCacheBuilder;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
@@ -11,7 +12,6 @@ import org.deeplearning4j.text.documentiterator.FileDocumentIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -39,7 +39,7 @@ public class Word2VecTests {
 
         TokenizerFactory t = new UimaTokenizerFactory();
 
-        InMemoryLookupCache cache = new InMemoryLookupCache(100,false,0.025f);
+        InMemoryLookupCache cache = new InMemoryLookupCacheBuilder().vectorLength(100).useAdaGrad(false).lr(0.025f).createInMemoryLookupCache();
 
         Word2Vec vec = new Word2Vec.Builder()
                 .minWordFrequency(1).iterations(5)
@@ -69,7 +69,7 @@ public class Word2VecTests {
 
         TokenizerFactory t = new DefaultTokenizerFactory();
 
-        InMemoryLookupCache cache = new InMemoryLookupCache(100,true,0.025f);
+        InMemoryLookupCache cache = new InMemoryLookupCacheBuilder().vectorLength(100).useAdaGrad(true).lr(0.025f).createInMemoryLookupCache();
         Word2Vec vec = new Word2Vec.Builder()
                 .minWordFrequency(1).layerSize(100).stopWords(new ArrayList<String>())
                 .vocabCache(cache)

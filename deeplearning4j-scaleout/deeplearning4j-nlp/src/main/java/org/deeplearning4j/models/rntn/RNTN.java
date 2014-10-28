@@ -272,8 +272,8 @@ public class RNTN implements Serializable {
         return Nd4j.getBlasWrapper().scal(scalingForInit,binary);
     }
 
-   public INDArray randomTransformBlock() {
-        double range = 1.0f / (double) (Math.sqrt((double) numHidden) * 2.0f);
+    public INDArray randomTransformBlock() {
+        double range = 1.0 /  (Math.sqrt((double) numHidden) * 2.0f);
         INDArray ret = Nd4j.rand(numHidden,numHidden,-range,range,rng).add(identity);
         return ret;
     }
@@ -283,7 +283,7 @@ public class RNTN implements Serializable {
      */
     INDArray randomClassificationMatrix() {
         // Leave the bias column with 0 values
-        double range = 1.0f / (double) (Math.sqrt((double) numHidden));
+        double range = 1.0 / (Math.sqrt((double) numHidden));
         INDArray ret = Nd4j.zeros(numOuts,numHidden + 1);
         INDArray insert = Nd4j.rand(numOuts,numHidden,-range,range,rng);
         ret.put(new NDArrayIndex[] {interval(0,numOuts),interval(0,numHidden)},insert);
@@ -305,8 +305,7 @@ public class RNTN implements Serializable {
         this.trainingTrees = trainingBatch;
         for(Tree t : trainingBatch) {
             forwardPropagateTree(t);
-
-            setParameters(getParameters().subi(getValueGradient(0)));
+            setParameters(getParameters().subi(getValueGradient()));
 
         }
     }
@@ -474,9 +473,9 @@ public class RNTN implements Serializable {
 
 
     double scaleAndRegularize(MultiDimensionalMap<String, String, INDArray> derivatives,
-                             MultiDimensionalMap<String, String, INDArray> currentMatrices,
-                             double scale,
-                             double regCost) {
+                              MultiDimensionalMap<String, String, INDArray> currentMatrices,
+                              double scale,
+                              double regCost) {
 
         double cost = 0.0f; // the regularization cost
         for (MultiDimensionalMap.Entry<String, String, INDArray> entry : currentMatrices.entrySet()) {
@@ -489,9 +488,9 @@ public class RNTN implements Serializable {
     }
 
     double scaleAndRegularize(Map<String, INDArray> derivatives,
-                             Map<String, INDArray> currentMatrices,
-                             double scale,
-                             double regCost) {
+                              Map<String, INDArray> currentMatrices,
+                              double scale,
+                              double regCost) {
 
         double cost = 0.0f; // the regularization cost
         for (Map.Entry<String, INDArray> entry : currentMatrices.entrySet()) {
@@ -504,9 +503,9 @@ public class RNTN implements Serializable {
     }
 
     double scaleAndRegularizeINDArray(MultiDimensionalMap<String, String, INDArray> derivatives,
-                                        MultiDimensionalMap<String, String, INDArray> currentMatrices,
-                                        double scale,
-                                        double regCost) {
+                                      MultiDimensionalMap<String, String, INDArray> currentMatrices,
+                                      double scale,
+                                      double regCost) {
         double cost = 0.0f; // the regularization cost
         for (MultiDimensionalMap.Entry<String, String, INDArray> entry : currentMatrices.entrySet()) {
             INDArray D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
@@ -627,7 +626,7 @@ public class RNTN implements Serializable {
     }
 
     private INDArray computeINDArrayDeltaDown(INDArray deltaFull, INDArray leftVector, INDArray rightVector,
-                                                INDArray W, INDArray Wt) {
+                                              INDArray W, INDArray Wt) {
         INDArray WTDelta = W.transpose().mmul(deltaFull);
         INDArray WTDeltaNoBias = WTDelta.isMatrix() ? WTDelta.get(interval( 0, 1),interval(0, (deltaFull.rows() * 2) + 1)) :
                 WTDelta.get(interval(0, (deltaFull.rows() * 2)));
@@ -767,7 +766,7 @@ public class RNTN implements Serializable {
 
 
 
-    public INDArray getValueGradient(int iterations) {
+    public INDArray getValueGradient() {
 
 
         // We use TreeMap for each of these so that they stay in a
