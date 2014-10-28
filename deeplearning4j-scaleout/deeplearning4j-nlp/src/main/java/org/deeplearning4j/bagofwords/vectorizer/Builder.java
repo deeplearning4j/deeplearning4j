@@ -3,17 +3,15 @@ package org.deeplearning4j.bagofwords.vectorizer;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
-import org.deeplearning4j.text.invertedindex.DefaultInvertedIndex;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
-import java.lang.reflect.Constructor;
 import java.util.List;
 
 public abstract class Builder {
-    protected VocabCache cache = new InMemoryLookupCache(100);
+    protected VocabCache cache = new InMemoryLookupCache.Builder().vectorLength(100).build();
     protected TokenizerFactory tokenizerFactory;
     protected List<String> stopWords = StopWords.getStopWords();
     protected int layerSize = 1;

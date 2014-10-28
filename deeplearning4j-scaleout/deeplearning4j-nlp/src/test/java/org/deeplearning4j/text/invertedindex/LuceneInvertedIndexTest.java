@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCacheBuilder;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -16,7 +16,7 @@ public class LuceneInvertedIndexTest {
 
     @Test
     public void testLuceneInvertedIndex() {
-        VocabCache cache = new InMemoryLookupCache(100);
+        VocabCache cache = new InMemoryLookupCacheBuilder().vectorLength(100).createInMemoryLookupCache();
         cache.addToken(new VocabWord(1,"hello"));
         cache.addToken(new VocabWord(2,"hello2"));
         cache.addWordToIndex(0,"hello");

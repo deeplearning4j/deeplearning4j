@@ -8,10 +8,10 @@ import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 import com.google.common.util.concurrent.AtomicDouble;
-import it.unimi.dsi.util.XorShift1024StarRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
@@ -52,7 +52,7 @@ public class Word2Vec implements Persistable {
     private transient VocabCache cache;
     private int batchSize = 1000;
     private int topNSize = 40;
-    private int sample = 1;
+    private double sample = 0;
     private int totalWords = 1;
     private AtomicInteger rateOfChange = new AtomicInteger(0);
     //learning rate
@@ -75,6 +75,7 @@ public class Word2Vec implements Persistable {
     private double minLearningRate = 0.01;
     private TextVectorizer vectorizer;
     private int learningRateDecayWords = 10000;
+    private boolean useAdaGrad = false;
 
 
     public Word2Vec() {}
@@ -300,9 +301,27 @@ public class Word2Vec implements Persistable {
             log.info("Training on " + docs.size());
             final List<VocabWord> docMiniBatch = new CopyOnWriteArrayList<>();
             final List<List<VocabWord>> minibatches = new ArrayList<>();
+            final AtomicLong nextRandom = new AtomicLong(5);
             for (int j : docs) {
                 final int k = j;
-                docMiniBatch.addAll(vectorizer.index().document(k));
+                List<VocabWord> doc = vectorizer.index().document(k);
+                for(VocabWord word : doc) {
+                    // The subsampling randomly discards frequent words while keeping the ranking same
+                    if (sample > 0) {
+                        double ran = (Math.sqrt(word.getWordFrequency()/ (sample * numSentencesProcessed.get())) + 1)
+                                * (sample * numSentencesProcessed.get()) / word.getWordFrequency();
+
+                        if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
+                            continue;
+                        }
+
+                        docMiniBatch.add(word);
+                    }
+                    else
+                        docMiniBatch.add(word);
+                }
+
+
                 if(docMiniBatch.size() >= batchSize) {
                     minibatches.add(new ArrayList<>(docMiniBatch));
 
@@ -319,7 +338,7 @@ public class Word2Vec implements Persistable {
 
                     @Override
                     public Void call() {
-                        trainSentence(batch, numSentencesProcessed);
+                        trainSentence(batch, numSentencesProcessed,nextRandom);
                         docMiniBatch.clear();
                         return null;
                     }
@@ -461,9 +480,7 @@ public class Word2Vec implements Persistable {
      * Train on a list of vocab words
      * @param sentence the list of vocab words to train on
      */
-    public void trainSentence(final List<VocabWord> sentence,AtomicInteger numWordsSoFar) {
-        if(g == null)
-            g = new XorShift1024StarRandomGenerator(seed);
+    public void trainSentence(final List<VocabWord> sentence,AtomicInteger numWordsSoFar,AtomicLong nextRandom) {
         if(sentence == null || sentence.isEmpty())
             return;
 
@@ -471,15 +488,21 @@ public class Word2Vec implements Persistable {
         rateOfChange.set(rateOfChange.get() + sentence.size());
         if(rateOfChange.get() >=  learningRateDecayWords) {
             rateOfChange.set(0);
-            alpha.set(Math.max(minLearningRate,alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) totalWords))));
+            //use learning rate decay instead
+            if(!useAdaGrad) {
+                alpha.set(Math.max(minLearningRate, alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) totalWords))));
+                cache.setLearningRate(alpha.get());
+            }
             log.info("Num words so far " + numWordsSoFar.get() + " alpha is " + alpha.get() + " out of " + totalWords);
         }
 
 
 
 
-        for(int i = 0; i < sentence.size(); i++)
-            skipGram(i, sentence, (int) g.nextDouble() % window);
+        for(int i = 0; i < sentence.size(); i++) {
+            nextRandom.set(nextRandom.get() * 25214903917L + 11);
+            skipGram(i, sentence, (int) nextRandom.get() % window,nextRandom);
+        }
     }
 
 
@@ -488,7 +511,7 @@ public class Word2Vec implements Persistable {
      * @param i
      * @param sentence
      */
-    public void skipGram(int i,List<VocabWord> sentence, int b) {
+    public void skipGram(int i,List<VocabWord> sentence, int b,AtomicLong nextRandom) {
         final VocabWord word = sentence.get(i);
         if(word == null || sentence.isEmpty())
             return;
@@ -500,7 +523,7 @@ public class Word2Vec implements Persistable {
                 int c = i - window + a;
                 if(c >= 0 && c < sentence.size()) {
                     VocabWord lastWord = sentence.get(c);
-                    iterate(word,lastWord);
+                    iterate(word,lastWord,nextRandom);
                 }
             }
         }
@@ -512,8 +535,9 @@ public class Word2Vec implements Persistable {
      * on the given words
      * @param w1 the first word to fit
      */
-    public void  iterate(VocabWord w1, VocabWord w2) {
-        cache.iterate(w1,w2);
+    public void  iterate(VocabWord w1, VocabWord w2,AtomicLong nextRandom) {
+        cache.iterateSample(w1,w2,nextRandom);
+
     }
 
 
@@ -528,6 +552,7 @@ public class Word2Vec implements Persistable {
         log.info("Built tree");
 
     }
+
 
 
 
@@ -678,7 +703,33 @@ public class Word2Vec implements Persistable {
         private boolean saveVocab = false;
         private int batchSize = 1000;
         private int learningRateDecayWords = 10000;
+        private boolean useAdaGrad = false;
         private TextVectorizer textVectorizer;
+        private double minLearningRate = 1e-2;
+        private double negative = 0;
+        private double sampling = 1e-5;
+
+        public Builder sampling(double sample) {
+            this.sampling = sample;
+            return this;
+        }
+
+
+        public Builder negativeSample(double negative) {
+            this.negative = negative;
+            return this;
+        }
+
+        public Builder minLearningRate(double minLearningRate) {
+            this.minLearningRate = minLearningRate;
+            return this;
+        }
+
+
+        public Builder useAdaGrad(boolean useAdaGrad) {
+            this.useAdaGrad = useAdaGrad;
+            return this;
+        }
 
         public Builder vectorizer(TextVectorizer textVectorizer) {
             this.textVectorizer = textVectorizer;
@@ -777,6 +828,11 @@ public class Word2Vec implements Persistable {
                 ret.seed = seed;
                 ret.saveVocab = saveVocab;
                 ret.batchSize = batchSize;
+                ret.useAdaGrad = useAdaGrad;
+                ret.minLearningRate = minLearningRate;
+                ret.sample = sampling;
+
+
                 try {
                     if (tokenizerFactory == null)
                         tokenizerFactory = new UimaTokenizerFactory();
@@ -784,9 +840,13 @@ public class Word2Vec implements Persistable {
                     throw new RuntimeException(e);
                 }
 
-                if(vocabCache == null)
-                    vocabCache = new InMemoryLookupCache(layerSize);
+                if(vocabCache == null) {
+                    vocabCache = new InMemoryLookupCache.Builder().negative(negative)
+                            .useAdaGrad(useAdaGrad).lr(lr)
+                            .vectorLength(layerSize).build();
 
+                    ret.cache = vocabCache;
+                }
                 ret.docIter = docIter;
                 ret.tokenizerFactory = tokenizerFactory;
 
@@ -799,6 +859,8 @@ public class Word2Vec implements Persistable {
                 ret.layerSize = layerSize;
                 ret.sentenceIter = iter;
                 ret.window = window;
+                ret.useAdaGrad = useAdaGrad;
+                ret.minLearningRate = minLearningRate;
                 ret.vectorizer = textVectorizer;
                 ret.stopWords = stopWords;
                 ret.minWordFrequency = minWordFrequency;
@@ -810,6 +872,8 @@ public class Word2Vec implements Persistable {
                 ret.numIterations = iterations;
                 ret.saveVocab = saveVocab;
                 ret.batchSize = batchSize;
+                ret.sample = sampling;
+
                 try {
                     if (tokenizerFactory == null)
                         tokenizerFactory = new UimaTokenizerFactory();
@@ -817,9 +881,12 @@ public class Word2Vec implements Persistable {
                     throw new RuntimeException(e);
                 }
 
-                if(vocabCache == null)
-                    vocabCache = new InMemoryLookupCache(layerSize);
-
+                if(vocabCache == null) {
+                    vocabCache = new InMemoryLookupCache.Builder().negative(negative)
+                            .useAdaGrad(useAdaGrad).lr(lr)
+                            .vectorLength(layerSize).build();
+                    ret.cache = vocabCache;
+                }
                 ret.tokenizerFactory = tokenizerFactory;
                 return ret;
             }
