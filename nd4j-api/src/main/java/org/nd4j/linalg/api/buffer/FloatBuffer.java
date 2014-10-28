@@ -76,10 +76,7 @@ public class FloatBuffer extends BaseDataBuffer {
         return ret;
     }
 
-    @Override
-    public <E> E[] asType() {
-        return null;
-    }
+
 
     @Override
     public double getDouble(int i) {

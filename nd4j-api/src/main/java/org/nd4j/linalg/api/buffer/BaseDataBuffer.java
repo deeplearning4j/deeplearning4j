@@ -70,5 +70,8 @@ public abstract  class BaseDataBuffer implements DataBuffer {
     public <E> void put(int i, E element) {
         throw new UnsupportedOperationException();
     }
-
+    @Override
+    public <E> E[] asType() {
+        throw new UnsupportedOperationException();
+    }
 }
