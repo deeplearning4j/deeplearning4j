@@ -187,9 +187,7 @@ public class Word2VecLoader {
     public static void writeWordVectors(Word2Vec vec,String path) throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path),false));
         int words = 0;
-        InMemoryLookupCache l = (InMemoryLookupCache) vec.getCache();
-        for(int i = 0; i < l.getSyn0().rows(); i++) {
-            String word = l.wordAtIndex(i);
+        for(String word : vec.getCache().words()) {
             if(word == null)
                 continue;
             StringBuffer sb = new StringBuffer();
@@ -264,12 +262,11 @@ public class Word2VecLoader {
         BufferedWriter write = new BufferedWriter(new FileWriter(csv));
         int words = 0;
         InMemoryLookupCache l = (InMemoryLookupCache) vec.getCache();
-        for(int i = 0; i < tsne.rows(); i++) {
-            String word = l.wordAtIndex(i);
+        for(String word : vec.getCache().words()) {
             if(word == null)
                 continue;
             StringBuffer sb = new StringBuffer();
-            INDArray wordVector = tsne.getRow(i);
+            INDArray wordVector = tsne.getRow(l.wordFor(word).getIndex());
             for(int j = 0; j < wordVector.length(); j++) {
                 sb.append(wordVector.getDouble(j));
                 if(j < wordVector.length() - 1)
