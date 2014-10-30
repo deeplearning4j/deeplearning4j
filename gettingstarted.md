@@ -17,7 +17,7 @@ Contents
 
 * DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
 
-* You can install DL4J either from source or from Maven central. Here are the **source** instructions. 
+* You can install DL4J either from source or from Maven central. Here are the **source** instructions, which require Github (Mac and Windows users, see below). 
 
          git clone https://github.com/agibsonccc/java-deeplearning
          cd java-deeplearning
@@ -140,6 +140,7 @@ If you're using IntelliJ as your IDE, this should work already.
 
 ### <a name="osx">OSX</a>
 
+* Install [Github](https://mac.github.com/).
 * Jblas is already installed on OSX.  
 
 ### <a name="windows">Windows</a>
