@@ -1,7 +1,7 @@
 package org.deeplearning4j.models.rntn;
 
 import org.apache.commons.math3.random.MersenneTwister;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCacheBuilder;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.util.SerializationUtils;
 import org.nd4j.linalg.api.activation.Activations;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
@@ -35,7 +35,7 @@ public class BasicRNTNTest {
        sentenceIter = new CollectionSentenceIterator(Arrays.asList(sentence));
        File vectors = new File("wordvectors.ser");
        if(!vectors.exists()) {
-           vec = new Word2Vec.Builder().vocabCache(new InMemoryLookupCacheBuilder().vectorLength(100).createInMemoryLookupCache())
+           vec = new Word2Vec.Builder().vocabCache(new InMemoryLookupCache.Builder().vectorLength(100).build())
                    .iterate(sentenceIter).build();
            vec.fit();
 
@@ -44,7 +44,7 @@ public class BasicRNTNTest {
        }
        else {
            vec = SerializationUtils.readObject(vectors);
-           vec.setCache(new InMemoryLookupCacheBuilder().vectorLength(vec.getLayerSize()).createInMemoryLookupCache());
+           vec.setCache(new InMemoryLookupCache.Builder().vectorLength(vec.getLayerSize()).build());
        }
    }
 
