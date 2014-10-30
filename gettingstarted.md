@@ -144,7 +144,7 @@ If you're using IntelliJ as your IDE, this should work already.
 
 ### <a name="windows">Windows</a>
 
-* Install [Git](https://windows.github.com/). Click on the Git Shell alias. Follow the instructions at the top of the page for all OS to "git clone" the code repository of Deeplearning4j and ND4J.
+* Install [Git](https://windows.github.com/). Click on the Git Shell alias. Within that shell, enter the commands at the top of this page (under "all OS") to git clone the code repositories of Deeplearning4j and ND4J.
 
 * Install [Anaconda](http://docs.continuum.io/anaconda/install.html#windows-install). 
 
