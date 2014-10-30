@@ -144,12 +144,13 @@ If you're using IntelliJ as your IDE, this should work already.
 
 ### <a name="windows">Windows</a>
 
-* First, install [Anaconda](http://docs.continuum.io/anaconda/install.html#windows-install). 
+* Install [Git](https://windows.github.com/). Click on the Git Shell alias. Follow the instructions at the top of the page for all OS to "git clone" the code repository of Deeplearning4j and ND4J.
+
+* Install [Anaconda](http://docs.continuum.io/anaconda/install.html#windows-install). 
 
 * Second, install [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/). Lapack will ask you if you have Intel compilers. You do not. 
 
 * Instead, you will need to install [MinGW 32 bits](http://www.mingw.org/) (the download button is on the upper right) and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). 
-
 * Lapack offers the alternative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). 
 
 ### <a name="next">Next Steps: Running Examples</a>
