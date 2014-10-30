@@ -8,7 +8,7 @@ highlighter: pygments
 # Themes are encouraged to use these universal variables 
 # so be sure to set them if your theme uses them.
 #
-title : DL4J 
+title : Deeplearning4j 
 tagline: Deep Learning for Java
 author :
   name : BLIX LLC
