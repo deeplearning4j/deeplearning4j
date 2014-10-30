@@ -319,3 +319,27 @@ You'll notice we specify a document iterator, a tokenizer factory, a learning ra
 * cache: this is where all of our metadata about vocabulary is stored including word vectors, tfidf scores, document frequencies as well as where documents occurred.
 * layer size: this is the number of features per word
 * window size: the window size for iterating over text, this is how long of contexts to train on.
+
+
+
+Some Results:
+================================================
+
+How do we evaluate how well our feature vectors performed? There's no F1 score for unsupervised learning. A quick and dirty technique you can do is use words neares:
+
+
+Words nearest  amusing [sometimes, funny, antics, enough, often, even, just, behavior, friends, touching, plain]
+Words nearest  turd [hankies, incorporates, behave, backmasking, uptight, demand, Fat, rotoscope, foreign, action-movie, bores]
+
+For example these are a positive and negative word. If we think about the domain, funny being next to amusing or behavior (describing amusing) makes sense for reviews.
+
+Turd being next to bores also makes sense.
+
+Feel free to play around with the vocab yourself ot get an idea. Similarities also make sense.
+
+
+If you want you could also run TSNE as wel. We will get in to that with another post.
+
+
+
+
