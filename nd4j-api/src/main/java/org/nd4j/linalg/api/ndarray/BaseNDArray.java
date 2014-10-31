@@ -586,8 +586,8 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray assign(INDArray arr) {
         LinAlgExceptions.assertSameShape(this,arr);
-        INDArray other = arr.ravel();
-        INDArray thisArr = ravel();
+        INDArray other = arr.linearView();
+        INDArray thisArr = linearView();
         for(int i = 0; i < other.length(); i++)
             thisArr.putScalar(i, other.getDouble(i));
         return this;

@@ -60,6 +60,19 @@ public class FeatureUtil {
     }
 
 
+    /**
+     * Scales the ndarray columns
+     * to the given min/max values
+     * @param min the minimum number
+     * @param max the max number
+     */
+    public static void scaleMinMax(double min,double max,INDArray toScale) {
+        //X_std = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0)) X_scaled = X_std * (max - min) + min
+        INDArray std = toScale.subRowVector(toScale.min(0)).diviRowVector(toScale.max(0).subi(toScale.min(0)));
+        INDArray scaled = std.mul(max - min).addi(min);
+        toScale.assign(scaled);
+    }
+
 
 
 }
