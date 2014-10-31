@@ -35,6 +35,10 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>,Seria
 
     void squishToRange(double min, double max);
 
+
+
+    void scaleMinAndMax(double min,double max);
+
     void scale();
 
     void addFeatureVector(INDArray toAdd);

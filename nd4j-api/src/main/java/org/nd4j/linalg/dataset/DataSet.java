@@ -180,6 +180,11 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
         }
     }
 
+    @Override
+    public void scaleMinAndMax(double min, double max) {
+        FeatureUtil.scaleMinMax(min,max,getFeatureMatrix());
+    }
+
     /**
      * Divides the input data applyTransformToDestination by the max number in each row
      */

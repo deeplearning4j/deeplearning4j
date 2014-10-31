@@ -42,7 +42,7 @@ public class FeatureUtil {
         INDArray columnMeans = toNormalize.mean(0);
         toNormalize.subiRowVector(columnMeans);
         INDArray std = toNormalize.std(0);
-        std.addi(Nd4j.scalar(1e-6));
+        std.addi(Nd4j.scalar(1e-12));
         toNormalize.diviRowVector(std);
     }
 
@@ -54,7 +54,7 @@ public class FeatureUtil {
     public static void scaleByMax(INDArray toScale) {
         INDArray scale = toScale.max(1);
         for (int i = 0; i < toScale.rows(); i++) {
-            float scaleBy = scale.getFloat(i);
+            double scaleBy = scale.getDouble(i);
             toScale.putRow(i, toScale.getRow(i).divi(scaleBy));
         }
     }
@@ -68,7 +68,11 @@ public class FeatureUtil {
      */
     public static void scaleMinMax(double min,double max,INDArray toScale) {
         //X_std = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0)) X_scaled = X_std * (max - min) + min
-        INDArray std = toScale.subRowVector(toScale.min(0)).diviRowVector(toScale.max(0).subi(toScale.min(0)));
+        INDArray min2 = toScale.min(0).broadcast(toScale.shape()).transpose();
+        INDArray max2 = toScale.max(0).broadcast(toScale.shape()).transpose();
+
+        INDArray std = toScale.sub(min2).divi(max2.sub(min2));
+
         INDArray scaled = std.mul(max - min).addi(min);
         toScale.assign(scaled);
     }
