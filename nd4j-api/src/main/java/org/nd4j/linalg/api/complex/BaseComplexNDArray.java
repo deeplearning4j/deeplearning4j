@@ -2049,8 +2049,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
         IComplexNDArray linear = linearView();
+        IComplexNDArray otherLinear = arr.linearView();
         for(int i = 0; i < linear.length(); i++) {
-            linear.putScalar(i,arr.getComplex(0));
+            linear.putScalar(i,otherLinear.getComplex(i));
         }
 
 
