@@ -320,26 +320,13 @@ You'll notice we specify a document iterator, a tokenizer factory, a learning ra
 * layer size: this is the number of features per word
 * window size: the window size for iterating over text, this is how long of contexts to train on.
 
+## A Few Results
 
+How do you evaluate how well feature vectors perform? Unlike classification nets, there's no f1 score for unsupervised, generative learning. A quick and dirty technique is words nearest:
 
-Some Results:
-================================================
+* Words nearest: amusing [sometimes, funny, antics, enough, often, even, just, behavior, friends, touching, plain]
+* Words nearest: turd [hankies, incorporates, behave, backmasking, uptight, demand, Fat, rotoscope, foreign, action-movie, bores]
 
-How do we evaluate how well our feature vectors performed? There's no F1 score for unsupervised learning. A quick and dirty technique you can do is use words neares:
+The examples above are positive and negative words. If we reflect semantically about the doman of each keyword, it makes sense that funny or behavior would be near amusing. 
 
-
-Words nearest  amusing [sometimes, funny, antics, enough, often, even, just, behavior, friends, touching, plain]
-Words nearest  turd [hankies, incorporates, behave, backmasking, uptight, demand, Fat, rotoscope, foreign, action-movie, bores]
-
-For example these are a positive and negative word. If we think about the domain, funny being next to amusing or behavior (describing amusing) makes sense for reviews.
-
-Turd being next to bores also makes sense.
-
-Feel free to play around with the vocab yourself ot get an idea. Similarities also make sense.
-
-
-If you want you could also run TSNE as wel. We will get in to that with another post.
-
-
-
-
+You should play around with the vocabulary yourself to get an idea and search for similarities. Results can be rendered visually using t-SNE. We'll get to that in another post.
