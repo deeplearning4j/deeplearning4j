@@ -1,11 +1,15 @@
 package org.nd4j.linalg.api.ndarray;
 
 
+import com.google.common.base.Function;
+import org.apache.commons.lang3.tuple.Triple;
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.dimensionfunctions.DimensionFunctions;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -423,8 +427,8 @@ public abstract class BaseNDArray  implements INDArray {
     public int secondaryStride() {
         if(stride.length >= 2) {
             if(ordering == NDArrayFactory.C) {
-              if(isColumnVector())
-                  return majorStride();
+                if(isColumnVector())
+                    return majorStride();
                 return stride[1];
             }
             else
@@ -1354,7 +1358,7 @@ public abstract class BaseNDArray  implements INDArray {
 
         //needed to copy data
         if(newStrides == null)
-            newStrides = Nd4j.getStrides(newShape,ordering);
+            newStrides = Nd4j.getStrides(newShape);
         if(this instanceof  IComplexNDArray)
             return Nd4j.createComplex(newCopy.data(),newShape,newStrides,offset);
         return Nd4j.create(newCopy.data(),newShape,newStrides,offset);
@@ -1792,7 +1796,8 @@ public abstract class BaseNDArray  implements INDArray {
 
 
         else {
-            for(int i = 0; i < vectorsAlongDimension(dimension); i++) {
+            int vectors =  vectorsAlongDimension(dimension);
+            for(int i = 0; i < vectors; i++) {
                 INDArray vector = vectorAlongDimension(i,dimension);
                 op.operate(vector);
             }
@@ -2612,36 +2617,10 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray normmax(int dimension) {
-        if(isVector()) {
-            return Nd4j.scalar(Ops.normmax(this));
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = Nd4j.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.normmax(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    INDArray arr2 = nd;
-                    arr.put(i.get(),arr2.normmax(0));
-                    i.incrementAndGet();
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
+        Triple<SliceOp,INDArray,int[]> pair = getOp(new AtomicInteger(0),DimensionFunctions.normmax(dimension),dimension);
+        return doDimensionWise(
+                DimensionFunctions.normmax(),
+                pair.getLeft(),pair.getMiddle(),pair.getRight(),dimension,false);
     }
 
 
@@ -3055,7 +3034,7 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray putColumn(int column, INDArray toPut) {
-        assert toPut.isVector() && toPut.length() == rows : "Illegal length for row " + toPut.length() + " should have been " + columns;
+        assert toPut.isVector() && toPut.length() == rows() : "Illegal length for row " + toPut.length() + " should have been " + rows();
         INDArray r = getColumn(column);
         for(int i = 0; i < r.length(); i++)
             r.putScalar(i,toPut.getDouble(i));
@@ -3193,41 +3172,10 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray prod(int dimension) {
-
-        if(dimension == Integer.MAX_VALUE) {
-            return Nd4j.scalar(Ops.prod(this));
-        }
-
-        else if(isVector()) {
-            return  prod(Integer.MAX_VALUE);
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = Nd4j.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.prod(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.prod(0));
-                    i.incrementAndGet();
-
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
+        Triple<SliceOp,INDArray,int[]> pair = getOp(new AtomicInteger(0),DimensionFunctions.prod(dimension),dimension);
+        return doDimensionWise(
+                DimensionFunctions.prod(),
+                pair.getLeft(),pair.getMiddle(),pair.getRight(),dimension,false);
     }
 
     /**
@@ -3238,39 +3186,10 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray mean(int dimension) {
-        if(dimension == Integer.MAX_VALUE || isVector()) {
-            return Nd4j.scalar(Ops.mean(this));
-
-        }
-        else if(isVector()) {
-            return Nd4j.scalar(sum(Integer.MAX_VALUE).getDouble(0) / length());
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = Nd4j.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.mean(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.mean(0));
-                    i.incrementAndGet();
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
+        Triple<SliceOp,INDArray,int[]> pair = getOp(new AtomicInteger(0),DimensionFunctions.mean(dimension),dimension);
+        return doDimensionWise(
+                DimensionFunctions.mean(),
+                pair.getLeft(),pair.getMiddle(),pair.getRight(),dimension,false);
     }
 
     /**
@@ -3281,36 +3200,10 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray var(int dimension) {
-        if(dimension == Integer.MAX_VALUE || isVector()) {
-            return Nd4j.scalar(Ops.var(this));
-        }
-
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = Nd4j.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.var(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.var(0));
-                    i.incrementAndGet();
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
+        Triple<SliceOp,INDArray,int[]> pair = getOp(new AtomicInteger(0),DimensionFunctions.var(dimension),dimension);
+        return doDimensionWise(
+                DimensionFunctions.var(),
+                pair.getLeft(),pair.getMiddle(),pair.getRight(),dimension,false);
     }
 
     /**
@@ -3321,37 +3214,10 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray max(int dimension) {
-        if(dimension == Integer.MAX_VALUE || isVector()) {
-            return Nd4j.scalar(Ops.max(this));
-        }
-
-
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = Nd4j.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.max(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.max(0));
-                    i.incrementAndGet();
-                }
-            }, false);
-
-            return arr.reshape(shape).transpose();
-        }
+        Triple<SliceOp,INDArray,int[]> pair = getOp(new AtomicInteger(0),DimensionFunctions.max(dimension),dimension);
+        return doDimensionWise(
+                DimensionFunctions.max(),
+                pair.getLeft(),pair.getMiddle(),pair.getRight(),dimension,false);
     }
 
     /**
@@ -3362,37 +3228,10 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray min(int dimension) {
-        if(dimension == Integer.MAX_VALUE || isVector()) {
-            return Nd4j.scalar(Ops.min(this));
-        }
-
-
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr =  Nd4j.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.min(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.min(0));
-                    i.incrementAndGet();
-                }
-            }, false);
-
-            return arr.reshape(shape).transpose();
-        }
+        Triple<SliceOp,INDArray,int[]> pair = getOp(new AtomicInteger(0),DimensionFunctions.min(dimension),dimension);
+        return doDimensionWise(
+                DimensionFunctions.min(),
+                pair.getLeft(),pair.getMiddle(),pair.getRight(),dimension,false);
     }
 
     /**
@@ -3403,39 +3242,10 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray sum(int dimension) {
-        if(dimension == Integer.MAX_VALUE || isVector()) {
-            return Nd4j.scalar(Ops.sum(this));
-        }
-
-        else if(isVector()) {
-            return  sum(Integer.MAX_VALUE);
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = Nd4j.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.sum(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.sum(0));
-                    i.incrementAndGet();
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
+        Triple<SliceOp,INDArray,int[]> pair = getOp(new AtomicInteger(0),DimensionFunctions.sum(dimension),dimension);
+        return doDimensionWise(
+                DimensionFunctions.sum(),
+                pair.getLeft(),pair.getMiddle(),pair.getRight(),dimension,false);
     }
 
 
@@ -3448,36 +3258,10 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray norm1(int dimension) {
-        if(isVector() || dimension == Integer.MAX_VALUE) {
-            return Nd4j.scalar(Ops.norm1(this));
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = Nd4j.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.norm1(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.norm1(0));
-                    i.incrementAndGet();
-
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
+        Triple<SliceOp,INDArray,int[]> pair = getOp(new AtomicInteger(0),DimensionFunctions.norm1(dimension),dimension);
+        return doDimensionWise(
+                DimensionFunctions.norm1(),
+                pair.getLeft(),pair.getMiddle(),pair.getRight(),dimension,false);
     }
 
 
@@ -3491,36 +3275,10 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray std(int dimension) {
-        if(isVector() || dimension == Integer.MAX_VALUE) {
-            return Nd4j.scalar(Ops.std(this));
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = Nd4j.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.std(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.std(0));
-                    i.incrementAndGet();
-
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
+        Triple<SliceOp,INDArray,int[]> pair = getOp(new AtomicInteger(0),DimensionFunctions.std(dimension),dimension);
+        return  doDimensionWise(
+                DimensionFunctions.std(),
+                pair.getLeft(),pair.getMiddle(),pair.getRight(),dimension,false);
     }
 
 
@@ -3532,36 +3290,39 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray norm2(int dimension) {
-        if(isVector() || dimension == Integer.MAX_VALUE) {
-            return  Nd4j.scalar(Ops.norm2(this));
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = Nd4j.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.norm2(0));
-                    i.incrementAndGet();
-                }
+        Triple<SliceOp,INDArray,int[]> pair =  getOp(new AtomicInteger(0),DimensionFunctions.norm2(dimension),dimension);
+        return  doDimensionWise(
+                DimensionFunctions.norm2(),
+                pair.getLeft(),pair.getMiddle(),pair.getRight(),dimension,false);
+    }
 
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.norm2(0));
-                    i.incrementAndGet();
 
-                }
-            }, false);
+    private Triple<SliceOp,INDArray,int[]> getOp(final AtomicInteger i,final Function<INDArray,INDArray> func,int dimension) {
+        int[] shape = shape().length == 1 || dimension == Integer.MAX_VALUE ? new int[] {1} : ArrayUtil.removeIndex(shape(),dimension);
+        final INDArray put = Nd4j.create(new int[]{ArrayUtil.prod(shape)});
+        SliceOp op = new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
+                INDArray arr2 = (INDArray) nd.getResult();
+                put.put(i.get(),func.apply(arr2));
+                i.incrementAndGet();
+            }
 
-            return arr.reshape(shape);
-        }
+            /**
+             * Operates on an ndarray slice
+             *
+             * @param nd the result to operate on
+             */
+            @Override
+            public void operate(INDArray nd) {
+                put.put(i.get(),func.apply(nd));
+                i.incrementAndGet();
+
+            }
+        };
+
+        return Triple.of(op,put,shape);
+
     }
 
 
@@ -3609,6 +3370,19 @@ public abstract class BaseNDArray  implements INDArray {
         }
         throw new IllegalStateException("Unable to getFromOrigin number of of rows for a non 2d matrix");
     }
+
+
+
+    protected INDArray doDimensionWise(Function<INDArray,INDArray> baseCase,SliceOp sliceOp,INDArray arr,int[] newShape,int dimension,boolean modify) {
+        if(dimension == Integer.MAX_VALUE || isVector())
+            return baseCase.apply(this.linearView());
+
+        else {
+            iterateOverDimension(dimension, sliceOp,modify);
+            return arr.reshape(newShape);
+        }
+    }
+
 
 
 
@@ -4210,6 +3984,10 @@ public abstract class BaseNDArray  implements INDArray {
                 shape.length == 2 && (shape[0] == 1 || shape[1] == 1) && !isScalar();
     }
 
+    @Override
+    public boolean isSquare() {
+        return isMatrix() && rows() == columns();
+    }
 
     /**
      * Checks whether the matrix is a row vector.

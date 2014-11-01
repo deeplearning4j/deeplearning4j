@@ -1025,6 +1025,55 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return this;
     }
 
+    @Override
+    public IComplexNDArray normmax(int dimension) {
+        return Nd4j.createComplex(super.normmax(dimension));
+    }
+
+    @Override
+    public IComplexNDArray prod(int dimension) {
+        return Nd4j.createComplex(super.prod(dimension));
+    }
+
+    @Override
+    public IComplexNDArray mean(int dimension) {
+        return Nd4j.createComplex(super.mean(dimension));
+    }
+
+    @Override
+    public IComplexNDArray var(int dimension) {
+        return Nd4j.createComplex(super.var(dimension));
+    }
+
+    @Override
+    public IComplexNDArray max(int dimension) {
+        return Nd4j.createComplex(super.max(dimension));
+    }
+
+    @Override
+    public IComplexNDArray sum(int dimension) {
+        return Nd4j.createComplex(super.sum(dimension));
+    }
+
+    @Override
+    public IComplexNDArray min(int dimension) {
+        return Nd4j.createComplex(super.min(dimension));
+    }
+
+    @Override
+    public IComplexNDArray norm1(int dimension) {
+        return Nd4j.createComplex(super.norm1(dimension));
+    }
+
+    @Override
+    public IComplexNDArray std(int dimension) {
+        return Nd4j.createComplex(super.std(dimension));
+    }
+
+    @Override
+    public IComplexNDArray norm2(int dimension) {
+        return Nd4j.createComplex(super.norm2(dimension));
+    }
 
     /**
      * Inserts the element at the specified index
@@ -3583,29 +3632,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
 
-    /**
-     * Returns the product along a given dimension
-     *
-     * @param dimension the dimension to getScalar the product along
-     * @return the product along the specified dimension
-     */
-    @Override
-    public IComplexNDArray prod(int dimension) {
-        return Nd4j.createComplex(super.prod(dimension));
-
-    }
-
-    /**
-     * Returns the overall mean of this ndarray
-     *
-     * @param dimension the dimension to getScalar the mean along
-     * @return the mean along the specified dimension of this ndarray
-     */
-    @Override
-    public IComplexNDArray mean(int dimension) {
-        return Nd4j.createComplex(super.mean(dimension));
-
-    }
 
     /**
      * Set the value of the ndarray to the specified value
@@ -3739,264 +3765,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return min;
     }
 
-    /**
-     * Returns the overall max of this ndarray
-     *
-     * @param dimension the dimension to getScalar the mean along
-     * @return the mean along the specified dimension of this ndarray
-     */
-    @Override
-    public IComplexNDArray max(int dimension) {
-        return Nd4j.createComplex(super.max(dimension));
-
-    }
-
-    /**
-     * Returns the overall min of this ndarray
-     *
-     * @param dimension the dimension to getScalar the mean along
-     * @return the mean along the specified dimension of this ndarray
-     */
-    @Override
-    public IComplexNDArray min(int dimension) {
-        return Nd4j.createComplex(super.min(dimension));
-
-    }
-
-
-    /**
-     * Returns the normmax along the specified dimension
-     *
-     * @param dimension the dimension to getScalar the norm1 along
-     * @return the norm1 along the specified dimension
-     */
-    @Override
-    public IComplexNDArray normmax(int dimension) {
-        if(dimension == Integer.MAX_VALUE) {
-            return Nd4j.scalar(ComplexOps.normmax(this));
-        }
-
-        else if(isVector()) {
-            return  sum(Integer.MAX_VALUE);
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final IComplexNDArray arr = Nd4j.createComplex(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    IComplexNDArray arr2 = (IComplexNDArray) nd.getResult();
-                    arr.put(i.get(),arr2.normmax(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.normmax(0));
-                    i.incrementAndGet();
-
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
-
-
-    }
-
-
-    /**
-     * Returns the sum along the last dimension of this ndarray
-     *
-     * @param dimension the dimension to getScalar the sum along
-     * @return the sum along the specified dimension of this ndarray
-     */
-    @Override
-    public IComplexNDArray sum(int dimension) {
-
-        if(dimension == Integer.MAX_VALUE) {
-            return Nd4j.scalar(ComplexOps.sum(this));
-        }
-
-        else if(isVector()) {
-            return  sum(Integer.MAX_VALUE);
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final IComplexNDArray arr = Nd4j.createComplex(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.sum(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.sum(0));
-                    i.incrementAndGet();
-
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
-
-    }
 
 
 
-    /**
-     * Returns the norm1 along the specified dimension
-     *
-     * @param dimension the dimension to getScalar the norm1 along
-     * @return the norm1 along the specified dimension
-     */
-    @Override
-    public IComplexNDArray norm1(int dimension) {
-        if(dimension == Integer.MAX_VALUE) {
-            return Nd4j.scalar(ComplexOps.norm1(this));
-        }
-
-        else if(isVector()) {
-            return  norm1(Integer.MAX_VALUE);
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final IComplexNDArray arr = Nd4j.createComplex(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    IComplexNDArray arr2 = (IComplexNDArray) nd.getResult();
-                    arr.put(i.get(),arr2.norm1(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.norm1(0));
-                    i.incrementAndGet();
-
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
 
 
-    }
-
-    /**
-     * Standard deviation of an ndarray along a dimension
-     *
-     * @param dimension the dimension to getScalar the std along
-     * @return the standard deviation along a particular dimension
-     */
-    @Override
-    public INDArray std(int dimension) {
-        if(dimension == Integer.MAX_VALUE) {
-            return Nd4j.scalar(ComplexOps.std(this));
-        }
-
-        else if(isVector()) {
-            return  std(Integer.MAX_VALUE);
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final IComplexNDArray arr = Nd4j.createComplex(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    IComplexNDArray arr2 = (IComplexNDArray) nd.getResult();
-                    arr.put(i.get(),arr2.std(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.std(0));
-                    i.incrementAndGet();
-
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
-
-
-    }
-
-
-
-    /**
-     * Returns the norm2 along the specified dimension
-     *
-     * @param dimension the dimension to getScalar the norm2 along
-     * @return the norm2 along the specified dimension
-     */
-    @Override
-    public IComplexNDArray norm2(int dimension) {
-        if(dimension == Integer.MAX_VALUE) {
-            return Nd4j.scalar(ComplexOps.norm2(this));
-        }
-
-        else if(isVector()) {
-            return  sum(Integer.MAX_VALUE);
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final IComplexNDArray arr = Nd4j.createComplex(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    IComplexNDArray arr2 = (IComplexNDArray) nd.getResult();
-                    arr.put(i.get(),arr2.norm2(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.norm2(0));
-                    i.incrementAndGet();
-
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
-
-    }
 
 
 

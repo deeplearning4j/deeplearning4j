@@ -68,6 +68,7 @@ public class FeatureUtil {
      */
     public static void scaleMinMax(double min,double max,INDArray toScale) {
         //X_std = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0)) X_scaled = X_std * (max - min) + min
+
         INDArray min2 = toScale.min(0).broadcast(toScale.shape()).transpose();
         INDArray max2 = toScale.max(0).broadcast(toScale.shape()).transpose();
 

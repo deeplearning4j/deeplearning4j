@@ -1329,6 +1329,15 @@ public interface INDArray extends Serializable {
      */
     boolean isVector();
 
+
+    /**
+     * Returns whether the matrix
+     * has the same rows and columns
+     * @return true if the matrix has the same rows and columns
+     * false otherwise
+     */
+    boolean isSquare();
+
     /**
      * Returns true if this ndarray is a matrix
      * @return whether this ndarray is a matrix
