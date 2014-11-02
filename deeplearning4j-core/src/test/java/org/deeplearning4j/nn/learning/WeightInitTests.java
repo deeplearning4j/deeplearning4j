@@ -10,7 +10,7 @@ import org.nd4j.linalg.api.activation.Activations;
 /**
  * Created by agibsonccc on 9/13/14.
  */
-public class WeightINitTests {
+public class WeightInitTests {
 
     @Test
     public void testSi() {

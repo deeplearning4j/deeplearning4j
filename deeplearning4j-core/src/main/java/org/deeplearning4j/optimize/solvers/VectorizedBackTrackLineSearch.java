@@ -31,8 +31,13 @@ information, see the file `LICENSE' included with this distribution. */
 import org.apache.commons.math3.util.FastMath;
 
 import org.deeplearning4j.exception.InvalidStepException;
+import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.deeplearning4j.optimize.api.LineOptimizerMatrix;
@@ -48,9 +53,15 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
     private static Logger logger = LoggerFactory.getLogger(VectorizedBackTrackLineSearch.class.getName());
 
     OptimizableByGradientValueMatrix function;
+    StepFunction stepFunction;
+
+    public VectorizedBackTrackLineSearch(OptimizableByGradientValueMatrix function, StepFunction stepFunction) {
+        this.function = function;
+        this.stepFunction = stepFunction;
+    }
 
     public VectorizedBackTrackLineSearch (OptimizableByGradientValueMatrix optimizable) {
-        this.function = optimizable;
+        this(optimizable, new DefaultStepFunction());
     }
 
     final int maxIterations = 100;
@@ -111,6 +122,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
                     +	line.norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+ FastMath.max(Float.NEGATIVE_INFINITY,Transforms.abs(line).max(Integer.MAX_VALUE).getDouble(0)));
         }
 
+        BooleanIndexing.applyWhere(g, Conditions.isNan(),new Value(Nd4j.EPS_THRESHOLD));
         LinAlgExceptions.assertValidNum(g);
         double sum = line.norm2(Integer.MAX_VALUE).getDouble(0);
         if(sum > stpmax) {
@@ -161,8 +173,8 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
             assert(alam != oldAlam) : "alam == oldAlam";
 
 
-
-            x.addi(line.mul(alam - oldAlam));  // step
+            stepFunction.step(x,line,new Object[]{alam,oldAlam});
+            //x.addi(line.mul(alam - oldAlam));  // step
 
             double norm1 = x.norm1(Integer.MAX_VALUE).getDouble(0);
             logger.debug ("after step, x.1norm: " +norm1);
@@ -215,7 +227,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
                     rhs1 = f - fold- alam * slope;
                     rhs2 = f2 - fold - alam2 * slope;
                     assert((alam - alam2) != 0): "FAILURE: dividing by alam-alam2. alam="+alam;
-                    a = ( rhs1 / (double) (FastMath.pow(alam, 2)) - rhs2 /(double)  ( FastMath.pow(alam2, 2) )) / (alam-alam2);
+                    a = ( rhs1 / (FastMath.pow(alam, 2)) - rhs2 /  ( FastMath.pow(alam2, 2) )) / (alam-alam2);
                     b = ( -alam2* rhs1/( alam* alam ) + alam * rhs2 / ( alam2 *  alam2 )) / ( alam - alam2);
                     if(a == 0.0)
                         tmplam = -slope / (2.0f * b);
@@ -225,9 +237,9 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
                             tmplam = .5f * alam;
                         }
                         else if (b <= 0.0)
-                            tmplam = (-b + (double) FastMath.sqrt(disc))/(3.0f * a );
+                            tmplam = (-b + FastMath.sqrt(disc))/(3.0f * a );
                         else
-                            tmplam = -slope / (b + (double) FastMath.sqrt(disc));
+                            tmplam = -slope / (b +FastMath.sqrt(disc));
                     }
                     if (tmplam > .5f * alam)
                         tmplam = .5f * alam;    // lambda <= .5 lambda_1

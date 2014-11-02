@@ -9,7 +9,10 @@ import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
@@ -193,6 +196,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public  double score() {
         LinAlgExceptions.assertRows(input,labels);
         INDArray output  = output(input);
+        BooleanIndexing.applyWhere(output, Conditions.isNan(),new Value(Nd4j.EPS_THRESHOLD));
         assert !Nd4j.hasInvalidNumber(output) : "Invalid number on output!";
         if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
             return  LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
@@ -305,7 +309,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             case MCXENT:
                 INDArray preOut = preOutput(input);
                 //input activation
-                INDArray p_y_given_x = Activations.sigmoid().apply(preOut);
+                INDArray p_y_given_x = Activations.softMaxRows().apply(preOut);
                 //difference of outputs
                 INDArray dy = labels.sub(p_y_given_x);
                 return input.transpose().mmul(dy);
@@ -322,6 +326,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
                 return input.transpose().mmul(pow(labels.sub(z),2));
             case SQUARED_LOSS:
                 return input.transpose().mmul(pow(labels.sub(z),2));
+            case NEGATIVELOGLIKELIHOOD:
+                return input.transpose().mmul(log(z).negi());
 
 
         }

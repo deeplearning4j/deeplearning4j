@@ -176,9 +176,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                     .build();
 
         //add a default configuration for each hidden layer + output layer
-        for(int i = 0; i < hiddenLayerSizes.length + 1; i++) {
-            layerWiseConfigurations.add(defaultConfiguration.clone());
-        }
+        if(layerWiseConfigurations == null || layerWiseConfigurations.isEmpty())
+            for(int i = 0; i < hiddenLayerSizes.length + 1; i++) {
+                layerWiseConfigurations.add(defaultConfiguration.clone());
+            }
 
 
     }
@@ -376,11 +377,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     /**
      * Finetunes with the current cached labels
      *
-     * @param lr     the learning rate to use
-     * @param epochs the max number of epochs to finetune with
+     *
      */
-    public void finetune(double lr, int epochs) {
-        finetune(this.labels, lr, epochs);
+    public void finetune() {
+        finetune(this.labels);
 
     }
 
@@ -845,19 +845,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     /**
      * Backpropagation of errors for weights
-     *
-     * @param lr     the learning rate to use
-     * @param epochs the number of epochs to iterate (this is already called in finetune)
      * @param eval   the evaluator for stopping
      */
-    public void backProp(double lr, int epochs, TrainingEvaluator eval) {
+    public void backProp(TrainingEvaluator eval) {
         if (useGaussNewtonVectorProductBackProp) {
-            BackPropROptimizer opt = new BackPropROptimizer(this, lr, epochs);
-            opt.optimize(eval, epochs, lineSearchBackProp);
+            BackPropROptimizer opt = new BackPropROptimizer(this, defaultConfiguration.getLr(), defaultConfiguration.getNumIterations());
+            opt.optimize(eval, lineSearchBackProp);
 
         } else {
-            BackPropOptimizer opt = new BackPropOptimizer(this, lr, epochs);
-            opt.optimize(eval, epochs, lineSearchBackProp);
+            BackPropOptimizer opt = new BackPropOptimizer(this, defaultConfiguration.getLr(), defaultConfiguration.getNumIterations());
+            opt.optimize(eval, lineSearchBackProp);
 
         }
     }
@@ -865,11 +862,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     /**
      * Backpropagation of errors for weights
      *
-     * @param lr     the learning rate to use
-     * @param epochs the number of epochs to iterate (this is already called in finetune)
      */
-    public void backProp(double lr, int epochs) {
-        backProp(lr, epochs, null);
+    public void backProp() {
+        backProp( null);
 
     }
 
@@ -988,7 +983,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      *
      * @return whether the training should converge or not
      */
-    protected List<Pair<INDArray, INDArray>> backPropGradient() {
+    public List<Pair<INDArray, INDArray>> backPropGradient() {
         //feedforward to compute activations
         //initial error
         //log.info("Back prop step " + epoch);
@@ -1015,7 +1010,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
             //update hidden bias
-            INDArray deltaColumnSums = deltas.get(l).sum(0);
+            INDArray deltaColumnSums = deltas.get(l).isVector() ? deltas.get(l) : deltas.get(l).sum(0);
 
 
             list.add(new Pair<>(gradientChange, deltaColumnSums));
@@ -1058,7 +1053,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         INDArray gradient = pack(list);
         INDArray params = params().mul(defaultConfiguration.getL2());
-        gradient.addi(mask.mul(params));
+        //gradient.addi(mask.mul(params));
         list = unPack(gradient);
 
         return list;
@@ -1236,9 +1231,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      *
      * @param iter       fine tune based on the labels
      * @param lr         the learning rate during training
-     * @param iterations the number of times to iterate
      */
-    public void finetune(DataSetIterator iter, double lr, int iterations) {
+    public void finetune(DataSetIterator iter, double lr) {
         iter.reset();
 
         while (iter.hasNext()) {
@@ -1250,7 +1244,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             setLabels(data.getLabels());
             feedForward();
             optimizer = new MultiLayerNetworkOptimizer(this, lr);
-            optimizer.optimize(data.getLabels(), lr, iterations);
+            optimizer.optimize(data.getLabels());
         }
 
 
@@ -1277,7 +1271,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
             optimizer = new MultiLayerNetworkOptimizer(this, lr);
-            optimizer.optimize(this.labels, lr, iterations, eval);
+            optimizer.optimize(this.labels, eval);
         }
 
 
@@ -1288,15 +1282,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * Run SGD based on the given labels
      *
      * @param labels     the labels to use
-     * @param lr         the learning rate during training
-     * @param iterations the number of times to iterate
      */
-    public void finetune(INDArray labels, double lr, int iterations) {
+    public void finetune(INDArray labels) {
         this.labels = labels;
         if (labels != null)
             this.labels = labels;
-        optimizer = new MultiLayerNetworkOptimizer(this, lr);
-        optimizer.optimize(this.labels, lr, iterations);
+        optimizer = new MultiLayerNetworkOptimizer(this, defaultConfiguration.getLr());
+        optimizer.optimize(this.labels);
 
     }
 
@@ -1304,17 +1296,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * Run training algorithm based on the given labels
      *
      * @param labels     the labels to use
-     * @param lr         the learning rate during training
-     * @param iterations the number of times to iterate
      */
-    public void finetune(INDArray labels, double lr, int iterations, TrainingEvaluator eval) {
+    public void finetune(INDArray labels, TrainingEvaluator eval) {
         feedForward();
 
         if (labels != null)
             this.labels = labels;
 
-        optimizer = new MultiLayerNetworkOptimizer(this, lr);
-        optimizer.optimize(this.labels, lr, iterations, eval);
+        optimizer = new MultiLayerNetworkOptimizer(this, defaultConfiguration.getLr());
+        optimizer.optimize(this.labels, eval);
     }
 
 
@@ -1355,7 +1345,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     @Override
     public void fit(INDArray examples, INDArray labels) {
         pretrain(examples,new Object[]{defaultConfiguration.getK(), defaultConfiguration.getLr()});
-        finetune(labels,defaultConfiguration.getLr(),defaultConfiguration.getNumIterations());
+        finetune(labels);
     }
 
     /**
@@ -1684,10 +1674,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     }
 
-    public boolean isShouldBackProp() {
-        return shouldBackProp;
-    }
-
 
     public INDArray getInput() {
         return input;
@@ -1698,7 +1684,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    public boolean isForceNumEpochs() {
+    public boolean forceNumIterations() {
         return forceNumEpochs;
     }
 
@@ -1791,6 +1777,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     }
 
+    public Layer getInputLayer() {
+        return  getLayers()[0];
+    }
 
     public OutputLayer getOutputLayer() {
         return (OutputLayer) getLayers()[getLayers().length - 1];
@@ -1816,8 +1805,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     public void setParameters(INDArray params) {
         for (int i = 0; i < getNeuralNets().length; i++) {
             ParamRange range = startIndexForLayer(i);
-            INDArray w = params.get(NDArrayIndex.interval(0, params.rows()), NDArrayIndex.interval(range.getwStart(), range.getwEnd()));
-            INDArray bias = params.get(NDArrayIndex.interval(0, params.rows()), NDArrayIndex.interval(range.getBiasStart(), range.getBiasEnd()));
+            INDArray w = params.get(NDArrayIndex.interval(range.getwStart(), range.getwEnd()));
+            INDArray bias = params.get(NDArrayIndex.interval(range.getBiasStart(), range.getBiasEnd()));
             int rows = getNeuralNets()[i].getW().rows(), columns = getNeuralNets()[i].getW().columns();
             getNeuralNets()[i].setW(w.reshape(rows, columns));
             getNeuralNets()[i].sethBias(bias.reshape(getNeuralNets()[i].gethBias().rows(), getNeuralNets()[i].gethBias().columns()));
@@ -1825,8 +1814,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
         ParamRange range = startIndexForLayer(getNeuralNets().length);
-        INDArray w = params.get(NDArrayIndex.interval(0, params.rows()), NDArrayIndex.interval(range.getwStart(), range.getwEnd()));
-        INDArray bias = params.get(NDArrayIndex.interval(0, params.rows()), NDArrayIndex.interval(range.getBiasStart(), range.getBiasEnd()));
+        INDArray w = params.get(NDArrayIndex.interval(range.getwStart(), range.getwEnd()));
+        INDArray bias = params.get( NDArrayIndex.interval(range.getBiasStart(), range.getBiasEnd()));
         int rows = getOutputLayer().getW().rows(), columns = getOutputLayer().getW().columns();
         getOutputLayer().setW(w.reshape(rows, columns));
         getOutputLayer().setB(bias.reshape(getOutputLayer().getB().rows(), getOutputLayer().getB().columns()));
@@ -1984,7 +1973,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
 
-        public Builder<E> layerWiseCOnfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
+        public Builder<E> layerWiseConfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
             this.layerWiseConfiguration = layerWiseConfiguration;
             return this;
         }
@@ -2045,7 +2034,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
          *
          * @return
          */
-        public Builder<E> forceEpochs() {
+        public Builder<E> forceIterations() {
             shouldForceEpochs = true;
             return this;
         }
@@ -2163,6 +2152,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                 ret.getWeightTransforms().putAll(weightTransforms);
                 ret.getVisibleBiasTransforms().putAll(visibleBiasTransforms);
                 ret.getHiddenBiasTransforms().putAll(hiddenBiasTransforms);
+                ret.layerWiseConfigurations = layerWiseConfiguration;
+                if(ret.defaultConfiguration == null)
+                    ret.defaultConfiguration = layerWiseConfiguration.get(0);
                 if (hiddenLayerSizes == null)
                     throw new IllegalStateException("Unable to build network, no hidden layer sizes defined");
 
