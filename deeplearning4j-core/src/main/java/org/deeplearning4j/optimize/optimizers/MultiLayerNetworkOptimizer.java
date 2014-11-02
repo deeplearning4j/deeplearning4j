@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.List;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
@@ -41,58 +42,17 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
         this.currentIteration = value;
     }
 
-    public void optimize(INDArray labels,double lr,int epochs,TrainingEvaluator eval) {
+    public void optimize(INDArray labels,TrainingEvaluator eval) {
         network.getOutputLayer().setLabels(labels);
-
-        if(!network.isForceNumEpochs()) {
-            //network.getOutputLayer().fit(labels,lr,epochs,eval);
-
-            if(network.isShouldBackProp())
-                network.backProp(lr, epochs,eval);
-
-        }
-
-        else {
-            log.info("Training for " + epochs + " epochs");
-            List<INDArray> activations = network.feedForward();
-            INDArray train = activations.get(activations.size() - 1);
-
-            for(int i = 0; i < epochs; i++) {
-                if(i % network.getDefaultConfiguration().getResetAdaGradIterations() == 0)
-                    network.getOutputLayer().getAdaGrad().historicalGradient = null;
-                network.getOutputLayer().train(train, labels,lr);
-
-            }
-
-
-            if(network.isShouldBackProp())
-                network.backProp(lr, epochs,eval);
-
-        }
-
-
-
+        network.backProp(eval);
     }
 
     /**
      *
      * @param labels
-     * @param lr
-     * @param iteration
      */
-    public void optimize(INDArray labels,double lr,int iteration) {
-        network.getOutputLayer().setLabels(labels);
-        if(!network.isForceNumEpochs()) {
-            network.backProp(lr, iteration);
-
-        }
-
-        else {
-            log.info("Training for " + iteration + " iteration");
-            network.backProp(lr, iteration);
-
-        }
-
+    public void optimize(INDArray labels) {
+        optimize(labels,null);
 
 
     }
@@ -184,7 +144,7 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
 
     @Override
     public double getValue() {
-        return (double) network.score();
+        return  network.score();
     }
 
 

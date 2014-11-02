@@ -11,6 +11,6 @@ public enum WeightInit {
         Zeros: straight zeros
         Sample weights from a distribution
      */
-    VI,ZERO,DISTRIBUTION
+    VI,ZERO, SIZE, DISTRIBUTION
 
 }

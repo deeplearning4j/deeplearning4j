@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf;
 
+import com.google.common.base.Function;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
@@ -14,9 +15,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A Serializable configuration
@@ -366,7 +365,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return renderWeightsEveryNumEpochs;
     }
 
-    public void setRenderWeightsEveryNumEpochs(int renderWeightsEveryNumEpochs) {
+    public void setRenderWeightIterations(int renderWeightsEveryNumEpochs) {
         this.renderWeightsEveryNumEpochs = renderWeightsEveryNumEpochs;
     }
 
@@ -504,6 +503,26 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 '}';
     }
 
+
+    /**
+     * Set the configuration for classification
+     * @param conf the configuration to set
+     */
+    public static void setClassifier(NeuralNetConfiguration conf) {
+        setClassifier(conf,true);
+    }
+
+    /**
+     * Set the conf for classification
+     * @param conf the configuration to set
+     * @param rows whether to use softmax rows or soft max columns
+     */
+    public static void setClassifier(NeuralNetConfiguration conf,boolean rows) {
+        conf.setActivationFunction(rows ? Activations.softMaxRows() : Activations.softmax());
+        conf.setLossFunction(LossFunctions.LossFunction.MCXENT);
+    }
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -640,6 +659,43 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return new NeuralNetConfiguration(this);
     }
 
+
+    /**
+     * Interface for a function to override
+     * builder configurations at a particular layer
+     *
+     */
+    public static interface  ConfOverride  {
+        void override(int i,Builder builder);
+
+    }
+
+    /**
+     * Fluent interface for building a list of configurations
+     */
+    public static class ListBuilder {
+        private List<Builder> layerwise;
+        public ListBuilder(List<Builder> list) {
+            this.layerwise = list;
+        }
+
+        public ListBuilder override(ConfOverride override) {
+            for(int i = 0; i < layerwise.size(); i++)
+                override.override(i,layerwise.get(i));
+            return this;
+        }
+
+
+        public List<NeuralNetConfiguration> build() {
+            List<NeuralNetConfiguration> list = new ArrayList<>();
+            for(int i = 0; i < layerwise.size(); i++)
+                list.add(layerwise.get(i).build());
+            return list;
+        }
+
+    }
+
+
     public static class Builder {
         private int k = 1;
         private float corruptionLevel = 3e-1f;
@@ -680,6 +736,29 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
 
+        public ListBuilder list(int size) {
+            List<Builder> list = new ArrayList<>();
+            for(int i = 0; i < size; i++)
+                list.add(clone());
+            return new ListBuilder(list);
+        }
+
+
+        public Builder clone() {
+            Builder b = new Builder().activationFunction(activationFunction)
+                    .adagradResetIterations(resetAdaGradIterations).applySparsity(applySparsity)
+                    .concatBiases(concatBiases).constrainGradientToUnitNorm(constrainGradientToUnitNorm)
+                    .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize)
+                    .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr)
+                    .lossFunction(lossFunction).momentumAfter(momentumAfter).momentum(momentum)
+                    .nIn(nIn).nOut(nOut).numFeatureMaps(numFeatureMaps).optimizationAlgo(optimizationAlgo)
+                    .regularization(useRegularization).render(renderWeightsEveryNumEpochs).resetAdaGradIterations(resetAdaGradIterations)
+                    .rng(rng).seed(seed).sparsity(sparsity).stride(stride).useAdaGrad(useAdaGrad).visibleUnit(visibleUnit)
+                    .weightInit(weightInit).weightShape(weightShape).withActivationType(activationType);
+            return b;
+        }
+
+
         public Builder numInFeatureMaps(int numInFeatureMaps) {
             this.numInFeatureMaps = numInFeatureMaps;
             return this;
@@ -703,6 +782,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         public Builder filterSize(int[] filterSize) {
+            if(filterSize == null)
+                return this;
             if(filterSize == null || filterSize.length != 2)
                 throw new IllegalArgumentException("Invalid filter size must be length 2");
             this.filterSize = filterSize;
@@ -753,15 +834,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder regularizationCoefficient(float l2) {
-            this.l2 = l2;
-            return this;
-        }
 
-        public Builder regularize(boolean useRegularization) {
-            this.useRegularization = useRegularization;
-            return this;
-        }
 
         public Builder momentumAfter(Map<Integer, Float> momentumAfter) {
             this.momentumAfter = momentumAfter;
@@ -788,10 +861,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder optimize(NeuralNetwork.OptimizationAlgorithm optimizationAlgo) {
-            this.optimizationAlgo = optimizationAlgo;
-            return this;
-        }
+
 
         public Builder render(int renderWeightsEveryNumEpochs) {
             this.renderWeightsEveryNumEpochs = renderWeightsEveryNumEpochs;
@@ -803,10 +873,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder constrainWeights(boolean constrainGradientToUnitNorm) {
-            this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
-            return this;
-        }
+
 
         public Builder rng(RandomGenerator rng) {
             this.rng = rng;
@@ -862,11 +929,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public Builder lossFunction(LossFunctions.LossFunction lossFunction) {
             this.lossFunction = lossFunction;
-            return this;
-        }
-
-        public Builder renderWeightsEveryNumEpochs(int renderWeightsEveryNumEpochs) {
-            this.renderWeightsEveryNumEpochs = renderWeightsEveryNumEpochs;
             return this;
         }
 

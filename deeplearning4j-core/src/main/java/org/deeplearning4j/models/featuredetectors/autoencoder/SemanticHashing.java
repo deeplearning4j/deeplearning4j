@@ -233,14 +233,14 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
      * Trains the decoder on the given input
      * @param input the given input to iterate on
      */
-    public void finetune(INDArray input,double lr,int iterations) {
+    public void finetune(INDArray input) {
         this.input = input;
 
 
         setInput(input);
         setLabels(input);
 
-        super.finetune(input,lr, iterations);
+        super.finetune(input);
 
     }
 
@@ -368,10 +368,7 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
     @Override
     public void fit(DataSet data) {
         this.input = data.getFeatureMatrix();
-        INDArray labels = data.getLabels();
-        double lr = layerWiseConfigurations.get(0).getLr();
-        int iterations = layerWiseConfigurations.get(0).getNumIterations();
-        finetune(labels, lr,iterations);
+        finetune(data.getLabels());
     }
 
     /**
@@ -465,8 +462,8 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
          * @return
          */
         @Override
-        public Builder forceEpochs() {
-            super.forceEpochs();
+        public Builder forceIterations() {
+            super.forceIterations();
             return this;
         }
 
@@ -526,8 +523,8 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
 
 
         @Override
-        public Builder layerWiseCOnfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
-            super.layerWiseCOnfiguration(layerWiseConfiguration);
+        public Builder layerWiseConfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
+            super.layerWiseConfiguration(layerWiseConfiguration);
             return this;
         }
 

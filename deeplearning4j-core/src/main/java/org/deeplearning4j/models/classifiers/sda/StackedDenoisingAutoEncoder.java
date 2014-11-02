@@ -7,7 +7,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.transformation.MatrixTransform;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -82,7 +81,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
                         setInput(input);
                     //override learning rate where present
                     float realLearningRate = layerWiseConfigurations.get(i).getLr();
-                    if (isForceNumEpochs()) {
+                    if (forceNumIterations()) {
                         for (int iteration = 0; iteration < iterations; iteration++) {
                             log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
                             getNeuralNets()[i].iterate(next.getFeatureMatrix(), new Object[]{corruptionLevel, lr});
@@ -106,7 +105,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
                     log.info("Training on layer " + (i + 1));
                     //override learning rate where present
                     float realLearningRate = layerWiseConfigurations.get(i).getLr();
-                    if (isForceNumEpochs()) {
+                    if (forceNumIterations()) {
                         for (int iteration = 0; iteration < iterations; iteration++) {
                             log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
                             getNeuralNets()[i].iterate(layerInput, new Object[]{corruptionLevel, lr});
@@ -159,7 +158,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
                 layerInput = input;
             else
                 layerInput = this.getNeuralNets()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
-            if (isForceNumEpochs()) {
+            if (forceNumIterations()) {
                 for (int iteration = 0; iteration < iterations; iteration++) {
                     getNeuralNets()[i].iterate(layerInput, new Object[]{corruptionLevel, lr});
                     log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
@@ -254,7 +253,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
          *
          * @return
          */
-        public Builder forceEpochs() {
+        public Builder forceIterations() {
             shouldForceEpochs = true;
             return this;
         }
@@ -294,8 +293,8 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
         }
 
         @Override
-        public Builder layerWiseCOnfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
-            super.layerWiseCOnfiguration(layerWiseConfiguration);
+        public Builder layerWiseConfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
+            super.layerWiseConfiguration(layerWiseConfiguration);
             return this;
         }
 
@@ -331,6 +330,8 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
 
         public StackedDenoisingAutoEncoder build() {
             StackedDenoisingAutoEncoder ret = super.build();
+            if(ret.defaultConfiguration == null)
+                ret.defaultConfiguration = layerWiseConfiguration.get(0);
             ret.initializeLayers(Nd4j.zeros(1, ret.defaultConfiguration.getnIn()));
 
             return ret;

@@ -13,14 +13,14 @@ package org.deeplearning4j.optimize.solvers;
 
 
 import org.deeplearning4j.exception.InvalidStepException;
+import org.deeplearning4j.optimize.api.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.LinAlgExceptions;
-import org.deeplearning4j.optimize.api.LineOptimizerMatrix;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
-import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.util.OptimizerMatrix;
 
 import org.slf4j.Logger;
@@ -83,6 +83,36 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 
     public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, double initialStepSize,IterationListener listener) {
         this(function,initialStepSize);
+        this.listener = listener;
+
+
+    }
+
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function,StepFunction stepFunction) {
+        this(function, stepFunction,0.01f);
+    }
+
+
+
+
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, StepFunction stepFunction,double initialStepSize) {
+        this.initialStepSize = initialStepSize;
+        this.optimizable = function;
+        this.lineMaximizer = new VectorizedBackTrackLineSearch(function,stepFunction);
+        lineMaximizer.setAbsTolx(tolerance);
+        // Alternative:
+        //this.lineMaximizer = new GradientBracketLineOptimizer (function);
+
+    }
+
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function,StepFunction stepFunction,IterationListener listener) {
+        this(function, stepFunction,0.01f);
+        this.listener = listener;
+
+    }
+
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, double initialStepSize,StepFunction stepFunction,IterationListener listener) {
+        this(function,stepFunction,initialStepSize);
         this.listener = listener;
 
 
@@ -157,6 +187,9 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             if ((0 < tolerance) && (2.0 * Math.abs(fret - fp) <= tolerance * (Math.abs(fret) + Math.abs(fp) + eps))) {
                 logger.info("ConjugateGradient converged: old value= " + fp + " new value= " + fret + " tolerance="
                         + tolerance);
+                if(listener != null) {
+                    listener.iterationDone(iterationCount);
+                }
                 converged = true;
                 return true;
             }
@@ -184,7 +217,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             g = xi.dup();
             h = xi.add(h.mul(gam));
 
-
+            BooleanIndexing.applyWhere(h, Conditions.isNan(),new Value(Nd4j.EPS_THRESHOLD));
             LinAlgExceptions.assertValidNum(h);
 
             // gdruck

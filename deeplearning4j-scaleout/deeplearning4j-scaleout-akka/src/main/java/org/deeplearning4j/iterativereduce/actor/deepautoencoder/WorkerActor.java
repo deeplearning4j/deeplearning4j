@@ -216,7 +216,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
             boolean done = false;
             while(!done && numTries < 3) {
                 try {
-                    network.finetune(d.getFeatureMatrix(),conf.getConf().getFinetuneLearningRate(),conf.getConf().getFinetuneEpochs());
+                    network.finetune(d.getFeatureMatrix());
                     log.info("Worker " + id + " finetune");
                     done = true;
                 }catch(Exception e) {
