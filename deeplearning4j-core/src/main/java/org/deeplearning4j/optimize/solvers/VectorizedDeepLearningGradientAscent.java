@@ -2,6 +2,9 @@ package org.deeplearning4j.optimize.solvers;
 
 
 import org.deeplearning4j.exception.InvalidStepException;
+import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.optimizers.BackPropOptimizer;
+import org.deeplearning4j.optimize.stepfunctions.BackPropStepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
@@ -36,6 +39,33 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
     double step = initialStepSize;
     TrainingEvaluator eval;
 
+
+
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function, double initialStepSize,StepFunction step) {
+        this.optimizable = function;
+        this.lineMaximizer = new VectorizedBackTrackLineSearch(function,step);
+        lineMaximizer.setAbsTolx(tolerance);
+        // Alternative:
+        //this.lineMaximizer = new GradientBracketLineOptimizer (function);
+
+    }
+
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function,IterationListener listener,StepFunction step) {
+        this(function, 0.01f,step);
+        this.listener = listener;
+
+    }
+
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function, double initialStepSize,IterationListener listener,StepFunction step) {
+        this(function,initialStepSize,step);
+        this.listener = listener;
+
+
+    }
+
+
+
+
     public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function, double initialStepSize) {
         this.optimizable = function;
         this.lineMaximizer = new VectorizedBackTrackLineSearch(function);
@@ -60,6 +90,9 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 
     public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function) {
         this(function, 0.01f);
+    }
+
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix backPropOptimizer, BackPropStepFunction backPropStepFunction) {
     }
 
 
@@ -124,7 +157,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
     {
         int iterations;
         double fret;
-        double fp = optimizable.getValue ();
+        double fp = optimizable.getValue();
         INDArray xi = optimizable.getValueGradient(0);
 
         for (iterations = 0; iterations < numIterations; iterations++) {
@@ -132,9 +165,9 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
             boolean calledEpochDone = false;
             // Ensure step not too large
             optimizable.setCurrentIteration(iterations);
-            double sum = (double) xi.norm2(Integer.MAX_VALUE).getDouble(0);
+            double sum = xi.norm2(Integer.MAX_VALUE).getDouble(0);
             if (sum > stpmax) {
-                logger.info ("*** Step 2-norm "+sum+" greater than max " + stpmax + "  Scaling...");
+                logger.info ("*** Step 2-norm " + sum +" greater than max " + stpmax + "  Scaling...");
                 xi.muli(stpmax / sum);
             }
             try {
@@ -145,7 +178,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
                 continue;
 
             }
-            fret = optimizable.getValue ();
+            fret = optimizable.getValue();
             if (2.0 * Math.abs(fret-fp) <= tolerance * (Math.abs(fret) + Math.abs(fp) + eps)) {
                 logger.info ("Gradient Ascent: Value difference " + Math.abs( fret-fp ) +" below " +
                         "tolerance; saying converged.");

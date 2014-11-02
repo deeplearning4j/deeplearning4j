@@ -7,8 +7,6 @@ import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.util.MultiDimensionalMap;
 
-import java.util.Random;
-
 public class Distributions {
 
 
@@ -70,16 +68,15 @@ public class Distributions {
 
     /**
      * Returns a uniform distribution with a
-     * min of fanIn and max of fanOut
+     * min of min and max of fanOut
      * @param rng the rng to use
-     * @param fanIn the fanin to use
-     *  @param fanOut the fanout to use
-     * @return a uniform distribution with a min of -fanIn
-     * and a max of fanIn
+     * @param min the fanin to use
+     *  @param max the fanout to use
+     * @return a uniform distribution with a min of -min
+     * and a max of min
      */
-    public static RealDistribution uniform(RandomGenerator rng,double fanIn,double fanOut) {
-        fanIn = Math.abs(fanIn);
-        return new UniformRealDistribution(rng,fanIn,fanOut);
+    public static RealDistribution uniform(RandomGenerator rng,double min,double max) {
+        return new UniformRealDistribution(rng, min,max);
     }
 
     /**

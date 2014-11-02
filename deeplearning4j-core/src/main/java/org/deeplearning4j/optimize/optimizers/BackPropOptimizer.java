@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimize.optimizers;
 
+import org.deeplearning4j.optimize.stepfunctions.BackPropStepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 
@@ -23,14 +24,14 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
     private BaseMultiLayerNetwork network;
     private int length = -1;
     private double lr  = 1e-1f;
-    private int epochs = 1000;
+    private int iterations = 1000;
     private static Logger log = LoggerFactory.getLogger(BackPropOptimizer.class);
     private int currentIteration = -1;
 
     public BackPropOptimizer(BaseMultiLayerNetwork network,double lr,int epochs) {
         this.network = network;
         this.lr = lr;
-        this.epochs = epochs;
+        this.iterations = epochs;
     }
 
     @Override
@@ -38,17 +39,15 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
         this.currentIteration = value;
     }
 
-    public void optimize(TrainingEvaluator eval,int numEpochs,boolean lineSearch) {
+    public void optimize(TrainingEvaluator eval,boolean lineSearch) {
         if(!lineSearch) {
             log.info("BEGIN BACKPROP WITH SCORE OF " + network.score());
 
-            double lastEntropy =  network.score();
             //store a copy of the network for when binary cross entropy gets
             //worse after an iteration
-            BaseMultiLayerNetwork revert = network.clone();
-            //sgd style; only iterate a certain number of epochs
-            if(network.isForceNumEpochs()) {
-                for(int i = 0; i < epochs; i++) {
+            //sgd style; only iterate a certain number of iterations
+            if(network.forceNumIterations()) {
+                for(int i = 0; i < iterations; i++) {
                     if(i % network.getDefaultConfiguration().getResetAdaGradIterations() == 0)
                         network.getOutputLayer().getAdaGrad().historicalGradient = null;
                     network.backPropStep();
@@ -57,89 +56,48 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
                 }
             }
 
-            else {
-
-
-                boolean train = true;
-                int count = 0;
-                double changeTolerance = 1e-6f;
-                int backPropIterations = 0;
-                while(train) {
-                    if(backPropIterations >= epochs) {
-                        log.info("Backprop number of iterations max hit; converging");
-                        break;
-
-                    }
-                    count++;
-                    network.backPropStep();
-
-                /* Trains logistic regression post weight updates */
-
-                    double entropy = network.score();
-                    if(entropy < lastEntropy) {
-                        double diff = Math.abs(entropy - lastEntropy);
-                        if(diff < changeTolerance) {
-                            log.info("Not enough of a change on back prop...breaking");
-                            break;
-                        }
-                        else
-                            lastEntropy = entropy;
-                        log.info("New score " + lastEntropy);
-                        revert = network.clone();
-                    }
-
-                    else if(count >= epochs) {
-                        log.info("Hit max number of epochs...breaking");
-                        train = false;
-                    }
-
-                    else if(entropy >= lastEntropy) {
-                        train = false;
-                        network.update(revert);
-                        log.info("Reverting to best score " + lastEntropy);
-                    }
-
-                    backPropIterations++;
-                }
-
-
-            }
+           else
+                lineSearchBackProp(eval);
         }
 
-        else {
-
-            NeuralNetwork.OptimizationAlgorithm optimizationAlgorithm = network.getDefaultConfiguration().getOptimizationAlgo();
-            if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT) {
-                VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(this);
-                g.setTrainingEvaluator(eval);
-                g.setMaxIterations(numEpochs);
-                g.optimize(numEpochs);
-
-            }
-
-            else if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
-                StochasticHessianFree s = new StochasticHessianFree(this,network);
-                s.setTrainingEvaluator(eval);
-                s.setMaxIterations(numEpochs);
-                s.optimize(numEpochs);
-
-            }
+        else
+            lineSearchBackProp(eval);
 
 
-
-            else {
-                VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(this);
-                g.setTrainingEvaluator(eval);
-                g.optimize(numEpochs);
-
-            }
-
-        }
 
 
 
     }
 
+
+    private void lineSearchBackProp(TrainingEvaluator eval) {
+        NeuralNetwork.OptimizationAlgorithm optimizationAlgorithm = network.getDefaultConfiguration().getOptimizationAlgo();
+        if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT) {
+            VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(this,new BackPropStepFunction(network));
+            g.setTrainingEvaluator(eval);
+            g.setMaxIterations(iterations);
+            g.optimize(iterations);
+
+        }
+
+        else if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
+            StochasticHessianFree s = new StochasticHessianFree(this,network);
+            s.setTrainingEvaluator(eval);
+            s.setMaxIterations(iterations);
+            s.optimize(iterations);
+
+        }
+
+
+
+        else {
+            VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(this,new BackPropStepFunction(network));
+            g.setTrainingEvaluator(eval);
+            g.optimize(iterations);
+
+        }
+
+    }
 
 
     @Override
@@ -175,14 +133,13 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
     @Override
     public void setParameters(INDArray params) {
         network.setParameters(params);
-        network.getOutputLayer().trainTillConvergence(lr,epochs);
 
 
     }
 
     @Override
     public INDArray getValueGradient(int iteration) {
-        return network.getBackPropGradient2().getFirst();
+        return network.pack(network.backPropGradient());
     }
 
 

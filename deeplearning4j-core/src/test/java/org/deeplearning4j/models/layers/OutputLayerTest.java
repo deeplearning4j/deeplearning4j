@@ -4,6 +4,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -28,11 +29,9 @@ public class OutputLayerTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-                .lossFunction(LossFunctions.LossFunction.MCXENT)
-                .activationFunction(Activations.softmax()).iterations(100)
-                .rng(gen)
+                    .lossFunction(LossFunctions.LossFunction.MCXENT).constrainGradientToUnitNorm(true)
+                .activationFunction(Activations.softMaxRows()).iterations(10).dist(Distributions.normal(gen,1e-1))
+                .rng(gen).regularization(true).l2(2e-4f).momentum(0.9f)
                 .learningRate(1e-1f).nIn(4).nOut(3).build();
 
         OutputLayer l = new OutputLayer.Builder()

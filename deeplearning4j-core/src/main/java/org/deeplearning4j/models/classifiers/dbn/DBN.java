@@ -104,7 +104,7 @@ public class DBN extends BaseMultiLayerNetwork {
                         setInput(input);
                     //override learning rate where present
                     float realLearningRate = layerWiseConfigurations.get(i).getLr();
-                    if(isForceNumEpochs()) {
+                    if(forceNumIterations()) {
                         for(int epoch = 0; epoch < epochs; epoch++) {
                             log.info("Error on iteration " + epoch + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
                             getNeuralNets()[i].iterate(next.getFeatureMatrix(), new Object[]{k, learningRate});
@@ -132,7 +132,7 @@ public class DBN extends BaseMultiLayerNetwork {
                     log.info("Training on layer " + (i + 1));
                     //override learning rate where present
                     float realLearningRate = layerWiseConfigurations.get(i).getLr();
-                    if(isForceNumEpochs()) {
+                    if(forceNumIterations()) {
                         for(int epoch = 0; epoch < epochs; epoch++) {
                             log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
                             getNeuralNets()[i].iterate(layerInput, new Object[]{k, learningRate});
@@ -190,7 +190,7 @@ public class DBN extends BaseMultiLayerNetwork {
             log.info("Training on layer " + (i + 1));
             //override learning rate where present
             float realLearningRate = layers[i].conf().getLr();
-            if(isForceNumEpochs()) {
+            if(forceNumIterations()) {
                 for(int epoch = 0; epoch < epochs; epoch++) {
                     log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
                     getNeuralNets()[i].iterate(layerInput, new Object[]{k, learningRate});
@@ -277,8 +277,8 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
         @Override
-        public Builder layerWiseCOnfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
-             super.layerWiseCOnfiguration(layerWiseConfiguration);
+        public Builder layerWiseConfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
+             super.layerWiseConfiguration(layerWiseConfiguration);
             return this;
         }
 
@@ -306,7 +306,7 @@ public class DBN extends BaseMultiLayerNetwork {
          * SGD style rather than conjugate gradient
          * @return
          */
-        public Builder forceEpochs() {
+        public Builder forceIterations() {
             shouldForceEpochs = true;
             return this;
         }

@@ -42,16 +42,17 @@ public class BackPropROptimizer implements Serializable,OptimizableByGradientVal
         this.currentIteration = value;
     }
 
-    public void optimize(TrainingEvaluator eval,int numEpochs,boolean lineSearch) {
+    public void optimize(TrainingEvaluator eval,boolean lineSearch) {
         if(!lineSearch) {
-            log.info("BEGIN BACKPROP WITH SCORE OF " + network.score());
-
             double lastEntropy =  network.score();
+
+            log.info("BEGIN BACKPROP WITH SCORE OF " + lastEntropy);
+
             //store a copy of the network for when binary cross entropy gets
             //worse after an iteration
             BaseMultiLayerNetwork revert = network.clone();
             //sgd style; only iterate a certain number of epochs
-            if(network.isForceNumEpochs()) {
+            if(network.forceNumIterations()) {
                 for(int i = 0; i < epochs; i++) {
                     if(i % network.getDefaultConfiguration().getResetAdaGradIterations() == 0)
                         network.getOutputLayer().getAdaGrad().historicalGradient = null;
@@ -114,21 +115,21 @@ public class BackPropROptimizer implements Serializable,OptimizableByGradientVal
             if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT) {
                 VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(this);
                 g.setTrainingEvaluator(eval);
-                g.setMaxIterations(numEpochs);
-                g.optimize(numEpochs);
+                g.setMaxIterations(epochs);
+                g.optimize(epochs);
 
             }
 
             else if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
                 h = new StochasticHessianFree(this,network);
                 h.setTrainingEvaluator(eval);
-                h.optimize(numEpochs);
+                h.optimize(epochs);
             }
 
             else {
                 VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(this);
                 g.setTrainingEvaluator(eval);
-                g.optimize(numEpochs);
+                g.optimize(epochs);
 
             }
 

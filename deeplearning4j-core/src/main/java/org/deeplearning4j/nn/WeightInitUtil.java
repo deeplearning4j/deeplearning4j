@@ -3,6 +3,7 @@ package org.deeplearning4j.nn;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
+import org.deeplearning4j.distributions.Distributions;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.RectifiedLinear;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -18,10 +19,22 @@ import org.nd4j.linalg.util.ArrayUtil;
 public class WeightInitUtil {
 
 
-
+    /**
+     * Generate a random matrix with respect to the number of inputs and outputs.
+     * This is a bound uniform distribution with the specified minimum and maximum
+     * @param shape the shape of the matrix
+     * @param nIn the number of inputs
+     * @param nOut the number of outputs
+     * @return
+     */
+    public static INDArray uniformBasedOnInAndOut(int[] shape,int nIn,int nOut) {
+        double min = -4.0 * Math.sqrt(6.0 / (double) (nOut + nIn));
+        double max = 4.0 * Math.sqrt(6.0 / (double) (nOut + nIn));
+        return Nd4j.rand(shape, Distributions.uniform(new MersenneTwister(123),min,max));
+    }
 
     public static INDArray initWeights(int[] shape,float min,float max) {
-         return Nd4j.rand(shape,min,max,new MersenneTwister(123));
+        return Nd4j.rand(shape,min,max,new MersenneTwister(123));
     }
 
 
@@ -47,6 +60,8 @@ public class WeightInitUtil {
                     ret.putRow(i,Nd4j.create(dist.sample(ret.columns())));
                 }
                 return ret;
+            case SIZE:
+                return uniformBasedOnInAndOut(new int[]{nIn,nOut},nIn,nOut);
 
 
 
