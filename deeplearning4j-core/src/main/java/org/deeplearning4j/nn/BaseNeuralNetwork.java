@@ -373,9 +373,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         }
 
         if(conf.isConstrainGradientToUnitNorm()) {
-            wGradient.divi(wGradient.norm2(Integer.MAX_VALUE));
-            vBiasGradient.divi(vBiasGradient.norm2(Integer.MAX_VALUE));
-            hBiasGradient.divi(hBiasGradient.norm2(Integer.MAX_VALUE));
+            double norm2 = Nd4j.norm2(Nd4j.toFlattened(wGradient,vBiasGradient,hBiasGradient)).getDouble(0);
+            wGradient.divi(norm2);
+            vBiasGradient.divi(norm2);
+            hBiasGradient.divi(norm2);
         }
 
 

@@ -40,18 +40,14 @@ public class StackedDenoisingAutoEncoderTest {
 
 
         List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
-                .momentum(5e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen,1e-2))
-                .withActivationType(NeuralNetConfiguration.ActivationType.HIDDEN_LAYER_ACTIVATION).iterations(10)
+                .momentum(5e-1f).weightInit(WeightInit.SIZE)
+                .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE).iterations(10)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
                 .learningRate(1e-1f).nIn(d2.numInputs()).nOut(d2.numOutcomes()).list(4).override(new NeuralNetConfiguration.ConfOverride() {
                     @Override
                     public void override(int i, NeuralNetConfiguration.Builder builder) {
-                          if(i > 0) {
-                              //builder.weightInit(WeightInit.SIZE);
-                              //builder.render(30);
-                              builder.dist(Distributions.uniform(gen,4e-1));
-                          }
-
+                          if(i == 3)
+                              builder.iterations(1000);
 
                     }
                 }).build();
