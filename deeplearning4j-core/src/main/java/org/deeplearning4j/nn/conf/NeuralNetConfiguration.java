@@ -520,6 +520,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public static void setClassifier(NeuralNetConfiguration conf,boolean rows) {
         conf.setActivationFunction(rows ? Activations.softMaxRows() : Activations.softmax());
         conf.setLossFunction(LossFunctions.LossFunction.MCXENT);
+        conf.setWeightInit(WeightInit.ZERO);
     }
 
 
