@@ -7,6 +7,8 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -33,9 +35,9 @@ public class DBNTest {
     public void testIris() {
         RandomGenerator gen = new MersenneTwister(123);
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().constrainGradientToUnitNorm(false)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
-                .learningRate(1e-2f).nIn(4).nOut(3).build();
+                .learningRate(1e-1f).nIn(4).nOut(3).build();
 
 
 
@@ -45,10 +47,11 @@ public class DBNTest {
 
         NeuralNetConfiguration.setClassifier(d.getOutputLayer().conf());
 
+
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
         DataSet next = iter.next(150);
-        next.scaleMinAndMax(0,1);
+        next.normalizeZeroMeanZeroUnitVariance();
         d.fit(next);
 
         Evaluation eval = new Evaluation();
