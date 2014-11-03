@@ -51,5 +51,22 @@ public abstract class LossFunctionTests {
         LossFunctions.score(in, LossFunctions.LossFunction.MCXENT,out,0,false);
     }
 
+    @Test
+    public void testNegativeLogLikelihood() {
+        INDArray softmax = Nd4j.create(new double[][]{{0.6,0.4},{0.7,0.3}});
+        INDArray trueLabels = Nd4j.create(new double[][]{{1,0},{0,1}});
+        double score = LossFunctions.score(trueLabels, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD,softmax,0,false);
+        assertEquals(1.71479842809,score,1e-1);
+
+
+        INDArray softmax2 = Nd4j.create(new double[][]{{0.33,0.33,0.33},{0.33,0.33,0.33}});
+        INDArray trueLabels2 = Nd4j.create(new double[][]{{1,0,0},{1,0,0}});
+        double score2 = LossFunctions.score(trueLabels2, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD,softmax2,0,false);
+        assertEquals(1.90961775772,score2,1e-1);
+
+    }
+
+
+
 
 }

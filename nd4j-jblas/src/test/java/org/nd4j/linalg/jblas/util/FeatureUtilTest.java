@@ -29,6 +29,11 @@ public class FeatureUtilTest {
         INDArray assertion2 = Nd4j.create(Nd4j.createBuffer(new double[]{0,1,0,1,0,1}),new int[]{2,3});
         FeatureUtil.scaleMinMax(0,1,twoThree);
         assertEquals(assertion2,twoThree);
+
+
+
+
+
     }
 
 

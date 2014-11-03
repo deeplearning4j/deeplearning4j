@@ -1110,8 +1110,11 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray sum(int dimension);
 
 
+    @Override
+    IComplexNDArray var(int dimension);
 
-
+    @Override
+    IComplexNDArray std(int dimension);
 
     IComplexNumber getComplex(int i);
 

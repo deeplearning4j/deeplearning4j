@@ -74,9 +74,188 @@ public class Nd4j {
     }
 
 
+
+
+
     public static NDArrayFactory factory() {
         return INSTANCE;
     }
+
+    public static INDArray cumsum(INDArray compute) {
+        return compute.cumsum(Integer.MAX_VALUE);
+    }
+
+    public static INDArray max(INDArray compute) {
+        return compute.max(Integer.MAX_VALUE);
+    }
+    public static INDArray min(INDArray compute) {
+        return compute.min(Integer.MAX_VALUE);
+    }
+
+    public static INDArray prod(INDArray compute) {
+        return compute.prod(Integer.MAX_VALUE);
+    }
+
+
+    public static INDArray normmax(INDArray compute) {
+        return compute.normmax(Integer.MAX_VALUE);
+    }
+
+    public static INDArray norm2(INDArray compute) {
+        return compute.norm2(Integer.MAX_VALUE);
+    }
+    public static INDArray norm1(INDArray compute) {
+        return compute.norm1(Integer.MAX_VALUE);
+    }
+
+    public static INDArray std(INDArray compute) {
+        return compute.std(Integer.MAX_VALUE);
+    }
+    public static INDArray var(INDArray compute) {
+        return compute.var(Integer.MAX_VALUE);
+    }
+
+    public static INDArray sum(INDArray compute) {
+        return compute.sum(Integer.MAX_VALUE);
+    }
+
+    public static INDArray mean(INDArray compute) {
+        return compute.mean(Integer.MAX_VALUE);
+    }
+
+
+
+    public static IComplexNDArray cumsum(IComplexNDArray compute) {
+        return compute.cumsum(Integer.MAX_VALUE);
+    }
+
+    public static IComplexNDArray max(IComplexNDArray compute) {
+        return compute.max(Integer.MAX_VALUE);
+    }
+    public static IComplexNDArray min(IComplexNDArray compute) {
+        return compute.min(Integer.MAX_VALUE);
+    }
+
+    public static IComplexNDArray prod(IComplexNDArray compute) {
+        return compute.prod(Integer.MAX_VALUE);
+    }
+
+
+    public static IComplexNDArray normmax(IComplexNDArray compute) {
+        return compute.normmax(Integer.MAX_VALUE);
+    }
+
+    public static IComplexNDArray norm2(IComplexNDArray compute) {
+        return compute.norm2(Integer.MAX_VALUE);
+    }
+    public static IComplexNDArray norm1(IComplexNDArray compute) {
+        return compute.norm1(Integer.MAX_VALUE);
+    }
+
+    public static IComplexNDArray std(IComplexNDArray compute) {
+        return compute.std(Integer.MAX_VALUE);
+    }
+    public static IComplexNDArray var(IComplexNDArray compute) {
+        return compute.var(Integer.MAX_VALUE);
+    }
+
+    public static IComplexNDArray sum(IComplexNDArray compute) {
+        return compute.sum(Integer.MAX_VALUE);
+    }
+
+    public static IComplexNDArray mean(IComplexNDArray compute) {
+        return compute.mean(Integer.MAX_VALUE);
+    }
+
+
+    public static INDArray cumsum(INDArray compute,int dimension) {
+        return compute.cumsum(dimension);
+    }
+
+    public static INDArray max(INDArray compute,int dimension) {
+        return compute.max(dimension);
+    }
+    public static INDArray min(INDArray compute,int dimension) {
+        return compute.min(dimension);
+    }
+
+    public static INDArray prod(INDArray compute,int dimension) {
+        return compute.prod(dimension);
+    }
+
+
+    public static INDArray normmax(INDArray compute,int dimension) {
+        return compute.normmax(dimension);
+    }
+
+    public static INDArray norm2(INDArray compute,int dimension) {
+        return compute.norm2(dimension);
+    }
+    public static INDArray norm1(INDArray compute,int dimension) {
+        return compute.norm1(dimension);
+    }
+
+    public static INDArray std(INDArray compute,int dimension) {
+        return compute.std(dimension);
+    }
+    public static INDArray var(INDArray compute,int dimension) {
+        return compute.var(dimension);
+    }
+
+    public static INDArray sum(INDArray compute,int dimension) {
+        return compute.sum(dimension);
+    }
+
+    public static INDArray mean(INDArray compute,int dimension) {
+        return compute.mean(dimension);
+    }
+
+
+
+    public static IComplexNDArray cumsum(IComplexNDArray compute,int dimension) {
+        return compute.cumsum(dimension);
+    }
+
+    public static IComplexNDArray max(IComplexNDArray compute,int dimension) {
+        return compute.max(dimension);
+    }
+    public static IComplexNDArray min(IComplexNDArray compute,int dimension) {
+        return compute.min(dimension);
+    }
+
+    public static IComplexNDArray prod(IComplexNDArray compute,int dimension) {
+        return compute.prod(dimension);
+    }
+
+
+    public static IComplexNDArray normmax(IComplexNDArray compute,int dimension) {
+        return compute.normmax(dimension);
+    }
+
+    public static IComplexNDArray norm2(IComplexNDArray compute,int dimension) {
+        return compute.norm2(dimension);
+    }
+    public static IComplexNDArray norm1(IComplexNDArray compute,int dimension) {
+        return compute.norm1(dimension);
+    }
+
+    public static IComplexNDArray std(IComplexNDArray compute,int dimension) {
+        return compute.std(dimension);
+    }
+    public static IComplexNDArray var(IComplexNDArray compute,int dimension) {
+        return compute.var(dimension);
+    }
+
+    public static IComplexNDArray sum(IComplexNDArray compute,int dimension) {
+        return compute.sum(dimension);
+    }
+
+    public static IComplexNDArray mean(IComplexNDArray compute,int dimension) {
+        return compute.mean(dimension);
+    }
+
+
+
 
     /**
      * Create a buffer equal of length prod(shape)

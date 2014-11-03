@@ -50,6 +50,8 @@ public class SoftMax extends BaseActivationFunction {
         if(row) {
             if(input.ordering() == NDArrayFactory.FORTRAN) {
                 INDArray max = input.max(1);
+                if(!max.isColumnVector())
+                    max = max.transpose();
                 INDArray diff = input.subColumnVector(max);
                 new ArrayOps()
                         .from(diff)
@@ -60,7 +62,8 @@ public class SoftMax extends BaseActivationFunction {
             }
             else {
                 INDArray max = input.max(1);
-
+                if(!max.isColumnVector())
+                    max = max.transpose();
                 INDArray diff = input.subColumnVector(max);
                 new ArrayOps()
                         .from(diff)

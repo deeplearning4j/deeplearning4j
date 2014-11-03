@@ -69,10 +69,10 @@ public class FeatureUtil {
     public static void scaleMinMax(double min,double max,INDArray toScale) {
         //X_std = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0)) X_scaled = X_std * (max - min) + min
 
-        INDArray min2 = toScale.min(0).broadcast(toScale.shape()).transpose();
-        INDArray max2 = toScale.max(0).broadcast(toScale.shape()).transpose();
+        INDArray min2 = toScale.min(0);
+        INDArray max2 = toScale.max(0);
 
-        INDArray std = toScale.sub(min2).divi(max2.sub(min2));
+        INDArray std = toScale.subRowVector(min2).diviRowVector(max2.sub(min2));
 
         INDArray scaled = std.mul(max - min).addi(min);
         toScale.assign(scaled);
