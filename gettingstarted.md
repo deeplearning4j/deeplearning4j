@@ -96,7 +96,7 @@ Add these POM coordinates to your project:
 		
          <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-nlp/artifactId>
+            <artifactId>deeplearning4j-nlp</artifactId>
             <version>0.0.3.2</version>
          </dependency>
 
