@@ -33,21 +33,26 @@ public class StackedDenoisingAutoEncoderTest {
 
     @Test
     public void testDbn() throws IOException {
-        RandomGenerator gen = new MersenneTwister(123);
+        final RandomGenerator gen = new MersenneTwister(123);
         DataSetIterator iter = new MultipleEpochsIterator(2,new MnistDataSetIterator(100,1000));
 
         DataSet d2 = iter.next();
 
 
         List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
-                .momentum(5e-1f).weightInit(WeightInit.DISTRIBUTION).render(30).dist(Distributions.normal(gen,1e-2))
-                .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE).iterations(100)
+                .momentum(5e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen,1e-2))
+                .withActivationType(NeuralNetConfiguration.ActivationType.HIDDEN_LAYER_ACTIVATION).iterations(10)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
                 .learningRate(1e-1f).nIn(d2.numInputs()).nOut(d2.numOutcomes()).list(4).override(new NeuralNetConfiguration.ConfOverride() {
                     @Override
                     public void override(int i, NeuralNetConfiguration.Builder builder) {
-                          if(i == 3)
-                              builder.weightInit(WeightInit.SIZE);
+                          if(i > 0) {
+                              //builder.weightInit(WeightInit.SIZE);
+                              //builder.render(30);
+                              builder.dist(Distributions.uniform(gen,4e-1));
+                          }
+
+
                     }
                 }).build();
 
@@ -56,7 +61,7 @@ public class StackedDenoisingAutoEncoderTest {
 
 
         StackedDenoisingAutoEncoder d = new StackedDenoisingAutoEncoder.Builder().layerWiseConfiguration(conf)
-                .hiddenLayerSizes(new int[]{500, 250, 200})
+                .hiddenLayerSizes(new int[]{600, 300, 200})
                 .build();
 
 
