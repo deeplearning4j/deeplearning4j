@@ -10,6 +10,7 @@ import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
 import org.deeplearning4j.optimize.solvers.VectorizedDeepLearningGradientAscent;
 import org.deeplearning4j.optimize.solvers.VectorizedNonZeroStoppingConjugateGradient;
+import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,30 +41,8 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
     }
 
     public void optimize(TrainingEvaluator eval,boolean lineSearch) {
-        if(!lineSearch) {
-            log.info("BEGIN BACKPROP WITH SCORE OF " + network.score());
-
-            //store a copy of the network for when binary cross entropy gets
-            //worse after an iteration
-            //sgd style; only iterate a certain number of iterations
-            if(network.forceNumIterations()) {
-                for(int i = 0; i < iterations; i++) {
-                    if(i % network.getDefaultConfiguration().getResetAdaGradIterations() == 0)
-                        network.getOutputLayer().getAdaGrad().historicalGradient = null;
-                    network.backPropStep();
-                    log.info("Iteration " + i + " error " + network.score());
-
-                }
-            }
-
-           else
-                lineSearchBackProp(eval);
-        }
-
-        else
-            lineSearchBackProp(eval);
-
-
+        lineSearchBackProp(eval);
+        network.getOutputLayer().fit(new DataSet(network.getOutputLayer().getInput(),network.getOutputLayer().getLabels()));
 
 
 

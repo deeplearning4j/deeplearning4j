@@ -62,6 +62,8 @@ public class WeightInitUtil {
                 return ret;
             case SIZE:
                 return uniformBasedOnInAndOut(new int[]{nIn,nOut},nIn,nOut);
+            case ZERO:
+                return Nd4j.create(new int[]{nIn,nOut});
 
 
 
