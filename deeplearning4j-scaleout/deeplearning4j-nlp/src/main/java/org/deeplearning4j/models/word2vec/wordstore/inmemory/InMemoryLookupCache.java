@@ -607,6 +607,26 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     }
 
     @Override
+    public Iterator<INDArray> vectors() {
+        return new WeightIterator();
+    }
+
+
+    private  class WeightIterator implements Iterator<INDArray> {
+        private int currIndex = 0;
+
+        @Override
+        public boolean hasNext() {
+            return currIndex < syn0.rows();
+        }
+
+        @Override
+        public INDArray next() {
+            return syn0.getRow(currIndex++);
+        }
+    }
+
+    @Override
     public void saveVocab() {
         SerializationUtils.saveObject(this, new File("ser"));
     }

@@ -8,6 +8,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -57,7 +58,7 @@ public class RNTN implements Serializable {
     public final static String UNKNOWN_FEATURE = "UNK";
     private boolean lowerCasefeatureNames;
     protected ActivationFunction activationFunction = Activations.tanh();
-    protected ActivationFunction outputActivation = Activations.softMaxRows();
+    protected ActivationFunction outputActivation = Activations.softmax();
     protected AdaGrad paramAdaGrad;
 
     /** Regularization cost for the applyTransformToOrigin matrix  */
@@ -94,7 +95,7 @@ public class RNTN implements Serializable {
      */
     private Map<String, INDArray> unaryClassification;
 
-    private Map<String, INDArray> featureVectors;
+    private VocabCache featureVectors;
 
     /**
      * CxN+1, where N = size of word vectors, C is the number of classes
@@ -136,7 +137,25 @@ public class RNTN implements Serializable {
 
     private transient ActorSystem rnTnActorSystem = ActorSystem.create("RNTN");
 
-    private RNTN(int numHidden, RandomGenerator rng, boolean useFloatTensors, boolean combineClassification, boolean simplifiedModel, boolean randomFeatureVectors, double scalingForInit, boolean lowerCasefeatureNames, ActivationFunction activationFunction, int adagradResetFrequency, double regTransformINDArray, Map<String, INDArray> featureVectors, int numBinaryMatrices, int binaryTransformSize, int binaryINd4jize, int binaryClassificationSize, int numUnaryMatrices, int unaryClassificationSize, Map<Integer, Float> classWeights) {
+    private RNTN(int numHidden,
+                 RandomGenerator rng,
+                 boolean useFloatTensors,
+                 boolean combineClassification,
+                 boolean simplifiedModel,
+                 boolean randomFeatureVectors,
+                 double scalingForInit,
+                 boolean lowerCasefeatureNames,
+                 ActivationFunction activationFunction,
+                 int adagradResetFrequency,
+                 double regTransformINDArray,
+                 VocabCache featureVectors,
+                 int numBinaryMatrices,
+                 int binaryTransformSize,
+                 int binaryINd4jize,
+                 int binaryClassificationSize,
+                 int numUnaryMatrices,
+                 int unaryClassificationSize,
+                 Map<Integer, Float> classWeights) {
         this.numHidden = numHidden;
         this.rng = rng;
         this.useFloatTensors = useFloatTensors;
@@ -245,7 +264,7 @@ public class RNTN implements Serializable {
         unaryClassificationSize = numOuts * (numHidden + 1);
 
 
-        featureVectors.put(UNKNOWN_FEATURE,randomWordVector());
+
         numUnaryMatrices = unaryClassification.size();
         unaryClassificationSize = numOuts * (numHidden + 1);
         classWeights = new HashMap<>();
@@ -398,7 +417,7 @@ public class RNTN implements Serializable {
 
 
     public INDArray getFeatureVector(String word) {
-        INDArray ret = featureVectors.get(getVocabWord(word));
+        INDArray ret = featureVectors.vector(getVocabWord(word));
         if(ret.isRowVector())
             ret = ret.transpose();
         return ret;
@@ -408,7 +427,7 @@ public class RNTN implements Serializable {
         if (lowerCasefeatureNames) {
             word = word.toLowerCase();
         }
-        if (featureVectors.containsKey(word)) {
+        if (featureVectors.containsWord(word)) {
             return word;
         }
         // TODO: go through unknown words here
@@ -457,7 +476,7 @@ public class RNTN implements Serializable {
         // binaryINd4jize was applyTransformToDestination to 0 if useFloatTensors=false
         totalSize = numBinaryMatrices * (binaryTransform.size() + binaryClassificationSize) + binaryINd4jize;
         totalSize += numUnaryMatrices * unaryClassification.size();
-        totalSize += featureVectors.size() * numHidden;
+        totalSize += featureVectors.numWords() * numHidden;
         return totalSize;
     }
 
@@ -468,7 +487,7 @@ public class RNTN implements Serializable {
                 binaryClassification.values().iterator(),
                 binaryINd4j.values().iterator(),
                 unaryClassification.values().iterator(),
-                featureVectors.values().iterator());
+                featureVectors.vectors());
     }
 
 
@@ -482,22 +501,40 @@ public class RNTN implements Serializable {
             INDArray D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
             D = Nd4j.getBlasWrapper().scal(scale,D).add(Nd4j.getBlasWrapper().scal(regCost,entry.getValue()));
             derivatives.put(entry.getFirstKey(), entry.getSecondKey(), D);
-            cost += (double) entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).element() * regCost / 2.0;
+            cost +=  entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).getDouble(0) * regCost / 2.0;
         }
         return cost;
     }
 
     double scaleAndRegularize(Map<String, INDArray> derivatives,
-                              Map<String, INDArray> currentMatrices,
+                             Map<String,INDArray> currentMatrices,
                               double scale,
                               double regCost) {
 
         double cost = 0.0f; // the regularization cost
-        for (Map.Entry<String, INDArray> entry : currentMatrices.entrySet()) {
-            INDArray D = derivatives.get(entry.getKey());
-            D = Nd4j.getBlasWrapper().scal(scale,D).add(Nd4j.getBlasWrapper().scal(regCost,entry.getValue()));
-            derivatives.put(entry.getKey(), D);
-            cost += (double) entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).element() * regCost / 2.0f;
+        for (String s  : currentMatrices.keySet()) {
+            INDArray D = derivatives.get(s);
+            INDArray vector = currentMatrices.get(s);
+            D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost,vector));
+            derivatives.put(s, D);
+            cost += (double) vector.mul(vector).sum(Integer.MAX_VALUE).element() * regCost / 2.0f;
+        }
+        return cost;
+    }
+
+
+    double scaleAndRegularize(Map<String, INDArray> derivatives,
+                             VocabCache currentMatrices,
+                              double scale,
+                              double regCost) {
+
+        double cost = 0.0f; // the regularization cost
+        for (String s  : currentMatrices.words()) {
+            INDArray D = derivatives.get(s);
+            INDArray vector = currentMatrices.vector(s);
+            D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost,vector));
+            derivatives.put(s, D);
+            cost += (double) vector.mul(vector).sum(Integer.MAX_VALUE).element() * regCost / 2.0f;
         }
         return cost;
     }
@@ -664,7 +701,7 @@ public class RNTN implements Serializable {
             String word = tree.children().get(0).value();
             INDArray wordVector = getFeatureVector(word);
             if(wordVector == null) {
-                wordVector = featureVectors.get(UNKNOWN_FEATURE);
+                wordVector = featureVectors.vector(Word2Vec.UNK);
             }
 
 
@@ -760,7 +797,7 @@ public class RNTN implements Serializable {
                 binaryClassification.values().iterator(),
                 binaryINd4j.values().iterator(),
                 unaryClassification.values().iterator(),
-                featureVectors.values().iterator());
+                featureVectors.vectors());
     }
 
 
@@ -816,10 +853,13 @@ public class RNTN implements Serializable {
             int numCols = entry.getValue().columns();
             unaryCD.put(entry.getKey(), Nd4j.create(numRows, numCols));
         }
-        for (Map.Entry<String, INDArray> entry : featureVectors.entrySet()) {
-            int numRows = entry.getValue().rows();
-            int numCols = entry.getValue().columns();
-            wordVectorD.put(entry.getKey(), Nd4j.create(numRows, numCols));
+
+
+        for (String s : featureVectors.words()) {
+            INDArray vector = featureVectors.vector(s);
+            int numRows = vector.rows();
+            int numCols = vector.columns();
+            wordVectorD.put(s, Nd4j.create(numRows, numCols));
         }
 
 
@@ -900,7 +940,7 @@ public class RNTN implements Serializable {
                 outputActivationFunction = Activations.softmax();
         private int adagradResetFrequency;
         private double regTransformINDArray;
-        private Map<String, INDArray> featureVectors;
+        private VocabCache featureVectors;
         private int numBinaryMatrices;
         private int binaryTransformSize;
         private int binaryINd4jize;
@@ -977,7 +1017,7 @@ public class RNTN implements Serializable {
             return this;
         }
 
-        public Builder setFeatureVectors(Map<String, INDArray> featureVectors) {
+        public Builder setFeatureVectors(VocabCache featureVectors) {
             this.featureVectors = featureVectors;
             return this;
         }
@@ -1018,7 +1058,9 @@ public class RNTN implements Serializable {
         }
 
         public RNTN build() {
-            return new RNTN(numHidden, rng, useINd4j, combineClassification, simplifiedModel, randomFeatureVectors, scalingForInit, lowerCasefeatureNames, activationFunction, adagradResetFrequency, regTransformINDArray, featureVectors, numBinaryMatrices, binaryTransformSize, binaryINd4jize, binaryClassificationSize, numUnaryMatrices, unaryClassificationSize, classWeights);
+            RNTN rt =  new RNTN(numHidden, rng, useINd4j, combineClassification, simplifiedModel, randomFeatureVectors, scalingForInit, lowerCasefeatureNames, activationFunction, adagradResetFrequency, regTransformINDArray, featureVectors, numBinaryMatrices, binaryTransformSize, binaryINd4jize, binaryClassificationSize, numUnaryMatrices, unaryClassificationSize, classWeights);
+
+            return rt;
         }
     }
 
