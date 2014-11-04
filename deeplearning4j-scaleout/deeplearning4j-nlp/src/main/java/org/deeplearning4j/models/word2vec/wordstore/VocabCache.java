@@ -5,6 +5,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.models.word2vec.VocabWord;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -267,5 +268,10 @@ public interface VocabCache  {
      */
     void setLearningRate(double lr);
 
+    /**
+     * Iterates through all of the vectors in the cache
+     * @return an iterator for all vectors in the cache
+     */
+    Iterator<INDArray> vectors();
 
 }
