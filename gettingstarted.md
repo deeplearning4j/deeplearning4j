@@ -17,7 +17,7 @@ Contents
 
 * DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
 
-* You can install DL4J either from source or from Maven central. Here are the **source** instructions, which require Github (Mac and Windows users, see below). 
+* You can install DL4J either from source or from [Maven central](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-distribution/0.0.3.2-SNAPSHOT-SNAPSHOT/). Here are the **source** instructions, which require Github (Mac and Windows users, see below). 
 
          git clone https://github.com/agibsonccc/java-deeplearning
          cd java-deeplearning
