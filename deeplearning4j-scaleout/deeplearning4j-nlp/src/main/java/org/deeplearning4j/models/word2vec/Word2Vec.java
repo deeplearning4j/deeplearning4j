@@ -698,7 +698,7 @@ public class Word2Vec implements Persistable {
         private VocabCache vocabCache;
         private DocumentIterator docIter;
         private double lr = 2.5e-1;
-        private int iterations = 5;
+        private int iterations = 1;
         private long seed = 123;
         private boolean saveVocab = false;
         private int batchSize = 1000;
