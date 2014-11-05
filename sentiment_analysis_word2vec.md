@@ -320,10 +320,10 @@ You'll notice we specify a document iterator, a tokenizer factory, a learning ra
 
 ## A Few Results
 
-How do you evaluate how well feature vectors perform? Unlike classification nets, there's no f1 score for unsupervised, generative learning. A quick and dirty technique is words nearest:
+How do you evaluate how well feature vectors perform? Unlike classification nets, there's no f1 score for unsupervised, generative learning. A quick and dirty technique is *words nearest*. The first word is the search term, and the words in the array are those Word2Vec has determined to be closest in meaning.
 
-* Words nearest: amusing [sometimes, characters, cast, often, funny, flat-out, Slackers, many, clever, wars, either]
-* Words nearest: chilling [luck, effectively, oozing, severely, grew, guilty, talented, pleasure, guys, Ice, tongue-tied]
+* **amusing** [sometimes, characters, cast, often, funny, flat-out, Slackers, many, clever, wars, either]
+* **chilling** [luck, effectively, oozing, severely, grew, guilty, talented, pleasure, guys, Ice, tongue-tied]
 
 In the examples above, amusing has positive connotations and is related to performance, while chilling is partially negative, and partically physical. If we reflect semantically about the domain of each keyword, it makes sense that characters and funny would be near amusing. 
 
