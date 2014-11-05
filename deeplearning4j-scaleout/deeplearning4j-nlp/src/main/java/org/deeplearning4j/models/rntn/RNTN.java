@@ -956,7 +956,7 @@ public class RNTN implements Serializable {
         }
 
         public Builder setFeatureVectors(Word2Vec vec) {
-          return setFeatureVectors(vec.getCache())
+          return setFeatureVectors(vec.getCache());
         }
 
         public Builder setNumHidden(int numHidden) {
