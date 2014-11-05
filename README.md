@@ -107,8 +107,8 @@ Installation
        <dependency>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-core</artifactId>
-         <version>0.0.3.2-SNAPSHOT</version>
-      </dependency>
+        <version>0.0.3.2-SNAPSHOT</version>
+       </dependency>
 
 ## Scaleout for multithreaded methods and clustering
        
@@ -122,6 +122,6 @@ Installation
 
           <dependency>
            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-nlp</artifactId>
-             <version>0.0.3.2-SNAPSHOT</version>
+           <artifactId>deeplearning4j-nlp</artifactId>
+           <version>0.0.3.2-SNAPSHOT</version>
           </dependency>
