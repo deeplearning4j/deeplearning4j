@@ -59,8 +59,9 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         this.useAdaGrad = useAdaGrad;
         this.lr.set(lr);
         this.rng = gen;
+        addToken(new VocabWord(1.0,Word2Vec.UNK));
         addWordToIndex(0, Word2Vec.UNK);
-        wordIndex.add(Word2Vec.UNK);
+        putVocabWord(Word2Vec.UNK);
         this.negative = negative;
         initExpTable();
 
@@ -354,6 +355,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         this.rng = new MersenneTwister(seed);
 
         syn0  = Nd4j.rand(new int[]{vocabs.size(),vectorLength},rng).subi(0.5).divi(vectorLength);
+        putVector(Word2Vec.UNK,Nd4j.rand(1,vectorLength).subi(0.5).divi(vectorLength));
+
         syn1 = Nd4j.create(syn0.shape());
         initNegative();
 
@@ -525,6 +528,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         if(!wordFrequencies.containsKey(word))
             wordFrequencies.incrementCount(word,1);
         wordIndex.add(word,index);
+
     }
 
     /**
@@ -622,7 +626,9 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
 
         @Override
         public INDArray next() {
-            return syn0.getRow(currIndex++);
+            INDArray ret = syn0.slice(currIndex);
+            currIndex++;
+            return ret;
         }
 
         @Override

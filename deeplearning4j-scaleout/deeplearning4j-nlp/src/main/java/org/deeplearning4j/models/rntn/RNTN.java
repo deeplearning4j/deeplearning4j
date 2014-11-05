@@ -50,7 +50,7 @@ public class RNTN implements Serializable {
     //must be same size as word vectors
     private int numHidden = 25;
     private RandomGenerator rng;
-    private boolean useFloatTensors = true;
+    private boolean useDoubleTensors = true;
     private boolean combineClassification = true;
     private boolean simplifiedModel = true;
     private boolean randomFeatureVectors = true;
@@ -60,7 +60,7 @@ public class RNTN implements Serializable {
     protected ActivationFunction activationFunction = Activations.tanh();
     protected ActivationFunction outputActivation = Activations.softmax();
     protected AdaGrad paramAdaGrad;
-
+    protected int numParameters = -1;
     /** Regularization cost for the applyTransformToOrigin matrix  */
     private double regTransformMatrix = 0.001f;
 
@@ -130,7 +130,7 @@ public class RNTN implements Serializable {
     private List<Tree> trainingTrees;
 
 
-    private Map<Integer,Float> classWeights;
+    private Map<Integer,Double> classWeights;
 
     private static Logger log = LoggerFactory.getLogger(RNTN.class);
 
@@ -139,7 +139,7 @@ public class RNTN implements Serializable {
 
     private RNTN(int numHidden,
                  RandomGenerator rng,
-                 boolean useFloatTensors,
+                 boolean useDoubleTensors,
                  boolean combineClassification,
                  boolean simplifiedModel,
                  boolean randomFeatureVectors,
@@ -155,10 +155,10 @@ public class RNTN implements Serializable {
                  int binaryClassificationSize,
                  int numUnaryMatrices,
                  int unaryClassificationSize,
-                 Map<Integer, Float> classWeights) {
+                 Map<Integer, Double> classWeights) {
         this.numHidden = numHidden;
         this.rng = rng;
-        this.useFloatTensors = useFloatTensors;
+        this.useDoubleTensors = useDoubleTensors;
         this.combineClassification = combineClassification;
         this.simplifiedModel = simplifiedModel;
         this.randomFeatureVectors = randomFeatureVectors;
@@ -223,7 +223,7 @@ public class RNTN implements Serializable {
             }
 
             binaryTransform.put(left, right, randomTransformMatrix());
-            if (useFloatTensors) {
+            if (useDoubleTensors) {
                 binaryINd4j.put(left, right, randomBinaryINDArray());
             }
 
@@ -235,7 +235,7 @@ public class RNTN implements Serializable {
         numBinaryMatrices = binaryTransform.size();
         binaryTransformSize = numHidden * (2 * numHidden + 1);
 
-        if (useFloatTensors) {
+        if (useDoubleTensors) {
             binaryINd4jize = numHidden * numHidden * numHidden * 4;
         } else {
             binaryINd4jize = 0;
@@ -324,34 +324,15 @@ public class RNTN implements Serializable {
         this.trainingTrees = trainingBatch;
         for(Tree t : trainingBatch) {
             forwardPropagateTree(t);
-            setParameters(getParameters().subi(getValueGradient()));
+            INDArray params = getParameters();
+            INDArray gradient = getValueGradient();
+            if(params.length() != gradient.length())
+                throw new IllegalStateException("Params not equal to gradient!");
+            setParameters(params.subi(gradient));
 
         }
     }
 
-    /**
-     * Given a sequence of Iterators over a applyTransformToDestination of matrices, fill in all of
-     * the matrices with the entries in the theta vector.  Errors are
-     * thrown if the theta vector does not exactly fill the matrices.
-     */
-    public  void setParams(INDArray theta, Iterator<? extends INDArray> ... matrices) {
-        int index = 0;
-        for (Iterator<? extends INDArray> matrixIterator : matrices) {
-            while (matrixIterator.hasNext()) {
-                INDArray matrix = matrixIterator.next();
-                for (int i = 0; i < matrix.length(); ++i) {
-                    matrix.put(i, theta.getScalar(index));
-                    ++index;
-                }
-            }
-        }
-
-
-        if (index != theta.length()) {
-            throw new AssertionError("Did not entirely use the theta vector");
-        }
-
-    }
 
     public INDArray getWForNode(Tree node) {
         if (node.children().size() == 2) {
@@ -368,7 +349,7 @@ public class RNTN implements Serializable {
     }
 
     public INDArray getINDArrayForNode(Tree node) {
-        if (!useFloatTensors) {
+        if (!useDoubleTensors) {
             throw new AssertionError("Not using INd4j");
         }
         if (node.children().size() == 2) {
@@ -431,7 +412,7 @@ public class RNTN implements Serializable {
             return word;
         }
         // TODO: go through unknown words here
-        return UNKNOWN_FEATURE;
+        return Word2Vec.UNK;
     }
 
     public String basicCategory(String category) {
@@ -471,24 +452,7 @@ public class RNTN implements Serializable {
 
 
 
-    public int getNumParameters() {
-        int totalSize;
-        // binaryINd4jize was applyTransformToDestination to 0 if useFloatTensors=false
-        totalSize = numBinaryMatrices * (binaryTransform.size() + binaryClassificationSize) + binaryINd4jize;
-        totalSize += numUnaryMatrices * unaryClassification.size();
-        totalSize += featureVectors.numWords() * numHidden;
-        return totalSize;
-    }
 
-
-    public INDArray getParameters() {
-        return Nd4j.toFlattened(getNumParameters(),
-                binaryTransform.values().iterator(),
-                binaryClassification.values().iterator(),
-                binaryINd4j.values().iterator(),
-                unaryClassification.values().iterator(),
-                featureVectors.vectors());
-    }
 
 
     double scaleAndRegularize(MultiDimensionalMap<String, String, INDArray> derivatives,
@@ -507,7 +471,7 @@ public class RNTN implements Serializable {
     }
 
     double scaleAndRegularize(Map<String, INDArray> derivatives,
-                             Map<String,INDArray> currentMatrices,
+                              Map<String,INDArray> currentMatrices,
                               double scale,
                               double regCost) {
 
@@ -524,7 +488,7 @@ public class RNTN implements Serializable {
 
 
     double scaleAndRegularize(Map<String, INDArray> derivatives,
-                             VocabCache currentMatrices,
+                              VocabCache currentMatrices,
                               double scale,
                               double regCost) {
 
@@ -559,6 +523,8 @@ public class RNTN implements Serializable {
                                              MultiDimensionalMap<String, String, INDArray> binaryINDArrayTD,
                                              Map<String, INDArray> unaryCD,
                                              Map<String, INDArray> wordVectorD) {
+        if(wordVectorD == null)
+            throw new IllegalStateException("eh?");
         INDArray delta = Nd4j.create(numHidden, 1);
         backpropDerivativesAndError(tree, binaryTD, binaryCD, binaryINDArrayTD, unaryCD, wordVectorD, delta);
     }
@@ -586,9 +552,9 @@ public class RNTN implements Serializable {
             goldLabel.putScalar(goldClass, 1.0f);
         }
 
-        Float nodeWeight = classWeights.get(goldClass);
+        Double nodeWeight = classWeights.get(goldClass);
         if(nodeWeight == null)
-            nodeWeight = 1.0f;
+            nodeWeight = 1.0;
         INDArray predictions = tree.prediction();
 
         // If this is an unlabeled class, applyTransformToDestination deltaClass to 0.  We could
@@ -613,7 +579,8 @@ public class RNTN implements Serializable {
             INDArray deltaFromClass = getUnaryClassification(category).transpose().mmul(deltaClass);
             deltaFromClass = deltaFromClass.get(interval(0, numHidden),interval(0, 1)).mul(currentVectorDerivative);
             INDArray deltaFull = deltaFromClass.add(deltaUp);
-            wordVectorD.put(word, wordVectorD.get(word).add(deltaFull));
+            INDArray wordVector = wordVectorD.get(word);
+            wordVectorD.put(word, wordVector.add(deltaFull));
 
 
         } else {
@@ -645,7 +612,7 @@ public class RNTN implements Serializable {
             binaryTD.put(leftCategory, rightCategory, add.add(W_df));
 
             INDArray deltaDown;
-            if (useFloatTensors) {
+            if (useDoubleTensors) {
                 INDArray Wt_df = getINDArrayGradient(deltaFull, leftVector, rightVector);
                 binaryINDArrayTD.put(leftCategory, rightCategory, binaryINDArrayTD.get(leftCategory, rightCategory).add(Wt_df));
                 deltaDown = computeINDArrayDeltaDown(deltaFull, leftVector, rightVector, getBinaryTransform(leftCategory, rightCategory), getBinaryINDArray(leftCategory, rightCategory));
@@ -724,7 +691,7 @@ public class RNTN implements Serializable {
             INDArray childrenVector = Nd4j.appendBias(leftVector,rightVector);
 
 
-            if (useFloatTensors) {
+            if (useDoubleTensors) {
                 INDArray doubleT = getBinaryINDArray(leftCategory, rightCategory);
                 INDArray INDArrayIn = Nd4j.concat(0,leftVector, rightVector);
                 INDArray INDArrayOut = Nd4j.bilinearProducts(doubleT,INDArrayIn);
@@ -750,7 +717,7 @@ public class RNTN implements Serializable {
 
 
 
-    private INDArray getFloatTensorGradient(INDArray deltaFull, INDArray leftVector, INDArray rightVector) {
+    private INDArray getDoubleTensorGradient(INDArray deltaFull, INDArray leftVector, INDArray rightVector) {
         int size = deltaFull.length();
         INDArray Wt_df = Nd4j.create(new int[]{size * 2, size * 2, size});
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
@@ -793,14 +760,45 @@ public class RNTN implements Serializable {
     }
 
     public void setParameters(INDArray params) {
-        setParams(params,binaryTransform.values().iterator(),
+        if(params.length() != getNumParameters())
+            throw new IllegalStateException("Unable to set parameters of length " + params.length() + " must be of length " + numParameters);
+        Nd4j.setParams(params,
+                binaryTransform.values().iterator(),
                 binaryClassification.values().iterator(),
                 binaryINd4j.values().iterator(),
                 unaryClassification.values().iterator(),
                 featureVectors.vectors());
     }
 
+    public int getNumParameters() {
+        if(numParameters < 0) {
+            int totalSize = 0;
+            List<Iterator<INDArray>> list = Arrays.asList( binaryTransform.values().iterator(),
+                    binaryClassification.values().iterator(),
+                    binaryINd4j.values().iterator(),
+                    unaryClassification.values().iterator(),
+                    featureVectors.vectors());
+            for(Iterator<INDArray> iter : list) {
+                while(iter.hasNext())
+                    totalSize += iter.next().length();
+            }
 
+            numParameters = totalSize;
+        }
+
+        return numParameters;
+    }
+
+
+    public INDArray getParameters() {
+        return Nd4j.toFlattened(
+                getNumParameters(),
+                binaryTransform.values().iterator(),
+                binaryClassification.values().iterator(),
+                binaryINd4j.values().iterator(),
+                unaryClassification.values().iterator(),
+                featureVectors.vectors());
+    }
 
 
     public INDArray getValueGradient() {
@@ -838,7 +836,7 @@ public class RNTN implements Serializable {
             }
         }
 
-        if (useFloatTensors) {
+        if (useDoubleTensors) {
             for (MultiDimensionalMap.Entry<String, String, INDArray> entry : binaryINd4j.entrySet()) {
                 int numRows = entry.getValue().size(1);
                 int numCols = entry.getValue().size(2);
@@ -864,18 +862,19 @@ public class RNTN implements Serializable {
 
 
         final List<Tree> forwardPropTrees = new CopyOnWriteArrayList<>();
-        Parallelization.iterateInParallel(trainingTrees,new Parallelization.RunnableWithParams<Tree>() {
+        if(!forwardPropTrees.isEmpty())
+            Parallelization.iterateInParallel(trainingTrees,new Parallelization.RunnableWithParams<Tree>() {
 
-            public void run(Tree currentItem, Object[] args) {
-                Tree trainingTree = new Tree(currentItem);
-                trainingTree.connect(new ArrayList<>(currentItem.children()));
-                // this will attach the error vectors and the node vectors
-                // to each node in the tree
-                forwardPropagateTree(trainingTree);
-                forwardPropTrees.add(trainingTree);
+                public void run(Tree currentItem, Object[] args) {
+                    Tree trainingTree = new Tree(currentItem);
+                    trainingTree.connect(new ArrayList<>(currentItem.children()));
+                    // this will attach the error vectors and the node vectors
+                    // to each node in the tree
+                    forwardPropagateTree(trainingTree);
+                    forwardPropTrees.add(trainingTree);
 
-            }
-        },rnTnActorSystem);
+                }
+            },rnTnActorSystem);
 
 
 
@@ -884,24 +883,25 @@ public class RNTN implements Serializable {
 
         // TODO: we may find a big speedup by separating the derivatives and then summing
         final AtomicDouble error = new AtomicDouble(0);
-        Parallelization.iterateInParallel(forwardPropTrees,new Parallelization.RunnableWithParams<Tree>() {
+        if(!forwardPropTrees.isEmpty())
+            Parallelization.iterateInParallel(forwardPropTrees,new Parallelization.RunnableWithParams<Tree>() {
 
-            public void run(Tree currentItem, Object[] args) {
-                backpropDerivativesAndError(currentItem, binaryTD, binaryCD, binaryINDArrayTD, unaryCD, wordVectorD);
-                error.addAndGet(currentItem.errorSum());
+                public void run(Tree currentItem, Object[] args) {
+                    backpropDerivativesAndError(currentItem, binaryTD, binaryCD, binaryINDArrayTD, unaryCD, wordVectorD);
+                    error.addAndGet(currentItem.errorSum());
 
-            }
-        },new Parallelization.RunnableWithParams<Tree>() {
+                }
+            },new Parallelization.RunnableWithParams<Tree>() {
 
-            public void run(Tree currentItem, Object[] args) {
-            }
-        },rnTnActorSystem,new Object[]{ binaryTD, binaryCD, binaryINDArrayTD, unaryCD, wordVectorD});
+                public void run(Tree currentItem, Object[] args) {
+                }
+            },rnTnActorSystem,new Object[]{ binaryTD, binaryCD, binaryINDArrayTD, unaryCD, wordVectorD});
 
 
 
         // scale the error by the number of sentences so that the
         // regularization isn't drowned out for large training batchs
-        double scale = (1.0f / trainingTrees.size());
+        double scale = trainingTrees == null || trainingTrees.isEmpty() ? 1.0f :  (1.0f / trainingTrees.size());
         value = error.doubleValue() * scale;
 
         value += scaleAndRegularize(binaryTD, binaryTransform, scale, regTransformMatrix);
@@ -910,8 +910,16 @@ public class RNTN implements Serializable {
         value += scaleAndRegularize(unaryCD, unaryClassification, scale, regClassification);
         value += scaleAndRegularize(wordVectorD, featureVectors, scale, regWordVector);
 
-        INDArray derivative = Nd4j.toFlattened(getNumParameters(), binaryTD.values().iterator(), binaryCD.values().iterator(), binaryINDArrayTD.values().iterator()
-                , unaryCD.values().iterator(), wordVectorD.values().iterator());
+        INDArray derivative = Nd4j.toFlattened(
+                getNumParameters(),
+                binaryTD.values().iterator(),
+                binaryCD.values().iterator(),
+                binaryINDArrayTD.values().iterator()
+                , unaryCD.values().iterator(),
+                wordVectorD.values().iterator());
+
+        if(derivative.length() != numParameters)
+            throw new IllegalStateException("Gradient has wrong number of parameters " + derivative.length() + " should have been " + numParameters);
 
         if(paramAdaGrad == null)
             paramAdaGrad = new AdaGrad(1,derivative.columns());
@@ -947,7 +955,7 @@ public class RNTN implements Serializable {
         private int binaryClassificationSize;
         private int numUnaryMatrices;
         private int unaryClassificationSize;
-        private Map<Integer, Float> classWeights;
+        private Map<Integer, Double> classWeights;
 
 
         public Builder withOutputActivation(ActivationFunction outputActivationFunction) {
@@ -956,7 +964,7 @@ public class RNTN implements Serializable {
         }
 
         public Builder setFeatureVectors(Word2Vec vec) {
-          return setFeatureVectors(vec.getCache());
+            return setFeatureVectors(vec.getCache());
         }
 
         public Builder setNumHidden(int numHidden) {
@@ -1018,7 +1026,7 @@ public class RNTN implements Serializable {
 
         public Builder setFeatureVectors(VocabCache featureVectors) {
             this.featureVectors = featureVectors;
-            this.numHidden = featureVectors.vector(featureVectors.wordAtIndex(0)).columns();
+            this.numHidden = featureVectors.vector(featureVectors.words().iterator().next()).columns();
             return this;
         }
 
@@ -1052,7 +1060,7 @@ public class RNTN implements Serializable {
             return this;
         }
 
-        public Builder setClassWeights(Map<Integer, Float> classWeights) {
+        public Builder setClassWeights(Map<Integer, Double> classWeights) {
             this.classWeights = classWeights;
             return this;
         }

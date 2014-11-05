@@ -6,7 +6,6 @@
 		<version>0.0.3.2.4-SNAPSHOT</version>
 	</parent>
 	<properties>
-		<nd4j.version>0.0.3.5.1</nd4j.version>
 		<cleartk.version>2.0.0</cleartk.version>
 		<spring.version>3.2.5.RELEASE</spring.version>
 		<netty.version>3.8.0.Final</netty.version>
