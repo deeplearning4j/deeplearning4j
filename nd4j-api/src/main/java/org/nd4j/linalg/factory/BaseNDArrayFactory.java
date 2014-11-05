@@ -182,7 +182,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         for(INDArray d : matrices) {
             INDArray flattened = d.linearView();
             for(int i = 0; i < d.length(); i++) {
-                ret.putScalar(linearIndex++, flattened.getFloat(i));
+                ret.putScalar(linearIndex++, flattened.getDouble(i));
             }
         }
 
@@ -192,21 +192,20 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray toFlattened(int length,Iterator<? extends INDArray>...matrices) {
-
-
-        List<DataBuffer> gradient = new ArrayList<>();
-        for(Iterator<? extends INDArray> iter : matrices) {
-            while(iter.hasNext()) {
-                INDArray d = iter.next();
-                gradient.add(d.data());
+        INDArray ret = Nd4j.create(length);
+        for(Iterator<? extends INDArray> iter1 : matrices) {
+            int linearIndex = 0;
+            while(iter1.hasNext()) {
+                INDArray d = iter1.next();
+                INDArray flattened = d.linearView();
+                for(int i = 0; i < d.length(); i++) {
+                    ret.putScalar(linearIndex++, flattened.getDouble(i));
+                }
             }
+
         }
 
-
-
-        DataBuffer[] buffers = (ArrayUtil.combine(gradient.toArray(new DataBuffer[0])));
-        INDArray ret2 = create(createBuffer(buffers));
-        return ret2.reshape(1,ret2.length());
+        return ret;
     }
 
 
