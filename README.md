@@ -2,7 +2,7 @@
 
 A Numpy and Matlab like environment for cross-platform scientific computing. 
 
-* Supports GPUS via CUDA and Native via Jblas.
+* Supports GPUs via CUDA and Native via Jblas.
 * All of this is wrapped in a unifying interface.
 * The API is a mix of Numpy and Jblas.
 
@@ -14,7 +14,7 @@ This will create a 2 x 2 NDarray.
 
 The project works as follows:
 
-Include the following in your pom.xml:
+Include the following in your pom.xml.
 
             <dependency>
              <artifactId>nd4j</artifactId>
@@ -43,7 +43,7 @@ Jcuda:
              <version>0.0.1-SNAPSHOT</version>
             </dependency>
 
-For Jcuda, we are still in the process of streamlining the release for this one. For now, please do the following:
+We are still in the process of streamlining the release for for Jcuda. For now, please do the following:
 
              git clone https://github.com/SkymindIO/mavenized-jcuda
              cd mavenized-jcuda
@@ -53,11 +53,9 @@ This will install the Jcuda jar files.
 
 You need to specify a version of Jcuda to use as well. The version will depend on your GPU. Amazon supports 0.5.5.
 
-We will be streamlining this process soon. 
+### Basics
 
-Basics:
-
-In place operations:
+In-place operations:
 
              INDArray arr = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
              //scalar operation
