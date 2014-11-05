@@ -3,12 +3,9 @@ Deep Learning for Java
 
 Deep learning is a form of state-of-the-art machine learning that can learn to recognize patterns in data unsupervised.
 
-Unsupervised pattern recognition saves time during data analysis, trend discovery and labeling of certain types of data, such as images, text, sound and time series.
-
-Edit: Took Travis build out. It times out on the tests, we need to migrate to a better testing infrastructure.
+Unsupervised pattern recognition saves time during data analysis, trend discovery and labeling of certain types of data, such as image, text, sound and time series.
 
 See [Deeplearning4j.org](http://deeplearning4j.org/) for applications, tutorials, definitions and other resources on the discipline.
-
 
 Download a release
 ===========================
@@ -75,7 +72,7 @@ Initial deployment instructions:
 2. cd mavenized-jcuda && mvn clean install -DskipTests
 3. Include the linear-algebra-jcublas in your pom:
 
-          <dependency>
+                   <dependency>
                     <groupId>org.nd4j</groupId>
                      <artifactId>nd4j-jcublas</artifactId>
                       <version>0.0.3.2-SNAPSHOT</version>
@@ -92,7 +89,7 @@ Installation
 
 # Maven coordinates
 
- It is highly reccommended  that you use development snapshots right now.
+ It is highly reccommended that you use development snapshots right now.
  
  Put this snippet in your POM and use the dependencies as versioned below.
  
@@ -123,7 +120,7 @@ Installation
 
 ## Text analysis
 
-         <dependency>
+          <dependency>
            <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-nlp</artifactId>
              <version>0.0.3.2-SNAPSHOT</version>
