@@ -73,8 +73,52 @@ public class Nd4j {
         }
     }
 
+    /**
+     * Given a sequence of Iterators over a applyTransformToDestination of matrices, fill in all of
+     * the matrices with the entries in the theta vector.  Errors are
+     * thrown if the theta vector does not exactly fill the matrices.
+     */
+    public  static void setParams(INDArray theta, Collection<INDArray> ... matrices) {
+        int index = 0;
+        for (Collection<INDArray> matrixCollection : matrices) {
+            for (INDArray matrix : matrixCollection) {
+                INDArray linear = matrix.linearView();
+                for (int i = 0; i < matrix.length(); i++) {
+                    linear.putScalar(i, theta.getDouble(index));
+                    index++;
+                }
+            }
+        }
 
 
+        if (index != theta.length()) {
+            throw new AssertionError("Did not entirely use the theta vector");
+        }
+
+    }
+    /**
+     * Given a sequence of Iterators over a applyTransformToDestination of matrices, fill in all of
+     * the matrices with the entries in the theta vector.  Errors are
+     * thrown if the theta vector does not exactly fill the matrices.
+     */
+    public static void setParams(INDArray theta, Iterator<? extends INDArray> ... matrices) {
+        int index = 0;
+        for (Iterator<? extends INDArray> matrixIterator : matrices) {
+            while (matrixIterator.hasNext()) {
+                INDArray matrix = matrixIterator.next().linearView();
+                for (int i = 0; i < matrix.length(); i++) {
+                    matrix.putScalar(i, theta.getDouble(index));
+                    index++;
+                }
+            }
+        }
+
+
+        if (index != theta.length()) {
+            throw new AssertionError("Did not entirely use the theta vector");
+        }
+
+    }
 
 
     public static NDArrayFactory factory() {

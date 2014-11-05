@@ -177,8 +177,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray toFlattened(Collection<INDArray> matrices) {
         int length = 0;
         for(INDArray m : matrices)  length += m.length();
-        INDArray ret = Nd4j.create(length);
         int linearIndex = 0;
+
+        INDArray ret = Nd4j.create(length);
         for(INDArray d : matrices) {
             INDArray flattened = d.linearView();
             for(int i = 0; i < d.length(); i++) {
@@ -193,8 +194,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray toFlattened(int length,Iterator<? extends INDArray>...matrices) {
         INDArray ret = Nd4j.create(length);
+        int linearIndex = 0;
+
         for(Iterator<? extends INDArray> iter1 : matrices) {
-            int linearIndex = 0;
             while(iter1.hasNext()) {
                 INDArray d = iter1.next();
                 INDArray flattened = d.linearView();
