@@ -74,8 +74,8 @@ Initial deployment instructions:
 
                    <dependency>
                     <groupId>org.nd4j</groupId>
-                     <artifactId>nd4j-jcublas</artifactId>
-                      <version>0.0.3.2-SNAPSHOT</version>
+                    <artifactId>nd4j-jcublas</artifactId>
+                    <version>0.0.3.2-SNAPSHOT</version>
                    </dependency>
 
 Bugs/Feature Requests
