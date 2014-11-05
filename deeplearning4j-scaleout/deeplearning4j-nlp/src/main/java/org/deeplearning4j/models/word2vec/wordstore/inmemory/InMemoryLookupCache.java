@@ -624,6 +624,11 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         public INDArray next() {
             return syn0.getRow(currIndex++);
         }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
     }
 
     @Override
