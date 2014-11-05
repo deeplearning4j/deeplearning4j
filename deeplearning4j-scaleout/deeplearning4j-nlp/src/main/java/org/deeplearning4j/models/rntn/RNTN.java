@@ -409,7 +409,7 @@ public class RNTN implements Serializable {
         INDArray Wt_df = Nd4j.create(new int[]{size,size * 2, size*2});
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; slice++) {
-            Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal((double) deltaFull.getScalar(slice).element(),fullVector).mmul(fullVector.transpose()));
+            Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getDouble(0),fullVector).mmul(fullVector.transpose()));
         }
         return Wt_df;
     }
@@ -517,7 +517,7 @@ public class RNTN implements Serializable {
             INDArray vector = currentMatrices.get(s);
             D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost,vector));
             derivatives.put(s, D);
-            cost += (double) vector.mul(vector).sum(Integer.MAX_VALUE).element() * regCost / 2.0f;
+            cost += vector.mul(vector).sum(Integer.MAX_VALUE).getDouble(0) * regCost / 2.0f;
         }
         return cost;
     }
@@ -534,7 +534,7 @@ public class RNTN implements Serializable {
             INDArray vector = currentMatrices.vector(s);
             D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost,vector));
             derivatives.put(s, D);
-            cost += (double) vector.mul(vector).sum(Integer.MAX_VALUE).element() * regCost / 2.0f;
+            cost += vector.mul(vector).sum(Integer.MAX_VALUE).getDouble(0)* regCost / 2.0f;
         }
         return cost;
     }
@@ -548,7 +548,7 @@ public class RNTN implements Serializable {
             INDArray D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
             D = D.muli(scale).add(entry.getValue().muli(regCost));
             derivatives.put(entry.getFirstKey(), entry.getSecondKey(), D);
-            cost += (double)  entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).element() * regCost / 2.0f;
+            cost += entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).getDouble(0) * regCost / 2.0f;
         }
         return cost;
     }
@@ -598,7 +598,7 @@ public class RNTN implements Serializable {
         INDArray deltaClass = goldClass >= 0 ? Nd4j.getBlasWrapper().scal(nodeWeight,predictions.sub(goldLabel)) : Nd4j.create(predictions.rows(), predictions.columns());
         INDArray localCD = deltaClass.mmul(Nd4j.appendBias(currentVector).transpose());
 
-        double error = -(double) (Transforms.log(predictions).muli(goldLabel).sum(Integer.MAX_VALUE).element());
+        double error = - (Transforms.log(predictions).muli(goldLabel).sum(Integer.MAX_VALUE).getDouble(0));
         error = error * nodeWeight;
         tree.setError(error);
 
@@ -671,7 +671,7 @@ public class RNTN implements Serializable {
         INDArray deltaINDArray = Nd4j.create(size * 2, 1);
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
-            INDArray scaledFullVector = Nd4j.getBlasWrapper().scal((double) deltaFull.getScalar(slice).element(),fullVector);
+            INDArray scaledFullVector = Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getDouble(0),fullVector);
             deltaINDArray = deltaINDArray.add(Wt.slice(slice).add(Wt.slice(slice).transpose()).mmul(scaledFullVector));
         }
         return deltaINDArray.add(WTDeltaNoBias);
