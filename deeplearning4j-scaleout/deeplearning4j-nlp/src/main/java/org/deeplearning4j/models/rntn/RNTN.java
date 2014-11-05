@@ -1018,6 +1018,7 @@ public class RNTN implements Serializable {
 
         public Builder setFeatureVectors(VocabCache featureVectors) {
             this.featureVectors = featureVectors;
+            this.numHidden = featureVectors.vector(featureVectors.wordAtIndex(0)).columns();
             return this;
         }
 
