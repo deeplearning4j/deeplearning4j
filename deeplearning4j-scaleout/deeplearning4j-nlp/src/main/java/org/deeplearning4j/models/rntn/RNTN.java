@@ -956,8 +956,7 @@ public class RNTN implements Serializable {
         }
 
         public Builder setFeatureVectors(Word2Vec vec) {
-            this.numHidden = vec.getLayerSize();
-            return this;
+          return setFeatureVectors(vec.getCache())
         }
 
         public Builder setNumHidden(int numHidden) {
