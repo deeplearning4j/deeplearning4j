@@ -17,7 +17,7 @@ Contents
 
 * DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
 
-* You can install DL4J either from source or from Maven central. Here are the **source** instructions. 
+* You can install DL4J either from source or from [Maven central](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-distribution/0.0.3.2-SNAPSHOT/). Here are the **source** instructions, which require Github (Mac and Windows users, see below). 
 
          git clone https://github.com/agibsonccc/java-deeplearning
          cd java-deeplearning
@@ -96,7 +96,7 @@ Add these POM coordinates to your project:
 		
          <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-nlp/artifactId>
+            <artifactId>deeplearning4j-nlp</artifactId>
             <version>0.0.3.2</version>
          </dependency>
 
@@ -140,16 +140,18 @@ If you're using IntelliJ as your IDE, this should work already.
 
 ### <a name="osx">OSX</a>
 
+* Install [Github](https://mac.github.com/).
 * Jblas is already installed on OSX.  
 
 ### <a name="windows">Windows</a>
 
-* First, install [Anaconda](http://docs.continuum.io/anaconda/install.html#windows-install). 
+* Install [Git](https://windows.github.com/). Click on the Git Shell alias. Within that shell, enter the commands at the top of this page (under "all OS") to git clone the code repositories of Deeplearning4j and ND4J.
 
-* Second, install [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/). Lapack will ask you if you have Intel compilers. You do not. 
+* Install [Anaconda](http://docs.continuum.io/anaconda/install.html#windows-install). If your system doesn't like the default 64-bit install, try the 32-bit offered on the same download page. (Deeplearning4j depends on Anaconda to use the graphics generator matplotlib.) 
+
+* Install [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/). Lapack will ask if you have Intel compilers. You do not.  
 
 * Instead, you will need to install [MinGW 32 bits](http://www.mingw.org/) (the download button is on the upper right) and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). 
-
 * Lapack offers the alternative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). 
 
 ### <a name="next">Next Steps: Running Examples</a>

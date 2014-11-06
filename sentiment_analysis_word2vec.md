@@ -300,8 +300,6 @@ Since this is a word-vector-based approach, we're going to use Word2vec, and whi
 
 Since seeing is understanding, we use D3 to visualize the 16,000-word vocabulary. We use an algorithm called t-SNE to gauge the proximity of words to other words. Doing that lets us ensure that the word clusters themselves are coherent.
 
-TK: Add Renders
-
 Word vectors are useful with sequential applications for text. They can be used in document classification with a proper ensemble method (voting) as well with optimizing for a maximum likelihood estimator over the windows and labels.
 
 So what does Word2vec look like in code? The key code snippet is here:
@@ -319,3 +317,14 @@ You'll notice we specify a document iterator, a tokenizer factory, a learning ra
 * cache: this is where all of our metadata about vocabulary is stored including word vectors, tfidf scores, document frequencies as well as where documents occurred.
 * layer size: this is the number of features per word
 * window size: the window size for iterating over text, this is how long of contexts to train on.
+
+## A Few Results
+
+How do you evaluate how well feature vectors perform? Unlike classification nets, there's no f1 score for unsupervised, generative learning. A quick and dirty technique is *words nearest*. The first word is the search term, and the words in the array are those Word2Vec has determined to be closest in meaning.
+
+* **amusing** [sometimes, characters, cast, often, funny, flat-out, Slackers, many, clever, wars, either]
+* **chilling** [luck, effectively, oozing, severely, grew, guilty, talented, pleasure, guys, Ice, tongue-tied]
+
+In the examples above, amusing has positive connotations and is related to performance, while chilling is partially negative, and partically physical. If we reflect semantically about the domain of each keyword, it makes sense that characters and funny would be near amusing. 
+
+You should play around with the vocabulary yourself to get an idea and search for similarities. Results can be rendered visually using t-SNE. We'll get to that in another post.
