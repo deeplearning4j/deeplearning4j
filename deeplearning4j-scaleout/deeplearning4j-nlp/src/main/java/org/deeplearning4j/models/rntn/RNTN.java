@@ -3,6 +3,7 @@ package org.deeplearning4j.models.rntn;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 import akka.actor.ActorSystem;
+import akka.dispatch.Futures;
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -11,6 +12,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Activations;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -26,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -136,6 +139,8 @@ public class RNTN implements Serializable {
 
 
     private transient ActorSystem rnTnActorSystem = ActorSystem.create("RNTN");
+
+
 
     private RNTN(int numHidden,
                  RandomGenerator rng,
@@ -288,7 +293,9 @@ public class RNTN implements Serializable {
         binary.put(indices,block);
         NDArrayIndex[] indices2 = new NDArrayIndex[]{interval(0,block.rows()),interval(numHidden,numHidden + block.columns())};
         binary.put(indices2,randomTransformBlock());
-        return Nd4j.getBlasWrapper().scal(scalingForInit,binary);
+        if(binary.data().dataType().equals(DataBuffer.DOUBLE))
+            return Nd4j.getBlasWrapper().scal(scalingForInit,binary);
+        return Nd4j.getBlasWrapper().scal((float) scalingForInit,binary);
     }
 
     public INDArray randomTransformBlock() {
@@ -306,7 +313,10 @@ public class RNTN implements Serializable {
         INDArray ret = Nd4j.zeros(numOuts,numHidden + 1);
         INDArray insert = Nd4j.rand(numOuts,numHidden,-range,range,rng);
         ret.put(new NDArrayIndex[] {interval(0,numOuts),interval(0,numHidden)},insert);
-        return Nd4j.getBlasWrapper().scal(scalingForInit,ret);
+        if(ret.data().dataType().endsWith(DataBuffer.DOUBLE))
+            return Nd4j.getBlasWrapper().scal(scalingForInit,ret);
+        return Nd4j.getBlasWrapper().scal((float) scalingForInit,ret);
+
     }
 
     INDArray randomWordVector() {
@@ -322,13 +332,27 @@ public class RNTN implements Serializable {
      */
     public void fit(List<Tree> trainingBatch) {
         this.trainingTrees = trainingBatch;
-        for(Tree t : trainingBatch) {
-            forwardPropagateTree(t);
-            INDArray params = getParameters();
-            INDArray gradient = getValueGradient();
-            if(params.length() != gradient.length())
-                throw new IllegalStateException("Params not equal to gradient!");
-            setParameters(params.subi(gradient));
+        int count = 0;
+        for(final Tree t : trainingBatch) {
+            log.info("Working mini batch " + count++);
+            Futures.future(new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    forwardPropagateTree(t);
+                    try {
+                        INDArray params = getParameters();
+                        INDArray gradient = getValueGradient();
+                        if(params.length() != gradient.length())
+                            throw new IllegalStateException("Params not equal to gradient!");
+                        setParameters(params.subi(gradient));
+                    }catch(NegativeArraySizeException e) {
+                        log.warn("Couldnt compute parameters due to negative array size...for trees " + t);
+                    }
+
+                    return null;
+                }
+            },rnTnActorSystem.dispatcher());
+
 
         }
     }

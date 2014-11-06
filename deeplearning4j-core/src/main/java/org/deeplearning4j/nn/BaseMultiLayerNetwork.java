@@ -488,14 +488,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         List<ActivationFunction> activationFunctions = new ArrayList<>();
 
 
-        for (int j = 0; j < getNeuralNets().length; j++) {
-            weights.add(getNeuralNets()[j].getW());
-            biases.add(getNeuralNets()[j].gethBias());
-            activationFunctions.add(getNeuralNets()[j].conf().getActivationFunction());
+        for (int j = 0; j < getLayers().length; j++) {
+            weights.add(getLayers()[j].getW());
+            biases.add(getLayers()[j].getB());
+            activationFunctions.add(getLayers()[j].conf().getActivationFunction());
         }
 
 
-        INDArray rix = rActivations.get(rActivations.size() - 1).divi(input.rows());
+        INDArray rix = rActivations.get(rActivations.size() - 1).divi((double) input.rows());
         LinAlgExceptions.assertValidNum(rix);
 
         //errors
@@ -568,9 +568,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         List<INDArray> biases = new ArrayList<>();
 
         List<ActivationFunction> activationFunctions = new ArrayList<>();
-        for (int j = 0; j < getNeuralNets().length; j++) {
-            weights.add(getNeuralNets()[j].getW());
-            biases.add(getNeuralNets()[j].gethBias());
+        for (int j = 0; j < getLayers().length; j++) {
+            weights.add(getLayers()[j].getW());
+            biases.add(getLayers()[j].getB());
             activationFunctions.add(getLayers()[j].conf().getActivationFunction());
         }
 
@@ -1128,21 +1128,21 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             INDArray preConGradientChange = deltas.get(l).getSecond();
 
 
-            if (l < getNeuralNets().length && gradientChange.length() != getNeuralNets()[l].getW().length())
+            if (l < layers.length && gradientChange.length() != layers[l].getW().length())
                 throw new IllegalStateException("Gradient change not equal to weight change");
             else if (l == getNeuralNets().length && gradientChange.length() != getOutputLayer().getW().length())
                 throw new IllegalStateException("Gradient change not equal to weight change");
 
 
             //update hidden bias
-            INDArray deltaColumnSums = deltas.get(l).getFirst().mean(1);
-            INDArray preConColumnSums = deltas.get(l).getSecond().mean(1);
+            INDArray deltaColumnSums = deltas.get(l).getFirst().mean(0);
+            INDArray preConColumnSums = deltas.get(l).getSecond().mean(0);
 
             grad.add(new Pair<>(gradientChange, deltaColumnSums));
             preCon.add(new Pair<>(preConGradientChange, preConColumnSums));
-            if (l < getNeuralNets().length && deltaColumnSums.length() != neuralNets[l].gethBias().length())
+            if (l < layers.length && deltaColumnSums.length() != layers[l].getB().length())
                 throw new IllegalStateException("Bias change not equal to weight change");
-            else if (l == getNeuralNets().length && deltaColumnSums.length() != getOutputLayer().getB().length())
+            else if (l == getLayers().length && deltaColumnSums.length() != getOutputLayer().getB().length())
                 throw new IllegalStateException("Bias change not equal to weight change");
 
 
@@ -1205,8 +1205,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
             //update hidden bias
-            INDArray deltaColumnSums = deltas.get(l).mean(1);
-            if (deltaColumnSums.length() != neuralNets[l].gethBias().length())
+            INDArray deltaColumnSums = deltas.get(l).mean(0);
+            if (deltaColumnSums.length() != layers[l].getB().length())
                 throw new IllegalStateException("Bias change not equal to weight change");
 
 
@@ -1216,7 +1216,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         }
 
         INDArray logLayerGradient = deltas.get(getnLayers());
-        INDArray biasGradient = deltas.get(getnLayers()).mean(1);
+        INDArray biasGradient = deltas.get(getnLayers()).mean(0);
 
         list.add(new Pair<>(logLayerGradient, biasGradient));
 

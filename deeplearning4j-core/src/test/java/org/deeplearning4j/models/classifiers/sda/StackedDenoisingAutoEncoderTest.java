@@ -7,6 +7,7 @@ import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -40,9 +41,9 @@ public class StackedDenoisingAutoEncoderTest {
 
 
         List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
-                .momentum(5e-1f).weightInit(WeightInit.SIZE)
+                .momentum(5e-1f).weightInit(WeightInit.SIZE).constrainGradientToUnitNorm(false)
                 .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE).iterations(10)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
+                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE)
                 .learningRate(1e-1f).nIn(d2.numInputs()).nOut(d2.numOutcomes()).list(4).override(new NeuralNetConfiguration.ConfOverride() {
                     @Override
                     public void override(int i, NeuralNetConfiguration.Builder builder) {
