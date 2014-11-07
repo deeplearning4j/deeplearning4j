@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# DBNs = Classifiers
+# DBNs Are Classifiers
 
 Deep-belief networks are multi-class classifiers. Given many inputs belonging to various classes, a DBN can first learn from a small training set, and then classify unlabeled data according to those various classes. It can take in one input and decide which label should be applied to its data record. 
 
@@ -189,7 +189,7 @@ In this example, we have the following
 
 After your net has trained, you'll see an F1 score like this. In machine learning, an F1 score is one metric used to determine how well a classifier performs. It's a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It's basically the probability that your net's guesses are correct.
 
-Our model wasn’t tuned all that well (back to the knobs!), and this is just a first pass, but not bad!
+Our model wasn’t tuned all that well (back to the knobs!), and this is just a first pass, but not bad.
 
 In the end, a working network's visual representation of the Iris dataset will look something like this
 
