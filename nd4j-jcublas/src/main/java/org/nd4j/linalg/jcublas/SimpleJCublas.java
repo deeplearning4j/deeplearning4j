@@ -1,7 +1,9 @@
 package org.nd4j.linalg.jcublas;
 
 import jcuda.*;
+import jcuda.driver.JCudaDriver;
 import jcuda.jcublas.JCublas;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -13,6 +15,8 @@ import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import javax.xml.crypto.Data;
@@ -29,12 +33,19 @@ import java.lang.reflect.Field;
  *
  */
 public class SimpleJCublas {
+    public final static String CUDA_HOME = "CUDA_HOME";
+    public final static String JCUDA_HOME_PROP = "jcuda.home";
+    private static Logger log = LoggerFactory.getLogger(SimpleJCublas.class);
     static {
         //write the file to somewhere on java.library.path where there is permissions
-        ClassPathResource resource = new ClassPathResource("/" + resourceName().substring(3));
+        String name = "/" + resourceName().substring(3).replace("X","x");
+        log.info("Loading jcublas from " + name);
+        ClassPathResource resource = new ClassPathResource(name);
         String home = findWritableLibDir();
+
+
         File cuBlastmp = new File(home);
-        File shared = new File(cuBlastmp,resourceName());
+        File shared = new File(cuBlastmp,resourceName().replace("X","x"));
         try {
             shared.createNewFile();
             BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(shared));
@@ -43,11 +54,19 @@ public class SimpleJCublas {
             bos.close();
 
         } catch (IOException e) {
-            throw new RuntimeException("Unable to initialize jcublas");
+            throw new RuntimeException("Unable to initialize jcublas",e);
         }
 
-        shared.deleteOnExit();
-        cuBlastmp.deleteOnExit();
+        File libs = new File(libDir());
+
+        try {
+            FileUtils.copyDirectory(libs,cuBlastmp);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+
 
 
         JCublas.setLogLevel(LogLevel.LOG_DEBUG);
@@ -61,15 +80,81 @@ public class SimpleJCublas {
         });
     }
 
-    private static String resourceName() {
+    private static String cudaHome() {
+        String cudaHome = System.getProperty(JCUDA_HOME_PROP,System.getenv(CUDA_HOME));
+
+        if(cudaHome == null)
+            return cudaBase();
+        return cudaHome;
+    }
+
+
+    private static String version() {
+        switch(JCudaDriver.CUDA_VERSION) {
+            case 6050:
+                return "6.5";
+            case 6000:
+                return "6.0";
+            case 5500:
+                return "5.5";
+            default:
+                return null;
+        }
+    }
+
+    private static String libDir() {
+        return cudaBase() + File.separator  + libFolder() + thirtyTwoOrSixtyFour();
+    }
+
+
+    private static String libFolder() {
         LibUtils.OSType osType = LibUtils.calculateOS();
+        return osType == LibUtils.OSType.WINDOWS ? "Lib" : "lib";
+    }
+
+    private static int thirtyTwoOrSixtyFour() {
+        LibUtils.ARCHType ar = LibUtils.calculateArch();
+        switch(ar) {
+            case X86_64:
+                return 64;
+            case PPC_64:
+                return 64;
+            default:
+                return 32;
+        }
+
+    }
+
+
+    private static String cudaBase() {
+        LibUtils.OSType osType = LibUtils.calculateOS();
+        LibUtils.ARCHType ar = LibUtils.calculateArch();
+
         switch(osType) {
             case APPLE:
-                return "libJCublas-linux-x86_64.so";
+                return String.format("/Developer/NVIDIA/CUDA-%s",ar.toString());
             case LINUX:
-                return "libJCublas-linux-x86_64.so";
+                return String.format("/usr/local/cuda-" + version(),ar.toString());
             case SUN:
-                return "libJCublas-linux-x86_64.so";
+                return String.format("/usr/local/cuda-" + version(),ar.toString());
+            case WINDOWS:
+                return String.format("C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v%s",ar.toString());
+            default:
+                return null;
+        }
+
+    }
+    private static String resourceName() {
+        LibUtils.OSType osType = LibUtils.calculateOS();
+        LibUtils.ARCHType ar = LibUtils.calculateArch();
+
+        switch(osType) {
+            case APPLE:
+                return String.format("libJCublas-linux-%s.so",ar.toString());
+            case LINUX:
+                return String.format("libJCublas-linux-%s.so",ar.toString());
+            case SUN:
+                return String.format("libJCublas-linux-%s.so",ar.toString());
             case WINDOWS:
                 return "libJCublas-windows-x86.dll";
             default:
@@ -1064,7 +1149,7 @@ public class SimpleJCublas {
      * @param y
      * @return
      */
-    public static float dot(INDArray x, INDArray y) {
+    public static double dot(INDArray x, INDArray y) {
         DataTypeValidation.assertSameDataType(x,y);
         JCublas.cublasInit();
 
@@ -1074,15 +1159,31 @@ public class SimpleJCublas {
         Pointer xCPointer = alloc(xC);
         Pointer yCPointer = alloc(yC);
 
-        float ret =  JCublas.cublasSdot(
-                x.length(),
-                xCPointer,
-                1
-                ,yCPointer,
-                1);
+        if(x.data().dataType().endsWith(DataBuffer.FLOAT)) {
+            float ret =  JCublas.cublasSdot(
+                    x.length(),
+                    xCPointer,
+                    1
+                    ,yCPointer,
+                    1);
 
-        free(xCPointer,yCPointer);
-        return ret;
+            free(xCPointer,yCPointer);
+            return ret;
+        }
+
+
+        else {
+            double ret =  JCublas.cublasDdot(
+                    x.length(),
+                    xCPointer,
+                    1
+                    ,yCPointer,
+                    1);
+
+            free(xCPointer,yCPointer);
+            return ret;
+        }
+
     }
 
 

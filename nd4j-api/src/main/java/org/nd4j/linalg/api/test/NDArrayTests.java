@@ -323,8 +323,8 @@ public abstract class NDArrayTests {
 
     @Test
     public void testCosineSim() {
-        INDArray vec1 = Nd4j.create(new float[]{1,2,3,4});
-        INDArray vec2 = Nd4j.create(new float[]{1,2,3,4});
+        INDArray vec1 = Nd4j.create(new double[]{1,2,3,4});
+        INDArray vec2 = Nd4j.create(new double[]{1,2,3,4});
         double sim = Transforms.cosineSim(vec1,vec2);
         assertEquals(1,sim,1e-1);
 

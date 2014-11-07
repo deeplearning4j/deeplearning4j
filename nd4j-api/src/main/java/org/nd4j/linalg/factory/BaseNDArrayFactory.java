@@ -235,7 +235,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         for(int i = 0; i < curr.slices(); i++) {
             INDArray slice = curr.slice(i);
             INDArray inTTimesSlice = inT.mmul(slice);
-            ret.putScalar(i, inTTimesSlice.mmul(in).getFloat(0));
+            ret.putScalar(i, Nd4j.getBlasWrapper().dot(inTTimesSlice,in));
         }
         return ret;
     }
