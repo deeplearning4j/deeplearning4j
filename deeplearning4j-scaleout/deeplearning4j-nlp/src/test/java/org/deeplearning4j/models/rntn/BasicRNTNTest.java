@@ -30,6 +30,8 @@ public class BasicRNTNTest {
     private SentenceIterator sentenceIter;
     private TokenizerFactory tokenizerFactory;
     private String sentence = "<LABEL> This is one sentence. </LABEL>";
+
+
     @Before
     public void init() throws Exception {
         new File("cache.ser").delete();
@@ -38,7 +40,8 @@ public class BasicRNTNTest {
         sentenceIter = new CollectionSentenceIterator(Arrays.asList(sentence));
         File vectors = new File("wordvectors.ser");
         vectors.delete();
-        vec = new Word2Vec.Builder().vocabCache(new InMemoryLookupCache.Builder().vectorLength(100).build())
+        vec = new Word2Vec.Builder()
+                .vocabCache(new InMemoryLookupCache.Builder().vectorLength(100).build())
                 .iterate(sentenceIter).build();
         vec.fit();
 

@@ -226,7 +226,6 @@ public class TreeParser {
                 parser.process(c2);
 
                 //build the tree based on this
-                //damn it
                 List<TopTreebankNode> nodes = new ArrayList<>(JCasUtil.select(c2.getJCas(),TopTreebankNode.class));
                 if(nodes.size() > 1) {
                     log.warn("More than one top level node for a treebank parse. Only accepting first input node.");
@@ -237,14 +236,7 @@ public class TreeParser {
                     continue;
                 }
 
-                Collection<String> labels2 = stringsWithLabels.getSecond().values();
-                Set<String> diff = SetUtils.difference(labels2,labels);
-                if(!diff.isEmpty()) {
-                    log.warn("Found invalid sentence. Skipping");
-                    c2.reset();
-                    continue;
 
-                }
 
 
                 TopTreebankNode node = nodes.get(0);
