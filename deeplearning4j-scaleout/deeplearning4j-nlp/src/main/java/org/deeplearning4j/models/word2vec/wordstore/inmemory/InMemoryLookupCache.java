@@ -368,7 +368,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      * @param word the word to increment the count for
      */
     @Override
-    public synchronized void incrementWordCount(String word) {
+    public  void incrementWordCount(String word) {
         incrementWordCount(word,1);
     }
 
@@ -380,7 +380,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      * @param increment the amount to increment by
      */
     @Override
-    public  synchronized void incrementWordCount(String word, int increment) {
+    public   void incrementWordCount(String word, int increment) {
         wordFrequencies.incrementCount(word,1);
 
         VocabWord token;
