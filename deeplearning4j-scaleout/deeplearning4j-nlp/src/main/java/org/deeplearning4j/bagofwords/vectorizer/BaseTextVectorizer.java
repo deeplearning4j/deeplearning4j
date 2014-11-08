@@ -135,7 +135,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
                 done = true;
             }
         }
-
+        log.info("Invoking finish on index");
         index.finish();
         trainingSystem.shutdown();
 
