@@ -20,6 +20,13 @@ public abstract class Builder {
     protected SentenceIterator sentenceIterator;
     protected List<String> labels;
     protected InvertedIndex index;
+    protected int batchSize = 1000;
+
+
+    public Builder batchSize(int batchSize) {
+        this.batchSize = batchSize;
+        return this;
+    }
 
 
     public Builder index(InvertedIndex index){

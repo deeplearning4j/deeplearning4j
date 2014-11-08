@@ -28,8 +28,8 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
 
     public BagOfWordsVectorizer(){}
 
-    protected BagOfWordsVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index) {
-        super(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels,index);
+    protected BagOfWordsVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index,int batchSize) {
+        super(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels,index,batchSize);
     }
 
     /**
@@ -118,7 +118,7 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
 
         @Override
         public TextVectorizer build() {
-            return new BagOfWordsVectorizer(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels,index);
+            return new BagOfWordsVectorizer(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels,index,batchSize);
 
         }
     }
