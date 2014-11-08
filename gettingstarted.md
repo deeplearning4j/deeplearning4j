@@ -19,8 +19,7 @@ Contents
 
 * You can install DL4J either from source or from [Maven central](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-distribution/0.0.3.2-SNAPSHOT/). Here are the **source** instructions, which require Github (Mac and Windows users, see below). 
 
-         git clone https://github.com/SkymindIO/deeplearning4j/
-         cd deeplearning4j
+         git clone https://github.com/SkymindIO/deeplearning4j
          git clone https://github.com/SkymindIO/dl4j-examples
 
 ###ND4J
