@@ -298,59 +298,23 @@ public class Word2Vec implements Persistable {
         final List<Future<?>> futures2 = new ArrayList<>();
         for (int i = 0; i < numIterations; i++) {
             log.info("Training on " + docs.size());
-            final List<VocabWord> docMiniBatch = new CopyOnWriteArrayList<>();
-            final List<List<VocabWord>> minibatches = new ArrayList<>();
-
             final AtomicLong nextRandom = new AtomicLong(5);
 
-            for (int j : docs) {
-                final int k = j;
-                List<VocabWord> doc = vectorizer.index().document(k);
-                for(VocabWord word : doc) {
-                    if(word == null || word.getWord() == null)
-                        continue;
-                    // The subsampling randomly discards frequent words while keeping the ranking same
-                    if (sample > 0) {
-                        double ran = (Math.sqrt(word.getWordFrequency()/ (sample * numSentencesProcessed.get())) + 1)
-                                * (sample * numSentencesProcessed.get()) / word.getWordFrequency();
 
-                        if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
-                            continue;
-                        }
-
-                        docMiniBatch.add(word);
-                    }
-                    else
-                        docMiniBatch.add(word);
-                }
-
-
-                if(docMiniBatch.size() >= batchSize) {
-                    minibatches.add(new ArrayList<>(docMiniBatch));
-
-
-                    docMiniBatch.clear();
-                }
-
-            }
-
-
-            for(final List<VocabWord> batch : minibatches) {
+            Iterator<List<VocabWord>> minibatchesIter = vectorizer.index().miniBatches();
+            while(minibatchesIter.hasNext()) {
+                final List<VocabWord> batch = minibatchesIter.next();
                 futures2.add(service.submit(new Callable<Void>() {
 
 
                     @Override
                     public Void call() {
                         trainSentence(batch, numSentencesProcessed,nextRandom);
-                        docMiniBatch.clear();
+
                         return null;
                     }
                 }));
             }
-
-
-
-
         }
 
 
@@ -460,7 +424,7 @@ public class Word2Vec implements Persistable {
         //vectorizer will handle setting up vocab meta data
         if(vectorizer == null)
             vectorizer = new TfidfVectorizer.Builder()
-                    .cache(cache).iterate(docIter).iterate(sentenceIter)
+                    .cache(cache).iterate(docIter).iterate(sentenceIter).batchSize(batchSize)
                     .minWords(minWordFrequency).stopWords(stopWords)
                     .tokenize(tokenizerFactory).build();
         vectorizer.fit();
@@ -632,52 +596,6 @@ public class Word2Vec implements Persistable {
 
 
 
-
-    public int getLayerSize() {
-        return layerSize;
-    }
-    public void setLayerSize(int layerSize) {
-        this.layerSize = layerSize;
-    }
-
-    public int getWindow() {
-        return window;
-    }
-
-
-
-
-
-
-    public List<String> getStopWords() {
-        return stopWords;
-    }
-
-    public  synchronized SentenceIterator getSentenceIter() {
-        return sentenceIter;
-    }
-
-
-
-    public  TokenizerFactory getTokenizerFactory() {
-        return tokenizerFactory;
-    }
-
-
-
-
-    public  void setTokenizerFactory(TokenizerFactory tokenizerFactory) {
-        this.tokenizerFactory = tokenizerFactory;
-    }
-
-    public VocabCache getCache() {
-        return cache;
-    }
-
-    public void setCache(VocabCache cache) {
-        this.cache = cache;
-    }
-
     /**
      * Note that calling a setter on this
      * means assumes that this is a training continuation
@@ -689,6 +607,36 @@ public class Word2Vec implements Persistable {
         this.shouldReset = false;
     }
 
+
+
+
+    public int getLayerSize() {
+        return layerSize;
+    }
+    public void setLayerSize(int layerSize) {
+        this.layerSize = layerSize;
+    }
+    public int getWindow() {
+        return window;
+    }
+    public List<String> getStopWords() {
+        return stopWords;
+    }
+    public  synchronized SentenceIterator getSentenceIter() {
+        return sentenceIter;
+    }
+    public  TokenizerFactory getTokenizerFactory() {
+        return tokenizerFactory;
+    }
+    public  void setTokenizerFactory(TokenizerFactory tokenizerFactory) {
+        this.tokenizerFactory = tokenizerFactory;
+    }
+    public VocabCache getCache() {
+        return cache;
+    }
+    public void setCache(VocabCache cache) {
+        this.cache = cache;
+    }
 
 
     public static class Builder {

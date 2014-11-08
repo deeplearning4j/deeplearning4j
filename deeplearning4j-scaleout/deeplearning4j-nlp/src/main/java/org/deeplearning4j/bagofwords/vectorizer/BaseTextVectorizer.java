@@ -43,10 +43,12 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     private AtomicInteger numWordsEncountered =  new AtomicInteger(0);
     private static Logger log = LoggerFactory.getLogger(BaseTextVectorizer.class);
     private InvertedIndex index;
+    private int batchSize = 1000;
+
 
     public BaseTextVectorizer(){}
 
-    protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index) {
+    protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index,int batchSize) {
         this.cache = cache;
         this.tokenizerFactory = tokenizerFactory;
         this.stopWords = stopWords;
@@ -56,9 +58,17 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         this.sentenceIterator = sentenceIterator;
         this.labels = labels;
         this.index = index;
+        this.batchSize = batchSize;
+
         if(index == null)
-            this.index = new LuceneInvertedIndex.Builder().indexDir(new File("word2vec-index"))
+            this.index = new LuceneInvertedIndex.Builder().batchSize(batchSize)
+                    .indexDir(new File("word2vec-index"))
                    .cache(cache).build();
+    }
+
+    @Override
+    public int batchSize() {
+        return batchSize;
     }
 
     @Override
