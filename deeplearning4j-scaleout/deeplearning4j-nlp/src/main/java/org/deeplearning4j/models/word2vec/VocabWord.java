@@ -146,7 +146,10 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 	}
 
 	public double getWordFrequency() {
-		return wordFrequency.get();
+		if(wordFrequency == null)
+            return 0.0;
+
+        return wordFrequency.get();
 	}
 
 	
