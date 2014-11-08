@@ -115,6 +115,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
         catch(AlreadyClosedException e1) {
             reader = null;
+            readerClosed.set(false);
             return document(index);
         }
         catch (Exception e) {
