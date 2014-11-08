@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public class LuceneInvertedIndex implements InvertedIndex {
+public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClosedListener {
 
     private transient  Directory dir;
     private transient IndexReader reader;
@@ -51,7 +51,7 @@ public class LuceneInvertedIndex implements InvertedIndex {
     private static Logger log = LoggerFactory.getLogger(LuceneInvertedIndex.class);
     public final static String INDEX_PATH = "word2vec-index";
     private AtomicLong finishedCalled;
-
+    private AtomicBoolean readerClosed = new AtomicBoolean(false);
 
 
     public LuceneInvertedIndex(VocabCache vocabCache,boolean cache) {
@@ -206,6 +206,16 @@ public class LuceneInvertedIndex implements InvertedIndex {
                 throw new RuntimeException(e);
             }
 
+        }
+
+        else if(readerClosed.get()) {
+            try {
+                reader = DirectoryReader.open(dir);
+                searcher = new IndexSearcher(reader);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
     }
@@ -376,6 +386,11 @@ public class LuceneInvertedIndex implements InvertedIndex {
 
 
 
+    }
+
+    @Override
+    public void onClose(IndexReader reader) {
+        readerClosed.set(true);
     }
 
 
