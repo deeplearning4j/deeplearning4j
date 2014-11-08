@@ -287,6 +287,7 @@ public class Word2Vec implements Persistable {
                 tries++;
             }
         }
+
         final AtomicInteger numSentencesProcessed = new AtomicInteger(0);
 
         for(int j : docs)
@@ -301,11 +302,15 @@ public class Word2Vec implements Persistable {
             log.info("Training on " + docs.size());
             final List<VocabWord> docMiniBatch = new CopyOnWriteArrayList<>();
             final List<List<VocabWord>> minibatches = new ArrayList<>();
+
             final AtomicLong nextRandom = new AtomicLong(5);
+
             for (int j : docs) {
                 final int k = j;
                 List<VocabWord> doc = vectorizer.index().document(k);
                 for(VocabWord word : doc) {
+                    if(word == null || word.getWord() == null)
+                        continue;
                     // The subsampling randomly discards frequent words while keeping the ranking same
                     if (sample > 0) {
                         double ran = (Math.sqrt(word.getWordFrequency()/ (sample * numSentencesProcessed.get())) + 1)
