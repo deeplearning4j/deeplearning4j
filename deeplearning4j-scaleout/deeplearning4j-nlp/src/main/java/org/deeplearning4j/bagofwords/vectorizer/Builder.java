@@ -21,6 +21,13 @@ public abstract class Builder {
     protected List<String> labels;
     protected InvertedIndex index;
     protected int batchSize = 1000;
+    protected double sample = 0.0;
+
+
+    public Builder sample(double sample) {
+        this.sample = sample;
+        return this;
+    }
 
 
     public Builder batchSize(int batchSize) {

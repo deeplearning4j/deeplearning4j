@@ -647,10 +647,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         return new File("ser").exists();
     }
 
-    @Override
-    public int batchSize() {
-        return 0;
-    }
+
 
     @Override
     public void plotVocab(Tsne tsne) {

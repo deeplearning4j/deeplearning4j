@@ -20,7 +20,11 @@ import org.deeplearning4j.util.Index;
 public interface TextVectorizer extends Vectorizer {
 
 
-
+    /**
+     * Sampling for building mini batches
+     * @return the sampling
+     */
+    double sample();
 
     /**
      * For word vectors, this is the batch size for how to partition documents

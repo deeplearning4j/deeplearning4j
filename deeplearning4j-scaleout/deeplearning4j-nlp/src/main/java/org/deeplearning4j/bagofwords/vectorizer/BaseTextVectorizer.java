@@ -4,23 +4,19 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.routing.RoundRobinPool;
-import org.deeplearning4j.models.word2vec.InputStreamCreator;
 import org.deeplearning4j.models.word2vec.StreamWork;
 import org.deeplearning4j.models.word2vec.VocabWork;
 import org.deeplearning4j.models.word2vec.actor.VocabActor;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
-import org.deeplearning4j.text.invertedindex.DefaultInvertedIndex;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.util.Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,15 +36,15 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     protected transient DocumentIterator docIter;
     protected List<String> labels;
     protected transient SentenceIterator sentenceIterator;
-    private AtomicInteger numWordsEncountered =  new AtomicInteger(0);
+    protected AtomicInteger numWordsEncountered =  new AtomicInteger(0);
     private static Logger log = LoggerFactory.getLogger(BaseTextVectorizer.class);
-    private InvertedIndex index;
-    private int batchSize = 1000;
-
+    protected InvertedIndex index;
+    protected int batchSize = 1000;
+    protected double sample = 0.0;
 
     public BaseTextVectorizer(){}
 
-    protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index,int batchSize) {
+    protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index,int batchSize,double sample) {
         this.cache = cache;
         this.tokenizerFactory = tokenizerFactory;
         this.stopWords = stopWords;
@@ -59,16 +55,22 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         this.labels = labels;
         this.index = index;
         this.batchSize = batchSize;
+        this.sample = sample;
 
         if(index == null)
             this.index = new LuceneInvertedIndex.Builder().batchSize(batchSize)
-                    .indexDir(new File("word2vec-index"))
+                    .indexDir(new File("word2vec-index")).sample(sample)
                    .cache(cache).build();
     }
 
     @Override
     public int batchSize() {
         return batchSize;
+    }
+
+    @Override
+    public double sample() {
+        return sample;
     }
 
     @Override
