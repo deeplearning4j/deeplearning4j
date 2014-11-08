@@ -84,7 +84,7 @@ Add these POM coordinates to your project:
 			<version>0.0.3.2</version>
          </dependency>
          
-         //For multithreaded/clustering support, add this dependency to your POM file
+         //For multithreaded/clustering support, add this dependency to your POM
          
          <dependency>
 			<groupId>org.deeplearning4j</groupId>
@@ -92,7 +92,7 @@ Add these POM coordinates to your project:
 			<version>0.0.3.2</version>
          </dependency>
          
-         // For natural-language processing (NLP), add this dependency to your POM file
+         //For natural-language processing, add this dependency to your POM
 		
          <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -133,7 +133,8 @@ Then enter ldconfig in the terminal, followed by the file path to link Cuda. You
 
 If you're still unable to load Jcublas, you will need to add the parameter -D to your code (it's a JVM argument); i.e.
 
-         java.library.path (settable via -Djava.librarypath=...) // for a writable directory, then 
+         java.library.path (settable via -Djava.librarypath=...) 
+         // ^ for a writable directory, then 
          -D appended directly to "<OTHER ARGS>" 
 
 If you're using IntelliJ as your IDE, this should work already. 
