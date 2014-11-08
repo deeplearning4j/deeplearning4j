@@ -290,8 +290,6 @@ public class Word2Vec implements Persistable {
 
         final AtomicInteger numSentencesProcessed = new AtomicInteger(0);
 
-        for(int j : docs)
-            totalWords += vectorizer.index().document(j).size();
         totalWords *= numIterations;
 
 
