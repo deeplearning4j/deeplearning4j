@@ -27,6 +27,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -53,7 +54,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     public final static String INDEX_PATH = "word2vec-index";
     private AtomicLong finishedCalled;
     private AtomicBoolean readerClosed = new AtomicBoolean(false);
-
+    private AtomicInteger totalWords = new AtomicInteger(0);
 
     public LuceneInvertedIndex(VocabCache vocabCache,boolean cache) {
         try {
@@ -278,6 +279,8 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
             initReader();
         }
+
+        totalWords.set(totalWords.get() + words.size());
     }
 
 
@@ -346,6 +349,11 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
         finishedCalled = new AtomicLong(System.currentTimeMillis());
 
+    }
+
+    @Override
+    public int totalWords() {
+        return totalWords.get();
     }
 
 

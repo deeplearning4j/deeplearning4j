@@ -60,5 +60,12 @@ public interface InvertedIndex extends Serializable {
      */
     void finish();
 
+    /**
+     * Total number of words in the index
+     * @return the total number of words in the index
+     */
+    int totalWords();
+
+
 
 }
