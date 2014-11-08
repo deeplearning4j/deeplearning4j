@@ -19,8 +19,8 @@ Contents
 
 * You can install DL4J either from source or from [Maven central](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-distribution/0.0.3.2-SNAPSHOT/). Here are the **source** instructions, which require Github (Mac and Windows users, see below). 
 
-         git clone https://github.com/agibsonccc/java-deeplearning
-         cd java-deeplearning
+         git clone https://github.com/SkymindIO/deeplearning4j/
+         cd deeplearning4j
 
 ###ND4J
 
@@ -62,7 +62,7 @@ Contents
 
 * After you run a "mvn clean install", a compressed tar file with a name similar to "deeplearning4j-dist-bin.tar.gz" will be installed in the local folder (This is where you will find the jar files and it's where compiling happens.):
 
-		*/java-deeplearning/deeplearning4j-distribution/target
+         */java-deeplearning/deeplearning4j-distribution/target
 	
 * Add the repository info below to your Project Object Model (POM) file (POM.xml files live in the root of a given directory):
 
@@ -92,7 +92,7 @@ Add these POM coordinates to your project:
 			<version>0.0.3.2</version>
          </dependency>
          
-		// For natural-language processing (NLP), add this dependency to your POM file
+         // For natural-language processing (NLP), add this dependency to your POM file
 		
          <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -125,16 +125,16 @@ Add these POM coordinates to your project:
 
 * If GPUs are broken, you'll need to enter an extra command. First, find out where Cuda installs itself. It will look something like this
 
-	/usr/local/cuda/lib64
+         /usr/local/cuda/lib64
 
 Then enter ldconfig in the terminal, followed by the file path to link Cuda. Your command will look similar to this
 
-	ldconfig /usr/local/cuda/lib64
+         ldconfig /usr/local/cuda/lib64
 
 If you're still unable to load Jcublas, you will need to add the parameter -D to your code (it's a JVM argument); i.e.
 
-	java.library.path (settable via -Djava.librarypath=...) // for a writable directory, then 
-	-D appended directly to "<OTHER ARGS>" 
+         java.library.path (settable via -Djava.librarypath=...) // for a writable directory, then 
+         -D appended directly to "<OTHER ARGS>" 
 
 If you're using IntelliJ as your IDE, this should work already. 
 
@@ -149,7 +149,7 @@ If you're using IntelliJ as your IDE, this should work already.
 
 * Install [Anaconda](http://docs.continuum.io/anaconda/install.html#windows-install). If your system doesn't like the default 64-bit install, try the 32-bit offered on the same download page. (Deeplearning4j depends on Anaconda to use the graphics generator matplotlib.) 
 
-* Install [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/). Lapack will ask if you have Intel compilers. You do not.  
+* Install [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/). Lapack will ask if you have Intel compilers. You do not.
 
 * Instead, you will need to install [MinGW 32 bits](http://www.mingw.org/) (the download button is on the upper right) and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). 
 * Lapack offers the alternative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). 
