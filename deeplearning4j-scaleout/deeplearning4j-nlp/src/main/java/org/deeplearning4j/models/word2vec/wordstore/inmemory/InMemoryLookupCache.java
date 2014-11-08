@@ -648,6 +648,11 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     }
 
     @Override
+    public int batchSize() {
+        return 0;
+    }
+
+    @Override
     public void plotVocab(Tsne tsne) {
         try {
             List<String> plot = new ArrayList<>();

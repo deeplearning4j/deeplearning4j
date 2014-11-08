@@ -15,8 +15,12 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public interface VocabCache  {
 
+
+
+
+
     /**
-     * Render the words via tsne
+     * Render the words via TSNE
      * @param tsne the tsne to use
      */
     void plotVocab(Tsne tsne);

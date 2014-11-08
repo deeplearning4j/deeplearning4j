@@ -3,6 +3,7 @@ package org.deeplearning4j.text.invertedindex;
 import org.deeplearning4j.models.word2vec.VocabWord;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -10,6 +11,19 @@ import java.util.List;
  * and documents to words
  */
 public interface InvertedIndex extends Serializable {
+
+
+    /**
+     * Sampling for creating mini batches
+     * @return the sampling for mini batches
+     */
+    double sample();
+
+    /**
+     * Iterates over mini batches
+     * @return the mini batches created by this vectorizer
+     */
+    Iterator<List<VocabWord>> miniBatches();
 
     /**
      * Returns a list of words for a document
@@ -65,6 +79,12 @@ public interface InvertedIndex extends Serializable {
      * @return the total number of words in the index
      */
     int totalWords();
+
+    /**
+     * For word vectors, this is the batch size for which to train on
+     * @return the batch size for which to train on
+     */
+    int batchSize();
 
 
 

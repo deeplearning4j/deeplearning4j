@@ -55,6 +55,12 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private AtomicLong finishedCalled;
     private AtomicBoolean readerClosed = new AtomicBoolean(false);
     private AtomicInteger totalWords = new AtomicInteger(0);
+    private int batchSize = 1000;
+    private List<List<VocabWord>> miniBatches = new ArrayList<>();
+    private List<VocabWord> currMiniBatch = new CopyOnWriteArrayList<>();
+    private double sample = 0;
+    private AtomicLong nextRandom = new AtomicLong(5);
+
 
     public LuceneInvertedIndex(VocabCache vocabCache,boolean cache) {
         try {
@@ -82,6 +88,20 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     private LuceneInvertedIndex(){
         indexManager = Executors.newFixedThreadPool(1);
+    }
+
+    @Override
+    public double sample() {
+        return sample;
+    }
+
+    @Override
+    public Iterator<List<VocabWord>> miniBatches() {
+        if(!currMiniBatch.isEmpty()) {
+            miniBatches.add(new ArrayList<>(currMiniBatch));
+            currMiniBatch.clear();
+        }
+        return miniBatches.iterator();
     }
 
     @Override
@@ -281,6 +301,34 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         }
 
         totalWords.set(totalWords.get() + words.size());
+
+
+        for(VocabWord word : words) {
+            // The subsampling randomly discards frequent words while keeping the ranking same
+            if (sample > 0) {
+                double ran = (Math.sqrt(word.getWordFrequency()/ (sample * numDocuments())) + 1)
+                        * (sample * numDocuments()) / word.getWordFrequency();
+
+                if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
+                    continue;
+                }
+
+                currMiniBatch.add(word);
+            }
+            else {
+                currMiniBatch.add(word);
+                if(currMiniBatch.size() >= batchSize) {
+                    miniBatches.add(new ArrayList<>(currMiniBatch));
+                    currMiniBatch.clear();
+                }
+            }
+            currMiniBatch.add(word);
+            if(currMiniBatch.size() >= batchSize) {
+                miniBatches.add(new ArrayList<>(currMiniBatch));
+                currMiniBatch.clear();
+            }
+        }
+
     }
 
 
@@ -356,6 +404,11 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         return totalWords.get();
     }
 
+    @Override
+    public int batchSize() {
+        return batchSize;
+    }
+
 
     private void index(String indexPath,boolean create) throws IOException {
         File dir2 = new File(indexPath);
@@ -416,12 +469,20 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         private VocabCache vocabCache;
         private List<String> stopWords = StopWords.getStopWords();
         private boolean cache = true;
+        private int batchSize = 1000;
+        private double sample = 0;
 
-
-        public Builder cacheDocsInMemory(boolean cache) {
-            this.cache = cache;
+        public Builder sample(double sample) {
+            this.sample = sample;
             return this;
         }
+
+        public Builder batchSize(int batchSize) {
+            this.batchSize = batchSize;
+            return this;
+        }
+
+
 
         public Builder indexDir(File indexDir) {
             this.indexDir = indexDir;
@@ -481,6 +542,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                     throw new IllegalStateException("Vocab cache must not be null");
 
 
+                ret.batchSize = batchSize;
                 ret.vocabCache = vocabCache;
                 ret.dir = dir;
                 ret.writer = writer;

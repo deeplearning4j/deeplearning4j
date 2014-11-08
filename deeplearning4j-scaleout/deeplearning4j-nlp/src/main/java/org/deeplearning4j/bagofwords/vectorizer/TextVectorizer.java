@@ -2,8 +2,11 @@ package org.deeplearning4j.bagofwords.vectorizer;
 
 import java.io.InputStream;
 import java.io.File;
+import java.util.Iterator;
+import java.util.List;
 
 import org.deeplearning4j.datasets.vectorizer.Vectorizer;
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -15,6 +18,16 @@ import org.deeplearning4j.util.Index;
  * @author Adam Gibson
  */
 public interface TextVectorizer extends Vectorizer {
+
+
+
+
+    /**
+     * For word vectors, this is the batch size for how to partition documents
+     * in to workloads
+     * @return the batchsize for partitioning documents in to workloads
+     */
+    int batchSize();
 
     /**
      * The vocab sorted in descending order
