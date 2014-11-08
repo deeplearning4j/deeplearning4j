@@ -142,7 +142,7 @@ public class LuceneInvertedIndex implements InvertedIndex {
         if(numDocs > 0)
             return numDocs;
 
-        int ret = 0;
+        int ret;
         try {
 
             initReader();
