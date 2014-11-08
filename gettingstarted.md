@@ -21,6 +21,7 @@ Contents
 
          git clone https://github.com/SkymindIO/deeplearning4j/
          cd deeplearning4j
+         git clone https://github.com/SkymindIO/dl4j-examples
 
 ###ND4J
 
@@ -34,13 +35,13 @@ Contents
 
 * Unzip the download, move it to your applications folder, and open the application. Upon opening, you may be prompted to install a Java SE 6 runtime. If so, install it. 
 
-* As you open IntelliJ, you will have to choose whether to create or open a project. Choose "Open Project" from the menu, and then select the working directory for Deeplearning4j. Mine was "java-deeplearning". Click the open button for that folder. (It will take a while for all the dependencies to be resolved, during which time you will not be able to run your examples.)
+* As you open IntelliJ, you will have to choose whether to create or open a project. Choose "Open Project" from the menu, and then select the working directory for Deeplearning4j. It should something like, well, "deeplearning4j". Click the open button for that folder. (It will take a while for all the dependencies to be resolved, during which time you will not be able to run your examples.) 
 
 ![Alt text](../img/open_project.png) 
 
 * You'll need to make sure the Maven 2 Integration plugin is installed. On Macs, go to Preferences and then click on Plugins. (On Linux, you'll find the plugins in Settings.) Then choose "Browse Repositories" and search for "Maven 2 Integration." Install that plugin and restart IntelliJ. Restarting should take you back to your java-deeplearning project. 
 
-* Click through the folder names to the examples folder -- java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/mnist -- and then right-click on the Java file you're interested in. (The MNIST dataset is where most users start.) Right click on MnistExample. In the menu that appears, look for the green arrow and choose "Run." 
+* Click through the folder names to the examples folder -- dl4j-examples/blob/master/src/main/java/org/deeplearning4j/mnist/ -- and then right-click on the Java file you're interested in. (The MNIST dataset is where most users start.) Right click on MnistExample. In the menu that appears, look for the green arrow and choose "Run." 
 
 ![Alt text](../img/run_menu.png)
 
