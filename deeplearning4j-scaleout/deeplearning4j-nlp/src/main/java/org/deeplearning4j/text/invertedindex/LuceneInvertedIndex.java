@@ -212,7 +212,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
             try {
                 reader = DirectoryReader.open(dir);
                 searcher = new IndexSearcher(reader);
-
+                readerClosed.set(false);
             } catch (IOException e) {
                 e.printStackTrace();
             }
