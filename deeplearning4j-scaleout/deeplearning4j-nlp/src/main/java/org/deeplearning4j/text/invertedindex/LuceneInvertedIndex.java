@@ -304,18 +304,10 @@ public class LuceneInvertedIndex implements InvertedIndex {
 
         else {
             try {
-
+                log.info("Committing index...");
                 writer.forceMerge(1);
                 writer.commit();
 
-                while(writer.hasPendingMerges() || writer.hasUncommittedChanges()) {
-                    try {
-                        Thread.sleep(10000);
-                        log.info("Waiting on writer....");
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
