@@ -7,6 +7,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -110,7 +111,13 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
             }
 
 
-        } catch (Exception e) {
+        }
+
+        catch(AlreadyClosedException e1) {
+            reader = null;
+            return document(index);
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
         return ret;
@@ -217,6 +224,8 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                 e.printStackTrace();
             }
         }
+
+
 
     }
 
@@ -374,15 +383,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                 Thread.currentThread().interrupt();
             }
         }
-        //indexDocs(writer, docDir);
 
-        // NOTE: if you want to maximize search performance,
-        // you can optionally call forceMerge here.  This can be
-        // a terribly costly operation, so generally it's only
-        // worth it when your index is relatively static (ie
-        // you're done adding documents to it):
-        //
-        // writer.forceMerge(1);
         initReader();
 
 
