@@ -5,13 +5,17 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Created by agibsonccc on 10/21/14.
+ * In memory inverted index
+ * @author Adam Gibson
  */
 public class DefaultInvertedIndex implements InvertedIndex {
+
     private Map<Integer,List<VocabWord>> docToWord = new ConcurrentHashMap<>();
     private Map<VocabWord,List<Integer>> wordToDocs = new ConcurrentHashMap<>();
+    private AtomicInteger totalWords = new AtomicInteger(0);
 
     @Override
     public List<VocabWord> document(int index) {
@@ -36,7 +40,7 @@ public class DefaultInvertedIndex implements InvertedIndex {
 
     @Override
     public void addWordToDoc(int doc, VocabWord word) {
-       List<VocabWord> wordsForDoc = docToWord.get(doc);
+        List<VocabWord> wordsForDoc = docToWord.get(doc);
         if(wordsForDoc == null) {
             wordsForDoc = Collections.synchronizedList(new ArrayList<VocabWord>());
             docToWord.put(doc,wordsForDoc);
@@ -62,21 +66,28 @@ public class DefaultInvertedIndex implements InvertedIndex {
             docToWord.put(doc,wordsForDoc);
         }
 
-       for(VocabWord word : words) {
-           List<Integer> docList = wordToDocs.get(word);
-           if(docList != null)
-               docList.add(doc);
-           else {
-               docList = new CopyOnWriteArrayList<>();
-               docList.add(doc);
-               wordToDocs.put(word,docList);
-           }
-       }
+        for(VocabWord word : words) {
+            List<Integer> docList = wordToDocs.get(word);
+            if(docList != null)
+                docList.add(doc);
+            else {
+                docList = new CopyOnWriteArrayList<>();
+                docList.add(doc);
+                wordToDocs.put(word,docList);
+            }
+        }
+
+        totalWords.set(totalWords() + words.size());
 
     }
 
     @Override
     public void finish() {
 
+    }
+
+    @Override
+    public int totalWords() {
+        return totalWords.get();
     }
 }
