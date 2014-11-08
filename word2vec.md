@@ -5,7 +5,7 @@ layout: default
 
 # Word2vec
 
-To see our Word2vec code, skip to the [training section](../word2vec.html#training1).
+To see our Word2vec code, skip to the [training section](../word2vec.html#training1). An example of sentiment analysis using [Word2Vec is here](http://deeplearning4j.org/sentiment_analysis_word2vec.html).
 
 ###Introduction to Word2vec
 
