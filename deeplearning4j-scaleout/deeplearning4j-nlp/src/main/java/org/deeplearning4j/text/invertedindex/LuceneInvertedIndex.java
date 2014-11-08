@@ -317,6 +317,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                 log.info("Committing index...");
                 writer.forceMerge(1);
                 writer.commit();
+                log.info("Finished committing changes");
 
             } catch (IOException e) {
                 e.printStackTrace();
