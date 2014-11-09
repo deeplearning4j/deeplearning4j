@@ -1006,7 +1006,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
         final INDArray ret = Nd4j.create(rows,cols);
-        ret.toString();
         final AtomicInteger i = new AtomicInteger(0);
         for(INDArray a : arrs) {
             a.iterateOverAllColumns(new SliceOp() {

@@ -17,7 +17,7 @@ public class MaxOut extends BaseActivationFunction {
      */
     @Override
     public Class<? extends ElementWiseOp> transformClazz() {
-        return null;
+        return org.nd4j.linalg.ops.transforms.MaxOut.class;
     }
 
     /**
