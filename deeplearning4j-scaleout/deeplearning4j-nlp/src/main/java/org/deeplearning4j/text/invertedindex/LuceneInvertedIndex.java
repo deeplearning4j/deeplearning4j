@@ -348,7 +348,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                                 currMiniBatch.clear();
                             }
                         }
-                       
+
                     }
 
                     try {
