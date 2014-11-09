@@ -53,6 +53,7 @@ public class Word2Vec implements Persistable {
     private int batchSize = 1000;
     private int topNSize = 40;
     private double sample = 0;
+    private int totalWords = 1;
     private AtomicInteger rateOfChange = new AtomicInteger(0);
     //learning rate
     private AtomicDouble alpha = new AtomicDouble(0.025);
@@ -288,7 +289,7 @@ public class Word2Vec implements Persistable {
         }
 
         final AtomicInteger numSentencesProcessed = new AtomicInteger(0);
-
+        totalWords = vectorizer.numWordsEncountered();
         totalWords *= numIterations;
 
 
@@ -456,10 +457,10 @@ public class Word2Vec implements Persistable {
             rateOfChange.set(0);
             //use learning rate decay instead
             if(!useAdaGrad) {
-                alpha.set(Math.max(minLearningRate, alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) vectorizer.index().totalWords()))));
+                alpha.set(Math.max(minLearningRate, alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) totalWords))));
                 cache.setLearningRate(alpha.get());
             }
-            log.info("Num words so far " + numWordsSoFar.get() + " alpha is " + alpha.get() + " out of " + vectorizer.index().totalWords());
+            log.info("Num words so far " + numWordsSoFar.get() + " alpha is " + alpha.get() + " out of " + totalWords);
         }
 
 
