@@ -84,7 +84,7 @@ Add these POM coordinates to your project:
 			<version>0.0.3.2</version>
          </dependency>
          
-         //For multithreaded/clustering support, add this dependency to your POM
+         //For multithreaded/clustering support, add this to your POM
          
          <dependency>
 			<groupId>org.deeplearning4j</groupId>
@@ -92,7 +92,7 @@ Add these POM coordinates to your project:
 			<version>0.0.3.2</version>
          </dependency>
          
-         //For natural-language processing, add this dependency to your POM
+         //For natural-language processing, add this to your POM
 		
          <dependency>
             <groupId>org.deeplearning4j</groupId>
