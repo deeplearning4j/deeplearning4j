@@ -37,7 +37,7 @@ public class VocabActor extends UntypedActor {
     private int minWordFrequency;
     private AtomicInteger numWordsEncountered;
     private InvertedIndex index;
-
+    private static Logger log = LoggerFactory.getLogger(VocabActor.class);
 
 
     public VocabActor(
@@ -72,6 +72,7 @@ public class VocabActor extends UntypedActor {
                 return;
             //work.getCount().incrementAndGet();
             String sentence = work.getWork();
+            log.info("Processing " + sentence);
             if(sentence.isEmpty() || sentence.length() <= 2) {
                 work.countDown();
                 return;
