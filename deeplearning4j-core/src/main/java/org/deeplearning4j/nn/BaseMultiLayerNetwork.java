@@ -2080,7 +2080,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
          * @param hiddenLayerSizes
          * @return
          */
-        public Builder<E> hiddenLayerSizes(Integer[] hiddenLayerSizes) {
+        public Builder<E> hiddenLayerSizes(Integer...hiddenLayerSizes) {
             this.hiddenLayerSizes = new int[hiddenLayerSizes.length];
             this.nLayers = hiddenLayerSizes.length;
             for (int i = 0; i < hiddenLayerSizes.length; i++)
@@ -2088,7 +2088,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             return this;
         }
 
-        public Builder<E> hiddenLayerSizes(int[] hiddenLayerSizes) {
+        public Builder<E> hiddenLayerSizes(int...hiddenLayerSizes) {
             this.hiddenLayerSizes = hiddenLayerSizes;
             this.nLayers = hiddenLayerSizes.length;
             return this;
