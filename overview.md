@@ -17,4 +17,4 @@ In the process, these networks learn to recognize correlations between certain r
 
 Deep-learning networks end in an output layer: a logistic, or softmax, classifier that assigns a likelihood to a particular outcome or label. We call that predictive, but it is predictive in a broad sense. Given raw data in the form of an image, a deep-learning network may decide, for example, that the input data is 90 percent likely to represent a person. 
 
-Next, we'll show you how to implement the simplest machine-learning network, a [Restricted Boltzmann machine](../restrictedboltzmannmachine.html). 
+Next, we'll explain the simplest machine-learning network, a [Restricted Boltzmann machine](../restrictedboltzmannmachine.html), and then show you how several RBMs form a [deep-belief network](../deepbeliefnetwork.html). 
