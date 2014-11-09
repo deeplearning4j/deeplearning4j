@@ -25,9 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -57,17 +55,19 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private AtomicBoolean readerClosed = new AtomicBoolean(false);
     private AtomicInteger totalWords = new AtomicInteger(0);
     private int batchSize = 1000;
-    private List<List<VocabWord>> miniBatches = new ArrayList<>();
-    private List<VocabWord> currMiniBatch = Collections.synchronizedList(new ArrayList<VocabWord>());
+    private List<List<VocabWord>> miniBatches = new CopyOnWriteArrayList<>();
     private double sample = 0;
     private AtomicLong nextRandom = new AtomicLong(5);
     private String indexPath = INDEX_PATH;
-
+    private ScheduledExecutorService miniBatchManager = Executors.newScheduledThreadPool(1);
+    private LinkedBlockingDeque<List<VocabWord>> miniBatchDocs = new LinkedBlockingDeque<>();
+    private AtomicBoolean miniBatchGoing = new AtomicBoolean(true);
 
     public LuceneInvertedIndex(VocabCache vocabCache,boolean cache) {
         this.vocabCache = vocabCache;
         this.cache = cache;
         indexManager = Executors.newFixedThreadPool(1);
+        startMiniBatches();
     }
 
 
@@ -76,11 +76,13 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         this.cache = cache;
         this.indexPath = indexPath;
         indexManager = Executors.newFixedThreadPool(1);
+        startMiniBatches();
     }
 
 
     private LuceneInvertedIndex(){
         indexManager = Executors.newFixedThreadPool(1);
+        startMiniBatches();
     }
 
     @Override
@@ -90,10 +92,6 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     @Override
     public Iterator<List<VocabWord>> miniBatches() {
-        if(!currMiniBatch.isEmpty()) {
-            miniBatches.add(new ArrayList<>(currMiniBatch));
-            currMiniBatch.clear();
-        }
         return miniBatches.iterator();
     }
 
@@ -312,34 +310,58 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         }
 
         totalWords.set(totalWords.get() + words.size());
+        miniBatchDocs.add(words);
+
+    }
 
 
-        for(VocabWord word : words) {
-            // The subsampling randomly discards frequent words while keeping the ranking same
-            if (sample > 0) {
-                double ran = (Math.sqrt(word.getWordFrequency()/ (sample * numDocuments())) + 1)
-                        * (sample * numDocuments()) / word.getWordFrequency();
+    private void startMiniBatches() {
+        miniBatchManager.schedule(new Runnable() {
+            @Override
+            public void run() {
+                List<VocabWord> currMiniBatch = new ArrayList<>();
+                while(miniBatchGoing.get()) {
+                    List<VocabWord> words = miniBatchDocs.poll();
+                    if(words == null || words.isEmpty()) {
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                        continue;
+                    }
+                    for (VocabWord word : words) {
+                        // The subsampling randomly discards frequent words while keeping the ranking same
+                        if (sample > 0) {
+                            double ran = (Math.sqrt(word.getWordFrequency() / (sample * numDocuments())) + 1)
+                                    * (sample * numDocuments()) / word.getWordFrequency();
 
-                if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
-                    continue;
+                            if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
+                                continue;
+                            }
+
+                            currMiniBatch.add(word);
+                        } else {
+                            currMiniBatch.add(word);
+                            if (currMiniBatch.size() >= batchSize) {
+                                miniBatches.add(new ArrayList<>(currMiniBatch));
+                                currMiniBatch.clear();
+                            }
+                        }
+                       
+                    }
+
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+
                 }
 
-                currMiniBatch.add(word);
-            }
-            else {
-                currMiniBatch.add(word);
-                if(currMiniBatch.size() >= batchSize) {
-                    miniBatches.add(new ArrayList<>(currMiniBatch));
-                    currMiniBatch.clear();
-                }
-            }
-            currMiniBatch.add(word);
-            if(currMiniBatch.size() >= batchSize) {
-                miniBatches.add(new ArrayList<>(currMiniBatch));
-                currMiniBatch.clear();
-            }
-        }
 
+            }
+        }, 1, TimeUnit.SECONDS);
     }
 
 
@@ -459,6 +481,17 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         }
 
         finishedCalled = new AtomicLong(System.currentTimeMillis());
+        indexManager.shutdown();
+        miniBatchManager.shutdown();
+        try {
+            indexManager.awaitTermination(1,TimeUnit.MINUTES);
+            miniBatchGoing.set(false);
+            miniBatchManager.awaitTermination(1,TimeUnit.MINUTES);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
 
     }
 

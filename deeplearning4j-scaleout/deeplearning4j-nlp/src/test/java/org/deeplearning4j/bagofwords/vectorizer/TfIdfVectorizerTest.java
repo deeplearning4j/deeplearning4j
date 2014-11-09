@@ -3,6 +3,7 @@ package org.deeplearning4j.bagofwords.vectorizer;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNotNull;
 
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
@@ -31,16 +32,15 @@ public class TfIdfVectorizerTest {
     private static Logger log = LoggerFactory.getLogger(TfIdfVectorizerTest.class);
 
     @Before
-    public void before() {
-        new File("word2vec-index").delete();
-        new File("word2vec-path").delete();
+    public void before() throws Exception {
+        FileUtils.deleteDirectory(new File("word2vec-index"));
 
     }
 
     @After
-    public void after() {
-        new File("word2vec-index").delete();
-        new File("word2vec-path").delete();
+    public void after() throws Exception {
+        FileUtils.deleteDirectory(new File("word2vec-index"));
+
 
     }
     @Test
@@ -58,7 +58,7 @@ public class TfIdfVectorizerTest {
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
         VocabCache cache = new InMemoryLookupCache.Builder()
                 .vectorLength(100).build();
-        InvertedIndex index = new LuceneInvertedIndex.Builder().cache(cache)
+        InvertedIndex index = new LuceneInvertedIndex.Builder().cache(cache).batchSize(5)
                 .cacheInRam(false).build();
         TextVectorizer vectorizer = new TfidfVectorizer.Builder()
                 .minWords(1).index(index).cache(cache)
@@ -89,6 +89,8 @@ public class TfIdfVectorizerTest {
             miniBatches.next();
             count++;
         }
+
+        assertEquals(2,count);
 
         log.info("Count " + count);
 
