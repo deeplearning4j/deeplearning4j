@@ -21,21 +21,19 @@ The variable k is the number of times you run [contrastive divergence](../glossa
 
 Here's how you set up a single-thread deep-belief network: 
 
-To create it, you instantiate an object of the class [DBN](../doc/org/deeplearning4j/dbn/DBN.html).
+To create it, you instantiate your NeuralNetConfiguration as well as an object of the class [DBN](../doc/org/deeplearning4j/dbn/DBN.html).
 
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RawDBNMnistExample.java?slice=26:30"></script>
+<script src="https://github.com/SkymindIO/dl4j-examples/edit/master/src/main/java/org/deeplearning4j/mnist/MnistExample.java?slice=26:39"></script>
 
-This is a little more complicated than the singular input. 
+That creates a deep-belief network with the specified hidden-layer sizes (three hidden layers); the number of inputs being 784; outputs 10; momentum and learning rate; the specified random number generator; sets reconstruction cross entropy as the l;oss function; and implements no regularization.
 
-It creates a deep-belief network with the specified hidden-layer sizes (three hidden layers at two hidden units each); the number of inputs being two; outputs also two; no regularization; the specified random number generator; and no momentum.
+Next, you iterate through the dataset with the MNISTDataFetcher.
 
-Next, you create a training set for the machine. An MNIST dataset is generated here with 784 columns. 
+<script src="https://github.com/SkymindIO/dl4j-examples/edit/master/src/main/java/org/deeplearning4j/mnist/MnistExample.java?slice=39:46"></script>
 
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RawDBNMnistExample.java?slice=31:49"></script>
+Finally, you evaluate the performance of your DBN:
 
-Pretraining and finetuning steps train the network for use on unstructured data. You can test the trained network by feeding it unstructured data and checking the output. 
-
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RawDBNMnistExample.java?slice=60:71"></script>
+<script src="https://github.com/SkymindIO/dl4j-examples/edit/master/src/main/java/org/deeplearning4j/mnist/MnistExample.java?slice=46:56"></script>
 
 This will print out the f1 score of the prediction.
 
@@ -43,6 +41,6 @@ Note that the eval class combines [confusion matrices](../glossary.html#confusio
 
 The f1 score will be a percentage. It's basically the probability that your guesses are correct. Eighty-six percent is industry standard; a solid deep-learning network should be capable of scores in the high 90s.
 
-If you run into trouble, try modifying the hidden-layer sizes, and tweaking other parameters to get the f1 score up.
+If you run into trouble, try modifying the hidden-layer sizes, and tweaking other parameters such as learning rate and momentum to get the f1 score up.
 
-Next, we'll show you how to use [distributed and multithreaded computing](../scaleout.html) to train your networks more quickly.
+Next, we'll show you how to use [distributed and multithreaded computing](../scaleout.html) to train your networks more quickly. To read about another type of deep net, the deep autoencoder, [click here](../deepautoencoder.html). 
