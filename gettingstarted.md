@@ -157,7 +157,7 @@ If you're using IntelliJ as your IDE, this should work already.
 
 ### <a name="next">Next Steps: Running Examples</a>
 
-Follow our [**MNIST tutorial**](../mnist-tutorial.html) and try [running a few examples](../quickstart.html). 
+Follow our [**MNIST tutorial**](../mnist-tutorial.html) and try [running a few examples with our Quickstart](../quickstart.html). 
 
 If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html). 
 
