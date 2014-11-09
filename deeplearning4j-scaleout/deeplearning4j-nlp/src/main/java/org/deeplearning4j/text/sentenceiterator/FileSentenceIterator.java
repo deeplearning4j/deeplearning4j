@@ -94,7 +94,7 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 
 
 
-    private  void nextLineIter() {
+    private  synchronized  void nextLineIter() {
         if(fileIterator.hasNext()) {
             try {
                 File next = fileIterator.next();
