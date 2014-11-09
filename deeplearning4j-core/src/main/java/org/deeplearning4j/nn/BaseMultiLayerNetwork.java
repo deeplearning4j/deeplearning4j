@@ -642,7 +642,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         List<INDArray> activations = feedForward();
 
         //- y - h
-        INDArray ix = labels.sub(activations.get(activations.size() - 1)).negi().subi(getOutputLayer().conf().getActivationFunction().applyDerivative(activations.get(activations.size() - 1)));
+        INDArray ix = labels.sub(activations.get(activations.size() - 1)).subi(getOutputLayer().conf().getActivationFunction().applyDerivative(activations.get(activations.size() - 1)));
 
 		/*
 		 * Precompute activations and z's (pre activation network outputs)
