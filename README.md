@@ -60,7 +60,7 @@ See our wiki: https://github.com/agibsonccc/java-deeplearning/wiki/Deeplearning4
 Contact
 =============================
 
-Deeplearning4j has its own IRC channel at https://webchat.freenode.net/, a network intended primarily for developers of free and open source software. Just enter /join #deeplearning4j on IRC where you would normally type to chat.
+Deeplearning4j has its own IRC channel at https://webchat.freenode.net/, a network intended primarily for developers of free and open source software. Just enter /join #deeplearning4j on IRC where you would normally type to chat. Alternatively, we're also reachable through [Skymind](http://www.skymind.io/contact.html)'s contact page.
 
 
 GPU Support (work in progress, only scaffolding for now)
