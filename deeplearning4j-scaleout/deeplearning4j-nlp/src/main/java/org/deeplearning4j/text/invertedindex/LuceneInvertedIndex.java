@@ -57,7 +57,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private AtomicInteger totalWords = new AtomicInteger(0);
     private int batchSize = 1000;
     private List<List<VocabWord>> miniBatches = new ArrayList<>();
-    private List<VocabWord> currMiniBatch = new CopyOnWriteArrayList<>();
+    private List<VocabWord> currMiniBatch = Collections.synchronizedList(new ArrayList<VocabWord>());
     private double sample = 0;
     private AtomicLong nextRandom = new AtomicLong(5);
 
