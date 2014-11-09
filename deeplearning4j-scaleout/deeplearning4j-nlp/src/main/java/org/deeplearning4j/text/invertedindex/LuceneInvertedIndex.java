@@ -46,7 +46,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private VocabCache vocabCache;
     public final static String WORD_FIELD = "word";
     private int numDocs = 0;
-    private List<List<VocabWord>> words = new CopyOnWriteArrayList<>();
+    private List<List<VocabWord>> words = Collections.synchronizedList(new ArrayList<List<VocabWord>>());
     private boolean cache = true;
     private transient ExecutorService indexManager;
     private AtomicBoolean indexBeingCreated = new AtomicBoolean(false);
