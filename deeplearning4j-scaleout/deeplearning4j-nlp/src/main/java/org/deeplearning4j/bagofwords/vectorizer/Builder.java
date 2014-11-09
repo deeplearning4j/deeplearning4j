@@ -36,7 +36,7 @@ public abstract class Builder {
     }
 
 
-    public Builder index(InvertedIndex index){
+    public Builder index(InvertedIndex index) {
         this.index = index;
         return this;
     }
