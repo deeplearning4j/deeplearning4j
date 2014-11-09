@@ -161,7 +161,7 @@ Follow our [**MNIST tutorial**](../mnist-tutorial.html) and try [running a few e
 
 If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html). 
 
-For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deeplearning4j/) or access the core through [Maven](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j).
+For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deeplearning4j/) or access the core through [Maven](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), a build automation tool used for Java projects.
 
 ### <a name="trouble">Troubleshooting</a>
 
