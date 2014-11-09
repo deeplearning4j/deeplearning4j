@@ -23,17 +23,17 @@ Here's how you set up a single-thread deep-belief network:
 
 To create it, you instantiate your NeuralNetConfiguration as well as an object of the class [DBN](../doc/org/deeplearning4j/dbn/DBN.html).
 
-<script src="https://github.com/SkymindIO/dl4j-examples/edit/master/src/main/java/org/deeplearning4j/mnist/MnistExample.java?slice=26:39"></script>
+<script src="http://gist-it.appspot.com/https://github.com/SkymindIO/dl4j-examples/edit/master/src/main/java/org/deeplearning4j/mnist/MnistExample.java?slice=26:39"></script>
 
 That creates a deep-belief network with the specified hidden-layer sizes (three hidden layers); the number of inputs being 784; outputs 10; momentum and learning rate; the specified random number generator; sets reconstruction cross entropy as the l;oss function; and implements no regularization.
 
 Next, you iterate through the dataset with the MNISTDataFetcher.
 
-<script src="https://github.com/SkymindIO/dl4j-examples/edit/master/src/main/java/org/deeplearning4j/mnist/MnistExample.java?slice=39:46"></script>
+<script src="http://gist-it.appspot.com/https://github.com/SkymindIO/dl4j-examples/edit/master/src/main/java/org/deeplearning4j/mnist/MnistExample.java?slice=39:46"></script>
 
 Finally, you evaluate the performance of your DBN:
 
-<script src="https://github.com/SkymindIO/dl4j-examples/edit/master/src/main/java/org/deeplearning4j/mnist/MnistExample.java?slice=46:56"></script>
+<script src="http://gist-it.appspot.com/https://github.com/SkymindIO/dl4j-examples/edit/master/src/main/java/org/deeplearning4j/mnist/MnistExample.java?slice=46:56"></script>
 
 This will print out the f1 score of the prediction.
 
