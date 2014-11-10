@@ -26,7 +26,7 @@ Contents
 
 * You'll need to install ND4J, the linear-algebra library powering DL4J, in the same root directory as DL4J itself (say, your Desktop...), like so:
 
-         git clone https://github.com/SkymindIO/nd4j.git
+         git clone https://github.com/SkymindIO/nd4j
 
 ### IntelliJ
 
