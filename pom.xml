@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-parent</artifactId>
-    <version>0.0.3.2.4-SNAPSHOT</version>
+    <version>0.0.3.2.4</version>
     <packaging>pom</packaging>
     <name>DeepLearning4j</name>
 
@@ -127,7 +127,7 @@
         <connection>scm:git:git@github.com:agibsonccc/java-deeplearning.git</connection>
         <developerConnection>scm:git:git@github.com:agibsonccc/java-deeplearning.git</developerConnection>
         <url>git@github.com:agibsonccc/java-deeplearning.git</url>
-      <tag>HEAD</tag>
+      <tag>deeplearning4j-parent-0.0.3.2.4</tag>
   </scm>
 
     <modules>
