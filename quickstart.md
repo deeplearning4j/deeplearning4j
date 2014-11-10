@@ -36,7 +36,7 @@ layout: default
 
 These tools will generate the visualizations that allow you to debug your neural nets as they train. (The visualizations occasionally generate a list of errors on Macs -- that does not stop the nets from training.)
 
-* Next, clone DL4J examples here. 
+* Next, git clone ND4J, the linear algebra library powering this project, as well as the DL4J examples like so:
 
 		git clone https://github.com/SkymindIO/nd4j
 		git clone https://github.com/SkymindIO/dl4j-examples
@@ -55,6 +55,6 @@ The way to judge whether your net has successfully learned the dataset is to loo
 
 By this point, you should have a net that produces relatively accurate reconstructions. Congratulations. (If you haven't, please [let us know](https://groups.google.com/forum/#!forum/deeplearning4j)!)
 
-**NEXT STEP**: Here is a tutorial on [how to run any example on DL4J](../runexample.html). Go [here](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j) to choose the next example to run. (You can choose examples for MNIST, Iris and Labeled Faces in the Wild.)
+**NEXT STEP**: Here is a tutorial on [how to run any example on DL4J](../runexample.html). Go [here](https://github.com/SkymindIO/dl4j-examples/tree/master/src/main/java/org/deeplearning4j) to choose the next example to run. (You can choose examples for MNIST, Iris and Labeled Faces in the Wild.)
 
 Once you've explored all our examples, you'll want to get the whole code base running by following the instructions on our  [Getting Started page](../gettingstarted.html).
