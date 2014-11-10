@@ -29,59 +29,112 @@ public class Word2VecLoader {
      * @return the loaded model
      * @throws IOException
      */
-    public static Word2Vec loadGoogleBinary(String path) throws IOException {
-        DataInputStream dis = null;
-        BufferedInputStream bis = null;
-        double len = 0;
-        float vector = 0;
-        int words,size = 0;
+    public static Word2Vec loadGoogleModel(String path,boolean binary) throws IOException {
         InMemoryLookupCache cache;
+        float[][] data;
 
-        try {
-            bis = new BufferedInputStream(new FileInputStream(path));
-            dis = new DataInputStream(bis);
-            words = Integer.parseInt(readString(dis));
-            size = Integer.parseInt(readString(dis));
+        if(binary) {
+            DataInputStream dis = null;
+            BufferedInputStream bis = null;
+            double len;
+            float vector;
+            int words = 0,size = 0;
+            try {
+                bis = new BufferedInputStream(new FileInputStream(path));
+                dis = new DataInputStream(bis);
+                words = Integer.parseInt(readString(dis));
+                size = Integer.parseInt(readString(dis));
 
-            cache = new InMemoryLookupCache.Builder().vectorLength(size).build();
+                data = new float[words][size];
 
-            String word;
-            float[] vectors = null;
-            for (int i = 0; i < words; i++) {
-                word = readString(dis);
-                vectors = new float[size];
-                len = 0;
-                for (int j = 0; j < size; j++) {
-                    vector = readFloat(dis);
-                    len += vector * vector;
-                    vectors[j] = vector;
+                cache = new InMemoryLookupCache.Builder().vectorLength(size).build();
+
+                String word;
+                float[] vectors;
+                for (int i = 0; i < words; i++) {
+                    word = readString(dis);
+                    vectors = new float[size];
+                    len = 0;
+                    for (int j = 0; j < size; j++) {
+                        vector = readFloat(dis);
+                        len += vector * vector;
+                        vectors[j] = vector;
+                    }
+                    len = Math.sqrt(len);
+
+                    for (int j = 0; j < size; j++)
+                        vectors[j] /= len;
+
+
+                    data[i] = vectors;
+
+
+                    cache.addWordToIndex(cache.numWords(),word);
+                    cache.addToken(new VocabWord(1,word));
+                    cache.putVocabWord(word);
+                    dis.read();
                 }
-                len = Math.sqrt(len);
+            }
+            finally {
+                bis.close();
+                dis.close();
+            }
 
-                for (int j = 0; j < size; j++)
-                    vectors[j] /= len;
+
+            Word2Vec ret = new Word2Vec();
+            cache.resetWeights();
+
+            for(int i = 0; i < data.length; i++)
+               cache.putVector(cache.wordAtIndex(i),Nd4j.create(new FloatBuffer(data[i])));
 
 
-                INDArray row = Nd4j.create(vectors);
-                if(word == null || word.isEmpty())
-                    continue;
+            ret.setCache(cache);
+            ret.setLayerSize(size);
+            return ret;
+
+        }
+
+        else {
+            BufferedReader reader = new BufferedReader(new FileReader(new File(path)));
+            String line = reader.readLine();
+            String[] initial = line.split(" ");
+            int words = Integer.parseInt(initial[0]);
+            int layerSize = Integer.parseInt(initial[1]);
+            cache = new InMemoryLookupCache.Builder()
+                    .vectorLength(layerSize).build();
+            data = new float[words][layerSize];
+            int count = 0;
+
+
+
+            while((line = reader.readLine()) != null) {
+                String[] split = line.split(" ");
+                String word = split[0];
+                float[] buffer = new float[layerSize];
+                for(int i = 1; i < split.length; i++) {
+                    buffer[i - 1] = Float.parseFloat(split[i]);
+                }
+
+                data[count++] = buffer;
+
                 cache.addWordToIndex(cache.numWords(),word);
-                cache.putVector(word, row);
                 cache.addToken(new VocabWord(1,word));
                 cache.putVocabWord(word);
-                dis.read();
+
             }
-        }
-        finally {
-            bis.close();
-            dis.close();
-        }
+
+            cache.resetWeights();
+
+            for(int i = 0; i < data.length; i++)
+                cache.putVector(cache.wordAtIndex(i),Nd4j.create(new FloatBuffer(data[i])));
 
 
-        Word2Vec ret = new Word2Vec();
-        ret.setCache(cache);
-        ret.setLayerSize(size);
-        return ret;
+            Word2Vec ret = new Word2Vec();
+            ret.setCache(cache);
+            ret.setLayerSize(layerSize);
+            return ret;
+
+        }
 
     }
 
