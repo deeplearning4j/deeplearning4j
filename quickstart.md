@@ -37,10 +37,11 @@ layout: default
 These tools will generate the visualizations that allow you to debug your neural nets as they train. (The visualizations occasionally generate a list of errors on Macs -- that does not stop the nets from training.)
 
 * Next, clone DL4J examples here. 
-* 
+
+		git clone https://github.com/SkymindIO/nd4j
 		git clone https://github.com/SkymindIO/dl4j-examples
 
-* Open up the project in IntelliJ and press run on the MNIST example. 
+* Open up the dl4j-examples project in IntelliJ, find the MNIST example and press run. 
 
 * This is the moment of truth. You should now see evidence in your terminal/cmd that the neural net has begun to train, as the net's iterations begin to scroll down your terminal window. (In some cases, the program may take a minute to locate resources.) Look at the second-to-last number on the righthand side below. It should be decreasing with each new iteration. That’s the measure of the net’s error reconstructing a numeral-image. If the error shrinks, your net is learning. 
 
