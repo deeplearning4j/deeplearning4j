@@ -22,10 +22,12 @@ public class FloatBuffer extends BaseDataBuffer {
         this.buffer = new float[length];
     }
     public FloatBuffer(float[] buffer) {
-        super(buffer.length);
-        this.buffer = Arrays.copyOf(buffer,buffer.length);
+         this(buffer,true);
     }
-
+    public FloatBuffer(float[] buffer,boolean copy) {
+        super(buffer.length);
+        this.buffer = copy ? Arrays.copyOf(buffer,buffer.length) : buffer;
+    }
     @Override
     public byte[] asBytes() {
         byte[][] ret1 = new byte[length][];

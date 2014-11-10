@@ -21,10 +21,19 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(length);
         this.buffer = new double[length];
     }
+
+
     public DoubleBuffer(double[] buffer) {
-        super(buffer.length);
-        this.buffer = Arrays.copyOf(buffer,buffer.length);
+        this(buffer,true);
     }
+
+    public DoubleBuffer(double[] buffer,boolean copy) {
+        super(buffer.length);
+        this.buffer = copy ? Arrays.copyOf(buffer,buffer.length) : buffer;
+    }
+
+
+
 
     @Override
     public byte[] asBytes() {
