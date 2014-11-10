@@ -79,7 +79,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public DataBuffer createBuffer(float[] concat, boolean copy) {
-        return new DoubleBuffer(concat,copy);
+        return new FloatBuffer(concat,copy);
     }
 
     /**
