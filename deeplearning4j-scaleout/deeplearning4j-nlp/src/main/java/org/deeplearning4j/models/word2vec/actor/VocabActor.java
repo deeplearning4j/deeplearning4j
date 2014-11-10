@@ -5,9 +5,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import akka.dispatch.Futures;
+import akka.dispatch.OnFailure;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.models.word2vec.StreamWork;
@@ -22,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import akka.actor.UntypedActor;
+import scala.concurrent.Future;
 
 /**
  * Individual actor for updating the vocab cache
@@ -66,8 +70,8 @@ public class VocabActor extends UntypedActor {
         Set<String> encountered = new HashSet<>();
 
         if(message  instanceof VocabWork) {
-            List<VocabWord> document = new ArrayList<>();
-            VocabWork work = (VocabWork) message;
+            final List<VocabWord> document = new ArrayList<>();
+            final VocabWork work = (VocabWork) message;
             if(work.getWork() == null || work.getWork().isEmpty())
                 return;
             //work.getCount().incrementAndGet();
@@ -81,11 +85,27 @@ public class VocabActor extends UntypedActor {
                 String token = t.nextToken();
                 processToken(token,encountered,document);
             }
-            index.addWordsToDoc(index.numDocuments(),document);
-            numWordsEncountered.set(numWordsEncountered.get() + document.size());
-            work.countDown();
 
-            lastUpdate.getAndSet(System.currentTimeMillis());
+
+            Future<Object> f = Futures.future(new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    index.addWordsToDoc(index.numDocuments(),document);
+                    numWordsEncountered.set(numWordsEncountered.get() + document.size());
+                    work.countDown();
+
+                    lastUpdate.getAndSet(System.currentTimeMillis());
+                    return null;
+                }
+            },context().dispatcher());
+            f.onFailure(new OnFailure() {
+                @Override
+                public void onFailure(Throwable failure) throws Throwable {
+                    log.error("Failure on vocab actor ",failure);
+                }
+            },context().dispatcher());
+
+
 
         }
 
