@@ -23,6 +23,12 @@ See [the parameters common to all single-layer networks](../singlelayernetwork.h
 
 The variable k is the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain composing the restricted Boltzmann machine. A typical value is 1.
 
+### Initiating an RBM
+
+ <script src="http://gist-it.appspot.com/https://github.com/SkymindIO/deeplearning4j/blob/4530b123f40645a2c34e650cbfcd6b5139638c9a/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/rbm/RBMTests.java?slice=58:74"></script>
+
+https://github.com/SkymindIO/deeplearning4j/blob/4530b123f40645a2c34e650cbfcd6b5139638c9a/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/rbm/RBMTests.java
+
 ### Continuous RBMs
 
 A continuous restricted Boltzmann machine is a form of RBM that accepts continuous input (i.e. numbers cut finer than integers) via a different type of contrastive divergence sampling. This allows the CRBM to handle things like image pixels or word-count vectors that are normalized to decimals between zero and one.
