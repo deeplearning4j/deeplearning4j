@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Restricted Boltzmann machines
+# Restricted Boltzmann Machines
 
 To quote Geoff Hinton, a Google researcher and university professor, a Boltzmann machine is "a network of symmetrically connected, neuron-like units that make [stochastic](../glossary.html#stochasticgradientdescent) decisions about whether to be on or off." (Stochastic means "randomly determined.")
 
@@ -23,11 +23,9 @@ See [the parameters common to all single-layer networks](../singlelayernetwork.h
 
 The variable k is the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain composing the restricted Boltzmann machine. A typical value is 1.
 
-### Initiating an RBM
+### Initiating an RBM on Iris
 
  <script src="http://gist-it.appspot.com/https://github.com/SkymindIO/deeplearning4j/blob/4530b123f40645a2c34e650cbfcd6b5139638c9a/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/rbm/RBMTests.java?slice=58:74"></script>
-
-https://github.com/SkymindIO/deeplearning4j/blob/4530b123f40645a2c34e650cbfcd6b5139638c9a/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/rbm/RBMTests.java
 
 ### Continuous RBMs
 
