@@ -11,13 +11,13 @@ With the exception of the first and final layers, each hidden layer has a double
 
 Deep-belief networks are used to recognize and generate images, video sequences and motion-capture data. A continuous deep-belief network is simply an extension of a deep-belief network that accepts a continuum of decimals, rather than binary data. 
 
-### parameters & k
+### Parameters & k
 
 See the [parameters common to all multilayer networks](../multinetwork.html).
 
 The variable k is the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain. In composing a deep-belief network, a typical value is one.
 
-### initiating a deep-belief network
+### Initiating a deep-belief network
 
 Here's how you set up a single-thread deep-belief network: 
 
