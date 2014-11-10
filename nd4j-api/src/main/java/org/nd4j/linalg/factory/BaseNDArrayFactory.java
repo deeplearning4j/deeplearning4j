@@ -72,6 +72,15 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return rand(new int[]{rows,columns},min,max,rng);
     }
 
+    @Override
+    public DataBuffer createBuffer(double[] concat, boolean copy) {
+        return new DoubleBuffer(concat,copy);
+    }
+
+    @Override
+    public DataBuffer createBuffer(float[] concat, boolean copy) {
+        return new DoubleBuffer(concat,copy);
+    }
 
     /**
      * Sets the data type
