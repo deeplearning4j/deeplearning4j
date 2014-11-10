@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClosedListener {
+public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClosedListener,Iterator<List<VocabWord>> {
 
     private transient  Directory dir;
     private transient IndexReader reader;
@@ -51,7 +51,6 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private AtomicBoolean indexBeingCreated = new AtomicBoolean(false);
     private static Logger log = LoggerFactory.getLogger(LuceneInvertedIndex.class);
     public final static String INDEX_PATH = "word2vec-index";
-    private AtomicLong finishedCalled;
     private AtomicBoolean readerClosed = new AtomicBoolean(false);
     private AtomicInteger totalWords = new AtomicInteger(0);
     private int batchSize = 1000;
@@ -92,7 +91,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     @Override
     public Iterator<List<VocabWord>> miniBatches() {
-        return miniBatches.iterator();
+        return this;
     }
 
     @Override
@@ -480,11 +479,10 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
         }
 
-        finishedCalled = new AtomicLong(System.currentTimeMillis());
         indexManager.shutdown();
         miniBatchManager.shutdown();
         try {
-            indexManager.awaitTermination(1,TimeUnit.MINUTES);
+            indexManager.awaitTermination(1,TimeUnit.DAYS);
             miniBatchGoing.set(false);
             miniBatchManager.awaitTermination(1,TimeUnit.MINUTES);
 
@@ -510,6 +508,34 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     @Override
     public void onClose(IndexReader reader) {
         readerClosed.set(true);
+    }
+
+    @Override
+    public boolean hasNext() {
+        return !miniBatchDocs.isEmpty() ||
+                miniBatchGoing.get() ||
+                !miniBatchManager.isShutdown();
+    }
+
+    @Override
+    public List<VocabWord> next() {
+        if(!miniBatchDocs.isEmpty())
+            return miniBatchDocs.poll();
+        else if(!miniBatchManager.isShutdown()) {
+            while(miniBatchDocs.isEmpty()) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+
+                log.warn("Waiting on more data...");
+
+                if(miniBatchManager.isShutdown())
+                    return miniBatchDocs.poll();
+            }
+        }
+        return null;
     }
 
 
