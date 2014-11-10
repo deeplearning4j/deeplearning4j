@@ -17,6 +17,7 @@ import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.stopwords.StopWords;
+import org.deeplearning4j.util.DiskBasedQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,8 +59,8 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private double sample = 0;
     private AtomicLong nextRandom = new AtomicLong(5);
     private String indexPath = INDEX_PATH;
-    private ScheduledExecutorService miniBatchManager = Executors.newScheduledThreadPool(1);
-    private LinkedBlockingDeque<List<VocabWord>> miniBatchDocs = new LinkedBlockingDeque<>();
+    private transient ScheduledExecutorService miniBatchManager = Executors.newScheduledThreadPool(1);
+    private Queue<List<VocabWord>> miniBatchDocs = new ConcurrentLinkedDeque<>();
     private AtomicBoolean miniBatchGoing = new AtomicBoolean(true);
 
     public LuceneInvertedIndex(VocabCache vocabCache,boolean cache) {
