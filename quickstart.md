@@ -36,23 +36,11 @@ layout: default
 
 These tools will generate the visualizations that allow you to debug your neural nets as they train. (The visualizations occasionally generate a list of errors on Macs -- that does not stop the nets from training.)
 
-* Next, download [DL4J examples here](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/). Just click on the latest [tar.gz](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/deeplearning4j-examples-0.0.3.2-20140811.044400-46-bin.tar.gz) or [.zip](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/deeplearning4j-examples-0.0.3.2-20140811.044400-46-bin.zip) file somewhere near the top of the list. It will look something like this:
+* Next, clone DL4J examples here. 
+* 
+		git clone https://github.com/SkymindIO/dl4j-examples
 
-		WINDOWS
-		deeplearning4j-examples-0.0.3.2-20140811.044400-46-bin.zip
-
-		MAC
-		deeplearning4j-examples-0.0.3.2-20140811.044400-46-bin.tar.gz
-
-* Unzip the file. (**EXCEPTION**: *If you have previously installed DL4J following the instructions on the [Getting Started page](../gettingstarted.html), you already have this file. In that case, simply cd into */deeplearning4j-examples/target/, where you will find the file you need to unzip. Then cd once more into the unzipped folder...*)
-
-* To run the examples, move into the DL4J examples folder you just downloaded and unzipped to make it your current working directory. To do that, you'll type something like this (file paths may vary :):
-
-		cd */Desktop/deeplearning4j-examples-0.0.3.2-SNAPSHOT
-
-* Once you've made the examples folder your current working directory, enter this command:
-
-		java -cp "lib/*" org.deeplearning4j.mnist.MnistExample
+* Open up the project in IntelliJ and press run on the MNIST example. 
 
 * This is the moment of truth. You should now see evidence in your terminal/cmd that the neural net has begun to train, as the net's iterations begin to scroll down your terminal window. (In some cases, the program may take a minute to locate resources.) Look at the second-to-last number on the righthand side below. It should be decreasing with each new iteration. That’s the measure of the net’s error reconstructing a numeral-image. If the error shrinks, your net is learning. 
 
