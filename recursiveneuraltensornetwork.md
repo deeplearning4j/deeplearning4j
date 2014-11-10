@@ -33,6 +33,14 @@ The entire sentence is at the root of the tree (at the top); each individual wor
 
 Finally, word vectors can be taken from Word2vec and substituted for the words in your tree. Next, we'll tackle how to combine those word vectors with neural nets, with code snippets.
 
+### Initiating an RNTN
+
+Instantiating an object of the RNTN class is simple:
+
+<script src="http://gist-it.appspot.com/https://github.com/SkymindIO/deeplearning4j/blob/2f13b4ac4c82fee649c965026f8e5f88c5f1523f/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/models/rntn/RNTN.java?slice=1092:1094"></script>
+
+A full example of the code necessary for an [RNTN is here](https://github.com/SkymindIO/deeplearning4j/blob/2f13b4ac4c82fee649c965026f8e5f88c5f1523f/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/models/rntn/RNTN.java).
+
 ###summary
 
 1. [[Word2vec](http://deeplearning4j.org/word2vec.html) pipeline] Vectorize a corpus of words
