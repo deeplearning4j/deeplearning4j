@@ -3,9 +3,12 @@ package org.deeplearning4j.models.word2vec;
 import static org.junit.Assert.*;
 
 import org.deeplearning4j.models.word2vec.loader.Word2VecLoader;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.springframework.core.io.ClassPathResource;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -13,10 +16,25 @@ import java.io.IOException;
  */
 public class Word2VecLoaderTest {
 
+    private File textFile,binaryFile;
+
+    @Before
+    public void before() throws Exception {
+        if(textFile == null)
+            textFile = new ClassPathResource("vec.txt").getFile();
+        if(binaryFile == null)
+            binaryFile = new ClassPathResource("vec.bin").getFile();
+    }
+
     @Test
-    @Ignore
-    public void testLoader() throws IOException {
-        Word2Vec vec = Word2VecLoader.loadGoogleBinary("vectors.bin");
+    public void testLoaderText() throws IOException {
+        Word2Vec vec = Word2VecLoader.loadGoogleModel(textFile.getAbsolutePath(),false);
+        assertTrue(vec.getCache().numWords() > 0);
+    }
+
+    @Test
+    public void testLoaderBinary() throws  IOException {
+        Word2Vec vec = Word2VecLoader.loadGoogleModel(binaryFile.getAbsolutePath(),true);
         assertTrue(vec.getCache().numWords() > 0);
     }
 
