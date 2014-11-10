@@ -29,13 +29,15 @@ public class Word2VecLoaderTest {
     @Test
     public void testLoaderText() throws IOException {
         Word2Vec vec = Word2VecLoader.loadGoogleModel(textFile.getAbsolutePath(),false);
+        assertEquals(5,vec.getCache().numWords());
         assertTrue(vec.getCache().numWords() > 0);
     }
 
     @Test
     public void testLoaderBinary() throws  IOException {
         Word2Vec vec = Word2VecLoader.loadGoogleModel(binaryFile.getAbsolutePath(),true);
-        assertTrue(vec.getCache().numWords() > 0);
+        assertEquals(5,vec.getCache().numWords());
+
     }
 
 }
