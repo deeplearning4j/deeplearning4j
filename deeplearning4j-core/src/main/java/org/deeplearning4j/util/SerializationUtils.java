@@ -2,8 +2,14 @@ package org.deeplearning4j.util;
 
 import java.io.*;
 
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.io.FileUtils;
 
+/**
+ * Serialization utils for saving and reading serializable objects
+ *
+ * @author Adam Gibson
+ */
 public class SerializationUtils {
 
 	@SuppressWarnings("unchecked")
@@ -72,10 +78,12 @@ public class SerializationUtils {
 	
 	public static void saveObject(Object toSave,File saveTo) {
 		try {
-			ObjectOutputStream os = new ObjectOutputStream(FileUtils.openOutputStream(saveTo));
+            OutputStream os1 = FileUtils.openOutputStream(saveTo);
+			ObjectOutputStream os = new ObjectOutputStream(os1);
 			os.writeObject(toSave);
 			os.flush();
-			os.close();
+            os.close();
+            os1.close();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
