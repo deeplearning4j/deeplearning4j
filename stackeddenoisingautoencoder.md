@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Stacked denoising autoencoders
+# Stacked Denoising Autoencoders
 
 A stacked denoising autoencoder is to a denoising autoencoder what a deep-belief network is to a [restricted Boltzmann machine](../restrictedboltzmannmachine.html). A key function of SDAs, and deep learning more generally, is their capacity for unsupervised pre-training, layer by layer, as input is fed through. Once each layer is pre-trained to conduct feature selection and extraction on the input from the preceding layer, a second stage of supervised fine tuning can follow. 
 
@@ -23,19 +23,9 @@ Here's how you set up a single-thread stacked denoising autoencoder:
 
 To create it, you simply instantiate an object of the class [StackedDenoisingAutoEncoder](../doc/org/deeplearning4j/sda/StackedDenoisingAutoEncoder.html).
 
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/StackedDenoisingAutoEncoderExample.java?slice=30:35"></script>
+<script src="http://gist-it.appspot.com/https://github.com/SkymindIO/deeplearning4j/blob/4530b123f40645a2c34e650cbfcd6b5139638c9a/deeplearning4j-core/src/test/java/org/deeplearning4j/models/classifiers/sda/StackedDenoisingAutoEncoderTest.java?slice=35:61"></script>
 
 This creates a stacked denoising autoencoder with the specified parameters. 
-
-You can test your newly trained network by feeding it unstructured data and checking the output. 
-
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/StackedDenoisingAutoEncoderExample.java?slice=36:41"></script>
-
-Passing an iterator to pretrain and finetune makes them automatically iterate over the dataset. After those two tasks, all that remains is creating the output, or prediction, which is expressed as an f1 score.
-
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/StackedDenoisingAutoEncoderExample.java?slice=52:62"></script>
-
-Note that the eval class combines [confusion matrices](../glossary.html#confusionmatrix) and f1 scores to allow for easy display and evaluation of data by allowing input of outcome matrices. This is useful for tracking how well your network trains over time. 
 
 The f1 score will be a percentage. It's basically the probability that your guesses are correct. Eighty-six percent is industry standard; a solid deep-learning network should be capable of scores in the high 90s.
 
