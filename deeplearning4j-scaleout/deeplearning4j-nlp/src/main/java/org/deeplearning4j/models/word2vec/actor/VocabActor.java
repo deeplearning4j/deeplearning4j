@@ -39,7 +39,7 @@ public class VocabActor extends UntypedActor {
     private AtomicLong lastUpdate;
     private VocabCache cache;
     private int minWordFrequency;
-    private AtomicInteger numWordsEncountered;
+    private AtomicLong numWordsEncountered;
     private InvertedIndex index;
     private static Logger log = LoggerFactory.getLogger(VocabActor.class);
 
@@ -50,7 +50,7 @@ public class VocabActor extends UntypedActor {
             List<String> stopWords,
             AtomicLong lastUpdate,
             int minWordFrequency,
-            AtomicInteger numWordsEncountered,
+            AtomicLong numWordsEncountered,
             InvertedIndex index) {
         super();
         this.tokenizer = tokenizer;
