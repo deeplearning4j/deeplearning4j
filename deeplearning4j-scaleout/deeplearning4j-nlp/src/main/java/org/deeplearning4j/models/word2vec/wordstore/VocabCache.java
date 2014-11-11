@@ -146,7 +146,7 @@ public interface VocabCache  {
      * The total number of word occurrences
      * @return the total number of word occurrences
      */
-    int totalWordOccurrences();
+    long totalWordOccurrences();
 
     /**
      * Inserts a word vector

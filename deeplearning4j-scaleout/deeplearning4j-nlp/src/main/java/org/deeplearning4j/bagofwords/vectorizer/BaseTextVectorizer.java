@@ -36,7 +36,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     protected transient DocumentIterator docIter;
     protected List<String> labels;
     protected transient SentenceIterator sentenceIterator;
-    protected AtomicInteger numWordsEncountered =  new AtomicInteger(0);
+    protected AtomicLong numWordsEncountered =  new AtomicLong(0);
     private static Logger log = LoggerFactory.getLogger(BaseTextVectorizer.class);
     protected InvertedIndex index;
     protected int batchSize = 1000;

@@ -4,27 +4,19 @@ import com.google.common.util.concurrent.AtomicDouble;
 import it.unimi.dsi.util.XorShift64StarRandomGenerator;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
-import org.deeplearning4j.plot.Tsne;
-import org.deeplearning4j.plot.dropwizard.RenderApplication;
 import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.util.Index;
 import org.deeplearning4j.util.SerializationUtils;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * In memory lookup cache for smaller datasets
@@ -191,7 +183,7 @@ public abstract class BaseLookupCache implements VocabCache,Serializable {
      * @return the total number of word occurrences
      */
     @Override
-    public int totalWordOccurrences() {
+    public long totalWordOccurrences() {
         return  totalWordOccurrences.get();
     }
 

@@ -23,7 +23,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -478,7 +477,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      * @return the total number of word occurrences
      */
     @Override
-    public int totalWordOccurrences() {
+    public long totalWordOccurrences() {
         return  totalWordOccurrences.get();
     }
 
