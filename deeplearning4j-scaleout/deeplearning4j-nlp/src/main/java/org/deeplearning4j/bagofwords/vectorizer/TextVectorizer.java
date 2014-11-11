@@ -81,7 +81,7 @@ public interface TextVectorizer extends Vectorizer {
      * Returns the number of words encountered so far
      * @return the number of words encountered so far
      */
-    int numWordsEncountered();
+    long numWordsEncountered();
 
     /**
      * Inverted index
