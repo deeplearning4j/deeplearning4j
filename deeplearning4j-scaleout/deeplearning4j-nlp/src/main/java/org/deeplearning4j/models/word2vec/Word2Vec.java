@@ -53,7 +53,7 @@ public class Word2Vec implements Persistable {
     private int batchSize = 1000;
     private int topNSize = 40;
     private double sample = 0;
-    private int totalWords = 1;
+    private long totalWords = 1;
     private AtomicInteger rateOfChange = new AtomicInteger(0);
     //learning rate
     private AtomicDouble alpha = new AtomicDouble(0.025);
