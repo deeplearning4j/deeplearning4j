@@ -24,7 +24,7 @@ public class BackPropROptimizer implements Serializable,OptimizableByGradientVal
 
     private BaseMultiLayerNetwork network;
     private int length = -1;
-    private double lr  = 1e-1;
+    private double lr = 1e-1;
     private int epochs = 1000;
     private static Logger log = LoggerFactory.getLogger(BackPropROptimizer.class);
     private int currentIteration = -1;
@@ -42,98 +42,26 @@ public class BackPropROptimizer implements Serializable,OptimizableByGradientVal
         this.currentIteration = value;
     }
 
-    public void optimize(TrainingEvaluator eval,boolean lineSearch) {
-        if(!lineSearch) {
-            double lastEntropy =  network.score();
+    public void optimize(TrainingEvaluator eval) {
+        NeuralNetwork.OptimizationAlgorithm optimizationAlgorithm = network.getDefaultConfiguration().getOptimizationAlgo();
+        if (optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT) {
+            VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(this);
+            g.setTrainingEvaluator(eval);
+            g.setMaxIterations(network.getOutputLayer().conf().getNumIterations());
+            g.optimize(network.getOutputLayer().conf().getNumIterations());
 
-            log.info("BEGIN BACKPROP WITH SCORE OF " + lastEntropy);
-
-            //store a copy of the network for when binary cross entropy gets
-            //worse after an iteration
-            BaseMultiLayerNetwork revert = network.clone();
-            //sgd style; only iterate a certain number of epochs
-            if(network.forceNumIterations()) {
-                for(int i = 0; i < epochs; i++) {
-                    if(i % network.getDefaultConfiguration().getResetAdaGradIterations() == 0)
-                        network.getOutputLayer().getAdaGrad().historicalGradient = null;
-                    network.backPropStepR(null);
-                    log.info("Iteration " + i + " error " + network.score());
-
-                }
-            }
-
-            else {
-
-
-                boolean train = true;
-                int count = 0;
-                double changeTolerance = 1e-5;
-                int backPropIterations = 0;
-                while(train) {
-                    if(backPropIterations >= epochs) {
-                        log.info("Backprop number of iterations max hit; converging");
-                        break;
-
-                    }
-                    count++;
-                /* Trains logistic regression post weight updates */
-
-                    double entropy = network.score();
-                    if( entropy < lastEntropy) {
-                        double diff = Math.abs(entropy - lastEntropy);
-                        if(diff < changeTolerance) {
-                            log.info("Not enough of a change on back prop...breaking");
-                            break;
-                        }
-                        else
-                            lastEntropy = entropy;
-                        log.info("New score " + lastEntropy);
-                        revert = network.clone();
-                    }
-
-                    else if(count >= epochs) {
-                        log.info("Hit max number of epochs...breaking");
-                        train = false;
-                    }
-
-                    else if(entropy >= lastEntropy || Double.isNaN(entropy) || Double.isInfinite(entropy)) {
-                        train = false;
-                        network.update(revert);
-                        log.info("Reverting to best score " + lastEntropy);
-                    }
-
-                    backPropIterations++;
-                }
-
-
-            }
-        }
-
-        else {
-
-            NeuralNetwork.OptimizationAlgorithm optimizationAlgorithm = network.getDefaultConfiguration().getOptimizationAlgo();
-            if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT) {
-                VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(this);
-                g.setTrainingEvaluator(eval);
-                g.setMaxIterations(epochs);
-                g.optimize(epochs);
-
-            }
-
-            else if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
-                h = new StochasticHessianFree(this,network);
-                h.setTrainingEvaluator(eval);
-                h.optimize(epochs);
-            }
-
-            else {
-                VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(this);
-                g.setTrainingEvaluator(eval);
-                g.optimize(epochs);
-
-            }
+        } else if (optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
+            h = new StochasticHessianFree(this, network);
+            h.setTrainingEvaluator(eval);
+            h.optimize(network.getOutputLayer().conf().getNumIterations());
+        } else {
+            VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(this);
+            g.setTrainingEvaluator(eval);
+            g.optimize(network.getOutputLayer().conf().getNumIterations());
 
         }
+
+
 
     }
 

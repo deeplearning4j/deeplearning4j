@@ -44,7 +44,7 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
 
     public void optimize(INDArray labels,TrainingEvaluator eval) {
         network.getOutputLayer().setLabels(labels);
-         network.backProp(eval);
+        network.backProp(eval);
     }
 
     /**
