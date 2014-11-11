@@ -850,11 +850,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     public void backProp(TrainingEvaluator eval) {
         if (useGaussNewtonVectorProductBackProp) {
             BackPropROptimizer opt = new BackPropROptimizer(this, defaultConfiguration.getLr(), defaultConfiguration.getNumIterations());
-            opt.optimize(eval, lineSearchBackProp);
+            opt.optimize(eval);
 
         } else {
             BackPropOptimizer opt = new BackPropOptimizer(this, defaultConfiguration.getLr(), defaultConfiguration.getNumIterations());
-            opt.optimize(eval, lineSearchBackProp);
+            opt.optimize(eval);
 
         }
     }
