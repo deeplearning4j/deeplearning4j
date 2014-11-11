@@ -36,32 +36,62 @@
         <junit.version>4.11</junit.version>
         <maven.test.skip>true</maven.test.skip>
         <logback.version>1.1.2</logback.version>
-         <nd4j.version>0.0.3.5.3</nd4j.version>
+        <nd4j.version>0.0.3.5.4</nd4j.version>
     </properties>
 
 
     <profiles>
-    <profile>
-      <id>qa</id>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <executions>
-              <execution>
-                <phase>install</phase>
-                <goals>
-                  <goal>copy-dependencies</goal>
-                </goals>
-                <configuration>
-                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
+        <profile>
+            <id>cuda</id>
+           <dependencies>
+               <dependency>
+                   <groupId>org.nd4j</groupId>
+                   <artifactId>nd4j-jcublas</artifactId>
+                   <version>${nd4j.version}</version>
+               </dependency>
+           </dependencies>
+        </profile>
+        <profile>
+            <id>jblas</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-jblas</artifactId>
+                    <version>${nd4j.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>netlib</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-netlib-blas</artifactId>
+                    <version>${nd4j.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>qa</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>copy-dependencies</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
 
         <profile>
             <id>release-sign-artifacts</id>
@@ -127,8 +157,8 @@
         <connection>scm:git:git@github.com:agibsonccc/java-deeplearning.git</connection>
         <developerConnection>scm:git:git@github.com:agibsonccc/java-deeplearning.git</developerConnection>
         <url>git@github.com:agibsonccc/java-deeplearning.git</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <modules>
         <module>deeplearning4j-core</module>
