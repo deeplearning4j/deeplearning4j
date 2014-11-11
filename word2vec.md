@@ -35,17 +35,20 @@ Assuming a list of sentences, Word2vec is used for lemmatization like this:
 
 <script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/word2vec/MovingWindowExample.java?slice=45:69"></script>
 
-From there, Word2vec will do automatic multithreaded training based on your sentence data. After that step, you'll want to save Word2vec like this:
+From there, Word2vec will do automatic multithreaded training based on your sentence data. After that step, you will want to save the model. There are a few different components to word2vec. One of these is the vocab cache. The normal way to save models in deeplearning4j is via the SerializationUtils (java serialization akin to python pickling)
 
        	 SerializationUtils.saveObject(vec, new File("mypath"));
+       	 
 
 This will save Word2vec to mypath. You can reload it into memory like this:
         
         Word2Vec vec = SerializationUtils.readObject(new File("mypath"));
 
+
+
 You can then use Word2vec as a lookup table in the following way:
               
-        DoubleMatrix wordVector = vec.getWordVectorMatrix("myword");
+        INDArray wordVector = vec.getWordVectorMatrix("myword");
 
         double[] wordVector = vec.getWordVector("myword");
 
@@ -197,12 +200,6 @@ Here we can create a word2Vec with a few parameters
     iterate : The SentenceIterator object that we created earlier
     
     tokenizerFactory : Our UimaTokenizerFactory object that we created earlier
-
-This next line is important. 
-
-    vec.setCache(new EhCacheVocabCache());
-
-The EhCacheVocabCache object is important to maintain performance. This object will cache your vocabulary to disk. You need to allocate and create a new cache object for DL4J to work properly.
 
 After this line it's also a good idea to set up any other parameters you need.
 
