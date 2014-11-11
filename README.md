@@ -107,7 +107,7 @@ Installation
        <dependency>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-core</artifactId>
-        <version>0.0.3.2-SNAPSHOT</version>
+        <version>0.0.3.2.5</version>
        </dependency>
 
 ## Scaleout for multithreaded methods and clustering
@@ -115,7 +115,7 @@ Installation
         <dependency>
          <groupId>org.deeplearning4j</groupId>
            <artifactId>deeplearning4j-scaleout-akka</artifactId>
-         <version>0.0.3.2-SNAPSHOT</version>
+         <version>0.0.3.2.5</version>
         </dependency>
 
 ## Text analysis
@@ -123,5 +123,5 @@ Installation
           <dependency>
            <groupId>org.deeplearning4j</groupId>
            <artifactId>deeplearning4j-nlp</artifactId>
-           <version>0.0.3.2-SNAPSHOT</version>
+           <version>0.0.3.2.5</version>
           </dependency>
