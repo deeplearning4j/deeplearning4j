@@ -3,6 +3,7 @@ package org.nd4j.linalg.netlib.complex;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Double implementation of a complex number.
@@ -28,6 +29,71 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     public ComplexDouble(double real) {
         super(real);
     }
+
+    @Override
+    public IComplexNumber eqc(IComplexNumber num) {
+        double val = num.realComponent().doubleValue();
+        double imag = num.imaginaryComponent().doubleValue();
+        double otherVal = num.realComponent().doubleValue();
+        double otherImag = num.imaginaryComponent().doubleValue();
+        if(val == otherVal)
+            return Nd4j.createComplexNumber(1, 0);
+        else if(val != otherVal)
+            return Nd4j.createComplexNumber(0,0);
+        else if(imag == otherImag)
+            return Nd4j.createComplexNumber(1,0);
+        else
+            return Nd4j.createComplexNumber(0,0);
+    }
+
+    @Override
+    public IComplexNumber neqc(IComplexNumber num) {
+        double val = num.realComponent().doubleValue();
+        double imag = num.imaginaryComponent().doubleValue();
+        double otherVal = num.realComponent().doubleValue();
+        double otherImag = num.imaginaryComponent().doubleValue();
+        if(val != otherVal)
+            return Nd4j.createComplexNumber(1,0);
+        else if(val == otherVal)
+            return Nd4j.createComplexNumber(0,0);
+        else if(imag != otherImag)
+            return Nd4j.createComplexNumber(1,0);
+        else
+            return Nd4j.createComplexNumber(0,0);
+    }
+
+    @Override
+    public IComplexNumber gt(IComplexNumber num) {
+        double val = num.realComponent().doubleValue();
+        double imag = num.imaginaryComponent().doubleValue();
+        double otherVal = num.realComponent().doubleValue();
+        double otherImag = num.imaginaryComponent().doubleValue();
+        if(val > otherVal)
+            return Nd4j.createComplexNumber(1,0);
+        else if(val < otherVal)
+            return Nd4j.createComplexNumber(0,0);
+        else if(imag > otherImag)
+            return Nd4j.createComplexNumber(1,0);
+        else
+            return Nd4j.createComplexNumber(0,0);
+    }
+
+    @Override
+    public IComplexNumber lt(IComplexNumber num) {
+        double val = num.realComponent().doubleValue();
+        double imag = num.imaginaryComponent().doubleValue();
+        double otherVal = num.realComponent().doubleValue();
+        double otherImag = num.imaginaryComponent().doubleValue();
+        if(val < otherVal)
+            return Nd4j.createComplexNumber(1,0);
+        else if(val > otherVal)
+            return Nd4j.createComplexNumber(0,0);
+        else if(imag < otherImag)
+            return Nd4j.createComplexNumber(1,0);
+        else
+            return Nd4j.createComplexNumber(0,0);
+    }
+
 
     /**
      * Returns the argument of a complex number.
