@@ -40,7 +40,7 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
         this.currentIteration = value;
     }
 
-    public void optimize(TrainingEvaluator eval,boolean lineSearch) {
+    public void optimize(TrainingEvaluator eval) {
         lineSearchBackProp(eval);
         network.getOutputLayer().fit(new DataSet(network.getOutputLayer().getInput(),network.getOutputLayer().getLabels()));
 
@@ -54,16 +54,16 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
         if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT) {
             VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(this,new BackPropStepFunction(network));
             g.setTrainingEvaluator(eval);
-            g.setMaxIterations(iterations);
-            g.optimize(iterations);
+            g.setMaxIterations(network.getOutputLayer().conf().getNumIterations());
+            g.optimize(network.getOutputLayer().conf().getNumIterations());
 
         }
 
         else if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
             StochasticHessianFree s = new StochasticHessianFree(this,network);
             s.setTrainingEvaluator(eval);
-            s.setMaxIterations(iterations);
-            s.optimize(iterations);
+            s.setMaxIterations(network.getOutputLayer().conf().getNumIterations());
+            s.optimize(network.getOutputLayer().conf().getNumIterations());
 
         }
 
@@ -72,7 +72,7 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
         else {
             VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(this,new BackPropStepFunction(network));
             g.setTrainingEvaluator(eval);
-            g.optimize(iterations);
+            g.optimize(network.getOutputLayer().conf().getNumIterations());
 
         }
 
@@ -96,6 +96,7 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
 
     @Override
     public void setParameter(int index, double value) {
+        throw new UnsupportedOperationException();
 
     }
 
@@ -106,7 +107,7 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
 
     @Override
     public double getParameter(int index) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override

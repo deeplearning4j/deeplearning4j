@@ -155,7 +155,9 @@ public abstract class BaseLayer implements Layer {
 
     protected void applyDropOutIfNecessary(INDArray input) {
         if(conf.getDropOut() > 0) {
-            this.dropoutMask = Nd4j.rand(input.rows(), conf.getnOut()).gt(conf.getDropOut());
+            INDArray mask = Nd4j.rand(input.rows(), input.columns());
+            mask.gti(2);
+            this.dropoutMask = Nd4j.rand(input.rows(), input.columns()).gt(conf.getDropOut());
         }
 
         else
