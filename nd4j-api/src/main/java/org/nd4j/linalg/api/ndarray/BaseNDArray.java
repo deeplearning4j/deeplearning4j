@@ -736,7 +736,12 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray lti(Number other) {
-        return lti(Nd4j.scalar(other));
+        INDArray linear = linearView();
+        double val = other.doubleValue();
+        for(int i = 0; i < linear.length(); i++) {
+            linear.putScalar(i,linear.getDouble(i) < val ? 1 : 0);
+        }
+        return this;
     }
 
     @Override
@@ -746,7 +751,12 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray eqi(Number other) {
-        return eqi(Nd4j.scalar(other));
+        INDArray linear = linearView();
+        double val = other.doubleValue();
+        for(int i = 0; i < linear.length(); i++) {
+            linear.putScalar(i,linear.getDouble(i) == val ? 1 : 0);
+        }
+        return this;
     }
 
     @Override
@@ -756,7 +766,12 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray gti(Number other) {
-        return gti(Nd4j.scalar(other));
+        INDArray linear = linearView();
+        double val = other.doubleValue();
+        for(int i = 0; i < linear.length(); i++) {
+            linear.putScalar(i,linear.getDouble(i) > val ? 1 : 0);
+        }
+        return this;
     }
 
     @Override
@@ -773,6 +788,22 @@ public abstract class BaseNDArray  implements INDArray {
         }
         return this;
     }
+
+    @Override
+    public INDArray neq(Number other) {
+        return dup().neqi(other);
+    }
+
+    @Override
+    public INDArray neqi(Number other) {
+        INDArray linear = linearView();
+        double val = other.doubleValue();
+        for(int i = 0; i < linear.length(); i++) {
+            linear.putScalar(i,linear.getDouble(i) != val ? 1 : 0);
+        }
+        return this;
+    }
+
     @Override
     public INDArray neq(INDArray other) {
         return dup().neqi(other);
@@ -847,7 +878,7 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linear = linearView();
         INDArray resultLinear = result.linearView();
         for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, n.floatValue() / linear.getDouble(i));
+            resultLinear.putScalar(i, n.doubleValue() / linear.getDouble(i));
         }
         return result;
     }
@@ -2726,7 +2757,7 @@ public abstract class BaseNDArray  implements INDArray {
     public INDArray assign(Number value) {
         INDArray one = linearView();
         for(int i = 0; i < one.length(); i++)
-            one.put(i, Nd4j.scalar(value.doubleValue()));
+            one.putScalar(i,value.doubleValue());
         return this;
     }
 

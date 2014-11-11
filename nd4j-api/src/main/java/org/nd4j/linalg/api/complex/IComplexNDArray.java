@@ -16,7 +16,7 @@ public interface IComplexNDArray extends INDArray {
      * when offset is > 0
      * @return the blas offset
      */
-   int blasOffset();
+    int blasOffset();
 
     /**
      * Returns a linear view reference of shape
@@ -99,6 +99,12 @@ public interface IComplexNDArray extends INDArray {
 
     @Override
     IComplexNDArray neqi(INDArray other);
+
+    @Override
+    IComplexNDArray neqi(Number other);
+
+    @Override
+    IComplexNDArray neq(Number other);
 
     /**
      * Assign all of the elements in the given
@@ -508,9 +514,25 @@ public interface IComplexNDArray extends INDArray {
 
     double getReal(int i);
 
+
+
+    IComplexNDArray putReal(int[] indices, float value);
+
+    IComplexNDArray putImag(int[] indices, float value);
+
+    IComplexNDArray putReal(int[] indices, double value);
+
+    IComplexNDArray putImag(int[] indices, double value);
+
+
+
     IComplexNDArray putReal(int rowIndex, int columnIndex, float value);
 
     IComplexNDArray putImag(int rowIndex, int columnIndex, float value);
+
+    IComplexNDArray putReal(int rowIndex, int columnIndex, double value);
+
+    IComplexNDArray putImag(int rowIndex, int columnIndex, double value);
 
     IComplexNDArray putReal(int i, float v);
 
@@ -1181,6 +1203,8 @@ public interface IComplexNDArray extends INDArray {
 
     IComplexNDArray put(int[] indexes, float value);
 
+    IComplexNDArray put(int[] indexes, double value);
+
     IComplexNDArray putSlice(int slice, IComplexNDArray put);
 
     /**
@@ -1236,4 +1260,35 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray broadcast(int[] shape);
 
     IComplexNDArray putScalar(int j, int i, IComplexNumber conji);
+
+
+    IComplexNDArray neqi(IComplexNumber other);
+
+
+    IComplexNDArray neq(IComplexNumber other);
+
+
+    IComplexNDArray lt(IComplexNumber other);
+
+
+    IComplexNDArray lti(IComplexNumber other);
+
+
+    IComplexNDArray eq(IComplexNumber other);
+
+
+    IComplexNDArray eqi(IComplexNumber other);
+
+
+    IComplexNDArray gt(IComplexNumber other);
+
+
+    IComplexNDArray gti(IComplexNumber other);
+
+
+
+
+
+
+
 }

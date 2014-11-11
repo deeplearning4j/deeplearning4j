@@ -209,6 +209,12 @@ public interface INDArray extends Serializable {
      */
     public INDArray epsi(INDArray other);
 
+
+
+    INDArray neq(Number other);
+
+    INDArray neqi(Number other);
+
     INDArray neq(INDArray other);
 
     INDArray neqi(INDArray other);

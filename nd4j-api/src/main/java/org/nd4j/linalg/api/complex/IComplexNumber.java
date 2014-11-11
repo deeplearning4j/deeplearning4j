@@ -119,5 +119,30 @@ public interface IComplexNumber {
      */
     public IComplexDouble asDouble();
 
+    /**
+     * Equals returning a complex number
+     * @param num the number to compare
+     * @return 1 if equal 0 otherwise
+     */
+    public IComplexNumber eqc(IComplexNumber num);
+    /**
+     * Not Equals returning a complex number
+     * @param num the number to compare
+     * @return 1 if not equal 0 otherwise
+     */
+    public IComplexNumber neqc(IComplexNumber num);
+    /**
+     * Greater than returning a complex number
+     * @param num the number to compare
+     * @return 1 if greater than 0 otherwise
+     */
+    public IComplexNumber gt(IComplexNumber num);
+    /**
+     * Less than returning a complex number
+     * @param num the number to compare
+     * @return 1 if less than 0 otherwise
+     */
+    public IComplexNumber lt(IComplexNumber num);
+
 
 }
