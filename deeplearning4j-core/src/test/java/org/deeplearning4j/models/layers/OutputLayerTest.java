@@ -46,7 +46,6 @@ public class OutputLayerTest {
         l.fit(next);
 
 
-        int[] predictions = l.predict(next.getFeatureMatrix());
 
         Evaluation eval = new Evaluation();
         INDArray output = l.output(next.getFeatureMatrix());

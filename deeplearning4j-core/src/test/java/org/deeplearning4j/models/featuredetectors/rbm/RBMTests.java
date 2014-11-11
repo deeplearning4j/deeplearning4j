@@ -39,7 +39,7 @@ public class RBMTests {
         RandomGenerator rng = new MersenneTwister(123);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.VI)
+                .weightInit(WeightInit.VI).dropOut(0.3f)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).render(10)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(rng)
