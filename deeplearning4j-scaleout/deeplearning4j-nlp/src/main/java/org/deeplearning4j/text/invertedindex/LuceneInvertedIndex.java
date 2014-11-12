@@ -539,6 +539,10 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         return null;
     }
 
+    @Override
+    public void remove() {
+        throw new UnsupportedOperationException();
+    }
 
     public static class Builder {
         private File indexDir;
