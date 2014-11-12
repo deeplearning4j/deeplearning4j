@@ -34,7 +34,7 @@ Contents
 
 * Unzip the download, move it to your applications folder, and open the application. Upon opening, you may be prompted to install a Java SE 6 runtime. If so, install it. 
 
-* As you open IntelliJ, you will have to choose whether to create or open a project. Choose "Open Project" from the menu, and then select the working directory for Deeplearning4j. It should something like "dl4j-examples". Click the open button for that folder. (It will take a while for all the dependencies to be resolved, during which time you will not be able to run your examples.) 
+* As you open IntelliJ, you will have to choose whether to create or open a project. Choose "Open Project" from the menu, and then select the working directory for Deeplearning4j. It should look something like "dl4j-examples". Click the open button for that folder. (It will take a while for all the dependencies to be resolved, during which time you will not be able to run your examples.) 
 
 ![Alt text](../img/open_project.png) 
 
