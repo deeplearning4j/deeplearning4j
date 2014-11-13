@@ -64,7 +64,7 @@ public class FilterRenderer {
         for (int i = 0; i < equiv.length; i++) {
 
             //equiv[i] = (int) Math.round( MatrixUtils.getElement(render_data, i) );
-            equiv[i] = (int) Math.round( (double) render_data.getScalar(i).element() * 256 );
+            equiv[i] = (int) Math.round(render_data.getDouble(i) * 256 );
             log.debug( "> " + equiv[i] );
 
         }
@@ -171,8 +171,8 @@ public class FilterRenderer {
 
         Map<Integer, Integer> mapHistory = new TreeMap<>();
 
-        double min = (double) data.min(Integer.MAX_VALUE).element();
-        double max = (double) data.max(Integer.MAX_VALUE).element();
+        double min = (double) data.min(Integer.MAX_VALUE).getDouble(0);
+        double max = (double) data.max(Integer.MAX_VALUE).getDouble(0);
 
         double range = max - min;
         double stepSize = range / numberBins;
@@ -190,7 +190,7 @@ public class FilterRenderer {
 
             for (int col = 0; col < data.columns(); col++ ) {
 
-                double matrix_value = (double) data.getScalar( row, col ).element();
+                double matrix_value = (double) data.getScalar( row, col ).getDouble(0);
 
                 // at this point we need round values into bins
 
@@ -247,8 +247,8 @@ public class FilterRenderer {
 
         Map<Integer, Integer> mapHistory = this.generateHistogramBuckets( data, numberBins );
 
-        double min = (double) data.min(Integer.MAX_VALUE).element(); //data.getFromOrigin(0, 0);
-        double max = (double) data.max(Integer.MAX_VALUE).element(); //data.getFromOrigin(0, 0);
+        double min = (double) data.min(Integer.MAX_VALUE).getDouble(0); //data.getFromOrigin(0, 0);
+        double max = (double) data.max(Integer.MAX_VALUE).getDouble(0); //data.getFromOrigin(0, 0);
 
         double range = max - min;
         double stepSize = range / numberBins;
@@ -430,7 +430,7 @@ public class FilterRenderer {
             for (int i = 0; i < column.length(); i++) {
 
                 //double patch_normal = ( column.getFromOrigin(i) - min ) / ( max - min + 0.000001 );
-                double patch_normal = ( (double) column.getScalar(i).element() - col_min ) / ( col_max - col_min + 0.000001f );
+                double patch_normal = (  column.getScalar(i).getDouble(0) - col_min ) / ( col_max - col_min + 0.000001f );
                 equiv[i] = (int) (255 * patch_normal);
 
             }
