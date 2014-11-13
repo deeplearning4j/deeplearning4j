@@ -417,8 +417,8 @@ public class FilterRenderer {
 
             INDArray column = data.getColumn(col);
 
-            double col_max = (double) column.min(Integer.MAX_VALUE).element();
-            double col_min = (double) column.max(Integer.MAX_VALUE).element();
+            double col_max =  column.min(Integer.MAX_VALUE).getDouble(0);
+            double col_min =  column.max(Integer.MAX_VALUE).getDouble(0);
 
             // now reshape the column into the shape of the filter patch
 
