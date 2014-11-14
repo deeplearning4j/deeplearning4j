@@ -18,100 +18,14 @@ Contents
 * DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
 
 ###ND4J
+If you aren't familiar with Nd4j, please see [here](http://nd4j.org/getstarted.html)
 
-* You'll need to install ND4J, the linear-algebra library powering DL4J, in the same root directory as DL4J itself (say, your Desktop...). This requires Github (Mac and Windows users, see below):
 
-         git clone https://github.com/SkymindIO/nd4j
+You can use deeplearning4j either via maven (see the readme for the dependencies) or via our [downloads](http://deeplearning4j.org/downloads.html)
 
-* You then install DL4J either from source or from [Maven central](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-distribution/0.0.3.2-SNAPSHOT/). Here are the **source** instructions: 
+You can then manually import the jar files in to [eclipse](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse) or [intellij](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project), [netbeans](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/).
 
-         git clone https://github.com/SkymindIO/deeplearning4j
-         git clone https://github.com/SkymindIO/dl4j-examples
 
-### IntelliJ
-
-* To work with DL4J code, you should download the Java IDE IntelliJ. A free, community edition is available [here](http://www.jetbrains.com/idea/download/).
-
-* Unzip the download, move it to your applications folder, and open the application. Upon opening, you may be prompted to install a Java SE 6 runtime. If so, install it. 
-
-* As you open IntelliJ, you will have to choose whether to create or open a project. Choose "Open Project" from the menu, and then select the working directory for Deeplearning4j. It should look something like "dl4j-examples". Click the open button for that folder. (It will take a while for all the dependencies to be resolved, during which time you will not be able to run your examples.) 
-
-![Alt text](../img/open_project.png) 
-
-* You'll need to make sure the Maven 2 Integration plugin is installed. On Macs, go to Preferences and then click on Plugins. (On Linux, you'll find the plugins in Settings.) Then choose "Browse Repositories" and search for "Maven 2 Integration." Install that plugin and restart IntelliJ. Restarting should take you back to your java-deeplearning project. 
-
-* Click through the folder names to the examples folder -- dl4j-examples/blob/master/src/main/java/org/deeplearning4j/mnist/ -- and then right-click on the Java file you're interested in. (The MNIST dataset is where most users start.) Right click on MnistExample. In the menu that appears, look for the green arrow and choose "Run." 
-
-![Alt text](../img/run_menu.png)
-
-* Warning messages will appear at the top of the screen. If IntelliJ prompts you to add an SDK, choose JDK.
-
-### Maven
-
-* To check if you have Maven on your machine, type this in the terminal/cmd:
-
-         mvn --version
-
-* If you have Maven, you'll see the particular version on your computer, as well as the file path to where it lives. On a Windows PC, my file path was:
-
-         c:\Programs\maven\bin\..
-
-* If you don't have Maven, you can follow the installation instructions on Maven's ["getting started" page](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html). Finally, **run this command in both the ND4J and DL4J folders**:
-
-         mvn clean install -DskipTests -Dmaven.javadoc.skip=true
-
-* After you run a "mvn clean install", a compressed tar file with a name similar to "deeplearning4j-dist-bin.tar.gz" will be installed in the local folder (This is where you will find the jar files and it's where compiling happens.):
-
-         */java-deeplearning/deeplearning4j-distribution/target
-	
-* Add the repository info below to your Project Object Model (POM) file (POM.xml files live in the root of a given directory):
-
-         <repositories>
-             <repository>
-                 <id>snapshots-repo</id>
-                 <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-                 <releases><enabled>false</enabled></releases>
-                 <snapshots><enabled>true</enabled></snapshots>
-             </repository>
-         </repositories>
-
-* All dependencies should be added after the tags "dependencyManagement" and "dependencies", and before they close. 
-Add these POM coordinates to your project:
-
-         <dependency>
-			<groupId>org.deeplearning4j</groupId>
-			<artifactId>deeplearning4j-core</artifactId>
-			<version>0.0.3.2</version>
-         </dependency>
-         
-         //For multithreaded/clustering support, add this to your POM
-         
-         <dependency>
-			<groupId>org.deeplearning4j</groupId>
-			<artifactId>deeplearning4j-scaleout-akka</artifactId>
-			<version>0.0.3.2</version>
-         </dependency>
-         
-         //For natural-language processing, add this to your POM
-		
-         <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-nlp</artifactId>
-            <version>0.0.3.2</version>
-         </dependency>
-
-* To locally install Jcublas, which does linear algebra for GPUs, first enter these commands:
-
-		git clone git@github.com:MysterionRise/mavenized-jcuda.git
-		cd mavenized-jcuda && mvn clean install -DskipTests
-
-  Then include linear-algebra-jcublas in your POM:
-
-           <dependency>
-             <groupId>org.deeplearning4j</groupId>
-             <artifactId>linear-algebra-jcublas</artifactId>
-             <version>0.0.3.2</version>
-           </dependency>
 
 ### <a name="linux">Linux</a>
 
