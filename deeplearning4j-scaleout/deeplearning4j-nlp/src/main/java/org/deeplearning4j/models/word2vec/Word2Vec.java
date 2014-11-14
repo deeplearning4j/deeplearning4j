@@ -87,7 +87,8 @@ public class Word2Vec implements Persistable {
 
     /**
      * Accuracy based on questions which are a space separated list of strings
-     * where the first word is the query word and the other words are the ones who should be "nearest"
+     * where the first word is the query word, the next 2 words are negative,
+     * and the last word is the predicted word to be nearest
      * @param questions the questions to ask
      * @return the accuracy based on these questions
      */
