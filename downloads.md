@@ -18,7 +18,47 @@ The first are preserialized datasets that can be downloaded directly for use wit
 
 ### distribution
 
-The second download is pre-compiled binaries, or jar files. These consist of the actual classes themselves, and can be found on [Maven](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j). With the binaries, you run everything. 
+Much like [nd4j backend downloads](http://nd4j.org/downloads.html) deeplearning4j needs an implementation of nd4j to use. Below are several binary bundles you can use bundled with different backends.
+
+#Native
+
+## Jblas
+
+### Latest
+* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.tar.gz)
+* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.bz2)
+* [zip arcive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.zip)
+
+### 0.0.3.2.5
+* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.tar.gz)
+* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.bz2)
+* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.zip)
+
+## Netlib Blas
+
+### Latest
+* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/netlib-blas/deeplearning4j-dist-bin.tar.gz)
+* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/netlib-blas/deeplearning4j-dist-bin.tar.bz2)
+* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/netlib-blas/deeplearning4j-dist-bin.zip)
+
+### 0.0.3.2.5
+* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.tar.gz)
+* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.tar.bz2)
+* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.zip)
+
+# GPUs
+
+## Jcublas
+
+###Latest
+* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jcublas/deeplearning4j-dist-bin.tar.gz)
+* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jcublas/deeplearning4j-dist-bin.tar.bz2)
+* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jcublas/deeplearning4j-dist-bin.zip)
+
+###0.0.3.2.5
+* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jcublas/deeplearning4j-dist-bin.tar.gz)
+* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jcublas/deeplearning4j-dist-bin.tar.bz2)
+* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jcublas/deeplearning4j-dist-bin.zip)
 
 ### models
 
