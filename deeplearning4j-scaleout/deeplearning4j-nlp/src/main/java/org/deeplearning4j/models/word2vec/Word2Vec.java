@@ -81,6 +81,47 @@ public class Word2Vec implements Persistable {
     public Word2Vec() {}
 
 
+
+
+
+
+    /**
+     * Accuracy based on questions which are a space separated list of strings
+     * where the first word is the query word and the other words are the ones who should be "nearest"
+     * @param questions the questions to ask
+     * @return the accuracy based on these questions
+     */
+    public  Map<String,Double> accuracy(List<String> questions) {
+        Map<String,Double> accuracy = new HashMap<>();
+        Counter<String> right = new Counter<>();
+        for(String s : questions) {
+            if(s.startsWith(":")) {
+                double correct = right.getCount("correct");
+                double wrong = right.getCount("wrong");
+                double accuracyRet = 100.0 * correct / (correct / wrong);
+                accuracy.put(s,accuracyRet);
+                right.clear();
+            }
+            else {
+                String[] split = s.split(" ");
+                String word = split[0];
+                List<String> positive = Arrays.asList(word);
+                List<String> negative = Arrays.asList(split[1],split[2]);
+                String predicted = split[3];
+                String w = wordsNearest(positive,negative,1).iterator().next();
+                if(predicted.equals(w))
+                    right.incrementCount("right",1.0);
+                else
+                    right.incrementCount("wrong",1.0);
+
+            }
+        }
+
+        return accuracy;
+    }
+
+
+
     /**
      * Find all words with a similar characters
      * in the vocab
@@ -141,6 +182,60 @@ public class Word2Vec implements Persistable {
             return cache.vector(UNK);
         INDArray r =  cache.vector(word);
         return r.div(Nd4j.getBlasWrapper().nrm2(r));
+    }
+
+
+    /**
+     * Words nearest based on positive and negative words
+     * @param positive the positive words
+     * @param negative the negative words
+     * @param top the top n words
+     * @return the words nearest the mean of the words
+     */
+    public Collection<String> wordsNearest(List<String> positive,List<String> negative,int top) {
+        INDArray words = Nd4j.create(positive.size() + negative.size(),layerSize);
+        int row = 0;
+        for(String s : positive) {
+            words.putRow(row++,cache.vector(s));
+        }
+
+        for(String s : negative) {
+            words.putRow(row++,cache.vector(s).mul(-1));
+        }
+
+        INDArray mean = words.mean(0);
+        if(cache instanceof  InMemoryLookupCache) {
+            InMemoryLookupCache l = (InMemoryLookupCache) cache;
+            INDArray syn0 = l.getSyn0();
+            INDArray weights = syn0.norm2(0).rdivi(1).muli(mean);
+            INDArray distances = syn0.mulRowVector(weights).sum(1);
+            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+            INDArray sort = sorted[0];
+            List<String> ret = new ArrayList<>();
+            if(top > sort.length())
+                top = sort.length();
+            //there will be a redundant word
+            for(int i = 0; i < top + 1; i++) {
+                ret.add(cache.wordAtIndex(sort.getInt(i)));
+            }
+
+
+            return ret;
+        }
+
+        Counter<String> distances = new Counter<>();
+
+        for(String s : cache.words()) {
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(mean,otherVec);
+            distances.incrementCount(s, sim);
+        }
+
+
+        distances.keepTopNKeys(top);
+        return distances.keySet();
+
+
     }
 
 
