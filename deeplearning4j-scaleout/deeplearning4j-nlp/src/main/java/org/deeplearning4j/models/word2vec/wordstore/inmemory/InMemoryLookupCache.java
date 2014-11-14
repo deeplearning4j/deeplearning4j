@@ -354,7 +354,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         this.rng = new MersenneTwister(seed);
 
         syn0  = Nd4j.rand(new int[]{vocabs.size(),vectorLength},rng).subi(0.5).divi(vectorLength);
-        putVector(Word2Vec.UNK,Nd4j.rand(1,vectorLength).subi(0.5).divi(vectorLength));
+        putVector(Word2Vec.UNK,Nd4j.rand(1,vectorLength,rng).subi(0.5).divi(vectorLength));
 
         syn1 = Nd4j.create(syn0.shape());
         initNegative();
