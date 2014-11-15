@@ -17,15 +17,13 @@ Contents
 
 * DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
 
-###ND4J
-If you aren't familiar with Nd4j, please see [here](http://nd4j.org/getstarted.html)
+### ND4J
 
+If you aren't familiar with ND4J, please start [here](http://nd4j.org/getstarted.html).
 
-You can use deeplearning4j either via maven (see the readme for the dependencies) or via our [downloads](http://deeplearning4j.org/downloads.html)
+You can use Deeplearning4j either via Maven (see the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for the dependencies) or with our [downloads](http://deeplearning4j.org/downloads.html).
 
-You can then manually import the jar files in to [eclipse](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse) or [intellij](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project), [netbeans](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/).
-
-
+You can then manually import the jar files into [Eclipse](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse) or [Intellij](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project), [Netbeans](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/).
 
 ### <a name="linux">Linux</a>
 
@@ -45,7 +43,7 @@ Then enter ldconfig in the terminal, followed by the file path to link Cuda. You
 
          ldconfig /usr/local/cuda/lib64
 
-If you're still unable to load Jcublas, you will need to add the parameter -D to your code (it's a JVM argument); i.e.
+If you're still unable to load Jcublas, you will need to add the parameter -D to your code (it's a JVM argument):
 
          java.library.path (settable via -Djava.librarypath=...) 
          // ^ for a writable directory, then 
@@ -79,21 +77,12 @@ For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deep
 
 ###Working with the source
 
-If you want to develop for deep learning4j, git clone the software and use maven as follows:
+If you want to develop for Deeplearning4j, git clone the software and use Maven as follows:
 
-mvn clean install -DskipTests -Dmaven.javadoc.skip=true
-
-
-
-
+      mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
 ### <a name="trouble">Troubleshooting</a>
 
 * If you have installed DL4J in the past and now see the examples throwing errors, run a git clone on [ND4J](http://nd4j.org/getstarted.html) in the same root directory as DL4J; run a clean Maven install within ND4J; install DL4J again; run a clean Maven install within DL4J, and see if that fixes things.
 
 * When you run an example, you may get a low [f1 score](../glossary.html#f1), which is the probability that the net's classification is accurate. In this case, a low f1 doesn't indicate poor performance, because the examples train on small data sets. We gave them small data sets so they would run quickly. Because small data sets are less representative than large ones, the results they produce will vary a great deal. For example, on the minuscule example data, our deep-belief net's f1 score currently varies between 0.32 and 1.0.
-* 
-
-
-
-
