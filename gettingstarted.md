@@ -80,6 +80,12 @@ For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deep
 If you want to develop for Deeplearning4j, git clone the software and use Maven as follows:
 
       mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+      
+Eclipse:
+
+After git clone:
+
+Run mvn eclipse:eclipse to import the source and set everything up.
 
 ### <a name="trouble">Troubleshooting</a>
 
