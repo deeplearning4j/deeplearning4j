@@ -125,7 +125,10 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 
     @Override
     public void reset() {
-        fileIterator = FileUtils.iterateFiles(file, null, true);
+        if(file.isFile())
+            fileIterator = Arrays.asList(file).iterator();
+        else
+            fileIterator = FileUtils.iterateFiles(file, null, true);
 
 
     }
