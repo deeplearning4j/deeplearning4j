@@ -287,9 +287,10 @@ public class Word2VecLoader {
             VocabWord word1 = new VocabWord(1.0,word);
             l.addToken(word1);
             l.addWordToIndex(l.numWords(),word);
+            l.putVocabWord(word);
             INDArray row = Nd4j.create(new FloatBuffer(split.length - 1));
             for(int i = 1; i < split.length; i++)
-                row.putScalar(i,Float.parseFloat(split[i]));
+                row.putScalar(i - 1,Float.parseFloat(split[i]));
             arrays.add(row);
         }
 

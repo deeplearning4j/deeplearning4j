@@ -17,6 +17,7 @@ import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.util.SetUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -186,6 +187,132 @@ public class Word2Vec implements Persistable {
     }
 
 
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Words nearest based on positive and negative words
+     * @param positive the positive words
+     * @param negative the negative words
+     * @param top the top n words
+     * @return the words nearest the mean of the words
+     */
+    public Collection<String> wordsNearestSum(List<String> positive,List<String> negative,int top) {
+        INDArray words = Nd4j.create(layerSize);
+        Set<String> union = SetUtils.union(new HashSet<>(positive),new HashSet<>(negative));
+        for(String s : positive)
+            words.addi(cache.vector(s));
+
+
+        for(String s : negative)
+            words.addi(cache.vector(s).mul(-1));
+
+
+        if(cache instanceof  InMemoryLookupCache) {
+            InMemoryLookupCache l = (InMemoryLookupCache) cache;
+            INDArray syn0 = l.getSyn0();
+            INDArray weights = syn0.norm2(0).rdivi(1).muli(words);
+            INDArray distances = syn0.mulRowVector(weights).sum(1);
+            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+            INDArray sort = sorted[0];
+            List<String> ret = new ArrayList<>();
+            if(top > sort.length())
+                top = sort.length();
+            //there will be a redundant word
+            int end = top + 1;
+            for(int i = 0; i < end; i++) {
+                String word = cache.wordAtIndex(sort.getInt(i));
+                if(union.contains(word)) {
+                    end++;
+                    if(end >= sort.length())
+                        break;
+                    continue;
+                }
+                ret.add(cache.wordAtIndex(sort.getInt(i)));
+            }
+
+
+            return ret;
+        }
+
+        Counter<String> distances = new Counter<>();
+
+        for(String s : cache.words()) {
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(words,otherVec);
+            distances.incrementCount(s, sim);
+        }
+
+
+        distances.keepTopNKeys(top);
+        return distances.keySet();
+
+
+    }
+
+
+    /**
+     * Get the top n words most similar to the given word
+     * @param word the word to compare
+     * @param n the n to get
+     * @return the top n words
+     */
+    public Collection<String> wordsNearestSum(String word,int n) {
+        INDArray vec = Transforms.unitVec(this.getWordVectorMatrix(word));
+
+
+        if(cache instanceof  InMemoryLookupCache) {
+            InMemoryLookupCache l = (InMemoryLookupCache) cache;
+            INDArray syn0 = l.getSyn0();
+            INDArray weights = syn0.norm2(0).rdivi(1).muli(vec);
+            INDArray distances = syn0.mulRowVector(weights).sum(1);
+            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+            INDArray sort = sorted[0];
+            List<String> ret = new ArrayList<>();
+            VocabWord word2 = cache.wordFor(word);
+            if(n > sort.length())
+                n = sort.length();
+            //there will be a redundant word
+            for(int i = 0; i < n + 1; i++) {
+                if(sort.getInt(i) == word2.getIndex())
+                    continue;
+                ret.add(cache.wordAtIndex(sort.getInt(i)));
+            }
+
+
+            return ret;
+        }
+
+        if(vec == null)
+            return new ArrayList<>();
+        Counter<String> distances = new Counter<>();
+
+        for(String s : cache.words()) {
+            if(s.equals(word))
+                continue;
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(vec,otherVec);
+            distances.incrementCount(s, sim);
+        }
+
+
+        distances.keepTopNKeys(n);
+        return distances.keySet();
+
+    }
+
+
+
+
+
     /**
      * Words nearest based on positive and negative words
      * @param positive the positive words
@@ -196,6 +323,7 @@ public class Word2Vec implements Persistable {
     public Collection<String> wordsNearest(List<String> positive,List<String> negative,int top) {
         INDArray words = Nd4j.create(positive.size() + negative.size(),layerSize);
         int row = 0;
+        Set<String> union = SetUtils.union(new HashSet<>(positive),new HashSet<>(negative));
         for(String s : positive) {
             words.putRow(row++,cache.vector(s));
         }
@@ -216,7 +344,15 @@ public class Word2Vec implements Persistable {
             if(top > sort.length())
                 top = sort.length();
             //there will be a redundant word
-            for(int i = 0; i < top + 1; i++) {
+            int end = top + 1;
+            for(int i = 0; i < end; i++) {
+                String word = cache.wordAtIndex(sort.getInt(i));
+                if(union.contains(word)) {
+                    end++;
+                    if(end >= sort.length())
+                        break;
+                    continue;
+                }
                 ret.add(cache.wordAtIndex(sort.getInt(i)));
             }
 
@@ -290,53 +426,9 @@ public class Word2Vec implements Persistable {
 
     }
 
-    /**
-     * Brings back a list of words that are analagous to the 3 words
-     * presented in vector space
-     * @param w1
-     * @param w2
-     * @param w3
-     * @return a list of words that are an analogy for the given 3 words
-     */
-    public List<String> analogyWords(String w1,String w2,String w3) {
-        TreeSet<VocabWord> analogies = analogy(w1, w2, w3);
-        List<String> ret = new ArrayList<>();
-        for(VocabWord w : analogies) {
-            String w4 = cache.wordAtIndex(w.getIndex());
-            ret.add(w4);
-        }
-        return ret;
-    }
 
 
 
-
-    private void insertTopN(String name, double score, List<VocabWord> wordsEntrys) {
-        if (wordsEntrys.size() < topNSize) {
-            VocabWord v = new VocabWord(score,name);
-            v.setIndex(cache.indexOf(name));
-            wordsEntrys.add(v);
-            return;
-        }
-        double min = Double.MAX_VALUE;
-        int minOffe = 0;
-        int minIndex = -1;
-        for (int i = 0; i < topNSize; i++) {
-            VocabWord wordEntry = wordsEntrys.get(i);
-            if (min > wordEntry.getWordFrequency()) {
-                min =  wordEntry.getWordFrequency();
-                minOffe = i;
-                minIndex = wordEntry.getIndex();
-            }
-        }
-
-        if (score > min) {
-            VocabWord w = new VocabWord(score, VocabWord.PARENT_NODE);
-            w.setIndex(minIndex);
-            wordsEntrys.set(minOffe,w);
-        }
-
-    }
 
     /**
      * Returns true if the model has this word in the vocab
@@ -432,65 +524,6 @@ public class Word2Vec implements Persistable {
 
     }
 
-
-
-    /**
-     *
-     *
-     * @param word
-     * @return
-     */
-    public Set<VocabWord> distance(String word) {
-        INDArray wordVector = getWordVectorMatrix(word);
-        if (wordVector == null) {
-            return null;
-        }
-
-        INDArray tempVector;
-        List<VocabWord> wordEntrys = new ArrayList<>(topNSize);
-        for (String name : cache.words()) {
-            if (name.equals(word)) {
-                continue;
-            }
-
-            tempVector = cache.vector(name);
-            insertTopN(name, Nd4j.getBlasWrapper().dot(wordVector,tempVector), wordEntrys);
-        }
-        return new TreeSet<>(wordEntrys);
-    }
-
-    /**
-     *
-     * @return
-     */
-    public TreeSet<VocabWord> analogy(String word0, String word1, String word2) {
-        INDArray wv0 = getWordVectorMatrix(word0);
-        INDArray wv1 = getWordVectorMatrix(word1);
-        INDArray wv2 = getWordVectorMatrix(word2);
-
-
-        INDArray wordVector = wv1.sub(wv0).add(wv2);
-
-        if (wv1 == null || wv2 == null || wv0 == null)
-            return null;
-
-        INDArray tempVector;
-        String name;
-        List<VocabWord> wordEntrys = new ArrayList<>(topNSize);
-        for (int i = 0; i < cache.numWords(); i++) {
-            name = cache.wordAtIndex(i);
-
-            if (name.equals(word0) || name.equals(word1) || name.equals(word2)) {
-                continue;
-            }
-
-
-            tempVector = cache.vector(cache.wordAtIndex(i));
-            double dist = Nd4j.getBlasWrapper().dot(wordVector,tempVector);
-            insertTopN(name, dist, wordEntrys);
-        }
-        return new TreeSet<>(wordEntrys);
-    }
 
 
     public void setup() {
@@ -732,6 +765,11 @@ public class Word2Vec implements Persistable {
     }
     public void setCache(VocabCache cache) {
         this.cache = cache;
+        if(cache instanceof InMemoryLookupCache) {
+            InMemoryLookupCache l = (InMemoryLookupCache) cache;
+            if(l.getSyn0() != null && l.getSyn0().columns() != layerSize)
+            layerSize = l.getSyn0().columns();
+        }
     }
 
 
