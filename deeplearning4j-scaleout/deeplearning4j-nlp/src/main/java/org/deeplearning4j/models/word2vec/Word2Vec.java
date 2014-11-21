@@ -815,6 +815,14 @@ public class Word2Vec implements Persistable {
     }
 
 
+    /**
+     * restart training on next fit().
+     * Use when sentence iterator is set for new training.
+     */
+    public void resetWeightsOnSetup() {
+        this.shouldReset = true;
+    }
+
 
 
     public int getLayerSize() {
