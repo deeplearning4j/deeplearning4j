@@ -38,8 +38,9 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
                                    List<String> labels,
                                    InvertedIndex index,
                                    int batchSize,
-                                   double sample) {
-        super(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels,index,batchSize,sample);
+                                   double sample,
+                                   boolean stem) {
+        super(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels,index,batchSize,sample,stem);
     }
 
     /**
@@ -128,7 +129,7 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
 
         @Override
         public TextVectorizer build() {
-            return new BagOfWordsVectorizer(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels,index,batchSize,sample);
+            return new BagOfWordsVectorizer(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels,index,batchSize,sample,stem);
 
         }
     }

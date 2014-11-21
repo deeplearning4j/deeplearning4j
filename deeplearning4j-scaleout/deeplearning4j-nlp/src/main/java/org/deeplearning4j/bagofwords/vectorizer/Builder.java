@@ -22,7 +22,14 @@ public abstract class Builder {
     protected InvertedIndex index;
     protected int batchSize = 1000;
     protected double sample = 0.0;
+    protected boolean stem = false;
 
+
+
+    public Builder stem(boolean stem) {
+        this.stem = stem;
+        return this;
+    }
 
     public Builder sample(double sample) {
         this.sample = sample;

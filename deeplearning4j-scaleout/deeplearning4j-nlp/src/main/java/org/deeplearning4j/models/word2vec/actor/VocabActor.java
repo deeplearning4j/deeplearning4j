@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import akka.actor.UntypedActor;
+import org.tartarus.snowball.ext.PorterStemmer;
 import scala.concurrent.Future;
 
 /**
@@ -42,7 +43,7 @@ public class VocabActor extends UntypedActor {
     private AtomicLong numWordsEncountered;
     private InvertedIndex index;
     private static Logger log = LoggerFactory.getLogger(VocabActor.class);
-
+    private PorterStemmer stemmer = new PorterStemmer();
 
     public VocabActor(
             TokenizerFactory tokenizer,
@@ -83,7 +84,7 @@ public class VocabActor extends UntypedActor {
             Tokenizer t = tokenizer.create(sentence);
             while(t.hasMoreTokens())  {
                 String token = t.nextToken();
-                processToken(token,encountered,document);
+                processToken(token,encountered,document,work.isStem());
             }
 
 
@@ -135,7 +136,7 @@ public class VocabActor extends UntypedActor {
                 String token = t.nextToken();
                 if(token == null || token.isEmpty())
                     break;
-                processToken(token,encountered,document);
+                processToken(token,encountered,document,false);
 
             }
 
@@ -159,11 +160,20 @@ public class VocabActor extends UntypedActor {
 
 
 
-    protected void processToken(String token,Set<String> encountered,List<VocabWord> words) {
+    protected void processToken(String token,Set<String> encountered,List<VocabWord> words,boolean stem) {
         if(stopWords.contains(token))
             token = "STOP";
         if(token.isEmpty())
             return;
+
+        if(stem) {
+            synchronized (stemmer) {
+                stemmer.setCurrent(token);
+                if(stemmer.stem() && !stemmer.getCurrent().isEmpty())
+                    token = stemmer.getCurrent();
+            }
+
+        }
 
         cache.incrementWordCount(token);
 
@@ -174,7 +184,7 @@ public class VocabActor extends UntypedActor {
         }
 
 
-        VocabWord token2 = null;
+        VocabWord token2;
         if(cache.hasToken(token))
             token2 = cache.tokenFor(token);
         else {
