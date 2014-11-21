@@ -41,10 +41,11 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     protected InvertedIndex index;
     protected int batchSize = 1000;
     protected double sample = 0.0;
+    protected boolean stem = false;
 
     public BaseTextVectorizer(){}
 
-    protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index,int batchSize,double sample) {
+    protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index,int batchSize,double sample,boolean stem) {
         this.cache = cache;
         this.tokenizerFactory = tokenizerFactory;
         this.stopWords = stopWords;
@@ -56,6 +57,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         this.index = index;
         this.batchSize = batchSize;
         this.sample = sample;
+        this.stem = stem;
 
         if(index == null)
             this.index = new LuceneInvertedIndex.Builder().batchSize(batchSize)
@@ -122,7 +124,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
             String sentence = getSentenceIterator().nextSentence();
             if(sentence == null)
                 break;
-            vocabActor.tell(new VocabWork(latch,sentence), vocabActor);
+            vocabActor.tell(new VocabWork(latch,sentence,stem), vocabActor);
             queued.incrementAndGet();
             if(queued.get() % 10000 == 0) {
                 log.info("Sent " + queued);

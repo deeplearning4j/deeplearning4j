@@ -13,12 +13,14 @@ public class VocabWork implements Serializable {
 
     private AtomicInteger count = new AtomicInteger(0);
     private String work;
+    private boolean stem = false;
 
 
 
-    public VocabWork(AtomicInteger count,String work) {
+    public VocabWork(AtomicInteger count,String work,boolean stem) {
         this.count = count;
         this.work = work;
+        this.stem = stem;
     }
 
     public AtomicInteger getCount() {
@@ -41,4 +43,11 @@ public class VocabWork implements Serializable {
         count.decrementAndGet();
     }
 
+    public boolean isStem() {
+        return stem;
+    }
+
+    public void setStem(boolean stem) {
+        this.stem = stem;
+    }
 }

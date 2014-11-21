@@ -1,5 +1,6 @@
 package org.deeplearning4j.text.invertedindex;
 
+import com.google.common.base.Function;
 import org.deeplearning4j.models.word2vec.VocabWord;
 
 import java.io.Serializable;
@@ -86,6 +87,11 @@ public interface InvertedIndex extends Serializable {
      */
     int batchSize();
 
+    /**
+     * Iterate over each document
+     * @param func the function to apply
+     */
+    void eachDoc(Function<List<VocabWord>,Void> func);
 
 
 }
