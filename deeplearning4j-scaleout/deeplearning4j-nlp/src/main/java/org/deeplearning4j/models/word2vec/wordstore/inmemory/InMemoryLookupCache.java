@@ -98,7 +98,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public  void iterateSample(VocabWord w1, VocabWord w2,AtomicLong nextRandom) {
-        if(w2.getIndex() < 0)
+        if(w2 == null || w2.getIndex() < 0)
             return;
         //current word vector
         INDArray l1 = this.syn0.slice(w2.getIndex());

@@ -1,5 +1,6 @@
 package org.deeplearning4j.text.invertedindex;
 
+import com.google.common.base.Function;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -46,7 +47,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private VocabCache vocabCache;
     public final static String WORD_FIELD = "word";
     private int numDocs = 0;
-    private List<List<VocabWord>> words = Collections.synchronizedList(new ArrayList<List<VocabWord>>());
+    private List<List<VocabWord>> words = new ArrayList<>();
     private boolean cache = true;
     private transient ExecutorService indexManager;
     private AtomicBoolean indexBeingCreated = new AtomicBoolean(false);
@@ -56,10 +57,10 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private AtomicInteger totalWords = new AtomicInteger(0);
     private int batchSize = 1000;
     private List<List<VocabWord>> miniBatches = new CopyOnWriteArrayList<>();
+    private List<VocabWord> currMiniBatch = Collections.synchronizedList(new ArrayList<VocabWord>());
     private double sample = 0;
     private AtomicLong nextRandom = new AtomicLong(5);
     private String indexPath = INDEX_PATH;
-    private transient ScheduledExecutorService miniBatchManager = Executors.newScheduledThreadPool(1);
     private Queue<List<VocabWord>> miniBatchDocs = new ConcurrentLinkedDeque<>();
     private AtomicBoolean miniBatchGoing = new AtomicBoolean(true);
 
@@ -67,7 +68,6 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         this.vocabCache = vocabCache;
         this.cache = cache;
         indexManager = Executors.newFixedThreadPool(1);
-        startMiniBatches();
     }
 
 
@@ -76,13 +76,11 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         this.cache = cache;
         this.indexPath = indexPath;
         indexManager = Executors.newFixedThreadPool(1);
-        startMiniBatches();
     }
 
 
     private LuceneInvertedIndex(){
         indexManager = Executors.newFixedThreadPool(1);
-        startMiniBatches();
     }
 
     @Override
@@ -310,59 +308,34 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         }
 
         totalWords.set(totalWords.get() + words.size());
-        miniBatchDocs.add(words);
+        addWords(words);
 
     }
 
+    private void addWords(List<VocabWord> words) {
+        for (VocabWord word : words) {
+            // The subsampling randomly discards frequent words while keeping the ranking same
+            if (sample > 0) {
+                double ran = (Math.sqrt(word.getWordFrequency() / (sample * numDocuments())) + 1)
+                        * (sample * numDocuments()) / word.getWordFrequency();
 
-    private void startMiniBatches() {
-        miniBatchManager.schedule(new Runnable() {
-            @Override
-            public void run() {
-                List<VocabWord> currMiniBatch = new ArrayList<>();
-                while(miniBatchGoing.get()) {
-                    List<VocabWord> words = miniBatchDocs.poll();
-                    if(words == null || words.isEmpty()) {
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
-                        continue;
-                    }
-                    for (VocabWord word : words) {
-                        // The subsampling randomly discards frequent words while keeping the ranking same
-                        if (sample > 0) {
-                            double ran = (Math.sqrt(word.getWordFrequency() / (sample * numDocuments())) + 1)
-                                    * (sample * numDocuments()) / word.getWordFrequency();
-
-                            if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
-                                continue;
-                            }
-
-                            currMiniBatch.add(word);
-                        } else {
-                            currMiniBatch.add(word);
-                            if (currMiniBatch.size() >= batchSize) {
-                                miniBatches.add(new ArrayList<>(currMiniBatch));
-                                currMiniBatch.clear();
-                            }
-                        }
-
-                    }
-
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-
+                if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
+                    continue;
                 }
 
-
+                currMiniBatch.add(word);
+            } else {
+                currMiniBatch.add(word);
+                if (currMiniBatch.size() >= batchSize) {
+                    miniBatches.add(new ArrayList<>(currMiniBatch));
+                    currMiniBatch.clear();
+                }
             }
-        }, 1, TimeUnit.SECONDS);
+
+        }
     }
+
+
 
 
     private void ensureDirExists() throws Exception {
@@ -442,7 +415,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                                 waitOnWriter();
                         if(IndexWriter.isLocked(dir))
                             IndexWriter.unlock(dir);
-                        writer.forceMerge(1);
+                       // writer.forceMerge(1);
                         writer.commit();
 
                         initReader();
@@ -461,7 +434,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         else {
             try {
                 log.info("Committing index...");
-                writer.forceMerge(1);
+                //writer.forceMerge(1);
                 writer.commit();
                 log.info("Finished committing changes");
 
@@ -481,11 +454,9 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         }
 
         indexManager.shutdown();
-        miniBatchManager.shutdown();
+
         try {
             indexManager.awaitTermination(1,TimeUnit.DAYS);
-            miniBatchGoing.set(false);
-            miniBatchManager.awaitTermination(1,TimeUnit.MINUTES);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -504,6 +475,12 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         return batchSize;
     }
 
+    @Override
+    public void eachDoc(Function<List<VocabWord>, Void> func) {
+        for(Integer i : allDocs()) {
+            func.apply(document(i));
+        }
+    }
 
 
     @Override
@@ -514,16 +491,15 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     @Override
     public boolean hasNext() {
         return !miniBatchDocs.isEmpty() ||
-                miniBatchGoing.get() ||
-                !miniBatchManager.isShutdown();
+                miniBatchGoing.get();
     }
 
     @Override
     public List<VocabWord> next() {
-        if(!miniBatchDocs.isEmpty())
-            return miniBatchDocs.poll();
-        else if(!miniBatchManager.isShutdown()) {
-            while(miniBatchDocs.isEmpty()) {
+        if(!miniBatches.isEmpty())
+            return miniBatches.remove(0);
+        else if(miniBatchGoing.get()) {
+            while(miniBatches.isEmpty()) {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -532,12 +508,15 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
                 log.warn("Waiting on more data...");
 
-                if(miniBatchManager.isShutdown())
-                    return miniBatchDocs.poll();
+                if(!miniBatches.isEmpty())
+                    return miniBatches.remove(0);
             }
         }
         return null;
     }
+
+
+
 
     @Override
     public void remove() {
