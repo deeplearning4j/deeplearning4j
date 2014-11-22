@@ -518,7 +518,7 @@ public class Word2Vec implements Persistable {
         FileUtils.deleteDirectory(miniBatchDir);
         miniBatchDir.mkdirs();
         final AtomicInteger doc = new AtomicInteger(0);
-
+        final int numDocs = vectorizer.index().numDocuments();
         vectorizer.index().eachDoc(new Function<List<VocabWord>, Void>() {
             @Nullable
             @Override
@@ -528,7 +528,7 @@ public class Word2Vec implements Persistable {
                     SerializationUtils.saveObject(batch, new File(miniBatchDir, String.valueOf(doc)));
                     doc.incrementAndGet();
                     if(doc.get() % 10000 == 0)
-                        log.info("Doc " + doc.get() + " done so far");
+                        log.info("Doc " + doc.get() + " done so far out of " + numDocs);
                     batch.clear();
                 }
                 return null;
