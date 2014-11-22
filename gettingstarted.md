@@ -21,7 +21,7 @@ Contents
 
 If you aren't familiar with ND4J, please start [here](http://nd4j.org/getstarted.html).
 
-You can use Deeplearning4j either via Maven (see the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for the dependencies) or with our [downloads](http://deeplearning4j.org/downloads.html).
+You can use Deeplearning4j either via Maven (see the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for the dependencies) or with our [downloads](http://deeplearning4j.org/download.html).
 
 You can then manually import the jar files into [Eclipse](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse) or [Intellij](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project), [Netbeans](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/).
 
