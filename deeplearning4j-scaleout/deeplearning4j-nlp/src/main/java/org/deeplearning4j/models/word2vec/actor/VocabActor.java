@@ -84,6 +84,8 @@ public class VocabActor extends UntypedActor {
             Tokenizer t = tokenizer.create(sentence);
             while(t.hasMoreTokens())  {
                 String token = t.nextToken();
+                if(token.isEmpty())
+                    break;
                 processToken(token,encountered,document,work.isStem());
             }
 
@@ -160,20 +162,25 @@ public class VocabActor extends UntypedActor {
 
 
 
-    protected void processToken(String token,Set<String> encountered,List<VocabWord> words,boolean stem) {
+    protected synchronized void processToken(String token,Set<String> encountered,List<VocabWord> words,boolean stem) {
         if(stopWords.contains(token))
             token = "STOP";
         if(token.isEmpty())
             return;
 
+        String oldToken = token;
         if(stem) {
             synchronized (stemmer) {
                 stemmer.setCurrent(token);
-                if(stemmer.stem() && !stemmer.getCurrent().isEmpty())
+
+                if(stemmer.stem() && stemmer.getCurrent() != null && !stemmer.getCurrent().isEmpty())
                     token = stemmer.getCurrent();
             }
 
         }
+
+        if(token.isEmpty())
+            token = oldToken;
 
         cache.incrementWordCount(token);
 
