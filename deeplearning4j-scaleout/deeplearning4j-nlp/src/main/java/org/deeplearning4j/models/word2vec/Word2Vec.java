@@ -77,7 +77,7 @@ public class Word2Vec implements Persistable {
     private TextVectorizer vectorizer;
     private int learningRateDecayWords = 10000;
     private boolean useAdaGrad = false;
-    private LinkedBlockingDeque<List<VocabWord>> jobQueue = new LinkedBlockingDeque<>();
+    private LinkedBlockingDeque<List<VocabWord>> jobQueue = new LinkedBlockingDeque<>(10000);
 
 
     public Word2Vec() {}
@@ -518,14 +518,17 @@ public class Word2Vec implements Persistable {
         FileUtils.deleteDirectory(miniBatchDir);
         miniBatchDir.mkdirs();
         final AtomicInteger doc = new AtomicInteger(0);
+
         vectorizer.index().eachDoc(new Function<List<VocabWord>, Void>() {
             @Nullable
             @Override
             public Void apply(@Nullable List<VocabWord> input) {
                 addWords(input, nextRandom, batch);
                 if (batch.size() >= batchSize) {
-                    SerializationUtils.saveObject(batch,new File(miniBatchDir,String.valueOf(doc)));
+                    SerializationUtils.saveObject(batch, new File(miniBatchDir, String.valueOf(doc)));
                     doc.incrementAndGet();
+                    if(doc.get() % 10000 == 0)
+                        log.info("Doc " + doc.get() + " done so far");
                     batch.clear();
                 }
                 return null;
@@ -537,7 +540,18 @@ public class Word2Vec implements Persistable {
 
         while(miniBatches.hasNext()) {
             List<VocabWord> miniBatch = SerializationUtils.readObject(miniBatches.next());
-            jobQueue.add(miniBatch);
+            try {
+                while (!jobQueue.offerLast(miniBatch, 100, TimeUnit.MILLISECONDS)) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (Exception e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }catch(Exception e) {
+                Thread.currentThread().interrupt();
+            }
+
         }
      
 
