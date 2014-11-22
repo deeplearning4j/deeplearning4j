@@ -3,38 +3,58 @@ title:
 layout: default
 ---
 
-DeepLearning4j uses [nd4j](http://nd4j.org/) as a computational kernel for matrix operations. Maven may also be hard to get up and
-running. In order to get started with deep learning4j, you first need to pick an [nd4j backend](http://nd4j.org/downloads.html)
+DeepLearning4j uses [ND4J](http://nd4j.org/) as a computational kernel for matrix operations. To get started with Deeplearning4j, you need to pick an [ND4J backend](http://nd4j.org/downloads.html), which will rely on GPUs or native computations. 
 
-This backend can be GPUs or native computations (if pure java is what you want, we are working on that as well with the vectorz project)
+##Why Swappable Backends?
 
+Many deep learning researchers have standardized on Cuda GPUs for parallel processing and matrix computations. Unfortunately, industry practicioners have to grapple with more limited options and legacy hardware. If you have a lot of legacy hardware, however, throwing CPUs at a deep-learning problem can work. 
 
-##Why backends?
+We created ND4J because no JVM Blas-based libraries allowed users to have a swappable interface for different fast-matrix operations. Swappable backends (a la [SLF4J](http://slf4j.org/)) was the only answer. 
 
-Many in the deep learning community have standardized on cuda GPUs for much of their parallel processing
-and matrix computations. Unfortunately, in industry (the rest of us) we have either legacy hardware
-or limited options. However, we may have lots of these machines laying around. If that's the case, throwing CPUs
-at a problem should be an option (not the only one). GPUs should also be an option however. I took it upon myself to create
-nd4j primarily for the fact that currently no JVM blas based libraries allows you to have a swappable (no code rewrite)
-interface to different fast matrix operations. Swappable backends (ala [slf4j](http://slf4j.org/)) was the only clear answer.
-
-A common API for creating machine learning algorithms should also be a real goal. No one wants to rewrite their libraries
-if they find that their matrix run time is faster (I did this once already).
+In addition, we felt a common API for creating machine-learning algorithms was a worthy goal. No one wants to rewrite their libraries if they find that their matrix run-time is faster.
 
 ##Downloads
 
-Below you will find bundled downloads of deeplearning4j for GPUs, native, among other components.
+Below, you will find bundled downloads of deeplearning4j for GPUs and native, among other components.
 
-#GPUs
+Much like [ND4J backend downloads](http://nd4j.org/downloads.html), Deeplearning4j needs an implementation of ND4J to use. Below are several binary bundles you can use bundled with different backends.
 
-Jcublas
+#Native
 
+## Jblas
 
+### Latest
+* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.tar.gz)
+* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.bz2)
+* [zip arcive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.zip)
 
-##Native
+### 0.0.3.2.5
+* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.tar.gz)
+* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.bz2)
+* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.zip)
 
-Jblas
+## Netlib Blas
 
+### Latest
+* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/netlib-blas/deeplearning4j-dist-bin.tar.gz)
+* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/netlib-blas/deeplearning4j-dist-bin.tar.bz2)
+* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/netlib-blas/deeplearning4j-dist-bin.zip)
 
-Netlib blas
+### 0.0.3.2.5
+* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.tar.gz)
+* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.tar.bz2)
+* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.zip)
 
+# GPUs
+
+## Jcublas
+
+###Latest
+* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jcublas/deeplearning4j-dist-bin.tar.gz)
+* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jcublas/deeplearning4j-dist-bin.tar.bz2)
+* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jcublas/deeplearning4j-dist-bin.zip)
+
+###0.0.3.2.5
+* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jcublas/deeplearning4j-dist-bin.tar.gz)
+* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jcublas/deeplearning4j-dist-bin.tar.bz2)
+* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jcublas/deeplearning4j-dist-bin.zip)
