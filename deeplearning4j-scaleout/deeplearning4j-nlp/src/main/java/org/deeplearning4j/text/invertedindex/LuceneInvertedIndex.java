@@ -477,7 +477,8 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     @Override
     public void eachDoc(Function<List<VocabWord>, Void> func) {
-        for(Integer i : allDocs()) {
+        Collection<Integer> allDocs = allDocs();
+        for(Integer i : allDocs) {
             func.apply(document(i));
         }
     }
