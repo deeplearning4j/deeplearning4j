@@ -17,7 +17,7 @@ Contents
 
 ### <a name="all">All Operating Systems</a>
 
-* DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
+DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
 
 ### ND4J
 
