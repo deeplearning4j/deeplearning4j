@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-#Intro to Troubleshooting Neural Net Training
+#Troubleshooting Neural Nets as They Train
 
 Neural networks are notoriously difficult to tune. When training with any neural net framework, you want to be able to understand how to use it. Below are some baseline steps you should take when tuning your network to train:
 
@@ -44,9 +44,9 @@ The data transforms that you'll perform are relative to the problem you're solvi
   	DBN d = new DBN.Builder().layerWiseConfiguration(conf)
   	 .hiddenLayerSizes(new int[]{3}).build();
 
-There's a lot going on here. I'll cover each of the facets of the configuration and how it relates to trouble shooting.
+There's a lot going on here -- I'll cover each of the facets of the configuration and how it relates to troubleshooting.
 
-## WweightInit
+## weightInit
 
 Deeplearning4j supports several different kinds of weight initializations with the weightInit parameter.
 
