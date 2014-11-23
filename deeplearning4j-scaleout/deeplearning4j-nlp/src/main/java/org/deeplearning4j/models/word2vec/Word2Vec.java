@@ -77,8 +77,8 @@ public class Word2Vec implements Persistable {
     private TextVectorizer vectorizer;
     private int learningRateDecayWords = 10000;
     private boolean useAdaGrad = false;
-    private LinkedBlockingDeque<List<VocabWord>> jobQueue = new LinkedBlockingDeque<>(10000);
-
+    private LinkedBlockingDeque<List<List<VocabWord>>> jobQueue = new LinkedBlockingDeque<>(100000);
+    private AtomicLong timeLastUpdated = new AtomicLong(0);
 
     public Word2Vec() {}
 
@@ -460,21 +460,7 @@ public class Word2Vec implements Persistable {
             docIter.reset();
 
 
-        final Collection<Integer> docs = vectorizer.index().allDocs();
-        int tries = 0;
-        while(docs.isEmpty()) {
-            if(tries >= 3)
-                throw new IllegalStateException("Unable to train, no documents found");
-            else {
-                log.warn("No documents found...waiting 10 seconds on try " + tries);
-                try {
-                    Thread.sleep(10000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                tries++;
-            }
-        }
+        final int[] docs = vectorizer.index().allDocs();
 
         final AtomicInteger numSentencesProcessed = new AtomicInteger(0);
         totalWords = vectorizer.numWordsEncountered();
@@ -486,74 +472,79 @@ public class Word2Vec implements Persistable {
 
         List<Thread> work = new ArrayList<>();
         for(int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
+            final String name = "worker" + i;
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     final AtomicLong nextRandom = new AtomicLong(5);
-
+                    long start = System.currentTimeMillis();
+                    long wordsSeen = 0;
                     while(true) {
-                        List<VocabWord> sentence = jobQueue.poll();
-                        if(sentence != null && sentence.isEmpty())
-                            break;
-                        if(sentence == null)
+                        List<List<VocabWord>> job = jobQueue.poll();
+                        if(job == null)
                             continue;
-                        //long before = System.currentTimeMillis();
-                        trainSentence(sentence,numSentencesProcessed,nextRandom);
-                        //long after = System.currentTimeMillis();
-                        //long diff = Math.abs(after - before);
-                        //log.info("Took " + diff + " for sentence of size " + sentence.size());
+
+                        wordsSeen += job.size();
+                        if(job != null && job.isEmpty()) {
+                            log.info("Shutting down worker " + name);
+                            break;
+                        }
+
+                        for(List<VocabWord> sentence : job) {
+                            long before = System.currentTimeMillis();
+                            trainSentence(sentence,numSentencesProcessed,nextRandom);
+                            long after = System.currentTimeMillis();
+                            long diff = Math.abs(after - before);
+                            log.info("Took " + diff + " for sentence of size " + sentence.size());
+
+                        }
+
+                        //log.info("Worker " + name + " processing words/second " +  wordsSeen / (double) (TimeUnit.MILLISECONDS.toSeconds(after - start)));
                     }
                 }
             });
 
+            t.setName("worker" + i);
             t.setDaemon(true);
             t.start();
             work.add(t);
         }
 
 
-        final List<VocabWord> batch = new ArrayList<>();
+        final List<List<VocabWord>> batch = new ArrayList<>(batchSize);
         final AtomicLong nextRandom = new AtomicLong(5);
-        final File miniBatchDir = new File(".minibatches");
-        FileUtils.deleteDirectory(miniBatchDir);
-        miniBatchDir.mkdirs();
         final AtomicInteger doc = new AtomicInteger(0);
         final int numDocs = vectorizer.index().numDocuments();
+        ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         vectorizer.index().eachDoc(new Function<List<VocabWord>, Void>() {
             @Nullable
             @Override
             public Void apply(@Nullable List<VocabWord> input) {
                 addWords(input, nextRandom, batch);
+
                 if (batch.size() >= batchSize) {
-                    SerializationUtils.saveObject(batch, new File(miniBatchDir, String.valueOf(doc)));
                     doc.incrementAndGet();
+                    try {
+                        while(!jobQueue.offer(new ArrayList<>(batch),1,TimeUnit.MILLISECONDS)) {
+                            Thread.sleep(1);
+                        }
+
+
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                     if(doc.get() % 10000 == 0)
                         log.info("Doc " + doc.get() + " done so far out of " + numDocs);
                     batch.clear();
                 }
                 return null;
             }
-        });
+        },exec);
 
 
-        Iterator<File> miniBatches = FileUtils.iterateFiles(miniBatchDir,null,false);
 
-        while(miniBatches.hasNext()) {
-            List<VocabWord> miniBatch = SerializationUtils.readObject(miniBatches.next());
-            try {
-                while (!jobQueue.offerLast(miniBatch, 100, TimeUnit.MILLISECONDS)) {
-                    try {
-                        Thread.sleep(100);
-                    } catch (Exception e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            }catch(Exception e) {
-                Thread.currentThread().interrupt();
-            }
 
-        }
-     
+
 
 
         if(!jobQueue.isEmpty()) {
@@ -563,7 +554,7 @@ public class Word2Vec implements Persistable {
 
 
         for(int i = 0; i < work.size(); i++)
-            jobQueue.add(new ArrayList<VocabWord>());
+            jobQueue.add(new ArrayList<List<VocabWord>>());
 
         for(Thread t : work)
             try {
@@ -573,7 +564,7 @@ public class Word2Vec implements Persistable {
             }
 
         for (int i = 0; i < numIterations; i++) {
-            log.info("Training on " + docs.size());
+            log.info("Training on " + docs.length);
 
 
 
@@ -584,8 +575,14 @@ public class Word2Vec implements Persistable {
 
 
 
-    private void addWords(List<VocabWord> words,AtomicLong nextRandom,List<VocabWord> currMiniBatch) {
-        for (VocabWord word : words) {
+    private void addWords(List<VocabWord> sentence,AtomicLong nextRandom,List<List<VocabWord>> currMiniBatch) {
+        if(sample <= 0) {
+            currMiniBatch.add(sentence);
+            return;
+        }
+
+        List<VocabWord> add = new ArrayList<>();
+        for (VocabWord word : sentence) {
             if(word == null)
                 continue;
             // The subsampling randomly discards frequent words while keeping the ranking same
@@ -598,13 +595,18 @@ public class Word2Vec implements Persistable {
                     continue;
                 }
 
-                currMiniBatch.add(word);
-            } else {
-                currMiniBatch.add(word);
-
+                add.add(word);
             }
+            else
+                add.add(word);
+
+
 
         }
+
+        currMiniBatch.add(add);
+
+
     }
 
 
@@ -664,12 +666,21 @@ public class Word2Vec implements Persistable {
 
         numWordsSoFar.set(numWordsSoFar.get() + sentence.size());
         rateOfChange.set(rateOfChange.get() + sentence.size());
+
         if(rateOfChange.get() >=  learningRateDecayWords) {
             rateOfChange.set(0);
             //use learning rate decay instead
             if(!useAdaGrad) {
                 alpha.set(Math.max(minLearningRate, alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) totalWords))));
                 cache.setLearningRate(alpha.get());
+            }
+            if(timeLastUpdated.get() == 0)
+                timeLastUpdated.set(System.currentTimeMillis());
+            else {
+                long curr = System.currentTimeMillis();
+                long diff = Math.abs(curr - timeLastUpdated.get());
+                log.info("Time since last update " + TimeUnit.SECONDS.convert(diff,TimeUnit.MILLISECONDS));
+                timeLastUpdated.set(curr);
             }
             log.info("Num words so far " + numWordsSoFar.get() + " alpha is " + alpha.get() + " out of " + totalWords);
         }
@@ -679,13 +690,7 @@ public class Word2Vec implements Persistable {
 
         for(int i = 0; i < sentence.size(); i++) {
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
-            long begin = System.currentTimeMillis();
             skipGram(i, sentence, (int) nextRandom.get() % window,nextRandom);
-            //long end = System.currentTimeMillis();
-            //long after = Math.abs(end - begin);
-
-            //if(after > 100)
-            //  log.info("Took " + after + " for sentence of size " + sentence.size());
         }
 
 

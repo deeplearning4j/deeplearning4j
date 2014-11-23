@@ -16,6 +16,8 @@ import java.io.Serializable;
 public interface Layer extends Serializable,Cloneable {
 
 
+    INDArray activationMean();
+
     NeuralNetConfiguration conf();
     void setConfiguration(NeuralNetConfiguration conf);
 

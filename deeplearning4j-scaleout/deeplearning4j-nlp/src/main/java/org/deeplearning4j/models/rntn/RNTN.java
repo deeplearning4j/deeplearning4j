@@ -293,7 +293,7 @@ public class RNTN implements Serializable {
         binary.put(indices,block);
         NDArrayIndex[] indices2 = new NDArrayIndex[]{interval(0,block.rows()),interval(numHidden,numHidden + block.columns())};
         binary.put(indices2,randomTransformBlock());
-        if(binary.data().dataType().equals(DataBuffer.DOUBLE))
+        if(binary.data().dataType() == DataBuffer.DOUBLE)
             return Nd4j.getBlasWrapper().scal(scalingForInit,binary);
         return Nd4j.getBlasWrapper().scal((float) scalingForInit,binary);
     }
@@ -313,7 +313,7 @@ public class RNTN implements Serializable {
         INDArray ret = Nd4j.zeros(numOuts,numHidden + 1);
         INDArray insert = Nd4j.rand(numOuts,numHidden,-range,range,rng);
         ret.put(new NDArrayIndex[] {interval(0,numOuts),interval(0,numHidden)},insert);
-        if(ret.data().dataType().endsWith(DataBuffer.DOUBLE))
+        if(ret.data().dataType() == (DataBuffer.DOUBLE))
             return Nd4j.getBlasWrapper().scal(scalingForInit,ret);
         return Nd4j.getBlasWrapper().scal((float) scalingForInit,ret);
 

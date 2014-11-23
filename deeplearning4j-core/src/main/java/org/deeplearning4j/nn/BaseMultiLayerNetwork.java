@@ -64,13 +64,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     //visible bias transforms for initialization
     protected Map<Integer, MatrixTransform> visibleBiasTransforms = new HashMap<>();
 
-    protected boolean shouldBackProp = true;
     //whether to only iterate a certain number of epochs
     protected boolean forceNumEpochs = false;
     protected boolean initCalled = false;
     /* Sample if true, otherwise use the straight activation function */
     protected boolean sampleFromHiddenActivations = true;
-
+    protected boolean pretrain = true;
     protected NeuralNetConfiguration defaultConfiguration;
     protected List<NeuralNetConfiguration> layerWiseConfigurations;
 
@@ -101,11 +100,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     protected double errorTolerance = 0.0001f;
 
 
-    /**
-     * Whether to use conjugate gradient line search for back prop or
-     * normal SGD backprop
-     */
-    protected boolean lineSearchBackProp = false;
 
     /*
       Binary drop connect mask
@@ -511,8 +505,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         }
 
         for (int i = 0; i < deltas.length; i++) {
-            if (defaultConfiguration.isConstrainGradientToUnitNorm())
-                deltaRet.add(deltas[i].div(deltas[i].norm2(Integer.MAX_VALUE)));
+            if (defaultConfiguration.isConstrainGradientToUnitNorm()) {
+                double sum = deltas[i].sum(Integer.MAX_VALUE).getDouble(0);
+                if(sum > 0)
+                    deltaRet.add(deltas[i].div(deltas[i].norm2(Integer.MAX_VALUE)));
+
+            }
 
             else
                 deltaRet.add(deltas[i]);
@@ -674,7 +672,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                 INDArray delta = activations.get(i).transpose().mmul(ix);
                 deltas[i] = delta;
                 applyDropConnectIfNecessary(deltas[i]);
-                INDArray weightsPlusBias = weights.get(i).addRowVector(biases.get(i)).transpose();
+                INDArray weightsPlusBias = weights.get(i).transpose();
                 INDArray activation = activations.get(i);
                 if (i > 0)
                     ix = ix.mmul(weightsPlusBias).muli(activationFunctions.get(i - 1).applyDerivative(activation));
@@ -1345,6 +1343,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     @Override
     public void fit(INDArray examples, INDArray labels) {
         pretrain(examples,new Object[]{defaultConfiguration.getK(), defaultConfiguration.getLr()});
+        //just in case: examples need to be set
+        if(!pretrain)
+            this.input = examples;
         finetune(labels);
     }
 
@@ -1470,7 +1471,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.input = network.input;
         this.labels = network.labels;
         this.learningRateUpdate = network.learningRateUpdate;
-        this.shouldBackProp = network.shouldBackProp;
         this.weightTransforms = network.weightTransforms;
         this.visibleBiasTransforms = network.visibleBiasTransforms;
         this.hiddenBiasTransforms = network.hiddenBiasTransforms;
@@ -1589,8 +1589,18 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     public abstract NeuralNetwork createLayer(INDArray input, INDArray W, INDArray hbias, INDArray vBias, int index);
 
 
+    /**
+     *
+     * @param iter
+     * @param otherParams
+     */
     public abstract void pretrain(DataSetIterator iter, Object[] otherParams);
 
+    /**
+     *
+     * @param input
+     * @param otherParams
+     */
     public abstract void pretrain(INDArray input, Object[] otherParams);
 
 
@@ -1739,9 +1749,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    public void setShouldBackProp(boolean shouldBackProp) {
-        this.shouldBackProp = shouldBackProp;
-    }
 
     public void setLayers(NeuralNetwork[] layers) {
         this.neuralNets = layers;
@@ -1786,13 +1793,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    public boolean isLineSearchBackProp() {
-        return lineSearchBackProp;
-    }
 
-    public void setLineSearchBackProp(boolean lineSearchBackProp) {
-        this.lineSearchBackProp = lineSearchBackProp;
-    }
 
 
     /**
@@ -1965,13 +1966,22 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         protected boolean shouldForceEpochs = false;
         private Map<Integer, MatrixTransform> hiddenBiasTransforms = new HashMap<>();
         private Map<Integer, MatrixTransform> visibleBiasTransforms = new HashMap<>();
-        private boolean lineSearchBackProp = false;
         private boolean useDropConnect = false;
         private boolean useGaussNewtonVectorProductBackProp = false;
         protected NeuralNetConfiguration conf;
         protected List<NeuralNetConfiguration> layerWiseConfiguration;
+        protected boolean pretrain = true;
 
 
+        /**
+         * Whether to pretrain or not
+         * @param pretrain
+         * @return
+         */
+        public Builder<E> pretrain(boolean pretrain) {
+            this.pretrain = pretrain;
+            return this;
+        }
 
         public Builder<E> layerWiseConfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
             this.layerWiseConfiguration = layerWiseConfiguration;
@@ -2007,16 +2017,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         }
 
 
-        /**
-         * Whether to use line search back prop instead of SGD
-         *
-         * @param lineSearchBackProp
-         * @return
-         */
-        public Builder<E> lineSearchBackProp(boolean lineSearchBackProp) {
-            this.lineSearchBackProp = lineSearchBackProp;
-            return this;
-        }
+
 
         public Builder<E> withVisibleBiasTransforms(Map<Integer, MatrixTransform> visibleBiasTransforms) {
             this.visibleBiasTransforms = visibleBiasTransforms;
@@ -2142,17 +2143,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                 ret.setLabels(this.labels);
                 ret.setHiddenLayerSizes(this.hiddenLayerSizes);
                 ret.setnLayers(this.nLayers);
-                ret.setShouldBackProp(this.backProp);
                 ret.setLayerWiseConfigurations(layerWiseConfiguration);
                 ret.neuralNets = new NeuralNetwork[nLayers];
                 ret.setInput(this.input);
-                ret.setLineSearchBackProp(lineSearchBackProp);
                 ret.setLabels(labels);
                 ret.setForceNumEpochs(shouldForceEpochs);
                 ret.getWeightTransforms().putAll(weightTransforms);
                 ret.getVisibleBiasTransforms().putAll(visibleBiasTransforms);
                 ret.getHiddenBiasTransforms().putAll(hiddenBiasTransforms);
                 ret.layerWiseConfigurations = layerWiseConfiguration;
+                ret.pretrain = pretrain;
                 if(ret.defaultConfiguration == null)
                     ret.defaultConfiguration = layerWiseConfiguration.get(0);
                 if (hiddenLayerSizes == null)

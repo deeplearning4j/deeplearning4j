@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.deeplearning4j.nn.api.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
@@ -52,6 +53,34 @@ public class NeuralNetPlotter implements Serializable {
 
 
 
+    public void plotNetworkGradient(Layer network,INDArray gradient,int patchesPerRow) {
+        histogram(
+                new String[]{"W", "w-gradient"},
+
+                new INDArray[]{
+                        network.getW(),
+                        gradient
+
+                });
+
+        plotActivations(network);
+
+        FilterRenderer render = new FilterRenderer();
+        try {
+            if(network.getW().shape().length > 2) {
+                INDArray w =  network.getW().dup();
+                INDArray render2 = w.transpose();
+                render.renderFilters(render2, "currimg.png", w.columns() , w.rows(),w.slices());
+
+            }
+            else
+                render.renderFilters(network.getW().dup(), "currimg.png", (int)Math.sqrt(network.getW().rows()) , (int) Math.sqrt( network.getW().rows()),patchesPerRow);
+
+
+        } catch (Exception e) {
+            log.error("Unable to plot filter, continuing...",e);
+        }
+    }
 
     public void plotNetworkGradient(NeuralNetwork network,NeuralNetworkGradient gradient,int patchesPerRow) {
         histogram(
@@ -71,7 +100,7 @@ public class NeuralNetPlotter implements Serializable {
         FilterRenderer render = new FilterRenderer();
         try {
             if(network.getW().shape().length > 2) {
-                INDArray w = (INDArray) network.getW().dup();
+                INDArray w =  network.getW().dup();
                 INDArray render2 = w.transpose();
                 render.renderFilters(render2, "currimg.png", w.columns() , w.rows(),w.slices());
 
@@ -177,6 +206,30 @@ public class NeuralNetPlotter implements Serializable {
     }
 
 
+    public void plotActivations(Layer network) {
+        try {
+            if(network.getInput() == null)
+                throw new IllegalStateException("Unable to plot; missing input");
+
+            INDArray hbiasMean = network.activationMean();
+
+
+            String filePath = writeMatrix(hbiasMean);
+
+            Process is = Runtime.getRuntime().exec("python /tmp/plot.py hbias " + filePath);
+
+            Thread.sleep(10000);
+            is.destroy();
+
+
+            log.info("Rendering hbias " + filePath);
+            log.error(IOUtils.readLines(is.getErrorStream()).toString());
+
+        }catch(Exception e) {
+            log.warn("Image closed");
+
+        }
+    }
 
     public void plotActivations(NeuralNetwork network) {
         try {

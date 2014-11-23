@@ -106,7 +106,11 @@ public abstract class BaseLayer implements Layer {
     }
 
 
-
+    @Override
+    public INDArray activationMean() {
+        INDArray hbiasMean = getInput().mmul(getW()).addRowVector(getB());
+        return hbiasMean;
+    }
 
     @Override
     public NeuralNetConfiguration conf() {
