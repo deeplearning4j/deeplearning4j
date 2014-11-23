@@ -66,7 +66,7 @@ If you're using IntelliJ as your IDE, this should work already.
 * Instead, you will need to install [MinGW 32 bits](http://www.mingw.org/) (the download button is on the upper right) and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). 
 * Lapack offers the alternative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). 
 
-* *For developers of DL4J only:* Install [Git](https://windows.github.com/). Click on the Git Shell alias. Within that shell, enter the commands below to git clone the code repositories of ND4J and Deeplearning4j. 
+* *For developers of DL4J only:* Install [Github](https://windows.github.com/). Click on the Git Shell alias. Within that shell, enter the commands below to git clone the code repositories of ND4J and Deeplearning4j. 
 
       git clone https://github.com/SkymindIO/nd4j
       git clone https://github.com/SkymindIO/deeplearning4j
@@ -79,15 +79,15 @@ If you have a clear idea of how deep learning works and know what you want it to
 
 ###<a name="source">Working With Source</a>
 
-For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deeplearning4j/).
+For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deeplearning4j/). If you want to develop for Deeplearning4j, install Github for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). 
 
-If you want to develop for Deeplearning4j, install Git. Then git clone the repository and run this command for Maven:
+Then git clone the repository and run this command for Maven:
 
       mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
 ###<a name="eclipse">Eclipse</a> 
 
-After running a git clone, run
+After running a git clone, enter this command
 
       mvn eclipse:eclipse 
   
