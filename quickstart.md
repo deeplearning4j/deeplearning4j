@@ -34,17 +34,17 @@ layout: default
 
 ![Alt text](../img/python_shot.png)
 
-These tools will generate the visualizations that allow you to debug your neural nets as they train. (The visualizations occasionally generate a list of errors on Macs -- that does not stop the nets from training.)
+These tools will generate the visualizations that allow you to debug your neural nets as they train. Normalish distributions are a good sign. The visualizations occasionally generate a list of errors on Macs -- that does not stop the nets from training.
 
 * Next, git clone the DL4J examples like so:
 
 		git clone https://github.com/SkymindIO/dl4j-examples
 
-You can then manually import the Maven project into [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html) or [Intellij](https://www.jetbrains.com/idea/help/importing-project-from-maven-model.html) or [Netbeans](http://wiki.netbeans.org/MavenBestPractices).
+You can then manually import the Maven project into [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html),  [Intellij](https://www.jetbrains.com/idea/help/importing-project-from-maven-model.html) or [Netbeans](http://wiki.netbeans.org/MavenBestPractices).
 
 * Open up the dl4j-examples project in IntelliJ, find the MNIST example and press run. 
 
-* This is the moment of truth. You should now see evidence in your terminal/cmd that the neural net has begun to train, as the net's iterations begin to scroll down your terminal window. (In some cases, the program may take a minute to locate resources.) Look at the second-to-last number on the righthand side below. It should be decreasing with each new iteration. That’s the measure of the net’s error reconstructing a numeral-image. If the error shrinks, your net is learning. 
+* This is the moment of truth. You should now see evidence in your terminal/cmd that the neural net has begun to train, as the net's iterations begin to scroll down your terminal window. (In some cases, the program may take a minute to locate resources.) Look at the second-to-rightmost number in the rows below. It should be decreasing with each new iteration. That’s the measure of the net’s error reconstructing a numeral-image. Less error means your net is learning. 
 
 ![Alt text](../img/learning.png)
 
@@ -52,7 +52,7 @@ You can then manually import the Maven project into [Eclipse](http://books.sonat
 
 ![Alt text](../img/numeral_reconstructions.png)
 
-The way to judge whether your net has successfully learned the dataset is to look at the visualizations. They should gradually come to resemble handwritten numerals. Once they do, your net has been successfully trained, and that's what you need for deep learning to be worth anything.
+The way to judge whether your net has successfully learned the MNIST dataset is to look at the visualizations. They should gradually come to resemble handwritten numerals. Once they do, your net has been successfully trained, and that's what you need for deep learning to be worth anything.
 
 By this point, you should have a net that produces relatively accurate reconstructions. Congratulations. (If you haven't, please [let us know](https://groups.google.com/forum/#!forum/deeplearning4j)!)
 
