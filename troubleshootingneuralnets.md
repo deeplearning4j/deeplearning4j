@@ -23,14 +23,17 @@ The data transforms that you'll perform are relative to the problem you're solvi
  
        List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
 	    .iterations(1)
-	    .weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen, 1e-2))
+	    .weightInit(WeightInit.DISTRIBUTION)
+	    .dist(Distributions.normal(gen, 1e-2))
 	    .activationFunction(Activations.tanh())
-	    .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+	    .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+	    .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
 	    .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
 	    .optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT)
 	    .rng(gen)
 	    .learningRate(1e-2f)
-	    .nIn(4).nOut(3).list(2).override(new NeuralNetConfiguration.ConfOverride() {
+	    .nIn(4).nOut(3).list(2)
+	    .override(new NeuralNetConfiguration.ConfOverride() {
             @Override
             public void override(int i, NeuralNetConfiguration.Builder builder) {
                 if (i == 1) {
