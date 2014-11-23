@@ -67,7 +67,7 @@ If you're using IntelliJ as your IDE, this should work already.
 * Lapack offers the alternative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). 
 
 * *For developers of DL4J only:* Install [Git](https://windows.github.com/). Click on the Git Shell alias. Within that shell, enter the commands below to git clone the code repositories of ND4J and Deeplearning4j. 
-* 
+
       git clone https://github.com/SkymindIO/nd4j
       git clone https://github.com/SkymindIO/deeplearning4j
 
