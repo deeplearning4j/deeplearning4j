@@ -66,7 +66,7 @@ If, when visualizing weights and gradients, you notice your magnitude is too hig
 
 Different data has different optimal activation functions. 
 
-If you use tanh, you can get a bounded range of -1,1 - and with a combination of zero mean and unit variance that may be a good nonlinear transform for your data. If you're dealing with binary data, sigmoid is better.
+If you use tanh, you can get a bounded range of -1,1 -- and with a combination of zero mean and unit variance that may be a good nonlinear transform for your data. If you're dealing with binary data, sigmoid is better.
 
 ##Visible/Hidden Unit
 
