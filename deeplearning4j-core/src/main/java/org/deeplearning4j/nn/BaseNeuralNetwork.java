@@ -12,7 +12,6 @@ import java.lang.reflect.Constructor;
 import java.util.Arrays;
 
 
-import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.models.classifiers.dbn.DBN;
@@ -241,7 +240,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
             iterations++;
 
-            int plotIterations = conf.getRenderWeightsEveryNumEpochs();
+            int plotIterations = conf.getRenderWeightIterations();
             if(plotIterations > 0) {
                 NeuralNetPlotter plotter = new NeuralNetPlotter();
                 if(iterations % plotIterations == 0) {
@@ -665,7 +664,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     @Override
     public void iterationDone(int iteration) {
-        int plotEpochs = conf.getRenderWeightsEveryNumEpochs();
+        int plotEpochs = conf.getRenderWeightIterations();
         if(plotEpochs <= 0)
             return;
         if(iteration % plotEpochs == 0 || iteration == 0) {

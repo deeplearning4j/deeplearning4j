@@ -6,6 +6,7 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 /**
  * An inverted index for mapping words to documents
@@ -38,7 +39,7 @@ public interface InvertedIndex extends Serializable {
      * @param vocabWord the vocab word to get documents for
      * @return the documents for a vocab word
      */
-    List<Integer> documents(VocabWord vocabWord);
+    int[] documents(VocabWord vocabWord);
 
     /**
      * Returns the number of documents
@@ -50,7 +51,7 @@ public interface InvertedIndex extends Serializable {
      * Returns a list of all documents
      * @return the list of all documents
      */
-    java.util.Collection<Integer> allDocs();
+    int[] allDocs();
 
 
 
@@ -90,8 +91,7 @@ public interface InvertedIndex extends Serializable {
     /**
      * Iterate over each document
      * @param func the function to apply
+     * @param exec exectuor service for execution
      */
-    void eachDoc(Function<List<VocabWord>,Void> func);
-
-
+    void eachDoc(Function<List<VocabWord>, Void> func, ExecutorService exec);
 }

@@ -1,6 +1,7 @@
 package org.deeplearning4j.text.invertedindex;
 
 import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -63,10 +64,19 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private String indexPath = INDEX_PATH;
     private Queue<List<VocabWord>> miniBatchDocs = new ConcurrentLinkedDeque<>();
     private AtomicBoolean miniBatchGoing = new AtomicBoolean(true);
+    private boolean miniBatch = false;
+    private int[] docIds;
+    private boolean updated = false;
 
     public LuceneInvertedIndex(VocabCache vocabCache,boolean cache) {
+        this(vocabCache,cache,false);
+    }
+
+
+    public LuceneInvertedIndex(VocabCache vocabCache,boolean cache,boolean miniBatch) {
         this.vocabCache = vocabCache;
         this.cache = cache;
+        this.miniBatch = miniBatch;
         indexManager = Executors.newFixedThreadPool(1);
     }
 
@@ -135,15 +145,15 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
     @Override
-    public List<Integer> documents(VocabWord vocabWord) {
+    public int[] documents(VocabWord vocabWord) {
         try {
             TermQuery query = new TermQuery(new Term(WORD_FIELD,vocabWord.getWord()));
 
 
             TopDocs topdocs = searcher.search(query,Integer.MAX_VALUE);
-            List<Integer> ret = new ArrayList<>();
+            int[] ret = new int[topdocs.totalHits];
             for(int i = 0; i < topdocs.totalHits; i++) {
-                ret.add(topdocs.scoreDocs[i].doc);
+                ret[i] = topdocs.scoreDocs[i].doc;
             }
 
 
@@ -178,24 +188,38 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
     @Override
-    public Collection<Integer> allDocs() {
+    public int[] allDocs() {
+        if(!updated && docIds != null)
+            return docIds;
+
+        updated = false;
         if(cache){
-            List<Integer> ret = new ArrayList<>();
+            int[] ret = new int[words.size()];
             for(int i = 0; i < words.size(); i++)
-                ret.add(i);
+                ret[i] = i;
             return ret;
         }
 
 
 
-        List<Integer> docIds = new ArrayList<>();
+        int[] docIds = new int[reader.maxDoc() + 1];
+        int count = 0;
         Bits liveDocs = MultiFields.getLiveDocs(reader);
         for(int i = 0; i < reader.maxDoc() + 1; i++) {
             if (liveDocs != null && !liveDocs.get(i))
                 continue;
 
-            docIds.add(i);
+            if(count > docIds.length) {
+                int[] newCopy = new int[docIds.length * 2];
+                System.arraycopy(docIds,0,newCopy,0,docIds.length);
+                docIds = newCopy;
+                log.info("Reallocating doc ids");
+            }
+
+            docIds[count++] = i;
         }
+
+        this.docIds = docIds;
         return docIds;
     }
 
@@ -224,7 +248,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
 
-    private void initReader() {
+    private synchronized void initReader() {
         if(reader == null) {
             try {
                 writer.commit();
@@ -252,6 +276,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     @Override
     public void addWordsToDoc(int doc,final List<VocabWord> words) {
+        updated = true;
         if (cache) {
             this.words.add(words);
             indexManager.execute(new Runnable() {
@@ -313,6 +338,8 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
     private void addWords(List<VocabWord> words) {
+        if(!miniBatch)
+            return;
         for (VocabWord word : words) {
             // The subsampling randomly discards frequent words while keeping the ranking same
             if (sample > 0) {
@@ -415,7 +442,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                                 waitOnWriter();
                         if(IndexWriter.isLocked(dir))
                             IndexWriter.unlock(dir);
-                       // writer.forceMerge(1);
+                        // writer.forceMerge(1);
                         writer.commit();
 
                         initReader();
@@ -476,10 +503,52 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
     @Override
-    public void eachDoc(Function<List<VocabWord>, Void> func) {
-        Collection<Integer> allDocs = allDocs();
-        for(Integer i : allDocs) {
-            func.apply(document(i));
+    public void eachDoc(final Function<List<VocabWord>, Void> func,ExecutorService exec) {
+        int[] docIds = allDocs();
+
+
+        int[] currDocIds = null;
+        int cursor = 0;
+        for(int i = 0; i < docIds.length; i++) {
+            if(currDocIds == null) {
+                //calculate batch size based on whats left
+                int size = Math.abs(i - docIds.length) > 100 ? 100 : Math.abs(i - docIds.length);
+                currDocIds = new int[size];
+                currDocIds[cursor++] = docIds[i];
+            }
+            else if(cursor == currDocIds.length - 1) {
+                final List<List<VocabWord>> docs = new ArrayList<>();
+                for(int i3 : currDocIds)
+                    docs.add(document(i3));
+
+
+                exec.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        for(List<VocabWord> doc : docs)
+                            func.apply(doc);
+                    }
+                });
+
+                cursor = 0;
+                currDocIds = null;
+            }
+            else {
+                currDocIds[cursor++] = docIds[i];
+            }
+
+
+
+
+        }
+
+        this.docIds = null;
+
+        exec.shutdown();
+        try {
+            exec.awaitTermination(1,TimeUnit.DAYS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -491,12 +560,16 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     @Override
     public boolean hasNext() {
+        if(!miniBatch)
+            throw new IllegalStateException("Mini batch mode turned off");
         return !miniBatchDocs.isEmpty() ||
                 miniBatchGoing.get();
     }
 
     @Override
     public List<VocabWord> next() {
+        if(!miniBatch)
+            throw new IllegalStateException("Mini batch mode turned off");
         if(!miniBatches.isEmpty())
             return miniBatches.remove(0);
         else if(miniBatchGoing.get()) {
@@ -537,8 +610,14 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         private boolean cache = true;
         private int batchSize = 1000;
         private double sample = 0;
+        private boolean miniBatch = false;
 
 
+
+        public Builder miniBatch(boolean miniBatch) {
+            this.miniBatch = miniBatch;
+            return this;
+        }
         public Builder cacheInRam(boolean cache) {
             this.cache = cache;
             return this;
@@ -619,7 +698,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                 ret.dir = dir;
                 ret.writer = writer;
                 ret.cache = cache;
-
+                ret.miniBatch = miniBatch;
                 ret.reader = reader;
                 ret.searcher = searcher;
                 ret.analyzer = analyzer;

@@ -142,9 +142,12 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
      * @param iterations      the number of iterations to run
      */
     public void pretrain(INDArray input, float lr, float corruptionLevel, int iterations) {
+
         if (this.getInput() == null)
             initializeLayers(input.dup());
 
+        if(!pretrain)
+            return;
         if (isUseGaussNewtonVectorProductBackProp())
             log.warn("Warning; using gauss newton vector back prop with pretrain is known to cause issues with obscenely large activations.");
 
@@ -216,6 +219,16 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
             return this;
         }
 
+        /**
+         * Whether to pretrain or not
+         * @param pretrain
+         * @return
+         */
+        public Builder pretrain(boolean pretrain) {
+            this.pretrain = pretrain;
+            return this;
+        }
+
 
         /**
          * Use drop connect on activations or not
@@ -230,11 +243,6 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
         }
 
 
-        @Override
-        public Builder lineSearchBackProp(boolean lineSearchBackProp) {
-            super.lineSearchBackProp(lineSearchBackProp);
-            return this;
-        }
 
 
         public Builder withVisibleBiasTransforms(Map<Integer, MatrixTransform> visibleBiasTransforms) {

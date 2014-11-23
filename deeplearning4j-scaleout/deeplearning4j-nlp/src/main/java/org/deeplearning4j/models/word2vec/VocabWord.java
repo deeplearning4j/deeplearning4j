@@ -10,10 +10,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
-
-
-
+import java.util.List;
 
 
 /**
@@ -27,18 +26,13 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 	//used in comparison when building the huffman tree
 	private AtomicDouble wordFrequency = new AtomicDouble(0);
 	private int index = -1;
-	//children of the binary tree
-	private VocabWord left;
-	private VocabWord right;
-	private VocabWord parent;
-	private int[] codes = new int[40];
+	private List<Integer> codes = new ArrayList<>();
 	//for my sanity
 	private String word;
-	public final static String PARENT_NODE = "parent";
 	private INDArray historicalGradient;
-	private int[] points = new int[40];
+	private List<Integer> points = new ArrayList<>();
     private int codeLength = 0;
-	
+
 
 	public static VocabWord none() {
 		return new VocabWord(0,"none");
@@ -80,54 +74,6 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 	public void setWord(String word) {
 		this.word = word;
 	}
-
-
-
-
-
-	public int[] getCodes() {
-		return codes;
-	}
-
-	public void setCodes(int[] codes) {
-		this.codes = codes;
-	}
-
-
-
-	public void setParent(VocabWord parent) {
-		this.parent = parent;
-	}
-
-
-
-
-
-
-	public VocabWord getLeft() {
-		return left;
-	}
-
-
-
-	public void setLeft(VocabWord left) {
-		this.left = left;
-	}
-
-
-
-	public VocabWord getRight() {
-		return right;
-	}
-
-
-
-	public void setRight(VocabWord right) {
-		this.right = right;
-	}
-
-
-
 	public void increment() {
 		increment(1);
 	}
@@ -152,16 +98,22 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
         return wordFrequency.get();
 	}
 
-	
-	
-	@Override
+    public List<Integer> getCodes() {
+        return codes;
+    }
+
+    public void setCodes(List<Integer> codes) {
+        this.codes = codes;
+    }
+
+    @Override
 	public int compareTo(VocabWord o) {
 		return Double.compare(wordFrequency.get(), o.wordFrequency.get());
 	}
 
 	public double getLearningRate(int index,double g) {
 		if(historicalGradient == null) {
-			historicalGradient = Nd4j.zeros(getCodes().length);
+			historicalGradient = Nd4j.zeros(getCodes().size());
 		}
 
 		double pow =  Math.pow(g,2);
@@ -173,13 +125,13 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
 	}
 
-	public int[] getPoints() {
-		return points;
-	}
+    public List<Integer> getPoints() {
+        return points;
+    }
 
-	public void setPoints(int[] points) {
-		this.points = points;
-	}
+    public void setPoints(List<Integer> points) {
+        this.points = points;
+    }
 
     public int getCodeLength() {
         return codeLength;
@@ -187,18 +139,15 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
     public void setCodeLength(int codeLength) {
         this.codeLength = codeLength;
-    }
+        if(codes.size() < codeLength) {
+            for(int i = 0; i < codeLength; i++)
+                codes.add(0);
+        }
 
-    @Override
-    public String toString() {
-        return "VocabWord{" +
-                "wordFrequency=" + wordFrequency +
-                ", index=" + index +
-                ", codes=" + Arrays.toString(codes) +
-                ", word='" + word + '\'' +
-                ", historicalGradient=" + historicalGradient +
-                ", points=" + Arrays.toString(points) +
-                '}';
+        if(points.size() < codeLength) {
+            for(int i = 0; i < codeLength; i++)
+                points.add(0);
+        }
     }
 
     @Override
@@ -208,33 +157,42 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
         VocabWord vocabWord = (VocabWord) o;
 
+        if (codeLength != vocabWord.codeLength) return false;
         if (index != vocabWord.index) return false;
-        if (!Arrays.equals(codes, vocabWord.codes)) return false;
-        if (historicalGradient != null ? !historicalGradient.equals(vocabWord.historicalGradient) : vocabWord.historicalGradient != null)
-            return false;
-        if (left != null ? !left.equals(vocabWord.left) : vocabWord.left != null) return false;
-        if (parent != null ? !parent.equals(vocabWord.parent) : vocabWord.parent != null) return false;
-        if (!Arrays.equals(points, vocabWord.points)) return false;
-        if (right != null ? !right.equals(vocabWord.right) : vocabWord.right != null) return false;
-        if (word != null ? !word.equals(vocabWord.word) : vocabWord.word != null) return false;
-        if (wordFrequency != null ? !wordFrequency.equals(vocabWord.wordFrequency) : vocabWord.wordFrequency != null)
-            return false;
+        if (!codes.equals(vocabWord.codes)) return false;
+        if (!historicalGradient.equals(vocabWord.historicalGradient)) return false;
+        if (!points.equals(vocabWord.points)) return false;
+        if (!word.equals(vocabWord.word)) return false;
+        if (!wordFrequency.equals(vocabWord.wordFrequency)) return false;
 
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = wordFrequency != null ? wordFrequency.hashCode() : 0;
+        int result = wordFrequency.hashCode();
         result = 31 * result + index;
-        result = 31 * result + (left != null ? left.hashCode() : 0);
-        result = 31 * result + (right != null ? right.hashCode() : 0);
-        result = 31 * result + (parent != null ? parent.hashCode() : 0);
-        result = 31 * result + (codes != null ? Arrays.hashCode(codes) : 0);
-        result = 31 * result + (word != null ? word.hashCode() : 0);
-        result = 31 * result + (historicalGradient != null ? historicalGradient.hashCode() : 0);
-        result = 31 * result + (points != null ? Arrays.hashCode(points) : 0);
+        result = 31 * result + codes.hashCode();
+        result = 31 * result + word.hashCode();
+        result = 31 * result + historicalGradient.hashCode();
+        result = 31 * result + points.hashCode();
+        result = 31 * result + codeLength;
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "VocabWord{" +
+                "wordFrequency=" + wordFrequency +
+                ", index=" + index +
+                ", codes=" + codes +
+                ", word='" + word + '\'' +
+                ", historicalGradient=" + historicalGradient +
+                ", points=" + points +
+                ", codeLength=" + codeLength +
+                '}';
+    }
+
+
 }
 
