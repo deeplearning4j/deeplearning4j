@@ -253,7 +253,6 @@ public class Conf implements Serializable,Cloneable {
     public BaseMultiLayerNetwork init() {
         return  new BaseMultiLayerNetwork.Builder<>().withClazz(getMultiLayerClazz())
                 .hiddenLayerSizes(getLayerSizes()).configure(conf)
-                .lineSearchBackProp(isLineSearchBackProp())
                 .build();
     }
 
