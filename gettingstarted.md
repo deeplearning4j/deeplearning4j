@@ -6,14 +6,14 @@ layout: default
 
 Contents
 
+* <a href="#next">Quickstart</a>
 * <a href="#all">Deeplearning4j install (All OS)</a>
     * <a href="#linux">Linux</a>
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
-    * <a href="#next">Quickstart</a>
-    * <a href="#source">Working With Source</a>
-    * <a href="#eclipse">Eclipse</a>
-    * <a href="#trouble">Troubleshooting</a>
+* <a href="#source">Working With Source</a>
+* <a href="#eclipse">Eclipse</a>
+* <a href="#trouble">Troubleshooting</a>
 
 ### <a name="all">All Operating Systems</a>
 
