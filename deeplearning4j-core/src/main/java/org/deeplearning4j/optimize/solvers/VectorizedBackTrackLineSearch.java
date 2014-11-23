@@ -15,9 +15,7 @@ information, see the file `LICENSE' included with this distribution. */
  Modified to be a vectorized version that uses jblas matrices
  for computation rather than the mallet ops.
 
- */
 
-/**
  Numerical Recipes in C: p.385. lnsrch. A simple backtracking line
  search. No attempt at accurately finding the true minimum is
  made. The goal is only to ensure that BackTrackLineSearch will
@@ -87,13 +85,13 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 
     /**
      * Sets the tolerance of relative diff in function value.
-     *  Line search converges if <tt>abs(delta x / x) < tolx</tt>
+     *  Line search converges if abs(delta x / x) < tolx
      *  for all coordinates. */
     public void setRelTolx (double tolx) { relTolx = tolx; }
 
     /**
      * Sets the tolerance of absolute diff in function value.
-     *  Line search converges if <tt>abs(delta x) < tolx</tt>
+     *  Line search converges if abs(delta x) < tolx
      *  for all coordinates. */
     public void setAbsTolx (double tolx) { absTolx = tolx; }
 
@@ -103,8 +101,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 
     // returns fraction of step size (alam) if found a good step
     // returns 0.0 if could not step in direction
-    public double optimize (INDArray line, int lineSearchIteration,double initialStep) throws InvalidStepException
-    {
+    public double optimize (INDArray line, int lineSearchIteration,double initialStep) throws InvalidStepException {
         INDArray g, x, oldParameters;
         double slope, test, alamin, alam, alam2, tmplam;
         double rhs1, rhs2, a, b, disc, oldAlam;

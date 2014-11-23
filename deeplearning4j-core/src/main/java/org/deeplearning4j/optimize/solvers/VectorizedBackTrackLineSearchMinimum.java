@@ -73,13 +73,13 @@ public class VectorizedBackTrackLineSearchMinimum
 
     /**
      * Sets the tolerance of relative diff in function value.
-     *  Line search converges if <tt>abs(delta x / x) < tolx</tt>
+     *  Line search converges if abs(delta x / x) < tolx
      *  for all coordinates. */
     public void setRelTolx (double tolx) { relTolx = tolx; }
 
     /**
      * Sets the tolerance of absolute diff in function value.
-     *  Line search converges if <tt>abs(delta x) < tolx</tt>
+     *  Line search converges if abs(delta x) < tolx
      *  for all coordinates. */
     public void setAbsTolx (double tolx) { absTolx = tolx; }
 
