@@ -227,11 +227,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
                 throw new RuntimeException(e1);
             }
 
-            //ensure network takes on configuration
-            if(startingNetwork != null) {
-                startingNetwork.setShouldBackProp(conf.isUseBackProp());
 
-            }
 
             log.info("Starting Save saver");
             if(modelSaver == null)
