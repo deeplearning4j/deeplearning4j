@@ -10,7 +10,7 @@ Contents
     * <a href="#linux">Linux</a>
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
-    * <a href="#next">Running Examples</a>
+    * <a href="#next">Quickstart</a>
     * <a href="#source">Working With Source</a>
     * <a href="#eclipse">Eclipse</a>
     * <a href="#trouble">Troubleshooting</a>
