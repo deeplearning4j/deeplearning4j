@@ -13,8 +13,8 @@ Contents
     * <a href="#windows">Windows</a>
 * <a href="#source">Working With Source</a>
 * <a href="#eclipse">Eclipse</a>
-* <a href="#next">Next Steps</a>
 * <a href="#trouble">Troubleshooting</a>
+* <a href="#next">Next Steps</a>
 
 ### <a name="quickstart">Quickstart</a>
 
@@ -93,10 +93,6 @@ After running a git clone, enter this command
   
 which will import the source and set everything up. 
 
-### <a name="next">Next Steps: MNIST and Running Examples</a>
-
-Then take a look at the [MNIST tutorial](../mnist-tutorial.html). If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html). 
-
 ### <a name="trouble">Troubleshooting</a>
 
 * If you have installed DL4J in the past and now see the examples throwing errors, run a git clone on [ND4J](http://nd4j.org/getstarted.html) in the same root directory as DL4J; run a clean Maven install within ND4J; install DL4J again; run a clean Maven install within DL4J, and see if that fixes things.
@@ -104,3 +100,7 @@ Then take a look at the [MNIST tutorial](../mnist-tutorial.html). If you have a 
 * When you run an example, you may get a low [f1 score](../glossary.html#f1), which is the probability that the net's classification is accurate. In this case, a low f1 doesn't indicate poor performance, because the examples train on small data sets. We gave them small data sets so they would run quickly. Because small data sets are less representative than large ones, the results they produce will vary a great deal. For example, on the minuscule example data, our deep-belief net's f1 score currently varies between 0.32 and 1.0.
 
 * Go here for a Javadoc list of [Deeplearning4j's classes and methods](http://deeplearning4j.org/doc/).
+
+### <a name="next">Next Steps: MNIST and Running Examples</a>
+
+Take a look at the [MNIST tutorial](../mnist-tutorial.html). If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html). 
