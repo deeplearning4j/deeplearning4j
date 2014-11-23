@@ -77,9 +77,7 @@ Try [running a few examples with our Quickstart](../quickstart.html), and then t
 
 ###<a name="source">Working With Source</a>
 
-For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deeplearning4j/). If you want to develop for Deeplearning4j, install Github for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). 
-
-Then git clone the repository and run this command for Maven:
+For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deeplearning4j/). If you want to develop for Deeplearning4j, install Github for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). Then git clone the repository, and run this command for Maven:
 
       mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
