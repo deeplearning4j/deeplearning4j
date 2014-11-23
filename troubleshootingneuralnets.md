@@ -33,7 +33,9 @@ Let's consider a configuration now:
 
 
 ```
-   List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
+ 
+ 
+  List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
                 .iterations(1)
                 .weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen, 1e-2))
                 .activationFunction(Activations.tanh())
@@ -59,6 +61,8 @@ Let's consider a configuration now:
 
         DBN d = new DBN.Builder().layerWiseConfiguration(conf)
                 .hiddenLayerSizes(new int[]{3}).build();
+                
+                
 ```
 
 There's a lot going on here. I will cover each of the facets of the conf and how it relates to trouble shooting:
