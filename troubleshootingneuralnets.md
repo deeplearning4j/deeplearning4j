@@ -9,7 +9,7 @@ Neural networks are notoriously difficult to tune. When training with any neural
 
 ##Data
 
-What's distribution of your data? Are you scaling it properly? In Deeplearning4j, there are a few different scaling/normalization techniques to be aware of.
+What's distribution of your data? Are you scaling it properly? With Deeplearning4j, there are a different scaling and normalization techniques to keep in mind.
 
       DataSet d = ...;
       //zero mean and unit variance
@@ -19,7 +19,7 @@ What's distribution of your data? Are you scaling it properly? In Deeplearning4j
       or:
       d.scaleMinAndMax(0,1);
 
-The data transforms that you'll perform are relative to the problem you're solving, and will vary according to your data. Let's consider a configuration now:
+The data transforms that you'll perform are relative to the problem you're solving, and will vary according to the data. Let's consider a configuration now:
  
        List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
 	    .iterations(1)
@@ -53,7 +53,7 @@ There's a lot going on here -- I'll cover each of the facets of the configuratio
 
 Deeplearning4j supports several different kinds of weight initializations with the weightInit parameter.
 
-You need to make sure your weights are neither too big nor too small. If you are running a classifier, ensure that your weights are initialized to zero on the output layer (as with the above example).
+You need to make sure your weights are neither too big nor too small. If you're running a classifier, ensure that your weights are initialized to zero on the output layer (as with the above example).
 
 ##Iterations
 
@@ -61,19 +61,19 @@ Note the number of iterations you're training on. Early stopping can help preven
 
 ##Learning Rate
 
-Learning rate is either used as the master step size in adagrad (default) or the step size used for calculating your gradient. With continuous data, you will want a smaller learning rate. With binary, you can often go up to 1e-1.
+The learning rate is either used as the master step size in Adagrad (default) or the step size used for calculating your gradient. With continuous data, you will want a smaller learning rate. With binary, you can often go up to a rate of 1e-1.
 
-If, when visualizing weights and gradients, you notice your magnitude is too high, try shrinking your learning rate or your weights.
+If, when visualizing weights and gradients, you notice the magnitudes are too high, try shrinking the learning rate or the weights.
 
 ##Activation Function
 
 Different data has different optimal activation functions. 
 
-If you use tanh, you can get a bounded range of -1,1 -- and with a combination of zero mean and unit variance that may be a good nonlinear transform for your data. If you're dealing with binary data, sigmoid is better.
+Using tanh, you can get a bounded range of -1,1 -- and with a combination of zero mean and unit variance, that may be a good nonlinear transform for the data. When dealing with binary data, sigmoid is better.
 
 ##Visible/Hidden Unit
 
-If you are using a DBN, pay attention here. An RBM (the component of the DBN used for feature extraction) is stochastic and will sample from different probability distributions relative to the visible or hidden units specified. 
+When using a deep-belief network, pay close attention here. An RBM (the component of the DBN used for feature extraction) is stochastic and will sample from different probability distributions relative to the visible or hidden units specified. 
 
 See Geoff Hinton's definitive work, [A Practical Guide to Training Restricted Boltzmann Machines](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf), for a list of all of the different probability distributions.
 
