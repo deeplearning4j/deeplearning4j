@@ -11,17 +11,17 @@ Neural networks are notoriously difficult to tune. When training with any neural
 
 What's distribution of your data? Are you scaling it properly? In Deeplearning4j, there are a few different scaling/normalization techniques to be aware of.
 
-		DataSet d = ...;
-		//zero mean and unit variance
-		d.normalizeZeroMeanAndUnitVariance();
-		Scale between 0 and 1:
-		d.scale();
-		or:
-		d.scaleMinAndMax(0,1);
+      DataSet d = ...;
+      //zero mean and unit variance
+      d.normalizeZeroMeanAndUnitVariance();
+      Scale between 0 and 1:
+      d.scale();
+      or:
+      d.scaleMinAndMax(0,1);
 
 The data transforms that you'll perform are relative to the problem you're solving, and will vary according to your data. Let's consider a configuration now:
  
-             List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
+       List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
 	    .iterations(1)
 	    .weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen, 1e-2))
 	    .activationFunction(Activations.tanh())
