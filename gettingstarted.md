@@ -96,4 +96,4 @@ which will import the source and set everything up.
 
 * When you run an example, you may get a low [f1 score](../glossary.html#f1), which is the probability that the net's classification is accurate. In this case, a low f1 doesn't indicate poor performance, because the examples train on small data sets. We gave them small data sets so they would run quickly. Because small data sets are less representative than large ones, the results they produce will vary a great deal. For example, on the minuscule example data, our deep-belief net's f1 score currently varies between 0.32 and 1.0.
 
-* Go here for a list of [Deeplearning4j's classes and methods](http://deeplearning4j.org/doc/).
+* Go here for a Javadoc list of [Deeplearning4j's classes and methods](http://deeplearning4j.org/doc/).
