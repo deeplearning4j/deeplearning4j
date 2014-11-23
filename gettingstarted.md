@@ -27,7 +27,7 @@ If you aren't familiar with ND4J, the linear-algebra kernel that powers DL4J, pl
 
 You can install [Deeplearning4j via Maven](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) (see the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for dependencies). [Maven](https://maven.apache.org/download.cgi) is a build automation tool used for Java projects. Alternatively, you can install DL4J based on our [downloads](http://deeplearning4j.org/download.html).
 
-If you prefer the downloads over Maven, you must then manually import the jar files into [Eclipse](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse) or [Intellij](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project), [Netbeans](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/).
+If you prefer the downloads over Maven, then you have to manually import the jar files into [Eclipse](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse), [Intellij](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project) or [Netbeans](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/).
 
 ### <a name="linux">Linux</a>
 
