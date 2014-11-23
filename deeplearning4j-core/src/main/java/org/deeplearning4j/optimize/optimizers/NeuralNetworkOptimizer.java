@@ -105,7 +105,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
     @Override
     public void iterationDone(int iteration) {
-        int plotEpochs = network.conf().getRenderWeightsEveryNumEpochs();
+        int plotEpochs = network.conf().getRenderWeightIterations();
         if(plotEpochs <= 0)
             return;
         if(iteration % plotEpochs == 0) {

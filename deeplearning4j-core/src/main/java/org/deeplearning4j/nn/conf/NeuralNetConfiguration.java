@@ -366,7 +366,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.optimizationAlgo = optimizationAlgo;
     }
 
-    public int getRenderWeightsEveryNumEpochs() {
+    public int getRenderWeightIterations() {
         return renderWeightsEveryNumEpochs;
     }
 
@@ -719,7 +719,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private NeuralNetwork.OptimizationAlgorithm optimizationAlgo = NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private int renderWeightsEveryNumEpochs = -1;
         private boolean concatBiases = false;
-        private boolean constrainGradientToUnitNorm = true;
+        private boolean constrainGradientToUnitNorm = false;
         private RandomGenerator rng = new MersenneTwister(123);
         private long seed = 123;
         private RealDistribution dist  = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);

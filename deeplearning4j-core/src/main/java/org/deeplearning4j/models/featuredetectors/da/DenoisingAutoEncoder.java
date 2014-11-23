@@ -220,7 +220,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
     @Override
     public void iterationDone(int iteration) {
-        int plotEpochs = conf.getRenderWeightsEveryNumEpochs();
+        int plotEpochs = conf.getRenderWeightIterations();
         if(plotEpochs <= 0)
             return;
         if(iteration % plotEpochs == 0 || iteration == 0) {

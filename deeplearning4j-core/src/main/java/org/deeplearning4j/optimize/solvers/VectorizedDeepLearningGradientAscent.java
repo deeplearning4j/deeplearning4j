@@ -41,10 +41,12 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 
 
 
+
     public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function, double initialStepSize,StepFunction step) {
         this.optimizable = function;
         this.lineMaximizer = new VectorizedBackTrackLineSearch(function,step);
         lineMaximizer.setAbsTolx(tolerance);
+        this.step = initialStepSize;
         // Alternative:
         //this.lineMaximizer = new GradientBracketLineOptimizer (function);
 
@@ -91,10 +93,6 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
     public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function) {
         this(function, 0.01f);
     }
-
-    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix backPropOptimizer, BackPropStepFunction backPropStepFunction) {
-    }
-
 
     @Override
     public void setMaxIterations(int maxIterations) {
@@ -161,7 +159,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
         INDArray xi = optimizable.getValueGradient(0);
 
         for (iterations = 0; iterations < numIterations; iterations++) {
-            logger.info ("At iteration "+ iterations +", cost = "+ fp  +", scaled = "+ maxStep +" step = "+step+", gradient infty-norm = "+ xi.normmax(Integer.MAX_VALUE));
+            logger.info ("At iteration "+ iterations +", cost = "+ fp  +", scaled = "+ maxStep +" step = " + step + ", gradient infty-norm = "+ xi.normmax(Integer.MAX_VALUE));
             boolean calledEpochDone = false;
             // Ensure step not too large
             optimizable.setCurrentIteration(iterations);

@@ -61,6 +61,8 @@ public class DBN extends BaseMultiLayerNetwork {
 
     @Override
     public void pretrain(DataSetIterator iter, Object[] otherParams) {
+        if(!pretrain)
+            return;
         int passes = otherParams.length > 3 ? (Integer) otherParams[3] : 1;
         for(int i = 0; i < passes; i++)
             pretrain(input, defaultConfiguration.getK(),defaultConfiguration.getLr(),defaultConfiguration.getNumIterations());
@@ -86,7 +88,8 @@ public class DBN extends BaseMultiLayerNetwork {
      * @param epochs the number of epochs to iterate
      */
     public void pretrain(DataSetIterator iter,int k,float learningRate,int epochs) {
-
+        if(!pretrain)
+            return;
 
         INDArray layerInput;
 
@@ -165,6 +168,9 @@ public class DBN extends BaseMultiLayerNetwork {
      */
     public void pretrain(INDArray input,int k, float learningRate,int epochs) {
 
+        if(!pretrain)
+            return;
+
         if(isUseGaussNewtonVectorProductBackProp()) {
             log.warn("WARNING; Gauss newton back vector back propagation is primarily used for hessian free which does not involve pretrain; just finetune. Use this at your own risk");
         }
@@ -241,6 +247,7 @@ public class DBN extends BaseMultiLayerNetwork {
     @Override
     public void fit(INDArray data, Object[] params) {
         pretrain(data,defaultConfiguration.getK(),defaultConfiguration.getLr(),defaultConfiguration.getNumIterations());
+
     }
 
 
@@ -282,11 +289,6 @@ public class DBN extends BaseMultiLayerNetwork {
             return this;
         }
 
-        @Override
-        public Builder lineSearchBackProp(boolean lineSearchBackProp) {
-            super.lineSearchBackProp(lineSearchBackProp);
-            return this;
-        }
 
 
 
@@ -374,6 +376,15 @@ public class DBN extends BaseMultiLayerNetwork {
             return this;
         }
 
+        /**
+         * Whether to pretrain or not
+         * @param pretrain
+         * @return
+         */
+        public Builder pretrain(boolean pretrain) {
+            this.pretrain = pretrain;
+            return this;
+        }
 
 
         @Override

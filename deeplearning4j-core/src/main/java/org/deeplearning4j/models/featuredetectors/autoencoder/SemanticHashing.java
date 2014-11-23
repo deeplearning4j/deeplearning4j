@@ -435,11 +435,7 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
         }
 
 
-        @Override
-        public Builder lineSearchBackProp(boolean lineSearchBackProp) {
-            super.lineSearchBackProp(lineSearchBackProp);
-            return this;
-        }
+
 
 
 
@@ -654,7 +650,6 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
             e.setUseDropConnect(encoder.isUseDropConnect());
             e.setUseGaussNewtonVectorProductBackProp(encoder.isUseGaussNewtonVectorProductBackProp());
             e.setSampleFromHiddenActivations(encoder.isSampleFromHiddenActivations());
-            e.setLineSearchBackProp(encoder.isLineSearchBackProp());
             e.setForceNumEpochs(shouldForceEpochs);
 
             List<NeuralNetConfiguration> confs = new ArrayList<>();

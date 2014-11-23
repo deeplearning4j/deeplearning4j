@@ -2,8 +2,6 @@ package org.deeplearning4j.models.word2vec;
 
 import java.util.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Huffman tree builder
@@ -16,16 +14,13 @@ public class Huffman {
         this.words = new ArrayList<>(words);
     }
 
-
-    private static Logger log = LoggerFactory.getLogger(Huffman.class);
-
     private List<VocabWord> words;
-
+    public final static int MAX_CODE_LENGTH = 40;
     public void build() {
         long[] count = new long[words.size() * 2 + 1];
         int[] binary = new int[words.size() * 2 + 1];
-        int[] code = new int[40];
-        int[] point = new int[40];
+        int[] code = new int[MAX_CODE_LENGTH];
+        int[] point = new int[MAX_CODE_LENGTH];
         int[] parentNode = new int[words.size() * 2 + 1];
         int a = 0;
 
@@ -103,11 +98,11 @@ public class Huffman {
 
 
             words.get(a).setCodeLength(i);
-            words.get(a).getPoints()[0] = words.size() - 2;
+            words.get(a).getPoints().add(words.size() - 2);
 
             for (b = 0; b < i; b++) {
-                words.get(a).getCodes()[i - b - 1] = code[b];
-                words.get(a).getPoints()[i - b] = point[b] - words.size();
+                words.get(a).getCodes().set(i - b - 1,code[b]);
+                words.get(a).getPoints().set(i - b,point[b] - words.size());
 
             }
         }
