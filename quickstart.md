@@ -36,9 +36,8 @@ layout: default
 
 These tools will generate the visualizations that allow you to debug your neural nets as they train. (The visualizations occasionally generate a list of errors on Macs -- that does not stop the nets from training.)
 
-* Next, git clone ND4J, the linear algebra library powering this project, as well as the DL4J examples like so:
+* Next, git clone the DL4J examples like so:
 
-		git clone https://github.com/SkymindIO/nd4j
 		git clone https://github.com/SkymindIO/dl4j-examples
 
 * Open up the dl4j-examples project in IntelliJ, find the MNIST example and press run. 
