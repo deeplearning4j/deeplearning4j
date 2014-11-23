@@ -41,7 +41,7 @@ If you prefer the downloads over Maven, you must then manually import the jar fi
 
          /usr/local/cuda/lib64
 
-Then enter ldconfig in the terminal, followed by the file path to link Cuda. Your command will look similar to this
+Then enter *ldconfig* in the terminal, followed by the file path to link Cuda. Your command will look similar to this
 
          ldconfig /usr/local/cuda/lib64
 
@@ -63,7 +63,8 @@ If you're using IntelliJ as your IDE, this should work already.
 
 * Install [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/). Lapack will ask if you have Intel compilers. You do not.
 
-* Instead, you will need to install [MinGW 32 bits](http://www.mingw.org/) (the download button is on the upper right) and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). 
+* Instead, you will need to install [MinGW 32 bits](http://www.mingw.org/) even if you have a 64-bit computer (the download button is on the upper right), and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). 
+
 * Lapack offers the alternative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). 
 
 * *For developers of DL4J only:* Install [Github](https://windows.github.com/). Click on the Git Shell alias. Within that shell, enter the commands below to git clone the code repositories of ND4J and Deeplearning4j. 
