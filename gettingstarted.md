@@ -15,6 +15,10 @@ Contents
 * <a href="#eclipse">Eclipse</a>
 * <a href="#trouble">Troubleshooting</a>
 
+### <a name="next">Quickstart, MNIST and Running Examples</a>
+
+Try running a few examples with our [Quickstart](../quickstart.html), and then take a look at the [MNIST tutorial](../mnist-tutorial.html). If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html). 
+
 ### <a name="all">All Operating Systems</a>
 
 DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
@@ -73,10 +77,6 @@ If you're using IntelliJ as your IDE, this should work already.
 
       git clone https://github.com/SkymindIO/nd4j
       git clone https://github.com/SkymindIO/deeplearning4j
-
-### <a name="next">Quickstart, MNIST and Running Examples</a>
-
-Try running a few examples with our [Quickstart](../quickstart.html), and then take a look at the [MNIST tutorial](../mnist-tutorial.html). If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html). 
 
 ###<a name="source">Working With Source</a>
 
