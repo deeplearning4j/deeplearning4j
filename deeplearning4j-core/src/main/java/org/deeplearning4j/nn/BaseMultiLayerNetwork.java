@@ -634,7 +634,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
     /* delta computation for back prop */
-    protected void computeDeltas(List<INDArray> deltaRet) {
+    protected  List<INDArray> computeDeltas() {
+        List<INDArray> deltaRet = new ArrayList<>();
         INDArray[] deltas = new INDArray[getnLayers() + 2];
 
         List<INDArray> activations = feedForward();
@@ -690,6 +691,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         }
 
 
+        return deltaRet;
     }
 
     /**
@@ -987,9 +989,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         //log.info("Back prop step " + epoch);
 
         //precompute deltas
-        List<INDArray> deltas = new ArrayList<>();
-        //compute derivatives and gradients given activations
-        computeDeltas(deltas);
+        List<INDArray> deltas = computeDeltas();
 
         List<Pair<INDArray, INDArray>> vWvB = new ArrayList<>();
         for (int i = 0; i < neuralNets.length; i++)
