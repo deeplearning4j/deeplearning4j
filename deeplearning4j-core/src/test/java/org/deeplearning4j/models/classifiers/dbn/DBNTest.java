@@ -100,7 +100,6 @@ public class DBNTest {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         fetcher.fetch(10);
         DataSet d2 = fetcher.next();
-
         d.fit(d2);
 
 
