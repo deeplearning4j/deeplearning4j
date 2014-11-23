@@ -21,7 +21,7 @@ What's distribution of your data? Are you scaling it properly? In Deeplearning4j
 
 The data transforms that you'll perform are relative to the problem you're solving, and will vary according to your data. Let's consider a configuration now:
  
-  List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
+             List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
 	    .iterations(1)
 	    .weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen, 1e-2))
 	    .activationFunction(Activations.tanh())
@@ -60,18 +60,22 @@ Note the number of iterations you're training on. Early stopping can help preven
 
 Learning rate is either used as the master step size in adagrad (default) or the step size used for calculating your gradient. With continuous data, you will want a smaller learning rate. With binary, you can often go up to 1e-1.
 
-If you notice your magnitude is too high when visualizing weights and gradients, you may either want to shrink your learning rate or your weights.
+If, when visualizing weights and gradients, you notice your magnitude is too high, try shrinking your learning rate or your weights.
 
 ##Activation Function
 
-Different data has different optimal activation functions. If you use tanh, you can get a bounded range of -1,1 - and with a combination of zero mean and unit variance that may be a good nonlinear transform for your data. If you're dealing with binary data, sigmoid is better.
+Different data has different optimal activation functions. 
+
+If you use tanh, you can get a bounded range of -1,1 - and with a combination of zero mean and unit variance that may be a good nonlinear transform for your data. If you're dealing with binary data, sigmoid is better.
 
 ##Visible/Hidden Unit
 
-If you are using a DBN, you will want to pay attention to this. An RBM (the component of the DBN used for feature extraction) is stochastic and will sample from different probability distributions relative to the visible or hidden units specified. See [Practical Guide to RBMs](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf) for a list of all of the different probability distributions and the like.
+If you are using a DBN, pay attention here. An RBM (the component of the DBN used for feature extraction) is stochastic and will sample from different probability distributions relative to the visible or hidden units specified. 
+
+See [Practical Guide to RBMs](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf) for a list of all of the different probability distributions.
 
 ##Loss Function
 
 Loss functions for each neural network layer can either be used in pretraining (to learn better weights) or in classification (on the output layer) for achieving some result. (I do the classification above in the override part)
 
-The loss function you specify is going to be relative to your objective. For pretraining, it is good to leave it at reconstruction entropy. For classification, use multiclass cross entropy.
+Your net's purpose will determine the loss funtion you use. For pretraining, choose reconstruction entropy. For classification, use multiclass cross entropy.
