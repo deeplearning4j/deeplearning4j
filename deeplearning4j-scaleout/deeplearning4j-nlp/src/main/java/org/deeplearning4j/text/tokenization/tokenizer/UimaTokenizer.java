@@ -24,7 +24,7 @@ public class UimaTokenizer implements Tokenizer {
     private int index;
     private static Logger log = LoggerFactory.getLogger(UimaTokenizer.class);
     private boolean checkForLabel;
-
+    private TokenPreProcess preProcess;
 
 
     public UimaTokenizer(String tokens,UimaResource resource,boolean checkForLabel) {
@@ -80,6 +80,8 @@ public class UimaTokenizer implements Tokenizer {
     public String nextToken() {
         String ret = tokens.get(index);
         index++;
+        if(preProcess != null)
+            ret = preProcess.preProcess(ret);
         return ret;
     }
 
@@ -94,8 +96,7 @@ public class UimaTokenizer implements Tokenizer {
 
 	@Override
 	public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
-		// TODO Auto-generated method stub
-		
+       this.preProcess = tokenPreProcessor;
 	}
 
 
