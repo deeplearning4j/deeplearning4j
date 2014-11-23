@@ -6,18 +6,19 @@ layout: default
 
 Contents
 
-* <a href="#next">Quickstart</a>
+* <a href="#quickstart">Quickstart</a>
 * <a href="#all">Deeplearning4j install (All OS)</a>
     * <a href="#linux">Linux</a>
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
 * <a href="#source">Working With Source</a>
 * <a href="#eclipse">Eclipse</a>
+* <a href="#next">Next Steps</a>
 * <a href="#trouble">Troubleshooting</a>
 
-### <a name="next">Quickstart, MNIST and Running Examples</a>
+### <a name="quickstart">Quickstart</a>
 
-Try running a few examples with our [Quickstart](../quickstart.html), and then take a look at the [MNIST tutorial](../mnist-tutorial.html). If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html). 
+Our [Quickstart](../quickstart.html) shows you how to run examples easily. 
 
 ### <a name="all">All Operating Systems</a>
 
@@ -91,6 +92,10 @@ After running a git clone, enter this command
       mvn eclipse:eclipse 
   
 which will import the source and set everything up. 
+
+### <a name="next">Next Steps: MNIST and Running Examples</a>
+
+Then take a look at the [MNIST tutorial](../mnist-tutorial.html). If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html). 
 
 ### <a name="trouble">Troubleshooting</a>
 
