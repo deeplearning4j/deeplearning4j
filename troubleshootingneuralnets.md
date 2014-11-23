@@ -27,7 +27,7 @@ The data transforms that you'll perform are relative to the problem you're solvi
 	    .dist(Distributions.normal(gen, 1e-2))
 	    .activationFunction(Activations.tanh())
 	    .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-	    .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+	    .hiddenUnit(RBM.HiddenUnit.RECTIFIED).constrainGradient
 	    .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
 	    .optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT)
 	    .rng(gen)
@@ -82,3 +82,16 @@ See Geoff Hinton's definitive work, [A Practical Guide to Training Restricted Bo
 Loss functions for each neural network layer can either be used in pretraining, to learn better weights, or in classification (on the output layer) for achieving some result. (In the example above, classification happens in the override section.)
 
 Your net's purpose will determine the loss funtion you use. For pretraining, choose reconstruction entropy. For classification, use multiclass cross entropy.
+
+##Gradient Constraining
+
+When training a neural network, it can sometimes be in your interest to constrain the gradient to unit norm. This will prevent overfitting and has a very similar effect to regularization. If your neural network isn't working, this can help. However, over penalizing can also prevent learning from happening. I would advise enabling this when the magnitude of your gradient is large (this can be seen if you add render(n) to your neural network configuration)
+or the neural network at the beginning (due to high weights among other things) has near all white activiations (the grey/white/black plot you see pop up after the histograms).
+
+You can enable this by adding:
+ 
+      .constrainGradientToUnitNorm(true)
+
+
+to your configuration.
+
