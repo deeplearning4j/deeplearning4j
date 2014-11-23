@@ -71,11 +71,9 @@ If you're using IntelliJ as your IDE, this should work already.
       git clone https://github.com/SkymindIO/nd4j
       git clone https://github.com/SkymindIO/deeplearning4j
 
-### <a name="next">Next Steps: Running Examples</a>
+### <a name="next">Quickstart, MNIST and Running Examples</a>
 
-Follow our [**MNIST tutorial**](../mnist-tutorial.html) and try [running a few examples with our Quickstart](../quickstart.html). 
-
-If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html). 
+Try [running a few examples with our Quickstart](../quickstart.html), and then take a look at our [**MNIST tutorial**](../mnist-tutorial.html). If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html). 
 
 ###<a name="source">Working With Source</a>
 
