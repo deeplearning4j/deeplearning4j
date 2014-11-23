@@ -9,12 +9,8 @@ See [Deeplearning4j.org](http://deeplearning4j.org/) for applications, tutorials
 
 Download a release
 ===========================
+See our downloads page: http://deeplearning4j.org/downloads
 
-Normal development distribution:
-https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-distribution/0.0.3.2-SNAPSHOT/
-
-Examples distribution:
-https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/
 
 Feature set summary
 ====================
