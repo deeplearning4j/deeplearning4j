@@ -18,7 +18,7 @@ Contents
 
 ### <a name="quickstart">Quickstart</a>
 
-Our [Quickstart](../quickstart.html) shows you how to run examples easily. 
+Our [Quickstart](../quickstart.html) shows you how to run your first examples. 
 
 ### <a name="all">Install: All OS</a>
 
