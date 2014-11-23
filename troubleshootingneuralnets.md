@@ -16,7 +16,7 @@ Below are some baseline steps you should take when tuning your network for train
 What distribution is your data? Are you scaling it properly? In deeplearning4j, there are a few different scaling/normalization 
 techniques to be aware of.
 
-```java
+```
 DataSet d = ...;
 //zero mean and unit variance
 d.normalizeZeroMeanAndUnitVariance();
@@ -32,7 +32,7 @@ The data transforms you should be doing are relative to the problem you're solvi
 Let's consider a configuration now:
 
 
-```java
+```
    List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
                 .iterations(1)
                 .weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen, 1e-2))
