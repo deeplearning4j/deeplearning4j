@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-#Troubleshooting Neural Nets as They Train
+#Troubleshooting Neural Net Training
 
 Neural networks are notoriously difficult to tune. When training with any neural net framework, you want to be able to understand how to use it. Below are some baseline steps you should take when tuning your network to train:
 
