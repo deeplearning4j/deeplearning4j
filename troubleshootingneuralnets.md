@@ -43,9 +43,9 @@ The data transforms that you'll perform are relative to the problem you're solvi
               }
             }
         }).build();
-
-  	DBN d = new DBN.Builder().layerWiseConfiguration(conf)
-  	 .hiddenLayerSizes(new int[]{3}).build();
+        
+        DBN d = new DBN.Builder().layerWiseConfiguration(conf)
+        .hiddenLayerSizes(new int[]{3}).build();
 
 There's a lot going on here -- I'll cover each of the facets of the configuration and how it relates to troubleshooting.
 
