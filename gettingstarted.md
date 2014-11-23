@@ -11,6 +11,8 @@ Contents
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
     * <a href="#next">Running Examples</a>
+    * <a href="#source">Working With Source</a>
+    * <a href="#eclipse">Eclipse</a>
     * <a href="#trouble">Troubleshooting</a>
 
 ### <a name="all">All Operating Systems</a>
@@ -21,9 +23,9 @@ Contents
 
 If you aren't familiar with ND4J, please start [here](http://nd4j.org/getstarted.html).
 
-You can use Deeplearning4j either via Maven (see the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for the dependencies) or with our [downloads](http://deeplearning4j.org/download.html).
+You can install Deeplearning4j via [Maven](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) (see the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for dependencies). Maven is a build automation tool used for Java projects. Alternatively, you can install DL4J based on our [downloads](http://deeplearning4j.org/download.html).
 
-You can then manually import the jar files into [Eclipse](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse) or [Intellij](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project), [Netbeans](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/).
+If you prefer the downloads over Maven, you must then manually import the jar files into [Eclipse](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse) or [Intellij](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project), [Netbeans](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/).
 
 ### <a name="linux">Linux</a>
 
@@ -53,12 +55,9 @@ If you're using IntelliJ as your IDE, this should work already.
 
 ### <a name="osx">OSX</a>
 
-* Install [Github](https://mac.github.com/).
 * Jblas is already installed on OSX.  
 
 ### <a name="windows">Windows</a>
-
-* Install [Git](https://windows.github.com/). Click on the Git Shell alias. Within that shell, enter the commands at the top of this page (under "all OS") to git clone the code repositories of Deeplearning4j and ND4J.
 
 * Install [Anaconda](http://docs.continuum.io/anaconda/install.html#windows-install). If your system doesn't like the default 64-bit install, try the 32-bit offered on the same download page. (Deeplearning4j depends on Anaconda to use the graphics generator matplotlib.) 
 
@@ -67,25 +66,32 @@ If you're using IntelliJ as your IDE, this should work already.
 * Instead, you will need to install [MinGW 32 bits](http://www.mingw.org/) (the download button is on the upper right) and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). 
 * Lapack offers the alternative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). 
 
+* *For developers of DL4J only:* Install [Git](https://windows.github.com/). Click on the Git Shell alias. Within that shell, enter the commands below to git clone the code repositories of ND4J and Deeplearning4j. 
+* 
+      git clone https://github.com/SkymindIO/nd4j
+      git clone https://github.com/SkymindIO/deeplearning4j
+
 ### <a name="next">Next Steps: Running Examples</a>
 
 Follow our [**MNIST tutorial**](../mnist-tutorial.html) and try [running a few examples with our Quickstart](../quickstart.html). 
 
 If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html). 
 
-For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deeplearning4j/) or access the core through [Maven](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), a build automation tool used for Java projects.
+###<a name="source">Working With Source</a>
 
-###Working with the source
+For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deeplearning4j/).
 
-If you want to develop for Deeplearning4j, git clone the software and use Maven as follows:
+If you want to develop for Deeplearning4j, install Git. Then git clone the repository and run this command for Maven:
 
       mvn clean install -DskipTests -Dmaven.javadoc.skip=true
-      
-Eclipse:
 
-After git clone:
+###<a name="eclipse">Eclipse</a> 
 
-Run mvn eclipse:eclipse to import the source and set everything up.
+After running a git clone, run
+
+      mvn eclipse:eclipse 
+  
+which will import the source and set everything up. 
 
 ### <a name="trouble">Troubleshooting</a>
 
