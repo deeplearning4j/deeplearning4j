@@ -36,11 +36,11 @@ The data transforms that you'll perform are relative to the problem you're solvi
 	    .override(new NeuralNetConfiguration.ConfOverride() {
             @Override
             public void override(int i, NeuralNetConfiguration.Builder builder) {
-                if (i == 1) {
-                    builder.weightInit(WeightInit.ZERO);
-                    builder.activationFunction(Activations.softMaxRows());
-                    builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-                }
+            if (i == 1) {
+                builder.weightInit(WeightInit.ZERO);
+                builder.activationFunction(Activations.softMaxRows());
+                builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+              }
             }
         }).build();
 
