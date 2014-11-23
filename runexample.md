@@ -7,7 +7,6 @@ layout: default
 
 Java involves deep and complex file systems, which you'll need to work with to run examples. 
 
-		git clone https://github.com/SkymindIO/nd4j
 		git clone https://github.com/SkymindIO/dl4j-examples
 
 Once you've cloned the repos, you'll need to load the dl4j-examples into IntelliJ as a project. With that, you can run any example it contains. The MNIST example is where most DL4J users start (to learn more about MNIST, go [here](../mnist-tutorial.html)).
