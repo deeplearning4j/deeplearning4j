@@ -59,9 +59,6 @@ Let's consider a configuration now:
 
         DBN d = new DBN.Builder().layerWiseConfiguration(conf)
                 .hiddenLayerSizes(new int[]{3}).build();
-
-
-
 ```
 
 There's a lot going on here. I will cover each of the facets of the conf and how it relates to trouble shooting:
