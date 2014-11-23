@@ -25,7 +25,7 @@ public class Floor extends BaseElementWiseOp {
             IComplexNumber c = (IComplexNumber) value;
             return Nd4j.scalar(ComplexUtil.floor(c));
         }
-        if(from.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(from.data().dataType() == (DataBuffer.FLOAT)) {
             float val = (float) value;
             return (float) Math.floor(val);
         }

@@ -258,7 +258,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public INDArray gesv(INDArray a, int[] ipiv, INDArray b) {
         //  public static native int sgesv(int n, int nrhs, float[] a, int aIdx, int lda, int[] ipiv, int ipivIdx, float[] b, int bIdx, int ldb);
         intW work = new intW(0);
-        if(a.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(a.data().dataType() == DataBuffer.FLOAT) {
             LAPACK.getInstance().sgesv(
                     a.rows(),
                     b.columns(),
@@ -305,7 +305,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public INDArray sysv(char uplo, INDArray a, int[] ipiv, INDArray b) {
         org.netlib.util.intW info = new intW(0);
         int lwork = 0;
-        if(a.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(a.data().dataType() == DataBuffer.FLOAT) {
             float[] work = new float[1];
 
             LAPACK.getInstance().ssysv(
@@ -357,7 +357,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public int syev(char jobz, char uplo, INDArray a, INDArray w) {
         intW info = new intW(0);
         int lWork = a.rows() * 5;
-        if(a.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(a.data().dataType() == DataBuffer.FLOAT) {
             float[] work2 = new float[lWork];
             LAPACK.getInstance().ssyev(
                     String.valueOf(jobz),
@@ -419,7 +419,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int lwork = 0;
         int[] iwork = new int[1];
         int liwork = 0;
-        if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(A.data().dataType() == DataBuffer.FLOAT) {
             float[] work = new float[1];
 
             LAPACK.getInstance().ssyevd(
@@ -570,7 +570,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int n = A.rows();
         int nrhs = B.columns();
         org.netlib.util.intW info = new intW(0);
-        if(A.data().dataType().equals(DataBuffer.FLOAT))
+        if(A.data().dataType() == DataBuffer.FLOAT)
             LAPACK.getInstance().sposv(
                     String.valueOf(uplo),
                     n,
@@ -606,7 +606,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         intW info = new intW(0);
         int lwork = A.rows() * 5;
 
-        if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(A.data().dataType() == DataBuffer.FLOAT) {
 
             float[] work = new float[A.rows() * 5];
 
@@ -677,7 +677,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int liwork = getLiWork(A.rows(),jobz);
 
         int[] iwork = new int[Math.max(1,liwork)];
-        if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(A.data().dataType() == DataBuffer.FLOAT) {
             float[] work = new float[lwork];
 
             LAPACK.getInstance().ssygvd(
@@ -787,7 +787,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int[] iwork = new int[3 * minmn * nlvl + 11 * minmn];
 
 
-        if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(A.data().dataType() == DataBuffer.FLOAT) {
             float[] s = new float[minmn];
             float[] work = new float[1];
 
@@ -867,7 +867,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
         int lwork = 0;
         intW status = new intW(0);
-        if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(A.data().dataType() == DataBuffer.FLOAT) {
             float[] work = new float[1];
 
             LAPACK.getInstance().sgeqrf(
@@ -916,7 +916,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public void ormqr(char side, char trans, INDArray A, INDArray tau, INDArray C) {
         int k = tau.length();
         intW status = new intW(0);
-        if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(A.data().dataType() == DataBuffer.FLOAT) {
             LAPACK.getInstance().sormqr(
                     String.valueOf(side),
                     String.valueOf(trans),

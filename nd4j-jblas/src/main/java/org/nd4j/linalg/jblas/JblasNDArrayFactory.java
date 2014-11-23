@@ -1,7 +1,6 @@
 package org.nd4j.linalg.jblas;
 
 
-import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -24,7 +23,7 @@ import java.util.List;
  */
 public class JblasNDArrayFactory extends BaseNDArrayFactory {
 
-    public JblasNDArrayFactory(String dtype,Character order) {
+    public JblasNDArrayFactory(int dtype,Character order) {
         super(dtype,order);
     }
 

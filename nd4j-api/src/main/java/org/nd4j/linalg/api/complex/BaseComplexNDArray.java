@@ -888,6 +888,35 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     protected IComplexNDArray doRowWise(INDArray rowVector, char operation) {
+
+        if(columns() == 1 && rowVector.isScalar()) {
+            if(rowVector instanceof IComplexNDArray) {
+                IComplexNDArray rowVectorComplex = (IComplexNDArray) rowVector;
+                switch(operation) {
+                    case 'a' : addi(rowVectorComplex.getComplex(0)); break;
+                    case 's' : subi(rowVectorComplex.getComplex(0)); break;
+                    case 'm' : muli(rowVectorComplex.getComplex(0)); break;
+                    case 'd' : divi(rowVectorComplex.getComplex(0)); break;
+                    case 'h' : rsubi(rowVectorComplex.getComplex(0)); break;
+                    case 't' : rdivi(rowVectorComplex.getComplex(0));  break;
+                }
+
+            }
+            else {
+                switch(operation) {
+                    case 'a' : addi(rowVector.getDouble(0)); break;
+                    case 's' : subi(rowVector.getDouble(0)); break;
+                    case 'm' : muli(rowVector.getDouble(0)); break;
+                    case 'd' : divi(rowVector.getDouble(0)); break;
+                    case 'h' : rsubi(rowVector.getDouble(0)); break;
+                    case 't' : rdivi(rowVector.getDouble(0));  break;
+                }
+
+            }
+
+            return this;
+        }
+
         assertRowVector(rowVector);
         for(int i = 0; i < rows(); i++) {
             switch(operation) {
@@ -907,7 +936,35 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     protected IComplexNDArray doColumnWise(INDArray columnVector, char operation) {
-        asserColumnVector(columnVector);
+        if(rows() == 1 && columnVector.isScalar()) {
+            if(columnVector instanceof IComplexNDArray) {
+                IComplexNDArray columnVectorComplex = (IComplexNDArray) columnVector;
+                switch(operation) {
+                    case 'a' : addi(columnVectorComplex.getComplex(0)); break;
+                    case 's' : subi(columnVectorComplex.getComplex(0)); break;
+                    case 'm' : muli(columnVectorComplex.getComplex(0)); break;
+                    case 'd' : divi(columnVectorComplex.getComplex(0)); break;
+                    case 'h' : rsubi(columnVectorComplex.getComplex(0)); break;
+                    case 't' : rdivi(columnVectorComplex.getComplex(0));  break;
+                }
+
+            }
+            else {
+                switch(operation) {
+                    case 'a' : addi(columnVector.getDouble(0)); break;
+                    case 's' : subi(columnVector.getDouble(0)); break;
+                    case 'm' : muli(columnVector.getDouble(0)); break;
+                    case 'd' : divi(columnVector.getDouble(0)); break;
+                    case 'h' : rsubi(columnVector.getDouble(0)); break;
+                    case 't' : rdivi(columnVector.getDouble(0));  break;
+                }
+
+            }
+
+            return this;
+        }
+
+        assertColumnVector(columnVector);
         for(int i = 0; i < columns(); i++) {
             IComplexNDArray slice = slice(i,0);
             switch(operation) {
@@ -3141,12 +3198,12 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             IComplexNDArray temp = Nd4j.createComplex(resultArray.shape(), ArrayUtil.calcStridesFortran(resultArray.shape(),2));
 
             if (otherArray.columns() == 1) {
-                if(data.dataType().equals(DataBuffer.DOUBLE))
+                if(data.dataType() == (DataBuffer.DOUBLE))
                     Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), temp);
                 else
                     Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asFloat(),this,otherArray,Nd4j.ZERO.asFloat(),temp);
             } else {
-                if(data.dataType().equals(DataBuffer.DOUBLE))
+                if(data.dataType() == (DataBuffer.DOUBLE))
                     Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asDouble(), this, otherArray,Nd4j.ZERO.asDouble(), temp);
                 else
                     Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asFloat(),this,otherArray,Nd4j.ZERO.asFloat(),temp);
@@ -3158,12 +3215,12 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
         } else {
             if (otherArray.columns() == 1)
-                if(data.dataType().equals(DataBuffer.DOUBLE))
+                if(data.dataType() == (DataBuffer.DOUBLE))
                     Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), resultArray);
                 else
                     Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asFloat(),this,otherArray,Nd4j.ZERO.asFloat(),resultArray);
             else
-            if(data.dataType().equals(DataBuffer.FLOAT))
+            if(data.dataType() == (DataBuffer.FLOAT))
                 Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), resultArray);
             else
                 Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asFloat(),this,otherArray,Nd4j.ZERO.asFloat(),resultArray);
@@ -3287,7 +3344,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         if (result == this)
             Nd4j.getBlasWrapper().axpy(Nd4j.NEG_UNIT, cOther, cResult);
         else if (result == other) {
-            if(data.dataType().equals(DataBuffer.DOUBLE)) {
+            if(data.dataType() == (DataBuffer.DOUBLE)) {
                 Nd4j.getBlasWrapper().scal(Nd4j.NEG_UNIT.asDouble(), cResult);
                 Nd4j.getBlasWrapper().axpy(Nd4j.UNIT, this, cResult);
             }

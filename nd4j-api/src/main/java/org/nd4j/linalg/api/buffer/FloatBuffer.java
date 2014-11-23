@@ -39,7 +39,7 @@ public class FloatBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public String dataType() {
+    public int dataType() {
         return DataBuffer.FLOAT;
     }
 

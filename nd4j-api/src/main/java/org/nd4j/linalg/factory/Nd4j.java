@@ -38,7 +38,7 @@ public class Nd4j {
     public final static String COMPLEX_CLASS_PROP = "complex.class";
     public final static String DTYPE = "dtype";
     public final static String BLAS_OPS = "blas.ops";
-    public static String dtype;
+    public static int dtype = DataBuffer.FLOAT;
     public static char ORDER = 'c';
     public final static String ORDER_KEY = "ndarray.order";
     public final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
@@ -57,11 +57,12 @@ public class Nd4j {
         try {
             ClassPathResource c = new ClassPathResource(LINALG_PROPS);
             props.load(c.getInputStream());
-            dtype = System.getProperty(DTYPE,props.get(DTYPE).toString());
+            String otherDtype =  System.getProperty(DTYPE,props.get(DTYPE).toString());
+            dtype = otherDtype.equals("float") ? DataBuffer.FLOAT : DataBuffer.DOUBLE;
             ORDER = System.getProperty(ORDER_KEY,props.getProperty(ORDER_KEY,"c").toString()).charAt(0);
 
             ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(NDARRAY_FACTORY_CLASS,props.get(NDARRAY_FACTORY_CLASS).toString()));
-            Constructor c2 = ndArrayFactoryClazz.getConstructor(String.class,Character.class);
+            Constructor c2 = ndArrayFactoryClazz.getConstructor(int.class,Character.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype,ORDER);
             blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS,props.get(BLAS_OPS).toString()));
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
@@ -317,7 +318,7 @@ public class Nd4j {
      * @return the buffer to create
      */
     public static DataBuffer createBuffer(long length) {
-        if(dataType().equals(DataBuffer.FLOAT)) {
+        if(dataType() == DataBuffer.FLOAT) {
             return createBuffer(new float[(int) length]);
 
         }
@@ -355,7 +356,7 @@ public class Nd4j {
      * Returns the data type used for the runtime
      * @return the datatype used for the runtime
      */
-    public static String dataType() {
+    public static int dataType() {
         return dtype;
     }
 
@@ -805,11 +806,11 @@ public class Nd4j {
         for(int i = 0; i < arr.stride().length; i++)
             dataOutputStream.writeInt(arr.stride()[i]);
 
-        dataOutputStream.writeUTF(dataType());
+        dataOutputStream.writeUTF(dataType() == DataBuffer.FLOAT ? "float" : "double");
 
         dataOutputStream.writeUTF("real");
 
-        if(dataType().equals("double"))
+        if(dataType() == DataBuffer.DOUBLE)
             ArrayUtil.write(arr.data().asFloat(),dataOutputStream);
         else
             ArrayUtil.write(arr.data().asDouble(),dataOutputStream);
@@ -871,11 +872,11 @@ public class Nd4j {
             dataOutputStream.writeInt(arr.size(i));
         for(int i = 0; i < arr.stride().length; i++)
             dataOutputStream.writeInt(arr.stride()[i]);
-        dataOutputStream.writeUTF(dataType());
+        dataOutputStream.writeUTF(dataType() == DataBuffer.FLOAT ? "float" : "double");
 
         dataOutputStream.writeUTF("complex");
 
-        if(dataType().equals("double"))
+        if(dataType() == DataBuffer.DOUBLE)
             ArrayUtil.write(arr.data().asDouble(),dataOutputStream);
         else
             ArrayUtil.write(arr.data().asFloat(),dataOutputStream);

@@ -72,7 +72,7 @@ public interface NDArrayFactory  {
      * Sets the data type
      * @param dtype
      */
-    void setDType(String dtype);
+    void setDType(int dtype);
 
     /**
      * Returns the order for this ndarray for internal data storage
@@ -84,7 +84,7 @@ public interface NDArrayFactory  {
      * Returns the data type for this ndarray
      * @return the data type for this ndarray
      */
-    public String dtype();
+    public int dtype();
 
     /**
      * Creates a complex ndarray with the specified shape

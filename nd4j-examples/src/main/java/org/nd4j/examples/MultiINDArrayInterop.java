@@ -1,6 +1,7 @@
 package org.nd4j.examples;
 
 import jcuda.jcublas.JCublas;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.BlasWrapper;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -14,8 +15,8 @@ import org.nd4j.linalg.jcublas.JCublasWrapper;
  */
 public class MultiINDArrayInterop {
 
-    static NDArrayFactory jblas = new JblasNDArrayFactory("double",'f');
-    static NDArrayFactory jcublas = new JCublasNDArrayFactory("double",'f');
+    static NDArrayFactory jblas = new JblasNDArrayFactory(DataBuffer.DOUBLE,'f');
+    static NDArrayFactory jcublas = new JCublasNDArrayFactory(DataBuffer.DOUBLE,'f');
     static BlasWrapper wrapper = new org.nd4j.linalg.jblas.BlasWrapper();
     static  BlasWrapper jcublasWrapper = new JCublasWrapper();
 

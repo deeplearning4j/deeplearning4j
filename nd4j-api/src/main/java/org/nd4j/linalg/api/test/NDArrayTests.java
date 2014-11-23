@@ -569,7 +569,7 @@ public abstract class NDArrayTests {
     public void testOrdering() {
         //c ordering first
         Nd4j.factory().setOrder('c');
-        Nd4j.factory().setDType("float");
+        Nd4j.factory().setDType(DataBuffer.FLOAT);
 
         INDArray  data = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         assertEquals(2.0,(float) data.getScalar(0,1).element(),1e-1);
@@ -629,7 +629,7 @@ public abstract class NDArrayTests {
     public void testMmul() {
 
         Nd4j.factory().setOrder('c');
-        Nd4j.dtype = "double";
+        Nd4j.dtype = DataBuffer.DOUBLE;
         DataBuffer data = Nd4j.linspace(1, 10, 10).data();
         INDArray n = Nd4j.create(data, new int[]{10});
         INDArray transposed = n.transpose();

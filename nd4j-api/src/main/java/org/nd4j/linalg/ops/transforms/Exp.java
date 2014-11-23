@@ -29,7 +29,7 @@ public class Exp extends BaseElementWiseOp {
             return  ComplexUtil.exp(c);
         }
         else {
-            if(from.data().dataType().equals(DataBuffer.FLOAT)) {
+            if(from.data().dataType() == (DataBuffer.FLOAT)) {
                 double val = (double) value;
                 return FastMath.exp(val);
             }

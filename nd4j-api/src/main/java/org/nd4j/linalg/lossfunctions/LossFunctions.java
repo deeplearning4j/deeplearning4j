@@ -119,10 +119,7 @@ public class LossFunctions {
         INDArray sigV = activationFunction.apply(preSigV);
         assert !Nd4j.hasInvalidNumber(sigH);
 
-        INDArray inner =
-                input.mul(log(sigV))
-                        .add(input.rsub(1)
-                                .mul(log(sigV.rsub(1))));
+        INDArray inner = input.mul(log(sigV)).addi(input.rsub(1).muli(log(sigV.rsub(1))));
 
 
         INDArray rows = inner.sum(1);

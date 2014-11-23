@@ -18,11 +18,11 @@ public class DataTypeValidation {
     }
 
     public static void assertDouble(INDArray d) {
-        if(!d.data().dataType().equals(DataBuffer.DOUBLE))
+        if(d.data().dataType() != DataBuffer.DOUBLE)
             throw new IllegalStateException("Given ndarray does not have data type double");
     }
     public static void assertFloat(INDArray d2) {
-        if(!d2.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(d2.data().dataType() != DataBuffer.FLOAT) {
             throw new IllegalStateException("Given ndarray does not have data type float");
         }
     }
@@ -30,9 +30,9 @@ public class DataTypeValidation {
     public static void assertSameDataType(INDArray...indArrays) {
         if(indArrays == null || indArrays.length < 2)
             return;
-        String type = indArrays[0].data().dataType();
+        int type = indArrays[0].data().dataType();
         for(int i = 1; i < indArrays.length; i++) {
-            assert indArrays[i].data().dataType().equals(type);
+            assert indArrays[i].data().dataType() == (type);
         }
     }
 

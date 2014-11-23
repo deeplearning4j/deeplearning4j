@@ -14,7 +14,7 @@ import java.util.UUID;
 public class IntBuffer extends BaseDataBuffer {
 
     private int[] buffer;
-    public final static String DATA_TYPE = "int";
+    public final static int DATA_TYPE = 2;
 
 
     public IntBuffer(int[] buffer) {
@@ -32,7 +32,7 @@ public class IntBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public String dataType() {
+    public int dataType() {
         return DATA_TYPE;
     }
 

@@ -20,7 +20,7 @@ import java.util.List;
  */
 public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
-    public JCublasNDArrayFactory(String dtype,Character order) {
+    public JCublasNDArrayFactory(int dtype,Character order) {
         super(dtype,order);
     }
 

@@ -179,7 +179,7 @@ public class DimensionFunctions {
             public INDArray apply(INDArray input) {
                 double s = 0.0;
                 for (int i = 0; i < input.length(); i++) {
-                    if(input.data().dataType().equals(DataBuffer.FLOAT))
+                    if(input.data().dataType() == (DataBuffer.FLOAT))
                         s += input.getDouble(i);
                     else
                         s+= input.getDouble(i);

@@ -21,7 +21,7 @@ import java.util.List;
  */
 public class NetlibBlasNDArrayFactory extends BaseNDArrayFactory {
 
-    public NetlibBlasNDArrayFactory(String dtype, Character order) {
+    public NetlibBlasNDArrayFactory(int dtype, Character order) {
         super(dtype,order);
     }
 

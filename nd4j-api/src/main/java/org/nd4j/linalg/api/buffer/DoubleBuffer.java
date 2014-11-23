@@ -46,7 +46,7 @@ public class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public String dataType() {
+    public int dataType() {
         return DataBuffer.DOUBLE;
     }
 

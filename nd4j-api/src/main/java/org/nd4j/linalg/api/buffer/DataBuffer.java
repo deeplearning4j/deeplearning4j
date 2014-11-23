@@ -10,8 +10,8 @@ import java.io.Serializable;
 public interface DataBuffer extends Serializable {
 
 
-    public final static String DOUBLE = "double";
-    public final static String FLOAT = "float";
+    public final static int DOUBLE = 0;
+    public final static int FLOAT = 1;
 
     /**
      * Raw byte array storage
@@ -23,7 +23,7 @@ public interface DataBuffer extends Serializable {
      * The data type of the buffer
      * @return the data type of the buffer
      */
-    public String dataType();
+    public int dataType();
 
     /**
      * Return the buffer as a float array

@@ -52,7 +52,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
             double val = f.doubleValue();
             if(Double.isNaN(val) || Double.isInfinite(val))
                 val = Nd4j.EPS_THRESHOLD;
-            if(origin.data().dataType().equals(DataBuffer.FLOAT))
+            if(origin.data().dataType() == (DataBuffer.FLOAT))
                 origin.putScalar(i, val);
             else
                 origin.putScalar(i, val);
@@ -82,7 +82,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
             double val = f.doubleValue();
             if(Double.isNaN(val) || Double.isInfinite(val))
                 val = Nd4j.EPS_THRESHOLD;
-            if(origin.data().dataType().equals(DataBuffer.FLOAT))
+            if(origin.data().dataType() == (DataBuffer.FLOAT))
                 origin.putScalar(i,val);
             else
                 origin.putScalar(i,val);

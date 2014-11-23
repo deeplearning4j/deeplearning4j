@@ -181,7 +181,7 @@ public class SimpleJCublas {
 
 
     private static int size(INDArray arr) {
-        if(arr.data().dataType().equals(DataBuffer.FLOAT))
+        if(arr.data().dataType() == DataBuffer.FLOAT)
             return Sizeof.FLOAT;
         return Sizeof.DOUBLE;
     }
@@ -237,7 +237,7 @@ public class SimpleJCublas {
         /* Copy from data to pointer at majorStride() (you want to stride through the data properly) incrementing by 1 for the pointer on the GPU.
         * This allows us to copy only what we need. */
         Pointer toData =null;
-        if(ndarray.data().dataType().equals(DataBuffer.FLOAT))
+        if(ndarray.data().dataType() == DataBuffer.FLOAT)
             toData = Pointer.to(ndarray.data().asFloat()).withByteOffset(ndarray.offset() * size(ndarray));
         else
             toData =  Pointer.to(ndarray.data().asDouble()).withByteOffset(ndarray.offset() * size(ndarray));
@@ -306,7 +306,7 @@ public class SimpleJCublas {
         //allocate memory for the pointer
 
         Pointer toData =null;
-        if(ndarray.data().dataType().equals(DataBuffer.FLOAT))
+        if(ndarray.data().dataType() == DataBuffer.FLOAT)
             toData = Pointer.to(ndarray.data().asFloat()).withByteOffset(ndarray.offset() * size(ndarray));
         else
             toData =  Pointer.to(ndarray.data().asDouble()).withByteOffset(ndarray.offset() * size(ndarray));
@@ -734,7 +734,7 @@ public class SimpleJCublas {
 
         JCublasComplexNDArray cA = (JCublasComplexNDArray) A;
         Pointer cAPointer = alloc(cA);
-        if(A.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(A.data().dataType() == DataBuffer.FLOAT) {
             float s = JCublas.cublasSnrm2(A.length(), cAPointer, 2);
             free(cAPointer);
             return s;
@@ -762,7 +762,7 @@ public class SimpleJCublas {
         Pointer xCPointer = alloc(xC);
         Pointer yCPointer = alloc(yC);
 
-        if(xC.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(xC.data().dataType() == DataBuffer.FLOAT) {
             JCublas.cublasScopy(
                     x.length(),
                     xCPointer,
@@ -802,7 +802,7 @@ public class SimpleJCublas {
 
         JCublasComplexNDArray xC = (JCublasComplexNDArray) x;
         Pointer xCPointer = alloc(xC);
-        if(xC.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(xC.data().dataType() == DataBuffer.FLOAT) {
             int max = JCublas.cublasIsamax(x.length(), xCPointer, 1);
             free(xCPointer);
             return max;
@@ -850,7 +850,7 @@ public class SimpleJCublas {
         Pointer yCPointer = alloc(yC);
 
 
-        if(xC.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(xC.data().dataType() == DataBuffer.FLOAT) {
             JCublas.cublasSswap(
                     xC.length(),
                     xCPointer,
@@ -885,7 +885,7 @@ public class SimpleJCublas {
         JCublas.cublasInit();
         JCublasNDArray xC = (JCublasNDArray) x;
         Pointer xCPointer = alloc(xC);
-        if(x.data().dataType().equals(DataBuffer.FLOAT)) {
+        if(x.data().dataType() == DataBuffer.FLOAT) {
             float sum = JCublas.cublasSasum(x.length(), xCPointer,1);
             free(xCPointer);
             return sum;
@@ -1115,7 +1115,7 @@ public class SimpleJCublas {
 
         Pointer xCPointer = alloc(xC);
         Pointer yCPointer = alloc(yC);
-        if(x.data().dataType().equals(DataBuffer.DOUBLE)) {
+        if(x.data().dataType() == DataBuffer.DOUBLE) {
             JCublas.cublasDcopy(x.length(),
                     xCPointer,
                     1,
@@ -1159,7 +1159,7 @@ public class SimpleJCublas {
         Pointer xCPointer = alloc(xC);
         Pointer yCPointer = alloc(yC);
 
-        if(x.data().dataType().endsWith(DataBuffer.FLOAT)) {
+        if(x.data().dataType() == (DataBuffer.FLOAT)) {
             float ret =  JCublas.cublasSdot(
                     x.length(),
                     xCPointer,
@@ -1348,7 +1348,7 @@ public class SimpleJCublas {
         Pointer xCPointer = alloc(xC);
         Pointer yCPointer = alloc(yC);
         IComplexDouble ret = null;
-        if(x.data().dataType().equals(DataBuffer.DOUBLE)) {
+        if(x.data().dataType() == DataBuffer.DOUBLE) {
             jcuda.cuDoubleComplex dott = JCublas.cublasZdotu(x.length(), xCPointer,1, yCPointer, 1);
             ret = Nd4j.createDouble(dott.x, dott.y);
         }
