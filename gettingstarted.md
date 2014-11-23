@@ -21,7 +21,9 @@ DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/d
 
 ### ND4J
 
-If you aren't familiar with ND4J, please start [here](http://nd4j.org/getstarted.html).
+If you aren't familiar with ND4J, the linear-algebra kernel that powers DL4J, please start [here](http://nd4j.org/getstarted.html).
+
+### Maven
 
 You can install [Deeplearning4j via Maven](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) (see the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for dependencies). [Maven](https://maven.apache.org/download.cgi) is a build automation tool used for Java projects. Alternatively, you can install DL4J based on our [downloads](http://deeplearning4j.org/download.html).
 
