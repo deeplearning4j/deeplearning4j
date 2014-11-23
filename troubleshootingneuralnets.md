@@ -72,7 +72,7 @@ If you use tanh, you can get a bounded range of -1,1 - and with a combination of
 
 If you are using a DBN, pay attention here. An RBM (the component of the DBN used for feature extraction) is stochastic and will sample from different probability distributions relative to the visible or hidden units specified. 
 
-See [Practical Guide to RBMs](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf) for a list of all of the different probability distributions.
+See Geoff Hinton's definitive work, [A Practical Guide to Training Restricted Boltzmann Machines](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf), for a list of all of the different probability distributions.
 
 ##Loss Function
 
