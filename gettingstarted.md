@@ -20,11 +20,11 @@ Contents
 
 Our [Quickstart](../quickstart.html) shows you how to run your first examples. 
 
-### <a name="all">Install: All OS</a>
+### <a name="all">Full Install: All OS</a>
 
 DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
 
-### ND4J
+### ND4J: Numpy for the JVM
 
 ND4J, the linear-algebra kernel that powers DL4J, lives [here](http://nd4j.org/getstarted.html).
 
