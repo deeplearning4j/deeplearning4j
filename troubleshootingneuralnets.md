@@ -76,6 +76,6 @@ See Geoff Hinton's definitive work, [A Practical Guide to Training Restricted Bo
 
 ##Loss Function
 
-Loss functions for each neural network layer can either be used in pretraining (to learn better weights) or in classification (on the output layer) for achieving some result. (I do the classification above in the override part)
+Loss functions for each neural network layer can either be used in pretraining, to learn better weights, or in classification (on the output layer) for achieving some result. (In the example above, classification happens in the override section.)
 
 Your net's purpose will determine the loss funtion you use. For pretraining, choose reconstruction entropy. For classification, use multiclass cross entropy.
