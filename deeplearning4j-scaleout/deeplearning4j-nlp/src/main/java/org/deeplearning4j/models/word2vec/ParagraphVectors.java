@@ -24,6 +24,14 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ParagraphVectors extends Word2Vec {
 
 
+    private boolean trainLabels = true;
+    private boolean trainWords = true;
+
+    public void dm(List<VocabWord> sentence,boolean trainLabels,boolean trainWords) {
+
+    }
+
+
     @Override
     public void fit() throws IOException {
         boolean loaded = buildVocab();
@@ -144,7 +152,19 @@ public class ParagraphVectors extends Word2Vec {
 
     public static class Builder extends Word2Vec.Builder {
 
+       private boolean trainWords = true;
+       private boolean trainLabels = true;
 
+
+        public Builder trainWords(boolean trainWords) {
+            this.trainWords = trainWords;
+            return this;
+        }
+
+        public Builder trainLabels(boolean trainLabels) {
+            this.trainLabels = trainLabels;
+            return this;
+        }
 
         @Override
         public ParagraphVectors build() {
@@ -165,7 +185,8 @@ public class ParagraphVectors extends Word2Vec {
                 ret.useAdaGrad = useAdaGrad;
                 ret.minLearningRate = minLearningRate;
                 ret.sample = sampling;
-
+                ret.trainLabels = trainLabels;
+                ret.trainWords = trainWords;
 
                 try {
                     if (tokenizerFactory == null)
@@ -207,6 +228,8 @@ public class ParagraphVectors extends Word2Vec {
                 ret.saveVocab = saveVocab;
                 ret.batchSize = batchSize;
                 ret.sample = sampling;
+                ret.trainLabels = trainLabels;
+                ret.trainWords = trainWords;
 
                 try {
                     if (tokenizerFactory == null)
