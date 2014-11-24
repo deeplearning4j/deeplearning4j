@@ -45,40 +45,40 @@ import javax.annotation.Nullable;
 public class Word2Vec implements Persistable {
 
 
-    private static final long serialVersionUID = -2367495638286018038L;
+    protected static final long serialVersionUID = -2367495638286018038L;
 
-    private transient TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
-    private transient SentenceIterator sentenceIter;
-    private transient DocumentIterator docIter;
-    private transient VocabCache cache;
-    private int batchSize = 1000;
-    private int topNSize = 40;
-    private double sample = 0;
-    private long totalWords = 1;
-    private AtomicInteger rateOfChange = new AtomicInteger(0);
+    protected transient TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
+    protected transient SentenceIterator sentenceIter;
+    protected transient DocumentIterator docIter;
+    protected transient VocabCache cache;
+    protected int batchSize = 1000;
+    protected int topNSize = 40;
+    protected double sample = 0;
+    protected long totalWords = 1;
+    protected AtomicInteger rateOfChange = new AtomicInteger(0);
     //learning rate
-    private AtomicDouble alpha = new AtomicDouble(0.025);
+    protected AtomicDouble alpha = new AtomicDouble(0.025);
     //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
-    private int minWordFrequency = 5;
+    protected int minWordFrequency = 5;
     //context to use for gathering word frequencies
-    private int window = 5;
+    protected int window = 5;
     //number of neurons per layer
-    private int layerSize = 50;
-    private transient  RandomGenerator g;
-    private static Logger log = LoggerFactory.getLogger(Word2Vec.class);
-    private List<String> stopWords;
-    private boolean shouldReset = true;
+    protected int layerSize = 50;
+    protected transient  RandomGenerator g;
+    protected static Logger log = LoggerFactory.getLogger(Word2Vec.class);
+    protected List<String> stopWords;
+    protected boolean shouldReset = true;
     //number of iterations to run
-    private int numIterations = 1;
+    protected int numIterations = 1;
     public final static String UNK = "UNK";
-    private long seed = 123;
-    private boolean saveVocab = false;
-    private double minLearningRate = 0.01;
-    private TextVectorizer vectorizer;
-    private int learningRateDecayWords = 10000;
-    private boolean useAdaGrad = false;
-    private LinkedBlockingDeque<List<VocabWord>> jobQueue = new LinkedBlockingDeque<>(100000);
-    private AtomicLong timeLastUpdated = new AtomicLong(0);
+    protected long seed = 123;
+    protected boolean saveVocab = false;
+    protected double minLearningRate = 0.01;
+    protected TextVectorizer vectorizer;
+    protected int learningRateDecayWords = 10000;
+    protected boolean useAdaGrad = false;
+    protected LinkedBlockingDeque<List<VocabWord>> jobQueue = new LinkedBlockingDeque<>(100000);
+    protected AtomicLong timeLastUpdated = new AtomicLong(0);
 
     public Word2Vec() {}
 
@@ -562,7 +562,7 @@ public class Word2Vec implements Persistable {
 
 
 
-    private void addWords(List<VocabWord> sentence,AtomicLong nextRandom,List<VocabWord> currMiniBatch) {
+    protected void addWords(List<VocabWord> sentence,AtomicLong nextRandom,List<VocabWord> currMiniBatch) {
         List<VocabWord> add = new ArrayList<>();
         for (VocabWord word : sentence) {
             if(word == null)
@@ -718,7 +718,7 @@ public class Word2Vec implements Persistable {
 
 
     /* Builds the binary tree for the word relationships */
-    private void buildBinaryTree() {
+    protected void buildBinaryTree() {
         log.info("Constructing priority queue");
         Huffman huffman = new Huffman(cache.vocabWords());
         huffman.build();
@@ -731,7 +731,7 @@ public class Word2Vec implements Persistable {
 
 
     /* reinit weights */
-    private void resetWeights() {
+    protected void resetWeights() {
         cache.resetWeights();
     }
 
@@ -757,7 +757,7 @@ public class Word2Vec implements Persistable {
 
 
     @SuppressWarnings("unchecked")
-    private void readStopWords() {
+    protected void readStopWords() {
         if(this.stopWords != null)
             return;
         this.stopWords = StopWords.getStopWords();
@@ -860,25 +860,25 @@ public class Word2Vec implements Persistable {
 
 
     public static class Builder {
-        private int minWordFrequency = 1;
-        private int layerSize = 50;
-        private SentenceIterator iter;
-        private List<String> stopWords = StopWords.getStopWords();
-        private int window = 5;
-        private TokenizerFactory tokenizerFactory;
-        private VocabCache vocabCache;
-        private DocumentIterator docIter;
-        private double lr = 2.5e-1;
-        private int iterations = 1;
-        private long seed = 123;
-        private boolean saveVocab = false;
-        private int batchSize = 1000;
-        private int learningRateDecayWords = 10000;
-        private boolean useAdaGrad = false;
-        private TextVectorizer textVectorizer;
-        private double minLearningRate = 1e-2;
-        private double negative = 0;
-        private double sampling = 1e-5;
+        protected int minWordFrequency = 1;
+        protected int layerSize = 50;
+        protected SentenceIterator iter;
+        protected List<String> stopWords = StopWords.getStopWords();
+        protected int window = 5;
+        protected TokenizerFactory tokenizerFactory;
+        protected VocabCache vocabCache;
+        protected DocumentIterator docIter;
+        protected double lr = 2.5e-1;
+        protected int iterations = 1;
+        protected long seed = 123;
+        protected boolean saveVocab = false;
+        protected int batchSize = 1000;
+        protected int learningRateDecayWords = 10000;
+        protected boolean useAdaGrad = false;
+        protected TextVectorizer textVectorizer;
+        protected double minLearningRate = 1e-2;
+        protected double negative = 0;
+        protected double sampling = 1e-5;
 
         public Builder sampling(double sample) {
             this.sampling = sample;
