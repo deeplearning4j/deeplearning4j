@@ -19,6 +19,8 @@ public interface VocabCache  {
 
 
 
+    void iterateSentence();
+
     /**
      * Render the words via TSNE
      * @param tsne the tsne to use

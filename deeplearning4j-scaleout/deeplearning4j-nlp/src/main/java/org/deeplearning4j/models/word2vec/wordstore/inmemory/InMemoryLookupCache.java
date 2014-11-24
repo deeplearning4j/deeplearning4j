@@ -649,6 +649,10 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     }
 
 
+    @Override
+    public void iterateSentence() {
+
+    }
 
     @Override
     public void plotVocab(Tsne tsne) {
