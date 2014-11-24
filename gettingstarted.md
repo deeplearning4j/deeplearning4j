@@ -34,8 +34,8 @@ You can install both ND4J and Deeplearning4j separately via [Maven](https://mave
 
 * Create your root directory; e.g. deeplearning4j or nd4j.
 * Create a pom.xml file within that directory.
-* Add dependencies and other information into that POM file. See the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for dependencies. 
-* Choose your IDE, and import the project via Maven. (Alternatively, you can run mvn install within the root.)
+* Add dependencies and other information to that POM file. See the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for dependencies. 
+* Choose your IDE -- [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html), [IntelliJ](https://www.jetbrains.com/idea/help/importing-project-from-maven-model.html) or [Netbeans](http://wiki.netbeans.org/MavenBestPractices) -- and import the project via Maven. (Alternatively, you can run mvn install within the root.)
 * Note that by using Maven you never run git clone (everything is called from the POM), and you never have to deal with source code, only byte code and jar files. 
 
 Alternatively, you can install DL4J using our [downloads](http://deeplearning4j.org/download.html). If you prefer the downloads over Maven, then you have to manually import the jar files into [Eclipse](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse), [Intellij](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project) or [Netbeans](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/).
