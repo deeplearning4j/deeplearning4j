@@ -48,6 +48,8 @@ public class Conf implements Serializable,Cloneable {
     private List<NeuralNetConfiguration> layerConfigs = new ArrayList<>();
 
     public NeuralNetConfiguration getConf() {
+        if(conf == null)
+            return layerConfigs.get(0);
         return conf;
     }
 
@@ -251,9 +253,15 @@ public class Conf implements Serializable,Cloneable {
      * @return the initialized network
      */
     public BaseMultiLayerNetwork init() {
+        if(conf != null)
         return  new BaseMultiLayerNetwork.Builder<>().withClazz(getMultiLayerClazz())
                 .hiddenLayerSizes(getLayerSizes()).configure(conf)
                 .build();
+        else if(layerConfigs != null)
+            return  new BaseMultiLayerNetwork.Builder<>().withClazz(getMultiLayerClazz())
+                    .hiddenLayerSizes(getLayerSizes()).layerWiseConfiguration(layerConfigs)
+                    .build();
+        throw new IllegalStateException("Conf or layer wise configurations must be specified");
     }
 
 
