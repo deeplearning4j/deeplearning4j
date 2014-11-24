@@ -504,7 +504,8 @@ public class Word2Vec implements Persistable {
         final AtomicInteger doc = new AtomicInteger(0);
         final int numDocs = vectorizer.index().numDocuments();
         ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        vectorizer.index().eachDoc(new Function<List<VocabWord>, Void>() {
+        for(int i = 0; i < numIterations; i++)
+            vectorizer.index().eachDoc(new Function<List<VocabWord>, Void>() {
             @Nullable
             @Override
             public Void apply(@Nullable List<VocabWord> input) {
