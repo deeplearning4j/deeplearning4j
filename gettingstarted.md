@@ -32,8 +32,8 @@ ND4J, the linear-algebra kernel that powers DL4J, lives [here](http://nd4j.org/g
 
 You can install both ND4J and Deeplearning4j separately via [Maven](https://maven.apache.org/download.cgi), a build automation tool used for Java projects. Maven installations require you to: 
 
-* Create your root directory; e.g. deeplearning4j
-* Create a pom.xml file within that directory
+* Create your root directory; e.g. deeplearning4j or nd4j.
+* Create a pom.xml file within that directory.
 * Add dependencies and other information into that POM file. See the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for dependencies. 
 * Choose your IDE, and import the project via Maven. (Alternatively, you can run mvn install within the root.)
 * Note that by using Maven you never have to deal with source code, only byte code and jar files. 
