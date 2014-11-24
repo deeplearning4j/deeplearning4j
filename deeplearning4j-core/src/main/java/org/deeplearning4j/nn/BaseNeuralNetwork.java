@@ -211,7 +211,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         boolean train = true;
         NeuralNetwork revert = clone();
         while(train) {
-            if(iterations > iterations)
+            if(iterations > conf().getNumIterations())
                 break;
 
 
