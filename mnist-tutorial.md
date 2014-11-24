@@ -7,7 +7,7 @@ layout: default
 
 MNIST is a good place to begin exploring image recognition. 
 
-To begin with, you’ll take an image from your data set and binarize it, which means you’ll convert its pixels from continuous gray scale to ones and zeros. A useful rule of thumb if that every gray-scale pixel with a value higher than 35 becomes a 1, and the rest are set to 0. The tool you’ll use to do that is an MNIST data-set iterator class.
+The first step is to take an image from the dataset and binarize it, which means converting its pixels from continuous gray scale to ones and zeros. A useful rule of thumb is that every gray-scale pixel with a value higher than 35 becomes a 1, while the rest are set to 0. The MNIST dataset iterator class does that.
 
 The [MnistDataSetIterator](../doc/org/datasets/iterator/impl/MnistDataSetIterator.html) does this for you.
 
@@ -40,10 +40,10 @@ Note to Windows uers, in place of the line below, please do the following:
 
           DataSetIterator iter = new ListDataSetIterator(d.asList(),10);
 
-Next, we want to train a deep-belief network to reconstruct the MNIST data set. This is done with following snippet:
+Next, we want to train a deep-belief network to reconstruct the MNIST dataset. This is done with following snippet:
 
 <script src="http://gist-it.appspot.com/https://github.com/SkymindIO/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/DBNExample.java?slice=28:58"></script>
 
 After your net has trained, you'll see an F1 score. In machine learning, that's the name for one metric used to determine how well a classifier performs. The [f1 score](https://en.wikipedia.org/wiki/F1_score) is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It's basically the probability that your net's guesses are correct.
 
-Now that you've seen Deeplearning4j train a neural network on MNIST images, you may want to learn how to deal with continuous data with the [Iris flower dataset](../iris-flower-dataset-tutorial.html).
+Now that you've seen a neural network train on MNIST images, learn how to train on continuous data with the [Iris flower dataset](../iris-flower-dataset-tutorial.html).
