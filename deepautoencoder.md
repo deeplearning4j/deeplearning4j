@@ -21,7 +21,7 @@ This is due to the representational capacity of sigmoid-belief units, a form of 
 
 The layers will be 1000, 500, 250, 100 nodes wide, respectively, until at the end, the net produces a vector 30 numbers long. This 30-number vector is the last layer of the first, pretraining, half of the deep autoencoder, and it is the product of a normal RBM, rather than an output layer such as Softmax or logistic regression. 
 
-### the decoding half
+### The decoding half
 
 Those 30 numbers are an encoded version of the 28x28 pixel image. The second half of a deep autoencoder actually learns how to decode the vector, which becomes the input.
 
@@ -33,13 +33,13 @@ The decoding half of a deep autoencoder is the part that learns to reconstruct t
 
 In other words, to train a deep autoencoder, pretrain a net a your choice. The pretraining can leverage DL4J’s distributed architecture. 
 
-You then feed this pretrained net into a DeepAutoEncoder object that will produce the associated decoder, and from there you call "finetune." This type of fine-tuning doesn't use labels for classification. It's using the pretrained net's output as its input, in order to reconstruct. 
+You then feed this pretrained net into a DeepAutoEncoder object that will produce the associated decoder, and from there you call “finetune.” This type of fine-tuning doesn’t use labels for classification. It’s using the pretrained net’s output as its input, in order to reconstruct. 
 
-If you don’t have a prebuilt net, just call "train" on a net that's been passed in, which will then have the decoder copied from the encoder’s architecture.
+If you don’t have a prebuilt net, just call “train” on a net that’s been passed in, which will then have the decoder copied from the encoder’s architecture.
 
-### training nuances
+### Training nuances
 
-At the stage of the decoder's backpropagation, the learning rate should be lowered, or made slower. It should be somewhere between 1e-3 and 1e-6, depending on whether you're handling binary or continuous data, respectively.
+At the stage of the decoder’s backpropagation, the learning rate should be lowered, or made slower. It should be somewhere between 1e-3 and 1e-6, depending on whether you’re handling binary or continuous data, respectively.
 
 ### image search
 
@@ -62,3 +62,7 @@ The scaled word counts are then fed into a deep-belief network, a stack of restr
 Each document’s number set, or vector, is then introduced to the same vector space, and its distance from every other document-vector measured. Roughly speaking, nearby document-vectors fall under the same topic. 
 
 For example, one document could be the “question” and others could be the “answers,” a match the software would make using vector-space measurements. 
+
+Here's an example of what a deep autoencoder looks like in code:
+
+ <script src="http://gist-it.appspot.com/https://github.com/SkymindIO/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/autoencoder/SemanticHashingTest.java?slice=21:45"></script>
