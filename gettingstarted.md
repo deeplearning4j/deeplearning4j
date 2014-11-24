@@ -26,7 +26,7 @@ DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/d
 
 ### ND4J: Numpy for the JVM
 
-ND4J, the linear-algebra kernel that powers DL4J, lives [here](http://nd4j.org/getstarted.html).
+ND4J, the linear-algebra kernel that powers DL4J, lives [here](http://nd4j.org/getstarted.html), and you need to install it to run DL4J.
 
 ### Maven
 
