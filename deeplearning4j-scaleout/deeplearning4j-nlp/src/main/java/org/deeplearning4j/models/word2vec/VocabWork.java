@@ -39,8 +39,8 @@ public class VocabWork implements Serializable {
         this.work = work;
     }
 
-    public void countDown() {
-        count.decrementAndGet();
+    public void increment() {
+        count.incrementAndGet();
     }
 
     public boolean isStem() {

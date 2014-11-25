@@ -160,7 +160,8 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
         if (codeLength != vocabWord.codeLength) return false;
         if (index != vocabWord.index) return false;
         if (!codes.equals(vocabWord.codes)) return false;
-        if (!historicalGradient.equals(vocabWord.historicalGradient)) return false;
+        if (historicalGradient != null ? !historicalGradient.equals(vocabWord.historicalGradient) : vocabWord.historicalGradient != null)
+            return false;
         if (!points.equals(vocabWord.points)) return false;
         if (!word.equals(vocabWord.word)) return false;
         if (!wordFrequency.equals(vocabWord.wordFrequency)) return false;
@@ -174,7 +175,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
         result = 31 * result + index;
         result = 31 * result + codes.hashCode();
         result = 31 * result + word.hashCode();
-        result = 31 * result + historicalGradient.hashCode();
+        result = 31 * result + (historicalGradient != null ? historicalGradient.hashCode() : 0);
         result = 31 * result + points.hashCode();
         result = 31 * result + codeLength;
         return result;

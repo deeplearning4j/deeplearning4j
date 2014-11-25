@@ -139,16 +139,16 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         }
 
 
-        boolean done = false;
-        while(!done) {
-            long sys = System.currentTimeMillis();
-            long curr = semaphore.get();
-            long diff = Math.abs(sys - curr);
-            if(diff > 10000) {
-                log.info("Done working");
-                done = true;
+        while(latch.get() < queued.get()) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
+
+
+
         log.info("Invoking finish on index");
         index.finish();
         trainingSystem.shutdown();

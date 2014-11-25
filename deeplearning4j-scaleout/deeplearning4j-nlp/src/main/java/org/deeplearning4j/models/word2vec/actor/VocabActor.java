@@ -6,13 +6,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import akka.dispatch.Futures;
 import akka.dispatch.OnFailure;
+import akka.dispatch.OnSuccess;
 import org.apache.commons.compress.utils.IOUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.models.word2vec.StreamWork;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.VocabWork;
@@ -75,12 +74,13 @@ public class VocabActor extends UntypedActor {
             final VocabWork work = (VocabWork) message;
             if(work.getWork() == null || work.getWork().isEmpty())
                 return;
-            //work.getCount().incrementAndGet();
+
             String sentence = work.getWork();
             if(sentence.isEmpty() || sentence.length() <= 2) {
-                work.countDown();
+                work.increment();
                 return;
             }
+
             Tokenizer t = tokenizer.create(sentence);
             while(t.hasMoreTokens())  {
                 String token = t.nextToken();
@@ -95,9 +95,6 @@ public class VocabActor extends UntypedActor {
                 public Object call() throws Exception {
                     index.addWordsToDoc(index.numDocuments(),document);
                     numWordsEncountered.set(numWordsEncountered.get() + document.size());
-                    work.countDown();
-
-                    lastUpdate.getAndSet(System.currentTimeMillis());
                     return null;
                 }
             },context().dispatcher());
@@ -105,6 +102,13 @@ public class VocabActor extends UntypedActor {
                 @Override
                 public void onFailure(Throwable failure) throws Throwable {
                     log.error("Failure on vocab actor ",failure);
+                }
+            },context().dispatcher());
+            f.onSuccess(new OnSuccess<Object>() {
+                @Override
+                public void onSuccess(Object result) throws Throwable {
+                    work.increment();
+                    lastUpdate.getAndSet(System.currentTimeMillis());
                 }
             },context().dispatcher());
 
@@ -142,7 +146,7 @@ public class VocabActor extends UntypedActor {
 
             }
 
-            //adds the words to the document after all of them have bene processed
+            //adds the words to the document after all of them have been processed
             index.addWordsToDoc(index.numDocuments(),document);
             numWordsEncountered.set(numWordsEncountered.get() + document.size());
 

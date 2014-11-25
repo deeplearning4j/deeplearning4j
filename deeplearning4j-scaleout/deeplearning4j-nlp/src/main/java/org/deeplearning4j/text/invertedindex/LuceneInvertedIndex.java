@@ -2,6 +2,7 @@ package org.deeplearning4j.text.invertedindex;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -189,10 +190,6 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     @Override
     public int[] allDocs() {
-        if(!updated && docIds != null)
-            return docIds;
-
-        updated = false;
         if(cache){
             int[] ret = new int[words.size()];
             for(int i = 0; i < words.size(); i++)
@@ -205,7 +202,8 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         int[] docIds = new int[reader.maxDoc() + 1];
         int count = 0;
         Bits liveDocs = MultiFields.getLiveDocs(reader);
-        for(int i = 0; i < reader.maxDoc() + 1; i++) {
+
+        for(int i = 0; i < reader.maxDoc(); i++) {
             if (liveDocs != null && !liveDocs.get(i))
                 continue;
 
@@ -461,7 +459,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         else {
             try {
                 log.info("Committing index...");
-                //writer.forceMerge(1);
+                writer.forceMerge(1);
                 writer.commit();
                 log.info("Finished committing changes");
 
@@ -469,14 +467,12 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                 e.printStackTrace();
             }
 
+            reader = null;
+
             initReader();
             numDocs = reader.numDocs();
 
-            try {
-                reader.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+
 
         }
 
