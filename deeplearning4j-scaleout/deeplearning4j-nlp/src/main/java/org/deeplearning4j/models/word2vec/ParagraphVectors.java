@@ -52,7 +52,7 @@ public class ParagraphVectors extends Word2Vec {
 
         final int[] docs = vectorizer.index().allDocs();
 
-        final AtomicInteger numSentencesProcessed = new AtomicInteger(0);
+        final AtomicLong numSentencesProcessed = new AtomicLong(0);
         totalWords = vectorizer.numWordsEncountered();
         totalWords *= numIterations;
 
@@ -61,7 +61,7 @@ public class ParagraphVectors extends Word2Vec {
         log.info("Processing sentences...");
 
         List<Thread> work = new ArrayList<>();
-        final AtomicInteger processed = new AtomicInteger(0);
+        final AtomicLong processed = new AtomicLong(0);
         for(int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
 
             Thread t = new Thread(new Runnable() {
@@ -89,7 +89,6 @@ public class ParagraphVectors extends Word2Vec {
         }
 
 
-        final List<VocabWord> batch = new ArrayList<>(batchSize);
         final AtomicLong nextRandom = new AtomicLong(5);
         final AtomicInteger doc = new AtomicInteger(0);
         final int numDocs = vectorizer.index().numDocuments();
@@ -99,11 +98,14 @@ public class ParagraphVectors extends Word2Vec {
                 @Nullable
                 @Override
                 public Void apply(@Nullable List<VocabWord> input) {
+                    List<VocabWord> batch = new ArrayList<>(batchSize);
+
                     addWords(input, nextRandom, batch);
+
                     try {
-                        while(!jobQueue.offer(batch,1, TimeUnit.MILLISECONDS)) {
+                        while(!jobQueue.offer(batch,1, TimeUnit.SECONDS))
                             Thread.sleep(1);
-                        }
+
 
 
                     } catch (InterruptedException e) {
@@ -113,7 +115,6 @@ public class ParagraphVectors extends Word2Vec {
                     doc.incrementAndGet();
                     if(doc.get() > 0 && doc.get() % 10000 == 0)
                         log.info("Doc " + doc.get() + " done so far out of " + numDocs);
-                    batch.clear();
 
                     return null;
                 }
@@ -123,12 +124,6 @@ public class ParagraphVectors extends Word2Vec {
 
 
 
-
-
-        if(!jobQueue.isEmpty()) {
-            jobQueue.add(new ArrayList<>(batch));
-            batch.clear();
-        }
 
 
         for(int i = 0; i < work.size(); i++)
