@@ -31,8 +31,8 @@ public class LuceneInvertedIndexTest {
         assertEquals(2,index.document(0).size());
         assertEquals(2,index.document(1).size());
 
-        assertEquals(2,index.documents(cache.wordFor("hello")).size());
-        assertEquals(2,index.documents(cache.wordFor("hello2")).size());
+        assertEquals(2,index.documents(cache.wordFor("hello")).length);
+        assertEquals(2,index.documents(cache.wordFor("hello2")).length);
 
 
     }

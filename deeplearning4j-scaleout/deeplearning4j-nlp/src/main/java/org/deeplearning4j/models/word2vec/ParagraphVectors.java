@@ -101,16 +101,7 @@ public class ParagraphVectors extends Word2Vec {
                     List<VocabWord> batch = new ArrayList<>(batchSize);
 
                     addWords(input, nextRandom, batch);
-
-                    try {
-                        while(!jobQueue.offer(batch,1, TimeUnit.SECONDS))
-                            Thread.sleep(1);
-
-
-
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+                    jobQueue.add(batch);
 
                     doc.incrementAndGet();
                     if(doc.get() > 0 && doc.get() % 10000 == 0)
