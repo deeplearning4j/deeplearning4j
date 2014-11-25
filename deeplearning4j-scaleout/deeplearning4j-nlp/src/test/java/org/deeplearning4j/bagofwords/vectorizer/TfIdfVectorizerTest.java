@@ -71,7 +71,7 @@ public class TfIdfVectorizerTest {
         assertEquals(word,vectorizer.vocab().tokenFor("file"));
 
 
-        Collection<Integer> docs = vectorizer.index().allDocs();
+        int[] docs = vectorizer.index().allDocs();
         for(int i : docs) {
             StringBuffer sb = new StringBuffer();
             List<VocabWord> doc = vectorizer.index().document(i);
@@ -80,8 +80,8 @@ public class TfIdfVectorizerTest {
             log.info("Doc " + sb.toString());
         }
 
-        assertEquals(docStrings.size(),docs.size());
-        assertEquals(docStrings.size(), vectorizer.index().documents(word).size());
+        assertEquals(docStrings.size(),docs.length);
+        assertEquals(docStrings.size(), vectorizer.index().documents(word).length);
 
         Iterator<List<VocabWord>> miniBatches = vectorizer.index().miniBatches();
         int count = 0;

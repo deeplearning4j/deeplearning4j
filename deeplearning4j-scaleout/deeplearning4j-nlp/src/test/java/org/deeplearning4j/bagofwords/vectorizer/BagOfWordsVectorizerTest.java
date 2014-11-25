@@ -40,7 +40,7 @@ public class BagOfWordsVectorizerTest {
         VocabWord word = vectorizer.vocab().wordFor("This");
         assumeNotNull(word);
         assertEquals(word,vectorizer.vocab().tokenFor("This"));
-        assertEquals(2,vectorizer.index().documents(word).size());
+        assertEquals(2,vectorizer.index().documents(word).length);
 
 
     }

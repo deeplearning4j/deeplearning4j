@@ -1,8 +1,6 @@
 package org.deeplearning4j.text.invertedindex;
 
 import com.google.common.base.Function;
-import com.google.common.collect.Lists;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -20,7 +18,6 @@ import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.stopwords.StopWords;
-import org.deeplearning4j.util.DiskBasedQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +42,6 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private transient IndexReader reader;
     private   transient Analyzer analyzer;
     private transient IndexSearcher searcher;
-    private  transient IndexWriter writer;
     private VocabCache vocabCache;
     public final static String WORD_FIELD = "word";
     private int numDocs = 0;
@@ -122,7 +118,8 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
         List<VocabWord> ret = new CopyOnWriteArrayList<>();
         try {
-            initReader();
+            IndexWriter writer = getWriter();
+            initReader(writer);
 
             Document doc = reader.document(index);
 
@@ -131,6 +128,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                 ret.add(vocabCache.wordFor(s));
             }
 
+            writer.close();
 
         }
 
@@ -162,7 +160,6 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
             return ret;
         }
         catch(AlreadyClosedException e) {
-            initReader();
             return documents(vocabWord);
         }
         catch (IOException e) {
@@ -178,9 +175,10 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
         int ret;
         try {
-
-            initReader();
+            IndexWriter writer = getWriter();
+            initReader(writer);
             ret = reader.numDocs();
+            writer.close();
 
         }catch(Exception e) {
             return 0;
@@ -224,8 +222,9 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     @Override
     public void addWordToDoc(int doc, VocabWord word) {
         Field f = new TextField(WORD_FIELD,word.getWord(),Field.Store.YES);
+        IndexWriter writer = getWriter();
         try {
-            initReader();
+            initReader(writer);
 
             Document doc2 = searcher.doc(doc);
             if(doc2 != null)
@@ -241,12 +240,12 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
             e.printStackTrace();
         }
 
-        initReader();
+        initReader(writer);
 
     }
 
 
-    private synchronized void initReader() {
+    private synchronized void initReader(IndexWriter writer) {
         if(reader == null) {
             try {
                 writer.commit();
@@ -275,65 +274,32 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     @Override
     public void addWordsToDoc(int doc,final List<VocabWord> words) {
         updated = true;
-        if (cache) {
-            this.words.add(words);
-            indexManager.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        if (writer == null) {
-                            if(!indexBeingCreated.get())
-                                createWriter();
-                            else {
-                                waitOnWriter();
-                            }
-                        }
-                        Document d = new Document();
-
-                        for (VocabWord word : words) {
-                            d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
-                        }
-
-                        writer.addDocument(d, analyzer);
-
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    initReader();
-                }
-            });
 
 
-        } else {
+        Document d = new Document();
 
-            Document d = new Document();
-
-            for (VocabWord word : words) {
-                d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
-            }
-            try {
-
-                while(writer == null) {
-                    if(!indexBeingCreated.get() || writer == null)
-                        createWriter();
-                    else {
-                        waitOnWriter();
-                    }
-                }
-                writer.addDocument(d, analyzer);
-
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            initReader();
+        for (VocabWord word : words) {
+            d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
         }
+        IndexWriter writer = getWriter();
+        initReader(writer);
 
         totalWords.set(totalWords.get() + words.size());
         addWords(words);
 
+        try {
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
+
+
+
+
+
+
 
     private void addWords(List<VocabWord> words) {
         if(!miniBatch)
@@ -374,118 +340,86 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     }
 
-    private void createWriter() {
+
+    private IndexWriter getWriter() {
+        IndexWriterConfig iwc;
+        IndexWriter writer = null;
         try {
-            ensureDirExists();
             if(analyzer == null)
                 analyzer  = new StandardAnalyzer(new InputStreamReader(new ByteArrayInputStream("".getBytes())));
-            IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, analyzer);
 
-            if(!indexBeingCreated.get() && writer == null) {
+            iwc = new IndexWriterConfig(Version.LATEST, analyzer);
+
+
+            ensureDirExists();
+
+            if(!indexBeingCreated.get()) {
                 indexBeingCreated.set(true);
+
+                if(IndexWriter.isLocked(dir)) {
+                    try {
+                        IndexWriter.unlock(dir);
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
+
+                }
+
+
                 writer = new IndexWriter(dir, iwc);
             }
-            else if(!indexBeingCreated.get()) {
+            else if(!indexBeingCreated.get() || writer == null) {
                 indexBeingCreated.set(true);
+                if(IndexWriter.isLocked(dir)) {
+                    try {
+                        IndexWriter.unlock(dir);
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
+
+                }
+                iwc = new IndexWriterConfig(Version.LATEST, analyzer);
+
                 writer = new IndexWriter(dir,iwc);
 
             }
 
-        }catch(LockObtainFailedException e) {
+        }
+        catch(LockObtainFailedException e) {
             try {
                 IndexWriter.unlock(dir);
-            } catch (IOException e1) {
-                throw new RuntimeException("Unable to unlock directory " + indexPath);
-            }
-            try {
-                IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, analyzer);
+                iwc = new IndexWriterConfig(Version.LATEST, analyzer);
+
                 writer = new IndexWriter(dir,iwc);
+
             } catch (IOException e1) {
-                log.warn("Failed to created writer...trying again");
-                createWriter();
+                e1.printStackTrace();
             }
+
+
 
         }
         catch(Exception e) {
             throw new IllegalStateException("Failed to created writer",e);
         }
+
+        return writer;
     }
 
 
-    private void waitOnWriter() {
-        while(writer == null) {
-            try {
-                Thread.sleep(1000);
-
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
 
     @Override
     public void finish() {
-        if(cache) {
-            indexManager.execute(new Runnable() {
-                public void run() {
-                    try {
-                        IndexWriterConfig iwc = new IndexWriterConfig(Version.LATEST, analyzer);
 
-                        if (dir == null)
-                            dir = FSDirectory.open(new File(INDEX_PATH));
-                        if (writer == null)
-                            if(!indexBeingCreated.get())
-                                writer = new IndexWriter(dir, iwc);
-                            else
-                                waitOnWriter();
-                        if(IndexWriter.isLocked(dir))
-                            IndexWriter.unlock(dir);
-                        // writer.forceMerge(1);
-                        writer.commit();
-
-                        initReader();
-                        numDocs = reader.numDocs();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-
-                }
-            });
-
-
-        }
-
-        else {
-            try {
-                log.info("Committing index...");
-                writer.forceMerge(1);
-                writer.commit();
-                log.info("Finished committing changes");
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            reader = null;
-
-            initReader();
-            numDocs = reader.numDocs();
-
-
-
-        }
-
-        indexManager.shutdown();
-
+        reader = null;
+        IndexWriter writer = getWriter();
+        initReader(writer);
+        numDocs = reader.numDocs();
         try {
-            indexManager.awaitTermination(1,TimeUnit.DAYS);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            writer.close();
+        } catch (IOException e) {
+            log.warn("Exception",e);
         }
-
-
     }
 
     @Override
@@ -501,52 +435,20 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     @Override
     public void eachDoc(final Function<List<VocabWord>, Void> func,ExecutorService exec) {
         int[] docIds = allDocs();
-
-
-        int[] currDocIds = null;
-        int cursor = 0;
-        for(int i = 0; i < docIds.length; i++) {
-            if(currDocIds == null) {
-                //calculate batch size based on whats left
-                int size = Math.abs(i - docIds.length) > 100 ? 100 : Math.abs(i - docIds.length);
-                currDocIds = new int[size];
-                currDocIds[cursor++] = docIds[i];
-            }
-            else if(cursor == currDocIds.length - 1) {
-                final List<List<VocabWord>> docs = new ArrayList<>();
-                for(int i3 : currDocIds)
-                    docs.add(document(i3));
-
-
-                exec.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        for(List<VocabWord> doc : docs)
-                            func.apply(doc);
-                    }
-                });
-
-                cursor = 0;
-                currDocIds = null;
-            }
-            else {
-                currDocIds[cursor++] = docIds[i];
-            }
-
-
-
-
-        }
-
-        this.docIds = null;
-
-        exec.shutdown();
-        try {
-            exec.awaitTermination(1,TimeUnit.DAYS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        for(int i : docIds) {
+            final int j = i;
+            exec.execute(new Runnable() {
+                @Override
+                public void run() {
+                    func.apply(document(j));
+                }
+            });
         }
     }
+
+
+
+
 
 
     @Override
@@ -692,7 +594,6 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                 ret.batchSize = batchSize;
                 ret.vocabCache = vocabCache;
                 ret.dir = dir;
-                ret.writer = writer;
                 ret.cache = cache;
                 ret.miniBatch = miniBatch;
                 ret.reader = reader;

@@ -75,7 +75,7 @@ public class Word2Vec implements Persistable {
     protected TextVectorizer vectorizer;
     protected int learningRateDecayWords = 10000;
     protected boolean useAdaGrad = false;
-    protected LinkedBlockingDeque<List<VocabWord>> jobQueue = new LinkedBlockingDeque<>(100000);
+    protected Queue<List<VocabWord>> jobQueue = new ConcurrentLinkedDeque<>();
     protected AtomicLong timeLastUpdated = new AtomicLong(0);
 
     public Word2Vec() {}
@@ -471,6 +471,7 @@ public class Word2Vec implements Persistable {
 
         List<Thread> work = new ArrayList<>();
         final AtomicInteger processed = new AtomicInteger(0);
+        final int allDocs = docs.length * numIterations;
         for(int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
             final Set<List<VocabWord>> set = new ConcurrentHashSet<>();
 
@@ -479,18 +480,16 @@ public class Word2Vec implements Persistable {
                 public void run() {
                     final AtomicLong nextRandom = new AtomicLong(5);
                     while(true) {
-                        if(processed.get() >= docs.length)
-                            break;
-                        List<VocabWord> job = jobQueue.poll();
+                        if(processed.get() >= allDocs)
+                            return;
+
+                        List<VocabWord> job = null;
+                        job = jobQueue.poll();
                         if(job == null || job.isEmpty() || set.contains(job))
                             continue;
-                        if(set.contains(job))
-                            continue;
 
-                        set.add(job);
                         trainSentence(job, numSentencesProcessed, nextRandom);
                         processed.incrementAndGet();
-                        log.info("Ran " + processed.get() + " so far");
 
 
 
@@ -531,16 +530,10 @@ public class Word2Vec implements Persistable {
                 if(batch.isEmpty())
                     return null;
 
-                try {
-                    for(int i = 0; i < numIterations; i++)
-                        while(!jobQueue.offer(batch,1,TimeUnit.MILLISECONDS))
-                            Thread.sleep(1);
-
-
-
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                for(int i = 0; i < numIterations; i++) {
+                    jobQueue.add(batch);
                 }
+
 
                 doc.incrementAndGet();
                 if(doc.get() > 0 && doc.get() % 10000 == 0)

@@ -141,7 +141,8 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
 
         while(latch.get() < queued.get()) {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(10000);
+                log.info("latch count " + latch.get() + " with queued " + queued.get());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
