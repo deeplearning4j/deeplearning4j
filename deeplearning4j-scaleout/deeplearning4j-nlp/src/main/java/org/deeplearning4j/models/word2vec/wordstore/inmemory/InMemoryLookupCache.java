@@ -97,7 +97,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      * @param nextRandom next random for sampling
      */
     @Override
-    public  void iterateSample(VocabWord w1, VocabWord w2,AtomicLong nextRandom) {
+    public  void iterateSample(VocabWord w1, VocabWord w2,AtomicLong nextRandom,double alpha) {
         if(w2 == null || w2.getIndex() < 0)
             return;
         //current word vector
