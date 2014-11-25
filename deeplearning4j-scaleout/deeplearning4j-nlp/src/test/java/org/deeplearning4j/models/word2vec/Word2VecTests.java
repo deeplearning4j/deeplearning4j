@@ -67,6 +67,6 @@ public class Word2VecTests {
 
     }
 
- 
+
 
 }

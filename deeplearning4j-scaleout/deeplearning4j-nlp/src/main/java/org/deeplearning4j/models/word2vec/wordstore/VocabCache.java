@@ -63,8 +63,9 @@ public interface VocabCache  {
      * @param w1 the first word to iterate on
      * @param w2 the second word to iterate on
      * @param nextRandom nextRandom for sampling
+     * @param alpha the alpha to use for learning
      */
-    void iterateSample(VocabWord w1,VocabWord w2,AtomicLong nextRandom);
+    void iterateSample(VocabWord w1,VocabWord w2,AtomicLong nextRandom,double alpha);
 
     /**
      * Returns all of the words in the vocab
