@@ -75,7 +75,8 @@ public class Word2Vec implements Persistable {
     protected TextVectorizer vectorizer;
     protected int learningRateDecayWords = 10000;
     protected boolean useAdaGrad = false;
-    protected Queue<List<List<VocabWord>>> jobQueue = new ConcurrentLinkedDeque<>();
+    protected int workers = Runtime.getRuntime().availableProcessors();
+    protected Queue<List<List<VocabWord>>> jobQueue = new LinkedBlockingDeque<>(10000);
 
     public Word2Vec() {}
 
@@ -472,7 +473,7 @@ public class Word2Vec implements Persistable {
         final int allDocs = docs.length * numIterations;
         final AtomicLong numWordsSoFar = new AtomicLong(0);
         final AtomicLong lastReport = new AtomicLong(0);
-        for(int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
+        for(int i = 0; i < workers; i++) {
             final Set<List<VocabWord>> set = new ConcurrentHashSet<>();
 
             Thread t = new Thread(new Runnable() {
@@ -488,6 +489,7 @@ public class Word2Vec implements Persistable {
                         if(job == null || job.isEmpty() || set.contains(job))
                             continue;
 
+                        log.info("Job of " + job.size());
                         double alpha = Math.max(minLearningRate, Word2Vec.this.alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) totalWords)));
                         long diff = Math.abs(lastReport.get() - numWordsSoFar.get());
                         if(numWordsSoFar.get() > 0 && diff >=  10000) {
@@ -495,11 +497,13 @@ public class Word2Vec implements Persistable {
                             lastReport.set(numWordsSoFar.get());
                         }
                         long increment = 0;
+                        double diff2 = 0.0;
                         for(List<VocabWord> sentence : job) {
                             trainSentence(sentence, nextRandom, alpha);
                             increment += sentence.size();
                         }
 
+                        log.info("Train sentence avg took " + diff2 / (double) job.size());
                         numWordsSoFar.set(numWordsSoFar.get() + increment);
                         processed.incrementAndGet();
 
@@ -542,9 +546,18 @@ public class Word2Vec implements Persistable {
                 if(batch.isEmpty())
                     return null;
 
-                if(batch.size() >= 100) {
-                    jobQueue.add(new LinkedList<>(batch2));
-                    batch2.clear();
+                if(batch2.size() >= 100) {
+                    boolean added = false;
+                    while(!added) {
+                        try {
+                            jobQueue.add(new LinkedList<>(batch2));
+                            batch2.clear();
+                            added = true;
+                        }catch(Exception e) {
+                            continue;
+                        }
+                    }
+
                 }
 
                 for(int i = 0; i < numIterations; i++) {
@@ -664,15 +677,13 @@ public class Word2Vec implements Persistable {
     public void trainSentence(final List<VocabWord> sentence,AtomicLong nextRandom,double alpha) {
         if(sentence == null || sentence.isEmpty())
             return;
-
-
-
-
-
         for(int i = 0; i < sentence.size(); i++) {
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             skipGram(i, sentence, (int) nextRandom.get() % window,nextRandom,alpha);
         }
+
+
+
 
 
     }
@@ -690,16 +701,17 @@ public class Word2Vec implements Persistable {
             return;
 
         int end =  window * 2 + 1 - b;
-
         for(int a = b; a < end; a++) {
             if(a != window) {
                 int c = i - window + a;
                 if(c >= 0 && c < sentence.size()) {
                     VocabWord lastWord = sentence.get(c);
                     iterate(word,lastWord,nextRandom,alpha);
-                }
+                                   }
             }
         }
+
+
 
 
     }
@@ -879,6 +891,13 @@ public class Word2Vec implements Persistable {
         protected double minLearningRate = 1e-2;
         protected double negative = 0;
         protected double sampling = 1e-5;
+        protected int workers = Runtime.getRuntime().availableProcessors();
+
+
+        public Builder workers(int workers) {
+            this.workers = workers;
+            return this;
+        }
 
         public Builder sampling(double sample) {
             this.sampling = sample;
@@ -1002,7 +1021,7 @@ public class Word2Vec implements Persistable {
                 ret.useAdaGrad = useAdaGrad;
                 ret.minLearningRate = minLearningRate;
                 ret.sample = sampling;
-
+                ret.workers = workers;
 
                 try {
                     if (tokenizerFactory == null)
@@ -1044,6 +1063,7 @@ public class Word2Vec implements Persistable {
                 ret.saveVocab = saveVocab;
                 ret.batchSize = batchSize;
                 ret.sample = sampling;
+                ret.workers = workers;
 
                 try {
                     if (tokenizerFactory == null)
