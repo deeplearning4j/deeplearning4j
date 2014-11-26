@@ -9,7 +9,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
-import org.deeplearning4j.scaleout.conf.Conf;
+import org.deeplearning4j.scaleout.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,8 +40,8 @@ public class ZookeeperConfigurationRetriever implements Watcher {
 
 
 
-    public Conf retrieve(String host) throws Exception {
-        Conf conf;
+    public Configuration retrieve(String host) throws Exception {
+        Configuration conf;
         String path = new ZookeeperPathBuilder().addPaths(Arrays.asList("tmp",id)).setHost(host).setPort(port).build();
         Stat stat = keeper.exists(path, false);
         if(stat == null) {
@@ -49,14 +49,14 @@ public class ZookeeperConfigurationRetriever implements Watcher {
             throw new IllegalStateException("Nothing found for " + path + " possible children include " + list);
         }
         byte[] data = keeper.getData(path, false, stat ) ;
-        conf = (Conf) ZooKeeperConfigurationRegister.deserialize(data);
+        conf = (Configuration) ZooKeeperConfigurationRegister.deserialize(data);
 
 
         return conf;
     }
 
-    public Conf retrieve() throws Exception {
-        Conf c = null;
+    public Configuration retrieve() throws Exception {
+        Configuration c = null;
         String localhost = InetAddress.getLocalHost().getHostName();
 
         String[] hosts = { host,"127.0.0.1","localhost",localhost };
