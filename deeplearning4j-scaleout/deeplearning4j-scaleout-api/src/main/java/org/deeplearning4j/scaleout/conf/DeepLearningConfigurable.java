@@ -1,6 +1,5 @@
 package org.deeplearning4j.scaleout.conf;
 
-import org.deeplearning4j.scaleout.conf.Conf;
 
 public interface DeepLearningConfigurable {
 	/*  A csv of integers: the rows represented as part of a worker for a submatrix */
@@ -55,6 +54,11 @@ public interface DeepLearningConfigurable {
 	public final static String PARAM_LEARNING_RATE = "lr";
 	/* Number of passes to do on the data applyTransformToDestination */
 	public final static String NUM_PASSES = "org.deeplearning4j.numpasses";
-	
-    void setup(Conf conf);
+
+
+    public final static String MASTER_PATH = "org.deeplearning4j.scaleout.masterpath";
+    public final static String MASTER_URL = "org.deeplearning4j.scaleout.masterurl";
+    public final static String STATE_TRACKER_CONNECTION_STRING = "org.deeplearning4j.scaleout.statetracker.connectionstring";
+
+    void setup(Configuration conf);
 }

@@ -11,7 +11,7 @@ import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
-import org.deeplearning4j.scaleout.conf.Conf;
+import org.deeplearning4j.scaleout.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +39,7 @@ import java.net.UnknownHostException;
  */
 public class ZooKeeperConfigurationRegister implements Watcher {
 
-	private Conf configuration;
+	private Configuration configuration;
 	private ZooKeeper zk;
 	private String id;
 	private String host;
@@ -53,7 +53,7 @@ public class ZooKeeperConfigurationRegister implements Watcher {
 	 * @param host host of the zookeeper cluster (note this is also provided to help setup the zk directory structure)
 	 * @param port the port of the zookeeper cluster (note this is also provided to help setup the zk directory structure)
 	 */
-	public ZooKeeperConfigurationRegister(Conf configuration,String id,String host,int port) {
+	public ZooKeeperConfigurationRegister(Configuration configuration,String id,String host,int port) {
 		super();
 		this.configuration = configuration;
 		this.id = id;

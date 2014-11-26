@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
@@ -80,6 +81,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private int[] stride = {2,2};
 
     private int numInFeatureMaps = 2;
+    private ObjectMapper mapper = new ObjectMapper();
 
     public NeuralNetConfiguration() {
 
@@ -692,14 +694,44 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
 
-        public List<NeuralNetConfiguration> build() {
+        public MultiLayerConfiguration build() {
             List<NeuralNetConfiguration> list = new ArrayList<>();
             for(int i = 0; i < layerwise.size(); i++)
                 list.add(layerwise.get(i).build());
-            return list;
+            MultiLayerConfiguration ret = new MultiLayerConfiguration.Builder()
+                    .confs(list).build();
+            return ret;
         }
 
     }
+
+
+    /**
+     * Return this configuration as json
+     * @return this configuration represented as json
+     */
+    public String toJson() {
+        try {
+            return mapper.writeValueAsString(this);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+           throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Create a neural net configuration from json
+     * @param json the neural net configuration from json
+     * @return
+     */
+    public static NeuralNetConfiguration fromJson(String json) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.readValue(json, NeuralNetConfiguration.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
 
     public static class Builder {
@@ -755,7 +787,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     .adagradResetIterations(resetAdaGradIterations).applySparsity(applySparsity)
                     .concatBiases(concatBiases).constrainGradientToUnitNorm(constrainGradientToUnitNorm)
                     .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize)
-                    .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr)
+                    .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr).useAdaGrad(adagrad)
                     .lossFunction(lossFunction).momentumAfter(momentumAfter).momentum(momentum)
                     .nIn(nIn).nOut(nOut).numFeatureMaps(numFeatureMaps).optimizationAlgo(optimizationAlgo)
                     .regularization(useRegularization).render(renderWeightsEveryNumEpochs).resetAdaGradIterations(resetAdaGradIterations)
@@ -897,6 +929,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,  renderWeightsEveryNumEpochs,
                     concatBiases,  constrainGradientToUnitNorm,  rng,
                     dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType,weightShape,filterSize,numFeatureMaps,stride,featureMapSize,numInFeatureMaps);
+            ret.useAdaGrad = this.adagrad;
             return ret;
         }
 
