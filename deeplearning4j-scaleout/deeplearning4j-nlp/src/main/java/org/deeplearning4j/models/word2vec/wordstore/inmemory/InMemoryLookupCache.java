@@ -136,7 +136,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
             //score
             double f =  expTable[idx];
             //gradient
-            double g = (1 - code - f) * (useAdaGrad ?  w1.getLearningRate(i,this.lr.get()) : this.lr.get());
+            double g = (1 - code - f) * (useAdaGrad ?  w1.getLearningRate(i,alpha) : alpha);
 
 
 
@@ -176,11 +176,11 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
                 double f = Nd4j.getBlasWrapper().dot(l1,syn1Neg.slice(target));
                 double g;
                 if (f > MAX_EXP)
-                    g = (label - 1) * (useAdaGrad ?  w1.getLearningRate(target,this.lr.get()) : this.lr.get());
+                    g = (label - 1) * (useAdaGrad ?  w1.getLearningRate(target,alpha) : alpha);
                 else if (f < -MAX_EXP)
-                    g = (label - 0) * (useAdaGrad ?  w1.getLearningRate(target,this.lr.get()) : this.lr.get());
+                    g = (label - 0) * (useAdaGrad ?  w1.getLearningRate(target,alpha) : alpha);
                 else
-                    g = (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *  (useAdaGrad ?  w1.getLearningRate(target,this.lr.get()) : this.lr.get());
+                    g = (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *  (useAdaGrad ?  w1.getLearningRate(target,alpha) : alpha);
                 if(syn0.data().dataType() == DataBuffer.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g,neu1e,l1);
                 else
@@ -238,7 +238,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         double avgChange = 0.0f;
 
 
-
+        double alpha = this.lr.get();
 
         for(int i = 0; i < w1.getCodeLength(); i++) {
             int code = w1.getCodes().get(i);
@@ -262,7 +262,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
             //score
             double f =  expTable[idx];
             //gradient
-            double g = (1 - code - f) * (useAdaGrad ?  w1.getLearningRate(i,this.lr.get()) : this.lr.get());
+            double g = (1 - code - f) * (useAdaGrad ?  w1.getLearningRate(i,alpha) : alpha);
 
             avgChange += g;
             if(syn0.data().dataType() == DataBuffer.DOUBLE) {
