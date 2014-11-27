@@ -20,7 +20,7 @@ import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 
 /**
- * Handles the data applyTransformToDestination iterator.
+ * Handles the data  iterator.
  * This includes disseminating new data sets to the cluster.
  * @author Adam Gibson
  *
@@ -56,24 +56,7 @@ public class BatchActor extends UntypedActor implements DeepLearningConfigurable
         }
         else if(message instanceof ResetMessage) {
             iter.reset();
-
-            if(iter.hasNext()) {
-                log.info("Propagating new work to master");
-                mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-                        iter.next()), mediator);
-            }
-            else if(!iter.hasNext()) {
-                int iterations = stateTracker.runPreTrainIterations();
-                if (iterations < conf.getInt(NUM_PASSES,1)) {
-                    stateTracker.incrementNumTimesPreTrainRan();
-                    iter.reset();
-                    log.info("Next pretrain iteration " + stateTracker.numTimesPreTrainRun() + " out of " + stateTracker.runPreTrainIterations());
-                }
-
-                else
-                    mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-                            DoneMessage.getInstance()), mediator);
-            }
+            self().tell(MoreWorkMessage.getInstance(),self());
         }
 
 
@@ -123,14 +106,14 @@ public class BatchActor extends UntypedActor implements DeepLearningConfigurable
                 for(int i = 0; i < numWorkers; i++) {
                     if(!iter.hasNext())
                         break;
+                    String worker = nextWorker();
+                    log.info("Saving data for worker " + worker);
 
-                    Job next = iter.next();
+                    Job next = iter.next(worker);
                     if(next == null)
                         break;
 
 
-                    String worker = nextWorker();
-                    log.info("Saving data for worker " + worker);
                     stateTracker.saveWorker(worker,next);
 
                 }
@@ -141,8 +124,8 @@ public class BatchActor extends UntypedActor implements DeepLearningConfigurable
                         stateTracker.workerData()), mediator);
             }
             else if(!iter.hasNext()) {
-                    mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-                            DoneMessage.getInstance()), mediator);
+                mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+                        DoneMessage.getInstance()), mediator);
             }
 
 

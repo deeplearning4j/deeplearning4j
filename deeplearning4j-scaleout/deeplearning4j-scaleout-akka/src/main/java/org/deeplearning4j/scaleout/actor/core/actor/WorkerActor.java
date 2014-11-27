@@ -127,10 +127,6 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
         }
 
 
-        else if(message instanceof Job) {
-            Job job = (Job) message;
-            workerPerformer.perform(job);
-        }
         else if(message instanceof Ack) {
             log.info("Ack from master on worker " + id);
         }
@@ -149,21 +145,6 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
                 new ClearWorker(id)), getSelf());
         heartbeat.cancel();
     }
-
-
-
-
-    public  Job getcurrentJob() {
-        try {
-            if(currentJob == null)
-                currentJob = (Job) tracker.getCurrent();
-        }catch(Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return currentJob;
-    }
-
 
 
 

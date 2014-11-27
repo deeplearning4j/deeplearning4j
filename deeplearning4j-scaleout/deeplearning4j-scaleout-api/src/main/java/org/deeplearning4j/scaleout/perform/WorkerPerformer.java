@@ -1,5 +1,7 @@
 package org.deeplearning4j.scaleout.perform;
 
+import org.deeplearning4j.scaleout.conf.Configuration;
+import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.job.Job;
 
 /**
@@ -7,7 +9,7 @@ import org.deeplearning4j.scaleout.job.Job;
  *
  * @author Adam Gibson
  */
-public interface WorkerPerformer {
+public interface WorkerPerformer extends DeepLearningConfigurable {
 
 
     /**
@@ -16,5 +18,11 @@ public interface WorkerPerformer {
      */
     void perform(Job job);
 
+
+    /**
+     * Update the job performer
+     * @param o the objects to update with
+     */
+    void update(Object...o);
 
 }
