@@ -1,10 +1,22 @@
 package org.deeplearning4j.nn.conf;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.apache.commons.math3.distribution.RealDistribution;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.nn.conf.deserializers.ActivationFunctionDeSerializer;
+import org.deeplearning4j.nn.conf.deserializers.DistributionDeSerializer;
+import org.deeplearning4j.nn.conf.deserializers.RandomGeneratorDeSerializer;
+import org.deeplearning4j.nn.conf.serializers.ActivationFunctionSerializer;
+import org.deeplearning4j.nn.conf.serializers.DistributionSerializer;
+import org.deeplearning4j.nn.conf.serializers.RandomGeneratorSerializer;
+import org.nd4j.linalg.api.activation.ActivationFunction;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -42,13 +54,32 @@ public class MultiLayerConfiguration implements Serializable {
     }
 
     /**
+     * Object mapper for serialization of configurations
+     * @return
+     */
+    public static ObjectMapper mapper() {
+        ObjectMapper ret = new ObjectMapper();
+        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        SimpleModule module = new SimpleModule();
+        module.addDeserializer(ActivationFunction.class,new ActivationFunctionDeSerializer());
+        module.addSerializer(ActivationFunction.class, new ActivationFunctionSerializer());
+        module.addDeserializer(RandomGenerator.class, new RandomGeneratorDeSerializer());
+        module.addSerializer(RandomGenerator.class, new RandomGeneratorSerializer());
+        module.addSerializer(RealDistribution.class, new DistributionSerializer());
+        module.addDeserializer(RealDistribution.class, new DistributionDeSerializer());
+        ret.registerModule(module);
+        return ret;
+    }
+
+    /**
      *
      * @return
      */
     public String toJson() {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = mapper();
         try {
-            return mapper.writeValueAsString(this);
+            return mapper.writeValueAsString(this).replaceAll("\"activationFunction\",","").replaceAll("\"rng\",","").replaceAll("\"dist\",", "");
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -60,7 +91,7 @@ public class MultiLayerConfiguration implements Serializable {
      * @return
      */
     public static MultiLayerConfiguration fromJson(String json) {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = mapper();
         try {
             return mapper.readValue(json, MultiLayerConfiguration.class);
         } catch (IOException e) {
@@ -68,6 +99,25 @@ public class MultiLayerConfiguration implements Serializable {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof MultiLayerConfiguration)) return false;
+
+        MultiLayerConfiguration that = (MultiLayerConfiguration) o;
+
+        if (confs != null ? !confs.equals(that.confs) : that.confs != null) return false;
+        if (!Arrays.equals(hiddenLayerSizes, that.hiddenLayerSizes)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = hiddenLayerSizes != null ? Arrays.hashCode(hiddenLayerSizes) : 0;
+        result = 31 * result + (confs != null ? confs.hashCode() : 0);
+        return result;
+    }
 
     public static class Builder {
 

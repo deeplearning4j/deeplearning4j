@@ -72,12 +72,12 @@ public class ExtraParamsBuilder implements DeepLearningConfigurable {
 	}
 	
 
-	
-	
-	
-	
-	public void setup(Conf conf) {
-		
+
+
+
+    @Override
+	public void setup(Configuration conf) {
+
 	}
 
 }

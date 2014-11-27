@@ -1,5 +1,6 @@
 package org.deeplearning4j.scaleout.statetracker.hazelcast;
 
+
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
@@ -22,7 +23,7 @@ import java.util.Collections;
  */
 @Path("/statetracker")
 @Produces(MediaType.APPLICATION_JSON)
-public class StateTrackerDropWizardResource extends Application<org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastConf>  implements Serializable {
+public class StateTrackerDropWizardResource extends Application<HazelCastConf> implements Serializable {
 
     private static Logger log = LoggerFactory.getLogger(StateTrackerDropWizardResource.class);
 
@@ -33,12 +34,12 @@ public class StateTrackerDropWizardResource extends Application<org.deeplearning
     }
 
     @Override
-    public void initialize(Bootstrap<org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastConf> hazelCastConfBootstrap) {
+    public void initialize(Bootstrap<HazelCastConf> hazelCastConfBootstrap) {
 
     }
 
     @Override
-    public void run(org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastConf hazelCastConf, Environment environment) throws Exception {
+    public void run(HazelCastConf hazelCastConf, Environment environment) throws Exception {
         environment.jersey().register(this);
 
     }

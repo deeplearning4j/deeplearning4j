@@ -10,7 +10,7 @@ import org.deeplearning4j.optimize.optimizers.NeuralNetworkOptimizer;
  * @author Adam Gibson
  */
 public class AutoEncoderOptimizer extends NeuralNetworkOptimizer {
-    public AutoEncoderOptimizer(NeuralNetwork network, float lr, Object[] trainingParams, NeuralNetwork.OptimizationAlgorithm optimizationAlgorithm, LossFunctions.LossFunction lossFunction) {
+    public AutoEncoderOptimizer(NeuralNetwork network, double lr, Object[] trainingParams, NeuralNetwork.OptimizationAlgorithm optimizationAlgorithm, LossFunctions.LossFunction lossFunction) {
         super(network, lr, trainingParams, optimizationAlgorithm, lossFunction);
     }
 
