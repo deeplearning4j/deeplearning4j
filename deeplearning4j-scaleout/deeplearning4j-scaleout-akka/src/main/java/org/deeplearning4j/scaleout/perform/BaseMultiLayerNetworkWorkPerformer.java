@@ -15,12 +15,10 @@ import java.io.Serializable;
  */
 public class BaseMultiLayerNetworkWorkPerformer implements WorkerPerformer {
     private BaseMultiLayerNetwork multiLayerNetwork;
-    private Configuration conf;
 
 
     @Override
     public void setup(Configuration conf) {
-        this.conf = conf;
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(conf.get(MULTI_LAYER_CONF));
         try {
             multiLayerNetwork = new BaseMultiLayerNetwork.Builder<>().layerWiseConfiguration(conf2)
@@ -37,7 +35,7 @@ public class BaseMultiLayerNetworkWorkPerformer implements WorkerPerformer {
         if(work instanceof DataSet) {
             DataSet data = (DataSet) work;
             multiLayerNetwork.fit(data);
-            job.setResult(multiLayerNetwork.pack());
+            job.setResult(multiLayerNetwork.paramsWithVisible());
         }
     }
 

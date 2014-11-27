@@ -870,12 +870,24 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    public boolean isUseDropConnect() {
-        return useDropConnect;
-    }
 
-    public void setUseDropConnect(boolean useDropConnect) {
-        this.useDropConnect = useDropConnect;
+
+    /**
+     * Returns a 1 x m vector where the vector is composed of
+     * a flattened vector of all of the weights for the
+     * various neuralNets(w,hbias NOT VBIAS) and output layer
+     *
+     * @return the params for this neural net
+     */
+    public INDArray paramsWithVisible() {
+        List<INDArray> params = new ArrayList<>();
+        for(int i = 0; i < getnLayers(); i++) {
+            params.add(getNeuralNets()[i].getW());
+            params.add(getNeuralNets()[i].getvBias());
+            params.add(getNeuralNets()[i].gethBias());
+        }
+        params.add(getOutputLayer().params());
+        return Nd4j.toFlattened(params);
     }
 
     /**
@@ -2110,7 +2122,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                 ret = (E) c.newInstance();
                 ret.setDefaultConfiguration(conf);
                 ret.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
-                ret.setUseDropConnect(useDropConnect);
                 ret.setInput(this.input);
                 ret.setLabels(this.labels);
                 ret.setHiddenLayerSizes(this.multiLayerConfiguration.getHiddenLayerSizes());
