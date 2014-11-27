@@ -25,10 +25,10 @@ public interface DeepLearningConfigurable {
 	/* Input split: integer */
 	public final static String SPLIT = "org.deeplearning4j.split";
 	/* Class to load for the base neural network*/
-	public final static String CLASS = "org.deeplearning4j.sendalyzeit.textanalytics.class";
+	public final static String CLASS = "org.deeplearning4j.class";
 	/* Network implementation specific parameters */
 	public final 
-	static String PARAMS = "org.deeplearning4j.sendalyzeit.textanalytics.params";
+	static String PARAMS = "org.deeplearning4j..textanalytics.params";
 	/* L2 regularization constant */
 	public final static String L2 = "org.deeplearning4j.l2";
 	/* Momentum */
@@ -59,6 +59,9 @@ public interface DeepLearningConfigurable {
     public final static String MASTER_PATH = "org.deeplearning4j.scaleout.masterpath";
     public final static String MASTER_URL = "org.deeplearning4j.scaleout.masterurl";
     public final static String STATE_TRACKER_CONNECTION_STRING = "org.deeplearning4j.scaleout.statetracker.connectionstring";
+
+    public final static String MULTI_LAYER_CONF = "org.deeplearning4j.scaleout.multilayerconf";
+    public final static String NEURAL_NET_CONF = "org.deeplearning4j.scaleout.neuralnetconf";
 
     void setup(Configuration conf);
 }

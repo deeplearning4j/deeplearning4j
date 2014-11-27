@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.api.Classifier;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.api.Persistable;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
@@ -71,7 +72,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     protected boolean sampleFromHiddenActivations = true;
     protected boolean pretrain = true;
     protected NeuralNetConfiguration defaultConfiguration;
-    protected List<NeuralNetConfiguration> layerWiseConfigurations;
+    protected MultiLayerConfiguration layerWiseConfigurations;
 
     /*
      * Hinton's Practical guide to RBMS:
@@ -158,7 +159,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     protected void intializeConfigurations() {
 
         if(layerWiseConfigurations == null)
-            layerWiseConfigurations = new ArrayList<>();
+            layerWiseConfigurations = new MultiLayerConfiguration.Builder().build();
 
         if(layers == null)
             layers = new Layer[getnLayers() + 1];
@@ -170,9 +171,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                     .build();
 
         //add a default configuration for each hidden layer + output layer
-        if(layerWiseConfigurations == null || layerWiseConfigurations.isEmpty())
+        if(layerWiseConfigurations == null || layerWiseConfigurations.getConfs().isEmpty())
             for(int i = 0; i < hiddenLayerSizes.length + 1; i++) {
-                layerWiseConfigurations.add(defaultConfiguration.clone());
+                layerWiseConfigurations.getConfs().add(defaultConfiguration.clone());
             }
 
 
@@ -236,11 +237,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.defaultConfiguration = defaultConfiguration;
     }
 
-    public List<NeuralNetConfiguration> getLayerWiseConfigurations() {
+    public MultiLayerConfiguration getLayerWiseConfigurations() {
         return layerWiseConfigurations;
     }
 
-    public void setLayerWiseConfigurations(List<NeuralNetConfiguration> layerWiseConfigurations) {
+    public void setLayerWiseConfigurations(MultiLayerConfiguration layerWiseConfigurations) {
         this.layerWiseConfigurations = layerWiseConfigurations;
     }
 
@@ -297,16 +298,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                     inputSize = this.hiddenLayerSizes[i - 1];
 
                 if (i == 0) {
-                    layerWiseConfigurations.get(i).setnIn(inputSize);
-                    layerWiseConfigurations.get(i).setnOut(this.hiddenLayerSizes[i]);
+                    layerWiseConfigurations.getConf(i).setnIn(inputSize);
+                    layerWiseConfigurations.getConf(i).setnOut(this.hiddenLayerSizes[i]);
                     // construct sigmoid_layer
                     layers[i] = createHiddenLayer(i,layerInput);
                 } else {
                     if (input != null)
                         layerInput = activationFromPrevLayer(i - 1,layerInput);
 
-                    layerWiseConfigurations.get(i).setnIn(inputSize);
-                    layerWiseConfigurations.get(i).setnOut(this.hiddenLayerSizes[i]);
+                    layerWiseConfigurations.getConf(i).setnIn(inputSize);
+                    layerWiseConfigurations.getConf(i).setnOut(this.hiddenLayerSizes[i]);
                     // construct sigmoid_layer
                     layers[i] = createHiddenLayer(i, layerInput);
 
@@ -321,8 +322,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         }
 
 
-        NeuralNetConfiguration last = layerWiseConfigurations.get(layerWiseConfigurations.size() - 1);
-        NeuralNetConfiguration secondToLast = layerWiseConfigurations.get(layerWiseConfigurations.size() - 2);
+        NeuralNetConfiguration last = layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 1);
+        NeuralNetConfiguration secondToLast = layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 2);
         last.setnIn(secondToLast.getnOut());
 
 
@@ -1418,7 +1419,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     public void printConfiguration() {
         StringBuffer sb = new StringBuffer();
         int count = 0;
-        for(NeuralNetConfiguration conf : getLayerWiseConfigurations()) {
+        for(NeuralNetConfiguration conf : getLayerWiseConfigurations().getConfs()) {
             sb.append(" Layer " + count++ + " conf " + conf);
         }
 
@@ -1619,7 +1620,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     public Layer createHiddenLayer(int index, INDArray layerInput) {
 
         return new org.deeplearning4j.nn.layers.Layer.Builder()
-                .withInput(layerInput).conf(layerWiseConfigurations.get(index))
+                .withInput(layerInput).conf(layerWiseConfigurations.getConf(index))
                 .build();
 
     }
@@ -1958,8 +1959,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     public static class Builder<E extends BaseMultiLayerNetwork> {
         protected Class<? extends BaseMultiLayerNetwork> clazz;
-        private int[] hiddenLayerSizes;
-        private int nLayers;
         private INDArray input, labels;
         protected Map<Integer, MatrixTransform> weightTransforms = new HashMap<>();
         protected boolean backProp = true;
@@ -1968,23 +1967,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         private Map<Integer, MatrixTransform> visibleBiasTransforms = new HashMap<>();
         private boolean useDropConnect = false;
         private boolean useGaussNewtonVectorProductBackProp = false;
-        protected NeuralNetConfiguration conf;
-        protected List<NeuralNetConfiguration> layerWiseConfiguration;
         protected boolean pretrain = true;
+        protected MultiLayerConfiguration multiLayerConfiguration;
+        protected NeuralNetConfiguration conf;
 
 
-        /**
-         * Whether to pretrain or not
-         * @param pretrain
-         * @return
-         */
-        public Builder<E> pretrain(boolean pretrain) {
-            this.pretrain = pretrain;
-            return this;
-        }
 
-        public Builder<E> layerWiseConfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
-            this.layerWiseConfiguration = layerWiseConfiguration;
+        public Builder<E> layerWiseConfiguration(MultiLayerConfiguration layerWiseConfiguration) {
+            this.multiLayerConfiguration = layerWiseConfiguration;
             return this;
         }
 
@@ -2075,25 +2065,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         }
 
 
-        /**
-         * Size of the hidden neuralNets
-         *
-         * @param hiddenLayerSizes
-         * @return
-         */
-        public Builder<E> hiddenLayerSizes(Integer...hiddenLayerSizes) {
-            this.hiddenLayerSizes = new int[hiddenLayerSizes.length];
-            this.nLayers = hiddenLayerSizes.length;
-            for (int i = 0; i < hiddenLayerSizes.length; i++)
-                this.hiddenLayerSizes[i] = hiddenLayerSizes[i];
-            return this;
-        }
 
-        public Builder<E> hiddenLayerSizes(int...hiddenLayerSizes) {
-            this.hiddenLayerSizes = hiddenLayerSizes;
-            this.nLayers = hiddenLayerSizes.length;
-            return this;
-        }
 
 
 
@@ -2141,22 +2113,20 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                 ret.setUseDropConnect(useDropConnect);
                 ret.setInput(this.input);
                 ret.setLabels(this.labels);
-                ret.setHiddenLayerSizes(this.hiddenLayerSizes);
-                ret.setnLayers(this.nLayers);
-                ret.setLayerWiseConfigurations(layerWiseConfiguration);
-                ret.neuralNets = new NeuralNetwork[nLayers];
+                ret.setHiddenLayerSizes(this.multiLayerConfiguration.getHiddenLayerSizes());
+                ret.setnLayers(this.multiLayerConfiguration.getHiddenLayerSizes().length);
+                ret.setLayerWiseConfigurations(multiLayerConfiguration);
+                ret.neuralNets = new NeuralNetwork[this.multiLayerConfiguration.getHiddenLayerSizes().length];
                 ret.setInput(this.input);
                 ret.setLabels(labels);
                 ret.setForceNumEpochs(shouldForceEpochs);
                 ret.getWeightTransforms().putAll(weightTransforms);
                 ret.getVisibleBiasTransforms().putAll(visibleBiasTransforms);
                 ret.getHiddenBiasTransforms().putAll(hiddenBiasTransforms);
-                ret.layerWiseConfigurations = layerWiseConfiguration;
+                ret.layerWiseConfigurations = multiLayerConfiguration;
                 ret.pretrain = pretrain;
                 if(ret.defaultConfiguration == null)
-                    ret.defaultConfiguration = layerWiseConfiguration.get(0);
-                if (hiddenLayerSizes == null)
-                    throw new IllegalStateException("Unable to build network, no hidden layer sizes defined");
+                    ret.defaultConfiguration = multiLayerConfiguration.getConf(0);
 
                 return ret;
             } catch (Exception e) {
