@@ -843,6 +843,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
         public ListBuilder list(int size) {
+            if(size < 2)
+                throw new IllegalArgumentException("Number of layers must be > 1");
+
             List<Builder> list = new ArrayList<>();
             for(int i = 0; i < size; i++)
                 list.add(clone());

@@ -635,7 +635,6 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
 
 
             e.setDefaultConfiguration(conf);
-            e.setUseDropConnect(encoder.isUseDropConnect());
             e.setUseGaussNewtonVectorProductBackProp(encoder.isUseGaussNewtonVectorProductBackProp());
             e.setSampleFromHiddenActivations(encoder.isSampleFromHiddenActivations());
             e.setForceNumEpochs(shouldForceEpochs);
