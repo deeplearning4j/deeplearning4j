@@ -119,8 +119,12 @@ public interface NeuralNetwork extends Serializable,Cloneable,IterationListener,
 
     void setConf(NeuralNetConfiguration conf);
 
-
+    /**
+     * The configuration for the neural network
+     * @return the configuration for the neural network
+     */
     NeuralNetConfiguration conf();
+
 
 
 

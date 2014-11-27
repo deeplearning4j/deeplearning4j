@@ -17,11 +17,11 @@ import org.deeplearning4j.scaleout.actor.core.ClusterListener;
 import org.deeplearning4j.scaleout.actor.core.protocol.Ack;
 import org.deeplearning4j.scaleout.actor.util.ActorRefUtils;
 import org.deeplearning4j.scaleout.conf.Configuration;
-import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.api.ComputableMaster;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.messages.DoneMessage;
 import org.deeplearning4j.scaleout.messages.MoreWorkMessage;
+import org.deeplearning4j.scaleout.perform.WorkerPerformer;
 import org.deeplearning4j.scaleout.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.DeepLearningAccumulatorIterateAndUpdate;
 import scala.Option;
@@ -61,7 +61,6 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
     ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
     protected boolean isDone = false;
     protected Cancellable forceNextPhase,clearStateWorkers;
-    private boolean began = false;
 
     /**
      * Creates the master and the workers with this given conf

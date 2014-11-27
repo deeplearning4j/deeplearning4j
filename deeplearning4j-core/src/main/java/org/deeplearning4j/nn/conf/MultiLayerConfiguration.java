@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -40,7 +41,10 @@ public class MultiLayerConfiguration implements Serializable {
         this.confs = confs;
     }
 
-
+    /**
+     *
+     * @return
+     */
     public String toJson() {
         ObjectMapper mapper = new ObjectMapper();
         try {
@@ -67,7 +71,7 @@ public class MultiLayerConfiguration implements Serializable {
 
     public static class Builder {
 
-        private List<NeuralNetConfiguration> confs;
+        private List<NeuralNetConfiguration> confs = new ArrayList<>();
         private int[] hiddenLayerSizes;
 
         public Builder confs(List<NeuralNetConfiguration> confs) {

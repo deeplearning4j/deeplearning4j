@@ -2,6 +2,9 @@ package org.deeplearning4j.scaleout.actor.core.protocol;
 
 import java.io.Serializable;
 
+/**
+ * @author Adam Gibson
+ */
 public class Ack implements Serializable {
 
 	/**

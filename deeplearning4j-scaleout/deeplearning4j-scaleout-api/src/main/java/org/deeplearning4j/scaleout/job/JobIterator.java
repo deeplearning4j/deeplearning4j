@@ -8,9 +8,12 @@ package org.deeplearning4j.scaleout.job;
 public interface JobIterator {
 
 
-
-
-
+    /**
+     * Assigns a worker id
+     * @param workerId
+     * @return
+     */
+    Job next(String workerId);
 
     /**
      * Get the next job
