@@ -144,7 +144,7 @@ public  class RBM extends BaseNeuralNetwork {
 
 
         int k = conf.getK();
-        float learningRate = conf.getLr();
+        double learningRate = conf.getLr();
         int iteration = params[params.length - 1] == null ? 0 : (int) params[params.length - 1];
 
         if(wAdaGrad != null)

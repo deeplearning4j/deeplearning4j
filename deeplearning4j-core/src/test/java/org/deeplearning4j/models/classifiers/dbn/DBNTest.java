@@ -9,6 +9,7 @@ import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -37,7 +38,7 @@ public class DBNTest {
     public void testIris() {
         RandomGenerator gen = new MersenneTwister(123);
 
-        List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(1)
                 .weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen, 1e-2))
                 .activationFunction(Activations.tanh())
@@ -46,7 +47,8 @@ public class DBNTest {
                 .optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT)
                 .rng(gen)
                 .learningRate(1e-2f)
-                .nIn(4).nOut(3).list(2).override(new NeuralNetConfiguration.ConfOverride() {
+                .nIn(4).nOut(3).list(2).hiddenLayerSizes(new int[]{3})
+                .override(new NeuralNetConfiguration.ConfOverride() {
                     @Override
                     public void override(int i, NeuralNetConfiguration.Builder builder) {
 
@@ -62,7 +64,7 @@ public class DBNTest {
 
 
         DBN d = new DBN.Builder().layerWiseConfiguration(conf)
-                .hiddenLayerSizes(new int[]{3}).build();
+                .build();
 
 
 
@@ -84,15 +86,15 @@ public class DBNTest {
     public void testDbn() throws IOException {
         RandomGenerator gen = new MersenneTwister(123);
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().withActivationType(NeuralNetConfiguration.ActivationType.NET_ACTIVATION)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().withActivationType(NeuralNetConfiguration.ActivationType.NET_ACTIVATION)
                 .momentum(9e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen,1e-1))
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).iterations(10)
-                .learningRate(1e-1f).nIn(784).nOut(10).build();
+                .learningRate(1e-1f).nIn(784).nOut(10).list(3).hiddenLayerSizes(new int[]{500, 250, 200})
+                .build();
 
 
 
-        DBN d = new DBN.Builder().configure(conf)
-                .hiddenLayerSizes(new int[]{500, 250, 200})
+        DBN d = new DBN.Builder().layerWiseConfiguration(conf)
                 .build();
 
         d.getInputLayer().conf().setRenderWeightIterations(10);

@@ -1,5 +1,7 @@
 package org.deeplearning4j.optimize;
 
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -39,9 +41,12 @@ public class BackPropOptimizerTests {
         double fineTuneLr = 0.01;
         int fineTuneEpochs = 10000;
 
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .k(1).nIn(nIns).nOut(nOuts).learningRate(fineTuneLr).list(3).hiddenLayerSizes(hiddenLayerSizes)
+                .build();
 
         DBN dbn = new DBN.Builder()
-                .hiddenLayerSizes(hiddenLayerSizes)
+                .layerWiseConfiguration(conf)
                 .build();
 
         INDArray params = dbn.params();

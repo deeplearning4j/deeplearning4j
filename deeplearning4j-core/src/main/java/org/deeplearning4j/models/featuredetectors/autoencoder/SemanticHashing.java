@@ -6,6 +6,7 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.nd4j.linalg.api.activation.ActivationFunction;
@@ -171,7 +172,7 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
         }
 
         for(int i = 0; i < deltas.length; i++) {
-            if(layerWiseConfigurations.get(i).isConstrainGradientToUnitNorm())
+            if(layerWiseConfigurations.getConf(i).isConstrainGradientToUnitNorm())
                 deltaRet.add(deltas[i].div(deltas[i].norm2(Integer.MAX_VALUE)));
 
             else
@@ -286,7 +287,7 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
         }
 
         for(int i = 0; i < deltas.length; i++) {
-            if(layerWiseConfigurations.get(i).isConstrainGradientToUnitNorm())
+            if(layerWiseConfigurations.getConf(i).isConstrainGradientToUnitNorm())
                 deltaRet.add(new Pair<>(deltas[i].divi(deltas[i].norm2(Integer.MAX_VALUE)),preCons[i]));
 
             else
@@ -506,20 +507,7 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
 
 
         @Override
-        public Builder hiddenLayerSizes(Integer[] hiddenLayerSizes) {
-            super.hiddenLayerSizes(hiddenLayerSizes);
-            return this;
-        }
-
-        @Override
-        public Builder hiddenLayerSizes(int[] hiddenLayerSizes) {
-            super.hiddenLayerSizes(hiddenLayerSizes);
-            return this;
-        }
-
-
-        @Override
-        public Builder layerWiseConfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
+        public Builder layerWiseConfiguration(MultiLayerConfiguration layerWiseConfiguration) {
             super.layerWiseConfiguration(layerWiseConfiguration);
             return this;
         }
@@ -652,12 +640,12 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
             e.setSampleFromHiddenActivations(encoder.isSampleFromHiddenActivations());
             e.setForceNumEpochs(shouldForceEpochs);
 
-            List<NeuralNetConfiguration> confs = new ArrayList<>();
+            MultiLayerConfiguration confs = new MultiLayerConfiguration.Builder().build();
             for(int i = 0; i <  e.layers.length; i++)
-                confs.add(e.layers[i].conf());
+                confs.getConfs().add(e.layers[i].conf());
 
             e.setLayerWiseConfigurations(confs);
-            e.setDefaultConfiguration(confs.get(0));
+            e.setDefaultConfiguration(confs.getConf(0));
 
             e.dimensionCheck();
 

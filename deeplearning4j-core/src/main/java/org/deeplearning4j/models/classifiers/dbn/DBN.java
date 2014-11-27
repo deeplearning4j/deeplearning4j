@@ -2,6 +2,7 @@ package org.deeplearning4j.models.classifiers.dbn;
 
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -87,7 +88,7 @@ public class DBN extends BaseMultiLayerNetwork {
      * @param learningRate the learning rate to use
      * @param epochs the number of epochs to iterate
      */
-    public void pretrain(DataSetIterator iter,int k,float learningRate,int epochs) {
+    public void pretrain(DataSetIterator iter,int k,double learningRate,int epochs) {
         if(!pretrain)
             return;
 
@@ -106,7 +107,7 @@ public class DBN extends BaseMultiLayerNetwork {
                     else
                         setInput(input);
                     //override learning rate where present
-                    float realLearningRate = layerWiseConfigurations.get(i).getLr();
+                    double realLearningRate = layerWiseConfigurations.getConf(i).getLr();
                     if(forceNumIterations()) {
                         for(int epoch = 0; epoch < epochs; epoch++) {
                             log.info("Error on iteration " + epoch + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
@@ -134,7 +135,7 @@ public class DBN extends BaseMultiLayerNetwork {
 
                     log.info("Training on layer " + (i + 1));
                     //override learning rate where present
-                    float realLearningRate = layerWiseConfigurations.get(i).getLr();
+                    double realLearningRate = layerWiseConfigurations.getConf(i).getLr();
                     if(forceNumIterations()) {
                         for(int epoch = 0; epoch < epochs; epoch++) {
                             log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
@@ -166,7 +167,7 @@ public class DBN extends BaseMultiLayerNetwork {
      * @param learningRate the learning rate to use
      * @param epochs the number of epochs to iterate
      */
-    public void pretrain(INDArray input,int k, float learningRate,int epochs) {
+    public void pretrain(INDArray input,int k, double learningRate,int epochs) {
 
         if(!pretrain)
             return;
@@ -195,7 +196,7 @@ public class DBN extends BaseMultiLayerNetwork {
 
             log.info("Training on layer " + (i + 1));
             //override learning rate where present
-            float realLearningRate = layers[i].conf().getLr();
+            double realLearningRate = layers[i].conf().getLr();
             if(forceNumIterations()) {
                 for(int epoch = 0; epoch < epochs; epoch++) {
                     log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
@@ -213,7 +214,7 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
 
-    public void pretrain(int k,float learningRate,int epochs) {
+    public void pretrain(int k,double learningRate,int epochs) {
         pretrain(this.getInput(),k,learningRate,epochs);
     }
 
@@ -223,7 +224,7 @@ public class DBN extends BaseMultiLayerNetwork {
                                      INDArray vBias, int index) {
         RBM ret = new RBM.Builder().withInput(input)
                 .withWeights(W).withHBias(hBias).withVisibleBias(vBias)
-                .configure(layerWiseConfigurations.get(index))
+                .configure(layerWiseConfigurations.getConf(index))
                 .build();
 
         return ret;
@@ -284,7 +285,7 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
         @Override
-        public Builder layerWiseConfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
+        public Builder layerWiseConfiguration(MultiLayerConfiguration layerWiseConfiguration) {
              super.layerWiseConfiguration(layerWiseConfiguration);
             return this;
         }
@@ -344,17 +345,6 @@ public class DBN extends BaseMultiLayerNetwork {
             return this;
         }
 
-        @Override
-        public Builder hiddenLayerSizes(Integer[] hiddenLayerSizes) {
-            super.hiddenLayerSizes(hiddenLayerSizes);
-            return this;
-        }
-
-        @Override
-        public Builder hiddenLayerSizes(int[] hiddenLayerSizes) {
-            super.hiddenLayerSizes(hiddenLayerSizes);
-            return this;
-        }
 
 
 

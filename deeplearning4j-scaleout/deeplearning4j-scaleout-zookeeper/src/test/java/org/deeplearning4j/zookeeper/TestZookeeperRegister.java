@@ -13,7 +13,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
-import org.deeplearning4j.scaleout.conf.Conf;
+import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.zookeeper.ZooKeeperConfigurationRegister;
 import org.deeplearning4j.scaleout.zookeeper.ZookeeperBuilder;
 import org.deeplearning4j.scaleout.zookeeper.ZookeeperConfigurationRetriever;
@@ -29,14 +29,14 @@ import org.slf4j.LoggerFactory;
 public class TestZookeeperRegister {
 	private static Logger log = LoggerFactory.getLogger(TestZookeeperRegister.class);
 	private ZooKeeper keeper;
-	private Conf conf;
+	private Configuration conf;
 	private ZooKeeperConfigurationRegister register;
 	private ZookeeperConfigurationRetriever retriever;
 	private TestingServer server;
 
 	@Before
 	public void init() throws Exception {
-		conf = new Conf();
+		conf = new Configuration();
 		try {
 			server = new TestingServer(2181);
 		}catch(Exception e) {
@@ -77,7 +77,7 @@ public class TestZookeeperRegister {
 
 		}, new Stat()));
 
-		Conf retrieve = retriever.retrieve();
+        Configuration retrieve = retriever.retrieve();
 		assumeNotNull(retrieve);
 
 		keeper.delete(path, -1);

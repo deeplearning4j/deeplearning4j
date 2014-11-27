@@ -17,8 +17,8 @@ import java.io.Serializable;
 public class NeuralNetWorkPerformer implements WorkerPerformer {
     protected NeuralNetwork neuralNetwork;
 
-    public NeuralNetWorkPerformer(NeuralNetwork neuralNetwork) {
-        this.neuralNetwork = neuralNetwork;
+    public NeuralNetWorkPerformer() {
+
     }
 
     @Override
