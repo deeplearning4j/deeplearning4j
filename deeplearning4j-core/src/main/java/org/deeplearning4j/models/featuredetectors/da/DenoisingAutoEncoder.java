@@ -42,7 +42,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
      * @param corruptionLevel the corruption value
      * @return the binomial sampled corrupted input
      */
-    public INDArray getCorruptedInput(INDArray x, float corruptionLevel) {
+    public INDArray getCorruptedInput(INDArray x, double corruptionLevel) {
         INDArray tilde_x = Nd4j.zeros(x.rows(), x.columns());
         for(int i = 0; i < x.rows(); i++)
             for(int j = 0; j < x.columns(); j++)
@@ -205,7 +205,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
     @Override
     public void iterate(INDArray input , Object[] params) {
-        float corruptionLevel = conf.getCorruptionLevel();
+        double corruptionLevel = conf.getCorruptionLevel();
         if(input != null )
             this.input = preProcessInput(input);
         this.lastMiniBatchSize = input.rows();
@@ -232,8 +232,8 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     @Override
     public  NeuralNetworkGradient getGradient(Object[] params) {
 
-        float corruptionLevel = conf.getCorruptionLevel();
-        float lr = conf.getLr();
+        double corruptionLevel = conf.getCorruptionLevel();
+        double lr = conf.getLr();
         int iteration = conf.getNumIterations();
 
         if(wAdaGrad != null)

@@ -2,6 +2,7 @@ package org.deeplearning4j.models.classifiers.sda;
 
 import org.deeplearning4j.models.featuredetectors.da.DenoisingAutoEncoder;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -80,7 +81,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
                     } else
                         setInput(input);
                     //override learning rate where present
-                    float realLearningRate = layerWiseConfigurations.get(i).getLr();
+                    double realLearningRate = layerWiseConfigurations.getConf(i).getLr();
                     if (forceNumIterations()) {
                         for (int iteration = 0; iteration < iterations; iteration++) {
                             log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
@@ -104,7 +105,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
 
                     log.info("Training on layer " + (i + 1));
                     //override learning rate where present
-                    float realLearningRate = layerWiseConfigurations.get(i).getLr();
+                    double realLearningRate = layerWiseConfigurations.getConf(i).getLr();
                     if (forceNumIterations()) {
                         for (int iteration = 0; iteration < iterations; iteration++) {
                             log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
@@ -141,7 +142,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
      *                        corruption level should be) the percent of inputs to corrupt
      * @param iterations      the number of iterations to run
      */
-    public void pretrain(INDArray input, float lr, float corruptionLevel, int iterations) {
+    public void pretrain(INDArray input, double lr, double corruptionLevel, int iterations) {
 
         if (this.getInput() == null)
             initializeLayers(input.dup());
@@ -179,7 +180,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
     @Override
     public NeuralNetwork createLayer(INDArray input, INDArray W, INDArray hbias,
                                      INDArray vBias, int index) {
-        DenoisingAutoEncoder ret = new DenoisingAutoEncoder.Builder().configure(layerWiseConfigurations.get(index))
+        DenoisingAutoEncoder ret = new DenoisingAutoEncoder.Builder().configure(layerWiseConfigurations.getConf(index))
                 .withInput(input).withWeights(W).withHBias(hbias).withVisibleBias(vBias)
                 .build();
         return ret;
@@ -301,22 +302,12 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
         }
 
         @Override
-        public Builder layerWiseConfiguration(List<NeuralNetConfiguration> layerWiseConfiguration) {
+        public Builder layerWiseConfiguration(MultiLayerConfiguration layerWiseConfiguration) {
             super.layerWiseConfiguration(layerWiseConfiguration);
             return this;
         }
 
 
-
-        public Builder hiddenLayerSizes(Integer[] hiddenLayerSizes) {
-            super.hiddenLayerSizes(hiddenLayerSizes);
-            return this;
-        }
-
-        public Builder hiddenLayerSizes(int[] hiddenLayerSizes) {
-            super.hiddenLayerSizes(hiddenLayerSizes);
-            return this;
-        }
 
 
 
@@ -339,7 +330,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
         public StackedDenoisingAutoEncoder build() {
             StackedDenoisingAutoEncoder ret = super.build();
             if(ret.defaultConfiguration == null)
-                ret.defaultConfiguration = layerWiseConfiguration.get(0);
+                ret.defaultConfiguration = this.multiLayerConfiguration.getConf(0);
             ret.initializeLayers(Nd4j.zeros(1, ret.defaultConfiguration.getnIn()));
 
             return ret;

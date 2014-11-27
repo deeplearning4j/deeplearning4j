@@ -26,7 +26,7 @@ public class DenoisingAutoEncoderOptimizer extends NeuralNetworkOptimizer {
 	 * @param optimizationAlgorithm
 	 * @param lossFunction
 	 */
-	public DenoisingAutoEncoderOptimizer(NeuralNetwork network, float lr, Object[] trainingParams, OptimizationAlgorithm optimizationAlgorithm, LossFunctions.LossFunction lossFunction) {
+	public DenoisingAutoEncoderOptimizer(NeuralNetwork network, double lr, Object[] trainingParams, OptimizationAlgorithm optimizationAlgorithm, LossFunctions.LossFunction lossFunction) {
 		super(network, lr, trainingParams, optimizationAlgorithm, lossFunction);
 	}
 

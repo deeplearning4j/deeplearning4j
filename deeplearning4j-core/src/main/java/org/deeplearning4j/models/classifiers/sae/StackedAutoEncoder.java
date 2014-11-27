@@ -12,7 +12,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class StackedAutoEncoder extends BaseMultiLayerNetwork {
     @Override
     public NeuralNetwork createLayer(INDArray input, INDArray W, INDArray hbias, INDArray vBias, int index) {
-        AutoEncoder ret = new AutoEncoder.Builder().configure(layerWiseConfigurations.get(index))
+        AutoEncoder ret = new AutoEncoder.Builder().configure(layerWiseConfigurations.getConf(index))
                 .withInput(input).withWeights(W).withHBias(hbias).withVisibleBias(vBias)
                 .build();
         return ret;
