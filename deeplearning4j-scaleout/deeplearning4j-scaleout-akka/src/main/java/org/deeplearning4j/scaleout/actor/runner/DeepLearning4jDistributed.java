@@ -14,6 +14,8 @@ import org.deeplearning4j.scaleout.actor.core.actor.MasterActor;
 import org.deeplearning4j.scaleout.actor.core.actor.ModelSavingActor;
 import org.deeplearning4j.scaleout.actor.core.actor.WorkerActor;
 import org.deeplearning4j.scaleout.actor.util.ActorRefUtils;
+import org.deeplearning4j.scaleout.aggregator.INDArrayAggregator;
+import org.deeplearning4j.scaleout.aggregator.JobAggregator;
 import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.job.JobIterator;
@@ -71,6 +73,16 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
         this.iter = iter;
     }
 
+
+
+    /**
+     * Master constructor
+     * @param iter the dataset to use
+     */
+    public DeepLearning4jDistributed(JobIterator iter,StateTracker stateTracker) {
+        this("master",iter);
+        this.stateTracker = stateTracker;
+    }
 
     /**
      * Master constructor
@@ -145,7 +157,8 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
 
         }, 10, TimeUnit.SECONDS);
 
-        masterActor = system.actorOf(ClusterSingletonManager.defaultProps(masterProps, "master", PoisonPill.getInstance(), "master"));
+        masterActor = system.actorOf(
+                ClusterSingletonManager.defaultProps(masterProps, "master", PoisonPill.getInstance(), "master"));
 
         log.info("Started master with address " + realJoinAddress.toString());
         c.set(MASTER_PATH,ActorRefUtils.absPath(masterActor, system));
@@ -177,8 +190,15 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
                         stateTracker = new HazelCastStateTracker(stateTrackerPort);
                     else
                         stateTracker = new HazelCastStateTracker();
-
                 }
+
+
+                if(stateTracker.jobAggregator() == null) {
+                    Class<? extends JobAggregator> clazz = (Class<? extends JobAggregator>) Class.forName(conf.get(JobAggregator.AGGREGATOR, INDArrayAggregator.class.getName()));
+                    JobAggregator agg = clazz.newInstance();
+                    stateTracker.setJobAggregator(agg);
+                }
+
 
                 log.info("Started state tracker with connection string " + stateTracker.connectionString());
 

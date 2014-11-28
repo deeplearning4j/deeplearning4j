@@ -1,7 +1,7 @@
 package org.deeplearning4j.scaleout.statetracker.hazelcast;
 
 
-import org.deeplearning4j.scaleout.aggregator.DeepLearningAccumulator;
+import org.deeplearning4j.scaleout.aggregator.WorkAccumulator;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.statetracker.IterateAndUpdate;
 import org.deeplearning4j.scaleout.statetracker.UpdateSaver;
@@ -58,6 +58,7 @@ public class HazelCastStateTracker  extends BaseHazelCastStateTracker {
         return new LocalFileUpdateSaver(".",getH());
     }
 
+
     @Override
     public Job loadForWorker(String workerId) {
         return null;
@@ -68,8 +69,6 @@ public class HazelCastStateTracker  extends BaseHazelCastStateTracker {
 
     }
 
-
-
     /**
      * Updates  for mini batches
      *
@@ -77,8 +76,7 @@ public class HazelCastStateTracker  extends BaseHazelCastStateTracker {
      */
     @Override
     public IterateAndUpdate updates() {
-        DeepLearningAccumulator d = new DeepLearningAccumulator(workerUpdates().size());
-        DeepLearningAccumulatorIterateAndUpdate d2 = new DeepLearningAccumulatorIterateAndUpdate(d,updateSaver(),workers());
+        IterateAndUpdateImpl d2 = new IterateAndUpdateImpl(jobAggregator,updateSaver(),workers());
         return d2;
     }
 

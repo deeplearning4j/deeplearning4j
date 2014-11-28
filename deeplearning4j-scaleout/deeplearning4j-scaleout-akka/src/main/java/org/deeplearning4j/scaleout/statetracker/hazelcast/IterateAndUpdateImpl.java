@@ -1,6 +1,7 @@
 package org.deeplearning4j.scaleout.statetracker.hazelcast;
 
-import org.deeplearning4j.scaleout.aggregator.DeepLearningAccumulator;
+import org.deeplearning4j.scaleout.aggregator.JobAggregator;
+import org.deeplearning4j.scaleout.aggregator.WorkAccumulator;
 import org.deeplearning4j.scaleout.job.Job;
 
 import org.deeplearning4j.scaleout.statetracker.IterateAndUpdate;
@@ -13,15 +14,15 @@ import java.util.Collection;
  * the workers and handles iterating and loading over each one of them at a time.
  * @author  Adam Gibson
  */
-public class DeepLearningAccumulatorIterateAndUpdate implements IterateAndUpdate {
+public class IterateAndUpdateImpl implements IterateAndUpdate {
 
 
-    private DeepLearningAccumulator accumulator;
+    private JobAggregator accumulator;
     private UpdateSaver updateSaver;
     private Collection<String> ids;
 
 
-    public DeepLearningAccumulatorIterateAndUpdate(DeepLearningAccumulator accumulator, UpdateSaver updateSaver, Collection<String> ids) {
+    public IterateAndUpdateImpl(JobAggregator accumulator, UpdateSaver updateSaver, Collection<String> ids) {
         this.accumulator = accumulator;
         this.updateSaver = updateSaver;
         this.ids = ids;
@@ -34,14 +35,14 @@ public class DeepLearningAccumulatorIterateAndUpdate implements IterateAndUpdate
      */
     @Override
     public Job accumulated() {
-        return new Job(accumulator.averaged(),"");
+        return new Job(accumulator.aggregate(),"");
     }
 
     @Override
     public void accumulate() throws Exception {
-        for(String s : ids)
+        for(String s : ids) {
             accumulator.accumulate(updateSaver.load(s));
-
+        }
     }
 
 

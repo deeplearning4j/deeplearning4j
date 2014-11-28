@@ -55,9 +55,6 @@ public class LocalFileUpdateSaver implements UpdateSaver {
 
                 @Override
                 public void entryRemoved(EntryEvent<String, Job> event) {
-                    File saveFile = new File(LocalFileUpdateSaver.this.baseDir,event.getKey());
-                    if(saveFile.exists())
-                        saveFile.delete();
                 }
 
                 @Override
@@ -67,9 +64,6 @@ public class LocalFileUpdateSaver implements UpdateSaver {
 
                 @Override
                 public void entryEvicted(EntryEvent<String, Job> event) {
-                    File saveFile = new File(LocalFileUpdateSaver.this.baseDir,event.getKey());
-                    if(saveFile.exists())
-                        saveFile.delete();
                 }
             },true);
         }

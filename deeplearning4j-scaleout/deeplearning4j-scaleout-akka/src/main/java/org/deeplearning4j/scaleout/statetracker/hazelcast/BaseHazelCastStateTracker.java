@@ -10,6 +10,7 @@ import com.hazelcast.core.*;
 
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.scaleout.actor.util.PortTaken;
+import org.deeplearning4j.scaleout.aggregator.JobAggregator;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.statetracker.IterateAndUpdate;
 import org.deeplearning4j.scaleout.statetracker.StateTracker;
@@ -20,6 +21,7 @@ import org.deeplearning4j.scaleout.statetracker.workretriever.LocalWorkRetriever
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -77,8 +79,6 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     private volatile  transient IList<String> updates;
     private volatile IAtomicReference<Double> patience;
     private volatile IAtomicReference<Boolean> begunTraining;
-    private volatile IAtomicReference<Double> patienceIncrease;
-    private volatile IAtomicReference<Integer> validationEpochs;
     private volatile IAtomicReference<Integer> miniBatchSize;
     private WorkRetriever workRetriever = new LocalWorkRetriever();
     protected UpdateSaver saver;
@@ -92,6 +92,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     private String connectionString;
     private Map<String,Long> heartbeat;
     private StateTrackerDropWizardResource resource;
+    protected JobAggregator jobAggregator;
 
     public final static String HAZELCAST_HOST = "hazelcast.host";
 
@@ -128,7 +129,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     public void startRestApi() {
         resource = new StateTrackerDropWizardResource(this);
         try {
-            InputStream is = getClass().getResourceAsStream("dropwizard.yml");
+            InputStream is = new ClassPathResource("/dropwizard.yml").getInputStream();
             File tmpConfig = new File("dropwizard.yml");
             BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpConfig));
             IOUtils.copy(is, bos);
@@ -139,6 +140,16 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
             throw new RuntimeException(e);
         }
 
+    }
+
+    @Override
+    public JobAggregator jobAggregator() {
+        return jobAggregator;
+    }
+
+    @Override
+    public void setJobAggregator(JobAggregator aggregator) {
+         this.jobAggregator = aggregator;
     }
 
     public abstract UpdateSaver createUpdateSaver();
@@ -253,6 +264,9 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
      */
     @Override
     public int inputSplit() {
+        Integer get = miniBatchSize.get();
+        if(get == null)
+            miniBatchSize.set(10);
         return (miniBatchSize.get() * numWorkers()) / numWorkers();
     }
 
@@ -346,9 +360,13 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
         try {
 
             updateSaver().save(id,update);
+            update.setWork(null);
+            update.setResult(null);
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
         updates.add(id);
 
     }
@@ -500,12 +518,10 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
         numTimesPretrain = h.getAtomicReference(NUM_TIMES_RUN_PRETRAIN);
         numTimesPretrainRan = h.getAtomicReference(NUM_TIMES_PRETRAIN_RAN);
         done = h.getAtomicReference(DONE);
-        validationEpochs = h.getAtomicReference(VALIDATION_EPOCHS);
         improvementThreshold = h.getAtomicReference(IMPROVEMENT_THRESHOLD);
         bestLoss = h.getAtomicReference(BEST_LOSS);
         earlyStop = h.getAtomicReference(EARLY_STOP);
         patience = h.getAtomicReference(PATIENCE);
-        patienceIncrease = h.getAtomicReference(PATIENCE_INCREASE);
         numBatches = h.getAtomicReference(NUM_BATCHES_SO_FAR_RAN);
 
 
@@ -691,8 +707,8 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
             }
         }
 
-
-        jobs.remove(remove);
+        if(remove != null)
+            jobs.remove(remove);
     }
 
     @Override
@@ -797,6 +813,8 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     @Override
     public int numWorkers() {
         int num = workers.size();
+        if(num < 1)
+            throw new IllegalStateException("There appears to have been an issue during initialization. No workers found.");
         return num;
     }
 

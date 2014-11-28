@@ -15,17 +15,19 @@ public class TestPerformer implements WorkerPerformer {
     private Configuration conf;
     private boolean updateCalled = false;
     private boolean performCalled = false;
-    private String id;
 
     @Override
     public void perform(Job job) {
         jobs.add(job);
+        job.setResult("done");
         performCalled = true;
     }
 
     @Override
     public void update(Object... o) {
         updateCalled = true;
+
+
     }
 
     @Override
