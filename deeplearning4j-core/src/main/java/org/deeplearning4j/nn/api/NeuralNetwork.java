@@ -125,9 +125,17 @@ public interface NeuralNetwork extends Serializable,Cloneable,IterationListener,
      */
     NeuralNetConfiguration conf();
 
+    /**
+     * Params with only hidden bias
+     * @return
+     */
+    INDArray params();
 
-
-
+    /**
+     * Params with only hidden bias
+     * @return
+     */
+    INDArray paramsWithVisible();
 
 
 }

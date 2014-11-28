@@ -28,6 +28,7 @@ public class NeuralNetWorkPerformerTest extends BaseWorkPerformerTest {
         DataSet d = fetcher.next();
         Job j = new Job(d,"1");
         assumeJobResultNotNull(performer,j);
+        performer.update(j.getResult());
     }
 
 

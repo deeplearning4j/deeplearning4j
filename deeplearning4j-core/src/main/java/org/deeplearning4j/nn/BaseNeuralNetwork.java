@@ -514,13 +514,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     }
 
-
-
-
+    @Override
+    public INDArray paramsWithVisible() {
+        return params();
+    }
 
     /* (non-Javadoc)
-       * @see org.deeplearning4j.nn.api.NeuralNetwork#getW()
-       */
+           * @see org.deeplearning4j.nn.api.NeuralNetwork#getW()
+           */
     @Override
     public INDArray getW() {
         return W;
