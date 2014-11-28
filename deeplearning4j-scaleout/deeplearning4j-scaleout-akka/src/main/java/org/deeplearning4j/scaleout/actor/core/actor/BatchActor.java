@@ -122,10 +122,11 @@ public class BatchActor extends UntypedActor implements DeepLearningConfigurable
                 mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
                         stateTracker.workerData()), mediator);
             }
-            else if(!iter.hasNext()) {
+
+            else if(!iter.hasNext())
                 mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
                         DoneMessage.getInstance()), mediator);
-            }
+
 
 
             else

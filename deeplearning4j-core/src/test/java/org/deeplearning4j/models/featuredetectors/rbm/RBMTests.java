@@ -41,7 +41,7 @@ public class RBMTests {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.VI).dropOut(0.3f)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).render(10)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(rng)
                 .learningRate(1e-1f).nIn(d.numInputs()).nOut(nOut).build();
 
@@ -105,7 +105,7 @@ public class RBMTests {
     @Test
     public void testMnist() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.5f).render(10)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.5f)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(new MersenneTwister(123))
                 .learningRate(1e-1f).nIn(784).nOut(600).build();
 

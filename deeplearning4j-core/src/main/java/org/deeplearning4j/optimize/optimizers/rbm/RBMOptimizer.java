@@ -24,8 +24,8 @@ public class RBMOptimizer extends NeuralNetworkOptimizer {
 	protected int k = -1;
 	protected int numTimesIterated = 0;
 	
-	public RBMOptimizer(BaseNeuralNetwork network,double lr, Object[] trainingParams,NeuralNetwork.OptimizationAlgorithm optimizationAlgorithm,LossFunctions.LossFunction lossFunction) {
-		super(network,lr,trainingParams,optimizationAlgorithm,lossFunction);
+	public RBMOptimizer(BaseNeuralNetwork network) {
+		super(network);
         if(extraParams.length == 1 && extraParams[0] == null)
             extraParams[0] = 1;
 	}
@@ -34,7 +34,7 @@ public class RBMOptimizer extends NeuralNetworkOptimizer {
 
     @Override
     public INDArray getValueGradient(int iteration) {
-        int k = extraParams != null  && extraParams.length < 1 ? 1 : (int) extraParams[0];
+        int k = network.conf().getK();
 
         numTimesIterated++;
         //adaptive k based on the number of iterations.

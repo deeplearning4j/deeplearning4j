@@ -205,7 +205,6 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
 
 
                 masterAddress  = startBackend(null,conf,iter,stateTracker);
-                Thread.sleep(60000);
 
             } catch (Exception e1) {
                 Thread.currentThread().interrupt();

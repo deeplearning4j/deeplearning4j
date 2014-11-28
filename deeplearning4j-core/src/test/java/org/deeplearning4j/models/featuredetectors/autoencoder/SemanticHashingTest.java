@@ -2,6 +2,7 @@ package org.deeplearning4j.models.featuredetectors.autoencoder;
 
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.models.classifiers.dbn.DBN;
+import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.junit.Test;
@@ -22,8 +23,19 @@ public class SemanticHashingTest {
     @Test
     public void testSemanticHashingMnist() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .nIn(784).nOut(10).momentum(0.5f).list(3).hiddenLayerSizes(new int[]{500,250,100})
+                .nIn(784).nOut(10).momentum(0.5f).list(4)
+                .hiddenLayerSizes(new int[]{500,250,100}).override(new NeuralNetConfiguration.ConfOverride() {
+                    @Override
+                    public void override(int i, NeuralNetConfiguration.Builder builder) {
+                        if(i == 3) {
+                            builder.activationFunction(Activations.softmax());
+                            builder.weightInit(WeightInit.ZERO);
+                            builder.lossFunction(LossFunctions.LossFunction.RMSE_XENT);
+                        }
+                    }
+                })
                 .build();
+
         DBN dbn = new DBN.Builder().layerWiseConfiguration(conf)
                 .build();
 

@@ -8,7 +8,8 @@ import java.io.Serializable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.deeplearning4j.iterativereduce.actor.core.ModelSaver;
+import org.deeplearning4j.scaleout.actor.core.ModelSaver;
+
 /**
  * Saves models to hdfs
  * @author Adam Gibson

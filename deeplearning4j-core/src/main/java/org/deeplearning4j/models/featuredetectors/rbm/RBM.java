@@ -518,7 +518,7 @@ public  class RBM extends BaseNeuralNetwork {
             this.sigma.divi(input.rows());
         }
 
-        optimizer = new RBMOptimizer(this, conf.getLr(), params, conf.getOptimizationAlgo(), conf.getLossFunction());
+        optimizer = new RBMOptimizer(this);
         optimizer.train(input);
     }
 

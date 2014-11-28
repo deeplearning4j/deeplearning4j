@@ -49,22 +49,9 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     /**
      *
      * @param network
-     * @param lr
-     * @param trainingParams
      */
-    public NeuralNetworkOptimizer(NeuralNetwork network,double lr,Object[] trainingParams,OptimizationAlgorithm optimizationAlgorithm,LossFunctions.LossFunction lossFunction) {
+    public NeuralNetworkOptimizer(NeuralNetwork network) {
         this.network = network;
-        this.lr = lr;
-        //add current iteration as an extra parameter
-        if(trainingParams != null) {
-            this.extraParams = new Object[trainingParams.length + 1];
-            System.arraycopy(trainingParams,0,extraParams,0,trainingParams.length);
-        }
-        else
-            this.extraParams = new Object[1];
-
-        this.optimizationAlgorithm = optimizationAlgorithm;
-        this.lossFunction = lossFunction;
     }
 
     private void createOptimizationAlgorithm() {
@@ -94,10 +81,10 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
         }
 
         network.setInput(x);
-        int epochs =  extraParams.length < 3 ? 1000 : (int) extraParams[2];
-        opt.setMaxIterations(epochs);
-        opt.optimize(epochs);
-        network.backProp(lr,epochs,extraParams);
+        int iterations =  network.conf().getNumIterations();
+        opt.setMaxIterations(iterations);
+        opt.optimize(iterations);
+        network.backProp(lr,iterations,extraParams);
 
 
 
@@ -164,9 +151,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
     @Override
     public INDArray getValueGradient(int iteration) {
-        if(iteration >= 1)
-            extraParams[extraParams.length - 1] = iteration;
-        NeuralNetworkGradient g = network.getGradient(extraParams);
+        NeuralNetworkGradient g = network.getGradient(null);
         return Nd4j.toFlattened(Arrays.asList(g.getwGradient(),g.getvBiasGradient(),g.gethBiasGradient()));
 
     }
