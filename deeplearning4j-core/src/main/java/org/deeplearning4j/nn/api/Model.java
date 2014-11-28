@@ -44,12 +44,6 @@ public interface Model {
     void setParams(INDArray params);
 
 
-    /**
-     * Fit the model to the given data
-     * @param data the data to fit the model to
-     * @param params the params (mixed values)
-     */
-    void fit(INDArray data,Object[] params);
 
     /**
      * Fit the model to the given data
@@ -61,9 +55,8 @@ public interface Model {
     /**
      * Run one iteration
      * @param input the input to iterate on
-     * @param params the extra params for the neural network(k, corruption level, max epochs,...)
      */
-    public void iterate(INDArray input,Object[] params);
+    public void iterate(INDArray input);
 
 
 }

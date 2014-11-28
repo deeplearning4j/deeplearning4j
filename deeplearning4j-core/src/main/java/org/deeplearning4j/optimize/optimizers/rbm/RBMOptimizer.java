@@ -26,8 +26,7 @@ public class RBMOptimizer extends NeuralNetworkOptimizer {
 	
 	public RBMOptimizer(BaseNeuralNetwork network) {
 		super(network);
-        if(extraParams.length == 1 && extraParams[0] == null)
-            extraParams[0] = 1;
+
 	}
 
 

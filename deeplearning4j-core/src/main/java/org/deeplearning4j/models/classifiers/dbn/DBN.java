@@ -17,7 +17,6 @@ import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 
 
@@ -60,35 +59,17 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
 
-    @Override
-    public void pretrain(DataSetIterator iter, Object[] otherParams) {
-        if(!pretrain)
-            return;
-        int passes = otherParams.length > 3 ? (Integer) otherParams[3] : 1;
-        for(int i = 0; i < passes; i++)
-            pretrain(input, defaultConfiguration.getK(),defaultConfiguration.getLr(),defaultConfiguration.getNumIterations());
 
-
-    }
-
-    @Override
-    public void pretrain(INDArray input, Object[] otherParams) {
-        pretrain(input, defaultConfiguration.getK(),defaultConfiguration.getLr(),defaultConfiguration.getNumIterations());
-
-    }
 
     /**
      * This unsupervised learning method runs
      * contrastive divergence on each RBM layer in the network.
      * @param iter the input to iterate on
-     * @param k the k to use for running the RBM contrastive divergence.
      * The typical tip is that the higher k is the closer to the model
      * you will be approximating due to more sampling. K = 1
      * usually gives very good results and is the default in quite a few situations.
-     * @param learningRate the learning rate to use
-     * @param epochs the number of epochs to iterate
      */
-    public void pretrain(DataSetIterator iter,int k,double learningRate,int epochs) {
+    public void pretrain(DataSetIterator iter) {
         if(!pretrain)
             return;
 
@@ -106,17 +87,15 @@ public class DBN extends BaseMultiLayerNetwork {
                     }
                     else
                         setInput(input);
-                    //override learning rate where present
-                    double realLearningRate = layerWiseConfigurations.getConf(i).getLr();
                     if(forceNumIterations()) {
-                        for(int epoch = 0; epoch < epochs; epoch++) {
-                            log.info("Error on iteration " + epoch + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
-                            getNeuralNets()[i].iterate(next.getFeatureMatrix(), new Object[]{k, learningRate});
-                            getNeuralNets()[i].iterationDone(epoch);
+                        for(int iteration = 0; iteration < getNeuralNets()[i].conf().getNumIterations(); iteration++) {
+                            log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
+                            getNeuralNets()[i].iterate(next.getFeatureMatrix());
+                            getNeuralNets()[i].iterationDone(iteration);
                         }
                     }
                     else
-                        getNeuralNets()[i].fit(next.getFeatureMatrix(), new Object[]{k, realLearningRate, epochs});
+                        getNeuralNets()[i].fit(next.getFeatureMatrix());
 
                 }
 
@@ -135,16 +114,15 @@ public class DBN extends BaseMultiLayerNetwork {
 
                     log.info("Training on layer " + (i + 1));
                     //override learning rate where present
-                    double realLearningRate = layerWiseConfigurations.getConf(i).getLr();
                     if(forceNumIterations()) {
-                        for(int epoch = 0; epoch < epochs; epoch++) {
-                            log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
-                            getNeuralNets()[i].iterate(layerInput, new Object[]{k, learningRate});
-                            getNeuralNets()[i].iterationDone(epoch);
+                        for(int iteration = 0; iteration < getNeuralNets()[i].conf().getNumIterations(); iteration++) {
+                            log.info("Error on epoch " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
+                            getNeuralNets()[i].iterate(layerInput);
+                            getNeuralNets()[i].iterationDone(iteration);
                         }
                     }
                     else
-                        getNeuralNets()[i].fit(layerInput, new Object[]{k, realLearningRate, epochs});
+                        getNeuralNets()[i].fit(layerInput);
 
                 }
 
@@ -160,14 +138,11 @@ public class DBN extends BaseMultiLayerNetwork {
      * This unsupervised learning method runs
      * contrastive divergence on each RBM layer in the network.
      * @param input the input to iterate on
-     * @param k the k to use for running the RBM contrastive divergence.
      * The typical tip is that the higher k is the closer to the model
      * you will be approximating due to more sampling. K = 1
      * usually gives very good results and is the default in quite a few situations.
-     * @param learningRate the learning rate to use
-     * @param epochs the number of epochs to iterate
      */
-    public void pretrain(INDArray input,int k, double learningRate,int epochs) {
+    public void pretrain(INDArray input) {
 
         if(!pretrain)
             return;
@@ -198,14 +173,14 @@ public class DBN extends BaseMultiLayerNetwork {
             //override learning rate where present
             double realLearningRate = layers[i].conf().getLr();
             if(forceNumIterations()) {
-                for(int epoch = 0; epoch < epochs; epoch++) {
-                    log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
-                    getNeuralNets()[i].iterate(layerInput, new Object[]{k, learningRate});
-                    getNeuralNets()[i].iterationDone(epoch);
+                for(int iteration = 0; iteration < layers[i].conf().getNumIterations(); iteration++) {
+                    log.info("Error on epoch " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
+                    getNeuralNets()[i].iterate(layerInput);
+                    getNeuralNets()[i].iterationDone(iteration);
                 }
             }
             else
-                getNeuralNets()[i].fit(layerInput, new Object[]{k, realLearningRate, epochs});
+                getNeuralNets()[i].fit(layerInput);
 
 
         }
@@ -214,9 +189,6 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
 
-    public void pretrain(int k,double learningRate,int epochs) {
-        pretrain(this.getInput(),k,learningRate,epochs);
-    }
 
 
     @Override
@@ -237,19 +209,6 @@ public class DBN extends BaseMultiLayerNetwork {
         return new RBM[numLayers];
     }
 
-
-
-    /**
-     * Fit the model to the given data
-     *
-     * @param data   the data to fit the model to
-     * @param params the params (mixed values)
-     */
-    @Override
-    public void fit(INDArray data, Object[] params) {
-        pretrain(data,defaultConfiguration.getK(),defaultConfiguration.getLr(),defaultConfiguration.getNumIterations());
-
-    }
 
 
     public static class Builder extends BaseMultiLayerNetwork.Builder<DBN> {
@@ -286,7 +245,7 @@ public class DBN extends BaseMultiLayerNetwork {
 
         @Override
         public Builder layerWiseConfiguration(MultiLayerConfiguration layerWiseConfiguration) {
-             super.layerWiseConfiguration(layerWiseConfiguration);
+            super.layerWiseConfiguration(layerWiseConfiguration);
             return this;
         }
 

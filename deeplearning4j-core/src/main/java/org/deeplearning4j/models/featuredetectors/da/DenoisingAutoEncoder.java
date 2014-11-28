@@ -112,15 +112,12 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     /**
      * Perform one iteration of training
      * @param x the input
-     * @param lr the learning rate
-     * @param corruptionLevel the corruption level to iterate with
-     * @param iteration the current iteration
-     */
-    public void train(INDArray x,float lr,float corruptionLevel,int iteration) {
+      */
+    public void train(INDArray x) {
         if(x != null)
             this.input = x;
         this.lastMiniBatchSize = x.rows();
-        NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel,lr,iteration});
+        NeuralNetworkGradient gradient = getGradient();
         vBias.addi(gradient.getvBiasGradient());
         W.addi(gradient.getwGradient());
         hBias.addi(gradient.gethBiasGradient());
@@ -182,7 +179,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
     @Override
-    public void fit(INDArray input, Object[] params) {
+    public void fit(INDArray input) {
         if(input != null)
             this.input = input;
         this.lastMiniBatchSize = input.rows();
@@ -190,26 +187,17 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
         optimizer.train(input);
     }
 
-    /**
-     * Fit the model to the given data
-     *
-     * @param data the data to fit the model to
-     */
-    @Override
-    public void fit(INDArray data) {
-        fit(data,null);
-    }
 
 
 
 
     @Override
-    public void iterate(INDArray input , Object[] params) {
+    public void iterate(INDArray input ) {
         double corruptionLevel = conf.getCorruptionLevel();
         if(input != null )
             this.input = preProcessInput(input);
         this.lastMiniBatchSize = input.rows();
-        NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel,conf.getLr(),0});
+        NeuralNetworkGradient gradient = getGradient();
 
         vBias.addi(gradient.getvBiasGradient());
         W.addi(gradient.getwGradient());
@@ -225,12 +213,12 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
             return;
         if(iteration % plotEpochs == 0 || iteration == 0) {
             NeuralNetPlotter plotter = new NeuralNetPlotter();
-            plotter.plotNetworkGradient(this,this.getGradient(new Object[]{0.3,0.001,1000}),getInput().rows());
+            plotter.plotNetworkGradient(this,this.getGradient(),getInput().rows());
         }
     }
 
     @Override
-    public  NeuralNetworkGradient getGradient(Object[] params) {
+    public  NeuralNetworkGradient getGradient() {
 
         double corruptionLevel = conf.getCorruptionLevel();
         double lr = conf.getLr();

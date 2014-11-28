@@ -89,7 +89,17 @@ public class DBNTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().withActivationType(NeuralNetConfiguration.ActivationType.NET_ACTIVATION)
                 .momentum(9e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen,1e-1))
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).iterations(10)
-                .learningRate(1e-1f).nIn(784).nOut(10).list(3).hiddenLayerSizes(new int[]{500, 250, 200})
+                .learningRate(1e-1f).nIn(784).nOut(10).list(4).hiddenLayerSizes(new int[]{500, 250, 200}).override(new NeuralNetConfiguration.ConfOverride() {
+                    @Override
+                    public void override(int i, NeuralNetConfiguration.Builder builder) {
+                        if(i == 3) {
+                            builder.weightInit(WeightInit.ZERO);
+                            builder.activationFunction(Activations.softMaxRows());
+                            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+
+                        }
+                    }
+                })
                 .build();
 
 
@@ -97,7 +107,6 @@ public class DBNTest {
         DBN d = new DBN.Builder().layerWiseConfiguration(conf)
                 .build();
 
-        d.getInputLayer().conf().setRenderWeightIterations(10);
         NeuralNetConfiguration.setClassifier(d.getOutputLayer().conf());
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         fetcher.fetch(10);

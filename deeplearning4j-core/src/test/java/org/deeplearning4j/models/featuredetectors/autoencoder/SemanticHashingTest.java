@@ -22,7 +22,7 @@ public class SemanticHashingTest {
 
     @Test
     public void testSemanticHashingMnist() throws Exception {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(100)
                 .nIn(784).nOut(10).momentum(0.5f).list(4)
                 .hiddenLayerSizes(new int[]{500,250,100}).override(new NeuralNetConfiguration.ConfOverride() {
                     @Override
