@@ -35,11 +35,8 @@ public interface NeuralNetwork extends Serializable,Cloneable,IterationListener,
 
     /**
      * Backprop with the output being the reconstruction
-     * @param lr the learning rate to use
-     * @param epochs the max number of epochs to run
-     * @param extraParams implementation specific params
      */
-    public void backProp(double lr,int epochs,Object[] extraParams);
+    public void backProp();
 
 
     public INDArray getW();
@@ -77,7 +74,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,IterationListener,
     public void setVBiasAdaGrad(AdaGrad adaGrad);
 
 
-    public NeuralNetworkGradient getGradient(Object[] params);
+    public NeuralNetworkGradient getGradient();
 
 
     public NeuralNetwork transpose();

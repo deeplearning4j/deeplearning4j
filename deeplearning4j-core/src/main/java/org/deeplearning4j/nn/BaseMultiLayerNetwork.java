@@ -338,6 +338,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     }
 
+
+
+
     /**
      * Triggers the activation of the last hidden layer ie: not logistic regression
      *
@@ -624,15 +627,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     }
 
-    /**
-     * Fit the model to the given data
-     *
-     * @param data the data to fit the model to
-     */
-    @Override
-    public void fit(INDArray data) {
-        this.pretrain(data,new Object[]{1});
-    }
 
     /* delta computation for back prop */
     protected  List<INDArray> computeDeltas() {
@@ -1355,12 +1349,30 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        pretrain(examples,new Object[]{defaultConfiguration.getK(), defaultConfiguration.getLr()});
+        pretrain(examples);
         //just in case: examples need to be set
         if(!pretrain)
             this.input = examples;
         finetune(labels);
     }
+
+
+    @Override
+    public void fit(INDArray data) {
+       pretrain(data);
+    }
+
+    @Override
+    public void iterate(INDArray input) {
+       pretrain(input);
+    }
+
+
+    /**
+     * Pretrain on the given data
+     * @param examples
+     */
+    public abstract void pretrain(INDArray examples);
 
     /**
      * Fit the model
@@ -1601,20 +1613,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     public abstract NeuralNetwork createLayer(INDArray input, INDArray W, INDArray hbias, INDArray vBias, int index);
 
-
-    /**
-     *
-     * @param iter
-     * @param otherParams
-     */
-    public abstract void pretrain(DataSetIterator iter, Object[] otherParams);
-
-    /**
-     *
-     * @param input
-     * @param otherParams
-     */
-    public abstract void pretrain(INDArray input, Object[] otherParams);
 
 
     public abstract NeuralNetwork[] createNetworkLayers(int numLayers);
@@ -1864,65 +1862,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    /**
-     * Run one iteration
-     *
-     * @param input  the input to iterate on
-     * @param params the extra params for the neural network(k, corruption level, max epochs,...)
-     */
-    @Override
-    public void iterate(INDArray input, Object[] params) {
 
-    }
-
-    /**
-     * Fit the model
-     *
-     * @param examples the examples to classify (one example in each row)
-     * @param labels   the example labels(a binary outcome matrix)
-     * @param params   extra parameters
-     */
-    @Override
-    public void fit(INDArray examples, INDArray labels, Object[] params) {
-
-    }
-
-    /**
-     * Fit the model
-     *
-     * @param data   the data to train on
-     * @param params extra parameters
-     */
-    @Override
-    public void fit(org.nd4j.linalg.dataset.api.DataSet data, Object[] params) {
-
-    }
-
-    /**
-     * Fit the model
-     *
-     * @param examples the examples to classify (one example in each row)
-     * @param labels   the labels for each example (the number of labels must match
-     *                 the number of rows in the example
-     * @param params   extra parameters
-     */
-    @Override
-    public void fit(INDArray examples, int[] labels, Object[] params) {
-
-    }
-
-    /**
-     * Iterate once on the model
-     *
-     * @param examples the examples to classify (one example in each row)
-     * @param labels   the labels for each example (the number of labels must match
-     *                 the number of rows in the example
-     * @param params   extra parameters
-     */
-    @Override
-    public void iterate(INDArray examples, int[] labels, Object[] params) {
-
-    }
 
 
 

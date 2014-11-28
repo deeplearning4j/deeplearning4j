@@ -35,14 +35,11 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
     private static final long serialVersionUID = 4455143696487934647L;
     protected NeuralNetwork network;
-    protected double lr;
-    protected Object[] extraParams;
     protected double tolerance = 0.00001f;
     protected static Logger log = LoggerFactory.getLogger(NeuralNetworkOptimizer.class);
     protected List<Double> errors = new ArrayList<>();
     protected transient OptimizerMatrix opt;
     protected OptimizationAlgorithm optimizationAlgorithm;
-    protected LossFunctions.LossFunction lossFunction;
     protected  NeuralNetPlotter plotter = new NeuralNetPlotter();
     protected double maxStep = -1;
     protected int currIteration = -1;
@@ -84,7 +81,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
         int iterations =  network.conf().getNumIterations();
         opt.setMaxIterations(iterations);
         opt.optimize(iterations);
-        network.backProp(lr,iterations,extraParams);
+        network.backProp();
 
 
 
@@ -96,7 +93,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
         if(plotEpochs <= 0)
             return;
         if(iteration % plotEpochs == 0) {
-            plotter.plotNetworkGradient(network,network.getGradient(extraParams),100);
+            plotter.plotNetworkGradient(network,network.getGradient(),100);
         }
 
     }
@@ -151,7 +148,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
     @Override
     public INDArray getValueGradient(int iteration) {
-        NeuralNetworkGradient g = network.getGradient(null);
+        NeuralNetworkGradient g = network.getGradient();
         return Nd4j.toFlattened(Arrays.asList(g.getwGradient(),g.getvBiasGradient(),g.gethBiasGradient()));
 
     }

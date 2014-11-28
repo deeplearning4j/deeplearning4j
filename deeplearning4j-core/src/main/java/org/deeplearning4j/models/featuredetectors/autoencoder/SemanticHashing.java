@@ -97,25 +97,11 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
     public SemanticHashing(){}
 
 
-
-
-    /**
-     * Pretrain the network with the given parameters
-     *
-     * @param input       the input to iterate ons
-     * @param otherParams the other parameters for child classes (algorithm specific parameters such as corruption level for SDA)
-     */
-    @Override
-    public void pretrain(INDArray input, Object[] otherParams) {
-        throw new IllegalStateException("Not implemented");
-
-    }
-
     /**
      * Creates a layer depending on the index.
      * The main reason this matters is for continuous variations such as the {@link org.deeplearning4j.models.classifiers.dbn.DBN}
      * where the first layer needs to be an {@link org.deeplearning4j.models.featuredetectors.rbm.RBM} for continuous inputs.
-     *
+     *d
      * @param input    the input to the layer
      * @param W        the weight vector
      * @param hbias    the hidden bias
@@ -207,19 +193,6 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
         R.add(R.get(R.size() - 1).mmul(W.get(W.size() - 1)).add(acts.get(acts.size() - 2).mmul(vWvB.get(vWvB.size() - 1).getFirst().addRowVector(vWvB.get(vWvB.size() - 1).getSecond()))).mul((getOutputLayer().conf().getActivationFunction().applyDerivative(acts.get(acts.size() - 1)))));
 
         return R;
-    }
-
-
-    /**
-     * Pretrain with a data applyTransformToDestination iterator.
-     * This will run through each neural net at a time and iterate on the input.
-     *
-     * @param iter        the iterator to use
-     * @param otherParams
-     */
-    @Override
-    public void pretrain(DataSetIterator iter, Object[] otherParams) {
-        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
@@ -361,6 +334,11 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
         fit(new org.nd4j.linalg.dataset.DataSet(examples,labels));
     }
 
+    @Override
+    public void pretrain(INDArray examples) {
+
+    }
+
     /**
      * Fit the model
      *
@@ -383,17 +361,6 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
 
     }
 
-
-    /**
-     * Fit the model to the given data
-     *
-     * @param data   the data to fit the model to
-     * @param params the params (mixed values)
-     */
-    @Override
-    public void fit(INDArray data, Object[] params) {
-
-    }
 
 
     public static class Builder extends BaseMultiLayerNetwork.Builder<SemanticHashing> {

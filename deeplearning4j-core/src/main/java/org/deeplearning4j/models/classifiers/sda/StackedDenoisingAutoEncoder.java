@@ -30,27 +30,6 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
     private static Logger log = LoggerFactory.getLogger(StackedDenoisingAutoEncoder.class);
 
 
-    public void pretrain(float lr, float corruptionLevel, int epochs) {
-        pretrain(this.getInput(), lr, corruptionLevel, epochs);
-    }
-
-    /**
-     * Pretrain with a data applyTransformToDestination iterator.
-     * This will run through each neural net at a time and iterate on the input.
-     *
-     * @param iter        the iterator to use
-     * @param otherParams
-     */
-    @Override
-    public void pretrain(DataSetIterator iter, Object[] otherParams) {
-        float corruptionLevel = (float) otherParams[0];
-        float lr = (Float) otherParams[1];
-        int epochs = (Integer) otherParams[2];
-        int passes = otherParams.length > 3 ? (Integer) otherParams[3] : 1;
-        for (int i = 0; i < passes; i++)
-            pretrain(iter, corruptionLevel, lr, epochs);
-
-    }
 
 
     /**
@@ -85,11 +64,11 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
                     if (forceNumIterations()) {
                         for (int iteration = 0; iteration < iterations; iteration++) {
                             log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
-                            getNeuralNets()[i].iterate(next.getFeatureMatrix(), new Object[]{corruptionLevel, lr});
+                            getNeuralNets()[i].iterate(next.getFeatureMatrix());
                             getNeuralNets()[i].iterationDone(iteration);
                         }
                     } else
-                        getNeuralNets()[i].fit(next.getFeatureMatrix(), new Object[]{corruptionLevel, realLearningRate, iterations});
+                        getNeuralNets()[i].fit(next.getFeatureMatrix());
 
                 }
 
@@ -99,7 +78,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
                     DataSet next = iter.next();
                     layerInput = next.getFeatureMatrix();
                     for (int j = 1; j <= i; j++)
-                           layerInput = activationFromPrevLayer(j,layerInput);
+                        layerInput = activationFromPrevLayer(j,layerInput);
 
 
 
@@ -109,11 +88,11 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
                     if (forceNumIterations()) {
                         for (int iteration = 0; iteration < iterations; iteration++) {
                             log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
-                            getNeuralNets()[i].iterate(layerInput, new Object[]{corruptionLevel, lr});
+                            getNeuralNets()[i].iterate(layerInput);
                             getNeuralNets()[i].iterationDone(iteration);
                         }
                     } else
-                        getNeuralNets()[i].fit(layerInput, new Object[]{corruptionLevel, realLearningRate, iterations});
+                        getNeuralNets()[i].fit(layerInput);
 
 
                 }
@@ -125,24 +104,15 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
 
     }
 
-    @Override
-    public void pretrain(INDArray input, Object[] otherParams) {
 
-         pretrain(input, defaultConfiguration.getLr(), defaultConfiguration.getCorruptionLevel(),defaultConfiguration.getNumIterations());
-
-    }
 
     /**
      * Unsupervised pretraining based on reconstructing the input
      * from a corrupted version
      *
      * @param input           the input to iterate on
-     * @param lr              the starting learning rate
-     * @param corruptionLevel the corruption level (the smaller number of inputs; the higher the
-     *                        corruption level should be) the percent of inputs to corrupt
-     * @param iterations      the number of iterations to run
-     */
-    public void pretrain(INDArray input, double lr, double corruptionLevel, int iterations) {
+       */
+    public void pretrain(INDArray input) {
 
         if (this.getInput() == null)
             initializeLayers(input.dup());
@@ -163,18 +133,19 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
             else
                 layerInput = this.getNeuralNets()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
             if (forceNumIterations()) {
-                for (int iteration = 0; iteration < iterations; iteration++) {
-                    getNeuralNets()[i].iterate(layerInput, new Object[]{corruptionLevel, lr});
+                for (int iteration = 0; iteration < layerWiseConfigurations.getConf(i).getNumIterations(); iteration++) {
+                    getNeuralNets()[i].iterate(layerInput);
                     log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
                     getNeuralNets()[i].iterationDone(iteration);
 
                 }
             } else
-                getNeuralNets()[i].fit(layerInput, new Object[]{corruptionLevel, lr, iterations});
+                getNeuralNets()[i].fit(layerInput);
 
 
         }
     }
+
 
 
     @Override
@@ -193,16 +164,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
     }
 
 
-    /**
-     * Fit the model to the given data
-     *
-     * @param data   the data to fit the model to
-     * @param params the params (mixed values)
-     */
-    @Override
-    public void fit(INDArray data, Object[] params) {
 
-    }
 
 
     public static class Builder extends BaseMultiLayerNetwork.Builder<StackedDenoisingAutoEncoder> {

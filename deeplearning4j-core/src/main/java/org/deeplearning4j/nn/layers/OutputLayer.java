@@ -414,7 +414,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        trainTillConvergence(examples,labels,conf.getLr(),conf.getNumIterations());
+        trainTillConvergence(examples, labels, conf.getLr(), conf.getNumIterations());
     }
 
     /**
@@ -427,30 +427,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         fit(data.getFeatureMatrix(),data.getLabels());
     }
 
-    /**
-     * Fit the model
-     *
-     * @param examples the examples to classify (one example in each row)
-     * @param labels   the example labels(a binary outcome matrix)
-     * @param params   extra parameters
-     */
-    @Override
-    public void fit(INDArray examples, INDArray labels, Object[] params) {
-        fit(examples,labels);
-    }
-
-    /**
-     * Fit the model
-     *
-     * @param data   the data to train on
-     * @param params extra parameters
-     */
-    @Override
-    public void fit(DataSet data, Object[] params) {
-        fit(data);
-    }
-
-    /**
+      /**
      * Fit the model
      *
      * @param examples the examples to classify (one example in each row)
@@ -463,32 +440,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     }
 
-    /**
-     * Fit the model
-     *
-     * @param examples the examples to classify (one example in each row)
-     * @param labels   the labels for each example (the number of labels must match
-     *                 the number of rows in the example
-     * @param params   extra parameters
-     */
-    @Override
-    public void fit(INDArray examples, int[] labels, Object[] params) {
-        INDArray labelMatrix = FeatureUtil.toOutcomeMatrix(labels,labels.length);
-        fit(examples,labelMatrix);
-    }
-
-    /**
-     * Iterate once on the model
-     *
-     * @param examples the examples to classify (one example in each row)
-     * @param labels   the labels for each example (the number of labels must match
-     *                 the number of rows in the example
-     * @param params   extra parameters
-     */
-    @Override
-    public void iterate(INDArray examples, int[] labels, Object[] params) {
-
-    }
 
     /**
      * Transform the data based on the model's output.
@@ -538,19 +489,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         }
         setB(params.get(NDArrayIndex.interval(conf.getnIn() * conf.getnOut(), params.length())));
     }
-
-    /**
-     * Fit the model to the given data
-     *
-     * @param data   the data to fit the model to
-     * @param params the params (mixed values)
-     */
-    @Override
-    public void fit(INDArray data, Object[] params) {
-        throw new UnsupportedOperationException();
-
-    }
-
     /**
      * Fit the model to the given data
      *
@@ -561,16 +499,11 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
        throw new UnsupportedOperationException();
     }
 
-    /**
-     * Run one iteration
-     *
-     * @param input  the input to iterate on
-     * @param params the extra params for the neural network(k, corruption level, max epochs,...)
-     */
     @Override
-    public void iterate(INDArray input, Object[] params) {
+    public void iterate(INDArray input) {
 
     }
+
 
     @Override
     public String toString() {
