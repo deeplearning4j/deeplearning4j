@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-parent</artifactId>
-    <version>0.0.3.2.8-SNAPSHOT</version>
+    <version>0.0.3.3-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>DeepLearning4j</name>
 
@@ -34,7 +34,6 @@
     <properties>
         <slf4j.version>1.7.6</slf4j.version>
         <junit.version>4.11</junit.version>
-        <maven.test.skip>true</maven.test.skip>
         <logback.version>1.1.2</logback.version>
         <nd4j.version>0.0.3.5.4</nd4j.version>
         <jackson.version>2.3.2</jackson.version>
