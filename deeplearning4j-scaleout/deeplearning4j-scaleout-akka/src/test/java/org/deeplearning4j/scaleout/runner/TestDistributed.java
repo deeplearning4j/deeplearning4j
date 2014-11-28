@@ -9,10 +9,14 @@ import org.deeplearning4j.scaleout.job.collection.CollectionJobIterator;
 import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
 import org.deeplearning4j.scaleout.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
+import org.deeplearning4j.util.SerializationUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import static org.junit.Assume.*;
 
+import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -27,7 +31,7 @@ public class TestDistributed {
     private StateTracker stateTracker;
     private JobIterator testIterator;
     private Configuration conf;
-
+    private File finalFile = new File("model-saver");
 
     @Before
     public void before() throws Exception {
@@ -44,44 +48,27 @@ public class TestDistributed {
     }
 
     @After
-    public void finish() {
+    public void finish() throws Exception {
         testJobs.clear();
         stateTracker.finish();
     }
 
     @Test
-    public void testDistributed() {
+    public void testDistributed() throws Exception {
         DeepLearning4jDistributed distributed = new DeepLearning4jDistributed(testIterator,stateTracker);
         distributed.setup(conf);
         distributed.train();
-        boolean done = false;
-        int countDone = 0;
-        Set<Job> remove = new HashSet<>();
-        while(!done) {
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            for(Job j : testJobs) {
-                if(j.getResult() != null && j.getResult().equals("done")) {
-                    countDone++;
-                    remove.add(j);
-                }
-            }
-
-            testJobs.removeAll(remove);
-            remove.clear();
-
-            if(countDone >= 10)
-                done = true;
-        }
-
 
 
 
     }
 
+    @Test
+    public void testNextOne() {
+        Serializable s = SerializationUtils.readObject(finalFile);
+        assumeNotNull(s);
+        finalFile.delete();
+
+    }
 
 }

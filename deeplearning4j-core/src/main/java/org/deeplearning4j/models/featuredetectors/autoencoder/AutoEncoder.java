@@ -149,7 +149,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
      */
     @Override
     public void fit(INDArray input, Object[] params) {
-        AutoEncoderOptimizer o = new AutoEncoderOptimizer(this,conf.getLr(),params,conf.getOptimizationAlgo(),conf.getLossFunction());
+        AutoEncoderOptimizer o = new AutoEncoderOptimizer(this);
         o.train(input);
     }
 
