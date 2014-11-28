@@ -10,31 +10,32 @@ import org.deeplearning4j.scaleout.job.Job;
  * It handles summing and averaging over all of the results
  * accumulated so far
  */
-public class DeepLearningAccumulator {
+public abstract class WorkAccumulator implements JobAggregator {
 
     private Job averaged = null;
-    private int numWorkers;
+    protected double seenSoFar = 0.0;
 
 
-    public DeepLearningAccumulator(int numWorkers) {
-        this.numWorkers = numWorkers;
+
+
+    protected Job empty() {
+        return new Job(null,"");
     }
 
     /**
      * Averages the results of the network so far
      * @param toAccumulate the network to average in
      */
-    public void accumulate(Job toAccumulate) {
+    public abstract void accumulate(Job toAccumulate);
 
 
-	}
 
     /**
      * The averaged network
      * @return the averaged network
      */
-	public Job averaged() {
-		return averaged;
-	}
+    public Job averaged() {
+        return averaged;
+    }
 
 }

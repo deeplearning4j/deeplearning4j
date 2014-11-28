@@ -113,8 +113,7 @@ public class BatchActor extends UntypedActor implements DeepLearningConfigurable
                     if(next == null)
                         break;
 
-
-                    stateTracker.saveWorker(worker,next);
+                    stateTracker.addJobToCurrent(next);
 
                 }
 
