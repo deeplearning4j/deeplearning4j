@@ -206,10 +206,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * Backprop with the output being the reconstruction
      */
     @Override
-    public void backProp(double lr,int iterations,Object[] extraParams) {
+    public void backProp() {
         double currRecon = LossFunctions.score(input, LossFunctions.LossFunction.SQUARED_LOSS,this.transform(input),conf.getL2(),conf.isUseRegularization());
         boolean train = true;
         NeuralNetwork revert = clone();
+        int iterations = 0;
         while(train) {
             if(iterations > conf().getNumIterations())
                 break;
@@ -244,7 +245,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             if(plotIterations > 0) {
                 NeuralNetPlotter plotter = new NeuralNetPlotter();
                 if(iterations % plotIterations == 0) {
-                    plotter.plotNetworkGradient(this,getGradient(extraParams),getInput().rows());
+                    plotter.plotNetworkGradient(this,getGradient(),getInput().rows());
                 }
             }
 
@@ -252,15 +253,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     }
 
-    /**
-     * Fit the model to the given data
-     *
-     * @param data the data to fit the model to
-     */
-    @Override
-    public void fit(INDArray data) {
-        fit(data,null);
-    }
+
 
     /**
      * Applies sparsity to the passed in hbias gradient
@@ -670,7 +663,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             return;
         if(iteration % plotEpochs == 0 || iteration == 0) {
             NeuralNetPlotter plotter = new NeuralNetPlotter();
-            plotter.plotNetworkGradient(this,this.getGradient(new Object[]{1,0.001,1000}),getInput().rows());
+            plotter.plotNetworkGradient(this,this.getGradient(),getInput().rows());
         }
     }
     public static class Builder<E extends BaseNeuralNetwork> {

@@ -77,20 +77,6 @@ public interface Classifier extends Model {
     void fit(DataSet data);
 
 
-    /**
-     * Fit the model
-     * @param examples the examples to classify (one example in each row)
-     * @param labels the example labels(a binary outcome matrix)
-     * @param params extra parameters
-     */
-    void fit(INDArray examples,INDArray labels,Object[] params);
-
-    /**
-     * Fit the model
-     * @param data the data to train on
-     * @param params extra parameters
-     */
-    void fit(DataSet data,Object[] params);
 
 
     /**
@@ -101,24 +87,6 @@ public interface Classifier extends Model {
      */
     void fit(INDArray examples,int[] labels);
 
-
-    /**
-     * Fit the model
-     * @param examples the examples to classify (one example in each row)
-     * @param labels the labels for each example (the number of labels must match
-     *               the number of rows in the example
-     * @param params extra parameters
-     */
-    void fit(INDArray examples,int[] labels,Object[] params);
-
-    /**
-     * Iterate once on the model
-     * @param examples the examples to classify (one example in each row)
-     * @param labels the labels for each example (the number of labels must match
-     *               the number of rows in the example
-     * @param params extra parameters
-     */
-    void iterate(INDArray examples,int[] labels,Object[] params);
 
 
 

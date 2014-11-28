@@ -49,20 +49,19 @@ public class AutoEncoder extends BaseNeuralNetwork {
      * iterate one iteration of the network
      *
      * @param input  the input to iterate on
-     * @param params the extra params (k, corruption level,...)
      */
     @Override
-    public void iterate(INDArray input,   Object[] params) {
-        NeuralNetworkGradient gradient = getGradient(new Object[]{conf.getLr()});
+    public void iterate(INDArray input) {
+        NeuralNetworkGradient gradient = getGradient();
         vBias.addi(gradient.getvBiasGradient());
         W.addi(gradient.getwGradient());
         hBias.addi(gradient.gethBiasGradient());
     }
 
     @Override
-    public NeuralNetworkGradient getGradient(Object[] params) {
-        double lr = (double) params[0];
-        int iterations = (int) params[1];
+    public NeuralNetworkGradient getGradient() {
+        double lr = conf.getLr();
+        int iterations = conf.getNumIterations();
 
 
         //feed forward
@@ -145,10 +144,9 @@ public class AutoEncoder extends BaseNeuralNetwork {
      * Trains via an optimization algorithm such as SGD or Conjugate Gradient
      *
      * @param input  the input to iterate on
-     * @param params the params (k,corruption level, max epochs,...)
      */
     @Override
-    public void fit(INDArray input, Object[] params) {
+    public void fit(INDArray input) {
         AutoEncoderOptimizer o = new AutoEncoderOptimizer(this);
         o.train(input);
     }

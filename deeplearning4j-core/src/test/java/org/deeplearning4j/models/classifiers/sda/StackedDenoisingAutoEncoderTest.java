@@ -9,6 +9,7 @@ import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -36,7 +37,7 @@ public class StackedDenoisingAutoEncoderTest {
     @Test
     public void testDbn() throws IOException {
         final RandomGenerator gen = new MersenneTwister(123);
-        DataSetIterator iter = new MultipleEpochsIterator(2,new MnistDataSetIterator(100,1000));
+        DataSetIterator iter = new MnistDataSetIterator(10,10);
 
         DataSet d2 = iter.next();
 
@@ -45,13 +46,15 @@ public class StackedDenoisingAutoEncoderTest {
                 .momentum(5e-1f).weightInit(WeightInit.SIZE).constrainGradientToUnitNorm(false)
                 .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE).iterations(10)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE)
-                .learningRate(1e-1f).nIn(d2.numInputs()).nOut(d2.numOutcomes()).list(4).hiddenLayerSizes(new int[]{600, 300, 200})
-                .override(new NeuralNetConfiguration.ConfOverride() {
+                .learningRate(1e-1f).nIn(d2.numInputs()).nOut(d2.numOutcomes()).list(4).hiddenLayerSizes(new int[]{600, 300, 200}).override(new NeuralNetConfiguration.ConfOverride() {
                     @Override
                     public void override(int i, NeuralNetConfiguration.Builder builder) {
-                          if(i == 3)
-                              builder.iterations(1000);
+                        if(i == 3) {
+                            builder.weightInit(WeightInit.ZERO);
+                            builder.activationFunction(Activations.softMaxRows());
+                            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
 
+                        }
                     }
                 })
                 .build();
@@ -60,13 +63,13 @@ public class StackedDenoisingAutoEncoderTest {
 
 
 
-        StackedDenoisingAutoEncoder d = new StackedDenoisingAutoEncoder.Builder().layerWiseConfiguration(conf)
+        StackedDenoisingAutoEncoder d = new StackedDenoisingAutoEncoder.Builder()
+                .layerWiseConfiguration(conf)
                 .build();
 
 
 
 
-        NeuralNetConfiguration.setClassifier(d.getOutputLayer().conf());
         d.fit(d2);
 
 

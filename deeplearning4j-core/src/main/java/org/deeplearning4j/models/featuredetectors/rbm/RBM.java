@@ -93,44 +93,11 @@ public  class RBM extends BaseNeuralNetwork {
      *
      * Other insights:
      *    CD - k involves keeping the first k samples of a gibbs sampling of the model.
-     *
-     * @param learningRate the learning rate to scale by
-     * @param k the number of iterations to do
-     * @param input the input to sample from
-     */
-    public void contrastiveDivergence(double learningRate,int k,INDArray input) {
-        if(input != null)
-            this.input = input;
-        this.lastMiniBatchSize = input.rows();
-        NeuralNetworkGradient gradient = getGradient(new Object[]{k,learningRate,-1});
-        double norm = gradient.getwGradient().norm2(Integer.MAX_VALUE).getDouble(0);
-        getW().addi(gradient.getwGradient());
-        gethBias().addi(gradient.gethBiasGradient());
-        getvBias().addi(gradient.getvBiasGradient());
 
-    }
-
-    /**
-     * Contrastive divergence revolves around the idea
-     * of approximating the log likelihood around x1(input) with repeated sampling.
-     * Given is an energy based model: the higher k is (the more we sample the model)
-     * the more we lower the energy (increase the likelihood of the model)
-     *
-     * and lower the likelihood (increase the energy) of the hidden samples.
-     *
-     * Other insights:
-     *    CD - k involves keeping the first k samples of a gibbs sampling of the model.
-     *
-     * @param learningRate the learning rate to scale by
-     * @param k the number of iterations to do
-     * @param input the input to sample from
-     * @param iteration  the iteration to use
      */
-    public void contrastiveDivergence(double learningRate,int k,INDArray input,int iteration) {
-        if(input != null)
-            this.input = input;
+    public void contrastiveDivergence() {
         this.lastMiniBatchSize = input.rows();
-        NeuralNetworkGradient gradient = getGradient(new Object[]{k,learningRate,iteration});
+        NeuralNetworkGradient gradient = getGradient();
         getW().addi(gradient.getwGradient());
         gethBias().addi(gradient.gethBiasGradient());
         getvBias().addi(gradient.getvBiasGradient());
@@ -139,13 +106,12 @@ public  class RBM extends BaseNeuralNetwork {
 
 
     @Override
-    public NeuralNetworkGradient getGradient(Object[] params) {
+    public NeuralNetworkGradient getGradient() {
 
 
 
         int k = conf.getK();
         double learningRate = conf.getLr();
-        int iteration = params[params.length - 1] == null ? 0 : (int) params[params.length - 1];
 
         if(wAdaGrad != null)
             wAdaGrad.setMasterStepSize(learningRate);
@@ -231,19 +197,11 @@ public  class RBM extends BaseNeuralNetwork {
         INDArray  vBiasGradient = input.sub(nvSamples).mean(0);
         NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 
-        updateGradientAccordingToParams(ret, iteration,learningRate);
+        updateGradientAccordingToParams(ret, 0,learningRate);
         return ret;
     }
 
-    /**
-     * Fit the model to the given data
-     *
-     * @param data the data to fit the model to
-     */
-    @Override
-    public void fit(INDArray data) {
-        fit(data,null);
-    }
+
 
     @Override
     public NeuralNetwork transpose() {
@@ -440,16 +398,7 @@ public  class RBM extends BaseNeuralNetwork {
         return propUp(input);
     }
 
-    @Override
-    public void iterationDone(int iteration) {
-        int plotEpochs = conf.getRenderWeightIterations();
-        if(plotEpochs <= 0)
-            return;
-        if(iteration % plotEpochs == 0 || iteration == 0) {
-            NeuralNetPlotter plotter = new NeuralNetPlotter();
-            plotter.plotNetworkGradient(this,this.getGradient(new Object[]{1,0.001,1000}),getInput().rows());
-        }
-    }
+
 
     /**
      * Calculates the activation of the hidden:
@@ -507,8 +456,7 @@ public  class RBM extends BaseNeuralNetwork {
      * Note: k is the first input iken params.
      */
     @Override
-    public void fit(INDArray input,
-                    Object[] params) {
+    public void fit(INDArray input) {
         if(input != null)
             this.input = Transforms.stabilize(input, 1);
         this.lastMiniBatchSize = input.rows();
@@ -537,13 +485,12 @@ public  class RBM extends BaseNeuralNetwork {
 
 
     @Override
-    public void iterate(INDArray input, Object[] params) {
+    public void iterate(INDArray input) {
         if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN)
             this.sigma = input.var(0).divi(input.rows());
 
-
-        int k = (int) params[0];
-        contrastiveDivergence(conf.getLr(), k, input);
+        this.input = input;
+        contrastiveDivergence();
     }
 
     public static class Builder extends BaseNeuralNetwork.Builder<RBM> {
