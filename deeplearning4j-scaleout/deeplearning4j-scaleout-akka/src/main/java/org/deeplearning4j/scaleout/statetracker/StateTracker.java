@@ -1,5 +1,6 @@
 package org.deeplearning4j.scaleout.statetracker;
 
+import org.deeplearning4j.scaleout.aggregator.JobAggregator;
 import org.deeplearning4j.scaleout.job.Job;
 
 import java.io.Serializable;
@@ -21,6 +22,11 @@ import java.util.Map;
  */
 public interface StateTracker extends Serializable {
 
+
+
+    JobAggregator jobAggregator();
+
+    void setJobAggregator(JobAggregator aggregator);
 
     void setCurrent(Serializable e) throws Exception;
 

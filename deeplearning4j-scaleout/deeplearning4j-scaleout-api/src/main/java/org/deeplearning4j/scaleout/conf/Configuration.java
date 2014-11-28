@@ -109,7 +109,7 @@ import java.util.regex.PatternSyntaxException;
  * <tt>${<i>user.name</i>}</tt> would then ordinarily be resolved to the value
  * of the System property with that name.
  */
-public class Configuration implements Iterable<Map.Entry<String,String>> {
+public class Configuration implements Iterable<Map.Entry<String,String>>,Serializable {
     private static final Logger LOG =
             LoggerFactory.getLogger(Configuration.class);
 
@@ -123,7 +123,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>> {
     /**
      * List of configuration parameters marked <b>final</b>.
      */
-    private Set<String> finalParameters = new HashSet<String>();
+    private Set<String> finalParameters = new HashSet<>();
 
     private boolean loadDefaults = true;
 
@@ -140,7 +140,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>> {
     private static final CopyOnWriteArrayList<String> defaultResources =
             new CopyOnWriteArrayList<>();
 
-    private static final ConcurrentMap<ClassLoader, Map<String, Class<?>>>
+    private static final transient ConcurrentMap<ClassLoader, Map<String, Class<?>>>
             CACHE_CLASSES = new ConcurrentHashMap<ClassLoader, Map<String, Class<?>>>();
 
     /**
@@ -174,7 +174,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>> {
 
     private Properties properties;
     private Properties overlay;
-    private ClassLoader classLoader;
+    private transient ClassLoader classLoader;
     {
         classLoader = Thread.currentThread().getContextClassLoader();
         if (classLoader == null) {

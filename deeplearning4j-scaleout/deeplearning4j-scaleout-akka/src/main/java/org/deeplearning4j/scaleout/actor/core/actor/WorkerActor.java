@@ -176,22 +176,31 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
 
 
                     if(getCurrentJob() != null) {
-                        if(getCurrentJob().getWork() == null)
-                            throw new IllegalStateException("Work for worker " + id + " was null");
+                        if(getCurrentJob().getWork() == null) {
+                            tracker.clearJob(id);
+                            tracker.enableWorker(id);
+                            log.warn("Work for worker " + id + " was null");
+                            return;
+                        }
+
+
 
 
                         log.info("Confirmation from " + getCurrentJob().workerId() + " on work");
 
                         workerPerformer.perform(getCurrentJob());
                         tracker.addUpdate(id, getCurrentJob());
+                        tracker.clearJob(id);
                         setCurrentJob(null);
 
                     }
 
                     else if(getCurrentJob() == null || !isWorking.get() && tracker.jobFor(id) != null) {
-                        if(tracker.jobFor(id) != null)
+                        if(tracker.jobFor(id) != null) {
                             tracker.clearJob(id);
-                        log.info("Clearing stale job... " + id);
+                            log.info("Clearing stale job... " + id);
+                        }
+
                     }
 
 

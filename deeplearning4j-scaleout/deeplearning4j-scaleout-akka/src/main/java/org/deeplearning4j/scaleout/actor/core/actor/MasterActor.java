@@ -24,7 +24,7 @@ import org.deeplearning4j.scaleout.messages.MoreWorkMessage;
 import org.deeplearning4j.scaleout.perform.WorkerPerformer;
 import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
 import org.deeplearning4j.scaleout.statetracker.StateTracker;
-import org.deeplearning4j.scaleout.statetracker.hazelcast.DeepLearningAccumulatorIterateAndUpdate;
+import org.deeplearning4j.scaleout.statetracker.hazelcast.IterateAndUpdateImpl;
 import scala.Option;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
@@ -82,6 +82,8 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
             throw new RuntimeException(e);
         }
 
+
+        setup(conf);
         stateTracker.runPreTrainIterations(conf.getInt(NUM_PASSES,1));
 
 
@@ -178,7 +180,7 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
     public  Job compute() {
 
 
-        DeepLearningAccumulatorIterateAndUpdate update = (DeepLearningAccumulatorIterateAndUpdate) stateTracker.updates();
+        IterateAndUpdateImpl update = (IterateAndUpdateImpl) stateTracker.updates();
         if(stateTracker.workerUpdates().isEmpty())
             return null;
 
