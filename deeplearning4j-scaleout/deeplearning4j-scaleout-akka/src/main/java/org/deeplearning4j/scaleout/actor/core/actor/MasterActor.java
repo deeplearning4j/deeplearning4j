@@ -22,6 +22,7 @@ import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.messages.DoneMessage;
 import org.deeplearning4j.scaleout.messages.MoreWorkMessage;
 import org.deeplearning4j.scaleout.perform.WorkerPerformer;
+import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
 import org.deeplearning4j.scaleout.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.DeepLearningAccumulatorIterateAndUpdate;
 import scala.Option;
@@ -212,11 +213,21 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
         log.info("Starting workers");
         ActorSystem system = context().system();
         RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
-        //start local workers
-        Props p = pool.props(WorkerActor.propsFor(conf, stateTracker));
-        p = ClusterSingletonManager.defaultProps(p, "master", PoisonPill.getInstance(), "master");
+        String performerFactoryClazz = conf.get(WorkerPerformerFactory.WORKER_PERFORMER);
+        try {
+            Class<? extends WorkerPerformerFactory> clazz = (Class<? extends WorkerPerformerFactory>) Class.forName(performerFactoryClazz);
+            WorkerPerformerFactory factory = clazz.newInstance();
+            WorkerPerformer performer = factory.create(conf);
+            //start local workers
+            Props p = pool.props(WorkerActor.propsFor(conf, stateTracker,performer));
+            p = ClusterSingletonManager.defaultProps(p, "master", PoisonPill.getInstance(), "master");
 
-        system.actorOf(p, "worker");
+            system.actorOf(p, "worker");
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
 
 
 

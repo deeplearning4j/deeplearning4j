@@ -34,15 +34,15 @@ public class Job implements Serializable {
         return clazz.cast(result);
     }
 
-    public Serializable getWork() {
+    public synchronized Serializable getWork() {
         return work;
     }
 
-    public void setWork(Serializable work) {
+    public synchronized void setWork(Serializable work) {
         this.work = work;
     }
 
-    public Serializable getResult() {
+    public synchronized Serializable getResult() {
         return result;
     }
 

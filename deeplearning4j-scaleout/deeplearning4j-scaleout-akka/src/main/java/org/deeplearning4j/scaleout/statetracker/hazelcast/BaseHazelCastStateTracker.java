@@ -636,8 +636,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
 
         r.set(j);
 
-        //iterate over jobs without the work/data
-        j.setWork(null);
+
 
         jobs.add(j);
 
