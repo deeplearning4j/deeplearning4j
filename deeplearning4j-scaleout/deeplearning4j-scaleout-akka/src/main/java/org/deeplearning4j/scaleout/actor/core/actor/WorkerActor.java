@@ -102,13 +102,11 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
 
 
 
-    public static Props propsFor(ActorRef actor,Configuration conf,StateTracker tracker) {
-        return Props.create(WorkerActor.class,actor,conf,tracker);
+    public static Props propsFor(Configuration conf,StateTracker tracker,WorkerPerformer performer) {
+        return Props.create(WorkerActor.class,conf,tracker,performer);
     }
 
-    public static Props propsFor(Configuration conf,StateTracker stateTracker) {
-        return Props.create(WorkerActor.class,conf,stateTracker);
-    }
+
 
 
 
@@ -165,7 +163,7 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
                             return;
                         }
 
-                        currentJob = u;
+                        setCurrentJob(u);
                         tracker.doneReplicating(id);
                     }catch(Exception e) {
                         throw new RuntimeException(e);
@@ -177,18 +175,20 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
                     checkJobAvailable();
 
 
-                    if(currentJob != null && !isWorking.get() && tracker.jobFor(id) != null) {
-                        log.info("Confirmation from " + currentJob.workerId() + " on work");
-                        if(currentJob.getWork() == null)
+                    if(getCurrentJob() != null) {
+                        if(getCurrentJob().getWork() == null)
                             throw new IllegalStateException("Work for worker " + id + " was null");
 
-                        workerPerformer.perform(currentJob);
-                        tracker.addUpdate(id, currentJob);
-                        currentJob = null;
+
+                        log.info("Confirmation from " + getCurrentJob().workerId() + " on work");
+
+                        workerPerformer.perform(getCurrentJob());
+                        tracker.addUpdate(id, getCurrentJob());
+                        setCurrentJob(null);
 
                     }
 
-                    else if(currentJob == null || !isWorking.get() && tracker.jobFor(id) != null) {
+                    else if(getCurrentJob() == null || !isWorking.get() && tracker.jobFor(id) != null) {
                         if(tracker.jobFor(id) != null)
                             tracker.clearJob(id);
                         log.info("Clearing stale job... " + id);
@@ -205,6 +205,16 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
 
         }, context().dispatcher());
 
+    }
+
+
+
+    public synchronized void setCurrentJob(Job j) {
+        this.currentJob = j;
+    }
+
+    public synchronized  Job getCurrentJob() {
+        return currentJob;
     }
 
 
@@ -252,7 +262,7 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
     protected void checkJobAvailable() throws Exception {
         Job j;
 
-        if((j = tracker.jobFor(id)) == null || !tracker.workerEnabled(id)) {
+        if((j = tracker.jobFor(id)) == null) {
             //inconsistent state
             if(!isWorking.get() && j != null)  {
                 tracker.clearJob(id);
@@ -265,7 +275,7 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
         if(tracker.needsReplicate(id)) {
             try {
                 log.info("Updating worker " + id);
-                currentJob = (Job) tracker.getCurrent();
+                setCurrentJob((Job) tracker.getCurrent());
                 tracker.doneReplicating(id);
             }catch(Exception e) {
                 throw new RuntimeException(e);
@@ -273,11 +283,10 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
         }
 
 
-        if(j != null && currentJob == null) {
+        if(j != null && getCurrentJob() == null) {
             log.info("Assigning job for worker " + id);
-            currentJob = j;
-            //clear data, no point in keeping both in memory
-            tracker.updateJob(new Job(id,null));
+            setCurrentJob(j);
+
 
         }
 
@@ -289,11 +298,15 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
     public void setup(Configuration conf) {
         this.conf = conf;
         String url = conf.get(MASTER_URL);
-        this.masterPath = conf.get(MASTER_PATH);
-        Address a = AddressFromURIString.apply(url);
-        Cluster.get(context().system()).join(a);
+        if(url != null) {
+            this.masterPath = conf.get(MASTER_PATH);
+            Address a = AddressFromURIString.apply(url);
+            Cluster.get(context().system()).join(a);
 
-        mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
+            mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
+        }
+
+
 
     }
 

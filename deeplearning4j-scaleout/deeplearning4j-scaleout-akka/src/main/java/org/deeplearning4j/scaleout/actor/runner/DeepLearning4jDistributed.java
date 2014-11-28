@@ -18,6 +18,8 @@ import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.job.JobIterator;
 import org.deeplearning4j.scaleout.messages.MoreWorkMessage;
+import org.deeplearning4j.scaleout.perform.WorkerPerformer;
+import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
 import org.deeplearning4j.scaleout.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
 import org.slf4j.Logger;
@@ -43,7 +45,6 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
 
     private static final long serialVersionUID = -4385335922485305364L;
     private transient ActorSystem system;
-    private Integer epochs;
     private ActorRef mediator;
     private static Logger log = LoggerFactory.getLogger(DeepLearning4jDistributed.class);
     private static String systemName = "ClusterSystem";
@@ -216,19 +217,18 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
 
                         @Override
                         public void run() {
-                            if(!system.isTerminated()) {
+                            if (!system.isTerminated()) {
                                 try {
                                     log.info("Current cluster members " +
                                             Cluster.get(system).readView().members());
-                                }catch(Exception e) {
+                                } catch (Exception e) {
                                     log.warn("Tried reading cluster members during shutdown");
                                 }
                             }
 
                         }
 
-                    },system.dispatcher());
-            log.info("Setup master with epochs " + epochs);
+                    }, system.dispatcher());
         }
 
         else {
@@ -282,7 +282,7 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
 
         //only start dropwizard on the master
         if(type.equals("master")) {
-          stateTracker.startRestApi();
+            stateTracker.startRestApi();
         }
 
         else if(stateTracker instanceof HazelCastStateTracker)
@@ -315,9 +315,11 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
 
 
             log.info("Joining cluster of size " + workers);
+            Class<? extends WorkerPerformerFactory> factoryClazz = (Class<? extends WorkerPerformerFactory>) Class.forName(conf.get(WorkerPerformerFactory.WORKER_PERFORMER));
+            WorkerPerformerFactory factory = factoryClazz.newInstance();
+            WorkerPerformer performer = factory.create();
 
-
-            Props p = pool.props(WorkerActor.propsFor(clusterClient, conf, stateTracker));
+            Props p = pool.props(WorkerActor.propsFor(conf, stateTracker,performer));
             system.actorOf(p, "worker");
 
             Cluster cluster = Cluster.get(system);
