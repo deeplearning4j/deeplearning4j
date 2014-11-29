@@ -38,8 +38,7 @@ public class BagOfWordsVectorizerTest {
 
     @Before
     public void before() {
-        cache = new InMemoryLookupCache.Builder()
-                .vectorLength(100).build();
+        cache = new InMemoryLookupCache();
         index = new LuceneInvertedIndex.Builder().indexDir(new File("bagofwords"))
                 .cache(cache).batchSize(5)
                 .cacheInRam(false).build();

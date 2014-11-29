@@ -38,8 +38,7 @@ public class TfIdfVectorizerTest {
     public void before() throws Exception {
         FileUtils.deleteDirectory(new File("tfidf"));
 
-        cache = new InMemoryLookupCache.Builder()
-                .vectorLength(100).build();
+        cache = new InMemoryLookupCache();
         index = new LuceneInvertedIndex.Builder().cache(cache)
                 .indexDir(new File("tfidf"))
                 .batchSize(5)

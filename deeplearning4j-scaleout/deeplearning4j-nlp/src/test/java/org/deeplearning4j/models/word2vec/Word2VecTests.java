@@ -1,15 +1,12 @@
 package org.deeplearning4j.models.word2vec;
 
-import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.text.sentenceiterator.LineSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
-import org.deeplearning4j.text.documentiterator.DocumentIterator;
-import org.deeplearning4j.text.documentiterator.FileDocumentIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.Before;
@@ -20,8 +17,7 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
+
 
 
 /**
@@ -43,15 +39,18 @@ public class Word2VecTests {
         File file = resource.getFile().getParentFile();
         SentenceIterator iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
         new File("cache.ser").delete();
+        InMemoryLookupCache cache = new InMemoryLookupCache();
 
 
         TokenizerFactory t = new UimaTokenizerFactory();
 
-        InMemoryLookupCache cache = new InMemoryLookupCache.Builder().vectorLength(100).useAdaGrad(false).lr(0.025f).build();
+        WeightLookupTable table = new InMemoryLookupTable
+                .Builder().vectorLength(100).useAdaGrad(false).cache(cache)
+                .lr(0.025f).build();
 
         Word2Vec vec = new Word2Vec.Builder()
                 .minWordFrequency(1).iterations(5)
-                .layerSize(100)
+                .layerSize(100).lookupTable(table)
                 .stopWords(new ArrayList<String>())
                 .vocabCache(cache)
                 .windowSize(5).iterate(iter).tokenizerFactory(t).build();

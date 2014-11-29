@@ -11,7 +11,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import java.util.List;
 
 public abstract class Builder {
-    protected VocabCache cache = new InMemoryLookupCache.Builder().vectorLength(100).build();
+    protected VocabCache cache = new InMemoryLookupCache();
     protected TokenizerFactory tokenizerFactory;
     protected List<String> stopWords = StopWords.getStopWords();
     protected int layerSize = 1;
