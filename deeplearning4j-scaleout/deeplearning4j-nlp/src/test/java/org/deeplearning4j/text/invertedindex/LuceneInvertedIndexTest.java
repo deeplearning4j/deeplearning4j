@@ -5,14 +5,22 @@ import static org.junit.Assert.*;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.Arrays;
 
 /**
  * Created by agibsonccc on 10/21/14.
  */
 public class LuceneInvertedIndexTest {
+
+    @Before
+    public void before() {
+        new File(LuceneInvertedIndex.DEFAULT_INDEX_DIR).delete();
+    }
+
 
     @Test
     public void testLuceneInvertedIndex() {
@@ -23,7 +31,8 @@ public class LuceneInvertedIndexTest {
         cache.addWordToIndex(1,"hello2");
         cache.putVocabWord("hello");
         cache.putVocabWord("hello2");
-        InvertedIndex index = new LuceneInvertedIndex(cache,true);
+        InvertedIndex index = new LuceneInvertedIndex(cache,false);
+        index.cleanup();
         index.addWordsToDoc(0, Arrays.asList(cache.wordFor("hello"),cache.wordFor("hello2")));
         index.addWordsToDoc(1, Arrays.asList(cache.wordFor("hello"),cache.wordFor("hello2")));
         index.finish();

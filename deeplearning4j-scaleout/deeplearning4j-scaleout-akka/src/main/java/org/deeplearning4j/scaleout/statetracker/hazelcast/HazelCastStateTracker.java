@@ -1,7 +1,6 @@
 package org.deeplearning4j.scaleout.statetracker.hazelcast;
 
 
-import org.deeplearning4j.scaleout.aggregator.WorkAccumulator;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.statetracker.IterateAndUpdate;
 import org.deeplearning4j.scaleout.statetracker.UpdateSaver;

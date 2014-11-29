@@ -16,6 +16,11 @@ public interface InvertedIndex extends Serializable {
 
 
     /**
+     * Cleanup any resources used
+     */
+    void cleanup();
+
+    /**
      * Sampling for creating mini batches
      * @return the sampling for mini batches
      */
