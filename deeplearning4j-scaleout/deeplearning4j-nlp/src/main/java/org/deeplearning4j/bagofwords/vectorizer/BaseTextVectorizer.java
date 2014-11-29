@@ -4,6 +4,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.routing.RoundRobinPool;
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.word2vec.StreamWork;
 import org.deeplearning4j.models.word2vec.VocabWork;
 import org.deeplearning4j.models.word2vec.actor.VocabActor;
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,10 +44,11 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     protected int batchSize = 1000;
     protected double sample = 0.0;
     protected boolean stem = false;
+    protected boolean cleanup = false;
 
     public BaseTextVectorizer(){}
 
-    protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index,int batchSize,double sample,boolean stem) {
+    protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index,int batchSize,double sample,boolean stem,boolean cleanup) {
         this.cache = cache;
         this.tokenizerFactory = tokenizerFactory;
         this.stopWords = stopWords;
@@ -59,10 +62,18 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         this.sample = sample;
         this.stem = stem;
 
-        if(index == null)
+        if(index == null) {
+            if(new File("word2vec-index").exists() && cleanup)
+                try {
+                    FileUtils.deleteDirectory(new File("word2vec-index"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             this.index = new LuceneInvertedIndex.Builder().batchSize(batchSize)
                     .indexDir(new File("word2vec-index")).sample(sample)
-                   .cache(cache).build();
+                    .cache(cache).build();
+
+        }
     }
 
     @Override

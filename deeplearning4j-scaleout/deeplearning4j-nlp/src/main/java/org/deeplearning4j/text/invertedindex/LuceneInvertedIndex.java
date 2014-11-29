@@ -1,6 +1,7 @@
 package org.deeplearning4j.text.invertedindex;
 
 import com.google.common.base.Function;
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -41,13 +42,11 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private transient  Directory dir;
     private transient IndexReader reader;
     private   transient Analyzer analyzer;
-    private transient IndexSearcher searcher;
     private VocabCache vocabCache;
     public final static String WORD_FIELD = "word";
     private int numDocs = 0;
     private List<List<VocabWord>> words = new ArrayList<>();
     private boolean cache = true;
-    private transient ExecutorService indexManager;
     private AtomicBoolean indexBeingCreated = new AtomicBoolean(false);
     private static Logger log = LoggerFactory.getLogger(LuceneInvertedIndex.class);
     public final static String INDEX_PATH = "word2vec-index";
@@ -62,9 +61,10 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private Queue<List<VocabWord>> miniBatchDocs = new ConcurrentLinkedDeque<>();
     private AtomicBoolean miniBatchGoing = new AtomicBoolean(true);
     private boolean miniBatch = false;
-    private static Map<String,IndexWriter> writer = new ConcurrentHashMap<>();
     public final static String DEFAULT_INDEX_DIR = "word2vec-index";
-
+    private transient SearcherManager searcherManager;
+    private transient ReaderManager  readerManager;
+    private transient TrackingIndexWriter indexWriter;
 
     public LuceneInvertedIndex(VocabCache vocabCache,boolean cache) {
         this(vocabCache,cache,DEFAULT_INDEX_DIR);
@@ -76,11 +76,23 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         this.vocabCache = vocabCache;
         this.cache = cache;
         this.indexPath = indexPath;
+        initReader();
     }
 
 
     private LuceneInvertedIndex(){
         this(null,false,DEFAULT_INDEX_DIR);
+    }
+
+    @Override
+    public void cleanup() {
+        File index = new File(indexPath);
+        if(index.exists())
+            try {
+                FileUtils.deleteDirectory(index);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
     }
 
     @Override
@@ -111,17 +123,15 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
         List<VocabWord> ret = new CopyOnWriteArrayList<>();
         try {
-            IndexWriter writer = getWriter();
-            initReader(writer);
-
+            IndexReader reader = getReader();
             Document doc = reader.document(index);
-
+            reader.close();
             String[] values = doc.getValues(WORD_FIELD);
             for(String s : values) {
                 ret.add(vocabCache.wordFor(s));
             }
 
-            
+
 
         }
 
@@ -139,9 +149,9 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     @Override
     public int[] documents(VocabWord vocabWord) {
         try {
-            TermQuery query = new TermQuery(new Term(WORD_FIELD,vocabWord.getWord()));
-
-
+            TermQuery query = new TermQuery(new Term(WORD_FIELD,vocabWord.getWord().toLowerCase()));
+            searcherManager.maybeRefreshBlocking();
+            IndexSearcher searcher = searcherManager.acquire();
             TopDocs topdocs = searcher.search(query,Integer.MAX_VALUE);
             int[] ret = new int[topdocs.totalHits];
             for(int i = 0; i < topdocs.totalHits; i++) {
@@ -149,6 +159,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
             }
 
 
+            searcherManager.release(searcher);
 
             return ret;
         }
@@ -163,20 +174,17 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     @Override
     public int numDocuments() {
-        if(numDocs > 0)
-            return numDocs;
-
-        int ret;
         try {
-            IndexWriter writer = getWriter();
-            initReader(writer);
-            ret = reader.numDocs();
-            
-
-        }catch(Exception e) {
-            return 0;
+            initReader();
+            readerManager.maybeRefreshBlocking();
+            reader = readerManager.acquire();
+            int ret = reader.numDocs();
+            reader.close();
+            return ret;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return ret;
+
     }
 
     @Override
@@ -189,8 +197,8 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         }
 
 
-
-        int[] docIds = new int[reader.maxDoc() + 1];
+        IndexReader reader = getReader();
+        int[] docIds = new int[reader.maxDoc()];
         int count = 0;
         Bits liveDocs = MultiFields.getLiveDocs(reader);
 
@@ -208,16 +216,20 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
             docIds[count++] = i;
         }
 
+        try {
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return docIds;
     }
 
     @Override
     public void addWordToDoc(int doc, VocabWord word) {
         Field f = new TextField(WORD_FIELD,word.getWord(),Field.Store.YES);
-        IndexWriter writer = getWriter();
         try {
-            initReader(writer);
-
+            initReader();
+            IndexSearcher searcher = searcherManager.acquire();
             Document doc2 = searcher.doc(doc);
             if(doc2 != null)
                 doc2.add(f);
@@ -226,41 +238,32 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                 d.add(f);
             }
 
+            searcherManager.release(searcher);
 
 
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        initReader(writer);
 
     }
 
 
-    private synchronized void initReader(IndexWriter writer) {
+    private  void initReader() {
         if(reader == null) {
             try {
-                writer.commit();
-                reader = DirectoryReader.open(dir);
-                searcher = new IndexSearcher(reader);
+                ensureDirExists();
+                searcherManager = new SearcherManager(getWriter().getIndexWriter(),true,new SearcherFactory());
+                indexWriter.getIndexWriter().commit();
+                readerManager = new ReaderManager(dir);
+                DirectoryReader reader = readerManager.acquire();
+                numDocs = readerManager.acquire().numDocs();
+                readerManager.release(reader);
             }catch(Exception e) {
                 throw new RuntimeException(e);
             }
 
         }
-
-        else if(readerClosed.get()) {
-            try {
-                reader = DirectoryReader.open(dir);
-                searcher = new IndexSearcher(reader);
-                readerClosed.set(false);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-
-
     }
 
     @Override
@@ -269,15 +272,19 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
         Document d = new Document();
 
-        for (VocabWord word : words) {
+        for (VocabWord word : words)
             d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
-        }
-        IndexWriter writer = getWriter();
-        initReader(writer);
+
+
 
         totalWords.set(totalWords.get() + words.size());
         addWords(words);
-
+        log.info("Adding words for doc " + doc);
+        try {
+            getWriter().addDocument(d);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -327,82 +334,91 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
 
-    private synchronized  IndexWriter getWriter() {
-        if(writer.containsKey(indexPath))
-            return writer.get(indexPath);
-        else {
-            IndexWriterConfig iwc;
-            IndexWriter writer = null;
+    private synchronized IndexReader getReader() {
+        if(reader != null)
             try {
-                if(analyzer == null)
-                    analyzer  = new StandardAnalyzer(new InputStreamReader(new ByteArrayInputStream("".getBytes())));
+                readerManager.maybeRefreshBlocking();
+                return readerManager.acquire();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        else {
+            initReader();
+            return reader;
+        }
+    }
 
+
+    private synchronized TrackingIndexWriter getWriterWithRetry() {
+        if(this.indexWriter != null)
+            return this.indexWriter;
+
+        IndexWriterConfig iwc;
+        IndexWriter writer = null;
+        try {
+            if(analyzer == null)
+                analyzer  = new StandardAnalyzer(new InputStreamReader(new ByteArrayInputStream("".getBytes())));
+
+
+
+            ensureDirExists();
+
+            if(IndexWriter.isLocked(dir)) {
+                IndexWriter.unlock(dir);
+            }
+
+            if(this.indexWriter == null) {
+                indexBeingCreated.set(true);
+                if(IndexWriter.isLocked(dir)) {
+                    IndexWriter.unlock(dir);
+                }
                 iwc = new IndexWriterConfig(Version.LATEST, analyzer);
-
-
-                ensureDirExists();
-
-                if(!indexBeingCreated.get()) {
-                    indexBeingCreated.set(true);
-
-                    if(IndexWriter.isLocked(dir)) {
-                        try {
-                            IndexWriter.unlock(dir);
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
-
-                    }
-
-
-                    writer = new IndexWriter(dir, iwc);
-                    LuceneInvertedIndex.writer.put(indexPath,writer);
-
-                }
-                else if(!indexBeingCreated.get() || writer == null) {
-                    indexBeingCreated.set(true);
-                    if(IndexWriter.isLocked(dir)) {
-                        try {
-                            IndexWriter.unlock(dir);
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
-
-                    }
-                    iwc = new IndexWriterConfig(Version.LATEST, analyzer);
-
-                    writer = new IndexWriter(dir,iwc);
-                    LuceneInvertedIndex.writer.put(indexPath,writer);
-
-                }
+                File indexPath2 = new File(indexPath);
+                File delete = new File(indexPath2,"write.lock");
+                delete.delete();
+                writer = new IndexWriter(dir,iwc);
+                this.indexWriter = new TrackingIndexWriter(writer);
 
             }
-            catch(LockObtainFailedException e) {
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e1) {
-                    e1.printStackTrace();
-                }
-                return getWriter();
-            }
-            catch(Exception e) {
-                throw new IllegalStateException("Failed to created writer",e);
-            }
 
-            return writer;
         }
 
+        catch(Exception e) {
+            return null;
+        }
+
+
+
+
+        return this.indexWriter;
+    }
+
+
+    private synchronized  TrackingIndexWriter getWriter() {
+        while(getWriterWithRetry() == null) {
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        return this.indexWriter;
     }
 
 
 
     @Override
     public void finish() {
-
-        reader = null;
-        IndexWriter writer = getWriter();
-        initReader(writer);
-        numDocs = reader.numDocs();
+        try {
+            initReader();
+            IndexReader reader = readerManager.acquire();
+            indexWriter.getIndexWriter().commit();
+            numDocs = reader.numDocs();
+            reader.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 
@@ -553,38 +569,22 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         }
 
         public InvertedIndex build() {
-            LuceneInvertedIndex ret = new LuceneInvertedIndex();
+            LuceneInvertedIndex ret;
+            if(indexDir != null) {
+                ret = new LuceneInvertedIndex(vocabCache,cache,indexDir.getAbsolutePath());
+            }
+            else
+                ret = new LuceneInvertedIndex();
             try {
-                if(analyzer == null)
-                    analyzer  = new StandardAnalyzer(new InputStreamReader(new ByteArrayInputStream(StringUtils.join(stopWords,"\n").getBytes())));
-                if(indexDir != null && dir != null)
-                    throw new IllegalStateException("Please define only a directory or a file directory");
-                if(iwc == null)
-                    iwc = new IndexWriterConfig(Version.LATEST, analyzer);
-
-                if(indexDir != null && !cache) {
-                    if(!indexDir.exists())
-                        indexDir.mkdirs();
-                    dir = FSDirectory.open(indexDir);
-                    if(writer == null)
-                        writer = new IndexWriter(dir, iwc);
-
-                }
-
-                if(vocabCache == null)
-                    throw new IllegalStateException("Vocab cache must not be null");
-
-
                 ret.batchSize = batchSize;
-                ret.vocabCache = vocabCache;
-                ret.dir = dir;
-                ret.cache = cache;
-                ret.miniBatch = miniBatch;
-                ret.reader = reader;
-                ret.searcher = searcher;
-                ret.analyzer = analyzer;
-                ret.vocabCache = vocabCache;
 
+                if(dir != null)
+                    ret.dir = dir;
+                ret.miniBatch = miniBatch;
+                if(reader != null)
+                    ret.reader = reader;
+                if(analyzer != null)
+                    ret.analyzer = analyzer;
             }catch(Exception e) {
                 throw new RuntimeException(e);
             }

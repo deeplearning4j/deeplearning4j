@@ -877,6 +877,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
         try {
             done.set(true);
             updateSaver().cleanup();
+            h.shutdown();
         }catch(Exception e) {
             log.warn("Hazelcast already shutdown...done() being called is pointless");
         }
