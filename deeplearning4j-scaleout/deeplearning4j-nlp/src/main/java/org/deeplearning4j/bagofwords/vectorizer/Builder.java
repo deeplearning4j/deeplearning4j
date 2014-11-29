@@ -23,8 +23,14 @@ public abstract class Builder {
     protected int batchSize = 1000;
     protected double sample = 0.0;
     protected boolean stem = false;
+    protected boolean cleanup = false;
 
 
+
+    public Builder cleanup(boolean cleanup) {
+        this.cleanup = cleanup;
+        return this;
+    }
 
     public Builder stem(boolean stem) {
         this.stem = stem;
