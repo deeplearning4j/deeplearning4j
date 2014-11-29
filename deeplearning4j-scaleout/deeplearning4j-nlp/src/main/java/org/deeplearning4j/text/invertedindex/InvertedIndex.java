@@ -16,6 +16,11 @@ public interface InvertedIndex extends Serializable {
 
 
     /**
+     * Unlock the index
+     */
+    void unlock();
+
+    /**
      * Cleanup any resources used
      */
     void cleanup();
