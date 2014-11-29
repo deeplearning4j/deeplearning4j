@@ -14,6 +14,8 @@ import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.invertedindex.InvertedIndex;
+import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.util.SetUtils;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -74,6 +76,7 @@ public class Word2Vec implements Persistable {
     protected double minLearningRate = 0.01;
     protected TextVectorizer vectorizer;
     protected int learningRateDecayWords = 10000;
+    protected InvertedIndex invertedIndex;
     protected boolean useAdaGrad = false;
     protected int workers = Runtime.getRuntime().availableProcessors();
     protected Queue<List<List<VocabWord>>> jobQueue = new LinkedBlockingDeque<>(10000);
@@ -656,11 +659,19 @@ public class Word2Vec implements Persistable {
         }
 
         //vectorizer will handle setting up vocab meta data
-        if(vectorizer == null)
-            vectorizer = new TfidfVectorizer.Builder()
+        if(vectorizer == null) {
+
+            if(invertedIndex == null)
+                invertedIndex = new LuceneInvertedIndex.Builder()
+                        .cache(cache).stopWords(stopWords)
+                        .build();
+
+            vectorizer = new TfidfVectorizer.Builder().index(invertedIndex)
                     .cache(cache).iterate(docIter).iterate(sentenceIter).batchSize(batchSize)
                     .minWords(minWordFrequency).stopWords(stopWords)
                     .tokenize(tokenizerFactory).build();
+        }
+
         vectorizer.fit();
 
         setup();
@@ -892,7 +903,13 @@ public class Word2Vec implements Persistable {
         protected double negative = 0;
         protected double sampling = 1e-5;
         protected int workers = Runtime.getRuntime().availableProcessors();
+        protected InvertedIndex index;
 
+
+        public Builder index(InvertedIndex index) {
+            this.index = index;
+            return this;
+        }
 
         public Builder workers(int workers) {
             this.workers = workers;
@@ -1022,7 +1039,7 @@ public class Word2Vec implements Persistable {
                 ret.minLearningRate = minLearningRate;
                 ret.sample = sampling;
                 ret.workers = workers;
-
+                ret.invertedIndex = index;
                 try {
                     if (tokenizerFactory == null)
                         tokenizerFactory = new UimaTokenizerFactory();
@@ -1064,6 +1081,7 @@ public class Word2Vec implements Persistable {
                 ret.batchSize = batchSize;
                 ret.sample = sampling;
                 ret.workers = workers;
+                ret.invertedIndex = index;
 
                 try {
                     if (tokenizerFactory == null)

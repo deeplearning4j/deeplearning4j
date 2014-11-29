@@ -9,13 +9,9 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
-import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.stopwords.StopWords;
@@ -65,6 +61,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private transient SearcherManager searcherManager;
     private transient ReaderManager  readerManager;
     private transient TrackingIndexWriter indexWriter;
+    private transient NativeFSLockFactory lockFactory;
 
     public LuceneInvertedIndex(VocabCache vocabCache,boolean cache) {
         this(vocabCache,cache,DEFAULT_INDEX_DIR);
@@ -85,14 +82,24 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
     @Override
+    public void unlock() {
+        try {
+            if(lockFactory == null)
+                lockFactory = new NativeFSLockFactory(new File(indexPath));
+            IndexWriter.unlock(dir);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
     public void cleanup() {
-        File index = new File(indexPath);
-        if(index.exists())
-            try {
-                FileUtils.deleteDirectory(index);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        try {
+            indexWriter.deleteAll();
+            indexWriter.getIndexWriter().commit();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -135,11 +142,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
         }
 
-        catch(AlreadyClosedException e1) {
-            reader = null;
-            readerClosed.set(false);
-            return document(index);
-        }
+
         catch (Exception e) {
             e.printStackTrace();
         }
@@ -253,8 +256,18 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         if(reader == null) {
             try {
                 ensureDirExists();
-                searcherManager = new SearcherManager(getWriter().getIndexWriter(),true,new SearcherFactory());
-                indexWriter.getIndexWriter().commit();
+                if(getWriter() == null) {
+                    this.indexWriter = null;
+                    while(getWriter() == null) {
+                        log.warn("Writer was null...reinitializing");
+                        Thread.sleep(1000);
+                    }
+                }
+                IndexWriter writer = getWriter().getIndexWriter();
+                if(writer == null)
+                    throw new IllegalStateException("index writer was null");
+                searcherManager = new SearcherManager(writer,true,new SearcherFactory());
+                writer.commit();
                 readerManager = new ReaderManager(dir);
                 DirectoryReader reader = readerManager.acquire();
                 numDocs = readerManager.acquire().numDocs();
@@ -360,7 +373,6 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                 analyzer  = new StandardAnalyzer(new InputStreamReader(new ByteArrayInputStream("".getBytes())));
 
 
-
             ensureDirExists();
 
             if(IndexWriter.isLocked(dir)) {
@@ -372,11 +384,33 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                 if(IndexWriter.isLocked(dir)) {
                     IndexWriter.unlock(dir);
                 }
+                if(new File(indexPath).exists()) {
+                    FileUtils.deleteDirectory(new File(indexPath));
+                }
+
                 iwc = new IndexWriterConfig(Version.LATEST, analyzer);
-                File indexPath2 = new File(indexPath);
-                File delete = new File(indexPath2,"write.lock");
-                delete.delete();
-                writer = new IndexWriter(dir,iwc);
+                iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+                iwc.setWriteLockTimeout(1000);
+
+                dir = FSDirectory.open(new File(indexPath));
+                log.info("Creating new index writer");
+                while((writer = tryCreateWriter(iwc)) == null) {
+                    log.warn("Failed to create writer...trying again");
+                    iwc = new IndexWriterConfig(Version.LATEST, analyzer);
+
+                    iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+                    iwc.setWriteLockTimeout(1000);
+                    if(dir != null) {
+
+                        dir.clearLock(IndexWriter.WRITE_LOCK_NAME);
+                        dir.close();
+                    }
+                    dir = FSDirectory.open(new File(indexPath),lockFactory);
+                    lockFactory.clearLock(IndexWriter.WRITE_LOCK_NAME);
+                    dir.clearLock(IndexWriter.WRITE_LOCK_NAME);
+
+                    Thread.sleep(10000);
+                }
                 this.indexWriter = new TrackingIndexWriter(writer);
 
             }
@@ -384,7 +418,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         }
 
         catch(Exception e) {
-            return null;
+            throw new IllegalStateException(e);
         }
 
 
@@ -394,13 +428,34 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
 
+    private IndexWriter tryCreateWriter(IndexWriterConfig iwc) {
+        try {
+            dir.clearLock(IndexWriter.WRITE_LOCK_NAME);
+            if(lockFactory == null)
+                lockFactory = new NativeFSLockFactory(new File(indexPath));
+            lockFactory.clearLock(IndexWriter.WRITE_LOCK_NAME);
+            return new IndexWriter(dir,iwc);
+        } catch (IOException e) {
+            log.warn("Couldn't create index ",e);
+            return null;
+        }
+
+    }
+
     private synchronized  TrackingIndexWriter getWriter() {
-        while(getWriterWithRetry() == null) {
+        int attempts = 0;
+        while(getWriterWithRetry() == null && attempts < 3) {
+
             try {
-                Thread.sleep(10000);
+                Thread.sleep(1000 * attempts);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
+
+            if(attempts >= 3)
+                throw new IllegalStateException("Can't obtain write lock");
+            attempts++;
+
         }
 
         return this.indexWriter;
