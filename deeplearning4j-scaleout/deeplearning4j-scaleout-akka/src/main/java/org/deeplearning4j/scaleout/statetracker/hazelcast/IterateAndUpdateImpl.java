@@ -35,13 +35,16 @@ public class IterateAndUpdateImpl implements IterateAndUpdate {
      */
     @Override
     public Job accumulated() {
-        return new Job(accumulator.aggregate(),"");
+        return accumulator.aggregate();
     }
 
     @Override
     public void accumulate() throws Exception {
         for(String s : ids) {
-            accumulator.accumulate(updateSaver.load(s));
+            Job j = updateSaver.load(s);
+            if(j == null)
+                continue;
+            accumulator.accumulate(j);
         }
     }
 
