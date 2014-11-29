@@ -24,7 +24,7 @@ public class LuceneInvertedIndexTest {
 
     @Test
     public void testLuceneInvertedIndex() {
-        VocabCache cache = new InMemoryLookupCache.Builder().vectorLength(100).build();
+        VocabCache cache = new InMemoryLookupCache();
         cache.addToken(new VocabWord(1,"hello"));
         cache.addToken(new VocabWord(2,"hello2"));
         cache.addWordToIndex(0,"hello");

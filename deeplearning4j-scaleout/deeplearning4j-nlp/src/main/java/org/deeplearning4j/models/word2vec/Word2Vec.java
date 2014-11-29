@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.word2vec;
 
+import java.awt.image.LookupTable;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -13,6 +14,8 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
@@ -78,6 +81,7 @@ public class Word2Vec implements Persistable {
     protected int learningRateDecayWords = 10000;
     protected InvertedIndex invertedIndex;
     protected boolean useAdaGrad = false;
+    protected WeightLookupTable lookupTable;
     protected int workers = Runtime.getRuntime().availableProcessors();
     protected Queue<List<List<VocabWord>>> jobQueue = new LinkedBlockingDeque<>(10000);
 
@@ -158,8 +162,8 @@ public class Word2Vec implements Persistable {
     public double[] getWordVector(String word) {
         int i = this.cache.indexOf(word);
         if(i < 0)
-            return cache.vector(UNK).ravel().data().asDouble();
-        return cache.vector(word).ravel().data().asDouble();
+            return lookupTable.vector(UNK).ravel().data().asDouble();
+        return lookupTable.vector(word).ravel().data().asDouble();
     }
 
     /**
@@ -170,8 +174,8 @@ public class Word2Vec implements Persistable {
     public INDArray getWordVectorMatrix(String word) {
         int i = this.cache.indexOf(word);
         if(i < 0)
-            return cache.vector(UNK);
-        return cache.vector(word);
+            return lookupTable.vector(UNK);
+        return lookupTable.vector(word);
     }
 
     /**
@@ -183,22 +187,10 @@ public class Word2Vec implements Persistable {
         int i = this.cache.indexOf(word);
 
         if(i < 0)
-            return cache.vector(UNK);
-        INDArray r =  cache.vector(word);
+            return lookupTable.vector(UNK);
+        INDArray r =  lookupTable.vector(word);
         return r.div(Nd4j.getBlasWrapper().nrm2(r));
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
     /**
      * Words nearest based on positive and negative words
@@ -211,15 +203,15 @@ public class Word2Vec implements Persistable {
         INDArray words = Nd4j.create(layerSize);
         Set<String> union = SetUtils.union(new HashSet<>(positive),new HashSet<>(negative));
         for(String s : positive)
-            words.addi(cache.vector(s));
+            words.addi(lookupTable.vector(s));
 
 
         for(String s : negative)
-            words.addi(cache.vector(s).mul(-1));
+            words.addi(lookupTable.vector(s).mul(-1));
 
 
-        if(cache instanceof  InMemoryLookupCache) {
-            InMemoryLookupCache l = (InMemoryLookupCache) cache;
+        if(lookupTable instanceof  InMemoryLookupTable) {
+            InMemoryLookupTable l = (InMemoryLookupTable) cache;
             INDArray syn0 = l.getSyn0();
             INDArray weights = syn0.norm2(0).rdivi(1).muli(words);
             INDArray distances = syn0.mulRowVector(weights).sum(1);
@@ -271,8 +263,8 @@ public class Word2Vec implements Persistable {
         INDArray vec = Transforms.unitVec(this.getWordVectorMatrix(word));
 
 
-        if(cache instanceof  InMemoryLookupCache) {
-            InMemoryLookupCache l = (InMemoryLookupCache) cache;
+        if(lookupTable instanceof InMemoryLookupTable) {
+            InMemoryLookupTable l = (InMemoryLookupTable) cache;
             INDArray syn0 = l.getSyn0();
             INDArray weights = syn0.norm2(0).rdivi(1).muli(vec);
             INDArray distances = syn0.mulRowVector(weights).sum(1);
@@ -327,16 +319,16 @@ public class Word2Vec implements Persistable {
         int row = 0;
         Set<String> union = SetUtils.union(new HashSet<>(positive),new HashSet<>(negative));
         for(String s : positive) {
-            words.putRow(row++,cache.vector(s));
+            words.putRow(row++,lookupTable.vector(s));
         }
 
         for(String s : negative) {
-            words.putRow(row++,cache.vector(s).mul(-1));
+            words.putRow(row++,lookupTable.vector(s).mul(-1));
         }
 
         INDArray mean = words.mean(0);
-        if(cache instanceof  InMemoryLookupCache) {
-            InMemoryLookupCache l = (InMemoryLookupCache) cache;
+        if(lookupTable instanceof  InMemoryLookupTable) {
+            InMemoryLookupTable l = (InMemoryLookupTable) cache;
             INDArray syn0 = l.getSyn0();
             INDArray weights = syn0.norm2(0).rdivi(1).muli(mean);
             INDArray distances = syn0.mulRowVector(weights).sum(1);
@@ -388,8 +380,8 @@ public class Word2Vec implements Persistable {
         INDArray vec = Transforms.unitVec(this.getWordVectorMatrix(word));
 
 
-        if(cache instanceof  InMemoryLookupCache) {
-            InMemoryLookupCache l = (InMemoryLookupCache) cache;
+        if(lookupTable instanceof  InMemoryLookupTable) {
+            InMemoryLookupTable l = (InMemoryLookupTable) cache;
             INDArray syn0 = l.getSyn0();
             INDArray weights = syn0.norm2(0).rdivi(1).muli(vec);
             INDArray distances = syn0.mulRowVector(weights).sum(1);
@@ -508,7 +500,7 @@ public class Word2Vec implements Persistable {
 
                         log.info("Train sentence avg took " + diff2 / (double) job.size());
                         numWordsSoFar.set(numWordsSoFar.get() + increment);
-                        processed.incrementAndGet();
+                        processed.set(processed.get() + job.size());
 
 
 
@@ -549,7 +541,11 @@ public class Word2Vec implements Persistable {
                 if(batch.isEmpty())
                     return null;
 
-                if(batch2.size() >= 100) {
+                for(int i = 0; i < numIterations; i++) {
+                    batch2.add(batch);
+                }
+
+                if(batch2.size() >= 100 || batch2.size() >= numDocs) {
                     boolean added = false;
                     while(!added) {
                         try {
@@ -561,10 +557,6 @@ public class Word2Vec implements Persistable {
                         }
                     }
 
-                }
-
-                for(int i = 0; i < numIterations; i++) {
-                    batch2.add(batch);
                 }
 
 
@@ -654,7 +646,7 @@ public class Word2Vec implements Persistable {
         if(cache.vocabExists()) {
             log.info("Loading vocab...");
             cache.loadVocab();
-            cache.resetWeights();
+            lookupTable.resetWeights();
             return true;
         }
 
@@ -718,7 +710,7 @@ public class Word2Vec implements Persistable {
                 if(c >= 0 && c < sentence.size()) {
                     VocabWord lastWord = sentence.get(c);
                     iterate(word,lastWord,nextRandom,alpha);
-                                   }
+                }
             }
         }
 
@@ -733,7 +725,7 @@ public class Word2Vec implements Persistable {
      * @param w1 the first word to fit
      */
     public void  iterate(VocabWord w1, VocabWord w2,AtomicLong nextRandom,double alpha) {
-        cache.iterateSample(w1,w2,nextRandom,alpha);
+        lookupTable.iterateSample(w1,w2,nextRandom,alpha);
 
     }
 
@@ -755,7 +747,7 @@ public class Word2Vec implements Persistable {
 
     /* reinit weights */
     protected void resetWeights() {
-        cache.resetWeights();
+        lookupTable.resetWeights();
     }
 
 
@@ -824,7 +816,13 @@ public class Word2Vec implements Persistable {
 
     }
 
+    public WeightLookupTable getLookupTable() {
+        return lookupTable;
+    }
 
+    public void setLookupTable(WeightLookupTable lookupTable) {
+        this.lookupTable = lookupTable;
+    }
 
     /**
      * Note that calling a setter on this
@@ -872,13 +870,20 @@ public class Word2Vec implements Persistable {
     public VocabCache getCache() {
         return cache;
     }
-    public void setCache(VocabCache cache) {
-        this.cache = cache;
-        if(cache instanceof InMemoryLookupCache) {
-            InMemoryLookupCache l = (InMemoryLookupCache) cache;
+
+
+    public void setCache(WeightLookupTable lookupTable) {
+        this.lookupTable = lookupTable;
+        if(cache instanceof InMemoryLookupTable) {
+            InMemoryLookupTable l = (InMemoryLookupTable) cache;
             if(l.getSyn0() != null && l.getSyn0().columns() != layerSize)
                 layerSize = l.getSyn0().columns();
         }
+    }
+
+    public void setCache(VocabCache cache) {
+        this.cache = cache;
+
     }
 
 
@@ -904,7 +909,12 @@ public class Word2Vec implements Persistable {
         protected double sampling = 1e-5;
         protected int workers = Runtime.getRuntime().availableProcessors();
         protected InvertedIndex index;
+        protected WeightLookupTable lookupTable;
 
+        public Builder lookupTable(WeightLookupTable lookupTable) {
+            this.lookupTable = lookupTable;
+            return this;
+        }
 
         public Builder index(InvertedIndex index) {
             this.index = index;
@@ -1040,6 +1050,7 @@ public class Word2Vec implements Persistable {
                 ret.sample = sampling;
                 ret.workers = workers;
                 ret.invertedIndex = index;
+                ret.lookupTable = lookupTable;
                 try {
                     if (tokenizerFactory == null)
                         tokenizerFactory = new UimaTokenizerFactory();
@@ -1048,12 +1059,18 @@ public class Word2Vec implements Persistable {
                 }
 
                 if(vocabCache == null) {
-                    vocabCache = new InMemoryLookupCache.Builder().negative(negative)
-                            .useAdaGrad(useAdaGrad).lr(lr)
-                            .vectorLength(layerSize).build();
+                    vocabCache = new InMemoryLookupCache();
 
                     ret.cache = vocabCache;
                 }
+
+                if(lookupTable == null) {
+                    lookupTable = new InMemoryLookupTable.Builder().negative(negative)
+                            .useAdaGrad(useAdaGrad).lr(lr)
+                            .vectorLength(layerSize).build();
+                }
+
+
                 ret.docIter = docIter;
                 ret.tokenizerFactory = tokenizerFactory;
 
@@ -1082,6 +1099,7 @@ public class Word2Vec implements Persistable {
                 ret.sample = sampling;
                 ret.workers = workers;
                 ret.invertedIndex = index;
+                ret.lookupTable = lookupTable;
 
                 try {
                     if (tokenizerFactory == null)
@@ -1091,10 +1109,15 @@ public class Word2Vec implements Persistable {
                 }
 
                 if(vocabCache == null) {
-                    vocabCache = new InMemoryLookupCache.Builder().negative(negative)
+                    vocabCache = new InMemoryLookupCache();
+
+                    ret.cache = vocabCache;
+                }
+
+                if(lookupTable == null) {
+                    lookupTable = new InMemoryLookupTable.Builder().negative(negative)
                             .useAdaGrad(useAdaGrad).lr(lr)
                             .vectorLength(layerSize).build();
-                    ret.cache = vocabCache;
                 }
                 ret.tokenizerFactory = tokenizerFactory;
                 return ret;

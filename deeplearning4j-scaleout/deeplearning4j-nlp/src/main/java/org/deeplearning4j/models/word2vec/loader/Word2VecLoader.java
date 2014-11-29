@@ -5,6 +5,10 @@ import java.util.*;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -30,7 +34,8 @@ public class Word2VecLoader {
      * @throws IOException
      */
     public static Word2Vec loadGoogleModel(String path,boolean binary) throws IOException {
-        InMemoryLookupCache cache;
+        WeightLookupTable lookupTable;
+        VocabCache cache;
         float[][] data;
 
         if(binary) {
@@ -46,8 +51,8 @@ public class Word2VecLoader {
                 size = Integer.parseInt(readString(dis));
 
                 data = new float[words][size];
-
-                cache = new InMemoryLookupCache.Builder().vectorLength(size).build();
+                cache = new InMemoryLookupCache();
+                lookupTable = new InMemoryLookupTable.Builder().vectorLength(size).build();
 
                 String word;
                 float[] vectors;
@@ -82,13 +87,14 @@ public class Word2VecLoader {
 
 
             Word2Vec ret = new Word2Vec();
-            cache.resetWeights();
+            lookupTable.resetWeights();
 
             for(int i = 0; i < data.length; i++)
-               cache.putVector(cache.wordAtIndex(i),Nd4j.create(new FloatBuffer(data[i])));
+                lookupTable.putVector(cache.wordAtIndex(i),Nd4j.create(new FloatBuffer(data[i])));
 
 
             ret.setCache(cache);
+            ret.setLookupTable(lookupTable);
             ret.setLayerSize(size);
             return ret;
 
@@ -100,8 +106,9 @@ public class Word2VecLoader {
             String[] initial = line.split(" ");
             int words = Integer.parseInt(initial[0]);
             int layerSize = Integer.parseInt(initial[1]);
-            cache = new InMemoryLookupCache.Builder()
+            lookupTable = new InMemoryLookupTable.Builder()
                     .vectorLength(layerSize).build();
+            cache = new InMemoryLookupCache();
             data = new float[words][layerSize];
             int count = 0;
 
@@ -123,10 +130,10 @@ public class Word2VecLoader {
 
             }
 
-            cache.resetWeights();
+            lookupTable.resetWeights();
 
             for(int i = 0; i < data.length; i++)
-                cache.putVector(cache.wordAtIndex(i),Nd4j.create(new FloatBuffer(data[i])));
+                lookupTable.putVector(cache.wordAtIndex(i),Nd4j.create(new FloatBuffer(data[i])));
 
 
             Word2Vec ret = new Word2Vec();
@@ -203,11 +210,11 @@ public class Word2VecLoader {
      * @param path  the path to write
      * @throws IOException
      */
-    public static void writeWordVectors(InMemoryLookupCache l,String path) throws IOException {
+    public static void writeWordVectors(InMemoryLookupTable l,InMemoryLookupCache cache,String path) throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path),false));
         int words = 0;
         for(int i = 0; i < l.getSyn0().rows(); i++) {
-            String word = l.wordAtIndex(i);
+            String word = cache.wordAtIndex(i);
             if(word == null)
                 continue;
             StringBuffer sb = new StringBuffer();
@@ -271,12 +278,12 @@ public class Word2VecLoader {
      * @param path the path of the file to load
      * @return the
      */
-    public static InMemoryLookupCache loadTxt(File path) throws FileNotFoundException {
+    public static Pair<WeightLookupTable,VocabCache> loadTxt(File path) throws FileNotFoundException {
         BufferedReader write = new BufferedReader(new FileReader(path));
-        InMemoryLookupCache l = new InMemoryLookupCache.Builder().vectorLength(100)
+        InMemoryLookupTable l = (InMemoryLookupTable) new InMemoryLookupTable.Builder().vectorLength(100)
                 .useAdaGrad(false)
                 .build();
-
+        VocabCache cache = new InMemoryLookupCache();
 
         LineIterator iter = IOUtils.lineIterator(write);
         List<INDArray> arrays = new ArrayList<>();
@@ -285,9 +292,9 @@ public class Word2VecLoader {
             String[] split = line.split(" ");
             String word = split[0];
             VocabWord word1 = new VocabWord(1.0,word);
-            l.addToken(word1);
-            l.addWordToIndex(l.numWords(),word);
-            l.putVocabWord(word);
+            cache.addToken(word1);
+            cache.addWordToIndex(cache.numWords(),word);
+            cache.putVocabWord(word);
             INDArray row = Nd4j.create(new FloatBuffer(split.length - 1));
             for(int i = 1; i < split.length; i++)
                 row.putScalar(i - 1,Float.parseFloat(split[i]));
@@ -301,7 +308,7 @@ public class Word2VecLoader {
 
         iter.close();
 
-        return l;
+        return new Pair<>((WeightLookupTable) l,cache);
     }
 
 

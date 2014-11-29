@@ -4,6 +4,8 @@ import static org.junit.Assert.*;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.random.MersenneTwister;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
@@ -37,6 +39,7 @@ public class BasicRNTNTest {
     private String sentence = "<LABEL> This is one sentence. </LABEL>";
     private InvertedIndex index;
     private VocabCache cache;
+    private WeightLookupTable lookupTable;
 
     @Before
     public void init() throws Exception {
@@ -51,8 +54,10 @@ public class BasicRNTNTest {
             sentenceIter = new CollectionSentenceIterator(Arrays.asList(sentence));
         File vectors = new File("wordvectors.ser");
         vectors.delete();
+        if(lookupTable == null)
+            lookupTable = new InMemoryLookupTable.Builder().vectorLength(100).build();
         if(cache == null)
-            cache = new InMemoryLookupCache.Builder().vectorLength(100).build();
+            cache = new InMemoryLookupCache();
         if(index == null)
             index = new LuceneInvertedIndex.Builder()
                     .indexDir(new File("rntn-index")).cache(cache).build();
