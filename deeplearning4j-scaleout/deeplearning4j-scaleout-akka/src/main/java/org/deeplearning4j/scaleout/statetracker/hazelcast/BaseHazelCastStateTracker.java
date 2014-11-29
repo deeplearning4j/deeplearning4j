@@ -93,7 +93,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     private Map<String,Long> heartbeat;
     private StateTrackerDropWizardResource resource;
     protected JobAggregator jobAggregator;
-
+    protected Serializable cachedCurrent;
     public final static String HAZELCAST_HOST = "hazelcast.host";
 
     public BaseHazelCastStateTracker() throws Exception {
@@ -732,6 +732,8 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
 
     @Override
     public  Serializable getCurrent() throws Exception {
+        if(cachedCurrent != null)
+            return cachedCurrent;
         Serializable u =  master.get();
         if(u == null)
             return null;
@@ -875,6 +877,9 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
         //this ensures a safe method call happens and just silently
         //returns true in case hazelcast is shutdown
         try {
+            if(getCurrent() != null) {
+                cachedCurrent = getCurrent();
+            }
             done.set(true);
             updateSaver().cleanup();
             h.shutdown();

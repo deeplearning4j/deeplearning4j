@@ -7,6 +7,8 @@ import com.hazelcast.core.IMap;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.statetracker.UpdateSaver;
 import org.deeplearning4j.util.SerializationUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Map;
@@ -23,6 +25,7 @@ public class LocalFileUpdateSaver implements UpdateSaver {
     private IMap<String,Job> updateableIMap;
     private String baseDir;
     public final static String UPDATE_SAVER = "updatesaver";
+    private static Logger log = LoggerFactory.getLogger(LocalFileUpdateSaver.class);
 
 
     public LocalFileUpdateSaver(String baseDir,HazelcastInstance instance) {
@@ -83,6 +86,10 @@ public class LocalFileUpdateSaver implements UpdateSaver {
     @Override
     public Job load(String id) throws Exception {
         String path = paths.remove(id);
+        if(path == null) {
+            log.warn("Tried loading work from id " + id + " but path was null");
+            return null;
+        }
         File load = new File(path);
         Job u =  SerializationUtils.readObject(load);
         load.delete();

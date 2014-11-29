@@ -1,6 +1,5 @@
 package org.deeplearning4j.models.word2vec;
 
-import java.awt.image.LookupTable;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;

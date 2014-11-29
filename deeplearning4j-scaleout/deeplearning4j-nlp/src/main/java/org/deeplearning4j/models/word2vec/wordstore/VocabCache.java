@@ -1,23 +1,18 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
-import org.deeplearning4j.plot.Tsne;
-import org.nd4j.linalg.api.ndarray.INDArray;
+
 import org.deeplearning4j.models.word2vec.VocabWord;
 
+import java.io.Serializable;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicLong;
+
 
 /**
  * A VocabCache handles the storage of information needed for the word2vec look up table.
  *
  * @author Adam Gibson
  */
-public interface VocabCache  {
-
-
-
-
+public interface VocabCache extends Serializable {
 
 
 
