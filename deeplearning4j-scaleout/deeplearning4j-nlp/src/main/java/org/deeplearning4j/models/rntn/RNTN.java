@@ -32,7 +32,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Recursive Neural INDArray Network by Socher et. al
+ * Recursive Neural Tensor Network by Socher et. al
  *
  * This is a modified implementation of the sentiment analysis RNTN
  * from Stanford that is intended to work with more general purpose inputs (scene detection with images,
@@ -547,8 +547,7 @@ public class RNTN implements Serializable {
                                              MultiDimensionalMap<String, String, INDArray> binaryINDArrayTD,
                                              Map<String, INDArray> unaryCD,
                                              Map<String, INDArray> wordVectorD) {
-        if(wordVectorD == null)
-            throw new IllegalStateException("eh?");
+
         INDArray delta = Nd4j.create(numHidden, 1);
         backpropDerivativesAndError(tree, binaryTD, binaryCD, binaryINDArrayTD, unaryCD, wordVectorD, delta);
     }

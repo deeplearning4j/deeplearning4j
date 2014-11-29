@@ -3,6 +3,7 @@ package org.deeplearning4j.bagofwords.vectorizer;
 
 import static org.junit.Assume.*;
 
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
@@ -46,8 +47,8 @@ public class BagOfWordsVectorizerTest {
     }
 
     @After
-    public void after() {
-        index.cleanup();
+    public void after() throws Exception {
+        FileUtils.deleteDirectory(new File("bagofwords"));
     }
 
 
