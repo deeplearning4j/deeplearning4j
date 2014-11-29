@@ -81,6 +81,10 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         this(null,false,DEFAULT_INDEX_DIR);
     }
 
+    public LuceneInvertedIndex(VocabCache vocabCache) {
+        this(vocabCache,false,DEFAULT_INDEX_DIR);
+    }
+
     @Override
     public void unlock() {
         try {
@@ -557,7 +561,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         private   Analyzer analyzer;
         private IndexSearcher searcher;
         private IndexWriter writer;
-        private  IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_4_10_0, analyzer);
+        private  IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_CURRENT, analyzer);
         private VocabCache vocabCache;
         private List<String> stopWords = StopWords.getStopWords();
         private boolean cache = true;
@@ -629,7 +633,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                 ret = new LuceneInvertedIndex(vocabCache,cache,indexDir.getAbsolutePath());
             }
             else
-                ret = new LuceneInvertedIndex();
+                ret = new LuceneInvertedIndex(vocabCache);
             try {
                 ret.batchSize = batchSize;
 
