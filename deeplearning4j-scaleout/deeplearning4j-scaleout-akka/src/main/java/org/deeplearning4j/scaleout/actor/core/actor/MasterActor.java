@@ -53,20 +53,14 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
     protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
     protected ActorRef batchActor;
     protected StateTracker stateTracker;
-    protected AtomicLong oneDown;
     protected final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
     public static String BROADCAST = "broadcast";
     public static String MASTER = "result";
     public static String SHUTDOWN = "shutdown";
     public static String FINISH = "finish";
     public  final static String NAME_SPACE = "org.deeplearning4j.scaleout.actor.core.actor";
-    public final static String WAIT_FOR_WORKERS = NAME_SPACE + ".wait";
     public final static String POLL_FOR_WORK = NAME_SPACE + ".poll";
-    protected int secondsPoll = 10;
-    protected boolean waitForWorkers = true;
-    Cluster cluster = Cluster.get(getContext().system());
-    ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
-    protected boolean isDone = false;
+    protected int secondsPoll = 1;
     protected Cancellable forceNextPhase,clearStateWorkers;
     protected WorkRouter workRouter;
 
@@ -103,17 +97,11 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
                     public void run() {
                         if(stateTracker.isDone())
                             return;
-
-                        try {
-
-
-                            if(workRouter.sendWork())
+                        if(workRouter.sendWork())
                                 nextBatch();
 
 
-                        }catch(Exception e) {
-                            throw new RuntimeException(e);
-                        }
+
 
                     }
 
@@ -156,39 +144,6 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
 
 
 
-    @Override
-    public  Job compute() {
-
-
-        IterateAndUpdateImpl update = (IterateAndUpdateImpl) stateTracker.updates();
-        if(stateTracker.workerUpdates().isEmpty())
-            return null;
-
-        try {
-            update.accumulate();
-
-        }catch(Exception e) {
-            log.debug("Unable to accumulate results",e);
-            return null;
-        }
-
-        Job masterResults = getResults();
-        if(masterResults == null)
-            masterResults = update.accumulated();
-
-
-        try {
-            stateTracker.setCurrent(masterResults);
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-
-        return masterResults;
-    }
-
-
 
     @Override
     public void setup(Configuration conf) {
@@ -200,7 +155,6 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
             Class<? extends WorkerPerformerFactory> clazz = (Class<? extends WorkerPerformerFactory>) Class.forName(performerFactoryClazz);
             WorkerPerformerFactory factory = clazz.newInstance();
             WorkerPerformer performer = factory.create(conf);
-            waitForWorkers = conf.getBoolean(WAIT_FOR_WORKERS,true);
             secondsPoll = conf.getInt(POLL_FOR_WORK,10);
             //start local workers
             Props p = pool.props(WorkerActor.propsFor(conf, stateTracker,performer));
@@ -262,36 +216,24 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
 
 
 
-    @Override
-    public void complete(DataOutputStream ds) {
-
-    }
-
-
-
-
     /**
      * Checks if done
      * @throws Exception
      */
-    protected void nextBatch() throws Exception {
+    protected void nextBatch() {
         Collection<String> updates = stateTracker.workerUpdates();
-        //ensure there aren't any jobs still in progress
-        if(!updates.isEmpty() && stateTracker.currentJobs().isEmpty()) {
-            Job masterResults = compute();
-            log.info("Updating next batch");
-            stateTracker.setCurrent(masterResults);
-            for(String s : stateTracker.workers()) {
-                log.info("Replicating new network to " + s);
-                stateTracker.addReplicate(s);
-                stateTracker.enableWorker(s);
+        Collection<Job> currentJobs;
+        try {
+            currentJobs = stateTracker.currentJobs();
+        } catch (Exception e) {
+           throw new RuntimeException(e);
+        }
 
-            }
-            stateTracker.workerUpdates().clear();
-            while(masterResults == null) {
-                log.info("On next batch master results was null, attempting to grab results again");
-                masterResults = getResults();
-            }
+
+
+        //ensure there aren't any jobs still in progress
+        if(!updates.isEmpty() && currentJobs.isEmpty()) {
+            workRouter.update();
 
 
 
@@ -307,7 +249,7 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
                 @Override
                 public Void call() throws Exception {
                     mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.BATCH,
-                            MoreWorkMessage.getInstance() ), getSelf());
+                            MoreWorkMessage.getInstance()), getSelf());
 
                     log.info("Requesting more work...");
                     return null;
@@ -323,25 +265,14 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
     }
 
     protected void doDoneOrNextPhase() throws Exception {
-        Job masterResults = null;
-        Collection<String> updates = stateTracker.workerUpdates();
 
-        if(!updates.isEmpty()) {
-            masterResults = compute();
+        if(!stateTracker.workerUpdates().isEmpty())
+            workRouter.update();
 
-            stateTracker.setCurrent(masterResults);
-            stateTracker.workerUpdates().clear();
 
-        }
-
-        while(!stateTracker.currentJobs().isEmpty() && waitForWorkers) {
-            log.info("Waiting for jobs to finish up before next phase...");
-            Thread.sleep(30000);
-        }
 
 
         if(stateTracker.currentJobs().isEmpty()) {
-            isDone = true;
             nextBatch();
             stateTracker.finish();
             log.info("Done training!");
@@ -386,7 +317,6 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
     public void postStop() throws Exception {
         super.postStop();
         log.info("Post stop on master");
-        cluster.unsubscribe(getSelf());
         if(clearStateWorkers != null)
             clearStateWorkers.cancel();
         if(forceNextPhase != null)
@@ -396,15 +326,6 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
 
 
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public  Job getResults() {
-        try {
-            return (Job) stateTracker.getCurrent();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     @Override
     public SupervisorStrategy supervisorStrategy() {
@@ -419,9 +340,6 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
         );
     }
 
-    public Configuration getConf() {
-        return conf;
-    }
 
 
 
