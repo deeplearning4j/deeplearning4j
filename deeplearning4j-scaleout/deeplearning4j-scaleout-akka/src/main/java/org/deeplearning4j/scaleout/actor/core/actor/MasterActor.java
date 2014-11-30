@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
- * Handles a applyTransformToDestination of workers and acts as a
+ * Handles a number of workers and acts as a
  * parameter server for iterative reduce
  * @author Adam Gibson
  *
@@ -51,17 +51,23 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
     protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
     protected ActorRef batchActor;
     protected StateTracker stateTracker;
-    protected int epochsComplete;
     protected AtomicLong oneDown;
     protected final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
     public static String BROADCAST = "broadcast";
     public static String MASTER = "result";
     public static String SHUTDOWN = "shutdown";
     public static String FINISH = "finish";
+    public  final static String NAME_SPACE = "org.deeplearning4j.scaleout.actor.core.actor";
+    public final static String WAIT_FOR_WORKERS = NAME_SPACE + ".wait";
+    public final static String POLL_FOR_WORK = NAME_SPACE + ".poll";
+    protected int secondsPoll = 10;
+    protected boolean waitForWorkers = true;
     Cluster cluster = Cluster.get(getContext().system());
     ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
     protected boolean isDone = false;
     protected Cancellable forceNextPhase,clearStateWorkers;
+
+
 
     /**
      * Creates the master and the workers with this given conf
@@ -95,7 +101,7 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
 		 * that if the system is done it shuts down
 		 */
         forceNextPhase =  context().system().scheduler()
-                .schedule(Duration.create(10, TimeUnit.SECONDS), Duration.create(10,TimeUnit.SECONDS), new Runnable() {
+                .schedule(Duration.create(secondsPoll, TimeUnit.SECONDS), Duration.create(secondsPoll,TimeUnit.SECONDS), new Runnable() {
 
                     @Override
                     public void run() {
@@ -122,7 +128,7 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
                                 oneDown = new AtomicLong(System.currentTimeMillis());
                             }
 
-                            if(updates.size() >= stateTracker.workers().size() || currentJobs.isEmpty())
+                            if(updates.size() >= stateTracker.workers().size() || currentJobs.isEmpty() || !waitForWorkers)
                                 nextBatch();
 
                             else
@@ -220,6 +226,8 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
             Class<? extends WorkerPerformerFactory> clazz = (Class<? extends WorkerPerformerFactory>) Class.forName(performerFactoryClazz);
             WorkerPerformerFactory factory = clazz.newInstance();
             WorkerPerformer performer = factory.create(conf);
+            waitForWorkers = conf.getBoolean(WAIT_FOR_WORKERS,true);
+            secondsPoll = conf.getInt(POLL_FOR_WORK,10);
             //start local workers
             Props p = pool.props(WorkerActor.propsFor(conf, stateTracker,performer));
             p = ClusterSingletonManager.defaultProps(p, "master", PoisonPill.getInstance(), "master");
@@ -339,7 +347,6 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
                 stateTracker.enableWorker(s);
 
             }
-            epochsComplete++;
             stateTracker.workerUpdates().clear();
             while(masterResults == null) {
                 log.info("On next batch master results was null, attempting to grab results again");
@@ -383,19 +390,12 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
             masterResults = compute();
 
             stateTracker.setCurrent(masterResults);
-
-
-            epochsComplete++;
             stateTracker.workerUpdates().clear();
 
         }
 
-        else
-            masterResults = getResults();
-
-
-        while(!stateTracker.currentJobs().isEmpty()) {
-            log.info("Waiting fo jobs to finish up before next phase...");
+        while(!stateTracker.currentJobs().isEmpty() && waitForWorkers) {
+            log.info("Waiting for jobs to finish up before next phase...");
             Thread.sleep(30000);
         }
 
@@ -413,7 +413,7 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
     /**
      * Creates the master and the workers with this given conf
      * @param conf the neural net config to use
-     * @param batchActor the batch actor to use for data applyTransformToDestination distribution
+     * @param batchActor the batch actor to use for data  distribution
      *
      */
     public MasterActor(Configuration conf,ActorRef batchActor) {

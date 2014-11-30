@@ -26,6 +26,27 @@ import java.util.Map;
 public interface StateTracker extends Serializable {
 
 
+
+
+    void increment(String key,double by);
+
+    double count(String key);
+
+    /**
+     * Retrieve an element defined with define
+     * @param key the key to use
+     * @param <E>
+     * @return the element defined or null
+     */
+    <E extends Serializable> E get(String key);
+
+    /**
+     * Define an object reference by key
+     * @param key the key to use
+     * @param o the object to define
+     */
+    <E extends Serializable> void  define(String key,E o);
+
     /**
      * Remove an update listener
      * @param listener the listener to remove
