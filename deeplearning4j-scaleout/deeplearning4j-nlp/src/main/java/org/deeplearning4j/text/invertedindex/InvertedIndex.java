@@ -16,6 +16,12 @@ public interface InvertedIndex extends Serializable {
 
 
     /**
+     * Iterate over batches
+     * @return the batch size
+     */
+    Iterator<List<List<VocabWord>>> batchIter(int batchSize);
+
+    /**
      * Iterate over documents
      * @return
      */

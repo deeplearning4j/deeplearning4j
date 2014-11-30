@@ -26,12 +26,12 @@ import java.util.List;
  */
 public class Word2VecJobIterator implements JobIterator {
 
-    private Iterator<List<VocabWord>> sentenceIterator;
+    private Iterator<List<List<VocabWord>>> sentenceIterator;
     private WeightLookupTable table;
     private VocabCache cache;
 
 
-    public Word2VecJobIterator(Iterator<List<VocabWord>> sentenceIterator,WeightLookupTable table,VocabCache cache,StateTracker stateTracker) {
+    public Word2VecJobIterator(Iterator<List<List<VocabWord>>> sentenceIterator,WeightLookupTable table,VocabCache cache,StateTracker stateTracker) {
         this.sentenceIterator = sentenceIterator;
         this.table = table;
         this.cache = cache;
@@ -41,14 +41,14 @@ public class Word2VecJobIterator implements JobIterator {
 
 
     public Word2VecJobIterator(TextVectorizer textVectorizer,WeightLookupTable table,VocabCache cache,StateTracker stateTracker) {
-        this.sentenceIterator = textVectorizer.index().docs();
+        this.sentenceIterator = textVectorizer.index().batchIter(1000);
         this.cache = cache;
         this.table = table;
         addListener(stateTracker);
 
     }
     public Word2VecJobIterator(InvertedIndex invertedIndex, WeightLookupTable table,VocabCache cache,StateTracker stateTracker) {
-        this.sentenceIterator = invertedIndex.docs();
+        this.sentenceIterator = invertedIndex.batchIter(1000);
         this.cache = cache;
         this.table = table;
         addListener(stateTracker);
@@ -85,7 +85,7 @@ public class Word2VecJobIterator implements JobIterator {
     }
 
 
-    private Word2VecWork create(List<VocabWord> sentence) {
+    private Word2VecWork create(List<List<VocabWord>> sentence) {
         Word2VecWork work = new Word2VecWork((InMemoryLookupTable) table,sentence);
         return work;
     }
@@ -93,13 +93,13 @@ public class Word2VecJobIterator implements JobIterator {
     @Override
     public Job next(String workerId) {
 
-        List<VocabWord> next = sentenceIterator.next();
+        List<List<VocabWord>> next = sentenceIterator.next();
         return new Job(create(next),workerId);
     }
 
     @Override
     public Job next() {
-        List<VocabWord> next = sentenceIterator.next();
+        List<List<VocabWord>> next = sentenceIterator.next();
         return new Job(create(next),"");
     }
 
