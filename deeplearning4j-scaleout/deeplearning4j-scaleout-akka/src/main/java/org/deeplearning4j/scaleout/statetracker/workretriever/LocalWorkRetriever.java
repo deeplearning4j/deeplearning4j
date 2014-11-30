@@ -1,10 +1,7 @@
 package org.deeplearning4j.scaleout.statetracker.workretriever;
 
 
-import com.hazelcast.core.EntryEvent;
-import com.hazelcast.core.EntryListener;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.core.*;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.api.statetracker.WorkRetriever;
 import org.deeplearning4j.util.SerializationUtils;
@@ -52,6 +49,16 @@ public class LocalWorkRetriever implements WorkRetriever {
 
             @Override
             public void entryEvicted(EntryEvent<String, Job> event) {
+
+            }
+
+            @Override
+            public void mapEvicted(MapEvent mapEvent) {
+
+            }
+
+            @Override
+            public void mapCleared(MapEvent mapEvent) {
 
             }
         },true);

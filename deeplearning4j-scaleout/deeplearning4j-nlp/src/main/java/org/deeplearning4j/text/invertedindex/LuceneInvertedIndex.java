@@ -86,6 +86,11 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
     @Override
+    public Iterator<List<List<VocabWord>>> batchIter(int batchSize) {
+        return new BatchDocIter(batchSize);
+    }
+
+    @Override
     public Iterator<List<VocabWord>> docs() {
         return new DocIter();
     }
@@ -544,6 +549,35 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     @Override
     public void remove() {
         throw new UnsupportedOperationException();
+    }
+
+
+
+    public class BatchDocIter implements Iterator<List<List<VocabWord>>> {
+
+        private int batchSize = 1000;
+        private int curr = 0;
+        private Iterator<List<VocabWord>> docIter = new DocIter();
+
+        public BatchDocIter(int batchSize) {
+            this.batchSize = batchSize;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return docIter.hasNext();
+        }
+
+        @Override
+        public List<List<VocabWord>> next() {
+            List<List<VocabWord>> ret = new ArrayList<>();
+            for(int i = 0; i < batchSize; i++) {
+                if(!docIter.hasNext())
+                    break;
+                ret.add(docIter.next());
+            }
+            return ret;
+        }
     }
 
 

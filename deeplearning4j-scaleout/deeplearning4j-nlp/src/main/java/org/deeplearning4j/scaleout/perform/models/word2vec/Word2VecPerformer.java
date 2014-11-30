@@ -65,12 +65,14 @@ public class Word2VecPerformer implements WorkerPerformer {
         if(job.getWork() instanceof Word2VecWork) {
             double numWordsSoFar = stateTracker.count(NUM_WORDS_SO_FAR);
             Word2VecWork work = (Word2VecWork) job.getWork();
-            List<VocabWord> sentence = work.getSentence();
+            List<List<VocabWord>> sentences = work.getSentences();
             double alpha2 = Math.max(minAlpha, alpha * (1 - (1.0 *  numWordsSoFar / (double) totalWords)));
+            int totalNewWords = 0;
+            for(List<VocabWord> sentence : sentences) {
+                trainSentence(sentence, work, alpha2);
+                totalNewWords += sentence.size();
+            }
 
-            trainSentence(sentence,work,alpha2);
-
-            int totalNewWords = work.getSentence().size();
             job.setResult((Serializable) Arrays.asList(work.addDeltas()));
             stateTracker.increment(NUM_WORDS_SO_FAR,totalNewWords);
 
@@ -83,10 +85,13 @@ public class Word2VecPerformer implements WorkerPerformer {
             int totalNewWords = 0;
             List<Word2VecResult> deltas = new ArrayList<>();
             for(Word2VecWork work : coll) {
-                List<VocabWord> sentence = work.getSentence();
-                trainSentence(sentence,work,alpha2);
-                totalNewWords += sentence.size();
-                deltas.add(work.addDeltas());
+                List<List<VocabWord>> sentences = work.getSentences();
+                for(List<VocabWord> sentence : sentences) {
+                    trainSentence(sentence,work,alpha2);
+                    totalNewWords += sentence.size();
+                    deltas.add(work.addDeltas());
+                }
+
             }
 
 
