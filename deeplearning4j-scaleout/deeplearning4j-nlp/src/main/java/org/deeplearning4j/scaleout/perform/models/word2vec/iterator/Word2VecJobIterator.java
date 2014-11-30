@@ -78,6 +78,8 @@ public class Word2VecJobIterator implements JobIterator {
                     }
                 }
 
+
+
             }
         });
     }
