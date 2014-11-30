@@ -2,9 +2,10 @@ package org.deeplearning4j.scaleout.perform.models.word2vec;
 
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.deeplearning4j.models.word2vec.Word2Vec;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
@@ -29,24 +30,24 @@ public class Word2VecWork implements Serializable {
     private Map<String,INDArray> originalNegative = new HashMap<>();
     private Map<String,INDArray> syn1Vectors = new HashMap<>();
 
-    public Word2VecWork(Word2Vec vec,List<VocabWord> sentence) {
+    public Word2VecWork(InMemoryLookupTable table,List<VocabWord> sentence) {
         this.sentence = sentence;
         for(VocabWord word : sentence) {
             indexes.put(word.getIndex(),word);
-            vectors.put(word.getWord(),new Pair<>(word,vec.getWordVectorMatrix(word.getWord()).dup()));
-            originalVectors.put(word.getWord(),vec.getWordVectorMatrix(word.getWord()).dup());
-            if(vec.getLookupTable() instanceof InMemoryLookupTable) {
-                InMemoryLookupTable l = (InMemoryLookupTable) vec.getLookupTable();
+            vectors.put(word.getWord(),new Pair<>(word,table.getSyn0().getRow(word.getIndex()).dup()));
+            originalVectors.put(word.getWord(),table.getSyn0().getRow(word.getIndex()).dup());
+            if(table instanceof InMemoryLookupTable) {
+                InMemoryLookupTable l = table;
                 syn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).dup());
                 originalSyn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).dup());
-                originalNegative.put(word.getWord(),l.getSyn1Neg().slice(word.getIndex()).dup());
-                if(l.getSyn1Neg() != null)
-                    negativeVectors.put(word.getWord(),new Pair<>(word,l.getSyn1Neg().slice(word.getIndex()).dup()));
+                if(l.getSyn1Neg() != null) {
+                    originalNegative.put(word.getWord(),l.getSyn1Neg().slice(word.getIndex()).dup());
+                    negativeVectors.put(word.getWord(), new Pair<>(word, l.getSyn1Neg().slice(word.getIndex()).dup()));
+                }
             }
 
         }
     }
-
 
 
     public Word2VecResult addDeltas() {

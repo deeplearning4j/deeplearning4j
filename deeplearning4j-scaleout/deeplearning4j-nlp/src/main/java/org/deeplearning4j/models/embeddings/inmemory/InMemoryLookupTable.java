@@ -140,6 +140,8 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
 
 
+
+
     /**
      * Iterate on the given 2 vocab words
      *
@@ -269,6 +271,22 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
     }
 
+    public boolean isUseAdaGrad() {
+        return useAdaGrad;
+    }
+
+    public void setUseAdaGrad(boolean useAdaGrad) {
+        this.useAdaGrad = useAdaGrad;
+    }
+
+    public double getNegative() {
+        return negative;
+    }
+
+    public void setNegative(double negative) {
+        this.negative = negative;
+    }
+
     /**
      * Iterate on the given 2 vocab words
      *
@@ -362,8 +380,9 @@ public class InMemoryLookupTable implements WeightLookupTable {
     public void resetWeights() {
         this.rng = new MersenneTwister(seed);
 
-        syn0  = Nd4j.rand(new int[]{vocab.numWords(),vectorLength},rng).subi(0.5).divi(vectorLength);
-        putVector(Word2Vec.UNK,Nd4j.rand(1,vectorLength,rng).subi(0.5).divi(vectorLength));
+        syn0  = Nd4j.rand(new int[]{vocab.numWords() + 1,vectorLength},rng).subi(0.5).divi(vectorLength);
+        INDArray randUnk = Nd4j.rand(1,vectorLength,rng).subi(0.5).divi(vectorLength);
+        putVector(Word2Vec.UNK,randUnk);
 
         syn1 = Nd4j.create(syn0.shape());
         initNegative();
