@@ -11,11 +11,8 @@ import com.hazelcast.core.*;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.scaleout.actor.util.PortTaken;
 import org.deeplearning4j.scaleout.aggregator.JobAggregator;
+import org.deeplearning4j.scaleout.api.statetracker.*;
 import org.deeplearning4j.scaleout.job.Job;
-import org.deeplearning4j.scaleout.statetracker.IterateAndUpdate;
-import org.deeplearning4j.scaleout.statetracker.StateTracker;
-import org.deeplearning4j.scaleout.statetracker.UpdateSaver;
-import org.deeplearning4j.scaleout.statetracker.WorkRetriever;
 import org.deeplearning4j.scaleout.statetracker.updatesaver.LocalFileUpdateSaver;
 import org.deeplearning4j.scaleout.statetracker.workretriever.LocalWorkRetriever;
 
@@ -95,10 +92,21 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     protected JobAggregator jobAggregator;
     protected Serializable cachedCurrent;
     public final static String HAZELCAST_HOST = "hazelcast.host";
+    private List<NewUpdateListener> listeners = new ArrayList<>();
 
     public BaseHazelCastStateTracker() throws Exception {
         this(DEFAULT_HAZELCAST_PORT);
 
+    }
+
+    @Override
+    public void removeUpdateListener(NewUpdateListener listener) {
+        listeners.remove(listener);
+    }
+
+    @Override
+    public void addUpdateListener(NewUpdateListener listener) {
+        listeners.add(listener);
     }
 
     /**
@@ -149,7 +157,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
 
     @Override
     public void setJobAggregator(JobAggregator aggregator) {
-         this.jobAggregator = aggregator;
+        this.jobAggregator = aggregator;
     }
 
     public abstract UpdateSaver createUpdateSaver();
@@ -745,6 +753,9 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
         if(e == null) {
             log.warn("Not setting a null update");
             return;
+        }
+        for(NewUpdateListener listener : listeners) {
+            listener.onUpdate(e);
         }
 
         this.master.set(e);

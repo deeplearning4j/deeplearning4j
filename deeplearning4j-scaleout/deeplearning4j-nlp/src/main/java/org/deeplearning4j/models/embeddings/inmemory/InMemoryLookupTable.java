@@ -399,6 +399,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
         }
 
     }
+
     /**
      * Inserts a word vector
      *
@@ -416,6 +417,21 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
     }
 
+    public INDArray getTable() {
+        return table;
+    }
+
+    public void setTable(INDArray table) {
+        this.table = table;
+    }
+
+    public INDArray getSyn1Neg() {
+        return syn1Neg;
+    }
+
+    public void setSyn1Neg(INDArray syn1Neg) {
+        this.syn1Neg = syn1Neg;
+    }
 
     /**
      * @param word

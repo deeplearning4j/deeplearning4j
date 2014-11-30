@@ -1,4 +1,4 @@
-package org.deeplearning4j.scaleout.statetracker;
+package org.deeplearning4j.scaleout.api.statetracker;
 
 
 import org.deeplearning4j.scaleout.job.Job;

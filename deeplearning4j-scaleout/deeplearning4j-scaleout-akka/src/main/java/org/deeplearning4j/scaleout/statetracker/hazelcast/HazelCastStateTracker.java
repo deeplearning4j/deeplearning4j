@@ -2,8 +2,8 @@ package org.deeplearning4j.scaleout.statetracker.hazelcast;
 
 
 import org.deeplearning4j.scaleout.job.Job;
-import org.deeplearning4j.scaleout.statetracker.IterateAndUpdate;
-import org.deeplearning4j.scaleout.statetracker.UpdateSaver;
+import org.deeplearning4j.scaleout.api.statetracker.IterateAndUpdate;
+import org.deeplearning4j.scaleout.api.statetracker.UpdateSaver;
 import org.deeplearning4j.scaleout.statetracker.updatesaver.LocalFileUpdateSaver;
 
 import javax.ws.rs.*;

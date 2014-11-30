@@ -1,6 +1,9 @@
-package org.deeplearning4j.scaleout.statetracker;
+package org.deeplearning4j.scaleout.api.statetracker;
 
 import org.deeplearning4j.scaleout.aggregator.JobAggregator;
+import org.deeplearning4j.scaleout.api.statetracker.IterateAndUpdate;
+import org.deeplearning4j.scaleout.api.statetracker.UpdateSaver;
+import org.deeplearning4j.scaleout.api.statetracker.WorkRetriever;
 import org.deeplearning4j.scaleout.job.Job;
 
 import java.io.Serializable;
@@ -23,6 +26,18 @@ import java.util.Map;
 public interface StateTracker extends Serializable {
 
 
+    /**
+     * Remove an update listener
+     * @param listener the listener to remove
+     */
+    void removeUpdateListener(NewUpdateListener listener);
+
+    /**
+     * Add an update listener
+     * @param listener a new update listener
+     */
+    void addUpdateListener(NewUpdateListener listener);
+
 
     JobAggregator jobAggregator();
 
@@ -30,6 +45,11 @@ public interface StateTracker extends Serializable {
 
     void setCurrent(Serializable e) throws Exception;
 
+    /**
+     * The current result
+     * @return the current result
+     * @throws Exception
+     */
     Serializable getCurrent() throws Exception;
 
     /**

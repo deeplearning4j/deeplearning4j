@@ -4,7 +4,7 @@ import org.deeplearning4j.scaleout.actor.runner.DeepLearning4jDistributed;
 import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.job.JobIterator;
 import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
-import org.deeplearning4j.scaleout.statetracker.StateTracker;
+import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
 
 /**
