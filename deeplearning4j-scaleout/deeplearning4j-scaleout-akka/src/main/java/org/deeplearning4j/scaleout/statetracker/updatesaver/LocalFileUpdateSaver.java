@@ -5,7 +5,7 @@ import com.hazelcast.core.EntryListener;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import org.deeplearning4j.scaleout.job.Job;
-import org.deeplearning4j.scaleout.statetracker.UpdateSaver;
+import org.deeplearning4j.scaleout.api.statetracker.UpdateSaver;
 import org.deeplearning4j.util.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

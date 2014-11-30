@@ -2,14 +2,13 @@ package org.deeplearning4j.scaleout.actor;
 
 import static org.junit.Assert.*;
 
-import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import org.deeplearning4j.scaleout.actor.core.actor.WorkerActor;
 import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.job.Job;
-import org.deeplearning4j.scaleout.statetracker.StateTracker;
+import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
 import org.junit.After;
 import org.junit.Before;

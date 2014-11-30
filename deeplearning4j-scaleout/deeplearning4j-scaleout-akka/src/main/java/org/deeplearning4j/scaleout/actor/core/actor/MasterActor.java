@@ -23,7 +23,7 @@ import org.deeplearning4j.scaleout.messages.DoneMessage;
 import org.deeplearning4j.scaleout.messages.MoreWorkMessage;
 import org.deeplearning4j.scaleout.perform.WorkerPerformer;
 import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
-import org.deeplearning4j.scaleout.statetracker.StateTracker;
+import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.IterateAndUpdateImpl;
 import scala.Option;
 import scala.concurrent.Future;

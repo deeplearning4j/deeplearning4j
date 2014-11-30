@@ -22,7 +22,7 @@ import org.deeplearning4j.scaleout.job.JobIterator;
 import org.deeplearning4j.scaleout.messages.MoreWorkMessage;
 import org.deeplearning4j.scaleout.perform.WorkerPerformer;
 import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
-import org.deeplearning4j.scaleout.statetracker.StateTracker;
+import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

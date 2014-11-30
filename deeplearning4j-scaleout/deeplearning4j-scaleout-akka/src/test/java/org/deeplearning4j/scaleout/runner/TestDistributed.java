@@ -7,7 +7,7 @@ import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.job.JobIterator;
 import org.deeplearning4j.scaleout.job.collection.CollectionJobIterator;
 import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
-import org.deeplearning4j.scaleout.statetracker.StateTracker;
+import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.util.SerializationUtils;
 import org.junit.After;
@@ -19,8 +19,6 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Created by agibsonccc on 11/27/14.
