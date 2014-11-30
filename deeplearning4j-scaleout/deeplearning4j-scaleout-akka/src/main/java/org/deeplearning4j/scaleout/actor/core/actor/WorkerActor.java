@@ -8,6 +8,7 @@ import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
 import akka.japi.Function;
+import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import org.deeplearning4j.scaleout.actor.core.protocol.Ack;
 import org.deeplearning4j.scaleout.actor.core.protocol.ClearWorker;
 import org.deeplearning4j.scaleout.actor.core.ClusterListener;
@@ -147,7 +148,7 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
 
 
     protected void heartbeat() throws Exception {
-        heartbeat = context().system().scheduler().schedule(Duration.apply(30, TimeUnit.SECONDS), Duration.apply(30, TimeUnit.SECONDS), new Runnable() {
+        heartbeat = context().system().scheduler().schedule(Duration.apply(1, TimeUnit.SECONDS), Duration.apply(1, TimeUnit.SECONDS), new Runnable() {
 
             @Override
             public void run() {
@@ -204,7 +205,13 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
                     }
 
 
-                }catch(Exception e) {
+                }
+
+                catch(HazelcastInstanceNotActiveException e1) {
+                    log.warn("Hazel cast shut down...exiting");
+                }
+
+                catch(Exception e) {
                     throw new RuntimeException(e);
                 }
 

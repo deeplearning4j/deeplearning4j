@@ -2,10 +2,8 @@ package org.deeplearning4j.scaleout.perform.models.word2vec;
 
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
@@ -23,30 +21,31 @@ public class Word2VecWork implements Serializable {
     private Map<String,Pair<VocabWord,INDArray>> vectors = new HashMap<>();
     private Map<String,Pair<VocabWord,INDArray>> negativeVectors = new HashMap<>();
 
-    private List<VocabWord> sentence;
+    private List<List<VocabWord>> sentences;
     private Map<Integer,VocabWord> indexes = new HashMap<>();
     private Map<String,INDArray> originalVectors = new HashMap<>();
     private Map<String,INDArray> originalSyn1Vectors = new HashMap<>();
     private Map<String,INDArray> originalNegative = new HashMap<>();
     private Map<String,INDArray> syn1Vectors = new HashMap<>();
 
-    public Word2VecWork(InMemoryLookupTable table,List<VocabWord> sentence) {
-        this.sentence = sentence;
-        for(VocabWord word : sentence) {
-            indexes.put(word.getIndex(),word);
-            vectors.put(word.getWord(),new Pair<>(word,table.getSyn0().getRow(word.getIndex()).dup()));
-            originalVectors.put(word.getWord(),table.getSyn0().getRow(word.getIndex()).dup());
-            if(table instanceof InMemoryLookupTable) {
-                InMemoryLookupTable l = table;
-                syn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).dup());
-                originalSyn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).dup());
-                if(l.getSyn1Neg() != null) {
-                    originalNegative.put(word.getWord(),l.getSyn1Neg().slice(word.getIndex()).dup());
-                    negativeVectors.put(word.getWord(), new Pair<>(word, l.getSyn1Neg().slice(word.getIndex()).dup()));
+    public Word2VecWork(InMemoryLookupTable table,List<List<VocabWord>> sentences) {
+        this.sentences = sentences;
+        for(List<VocabWord> sentence : sentences)
+            for(VocabWord word : sentence) {
+                indexes.put(word.getIndex(),word);
+                vectors.put(word.getWord(),new Pair<>(word,table.getSyn0().getRow(word.getIndex()).dup()));
+                originalVectors.put(word.getWord(),table.getSyn0().getRow(word.getIndex()).dup());
+                if(table instanceof InMemoryLookupTable) {
+                    InMemoryLookupTable l = table;
+                    syn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).dup());
+                    originalSyn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).dup());
+                    if(l.getSyn1Neg() != null) {
+                        originalNegative.put(word.getWord(),l.getSyn1Neg().slice(word.getIndex()).dup());
+                        negativeVectors.put(word.getWord(), new Pair<>(word, l.getSyn1Neg().slice(word.getIndex()).dup()));
+                    }
                 }
-            }
 
-        }
+            }
     }
 
 
@@ -55,17 +54,24 @@ public class Word2VecWork implements Serializable {
         Map<String,INDArray> syn1Change = new HashMap<>();
         Map<String,INDArray> negativeChange = new HashMap<>();
 
-
-        for(VocabWord word : sentence) {
-            syn0Change.put(word.getWord(),vectors.get(word.getWord()).getSecond().subi(originalVectors.get(word.getWord())));
-            syn1Change.put(word.getWord(),syn1Vectors.get(word.getWord()).subi(originalSyn1Vectors.get(word.getWord())));
-            if(!negativeVectors.isEmpty())
-                negativeChange.put(word.getWord(),negativeVectors.get(word.getWord()).getSecond().subi(originalNegative.get(word.getWord())));
-        }
+        for(List<VocabWord> sentence : sentences)
+            for(VocabWord word : sentence) {
+                syn0Change.put(word.getWord(),vectors.get(word.getWord()).getSecond().subi(originalVectors.get(word.getWord())));
+                syn1Change.put(word.getWord(),syn1Vectors.get(word.getWord()).subi(originalSyn1Vectors.get(word.getWord())));
+                if(!negativeVectors.isEmpty())
+                    negativeChange.put(word.getWord(),negativeVectors.get(word.getWord()).getSecond().subi(originalNegative.get(word.getWord())));
+            }
 
         return new Word2VecResult(syn0Change,syn1Change,negativeChange);
     }
 
+    public List<List<VocabWord>> getSentences() {
+        return sentences;
+    }
+
+    public void setSentences(List<List<VocabWord>> sentences) {
+        this.sentences = sentences;
+    }
 
     public Map<String, Pair<VocabWord, INDArray>> getNegativeVectors() {
         return negativeVectors;
@@ -81,14 +87,6 @@ public class Word2VecWork implements Serializable {
 
     public void setVectors(Map<String, Pair<VocabWord, INDArray>> vectors) {
         this.vectors = vectors;
-    }
-
-    public List<VocabWord> getSentence() {
-        return sentence;
-    }
-
-    public void setSentence(List<VocabWord> sentence) {
-        this.sentence = sentence;
     }
 
     public Map<Integer, VocabWord> getIndexes() {
