@@ -420,8 +420,13 @@ public class Word2Vec implements Persistable {
     }
 
 
+    public TextVectorizer getVectorizer() {
+        return vectorizer;
+    }
 
-
+    public void setVectorizer(TextVectorizer vectorizer) {
+        this.vectorizer = vectorizer;
+    }
 
     /**
      * Returns true if the model has this word in the vocab

@@ -30,7 +30,9 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     private int numDocs = 0;
 
     public InMemoryLookupCache() {
-        addToken(new VocabWord(1.0,Word2Vec.UNK));
+        VocabWord word = new VocabWord(1.0,Word2Vec.UNK);
+        word.setIndex(0);
+        addToken(word);
         addWordToIndex(0, Word2Vec.UNK);
         putVocabWord(Word2Vec.UNK);
 
@@ -156,7 +158,10 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public VocabWord wordFor(String word) {
-        return vocabs.get(word);
+        VocabWord ret =  vocabs.get(word);
+        if(ret == null)
+            return vocabs.get(Word2Vec.UNK);
+        return ret;
     }
 
     /**

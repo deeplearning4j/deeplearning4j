@@ -6,6 +6,7 @@ import org.deeplearning4j.scaleout.job.Job;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -18,8 +19,15 @@ public class Word2VecJobAggregator implements JobAggregator {
 
     @Override
     public void accumulate(Job job) {
-        Word2VecResult work = (Word2VecResult) job.getResult();
-        this.work.add(work);
+        if(job.getResult() instanceof Word2VecResult) {
+            Word2VecResult work = (Word2VecResult) job.getResult();
+            this.work.add(work);
+        }
+        else if(job.getResult() instanceof Collection) {
+            Collection<Word2VecResult> coll = (Collection<Word2VecResult>) job.getResult();
+            work.addAll(coll);
+        }
+
     }
 
     @Override

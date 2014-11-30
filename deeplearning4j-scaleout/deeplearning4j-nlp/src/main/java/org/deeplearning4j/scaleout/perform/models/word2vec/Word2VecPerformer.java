@@ -1,12 +1,15 @@
 package org.deeplearning4j.scaleout.perform.models.word2vec;
 
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.scaleout.aggregator.JobAggregator;
 import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.perform.WorkerPerformer;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
+import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.util.SerializationUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -14,9 +17,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -60,9 +63,17 @@ public class Word2VecPerformer implements WorkerPerformer {
     public void perform(Job job) {
 
         if(job.getWork() instanceof Word2VecWork) {
+            double numWordsSoFar = stateTracker.count(NUM_WORDS_SO_FAR);
             Word2VecWork work = (Word2VecWork) job.getWork();
             List<VocabWord> sentence = work.getSentence();
-            trainSentence(sentence,work,this.alpha);
+            double alpha2 = Math.max(minAlpha, alpha * (1 - (1.0 *  numWordsSoFar / (double) totalWords)));
+
+            trainSentence(sentence,work,alpha2);
+
+            int totalNewWords = work.getSentence().size();
+            job.setResult((Serializable) Arrays.asList(work.addDeltas()));
+            stateTracker.increment(NUM_WORDS_SO_FAR,totalNewWords);
+
         }
         else if(job.getWork() instanceof Collection) {
             double numWordsSoFar = stateTracker.count(NUM_WORDS_SO_FAR);
@@ -121,13 +132,45 @@ public class Word2VecPerformer implements WorkerPerformer {
 
 
         if(negative > 0) {
-            ByteArrayInputStream bis = new ByteArrayInputStream(conf.get(TABLE).getBytes());
-            table = SerializationUtils.readObject(bis);
+            try {
+                ByteArrayInputStream bis = new ByteArrayInputStream(conf.get(TABLE).getBytes());
+                DataInputStream dis = new DataInputStream(bis);
+                table = Nd4j.read(dis);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
         }
 
     }
 
+
+    /**
+     * Configure the configuration based on the table and idnex
+     * @param table the table
+     * @param index the index
+     * @param conf the configuration
+     */
+    public static void configure(InMemoryLookupTable table,InvertedIndex index,Configuration conf) {
+        conf.setInt(VECTOR_LENGTH, table.getVectorLength());
+        conf.setBoolean(ADAGRAD, table.isUseAdaGrad());
+        conf.setFloat(NEGATIVE, (float) table.getNegative());
+        conf.setFloat(ALPHA,(float) table.getLr().get());
+        conf.setInt(NUM_WORDS, index.totalWords());
+        conf.set(JobAggregator.AGGREGATOR,Word2VecJobAggregator.class.getName());
+        table.resetWeights();
+        if(table.getNegative() > 0) {
+            ByteArrayOutputStream bis = new ByteArrayOutputStream();
+            try {
+                DataOutputStream ois = new DataOutputStream(bis);
+                Nd4j.write(table.getTable(),ois);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            conf.set(Word2VecPerformer.TABLE,new String(bis.toByteArray()));
+
+        }
+    }
 
     /**
      * Train on a list of vocab words
@@ -241,11 +284,12 @@ public class Word2VecPerformer implements WorkerPerformer {
         }
 
 
-        int target = w1.getIndex();
-        int label;
-        INDArray syn1Neg = work.getNegativeVectors().get(work.getIndexes().get(target).getWord()).getSecond();
         //negative sampling
-        if(negative > 0)
+        if(negative > 0) {
+            int target = w1.getIndex();
+            int label;
+            INDArray syn1Neg = work.getNegativeVectors().get(work.getIndexes().get(target).getWord()).getSecond();
+
             for (int d = 0; d < negative + 1; d++) {
                 if (d == 0) {
 
@@ -260,25 +304,25 @@ public class Word2VecPerformer implements WorkerPerformer {
                     label = 0;
                 }
 
-                double f = Nd4j.getBlasWrapper().dot(l1,syn1Neg);
+                double f = Nd4j.getBlasWrapper().dot(l1, syn1Neg);
                 double g;
                 if (f > MAX_EXP)
-                    g = (label - 1) * (useAdaGrad ?  w1.getLearningRate(target,alpha) : alpha);
+                    g = (label - 1) * (useAdaGrad ? w1.getLearningRate(target, alpha) : alpha);
                 else if (f < -MAX_EXP)
-                    g = (label - 0) * (useAdaGrad ?  w1.getLearningRate(target,alpha) : alpha);
+                    g = (label - 0) * (useAdaGrad ? w1.getLearningRate(target, alpha) : alpha);
                 else
-                    g = (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *  (useAdaGrad ?  w1.getLearningRate(target,alpha) : alpha);
-                if(neu1e.data().dataType() == DataBuffer.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,neu1e,l1);
+                    g = (label - expTable[(int) ((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) * (useAdaGrad ? w1.getLearningRate(target, alpha) : alpha);
+                if (neu1e.data().dataType() == DataBuffer.DOUBLE)
+                    Nd4j.getBlasWrapper().axpy(g, neu1e, l1);
                 else
-                    Nd4j.getBlasWrapper().axpy((float) g,neu1e,l1);
+                    Nd4j.getBlasWrapper().axpy((float) g, neu1e, l1);
 
-                if(neu1e.data().dataType() == DataBuffer.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,syn1Neg,l1);
+                if (neu1e.data().dataType() == DataBuffer.DOUBLE)
+                    Nd4j.getBlasWrapper().axpy(g, syn1Neg, l1);
                 else
-                    Nd4j.getBlasWrapper().axpy((float) g,syn1Neg,l1);
+                    Nd4j.getBlasWrapper().axpy((float) g, syn1Neg, l1);
             }
-
+        }
 
         avgChange /=  w1.getCodes().size();
 

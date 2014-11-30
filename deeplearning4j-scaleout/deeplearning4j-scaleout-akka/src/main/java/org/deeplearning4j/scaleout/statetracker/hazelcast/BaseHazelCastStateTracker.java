@@ -524,17 +524,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
         jobs = h.getList(JOBS);
         workers = h.getList(WORKERS);
 
-        //we can make the assumption workers isn't empty because
-        //the master node by default comes with a applyTransformToDestination of workers
-        if(!this.type.equals("master")) {
-            while(workers.isEmpty()) {
-                log.warn("Waiting for data sync...");
-                Thread.sleep(1000);
-            }
 
-            log.info("Workers is " + workers.size());
-
-        }
 
         begunTraining = h.getAtomicReference(BEGUN);
         miniBatchSize = h.getAtomicReference(INPUT_SPLIT);
@@ -916,10 +906,12 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
         try {
             if(getCurrent() != null) {
                 cachedCurrent = getCurrent();
+                for(NewUpdateListener listener : listeners)
+                    listener.onUpdate(cachedCurrent);
             }
             done.set(true);
             updateSaver().cleanup();
-            h.shutdown();
+
         }catch(Exception e) {
             log.warn("Hazelcast already shutdown...done() being called is pointless");
         }
