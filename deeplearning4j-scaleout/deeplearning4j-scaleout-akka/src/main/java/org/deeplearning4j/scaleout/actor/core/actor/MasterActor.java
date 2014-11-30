@@ -402,6 +402,7 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
 
         if(stateTracker.currentJobs().isEmpty()) {
             isDone = true;
+            nextBatch();
             stateTracker.finish();
             log.info("Done training!");
         }

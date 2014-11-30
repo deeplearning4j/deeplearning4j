@@ -22,6 +22,7 @@ import javax.ws.rs.core.MediaType;
 public class HazelCastStateTracker  extends BaseHazelCastStateTracker {
 
     public HazelCastStateTracker() throws Exception {
+        super(DEFAULT_HAZELCAST_PORT);
         setUpdateSaver(createUpdateSaver());
     }
 

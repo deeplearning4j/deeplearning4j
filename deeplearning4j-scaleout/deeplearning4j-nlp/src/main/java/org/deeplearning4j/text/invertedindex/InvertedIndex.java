@@ -16,6 +16,12 @@ public interface InvertedIndex extends Serializable {
 
 
     /**
+     * Iterate over documents
+     * @return
+     */
+    Iterator<List<VocabWord>> docs();
+
+    /**
      * Unlock the index
      */
     void unlock();

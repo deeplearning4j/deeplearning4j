@@ -22,7 +22,7 @@ public abstract class BaseTestDistributed {
         stateTracker = createStateTracker();
         iterator = createIterator();
         workPerformFactoryClassName = workPerformFactoryClassName();
-        Configuration conf = createConfiguration();
+        conf = createConfiguration();
         distributed = new DeepLearning4jDistributed(iterator,stateTracker);
         distributed.setup(conf);
 

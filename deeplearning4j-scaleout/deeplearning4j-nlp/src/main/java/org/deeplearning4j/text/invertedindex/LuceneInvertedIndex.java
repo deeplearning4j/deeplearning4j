@@ -86,6 +86,11 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
     @Override
+    public Iterator<List<VocabWord>> docs() {
+        return new DocIter();
+    }
+
+    @Override
     public void unlock() {
         try {
             if(lockFactory == null)
@@ -118,20 +123,6 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     @Override
     public List<VocabWord> document(int index) {
-        if(cache) {
-            List<VocabWord> ret = words.get(index);
-            List<VocabWord> ret2 = new ArrayList<>();
-            //remove all non vocab words
-            for(VocabWord word : ret) {
-                if(vocabCache.containsWord(word.getWord()))
-                    ret2.add(word);
-            }
-
-
-            return ret2;
-        }
-
-
         List<VocabWord> ret = new CopyOnWriteArrayList<>();
         try {
             IndexReader reader = getReader();
@@ -510,6 +501,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
 
 
+
     @Override
     public void onClose(IndexReader reader) {
         readerClosed.set(true);
@@ -553,6 +545,24 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     public void remove() {
         throw new UnsupportedOperationException();
     }
+
+
+    public class DocIter implements Iterator<List<VocabWord>> {
+        private int currIndex = 0;
+        private int[] docs = allDocs();
+
+
+        @Override
+        public boolean hasNext() {
+            return currIndex < docs.length;
+        }
+
+        @Override
+        public List<VocabWord> next() {
+            return document(docs[currIndex++]);
+        }
+    }
+
 
     public static class Builder {
         private File indexDir;
