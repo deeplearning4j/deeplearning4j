@@ -1,5 +1,6 @@
 package org.deeplearning4j.scaleout.perform.models.word2vec;
 
+import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.perform.BaseWorkPerformerFactory;
 import org.deeplearning4j.scaleout.perform.WorkerPerformer;
 
@@ -9,9 +10,18 @@ import org.deeplearning4j.scaleout.perform.WorkerPerformer;
  */
 public class Word2VecPerformerFactory extends BaseWorkPerformerFactory {
 
+    private StateTracker stateTracker;
+
+    public Word2VecPerformerFactory() {}
+
+    public Word2VecPerformerFactory(StateTracker stateTracker) {
+        this.stateTracker = stateTracker;
+    }
 
     @Override
     public WorkerPerformer instantiate() {
+        if(stateTracker != null)
+            return new Word2VecPerformer(stateTracker);
         return new Word2VecPerformer();
     }
 }

@@ -32,6 +32,7 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
 import java.io.DataOutputStream;
+import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -153,7 +154,17 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
         String performerFactoryClazz = conf.get(WorkerPerformerFactory.WORKER_PERFORMER);
         try {
             Class<? extends WorkerPerformerFactory> clazz = (Class<? extends WorkerPerformerFactory>) Class.forName(performerFactoryClazz);
-            WorkerPerformerFactory factory = clazz.newInstance();
+
+            WorkerPerformerFactory factory = null;
+
+            try {
+                Constructor<?> c = clazz.getConstructor(StateTracker.class);
+                factory = (WorkerPerformerFactory) c.newInstance(stateTracker);
+            }catch(NoSuchMethodException e) {
+                factory = clazz.newInstance();
+            }
+
+
             WorkerPerformer performer = factory.create(conf);
             secondsPoll = conf.getInt(POLL_FOR_WORK,10);
             //start local workers

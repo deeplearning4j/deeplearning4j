@@ -59,6 +59,13 @@ public class Word2VecPerformer implements WorkerPerformer {
     private StateTracker stateTracker;
     private static Logger log = LoggerFactory.getLogger(Word2VecPerformer.class);
 
+    public Word2VecPerformer(StateTracker stateTracker) {
+        this.stateTracker = stateTracker;
+    }
+
+
+    public Word2VecPerformer() {}
+
     @Override
     public void perform(Job job) {
 
