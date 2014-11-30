@@ -1,9 +1,7 @@
 package org.deeplearning4j.scaleout.api;
 
-import java.io.DataOutputStream;
 
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
-import org.deeplearning4j.scaleout.job.Job;
 
 
 /**
@@ -14,7 +12,5 @@ import org.deeplearning4j.scaleout.job.Job;
  *
  */
 public interface ComputableMaster extends DeepLearningConfigurable {
-	void complete(DataOutputStream ds);
-	Job compute();
-	Job getResults();
+
 }
