@@ -51,12 +51,11 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     public final static String IS_PRETRAIN = "ispretrain";
     public final static String BEST_LOSS = "bestloss";
     public final static String IMPROVEMENT_THRESHOLD = "improvementthreshold";
-    public final static String VALIDATION_EPOCHS = "validationepochs";
     public final static String EARLY_STOP = "earlystop";
     public final static String PATIENCE = "patience";
-    public final static String PATIENCE_INCREASE = "patienceincrease";
     public final static String BEGUN = "begun";
     public final static String NUM_BATCHES_SO_FAR_RAN = "numbatches";
+    public final static String GLOBAL_REFERENCE = "globalreference";
 
     private volatile transient IAtomicReference<Serializable> master;
     private volatile transient IList<Job> jobs;
@@ -68,6 +67,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
 
     private volatile transient IAtomicReference<Boolean> earlyStop;
 
+    private volatile transient IMap<String,Serializable> references;
     private volatile transient IAtomicReference<Boolean> done;
     private volatile transient IList<String> replicate;
     private volatile transient IMap<String,Boolean> workerEnabled;
@@ -97,6 +97,28 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     public BaseHazelCastStateTracker() throws Exception {
         this(DEFAULT_HAZELCAST_PORT);
 
+    }
+
+    @Override
+    public <E extends Serializable> void define(String key, E o) {
+        references.put(key,o);
+    }
+
+    @Override
+    public <E extends Serializable> E get(String key) {
+        return (E) references.get(key);
+    }
+
+    @Override
+    public double count(String key) {
+        IAtomicLong long2 = h.getAtomicLong(key);
+        return long2.get();
+    }
+
+    @Override
+    public void increment(String key, double by) {
+        IAtomicLong long2 = h.getAtomicLong(key);
+        long2.addAndGet((long) by);
     }
 
     @Override
@@ -531,7 +553,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
         earlyStop = h.getAtomicReference(EARLY_STOP);
         patience = h.getAtomicReference(PATIENCE);
         numBatches = h.getAtomicReference(NUM_BATCHES_SO_FAR_RAN);
-
+        references = h.getMap(GLOBAL_REFERENCE);
 
         //applyTransformToDestination defaults only when master, otherwise, overrides previous values
         if(type.equals("master")) {
@@ -592,6 +614,10 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
 
         conf.addListConfig(replicateConfig);
 
+
+        MapConfig referenceConfig = new MapConfig();
+        referenceConfig.setName(GLOBAL_REFERENCE);
+        conf.addMapConfig(referenceConfig);
 
         ListConfig topicsConfig = new ListConfig();
         topicsConfig.setName(TOPICS);
