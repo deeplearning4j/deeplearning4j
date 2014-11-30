@@ -39,12 +39,5 @@ public class IterativeReduceWorkRouter extends BaseWorkRouter {
         return false;
     }
 
-    @Override
-    public void routeJob(Job job) {
-        try {
-            stateTracker.addJobToCurrent(job);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+
 }

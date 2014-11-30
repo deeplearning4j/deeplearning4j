@@ -18,6 +18,11 @@ public interface WorkRouter extends DeepLearningConfigurable {
 
 
     /**
+     * Update the workers and master results
+     */
+    void update();
+
+    /**
      * Whether to wait for workers or not
      * @return whether to wait for workers or not
      */
