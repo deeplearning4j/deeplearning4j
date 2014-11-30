@@ -13,12 +13,12 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Word2VecJobAggregator implements JobAggregator {
-    private List<Word2VecWork> work = new ArrayList<>();
+    private List<Word2VecResult> work = new ArrayList<>();
 
 
     @Override
     public void accumulate(Job job) {
-        Word2VecWork work = (Word2VecWork) job.getResult();
+        Word2VecResult work = (Word2VecResult) job.getResult();
         this.work.add(work);
     }
 
