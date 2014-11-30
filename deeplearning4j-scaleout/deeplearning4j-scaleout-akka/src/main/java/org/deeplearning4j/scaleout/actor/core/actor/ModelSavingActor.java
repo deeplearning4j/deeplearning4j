@@ -15,7 +15,7 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.messages.MoreWorkMessage;
-import org.deeplearning4j.scaleout.statetracker.StateTracker;
+import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 
 
 /**

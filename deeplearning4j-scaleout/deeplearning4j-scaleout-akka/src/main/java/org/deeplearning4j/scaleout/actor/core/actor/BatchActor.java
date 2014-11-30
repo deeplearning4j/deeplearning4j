@@ -10,7 +10,7 @@ import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.job.JobIterator;
 import org.deeplearning4j.scaleout.messages.DoneMessage;
 import org.deeplearning4j.scaleout.messages.MoreWorkMessage;
-import org.deeplearning4j.scaleout.statetracker.StateTracker;
+import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

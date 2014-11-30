@@ -16,7 +16,7 @@ import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.perform.WorkerPerformer;
-import org.deeplearning4j.scaleout.statetracker.StateTracker;
+import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.concurrent.duration.Duration;
