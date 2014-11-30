@@ -15,6 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -66,16 +68,24 @@ public class Word2VecPerformer implements WorkerPerformer {
             double numWordsSoFar = stateTracker.count(NUM_WORDS_SO_FAR);
 
             Collection<Word2VecWork> coll = (Collection<Word2VecWork>) job.getWork();
-            double alpha2 = Math.max(minAlpha, alpha * (1 - (1.0 * (double) numWordsSoFar / (double) totalWords)));
+            double alpha2 = Math.max(minAlpha, alpha * (1 - (1.0 *  numWordsSoFar / (double) totalWords)));
             int totalNewWords = 0;
+            List<Word2VecResult> deltas = new ArrayList<>();
             for(Word2VecWork work : coll) {
                 List<VocabWord> sentence = work.getSentence();
                 trainSentence(sentence,work,alpha2);
                 totalNewWords += sentence.size();
+                deltas.add(work.addDeltas());
             }
 
+
+
+            job.setResult((Serializable) deltas);
             stateTracker.increment(NUM_WORDS_SO_FAR,totalNewWords);
         }
+
+
+
 
     }
 
@@ -196,7 +206,7 @@ public class Word2VecPerformer implements WorkerPerformer {
 
             //other word vector
 
-            INDArray syn1 = work.getVectors().get(work.getIndexes().get(point).getWord()).getSecond();
+            INDArray syn1 = work.getSyn1Vectors().get(work.getIndexes().get(point).getWord());
 
 
             double dot = Nd4j.getBlasWrapper().dot(l1,syn1);
