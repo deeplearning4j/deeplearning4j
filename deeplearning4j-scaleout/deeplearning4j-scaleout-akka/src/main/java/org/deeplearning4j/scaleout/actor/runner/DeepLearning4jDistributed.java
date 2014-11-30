@@ -16,6 +16,7 @@ import org.deeplearning4j.scaleout.actor.core.actor.WorkerActor;
 import org.deeplearning4j.scaleout.actor.util.ActorRefUtils;
 import org.deeplearning4j.scaleout.aggregator.INDArrayAggregator;
 import org.deeplearning4j.scaleout.aggregator.JobAggregator;
+import org.deeplearning4j.scaleout.api.workrouter.WorkRouter;
 import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.job.JobIterator;
@@ -24,11 +25,13 @@ import org.deeplearning4j.scaleout.perform.WorkerPerformer;
 import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
 import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
+import org.deeplearning4j.scaleout.workrouter.IterativeReduceWorkRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.concurrent.duration.Duration;
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
@@ -60,6 +63,7 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
     private Configuration conf;
     private int stateTrackerPort = -1;
     private String masterHost;
+    private transient WorkRouter workRouter;
 
 
 
@@ -125,13 +129,26 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
 
         ActorRefUtils.addShutDownForSystem(system);
 
+
+
         system.actorOf(Props.create(ClusterListener.class));
 
-        ActorRef batchActor = system.actorOf(Props.create(BatchActor.class,iter,stateTracker,c),"batch");
+        try {
+            Class<? extends WorkRouter> routerClazz = (Class<? extends WorkRouter>) Class.forName(c.get(WorkRouter.WORK_ROUTER, IterativeReduceWorkRouter.class.getName()));
+            Constructor<?> constructor = routerClazz.getConstructor(StateTracker.class);
+            workRouter = (WorkRouter) constructor.newInstance(stateTracker);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+
+        workRouter.setup(c);
+
+        ActorRef batchActor = system.actorOf(Props.create(BatchActor.class,iter,stateTracker,c,workRouter),"batch");
 
         log.info("Started batch actor");
 
-        Props masterProps = Props.create(MasterActor.class,c,batchActor,stateTracker);
+        Props masterProps = Props.create(MasterActor.class,c,batchActor,stateTracker,workRouter);
 
 		/*
 		 * Starts a master: in the active state with the poison pill upon failure with the role of master

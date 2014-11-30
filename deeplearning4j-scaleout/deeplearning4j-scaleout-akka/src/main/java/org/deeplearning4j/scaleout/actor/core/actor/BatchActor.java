@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.deeplearning4j.scaleout.actor.core.ClusterListener;
 import org.deeplearning4j.scaleout.actor.core.protocol.ResetMessage;
+import org.deeplearning4j.scaleout.api.workrouter.WorkRouter;
 import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.job.Job;
@@ -34,16 +35,17 @@ public class BatchActor extends UntypedActor implements DeepLearningConfigurable
     private transient StateTracker stateTracker;
     private transient Configuration conf;
     private int numDataSets = 0;
+    private WorkRouter workRouter;
 
 
-    public BatchActor(JobIterator iter,StateTracker stateTracker,Configuration conf) {
+    public BatchActor(JobIterator iter,StateTracker stateTracker,Configuration conf,WorkRouter workRouter) {
         this.iter = iter;
         this.stateTracker = stateTracker;
         this.conf = conf;
         //subscribe to shutdown messages
         mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.SHUTDOWN, getSelf()), getSelf());
         mediator.tell(new DistributedPubSubMediator.Subscribe(BATCH, getSelf()), getSelf());
-
+        this.workRouter = workRouter;
     }
 
 
@@ -113,7 +115,7 @@ public class BatchActor extends UntypedActor implements DeepLearningConfigurable
                     if(next == null)
                         break;
 
-                    stateTracker.addJobToCurrent(next);
+                    workRouter.routeJob(next);
 
                 }
 

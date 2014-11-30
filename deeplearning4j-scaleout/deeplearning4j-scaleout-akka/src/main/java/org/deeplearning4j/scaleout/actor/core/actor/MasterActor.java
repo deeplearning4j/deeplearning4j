@@ -16,6 +16,7 @@ import akka.routing.RoundRobinPool;
 import org.deeplearning4j.scaleout.actor.core.ClusterListener;
 import org.deeplearning4j.scaleout.actor.core.protocol.Ack;
 import org.deeplearning4j.scaleout.actor.util.ActorRefUtils;
+import org.deeplearning4j.scaleout.api.workrouter.WorkRouter;
 import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.api.ComputableMaster;
 import org.deeplearning4j.scaleout.job.Job;
@@ -25,6 +26,7 @@ import org.deeplearning4j.scaleout.perform.WorkerPerformer;
 import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
 import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.IterateAndUpdateImpl;
+import org.deeplearning4j.scaleout.workrouter.IterativeReduceWorkRouter;
 import scala.Option;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
@@ -66,7 +68,7 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
     ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
     protected boolean isDone = false;
     protected Cancellable forceNextPhase,clearStateWorkers;
-
+    protected WorkRouter workRouter;
 
 
     /**
@@ -74,20 +76,14 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
      * @param conf the neural net config to use
      * @param batchActor the batch actor that handles data applyTransformToDestination dispersion
      */
-    public MasterActor(Configuration conf,ActorRef batchActor, final StateTracker stateTracker) {
+    public MasterActor(Configuration conf,ActorRef batchActor, final StateTracker stateTracker,WorkRouter router) {
         this.conf = conf;
         this.batchActor = batchActor;
+        this.workRouter = router;
 
         //subscribe to broadcasts from workers (location agnostic)
 
-
-
-        try {
-            this.stateTracker = stateTracker;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
+        this.stateTracker = stateTracker;
 
         setup(conf);
         stateTracker.runPreTrainIterations(conf.getInt(NUM_PASSES,1));
@@ -109,32 +105,10 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
                             return;
 
                         try {
-                            List<Job> currentJobs = stateTracker.currentJobs();
-                            log.info("Status check on next iteration");
 
 
-                            Collection<String> updates = stateTracker.workerUpdates();
-                            if(currentJobs.size() == 1 && oneDown != null) {
-                                long curr = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - oneDown.get());
-                                if(curr >= 5) {
-                                    stateTracker.currentJobs().clear();
-                                    oneDown = null;
-                                    log.info("Clearing out stale jobs");
-                                }
-                            }
-
-                            else if(currentJobs.size() == 1) {
-                                log.info("Marking start of stale jobs");
-                                oneDown = new AtomicLong(System.currentTimeMillis());
-                            }
-
-                            if(updates.size() >= stateTracker.workers().size() || currentJobs.isEmpty() || !waitForWorkers)
+                            if(workRouter.sendWork())
                                 nextBatch();
-
-                            else
-                                log.info("Still waiting on next batch, so far we have updates of size: " + updates.size()  + " out of " + stateTracker.workers().size());
-
-                            log.info("Current jobs left " + currentJobs);
 
 
                         }catch(Exception e) {
@@ -231,12 +205,12 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
             //start local workers
             Props p = pool.props(WorkerActor.propsFor(conf, stateTracker,performer));
             p = ClusterSingletonManager.defaultProps(p, "master", PoisonPill.getInstance(), "master");
-
             system.actorOf(p, "worker");
 
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
 
 
 
@@ -279,40 +253,6 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
             log.info("Prompted for more work, starting pipeline");
             mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.BATCH,
                     MoreWorkMessage.getInstance() ), getSelf());
-
-        }
-
-        //list of examples
-        else if(message instanceof Collection) {
-            Collection<String> list = (Collection<String>) message;
-            //workers to send job to
-            for(String worker : list) {
-                Job data = stateTracker.loadForWorker(worker);
-                int numRetries = 0;
-                while(data == null && numRetries < 3) {
-                    data = stateTracker.loadForWorker(worker);
-                    numRetries++;
-                    if(data == null) {
-                        Thread.sleep(10000);
-                        log.info("Data still not found....sleeping for 10 seconds and trying again");
-                    }
-                }
-
-
-                if(data == null && numRetries >= 3) {
-                    log.info("No data found for worker..." + worker + " returning");
-                    return;
-                }
-
-
-                //replicate the job to state tracker
-                stateTracker.addJobToCurrent(data);
-                //clear data immediately afterwards
-                data = null;
-                log.info("Job delegated for " + worker);
-            }
-
-
 
         }
 
@@ -411,17 +351,7 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
 
 
 
-    /**
-     * Creates the master and the workers with this given conf
-     * @param conf the neural net config to use
-     * @param batchActor the batch actor to use for data  distribution
-     *
-     */
-    public MasterActor(Configuration conf,ActorRef batchActor) {
-        this(conf,batchActor,null);
 
-
-    }
 
 
 
