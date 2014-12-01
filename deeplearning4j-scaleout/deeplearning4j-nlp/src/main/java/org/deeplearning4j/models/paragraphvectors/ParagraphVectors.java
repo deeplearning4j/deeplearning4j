@@ -265,31 +265,4 @@ public class ParagraphVectors extends Word2Vec {
 
     }
 
-    /**
-     * Train via skip gram
-     * @param i
-     * @param sentence
-     */
-    public void dm(int i, List<VocabWord> sentence, int b, AtomicLong nextRandom, double alpha) {
-
-        final VocabWord word = sentence.get(i);
-        if(word == null || sentence.isEmpty())
-            return;
-
-        int end =  window * 2 + 1 - b;
-        for(int a = b; a < end; a++) {
-            if(a != window) {
-                int c = i - window + a;
-                if(c >= 0 && c < sentence.size()) {
-                    VocabWord lastWord = sentence.get(c);
-                    iterate(word,lastWord,nextRandom,alpha);
-                }
-            }
-        }
-
-
-
-
-    }
-    
 }

@@ -106,9 +106,7 @@ public class Word2VecLoader {
             String[] initial = line.split(" ");
             int words = Integer.parseInt(initial[0]);
             int layerSize = Integer.parseInt(initial[1]);
-            lookupTable = new InMemoryLookupTable.Builder()
-                    .vectorLength(layerSize).build();
-            cache = new InMemoryLookupCache();
+             cache = new InMemoryLookupCache();
             data = new float[words][layerSize];
             int count = 0;
 
@@ -129,6 +127,11 @@ public class Word2VecLoader {
                 cache.putVocabWord(word);
 
             }
+
+
+            lookupTable = new InMemoryLookupTable.Builder().cache(cache)
+                    .vectorLength(layerSize).build();
+
 
             lookupTable.resetWeights();
 
