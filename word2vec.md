@@ -3,21 +3,21 @@ title:
 layout: default
 ---
 
-# Word2vec
+# Word2Vec
 
 Contents
 
 * <a href="#intro">Introduction</a>
-* <a href="#anatomy">Anatomy of Word2vec</a>
+* <a href="#anatomy">Anatomy of Word2Vec</a>
 * <a href="#code">Training</a>
 * <a href="#windows">Moving Windows</a>
 * <a href="#grams">N-grams & Skip-grams</a>
 * <a href="#load">Loading Your Data</a>
 * <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
-* <a href="#dbn">Fine-tuning DBNs</a>
+* <a href="#dbn">Fine-tuning DBNs (with code!)</a>
 * <a href="#next">Next Steps</a>
 
-###<a name="intro">Introduction to Word2vec</a>
+###<a name="intro">Introduction to Word2Vec</a>
 
 Word2Vec is a neural net that processes textual data before they are handled by deep-learning algorithms. It is at the heart of textual analysis with deep learning. While it does not implement deep learning, Word2vec turns input into a numerical form that deep-learning nets can understand -- the vector. 
 
