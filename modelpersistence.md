@@ -5,7 +5,7 @@ layout: default
 
 # Saving and Loading a Neural Network
 
-Neural networks that implement the Persistable interface are persistable via Java serialization. It looks like this in the [Javadoc](http://deeplearning4j.org/doc/).
+Neural networks that implement the Persistable interface are persistable via Java serialization. It looks like this in the [Javadoc](http://deeplearning4j.org/doc/), where you can find it by searching for "Persistable."
 
 ![Alt text](../img/persistable.png) 
 
