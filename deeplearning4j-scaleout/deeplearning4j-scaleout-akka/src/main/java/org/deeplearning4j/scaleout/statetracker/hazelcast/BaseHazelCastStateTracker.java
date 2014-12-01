@@ -747,6 +747,9 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     public void shutdown() {
         if(h != null)
             h.shutdown();
+        if(resource != null)
+            resource.shutdown();
+
 
     }
 

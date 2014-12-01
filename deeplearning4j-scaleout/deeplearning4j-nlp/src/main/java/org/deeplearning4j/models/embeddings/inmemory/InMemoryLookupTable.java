@@ -37,7 +37,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
     protected transient RandomGenerator rng = new XorShift64StarRandomGenerator(123);
     protected AtomicDouble lr = new AtomicDouble(1e-1);
     protected double[] expTable = new double[1000];
-    public static double MAX_EXP = 6;
+    protected static double MAX_EXP = 6;
     protected long seed = 123;
     //negative sampling table
     protected INDArray table,syn1Neg;
