@@ -52,22 +52,17 @@ Briefly, a two-layer neural net is trained with Gradient Descent. The connection
 
 Word2Vec trains on raw text. It then records the context, or usage, of each word encoded as word vectors. After training, it's used as lookup table to compose windows of training text for various tasks in natural-language processing.
 
-Assuming a list of sentences, Word2vec is used for lemmatization like this:
+After lemmatization, Word2vec will conduct automatic multithreaded training based on your sentence data. Then you'll want to save the model. There are a few different components to Word2vec. One of these is the vocab cache. The normal way to save models in deeplearning4j is via the SerializationUtils (java serialization akin to python pickling)
 
-<script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/word2vec/MovingWindowExample.java?slice=45:69"></script>
-
-From there, Word2vec will do automatic multithreaded training based on your sentence data. After that step, you will want to save the model. There are a few different components to word2vec. One of these is the vocab cache. The normal way to save models in deeplearning4j is via the SerializationUtils (java serialization akin to python pickling)
-
-       	 SerializationUtils.saveObject(vec, new File("mypath"));
+        SerializationUtils.saveObject(vec, new File("mypath"));
        	 
 This will save Word2vec to mypath. You can reload it into memory like this:
-        
+
         Word2Vec vec = SerializationUtils.readObject(new File("mypath"));
 
 You can then use Word2vec as a lookup table in the following way:
-              
-        INDArray wordVector = vec.getWordVectorMatrix("myword");
 
+        INDArray wordVector = vec.getWordVectorMatrix("myword");
         double[] wordVector = vec.getWordVector("myword");
 
 If the word isn't in the vocabulary, Word2vec returns zeros -- nothing more.
@@ -83,7 +78,6 @@ This will select moving windows of five tokens from the text (each member of a w
 You also may want to use your own custom tokenizer like this:
 
       TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-
       List<Window> windows = Windows.windows("text",tokenizerFactory);
 
 This will create a tokenizer for the text, and moving windows based on the tokenizer.
@@ -95,7 +89,6 @@ This will create a tokenizer for the text and create moving windows based on tha
 Notably, you can also specify the window size like so:
 
       TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-
       List<Window> windows = Windows.windows("text",tokenizerFactory,windowSize);
 
 Training word sequence models is done through optimization with the [Viterbi algorithm](../doc/org/deeplearning4j/word2vec/viterbi/Viterbi.html).
@@ -119,7 +112,7 @@ If you do this:
 on anything containing that window, it will automatically contain that label. This is used in bootstrapping a prior distribution over the set of labels in a training corpus.
 
 The following code saves your Viterbi implementation for later use:
-       
+
         SerializationUtils.saveObject(viterbi, new File("mypath"));
 
 ### <a name="grams">N-grams & Skip-grams</a>
