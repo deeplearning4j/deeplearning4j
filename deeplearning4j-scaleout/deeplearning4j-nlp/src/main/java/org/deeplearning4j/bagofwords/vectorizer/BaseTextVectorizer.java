@@ -225,7 +225,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
 
     @Override
     public long numWordsEncountered() {
-        return numWordsEncountered.get();
+        return index.totalWords();
     }
 
     @Override
