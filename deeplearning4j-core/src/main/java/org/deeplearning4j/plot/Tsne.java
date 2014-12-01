@@ -420,6 +420,8 @@ public class Tsne implements Serializable {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File("coords.csv"),true));
 
         for(int i = 0; i < y.rows(); i++) {
+            if(i >= labels.size())
+                break;
             String word = labels.get(i);
             if(word == null)
                 continue;

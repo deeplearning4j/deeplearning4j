@@ -635,7 +635,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
 
-        public ListBuilder hiddenLayerSizes(int[] hiddenLayerSizes) {
+        public ListBuilder hiddenLayerSizes(int...hiddenLayerSizes) {
             this.hiddenLayerSizes = hiddenLayerSizes;
             return this;
         }
