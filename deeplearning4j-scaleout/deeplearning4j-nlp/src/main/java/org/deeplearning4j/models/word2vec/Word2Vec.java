@@ -460,6 +460,9 @@ public class Word2Vec implements Persistable {
         final int[] docs = vectorizer.index().allDocs();
 
         totalWords = vectorizer.numWordsEncountered();
+        if(totalWords < 1)
+            throw new IllegalStateException("Unable to train, total words less than 1");
+
         totalWords *= numIterations;
 
 
@@ -488,7 +491,6 @@ public class Word2Vec implements Persistable {
                         if(job == null || job.isEmpty() || set.contains(job))
                             continue;
 
-                        log.info("Job of " + job.size());
                         double alpha = Math.max(minLearningRate, Word2Vec.this.alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) totalWords)));
                         long diff = Math.abs(lastReport.get() - numWordsSoFar.get());
                         if(numWordsSoFar.get() > 0 && diff >=  10000) {
@@ -496,13 +498,11 @@ public class Word2Vec implements Persistable {
                             lastReport.set(numWordsSoFar.get());
                         }
                         long increment = 0;
-                        double diff2 = 0.0;
                         for(List<VocabWord> sentence : job) {
                             trainSentence(sentence, nextRandom, alpha);
                             increment += sentence.size();
                         }
 
-                        log.info("Train sentence avg took " + diff2 / (double) job.size());
                         numWordsSoFar.set(numWordsSoFar.get() + increment);
                         processed.set(processed.get() + job.size());
 
@@ -1066,12 +1066,13 @@ public class Word2Vec implements Persistable {
 
                 if(lookupTable == null) {
                     lookupTable = new InMemoryLookupTable.Builder().negative(negative)
-                            .useAdaGrad(useAdaGrad).lr(lr)
+                            .useAdaGrad(useAdaGrad).lr(lr).cache(vocabCache)
                             .vectorLength(layerSize).build();
                 }
 
 
                 ret.docIter = docIter;
+                ret.lookupTable = lookupTable;
                 ret.tokenizerFactory = tokenizerFactory;
 
                 return ret;
@@ -1116,9 +1117,10 @@ public class Word2Vec implements Persistable {
 
                 if(lookupTable == null) {
                     lookupTable = new InMemoryLookupTable.Builder().negative(negative)
-                            .useAdaGrad(useAdaGrad).lr(lr)
+                            .useAdaGrad(useAdaGrad).lr(lr).cache(vocabCache)
                             .vectorLength(layerSize).build();
                 }
+                ret.lookupTable = lookupTable;
                 ret.tokenizerFactory = tokenizerFactory;
                 return ret;
             }
