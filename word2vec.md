@@ -8,6 +8,7 @@ layout: default
 Contents
 
 * <a href="#intro">Introduction to Word2vec</a>
+* <a href="#anatomy">Anatomy of Word2vec</a>
 * <a href="#code">Training</a>
 * <a href="#windows">Moving Windows</a>
 * <a href="#grams">N-grams & Skip-grams</a>
@@ -18,7 +19,7 @@ Contents
 
 ###<a name="intro">Introduction to Word2vec</a>
 
-Word2Vec is a neural net that processes textual data before they are handled by deep-learning algorithms. It is at the heart of text analysis with deep learning. While it does not implement deep learning, Word2vec turns input into a numerical form that deep-learning nets can understand -- the vector. 
+Word2Vec is a neural net that processes textual data before they are handled by deep-learning algorithms. It is at the heart of textual analysis with deep learning. While it does not implement deep learning, Word2vec turns input into a numerical form that deep-learning nets can understand -- the vector. 
 
 Word2vec creates features without human intervention, including the context of individual words; that context comes in the form of multiword windows. (In machine learning, the meaning of a word is the set of words that surrounds it.) Given enough data, usage and context, Word2vec can make highly accurate guesses as to a word’s meaning (for the purpose of deep learning, a word's meaning is simply a sign that helps to classify larger entities; e.g. placing a document in a cluster) based on its past appearances. 
 
@@ -35,6 +36,15 @@ Here's a graph of words associated with "China" using Word2vec:
 ![Alt text](../img/word2vec.png) 
 
 The other method of preparing text for input to a deep-learning net is called [Bag of Words (BoW)](../bagofwords-tf-idf.html). BoW produces a vocabulary with word counts associated to each element of the text. Its output is a wordcount vector. That said, it does not retain context, and therefore is not useful in a granular analysis of those words' meaning.
+
+###<a name="anatomy">Anatomy of Word2vec</a>
+
+What do we talk about when we talk about Word2vec? Deeplearning4j's natural-language processing components:
+
+* SentenceIterator/DocumentIterator: Used to iterate over a dataset. A SentenceIterator returns strings and a DocumentIterator works with inputstreams. Use the SentenceIterator wherever possible.
+* Tokenizer/TokenizerFactory: Used in tokenizing the text. In NLP terms, a sentence is represented as a series of tokens. A TokenizerFactory creates an instance of a tokenizer for a "sentence." 
+* VocabCache: Used for tracking metadata including word counts, document occurrences, the set of tokens (not vocab in this case, but rather tokens that have occurred), vocab (the features included in both bag of words as well as the word vector lookup table)
+* Inverted Index: Stores metadata about where words occurred. Can be used for understanding the dataset. A Lucene index with the Lucene implementation[1] is automatically created.
 
 ## <a name="code">Training</a> 
 
