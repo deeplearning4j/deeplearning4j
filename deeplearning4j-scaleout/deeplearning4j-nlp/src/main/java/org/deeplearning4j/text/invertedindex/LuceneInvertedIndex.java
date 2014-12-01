@@ -153,7 +153,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     public int[] documents(VocabWord vocabWord) {
         try {
             TermQuery query = new TermQuery(new Term(WORD_FIELD,vocabWord.getWord().toLowerCase()));
-            searcherManager.maybeRefreshBlocking();
+            searcherManager.maybeRefresh();
             IndexSearcher searcher = searcherManager.acquire();
             TopDocs topdocs = searcher.search(query,Integer.MAX_VALUE);
             int[] ret = new int[topdocs.totalHits];
@@ -349,7 +349,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private synchronized IndexReader getReader() {
         if(reader != null)
             try {
-                readerManager.maybeRefreshBlocking();
+                readerManager.maybeRefresh();
                 return readerManager.acquire();
             } catch (IOException e) {
                 throw new RuntimeException(e);
