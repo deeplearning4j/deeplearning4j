@@ -45,6 +45,7 @@ public class HazelCastStateTracker  extends BaseHazelCastStateTracker {
      */
     public HazelCastStateTracker(String connectionString) throws Exception {
         super(connectionString);
+        setUpdateSaver(createUpdateSaver());
     }
 
     public HazelCastStateTracker(String connectionString, String type, int stateTrackerPort) throws Exception {

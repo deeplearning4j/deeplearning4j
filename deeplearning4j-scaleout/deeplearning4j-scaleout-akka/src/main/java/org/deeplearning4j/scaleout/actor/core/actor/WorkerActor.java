@@ -163,7 +163,8 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
 
 
                     if(getCurrentJob() != null) {
-                        if(getCurrentJob().getWork() == null) {
+                        Job job = getCurrentJob();
+                        if(job.getWork() == null) {
                             tracker.clearJob(id);
                             tracker.enableWorker(id);
                             log.warn("Work for worker " + id + " was null");
@@ -172,17 +173,17 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
 
 
 
-                        String id = getCurrentJob().workerId();
+                        String id = job.workerId();
                         if(id == null || id.isEmpty())
-                            getCurrentJob().setWorkerId(id);
+                            job.setWorkerId(id);
 
-                        log.info("Confirmation from " + getCurrentJob().workerId() + " on work");
+                        log.info("Confirmation from " + job.workerId() + " on work");
                         long start = System.currentTimeMillis();
-                        workerPerformer.perform(getCurrentJob());
+                        workerPerformer.perform(job);
                         long end = System.currentTimeMillis();
                         long diff = Math.abs(end - start);
                         log.info("Job took " + diff + " milliseconds");
-                        tracker.addUpdate(id, getCurrentJob());
+                        tracker.addUpdate(id, job);
                         tracker.clearJob(id);
                         setCurrentJob(null);
 
