@@ -210,7 +210,7 @@ public class Word2Vec implements Persistable {
 
 
         if(lookupTable instanceof  InMemoryLookupTable) {
-            InMemoryLookupTable l = (InMemoryLookupTable) cache;
+            InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
             INDArray syn0 = l.getSyn0();
             INDArray weights = syn0.norm2(0).rdivi(1).muli(words);
             INDArray distances = syn0.mulRowVector(weights).sum(1);
@@ -327,7 +327,7 @@ public class Word2Vec implements Persistable {
 
         INDArray mean = words.mean(0);
         if(lookupTable instanceof  InMemoryLookupTable) {
-            InMemoryLookupTable l = (InMemoryLookupTable) cache;
+            InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
             INDArray syn0 = l.getSyn0();
             INDArray weights = syn0.norm2(0).rdivi(1).muli(mean);
             INDArray distances = syn0.mulRowVector(weights).sum(1);
@@ -380,7 +380,7 @@ public class Word2Vec implements Persistable {
 
 
         if(lookupTable instanceof  InMemoryLookupTable) {
-            InMemoryLookupTable l = (InMemoryLookupTable) cache;
+            InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
             INDArray syn0 = l.getSyn0();
             INDArray weights = syn0.norm2(0).rdivi(1).muli(vec);
             INDArray distances = syn0.mulRowVector(weights).sum(1);
