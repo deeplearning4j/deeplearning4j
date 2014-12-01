@@ -28,6 +28,7 @@ public class StateTrackerDropWizardResource extends Application<HazelCastConf> i
     private static Logger log = LoggerFactory.getLogger(StateTrackerDropWizardResource.class);
 
     private StateTracker stateTracker;
+    private Environment env;
 
     public StateTrackerDropWizardResource(StateTracker stateTracker) {
         this.stateTracker = stateTracker;
@@ -41,7 +42,7 @@ public class StateTrackerDropWizardResource extends Application<HazelCastConf> i
     @Override
     public void run(HazelCastConf hazelCastConf, Environment environment) throws Exception {
         environment.jersey().register(this);
-
+        this.env = environment;
     }
 
 
@@ -130,6 +131,18 @@ public class StateTrackerDropWizardResource extends Application<HazelCastConf> i
         return Response.ok(Collections.singletonMap("status", "saved")).build();
     }
 
+
+
+    public void shutdown() {
+        env.getAdminContext().shutdown();
+        try {
+            env.getAdminContext().shutdown();
+            env.getAdminContext().getServer().stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
 
 
 

@@ -73,6 +73,10 @@ public class Word2VecPerformer implements WorkerPerformer {
         if(job.getWork() instanceof Word2VecWork) {
             double numWordsSoFar = stateTracker.count(NUM_WORDS_SO_FAR);
             Word2VecWork work = (Word2VecWork) job.getWork();
+
+            if(work == null)
+                return;
+
             List<List<VocabWord>> sentences = work.getSentences();
             double alpha2 = Math.max(minAlpha, alpha * (1 - (1.0 *  numWordsSoFar / (double) totalWords)));
             int totalNewWords = 0;
