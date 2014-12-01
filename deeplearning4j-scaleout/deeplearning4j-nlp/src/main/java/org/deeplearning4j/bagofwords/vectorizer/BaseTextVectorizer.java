@@ -147,8 +147,9 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
 
         }
 
-
-        while(latch.get() < queued.get()) {
+        long diff = Long.MAX_VALUE;
+        while(queued.get() > 100 && diff > 5 || latch.get() < queued.get()) {
+            diff = Math.abs(latch.get() - queued.get());
             try {
                 Thread.sleep(10000);
                 log.info("latch count " + latch.get() + " with queued " + queued.get());
