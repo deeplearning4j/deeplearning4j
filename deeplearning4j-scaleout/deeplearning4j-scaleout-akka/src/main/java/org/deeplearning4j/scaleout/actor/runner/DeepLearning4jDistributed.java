@@ -361,7 +361,7 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
             Cluster cluster = Cluster.get(system);
             cluster.join(contactAddress);
 
-            log.info("Worker joining cluster");
+            log.info("Worker joining cluster of " + stateTracker.workers().size());
 
 
         } catch (Exception e) {
