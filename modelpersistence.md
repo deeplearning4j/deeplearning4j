@@ -3,10 +3,14 @@ title:
 layout: default
 ---
 
-# Saving and loading a neural network
+# Saving and Loading a Neural Network
 
-Neural networks that implement the [Persistable](../doc/org/deeplearning4j/nn/Persistable.html) interface are persistable via Java serialization.
+Neural networks that implement the Persistable interface are persistable via Java serialization. It looks like this in the Javadoc.
 
-With [this binary](../doc/org/deeplearning4j/datasets/DataSet.html), any neural network can be saved and sent across a network. Deeplearning4j uses it for the distributed training of neural nets. 
+![Alt text](../img/persistable.png) 
+
+With this binary, any neural network can be saved and sent across a network. Deeplearning4j uses it for the distributed training of neural nets. 
+
+![Alt text](../img/datasets.png) 
 
 It allows neural networks to be loaded into memory afterward (to resume training), and can be used with a REST API or other tools.
