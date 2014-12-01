@@ -30,7 +30,28 @@ public class Word2VecJobIterator implements JobIterator {
     private Iterator<List<List<VocabWord>>> sentenceIterator;
     private WeightLookupTable table;
     private VocabCache cache;
+    private int batchSize = 100;
 
+
+
+    public Word2VecJobIterator(Iterator<List<List<VocabWord>>> sentenceIterator,WeightLookupTable table,VocabCache cache,StateTracker stateTracker,int batchSize) {
+        this.sentenceIterator = sentenceIterator;
+        this.table = table;
+        this.cache = cache;
+        addListener(stateTracker);
+        this.batchSize = batchSize;
+
+    }
+
+
+    public Word2VecJobIterator(TextVectorizer textVectorizer,WeightLookupTable table,VocabCache cache,StateTracker stateTracker,int batchSize) {
+        this.sentenceIterator = textVectorizer.index().batchIter(batchSize);
+        this.cache = cache;
+        this.table = table;
+        addListener(stateTracker);
+        this.batchSize = batchSize;
+
+    }
 
     public Word2VecJobIterator(Iterator<List<List<VocabWord>>> sentenceIterator,WeightLookupTable table,VocabCache cache,StateTracker stateTracker) {
         this.sentenceIterator = sentenceIterator;
@@ -42,16 +63,17 @@ public class Word2VecJobIterator implements JobIterator {
 
 
     public Word2VecJobIterator(TextVectorizer textVectorizer,WeightLookupTable table,VocabCache cache,StateTracker stateTracker) {
-        this.sentenceIterator = textVectorizer.index().batchIter(1000);
+        this.sentenceIterator = textVectorizer.index().batchIter(batchSize);
         this.cache = cache;
         this.table = table;
         addListener(stateTracker);
 
     }
-    public Word2VecJobIterator(InvertedIndex invertedIndex, WeightLookupTable table,VocabCache cache,StateTracker stateTracker) {
-        this.sentenceIterator = invertedIndex.batchIter(1000);
+    public Word2VecJobIterator(InvertedIndex invertedIndex, WeightLookupTable table,VocabCache cache,StateTracker stateTracker,int batchSize) {
+        this.sentenceIterator = invertedIndex.batchIter(batchSize);
         this.cache = cache;
         this.table = table;
+        this.batchSize = batchSize;
         addListener(stateTracker);
 
     }
