@@ -5,13 +5,22 @@ layout: default
 
 # Word2vec
 
-To see our Word2vec code, skip to the [training section](../word2vec.html#training1). An example of sentiment analysis using [Word2Vec is here](http://deeplearning4j.org/sentiment_analysis_word2vec.html).
+Contents
 
-###Introduction to Word2vec
+* <a href="#intro">Introduction to Word2vec</a>
+* <a href="#code">Training</a>
+* <a href="#windows">Moving Windows</a>
+* <a href="#grams">N-grams & Skip-grams</a>
+* <a href="#load">Loading Your Data</a>
+* <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
+* <a href="#dbn">Fine-tuning DBNs</a>
+* <a href="#next">Next Steps</a>
+
+###<a name="intro">Introduction to Word2vec</a>
 
 Word2Vec is a neural net that processes textual data before they are handled by deep-learning algorithms. It is at the heart of text analysis with deep learning. While it does not implement deep learning, Word2vec turns input into a numerical form that deep-learning nets can understand -- the vector. 
 
-Word2vec creates features without human intervention, including the context of individual words; that context comes in the form of multiword windows. (In machine learning, the meaning of a word is the set of words that surrounds it.) Given enough data, usage and context, Word2vec can make highly accurate guesses as to a word’s meaning (for the purpose of deep learning, a word's meaning is simply a sign that helps to classify larger entities) based on its past appearances. 
+Word2vec creates features without human intervention, including the context of individual words; that context comes in the form of multiword windows. (In machine learning, the meaning of a word is the set of words that surrounds it.) Given enough data, usage and context, Word2vec can make highly accurate guesses as to a word’s meaning (for the purpose of deep learning, a word's meaning is simply a sign that helps to classify larger entities; e.g. placing a document in a cluster) based on its past appearances. 
 
 Word2vec expects a string of sentences as its input. Each sentence -- that is, each list of words -- is vectorized and then compared to other vectorized lists of words in an n-dimensional vector space. Related words and/or groups of words appear next to each other in that space. Quantifying them allows us to measure their similarities with exactitude, and therefore to cluster them. Those clusters form the basis of search, sentiment analysis and recommendations. 
 
@@ -27,7 +36,7 @@ Here's a graph of words associated with "China" using Word2vec:
 
 The other method of preparing text for input to a deep-learning net is called [Bag of Words (BoW)](../bagofwords-tf-idf.html). BoW produces a vocabulary with word counts associated to each element of the text. Its output is a wordcount vector. That said, it does not retain context, and therefore is not useful in a granular analysis of those words' meaning.
 
-## <a name="training1">Training</a> 
+## <a name="code">Training</a> 
 
 Word2Vec trains on raw text. It then records the context, or usage, of each word encoded as word vectors. After training, it's used as lookup table to compose windows of training text for various tasks in natural-language processing.
 
@@ -39,12 +48,9 @@ From there, Word2vec will do automatic multithreaded training based on your sent
 
        	 SerializationUtils.saveObject(vec, new File("mypath"));
        	 
-
 This will save Word2vec to mypath. You can reload it into memory like this:
         
         Word2Vec vec = SerializationUtils.readObject(new File("mypath"));
-
-
 
 You can then use Word2vec as a lookup table in the following way:
               
@@ -54,7 +60,7 @@ You can then use Word2vec as a lookup table in the following way:
 
 If the word isn't in the vocabulary, Word2vec returns zeros -- nothing more.
 
-### Windows
+###<a name="windows">Windows</a>
 
 Word2Vec works with neural networks by facilitating the moving-window model for training on word occurrences. There are two ways to get windows for text:
 
@@ -104,7 +110,7 @@ The following code saves your Viterbi implementation for later use:
        
         SerializationUtils.saveObject(viterbi, new File("mypath"));
 
-### N-grams & Skip-grams
+### <a name="grams">N-grams & Skip-grams</a>
 
 Words are read into the vector one at a time, *and scanned back and forth within a certain range*, much like n-grams. (An n-gram is a contiguous sequence of n items from a given linguistic sequence; it is the nth version of unigram, bigram, trigram, four-gram or five-gram.)  
 
@@ -136,13 +142,13 @@ A skip-gram, as you can see, is a form of noncontinous n-gram.
 
 In the literature, you will often see references to a "context window." In the example above, the context window is 3. Many windows use a context window of 5. 
 
-### The Dataset
+### <a name="dataset">The Dataset</a>
 
 For this example, we'll use a small dataset of articles from the Reuters newswire. 
 
 With DL4J, you can use a **[UimaSentenceIterator](https://uima.apache.org/)** to intelligently load your data. For simplicity's sake, we'll use a **FileSentenceIterator**.
 
-### Loading Your Data
+### <a name="load">Loading Your Data</a>
 
 DL4J makes it easy to load a corpus of documents. For this example, we have a folder in the user home directory called "reuters," containing a couple articles.
 
@@ -164,7 +170,7 @@ In lines 1 and 2, we get a file pointer to the directory ‘reuters’. Then we 
 
 On lines 4-8, we prepare the data by homogenizing it (e.g. lower-case all words and remove punctuation marks), which makes it easier for processing. 
 
-### Preparing to Create a Word2Vec Object
+### <a name="prepare">Preparing to Create a Word2Vec Object</a>
 
 Next we need the following
 
@@ -187,7 +193,7 @@ A smart tokenizer will recognize that the hyphen in *spider-man* can be part of 
 
 The word “Uima” refers to an Apache project -- Unstructured Information Management applications -- that helps make sense of unstructured data, as a tokenizer does. It is, in fact, a smart tokenizer. 
 
-### Creating a Word2Vec object
+### <a name="create">Creating a Word2Vec object</a>
 
 Now we can actually write some code to create a Word2Vec object. Consider the following:
 
@@ -220,7 +226,7 @@ Here are some functions you can call:
 2. *analogyWords(String A, String B, String x)* - A is to B as x is to ?
 3. *wordsNearest(String A, int n)* - Find the n-nearest words to A
 
-### Troubleshooting & Tuning Word2Vec
+### <a name="trouble">Troubleshooting & Tuning Word2Vec</a>
 
 *Q: I get a lot of stack traces like this*
 
@@ -245,14 +251,19 @@ You can shut down your Word2vec application and try to delete them.
 
 *A:* Try to raise the layer size via **.layerSize()** on your Word2Vec object like so
 
-        Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5).layerSize(300).iterate(iter).tokenizerFactory(t).build();
+        Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
+                     .layerSize(300).iterate(iter).tokenizerFactory(t).build();
 
-###Fine-tuning DBNs
+### <a name="dbn">Fine-tuning DBNs</a>
 
 Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used with DL4J's API:
 
-<script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/word2vec/Word2VecExample.java?slice=28:73"></script>
+<script src="http://gist-it.appspot.com/https://github.com/SkymindIO/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecExample.java?slice=21:90"></script>
 
 There are a couple parameters to pay special attention to here. The first is the number of words to be vectorized in the window, which you enter after WindowSize. The second is the number of nodes contained in the layer, which you'll enter after LayerSize. Those two numbers will be multiplied to obtain the number of inputs. 
 
 Word2Vec is especially useful in preparing text-based data for information retrieval and QA systems, which DL4J implements with [deep autoencoders](../deepautoencoder.html). For sentence parsing and other NLP tasks, we also have an implementation of [recursive neural tensor networks](../recursiveneuraltensornetwork.html).
+
+### <a name="next">Next Steps</a>
+
+An example of sentiment analysis using [Word2Vec is here](http://deeplearning4j.org/sentiment_analysis_word2vec.html).
