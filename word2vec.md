@@ -7,7 +7,7 @@ layout: default
 
 Contents
 
-* <a href="#intro">Introduction to Word2vec</a>
+* <a href="#intro">Introduction</a>
 * <a href="#anatomy">Anatomy of Word2vec</a>
 * <a href="#code">Training</a>
 * <a href="#windows">Moving Windows</a>
