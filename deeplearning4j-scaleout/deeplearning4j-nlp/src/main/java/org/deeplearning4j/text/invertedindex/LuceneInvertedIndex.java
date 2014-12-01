@@ -179,7 +179,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     public int numDocuments() {
         try {
             initReader();
-            readerManager.maybeRefreshBlocking();
+            readerManager.maybeRefresh();
             reader = readerManager.acquire();
             int ret = reader.numDocs();
             reader.close();

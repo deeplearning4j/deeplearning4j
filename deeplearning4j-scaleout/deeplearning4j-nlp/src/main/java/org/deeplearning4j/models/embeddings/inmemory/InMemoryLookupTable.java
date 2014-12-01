@@ -32,19 +32,19 @@ import java.util.concurrent.atomic.AtomicLong;
 public class InMemoryLookupTable implements WeightLookupTable {
 
 
-    private INDArray syn0,syn1;
-    private int vectorLength = 50;
-    private transient RandomGenerator rng = new XorShift64StarRandomGenerator(123);
-    private AtomicDouble lr = new AtomicDouble(1e-1);
-    double[] expTable = new double[1000];
-    static double MAX_EXP = 6;
-    private long seed = 123;
+    protected INDArray syn0,syn1;
+    protected int vectorLength = 50;
+    protected transient RandomGenerator rng = new XorShift64StarRandomGenerator(123);
+    protected AtomicDouble lr = new AtomicDouble(1e-1);
+    protected double[] expTable = new double[1000];
+    public static double MAX_EXP = 6;
+    protected long seed = 123;
     //negative sampling table
-    private INDArray table,syn1Neg;
-    private boolean useAdaGrad;
-    private double negative = 0;
-    private VocabCache vocab;
-    private Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
+    protected INDArray table,syn1Neg;
+    protected boolean useAdaGrad;
+    protected double negative = 0;
+    protected VocabCache vocab;
+    protected Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
 
 
 
@@ -123,7 +123,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
     }
 
 
-    private void initNegative() {
+    protected void initNegative() {
         if(negative > 0) {
             syn1Neg = Nd4j.zeros(syn0.shape());
             makeTable(10000,0.75);
@@ -131,7 +131,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
     }
 
 
-    private void initExpTable() {
+    protected void initExpTable() {
         for (int i = 0; i < expTable.length; i++) {
             double tmp =   FastMath.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
             expTable[i]  = tmp / (tmp + 1.0);
@@ -390,7 +390,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
     }
 
 
-    private void makeTable(int tableSize,double power) {
+    protected void makeTable(int tableSize,double power) {
         int vocabSize = syn0.rows();
         table = Nd4j.create(new FloatBuffer(tableSize));
         double trainWordsPow = 0.0;
@@ -477,8 +477,8 @@ public class InMemoryLookupTable implements WeightLookupTable {
     }
 
 
-    private  class WeightIterator implements Iterator<INDArray> {
-        private int currIndex = 0;
+    protected  class WeightIterator implements Iterator<INDArray> {
+        protected int currIndex = 0;
 
         @Override
         public boolean hasNext() {
@@ -547,13 +547,13 @@ public class InMemoryLookupTable implements WeightLookupTable {
     }
 
     public static class Builder {
-        private int vectorLength = 100;
-        private boolean useAdaGrad = false;
-        private double lr = 0.025;
-        private RandomGenerator gen = new XorShift64StarRandomGenerator(123);
-        private long seed = 123;
-        private double negative = 0;
-        private VocabCache vocabCache;
+        protected int vectorLength = 100;
+        protected boolean useAdaGrad = false;
+        protected double lr = 0.025;
+        protected RandomGenerator gen = new XorShift64StarRandomGenerator(123);
+        protected long seed = 123;
+        protected double negative = 0;
+        protected VocabCache vocabCache;
 
 
 
