@@ -52,7 +52,8 @@ public class Word2VecLoader {
 
                 data = new float[words][size];
                 cache = new InMemoryLookupCache();
-                lookupTable = new InMemoryLookupTable.Builder().vectorLength(size).build();
+                lookupTable = new InMemoryLookupTable.Builder().cache(cache)
+                        .vectorLength(size).build();
 
                 String word;
                 float[] vectors;
@@ -141,6 +142,7 @@ public class Word2VecLoader {
 
             Word2Vec ret = new Word2Vec();
             ret.setCache(cache);
+            ret.setLookupTable(lookupTable);
             ret.setLayerSize(layerSize);
             return ret;
 
