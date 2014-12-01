@@ -41,10 +41,10 @@ The other method of preparing text for input to a deep-learning net is called [B
 
 What do we talk about when we talk about Word2vec? Deeplearning4j's natural-language processing components:
 
-* SentenceIterator/DocumentIterator: Used to iterate over a dataset. A SentenceIterator returns strings and a DocumentIterator works with inputstreams. Use the SentenceIterator wherever possible.
-* Tokenizer/TokenizerFactory: Used in tokenizing the text. In NLP terms, a sentence is represented as a series of tokens. A TokenizerFactory creates an instance of a tokenizer for a "sentence." 
-* VocabCache: Used for tracking metadata including word counts, document occurrences, the set of tokens (not vocab in this case, but rather tokens that have occurred), vocab (the features included in both bag of words as well as the word vector lookup table)
-* Inverted Index: Stores metadata about where words occurred. Can be used for understanding the dataset. A Lucene index with the Lucene implementation[1] is automatically created.
+* **SentenceIterator/DocumentIterator**: Used to iterate over a dataset. A SentenceIterator returns strings and a DocumentIterator works with inputstreams. Use the SentenceIterator wherever possible.
+* **Tokenizer/TokenizerFactory**: Used in tokenizing the text. In NLP terms, a sentence is represented as a series of tokens. A TokenizerFactory creates an instance of a tokenizer for a "sentence." 
+* **VocabCache**: Used for tracking metadata including word counts, document occurrences, the set of tokens (not vocab in this case, but rather tokens that have occurred), vocab (the features included in both bag of words as well as the word vector lookup table)
+* **Inverted Index**: Stores metadata about where words occurred. Can be used for understanding the dataset. A Lucene index with the Lucene implementation[1] is automatically created.
 
 Briefly, a two-layer neural net is trained with <a href="#../glossary.html#downpoursgd">Gradient Descent</a>. The connection weights for the neural net are of a specified size. <em>syn0</em> in Word2vec terms is the wordvector lookup table, <em>syn1</em> is the activation, and a hierarchical Softmax trains on the two-layer net to calculate the likelihoods of various words being near one another. The Word2vec implementation here uses <a href="#grams">skipgrams</a>.
 
