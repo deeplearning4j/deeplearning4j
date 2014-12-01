@@ -127,7 +127,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
     @Override
-    public List<VocabWord> document(int index) {
+    public synchronized List<VocabWord> document(int index) {
         List<VocabWord> ret = new CopyOnWriteArrayList<>();
         try {
             IndexReader reader = getReader();
@@ -292,7 +292,6 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
         totalWords.set(totalWords.get() + words.size());
         addWords(words);
-        log.info("Adding words for doc " + doc);
         try {
             getWriter().addDocument(d);
         } catch (IOException e) {

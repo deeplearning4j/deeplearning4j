@@ -68,9 +68,9 @@ public class DeepLearning4jDistributedApp implements DeepLearningConfigurable {
 	protected String address;
 	@Option(name = "-stp",usage="state tracker port")
 	protected int stateTrackerPort = -1;
-    @Option(name = "-jsonpath",usage = "specify a path to a json fiel")
+    @Option(name = "-jsonpath",usage = "specify a path to a json file")
     protected String jsonPath;
-    @Option(name = "-json",usage = "json for configuraiton")
+    @Option(name = "-json",usage = "json for configuration")
     protected String json;
 	protected DeepLearning4jDistributed runner;
 	protected JobIterator iter;

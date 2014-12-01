@@ -33,7 +33,6 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     protected transient ActorSystem trainingSystem;
     protected transient TokenizerFactory tokenizerFactory;
     protected List<String> stopWords;
-    private int layerSize = 0;
     protected int minWordFrequency = 5;
     protected transient DocumentIterator docIter;
     protected List<String> labels;
@@ -48,11 +47,10 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
 
     public BaseTextVectorizer(){}
 
-    protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index,int batchSize,double sample,boolean stem,boolean cleanup) {
+    protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index,int batchSize,double sample,boolean stem,boolean cleanup) {
         this.cache = cache;
         this.tokenizerFactory = tokenizerFactory;
         this.stopWords = stopWords;
-        this.layerSize = layerSize;
         this.minWordFrequency = minWordFrequency;
         this.docIter = docIter;
         this.sentenceIterator = sentenceIterator;
@@ -197,13 +195,6 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         this.minWordFrequency = minWordFrequency;
     }
 
-    public int getLayerSize() {
-        return layerSize;
-    }
-
-    public void setLayerSize(int layerSize) {
-        this.layerSize = layerSize;
-    }
 
     public List<String> getStopWords() {
         return stopWords;

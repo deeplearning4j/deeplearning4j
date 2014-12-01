@@ -5,6 +5,7 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.scaleout.api.statetracker.NewUpdateListener;
 import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.job.Job;
@@ -86,7 +87,7 @@ public class Word2VecJobIterator implements JobIterator {
 
 
     private Word2VecWork create(List<List<VocabWord>> sentence) {
-        Word2VecWork work = new Word2VecWork((InMemoryLookupTable) table,sentence);
+        Word2VecWork work = new Word2VecWork((InMemoryLookupTable) table,(InMemoryLookupCache) cache,sentence);
         return work;
     }
 
