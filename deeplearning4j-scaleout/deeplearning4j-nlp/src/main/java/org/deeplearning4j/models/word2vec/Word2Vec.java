@@ -689,10 +689,6 @@ public class Word2Vec implements Persistable {
             skipGram(i, sentence, (int) nextRandom.get() % window,nextRandom,alpha);
         }
 
-
-
-
-
     }
 
 
