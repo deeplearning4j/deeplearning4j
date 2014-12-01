@@ -353,7 +353,7 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
             log.info("Joining cluster of size " + workers);
             Class<? extends WorkerPerformerFactory> factoryClazz = (Class<? extends WorkerPerformerFactory>) Class.forName(conf.get(WorkerPerformerFactory.WORKER_PERFORMER));
             WorkerPerformerFactory factory = factoryClazz.newInstance();
-            WorkerPerformer performer = factory.create();
+            WorkerPerformer performer = factory.create(conf);
 
             Props p = pool.props(WorkerActor.propsFor(conf, stateTracker,performer));
             system.actorOf(p, "worker");
