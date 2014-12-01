@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -36,18 +37,15 @@ public class LocalFileUpdateSaver implements UpdateSaver {
             updateableIMap.addEntryListener(new EntryListener<String, Job>() {
                 @Override
                 public void entryAdded(EntryEvent<String, Job> event) {
-                    File saveFile = new File(LocalFileUpdateSaver.this.baseDir,event.getKey());
-                    SerializationUtils.saveObject(event.getValue(),saveFile);
-                    boolean loadedProperly = false;
-                    while(!loadedProperly) {
-                        try {
-                            SerializationUtils.readObject(saveFile);
-
-                        }catch(Exception e) {
-
-                        }
-                        loadedProperly = true;
+                    String fileName = event.getKey();
+                    if(event.getKey().equals("."))
+                        fileName = UUID.randomUUID().toString();
+                    File saveFile = new File(LocalFileUpdateSaver.this.baseDir,fileName);
+                    if(saveFile.isDirectory()) {
+                        saveFile = new File(LocalFileUpdateSaver.this.baseDir,UUID.randomUUID().toString());
                     }
+                    SerializationUtils.saveObject(event.getValue(),saveFile);
+
                     paths.put(event.getKey(),saveFile.getAbsolutePath());
                     //no longer needed after persistence
                     updateableIMap.remove(event.getKey());

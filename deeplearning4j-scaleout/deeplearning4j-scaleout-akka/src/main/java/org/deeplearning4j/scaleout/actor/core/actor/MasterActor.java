@@ -33,9 +33,7 @@ import scala.concurrent.duration.Duration;
 
 import java.io.DataOutputStream;
 import java.lang.reflect.Constructor;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -99,9 +97,24 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
                         if(stateTracker.isDone())
                             return;
                         if(workRouter.sendWork())
-                                nextBatch();
+                              nextBatch();
+                        try {
+                            Set<Job> clear = new HashSet<>();
+                            for(Job j : stateTracker.currentJobs()) {
+                                    if(stateTracker.recentlyCleared().contains(j.workerId())) {
+                                        stateTracker.clearJob(j.workerId());
+                                        clear.add(j);
+                                        log.info("Found job that wasn't clear " + j.workerId());
+                                    }
+                            }
 
+                            stateTracker.currentJobs().removeAll(clear);
+                            if(stateTracker.currentJobs().isEmpty())
+                                stateTracker.recentlyCleared().clear();
 
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
 
 
                     }

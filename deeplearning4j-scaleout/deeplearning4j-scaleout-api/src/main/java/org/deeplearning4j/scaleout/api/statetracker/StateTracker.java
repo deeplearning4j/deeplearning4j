@@ -10,6 +10,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -26,7 +27,11 @@ import java.util.Map;
 public interface StateTracker extends Serializable {
 
 
-
+    /**
+     * The set of recently cleared jobs
+     * @return the set of recently cleared jobs (based on worker ids)
+     */
+    Set<String> recentlyCleared();
 
     void increment(String key,double by);
 

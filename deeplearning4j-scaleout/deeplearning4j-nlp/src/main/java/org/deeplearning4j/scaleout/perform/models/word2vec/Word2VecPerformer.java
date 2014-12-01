@@ -8,6 +8,7 @@ import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.perform.WorkerPerformer;
+import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.util.SerializationUtils;
@@ -58,7 +59,7 @@ public class Word2VecPerformer implements WorkerPerformer {
     private int totalWords = 1;
     private StateTracker stateTracker;
     private static Logger log = LoggerFactory.getLogger(Word2VecPerformer.class);
-
+    private int lastChecked = 0;
     public Word2VecPerformer(StateTracker stateTracker) {
         this.stateTracker = stateTracker;
     }
@@ -78,6 +79,14 @@ public class Word2VecPerformer implements WorkerPerformer {
             for(List<VocabWord> sentence : sentences) {
                 trainSentence(sentence, work, alpha2);
                 totalNewWords += sentence.size();
+            }
+
+
+            double newWords = totalNewWords + numWordsSoFar;
+            double diff = Math.abs(newWords - lastChecked);
+            if(diff >= 10000) {
+                lastChecked = (int) newWords;
+                log.info("Words so far " + newWords + " out of " + totalWords);
             }
 
             job.setResult((Serializable) Arrays.asList(work.addDeltas()));
@@ -103,6 +112,12 @@ public class Word2VecPerformer implements WorkerPerformer {
 
 
 
+            double newWords = totalNewWords + numWordsSoFar;
+            double diff = Math.abs(newWords - lastChecked);
+            if(diff >= 10000) {
+                lastChecked = (int) newWords;
+                log.info("Words so far " + newWords + " out of " + totalWords);
+            }
             job.setResult((Serializable) deltas);
             stateTracker.increment(NUM_WORDS_SO_FAR,totalNewWords);
         }
@@ -126,7 +141,7 @@ public class Word2VecPerformer implements WorkerPerformer {
         window = conf.getInt(WINDOW, 5);
         alpha = conf.getFloat(ALPHA, 0.025f);
         minAlpha = conf.getFloat(MIN_ALPHA, 1e-2f);
-        totalWords = conf.getInt(TOTAL_WORDS,1);
+        totalWords = conf.getInt(NUM_WORDS,1);
 
         initExpTable();
 
@@ -169,7 +184,8 @@ public class Word2VecPerformer implements WorkerPerformer {
         conf.setFloat(NEGATIVE, (float) table.getNegative());
         conf.setFloat(ALPHA,(float) table.getLr().get());
         conf.setInt(NUM_WORDS, index.totalWords());
-        conf.set(JobAggregator.AGGREGATOR,Word2VecJobAggregator.class.getName());
+        conf.set(JobAggregator.AGGREGATOR, Word2VecJobAggregator.class.getName());
+        conf.set(WorkerPerformerFactory.WORKER_PERFORMER,Word2VecPerformerFactory.class.getName());
         table.resetWeights();
         if(table.getNegative() > 0) {
             ByteArrayOutputStream bis = new ByteArrayOutputStream();
@@ -241,7 +257,15 @@ public class Word2VecPerformer implements WorkerPerformer {
     public  void iterateSample(Word2VecWork work,VocabWord w1, VocabWord w2,double alpha) {
         if(w2 == null || w2.getIndex() < 0)
             return;
+        if( work.getVectors().get(w2.getWord()) == null) {
+            log.warn("No vector found for word " + w2.getWord());
+            return;
+        }
 
+        if( work.getVectors().get(w1.getWord()) == null) {
+            log.warn("No vector found for word " + w1.getWord());
+            return;
+        }
         //current word vector
         INDArray l1 = work.getVectors().get(w2.getWord()).getSecond();
 

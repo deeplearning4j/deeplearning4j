@@ -155,21 +155,7 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
                 if(!tracker.isDone())
                     tracker.addWorker(id);
 
-                if(!tracker.isDone() && tracker.needsReplicate(id)) {
-                    try {
-                        log.info("Updating worker " + id);
-                        Job u = (Job) tracker.getCurrent();
 
-                        if(u == null) {
-                            return;
-                        }
-
-                        setCurrentJob(u);
-                        tracker.doneReplicating(id);
-                    }catch(Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
 
                 //eventually consistent storage
                 try {
@@ -186,10 +172,16 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
 
 
 
+                        String id = getCurrentJob().workerId();
+                        if(id == null || id.isEmpty())
+                            getCurrentJob().setWorkerId(id);
 
                         log.info("Confirmation from " + getCurrentJob().workerId() + " on work");
-
+                        long start = System.currentTimeMillis();
                         workerPerformer.perform(getCurrentJob());
+                        long end = System.currentTimeMillis();
+                        long diff = Math.abs(end - start);
+                        log.info("Job took " + diff + " milliseconds");
                         tracker.addUpdate(id, getCurrentJob());
                         tracker.clearJob(id);
                         setCurrentJob(null);
