@@ -284,6 +284,15 @@ public class Word2VecPerformer implements WorkerPerformer {
             int point = w1.getPoints().get(i);
 
             //other word vector
+            if(work.getIndexes().get(point) == null) {
+                log.warn("Work index for point " + point + " was null");
+                continue;
+            }
+
+            if(work.getSyn1Vectors().get(work.getIndexes().get(point).getWord()) == null) {
+                log.warn("Syn1 vectors for " + work.getIndexes().get(point).getWord() + " was null");
+                continue;
+            }
 
             INDArray syn1 = work.getSyn1Vectors().get(work.getIndexes().get(point).getWord());
 

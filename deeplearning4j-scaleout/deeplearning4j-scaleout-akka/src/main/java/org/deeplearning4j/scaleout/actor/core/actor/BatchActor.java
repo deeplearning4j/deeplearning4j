@@ -1,5 +1,7 @@
 package org.deeplearning4j.scaleout.actor.core.actor;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 
 import org.deeplearning4j.scaleout.actor.core.ClusterListener;
@@ -34,6 +36,7 @@ public class BatchActor extends UntypedActor implements DeepLearningConfigurable
     public final static String BATCH = "batch";
     private transient StateTracker stateTracker;
     private transient Configuration conf;
+    private Queue<String> workers = new ConcurrentLinkedDeque<>();
     private int numDataSets = 0;
     private WorkRouter workRouter;
 
@@ -110,7 +113,10 @@ public class BatchActor extends UntypedActor implements DeepLearningConfigurable
                         break;
                     String worker = nextWorker();
                     log.info("Saving data for worker " + worker);
-
+                    if(worker == null) {
+                        i--;
+                        continue;
+                    }
                     Job next = iter.next(worker);
                     if(next == null)
                         break;
@@ -138,19 +144,20 @@ public class BatchActor extends UntypedActor implements DeepLearningConfigurable
 
 
     private String nextWorker() {
-        boolean sent = false;
-
-        while(!sent) {
+        while(workers.isEmpty()) {
             //always update
             for(String s : stateTracker.workers()) {
-                if(!stateTracker.workerData().contains(s) && stateTracker.jobFor(s) == null) {
-                    return s;
+                if(stateTracker.jobFor(s) == null) {
+                    if(!workers.contains(s))
+                        workers.add(s);
 
                 }
             }
 
+            log.info("Refilling queue with size of " + workers.size() + " out of " + stateTracker.numWorkers());
         }
-        return null;
+
+        return workers.poll();
 
     }
 

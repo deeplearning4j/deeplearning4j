@@ -94,6 +94,8 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
 
                     @Override
                     public void run() {
+                        log.info("Heart beat on " + stateTracker.workers().size() + " workers");
+
                         if(stateTracker.isDone())
                             return;
                         if(workRouter.sendWork())
@@ -115,6 +117,7 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
+
 
 
                     }
