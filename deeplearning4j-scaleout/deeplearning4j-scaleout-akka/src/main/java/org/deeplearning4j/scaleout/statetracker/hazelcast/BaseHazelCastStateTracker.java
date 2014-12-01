@@ -2,10 +2,7 @@ package org.deeplearning4j.scaleout.statetracker.hazelcast;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.config.Config;
-import com.hazelcast.config.JoinConfig;
-import com.hazelcast.config.ListConfig;
-import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.*;
 import com.hazelcast.core.*;
 
 import org.apache.commons.io.IOUtils;
@@ -56,14 +53,15 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     public final static String BEGUN = "begun";
     public final static String NUM_BATCHES_SO_FAR_RAN = "numbatches";
     public final static String GLOBAL_REFERENCE = "globalreference";
+    public final static String RECENTLY_CLEARED = "recentlycleared";
 
     private volatile transient IAtomicReference<Serializable> master;
     private volatile transient IList<Job> jobs;
     private volatile transient IAtomicReference<Integer> numTimesPretrain;
     private volatile transient IAtomicReference<Integer> numTimesPretrainRan;
     private volatile transient IAtomicReference<Double> bestLoss;
-    private volatile transient IAtomicReference<Double> improvementThreshold;
     private volatile transient IAtomicReference<Integer> numBatches;
+    private volatile transient ISet<String> recentlyClearedJobs;
 
     private volatile transient IAtomicReference<Boolean> earlyStop;
 
@@ -159,8 +157,10 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     public void startRestApi() {
         resource = new StateTrackerDropWizardResource(this);
         try {
-            InputStream is = new ClassPathResource("/dropwizard.yml").getInputStream();
-            File tmpConfig = new File("dropwizard.yml");
+            InputStream is = new ClassPathResource("/hazelcast/dropwizard.yml").getInputStream();
+            File tmpConfig = new File("hazelcast/dropwizard.yml");
+            if(!tmpConfig.getParentFile().exists())
+                tmpConfig.getParentFile().mkdirs();
             BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpConfig));
             IOUtils.copy(is, bos);
             bos.flush();
@@ -525,7 +525,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
         workers = h.getList(WORKERS);
 
 
-
+        recentlyClearedJobs = h.getSet(RECENTLY_CLEARED);
         begunTraining = h.getAtomicReference(BEGUN);
         miniBatchSize = h.getAtomicReference(INPUT_SPLIT);
         workerEnabled = h.getMap(WORKER_ENABLED);
@@ -538,7 +538,6 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
         numTimesPretrain = h.getAtomicReference(NUM_TIMES_RUN_PRETRAIN);
         numTimesPretrainRan = h.getAtomicReference(NUM_TIMES_PRETRAIN_RAN);
         done = h.getAtomicReference(DONE);
-        improvementThreshold = h.getAtomicReference(IMPROVEMENT_THRESHOLD);
         bestLoss = h.getAtomicReference(BEST_LOSS);
         earlyStop = h.getAtomicReference(EARLY_STOP);
         patience = h.getAtomicReference(PATIENCE);
@@ -604,6 +603,9 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
 
         conf.addListConfig(replicateConfig);
 
+
+        SetConfig cleared = new SetConfig();
+        cleared.setName(RECENTLY_CLEARED);
 
         MapConfig referenceConfig = new MapConfig();
         referenceConfig.setName(GLOBAL_REFERENCE);
@@ -695,9 +697,13 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     }
     @Override
     public List<Job> currentJobs() throws Exception {
-        return new ArrayList<>(jobs);
+        return jobs;
     }
 
+    @Override
+    public Set<String> recentlyCleared() {
+        return recentlyClearedJobs;
+    }
 
     /**
      * Assuming a job already exists, updates the job
@@ -718,6 +724,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
 
         }
 
+        recentlyClearedJobs.add(id);
         IAtomicReference<Job> jRef = h.getAtomicReference("job-" + id);
         if(jRef.isNull())
             return;
@@ -733,6 +740,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
 
         if(remove != null)
             jobs.remove(remove);
+
     }
 
     @Override

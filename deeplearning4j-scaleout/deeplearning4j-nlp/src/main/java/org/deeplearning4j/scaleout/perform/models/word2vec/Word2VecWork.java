@@ -4,6 +4,7 @@ package org.deeplearning4j.scaleout.perform.models.word2vec;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
@@ -28,24 +29,34 @@ public class Word2VecWork implements Serializable {
     private Map<String,INDArray> originalNegative = new HashMap<>();
     private Map<String,INDArray> syn1Vectors = new HashMap<>();
 
-    public Word2VecWork(InMemoryLookupTable table,List<List<VocabWord>> sentences) {
+    public Word2VecWork(InMemoryLookupTable table,InMemoryLookupCache cache,List<List<VocabWord>> sentences) {
         this.sentences = sentences;
         for(List<VocabWord> sentence : sentences)
             for(VocabWord word : sentence) {
-                indexes.put(word.getIndex(),word);
-                vectors.put(word.getWord(),new Pair<>(word,table.getSyn0().getRow(word.getIndex()).dup()));
-                originalVectors.put(word.getWord(),table.getSyn0().getRow(word.getIndex()).dup());
-                if(table instanceof InMemoryLookupTable) {
-                    InMemoryLookupTable l = table;
-                    syn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).dup());
-                    originalSyn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).dup());
-                    if(l.getSyn1Neg() != null) {
-                        originalNegative.put(word.getWord(),l.getSyn1Neg().slice(word.getIndex()).dup());
-                        negativeVectors.put(word.getWord(), new Pair<>(word, l.getSyn1Neg().slice(word.getIndex()).dup()));
+                 addWord(word,table);
+                if(word.getPoints() != null) {
+                    for(int i = 0; i < word.getCodeLength(); i++) {
+                        VocabWord pointWord = cache.wordFor(cache.wordAtIndex(word.getPoints().get(i)));
+                        addWord(pointWord,table);
                     }
                 }
-
             }
+    }
+
+    private void addWord(VocabWord word,InMemoryLookupTable table) {
+        indexes.put(word.getIndex(),word);
+        vectors.put(word.getWord(),new Pair<>(word,table.getSyn0().getRow(word.getIndex()).dup()));
+        originalVectors.put(word.getWord(),table.getSyn0().getRow(word.getIndex()).dup());
+        if(table instanceof InMemoryLookupTable) {
+            InMemoryLookupTable l = table;
+            syn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).dup());
+            originalSyn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).dup());
+            if(l.getSyn1Neg() != null) {
+                originalNegative.put(word.getWord(),l.getSyn1Neg().slice(word.getIndex()).dup());
+                negativeVectors.put(word.getWord(), new Pair<>(word, l.getSyn1Neg().slice(word.getIndex()).dup()));
+            }
+        }
+
     }
 
 

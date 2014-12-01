@@ -61,7 +61,7 @@ public class StateTrackerDropWizardResource extends Application<HazelCastConf> i
     @Path("/minibatch/{num}")
     public Response setMiniBatchSizeRest(@PathParam("num") int num) {
         stateTracker.setMiniBatchSize(num);
-        return Response.ok(Collections.singletonMap("status","applyTransformToDestination mini batch to " + num)).build();
+        return Response.ok(Collections.singletonMap("status","mini batch to " + num)).build();
     }
 
     @GET

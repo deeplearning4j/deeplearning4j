@@ -14,7 +14,6 @@ public abstract class Builder {
     protected VocabCache cache = new InMemoryLookupCache();
     protected TokenizerFactory tokenizerFactory;
     protected List<String> stopWords = StopWords.getStopWords();
-    protected int layerSize = 1;
     protected int minWordFrequency = 5;
     protected DocumentIterator docIter;
     protected SentenceIterator sentenceIterator;
@@ -75,10 +74,7 @@ public abstract class Builder {
         return this;
     }
 
-    public Builder layerSize(int layerSize) {
-        this.layerSize = layerSize;
-        return this;
-    }
+
 
     public Builder minWords(int minWordFrequency) {
         this.minWordFrequency = minWordFrequency;

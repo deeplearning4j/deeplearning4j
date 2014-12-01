@@ -4,6 +4,7 @@ import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
@@ -66,6 +67,11 @@ public class DistributedWord2VecTest extends BaseTestDistributed {
                 .tokenize(t).build();
 
         vectorizer.fit();
+
+
+        Huffman huffman = new Huffman(cache.vocabWords());
+        huffman.build();
+
 
         init();
     }

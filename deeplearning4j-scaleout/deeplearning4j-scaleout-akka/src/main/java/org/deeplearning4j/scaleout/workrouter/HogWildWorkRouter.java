@@ -6,9 +6,19 @@ import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
 
 /**
- * Created by agibsonccc on 11/30/14.
+ *
+ * Async updates
+ *
+ * @author Adam Gibson
  */
 public class HogWildWorkRouter extends BaseWorkRouter  {
+    public HogWildWorkRouter() {
+    }
+
+    public HogWildWorkRouter(StateTracker stateTracker) {
+        super(stateTracker);
+    }
+
     @Override
     public StateTracker createStateTracker(Configuration conf) throws Exception {
         return new HazelCastStateTracker();
