@@ -96,8 +96,10 @@ public class VocabActor extends UntypedActor {
                             break;
                         processToken(token,encountered,document,work.isStem());
                     }
-
-                    index.addWordsToDoc(index.numDocuments(),document);
+                    if(work.getLabel() != null)
+                        index.addWordsToDoc(index.numDocuments(),document,work.getLabel());
+                    else
+                        index.addWordsToDoc(index.numDocuments(),document);
                     return null;
                 }
             },context().dispatcher());
