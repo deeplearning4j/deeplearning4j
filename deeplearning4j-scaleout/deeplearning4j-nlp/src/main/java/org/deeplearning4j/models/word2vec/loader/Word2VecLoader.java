@@ -59,6 +59,9 @@ public class Word2VecLoader {
                 float[] vectors;
                 for (int i = 0; i < words; i++) {
                     word = readString(dis);
+
+                    if(word.isEmpty())
+                        continue;
                     vectors = new float[size];
                     len = 0;
                     for (int j = 0; j < size; j++) {
@@ -70,6 +73,7 @@ public class Word2VecLoader {
 
                     for (int j = 0; j < size; j++)
                         vectors[j] /= len;
+
 
 
                     data[i] = vectors;
@@ -91,7 +95,8 @@ public class Word2VecLoader {
             lookupTable.resetWeights();
 
             for(int i = 0; i < data.length; i++)
-                lookupTable.putVector(cache.wordAtIndex(i),Nd4j.create(new FloatBuffer(data[i])));
+                if(cache.wordAtIndex(i) != null)
+                    lookupTable.putVector(cache.wordAtIndex(i),Nd4j.create(new FloatBuffer(data[i])));
 
 
             ret.setCache(cache);
@@ -107,7 +112,7 @@ public class Word2VecLoader {
             String[] initial = line.split(" ");
             int words = Integer.parseInt(initial[0]);
             int layerSize = Integer.parseInt(initial[1]);
-             cache = new InMemoryLookupCache();
+            cache = new InMemoryLookupCache();
             data = new float[words][layerSize];
             int count = 0;
 
@@ -116,6 +121,10 @@ public class Word2VecLoader {
             while((line = reader.readLine()) != null) {
                 String[] split = line.split(" ");
                 String word = split[0];
+
+                if(word.isEmpty())
+                    continue;
+
                 float[] buffer = new float[layerSize];
                 for(int i = 1; i < split.length; i++) {
                     buffer[i - 1] = Float.parseFloat(split[i]);
@@ -136,9 +145,10 @@ public class Word2VecLoader {
 
             lookupTable.resetWeights();
 
-            for(int i = 0; i < data.length; i++)
-                lookupTable.putVector(cache.wordAtIndex(i),Nd4j.create(new FloatBuffer(data[i])));
-
+            for(int i = 0; i < data.length; i++) {
+                if(cache.wordAtIndex(i) != null)
+                    lookupTable.putVector(cache.wordAtIndex(i), Nd4j.create(new FloatBuffer(data[i])));
+            }
 
             Word2Vec ret = new Word2Vec();
             ret.setCache(cache);

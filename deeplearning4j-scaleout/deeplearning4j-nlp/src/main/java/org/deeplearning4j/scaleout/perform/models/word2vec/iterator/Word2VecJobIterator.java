@@ -92,10 +92,10 @@ public class Word2VecJobIterator implements JobIterator {
 
                 for(Word2VecResult work1 : work) {
                     for(String s : work1.getSyn0Change().keySet()) {
-                        l.getSyn0().getRow(cache.indexOf(s)).addi(work1.getSyn0Change().get(s));
-                        l.getSyn1().getRow(cache.indexOf(s)).addi(work1.getSyn1Change().get(s));
+                        l.getSyn0().putRow(cache.indexOf(s),work1.getSyn0Change().get(s));
+                        l.getSyn1().putRow(cache.indexOf(s),work1.getSyn1Change().get(s));
                         if(l.getSyn1Neg() != null)
-                            l.getSyn1Neg().getRow(cache.indexOf(s)).addi(work1.getNegativeChange().get(s));
+                            l.getSyn1Neg().putRow(cache.indexOf(s),work1.getNegativeChange().get(s));
 
 
                     }
@@ -109,6 +109,12 @@ public class Word2VecJobIterator implements JobIterator {
 
 
     private Word2VecWork create(List<List<VocabWord>> sentence) {
+        if(cache == null)
+            throw new IllegalStateException("Unable to create work; no vocab found");
+        if(table == null)
+            throw new IllegalStateException("Unable to create work; no table found");
+        if(sentence == null)
+            throw new IllegalArgumentException("Unable to create work from null sentence");
         Word2VecWork work = new Word2VecWork((InMemoryLookupTable) table,(InMemoryLookupCache) cache,sentence);
         return work;
     }
