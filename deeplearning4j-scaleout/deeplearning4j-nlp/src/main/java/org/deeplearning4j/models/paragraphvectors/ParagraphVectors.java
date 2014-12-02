@@ -21,7 +21,7 @@ public class ParagraphVectors extends Word2Vec {
     protected boolean trainWords = true;
     protected List<VocabWord> labels = new ArrayList<>();
     //labels are also vocab words
-    protected Queue<List<Pair<List<VocabWord>,List<VocabWord>>>> jobQueue = new LinkedBlockingDeque<>(10000);
+    protected Queue<LinkedList<Pair<List<VocabWord>, Collection<VocabWord>>>> jobQueue = new LinkedBlockingDeque<>(10000);
 
     /**
      * Train the model
@@ -70,7 +70,7 @@ public class ParagraphVectors extends Word2Vec {
                         if(checked > 0 && checked % 1000 == 0 && processed.get() >= allDocs)
                             return;
                         checked++;
-                        List<Pair<List<VocabWord>,List<VocabWord>>> job = jobQueue.poll();
+                        List<Pair<List<VocabWord>, Collection<VocabWord>>> job = jobQueue.poll();
                         if(job == null || job.isEmpty() || set.contains(job))
                             continue;
 
@@ -83,7 +83,7 @@ public class ParagraphVectors extends Word2Vec {
                         }
                         long increment = 0;
                         double diff2 = 0.0;
-                        for(Pair<List<VocabWord>,List<VocabWord>> sentenceWithLabel : job) {
+                        for(Pair<List<VocabWord>, Collection<VocabWord>> sentenceWithLabel : job) {
                             trainSentence(sentenceWithLabel, nextRandom, alpha);
                             increment += sentenceWithLabel.getFirst().size();
                         }
@@ -124,18 +124,23 @@ public class ParagraphVectors extends Word2Vec {
 
 
         //TODO: need to handle binding labels to documents from the inverted index...
-        final Queue<Pair<List<VocabWord>,String>> batch2 = new ConcurrentLinkedDeque<>();
-        vectorizer.index().eachDocWithLabel(new Function<Pair<List<VocabWord>, String>, Void>() {
+        final Queue<Pair<List<VocabWord>,Collection<VocabWord>>> batch2 = new ConcurrentLinkedDeque<>();
+
+        vectorizer.index().eachDocWithLabels(new Function<Pair<List<VocabWord>, Collection<String>>, Void>() {
             @Override
-            public Void apply(@Nullable Pair<List<VocabWord>, String> input) {
+            public Void apply(@Nullable Pair<List<VocabWord>, Collection<String>> input) {
                 List<VocabWord> batch = new ArrayList<>();
                 addWords(input.getFirst(), nextRandom, batch);
 
                 if (batch.isEmpty())
                     return null;
 
+                Collection<VocabWord> docLabels = new ArrayList<>();
+                for(String s : input.getSecond())
+                    docLabels.add(cache.wordFor(s));
+
                 for (int i = 0; i < numIterations; i++) {
-                    batch2.add(new Pair<>(batch,input.getSecond()));
+                    batch2.add(new Pair<>(batch, docLabels));
                 }
 
                 if (batch2.size() >= 100 || batch2.size() >= numDocs) {
@@ -159,6 +164,7 @@ public class ParagraphVectors extends Word2Vec {
 
                 return null;
             }
+
 
 
         }, exec);
@@ -194,7 +200,7 @@ public class ParagraphVectors extends Word2Vec {
      * Train on a list of vocab words
      * @param sentenceWithLabel the list of vocab words to train on
      */
-    public void trainSentence(final Pair<List<VocabWord>,List<VocabWord>> sentenceWithLabel,AtomicLong nextRandom,double alpha) {
+    public void trainSentence(final Pair<List<VocabWord>, Collection<VocabWord>> sentenceWithLabel,AtomicLong nextRandom,double alpha) {
         if(sentenceWithLabel == null || sentenceWithLabel.getFirst().isEmpty())
             return;
         for(int i = 0; i < sentenceWithLabel.getFirst().size(); i++) {
@@ -216,11 +222,11 @@ public class ParagraphVectors extends Word2Vec {
      * @param nextRandom
      * @param alpha
      */
-    public void dm(int i, Pair<List<VocabWord>,List<VocabWord>> sentenceWithLabel, int b, AtomicLong nextRandom, double alpha) {
+    public void dm(int i, Pair<List<VocabWord>, Collection<VocabWord>> sentenceWithLabel, int b, AtomicLong nextRandom, double alpha) {
 
         final VocabWord word = sentenceWithLabel.getFirst().get(i);
         List<VocabWord> sentence = sentenceWithLabel.getFirst();
-        List<VocabWord> labels = sentenceWithLabel.getSecond();
+        Collection<VocabWord> labels = sentenceWithLabel.getSecond();
 
         if(word == null || sentence.isEmpty())
             return;
