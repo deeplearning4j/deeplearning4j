@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Vocab work
+ * Vocab work meant for use with the vocab actor
  *
  *
  * @author Adam Gibson
@@ -14,13 +14,18 @@ public class VocabWork implements Serializable {
     private AtomicInteger count = new AtomicInteger(0);
     private String work;
     private boolean stem = false;
-
+    private String label;
 
 
     public VocabWork(AtomicInteger count,String work,boolean stem) {
+        this(count,work,stem,null);
+    }
+
+    public VocabWork(AtomicInteger count,String work,boolean stem,String label) {
         this.count = count;
         this.work = work;
         this.stem = stem;
+        this.label = label;
     }
 
     public AtomicInteger getCount() {
@@ -49,5 +54,37 @@ public class VocabWork implements Serializable {
 
     public void setStem(boolean stem) {
         this.stem = stem;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof VocabWork)) return false;
+
+        VocabWork vocabWork = (VocabWork) o;
+
+        if (stem != vocabWork.stem) return false;
+        if (count != null ? !count.equals(vocabWork.count) : vocabWork.count != null) return false;
+        if (label != null ? !label.equals(vocabWork.label) : vocabWork.label != null) return false;
+        if (work != null ? !work.equals(vocabWork.work) : vocabWork.work != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = count != null ? count.hashCode() : 0;
+        result = 31 * result + (work != null ? work.hashCode() : 0);
+        result = 31 * result + (stem ? 1 : 0);
+        result = 31 * result + (label != null ? label.hashCode() : 0);
+        return result;
     }
 }
