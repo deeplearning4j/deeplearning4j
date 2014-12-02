@@ -5,6 +5,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.VocabWord;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -59,11 +60,19 @@ public interface InvertedIndex extends Serializable {
 
     /**
      * Returns a list of words for a document
+     * and the associated label
      * @param index
      * @return
      */
     Pair<List<VocabWord>,String> documentWithLabel(int index);
 
+    /**
+     * Returns a list of words associated with the document
+     * and the associated labels
+     * @param index
+     * @return
+     */
+    public Pair<List<VocabWord>, Collection<String>> documentWithLabels(int index);
 
     /**
      * Returns the list of documents a vocab word is in
@@ -143,6 +152,47 @@ public interface InvertedIndex extends Serializable {
 
 
     /**
+     * Add word to a document
+     * @param doc the document to add to
+     * @param word the word to add
+     */
+    void addLabelsForDoc(int doc,List<VocabWord> word);
+
+
+    /**
+     * Adds words to the given document
+     * @param doc the document to add to
+     * @param label the labels to add
+     *
+     */
+    void addLabelsForDoc(int doc,Collection<String> label);
+
+
+
+
+    /**
+     * Adds words to the given document
+     * @param doc the document to add to
+     * @param words the words to add
+     * @param label the label for the document
+     */
+    void addWordsToDoc(int doc,List<VocabWord> words,Collection<String> label);
+
+
+    /**
+     * Adds words to the given document
+     * @param doc the document to add to
+     * @param words the words to add
+     * @param label the label for the document
+     */
+    void addWordsToDocVocabWord(int doc,List<VocabWord> words,Collection<VocabWord> label);
+
+
+
+
+
+
+    /**
      * Finishes saving data
      */
     void finish();
@@ -159,6 +209,12 @@ public interface InvertedIndex extends Serializable {
      */
     int batchSize();
 
+    /**
+     * Iterate over each document with a label
+     * @param func the function to apply
+     * @param exec executor service for execution
+     */
+    void eachDocWithLabels(Function<Pair<List<VocabWord>,Collection<String>>, Void> func, ExecutorService exec);
 
 
     /**

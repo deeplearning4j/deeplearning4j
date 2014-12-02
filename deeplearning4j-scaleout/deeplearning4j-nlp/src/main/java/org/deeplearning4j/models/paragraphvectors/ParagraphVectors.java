@@ -6,6 +6,7 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -123,27 +124,28 @@ public class ParagraphVectors extends Word2Vec {
 
 
         //TODO: need to handle binding labels to documents from the inverted index...
-        final Queue<List<VocabWord>> batch2 = new ConcurrentLinkedDeque<>();
-        vectorizer.index().eachDoc(new Function<List<VocabWord>, Void>() {
+        final Queue<Pair<List<VocabWord>,String>> batch2 = new ConcurrentLinkedDeque<>();
+        vectorizer.index().eachDocWithLabel(new Function<Pair<List<VocabWord>, String>, Void>() {
             @Override
-            public Void apply(List<VocabWord> input) {
+            public Void apply(@Nullable Pair<List<VocabWord>, String> input) {
                 List<VocabWord> batch = new ArrayList<>();
-                addWords(input, nextRandom, batch);
-                if(batch.isEmpty())
+                addWords(input.getFirst(), nextRandom, batch);
+
+                if (batch.isEmpty())
                     return null;
 
-                for(int i = 0; i < numIterations; i++) {
-                    batch2.add(batch);
+                for (int i = 0; i < numIterations; i++) {
+                    batch2.add(new Pair<>(batch,input.getSecond()));
                 }
 
-                if(batch2.size() >= 100 || batch2.size() >= numDocs) {
+                if (batch2.size() >= 100 || batch2.size() >= numDocs) {
                     boolean added = false;
-                    while(!added) {
+                    while (!added) {
                         try {
                             //jobQueue.add(new LinkedList<>(batch2));
                             batch2.clear();
                             added = true;
-                        }catch(Exception e) {
+                        } catch (Exception e) {
                             continue;
                         }
                     }
@@ -152,15 +154,17 @@ public class ParagraphVectors extends Word2Vec {
 
 
                 doc.incrementAndGet();
-                if(doc.get() > 0 && doc.get() % 10000 == 0)
+                if (doc.get() > 0 && doc.get() % 10000 == 0)
                     log.info("Doc " + doc.get() + " done so far");
 
                 return null;
             }
-        },exec);
+
+
+        }, exec);
 
         if(!batch2.isEmpty()) {
-           // jobQueue.add(new LinkedList<>(batch2));
+            jobQueue.add(new LinkedList<>(batch2));
 
         }
 
