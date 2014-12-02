@@ -14,11 +14,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Created by agibsonccc on 11/30/14.
+ * Paragraph Vectors:
+ * [1] Quoc Le and Tomas Mikolov. Distributed Representations of Sentences and Documents. http://arxiv.org/pdf/1405.4053v2.pdf
+ .. [2] Tomas Mikolov, Kai Chen, Greg Corrado, and Jeffrey Dean. Efficient Estimation of Word Representations in Vector Space. In Proceedings of Workshop at ICLR, 2013.
+ .. [3] Tomas Mikolov, Ilya Sutskever, Kai Chen, Greg Corrado, and Jeffrey Dean. Distributed Representations of Words and Phrases and their Compositionality.
+ In Proceedings of NIPS, 2013.
+
+ @author Adam Gibson
+
  */
 public class ParagraphVectors extends Word2Vec {
-    protected boolean trainLabels = true;
-    protected boolean trainWords = true;
     protected List<VocabWord> labels = new ArrayList<>();
     //labels are also vocab words
     protected Queue<LinkedList<Pair<List<VocabWord>, Collection<VocabWord>>>> jobQueue = new LinkedBlockingDeque<>(10000);
@@ -123,7 +128,6 @@ public class ParagraphVectors extends Word2Vec {
         });
 
 
-        //TODO: need to handle binding labels to documents from the inverted index...
         final Queue<Pair<List<VocabWord>,Collection<VocabWord>>> batch2 = new ConcurrentLinkedDeque<>();
 
         vectorizer.index().eachDocWithLabels(new Function<Pair<List<VocabWord>, Collection<String>>, Void>() {
@@ -147,7 +151,7 @@ public class ParagraphVectors extends Word2Vec {
                     boolean added = false;
                     while (!added) {
                         try {
-                            //jobQueue.add(new LinkedList<>(batch2));
+                            jobQueue.add(new LinkedList<>(batch2));
                             batch2.clear();
                             added = true;
                         } catch (Exception e) {
@@ -205,7 +209,7 @@ public class ParagraphVectors extends Word2Vec {
             return;
         for(int i = 0; i < sentenceWithLabel.getFirst().size(); i++) {
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
-            dm(i, sentenceWithLabel, (int) nextRandom.get() % window, nextRandom, alpha);
+            dbow(i, sentenceWithLabel, (int) nextRandom.get() % window, nextRandom, alpha);
         }
 
 
@@ -215,28 +219,30 @@ public class ParagraphVectors extends Word2Vec {
     }
 
     /**
-     * Train the distributed memory model
+     * Train the distributed bag of words
+     * model
      * @param i the word to train
      * @param sentenceWithLabel the sentence with labels to train
      * @param b
      * @param nextRandom
      * @param alpha
      */
-    public void dm(int i, Pair<List<VocabWord>, Collection<VocabWord>> sentenceWithLabel, int b, AtomicLong nextRandom, double alpha) {
+    public void dbow(int i, Pair<List<VocabWord>, Collection<VocabWord>> sentenceWithLabel, int b, AtomicLong nextRandom, double alpha) {
 
         final VocabWord word = sentenceWithLabel.getFirst().get(i);
         List<VocabWord> sentence = sentenceWithLabel.getFirst();
-        Collection<VocabWord> labels = sentenceWithLabel.getSecond();
+        List<VocabWord> labels = (List<VocabWord>) sentenceWithLabel.getSecond();
 
         if(word == null || sentence.isEmpty())
             return;
+
 
         int end =  window * 2 + 1 - b;
         for(int a = b; a < end; a++) {
             if(a != window) {
                 int c = i - window + a;
-                if(c >= 0 && c < sentence.size()) {
-                    VocabWord lastWord = sentence.get(c);
+                if(c >= 0 && c < labels.size()) {
+                    VocabWord lastWord = labels.get(c);
                     iterate(word,lastWord,nextRandom,alpha);
                 }
             }
