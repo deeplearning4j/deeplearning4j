@@ -159,6 +159,15 @@ public interface InvertedIndex extends Serializable {
      */
     int batchSize();
 
+
+
+    /**
+     * Iterate over each document with a label
+     * @param func the function to apply
+     * @param exec executor service for execution
+     */
+    void eachDocWithLabel(Function<Pair<List<VocabWord>,String>, Void> func, ExecutorService exec);
+
     /**
      * Iterate over each document
      * @param func the function to apply
