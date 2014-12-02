@@ -559,6 +559,20 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
     @Override
+    public void eachDocWithLabel(final Function<Pair<List<VocabWord>, String>, Void> func, ExecutorService exec) {
+        int[] docIds = allDocs();
+        for(int i : docIds) {
+            final int j = i;
+            exec.execute(new Runnable() {
+                @Override
+                public void run() {
+                    func.apply(documentWithLabel(j));
+                }
+            });
+        }
+    }
+
+    @Override
     public void eachDoc(final Function<List<VocabWord>, Void> func,ExecutorService exec) {
         int[] docIds = allDocs();
         for(int i : docIds) {
