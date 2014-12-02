@@ -12,6 +12,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.stopwords.StopWords;
@@ -40,6 +41,8 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private   transient Analyzer analyzer;
     private VocabCache vocabCache;
     public final static String WORD_FIELD = "word";
+    public final static String LABEL = "label";
+
     private int numDocs = 0;
     private List<List<VocabWord>> words = new ArrayList<>();
     private boolean cache = true;
@@ -148,6 +151,8 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         }
         return ret;
     }
+
+
 
     @Override
     public int[] documents(VocabWord vocabWord) {
@@ -300,10 +305,77 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
 
+    @Override
+    public Pair<List<VocabWord>, String> documentWithLabel(int index) {
+        List<VocabWord> ret = new CopyOnWriteArrayList<>();
+        String label = "NONE";
+        try {
+            IndexReader reader = getReader();
+            Document doc = reader.document(index);
+            reader.close();
+            String[] values = doc.getValues(WORD_FIELD);
+            label = doc.get(LABEL);
+            if(label == null)
+                label = "NONE";
+            for(String s : values) {
+                ret.add(vocabCache.wordFor(s));
+            }
 
 
 
+        }
 
+
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new Pair<>(ret,label);
+
+
+    }
+
+    @Override
+    public void addLabelForDoc(int doc, VocabWord word) {
+        addLabelForDoc(doc,word.getWord());
+    }
+
+    @Override
+    public void addLabelForDoc(int doc, String label) {
+        IndexReader reader = getReader();
+        try {
+            Document doc2 = reader.document(doc);
+            doc2.add(new TextField(LABEL,label,Field.Store.YES));
+            reader.close();
+            TrackingIndexWriter writer = getWriter();
+            Term term = new Term(LABEL,label);
+            writer.updateDocument(term,doc2);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void addWordsToDoc(int doc, List<VocabWord> words, String label) {
+        Document d = new Document();
+
+        for (VocabWord word : words)
+            d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
+
+        d.add(new TextField(LABEL,label,Field.Store.YES));
+
+        totalWords.set(totalWords.get() + words.size());
+        addWords(words);
+        try {
+            getWriter().addDocument(d);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void addWordsToDoc(int doc, List<VocabWord> words, VocabWord label) {
+        addWordsToDoc(doc,words,label.getWord());
+    }
 
 
     private void addWords(List<VocabWord> words) {

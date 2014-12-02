@@ -13,6 +13,7 @@ import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     protected transient DocumentIterator docIter;
     protected List<String> labels;
     protected transient SentenceIterator sentenceIterator;
+    protected transient LabelAwareSentenceIterator labelSentenceIter;
     protected AtomicLong numWordsEncountered =  new AtomicLong(0);
     private static Logger log = LoggerFactory.getLogger(BaseTextVectorizer.class);
     protected InvertedIndex index;
@@ -128,24 +130,51 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
 
         }
 
+       if(getSentenceIterator() instanceof LabelAwareSentenceIterator) {
+           this.labelSentenceIter = (LabelAwareSentenceIterator) getSentenceIterator();
+           while(getSentenceIterator() != null && getSentenceIterator().hasNext()) {
+               String sentence = getSentenceIterator().nextSentence();
+               String label = labelSentenceIter.currentLabel();
 
-        while(getSentenceIterator() != null && getSentenceIterator().hasNext()) {
-            String sentence = getSentenceIterator().nextSentence();
-            if(sentence == null)
-                break;
-            vocabActor.tell(new VocabWork(latch,sentence,stem), vocabActor);
-            queued.incrementAndGet();
-            if(queued.get() % 10000 == 0) {
-                log.info("Sent " + queued);
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();;
-                }
-            }
+               if(sentence == null)
+                   break;
+               vocabActor.tell(new VocabWork(latch,sentence,stem,label), vocabActor);
+               queued.incrementAndGet();
+               if(queued.get() % 10000 == 0) {
+                   log.info("Sent " + queued);
+                   try {
+                       Thread.sleep(1);
+                   } catch (InterruptedException e) {
+                       Thread.currentThread().interrupt();;
+                   }
+               }
 
 
-        }
+           }
+       }
+
+        else {
+
+           while(getSentenceIterator() != null && getSentenceIterator().hasNext()) {
+               String sentence = getSentenceIterator().nextSentence();
+               if(sentence == null)
+                   break;
+               vocabActor.tell(new VocabWork(latch,sentence,stem), vocabActor);
+               queued.incrementAndGet();
+               if(queued.get() % 10000 == 0) {
+                   log.info("Sent " + queued);
+                   try {
+                       Thread.sleep(1);
+                   } catch (InterruptedException e) {
+                       Thread.currentThread().interrupt();;
+                   }
+               }
+
+
+           }
+       }
+
+
 
         long diff = Long.MAX_VALUE;
 
