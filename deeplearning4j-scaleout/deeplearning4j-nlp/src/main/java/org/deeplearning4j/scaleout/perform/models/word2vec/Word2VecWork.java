@@ -11,6 +11,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Word2vec work
@@ -19,21 +20,21 @@ import java.util.Map;
  */
 public class Word2VecWork implements Serializable {
 
-    private Map<String,Pair<VocabWord,INDArray>> vectors = new HashMap<>();
-    private Map<String,Pair<VocabWord,INDArray>> negativeVectors = new HashMap<>();
+    private Map<String,Pair<VocabWord,INDArray>> vectors = new ConcurrentHashMap<>();
+    private Map<String,Pair<VocabWord,INDArray>> negativeVectors = new ConcurrentHashMap<>();
 
     private List<List<VocabWord>> sentences;
-    private Map<Integer,VocabWord> indexes = new HashMap<>();
-    private Map<String,INDArray> originalVectors = new HashMap<>();
-    private Map<String,INDArray> originalSyn1Vectors = new HashMap<>();
-    private Map<String,INDArray> originalNegative = new HashMap<>();
-    private Map<String,INDArray> syn1Vectors = new HashMap<>();
+    private Map<Integer,VocabWord> indexes = new ConcurrentHashMap<>();
+    private Map<String,INDArray> originalVectors = new ConcurrentHashMap<>();
+    private Map<String,INDArray> originalSyn1Vectors = new ConcurrentHashMap<>();
+    private Map<String,INDArray> originalNegative = new ConcurrentHashMap<>();
+    private Map<String,INDArray> syn1Vectors = new ConcurrentHashMap<>();
 
     public Word2VecWork(InMemoryLookupTable table,InMemoryLookupCache cache,List<List<VocabWord>> sentences) {
         this.sentences = sentences;
         for(List<VocabWord> sentence : sentences)
             for(VocabWord word : sentence) {
-                 addWord(word,table);
+                addWord(word,table);
                 if(word.getPoints() != null) {
                     for(int i = 0; i < word.getCodeLength(); i++) {
                         VocabWord pointWord = cache.wordFor(cache.wordAtIndex(word.getPoints().get(i)));
@@ -44,6 +45,9 @@ public class Word2VecWork implements Serializable {
     }
 
     private void addWord(VocabWord word,InMemoryLookupTable table) {
+        if(word == null)
+            throw new IllegalArgumentException("Word must not be null!");
+
         indexes.put(word.getIndex(),word);
         vectors.put(word.getWord(),new Pair<>(word,table.getSyn0().getRow(word.getIndex()).dup()));
         originalVectors.put(word.getWord(),table.getSyn0().getRow(word.getIndex()).dup());
@@ -64,11 +68,10 @@ public class Word2VecWork implements Serializable {
         Map<String,INDArray> syn0Change = new HashMap<>();
         Map<String,INDArray> syn1Change = new HashMap<>();
         Map<String,INDArray> negativeChange = new HashMap<>();
-
         for(List<VocabWord> sentence : sentences)
             for(VocabWord word : sentence) {
-                syn0Change.put(word.getWord(),vectors.get(word.getWord()).getSecond().subi(originalVectors.get(word.getWord())));
-                syn1Change.put(word.getWord(),syn1Vectors.get(word.getWord()).subi(originalSyn1Vectors.get(word.getWord())));
+                syn0Change.put(word.getWord(),vectors.get(word.getWord()).getSecond().sub(originalVectors.get(word.getWord())));
+                syn1Change.put(word.getWord(),syn1Vectors.get(word.getWord()).sub(originalSyn1Vectors.get(word.getWord())));
                 if(!negativeVectors.isEmpty())
                     negativeChange.put(word.getWord(),negativeVectors.get(word.getWord()).getSecond().subi(originalNegative.get(word.getWord())));
             }

@@ -36,6 +36,7 @@ import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -62,6 +63,7 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
     protected int secondsPoll = 1;
     protected Cancellable forceNextPhase,clearStateWorkers;
     protected WorkRouter workRouter;
+    protected AtomicBoolean doneCalled = new AtomicBoolean(false);
 
 
     /**
@@ -99,15 +101,15 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
                         if(stateTracker.isDone())
                             return;
                         if(workRouter.sendWork())
-                              nextBatch();
+                            nextBatch();
                         try {
                             Set<Job> clear = new HashSet<>();
                             for(Job j : stateTracker.currentJobs()) {
-                                    if(stateTracker.recentlyCleared().contains(j.workerId())) {
-                                        stateTracker.clearJob(j.workerId());
-                                        clear.add(j);
-                                        log.info("Found job that wasn't clear " + j.workerId());
-                                    }
+                                if(stateTracker.recentlyCleared().contains(j.workerId())) {
+                                    stateTracker.clearJob(j.workerId());
+                                    clear.add(j);
+                                    log.info("Found job that wasn't clear " + j.workerId());
+                                }
                             }
 
                             stateTracker.currentJobs().removeAll(clear);
@@ -253,13 +255,14 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
         try {
             currentJobs = stateTracker.currentJobs();
         } catch (Exception e) {
-           throw new RuntimeException(e);
+            throw new RuntimeException(e);
         }
 
 
 
         //ensure there aren't any jobs still in progress
         if(!updates.isEmpty() && currentJobs.isEmpty()) {
+
             workRouter.update();
 
 
@@ -287,6 +290,11 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
 
         }
 
+        else if(currentJobs.isEmpty()) {
+
+        }
+
+
 
 
     }
@@ -300,6 +308,10 @@ public class MasterActor extends  UntypedActor implements ComputableMaster {
 
 
         if(stateTracker.currentJobs().isEmpty()) {
+            if(doneCalled.get())
+                return;
+            else
+            doneCalled.set(true);
             nextBatch();
             stateTracker.finish();
             log.info("Done training!");
