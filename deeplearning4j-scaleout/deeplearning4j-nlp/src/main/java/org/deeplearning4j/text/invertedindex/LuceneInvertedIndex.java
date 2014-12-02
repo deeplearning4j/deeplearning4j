@@ -335,6 +335,37 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
     @Override
+    public Pair<List<VocabWord>, Collection<String>> documentWithLabels(int index) {
+        List<VocabWord> ret = new CopyOnWriteArrayList<>();
+        Collection<String> labels = new ArrayList<>();
+
+        try {
+            IndexReader reader = getReader();
+            Document doc = reader.document(index);
+            reader.close();
+            String[] values = doc.getValues(WORD_FIELD);
+            String[] labels2 = doc.getValues(LABEL);
+
+            for(String s : values) {
+                ret.add(vocabCache.wordFor(s));
+            }
+
+            for(String s : labels2) {
+                labels.add(s);
+            }
+
+        }
+
+
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new Pair<>(ret,labels);
+
+
+    }
+
+    @Override
     public void addLabelForDoc(int doc, VocabWord word) {
         addLabelForDoc(doc,word.getWord());
     }
@@ -375,6 +406,84 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     @Override
     public void addWordsToDoc(int doc, List<VocabWord> words, VocabWord label) {
         addWordsToDoc(doc,words,label.getWord());
+    }
+
+    @Override
+    public void addLabelsForDoc(int doc, List<VocabWord> label) {
+        IndexReader reader = getReader();
+        try {
+            Document doc2 = reader.document(doc);
+            for(VocabWord s : label)
+                doc2.add(new TextField(LABEL,s.getWord(),Field.Store.YES));
+            reader.close();
+            TrackingIndexWriter writer = getWriter();
+            List<Term> terms = new ArrayList<>();
+            for(VocabWord s : label) {
+                Term term = new Term(LABEL,s.getWord());
+                terms.add(term);
+            }
+            writer.addDocument(doc2);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void addLabelsForDoc(int doc, Collection<String> label) {
+        IndexReader reader = getReader();
+        try {
+            Document doc2 = reader.document(doc);
+            for(String s : label)
+                doc2.add(new TextField(LABEL,s,Field.Store.YES));
+            reader.close();
+            TrackingIndexWriter writer = getWriter();
+            List<Term> terms = new ArrayList<>();
+            for(String s : label) {
+                Term term = new Term(LABEL,s);
+                terms.add(term);
+            }
+            writer.addDocument(doc2);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void addWordsToDoc(int doc, List<VocabWord> words, Collection<String> label) {
+        Document d = new Document();
+
+        for (VocabWord word : words)
+            d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
+
+        for(String s : label)
+            d.add(new TextField(LABEL,s,Field.Store.YES));
+
+        totalWords.set(totalWords.get() + words.size());
+        addWords(words);
+        try {
+            getWriter().addDocument(d);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void addWordsToDocVocabWord(int doc, List<VocabWord> words, Collection<VocabWord> label) {
+        Document d = new Document();
+
+        for (VocabWord word : words)
+            d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
+
+        for(VocabWord s : label)
+            d.add(new TextField(LABEL,s.getWord(),Field.Store.YES));
+
+        totalWords.set(totalWords.get() + words.size());
+        addWords(words);
+        try {
+            getWriter().addDocument(d);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -556,6 +665,20 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     @Override
     public int batchSize() {
         return batchSize;
+    }
+
+    @Override
+    public void eachDocWithLabels(final Function<Pair<List<VocabWord>, Collection<String>>, Void> func, ExecutorService exec) {
+        int[] docIds = allDocs();
+        for(int i : docIds) {
+            final int j = i;
+            exec.execute(new Runnable() {
+                @Override
+                public void run() {
+                    func.apply(documentWithLabels(j));
+                }
+            });
+        }
     }
 
     @Override
