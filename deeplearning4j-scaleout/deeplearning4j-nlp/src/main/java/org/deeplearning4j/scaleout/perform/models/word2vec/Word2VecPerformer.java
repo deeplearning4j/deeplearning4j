@@ -45,6 +45,7 @@ public class Word2VecPerformer implements WorkerPerformer {
     public final static String MIN_ALPHA = NAME_SPACE + ".minalpha";
     public final static String TOTAL_WORDS = NAME_SPACE + ".totalwords";
     public final static String NUM_WORDS_SO_FAR = NAME_SPACE + ".wordssofar";
+    public final static String ITERATIONS = NAME_SPACE + ".iterations";
 
     double[] expTable = new double[1000];
     static double MAX_EXP = 6;
@@ -57,6 +58,7 @@ public class Word2VecPerformer implements WorkerPerformer {
     private double alpha = 0.025;
     private double minAlpha = 1e-2;
     private int totalWords = 1;
+    private int iterations = 5;
     private StateTracker stateTracker;
     private static Logger log = LoggerFactory.getLogger(Word2VecPerformer.class);
     private int lastChecked = 0;
@@ -81,7 +83,8 @@ public class Word2VecPerformer implements WorkerPerformer {
             double alpha2 = Math.max(minAlpha, alpha * (1 - (1.0 *  numWordsSoFar / (double) totalWords)));
             int totalNewWords = 0;
             for(List<VocabWord> sentence : sentences) {
-                trainSentence(sentence, work, alpha2);
+                for(int i = 0; i < iterations; i++)
+                    trainSentence(sentence, work, alpha2);
                 totalNewWords += sentence.size();
             }
 
@@ -146,6 +149,7 @@ public class Word2VecPerformer implements WorkerPerformer {
         alpha = conf.getFloat(ALPHA, 0.025f);
         minAlpha = conf.getFloat(MIN_ALPHA, 1e-2f);
         totalWords = conf.getInt(NUM_WORDS,1);
+        iterations = conf.getInt(ITERATIONS,5);
 
         initExpTable();
 
@@ -212,6 +216,8 @@ public class Word2VecPerformer implements WorkerPerformer {
         if(sentence == null || sentence.isEmpty())
             return;
         for(int i = 0; i < sentence.size(); i++) {
+            if(sentence.get(i).getWord().endsWith("STOP"))
+                continue;
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             skipGram(i, sentence, (int) nextRandom.get() % window,work,alpha);
         }
@@ -278,7 +284,6 @@ public class Word2VecPerformer implements WorkerPerformer {
         INDArray neu1e = Nd4j.create(vectorLength);
 
 
-        double avgChange = 0.0f;
 
 
 
@@ -289,7 +294,7 @@ public class Word2VecPerformer implements WorkerPerformer {
 
             //other word vector
             if(work.getIndexes().get(point) == null) {
-                log.warn("Work index for point " + point + " was null");
+                //log.warn("Work index for point " + point + " was null");
                 continue;
             }
 
@@ -317,9 +322,6 @@ public class Word2VecPerformer implements WorkerPerformer {
             double g = (1 - code - f) * (useAdaGrad ?  w1.getLearningRate(i,alpha) : alpha);
 
 
-
-
-            avgChange += g;
             if(neu1e.data().dataType() == DataBuffer.DOUBLE) {
                 Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
                 Nd4j.getBlasWrapper().axpy(g, l1, syn1);
@@ -373,25 +375,18 @@ public class Word2VecPerformer implements WorkerPerformer {
             }
         }
 
-        avgChange /=  w1.getCodes().size();
 
 
-        if(useAdaGrad) {
-            if(neu1e.data().dataType() == DataBuffer.DOUBLE)
-                Nd4j.getBlasWrapper().axpy(avgChange,neu1e,l1);
-            else
-                Nd4j.getBlasWrapper().axpy((float) avgChange,neu1e,l1);
+
+        if(neu1e.data().dataType() == DataBuffer.DOUBLE)
+            Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
+
+        else
+            Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
 
 
-        }
-        else {
-            if(neu1e.data().dataType() == DataBuffer.DOUBLE)
-                Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
 
-            else
-                Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
 
-        }
 
 
 

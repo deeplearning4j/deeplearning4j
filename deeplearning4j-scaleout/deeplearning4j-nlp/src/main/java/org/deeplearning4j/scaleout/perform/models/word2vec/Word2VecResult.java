@@ -16,6 +16,8 @@ public class Word2VecResult implements Serializable {
 
 
 
+    public Word2VecResult() {}
+
     public Word2VecResult(Map<String, INDArray> syn0Change, Map<String, INDArray> syn1Change, Map<String, INDArray> negativeChange) {
         this.syn0Change = syn0Change;
         this.syn1Change = syn1Change;

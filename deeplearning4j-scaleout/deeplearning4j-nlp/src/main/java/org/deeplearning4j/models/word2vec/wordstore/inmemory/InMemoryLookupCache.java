@@ -157,7 +157,9 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      * @return
      */
     @Override
-    public VocabWord wordFor(String word) {
+    public synchronized  VocabWord wordFor(String word) {
+        if(word == null)
+            return null;
         VocabWord ret =  vocabs.get(word);
         if(ret == null)
             return vocabs.get(Word2Vec.UNK);

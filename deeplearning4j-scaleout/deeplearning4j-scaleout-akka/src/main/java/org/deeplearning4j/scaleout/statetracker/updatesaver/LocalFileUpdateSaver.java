@@ -89,7 +89,7 @@ public class LocalFileUpdateSaver implements UpdateSaver {
     }
 
     @Override
-    public Job load(String id) throws Exception {
+    public synchronized Job load(String id) throws Exception {
         String path = paths.remove(id);
         if(path == null) {
             log.warn("Tried loading work from id " + id + " but path was null");
@@ -97,7 +97,7 @@ public class LocalFileUpdateSaver implements UpdateSaver {
         }
         File load = new File(path);
         Job u =  SerializationUtils.readObject(load);
-        load.delete();
+        load.deleteOnExit();
         return u;
     }
 
