@@ -39,7 +39,6 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     protected static Logger log = LoggerFactory.getLogger(NeuralNetworkOptimizer.class);
     protected List<Double> errors = new ArrayList<>();
     protected transient OptimizerMatrix opt;
-    protected OptimizationAlgorithm optimizationAlgorithm;
     protected  NeuralNetPlotter plotter = new NeuralNetPlotter();
     protected double maxStep = -1;
     protected int currIteration = -1;
@@ -52,7 +51,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     }
 
     private void createOptimizationAlgorithm() {
-        if(optimizationAlgorithm == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
+        if(network.conf().getOptimizationAlgo() == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
             opt = new VectorizedNonZeroStoppingConjugateGradient(this,this);
             opt.setTolerance(tolerance);
         }
