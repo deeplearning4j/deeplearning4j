@@ -25,10 +25,10 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
     private INDArray bias,gradSqBias;
     private double xMax = 0.75;
 
-    public GloveWeightLookupTable(VocabCache vocab, int vectorLength, boolean useAdaGrad, double lr, RandomGenerator gen, double negative) {
+    public GloveWeightLookupTable(VocabCache vocab, int vectorLength, boolean useAdaGrad, double lr, RandomGenerator gen, double negative, double xMax) {
         super(vocab, vectorLength, useAdaGrad, lr, gen, negative);
+        this.xMax = xMax;
     }
-
 
     /**
      * Reset the weights of the cache
@@ -47,6 +47,35 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
         gradSqBias = gradSq.slice(gradSq.rows() - 1);
         syn1 = Nd4j.create(syn0.shape());
         initNegative();
+
+    }
+
+    /**
+     * glove iteration
+     * @param w1 the first word
+     * @param w2 the second word
+     * @param alpha the learning rate
+     * @param score the weight learned for the particular co occurrences
+     */
+    public void iterateSample(VocabWord w1, VocabWord w2, double alpha,double score) {
+        INDArray w1Vector = syn0.slice(w1.getIndex());
+        INDArray w2Vector = syn0.slice(w2.getIndex());
+        double diff = Nd4j.getBlasWrapper().dot(w1Vector,w2Vector) + (bias.getDouble(w1.getIndex()) + bias.getDouble(w2.getIndex()) - Math.log(score));
+        double fDiff =  score > xMax ? diff : Math.pow(score / xMax,alpha) * diff;
+        INDArray temp1 =  w1Vector.mul(fDiff);
+        INDArray temp2 = w2Vector.mul(fDiff);
+
+        INDArray grad1 = gradSq.slice(w1.getIndex());
+        INDArray grad2 = gradSq.slice(w2.getIndex());
+        grad1.addi(Transforms.pow(temp1,2));
+        grad2.addi(Transforms.pow(temp2,2));
+
+        bias.putScalar(w1.getIndex(),bias.getDouble(w1.getIndex()) - fDiff / Math.sqrt(gradSqBias.getDouble(w1.getIndex())));
+        bias.putScalar(w2.getIndex(),bias.getDouble(w1.getIndex()) - fDiff / Math.sqrt(gradSqBias.getDouble(w2.getIndex())));
+        fDiff *= fDiff;
+        grad1.addi(fDiff);
+        grad2.addi(fDiff);
+
 
     }
 
@@ -74,4 +103,62 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
 
 
     }
+
+
+    public static class Builder extends  InMemoryLookupTable.Builder {
+        private double xMax = 0.75;
+
+
+        public Builder xMax(double xMax) {
+          this.xMax = xMax;
+            return this;
+        }
+
+        @Override
+        public Builder cache(VocabCache vocab) {
+            super.cache(vocab);
+            return this;
+        }
+
+        @Override
+        public Builder negative(double negative) {
+            super.negative(negative);
+            return this;
+        }
+
+        @Override
+        public Builder vectorLength(int vectorLength) {
+            super.vectorLength(vectorLength);
+            return this;
+        }
+
+        @Override
+        public Builder useAdaGrad(boolean useAdaGrad) {
+            super.useAdaGrad(useAdaGrad);
+            return this;
+        }
+
+        @Override
+        public Builder lr(double lr) {
+            super.lr(lr);
+            return this;
+        }
+
+        @Override
+        public Builder gen(RandomGenerator gen) {
+            super.gen(gen);
+            return this;
+        }
+
+        @Override
+        public Builder seed(long seed) {
+            super.seed(seed);
+            return this;
+        }
+
+        public GloveWeightLookupTable build() {
+            return new GloveWeightLookupTable(vocabCache,vectorLength,useAdaGrad,lr,gen,negative,xMax);
+        }
+    }
+
 }
