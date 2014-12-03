@@ -43,7 +43,7 @@ public class Glove implements Serializable {
     protected Queue<List<List<VocabWord>>> jobQueue = new LinkedBlockingDeque<>(10000);
     private int batchSize = 1000;
 
-    public Glove(VocabCache vocabCache, SentenceIterator sentenceIterator, TextVectorizer textVectorizer, TokenizerFactory tokenizerFactory, GloveWeightLookupTable weightLookupTable, int layerSize, double learningRate, double xMax, int windowSize, CoOccurrences coOccurrences, List<String> stopWords, boolean stem) {
+    public Glove(VocabCache vocabCache, SentenceIterator sentenceIterator, TextVectorizer textVectorizer, TokenizerFactory tokenizerFactory, GloveWeightLookupTable weightLookupTable, int layerSize, double learningRate, double xMax, int windowSize, CoOccurrences coOccurrences, List<String> stopWords, boolean stem,int batchSize) {
         this.vocabCache = vocabCache;
         this.sentenceIterator = sentenceIterator;
         this.textVectorizer = textVectorizer;
@@ -56,6 +56,7 @@ public class Glove implements Serializable {
         this.coOccurrences = coOccurrences;
         this.stopWords = stopWords;
         this.stem = stem;
+        this.batchSize = batchSize;
     }
 
     public void fit() {
