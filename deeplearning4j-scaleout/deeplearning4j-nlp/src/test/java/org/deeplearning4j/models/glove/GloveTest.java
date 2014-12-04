@@ -31,8 +31,14 @@ public class GloveTest {
 
     @Test
     public void testGlove() {
-       glove = new Glove.Builder().iterate(iter).build();
+       glove = new Glove.Builder().iterate(iter).minWordFrequency(1)
+               .build();
+
        glove.fit();
+
+
+
+
     }
 
 
