@@ -2,14 +2,13 @@ package org.deeplearning4j.models.glove;
 
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.embeddings.WeightLookupTable;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.stopwords.StopWords;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
 import java.io.Serializable;
@@ -17,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -60,23 +58,34 @@ public class Glove implements Serializable {
     }
 
     public void fit() {
-        textVectorizer = new TfidfVectorizer.Builder()
-                .cache(vocabCache).iterate(sentenceIterator)
-                .stopWords(stopWords).stem(stem).build();
+        if(vocabCache == null)
+            vocabCache = new InMemoryLookupCache();
 
-        textVectorizer.fit();
+        if(textVectorizer == null) {
+            textVectorizer = new TfidfVectorizer.Builder().tokenize(tokenizerFactory)
+                    .cache(vocabCache).iterate(sentenceIterator)
+                    .stopWords(stopWords).stem(stem).build();
+
+            textVectorizer.fit();
+        }
 
 
-        coOccurrences = new CoOccurrences.Builder()
-                .cache(vocabCache).iterate(sentenceIterator)
-                .tokenizer(tokenizerFactory).windowSize(windowSize)
-                .build();
+        sentenceIterator.reset();
 
-        coOccurrences.fit();
+        if(coOccurrences == null) {
+            coOccurrences = new CoOccurrences.Builder()
+                    .cache(vocabCache).iterate(sentenceIterator)
+                    .tokenizer(tokenizerFactory).windowSize(windowSize)
+                    .build();
 
-        weightLookupTable = new GloveWeightLookupTable.Builder().xMax(xMax)
-                .cache(vocabCache).lr(learningRate).vectorLength(layerSize)
-                .build();
+            coOccurrences.fit();
+
+        }
+
+        if(weightLookupTable == null)
+            weightLookupTable = new GloveWeightLookupTable.Builder().xMax(xMax)
+                    .cache(vocabCache).lr(learningRate).vectorLength(layerSize)
+                    .build();
 
 
         final List<List<VocabWord>> miniBatches = new ArrayList<>();
@@ -103,6 +112,14 @@ public class Glove implements Serializable {
 
 
         final AtomicInteger processed = new AtomicInteger(coOccurrences.getCoOCurreneCounts().size());
+
+
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         Parallelization.runInParallel(Runtime.getRuntime().availableProcessors(),new Runnable() {
             @Override
             public void run() {
@@ -130,5 +147,90 @@ public class Glove implements Serializable {
     }
 
 
+
+    public static class Builder {
+        private VocabCache vocabCache;
+        private SentenceIterator sentenceIterator;
+        private TextVectorizer textVectorizer;
+        private TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
+        private GloveWeightLookupTable weightLookupTable;
+        private int layerSize = 300;
+        private double learningRate = 0.5;
+        private double xMax = 0.75;
+        private int windowSize = 5;
+        private CoOccurrences coOccurrences;
+        private List<String> stopWords = StopWords.getStopWords();
+        private boolean stem = false;
+        private int batchSize = 100;
+
+        public Builder cache(VocabCache vocabCache) {
+            this.vocabCache = vocabCache;
+            return this;
+        }
+
+        public Builder iterate(SentenceIterator sentenceIterator) {
+            this.sentenceIterator = sentenceIterator;
+            return this;
+        }
+
+        public Builder vectorizer(TextVectorizer textVectorizer) {
+            this.textVectorizer = textVectorizer;
+            return this;
+        }
+
+        public Builder tokenizer(TokenizerFactory tokenizerFactory) {
+            this.tokenizerFactory = tokenizerFactory;
+            return this;
+        }
+
+        public Builder weights(GloveWeightLookupTable weightLookupTable) {
+            this.weightLookupTable = weightLookupTable;
+            return this;
+        }
+
+        public Builder layerSize(int layerSize) {
+            this.layerSize = layerSize;
+            return this;
+        }
+
+        public Builder learningRate(double learningRate) {
+            this.learningRate = learningRate;
+            return this;
+        }
+
+        public Builder xMax(double xMax) {
+            this.xMax = xMax;
+            return this;
+        }
+
+        public Builder windowSize(int windowSize) {
+            this.windowSize = windowSize;
+            return this;
+        }
+
+        public Builder coOccurrences(CoOccurrences coOccurrences) {
+            this.coOccurrences = coOccurrences;
+            return this;
+        }
+
+        public Builder stopWords(List<String> stopWords) {
+            this.stopWords = stopWords;
+            return this;
+        }
+
+        public Builder stem(boolean stem) {
+            this.stem = stem;
+            return this;
+        }
+
+        public Builder batchSize(int batchSize) {
+            this.batchSize = batchSize;
+            return this;
+        }
+
+        public Glove build() {
+            return new Glove(vocabCache, sentenceIterator, textVectorizer, tokenizerFactory, weightLookupTable, layerSize, learningRate, xMax, windowSize, coOccurrences, stopWords, stem, batchSize);
+        }
+    }
 
 }
