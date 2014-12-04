@@ -55,6 +55,9 @@ public class CoOccurrences {
                                 cache,
                                 coOCurreneCounts)));
 
+
+        sentenceIterator.reset();
+
         final AtomicInteger queued = new AtomicInteger(0);
         while(sentenceIterator.hasNext()) {
             String sentence = sentenceIterator.nextSentence();
