@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.word2vec;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -14,14 +15,14 @@ public class VocabWork implements Serializable {
     private AtomicInteger count = new AtomicInteger(0);
     private String work;
     private boolean stem = false;
-    private String label;
+    private List<String> label;
 
 
     public VocabWork(AtomicInteger count,String work,boolean stem) {
         this(count,work,stem,null);
     }
 
-    public VocabWork(AtomicInteger count,String work,boolean stem,String label) {
+    public VocabWork(AtomicInteger count,String work,boolean stem,List<String> label) {
         this.count = count;
         this.work = work;
         this.stem = stem;
@@ -56,11 +57,11 @@ public class VocabWork implements Serializable {
         this.stem = stem;
     }
 
-    public String getLabel() {
+    public List<String> getLabel() {
         return label;
     }
 
-    public void setLabel(String label) {
+    public void setLabel(List<String> label) {
         this.label = label;
     }
 
