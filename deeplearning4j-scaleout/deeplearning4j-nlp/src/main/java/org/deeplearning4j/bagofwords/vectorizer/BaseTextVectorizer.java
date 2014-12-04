@@ -134,7 +134,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
            this.labelSentenceIter = (LabelAwareSentenceIterator) getSentenceIterator();
            while(getSentenceIterator() != null && getSentenceIterator().hasNext()) {
                String sentence = getSentenceIterator().nextSentence();
-               String label = labelSentenceIter.currentLabel();
+               List<String> label = labelSentenceIter.currentLabels();
 
                if(sentence == null)
                    break;

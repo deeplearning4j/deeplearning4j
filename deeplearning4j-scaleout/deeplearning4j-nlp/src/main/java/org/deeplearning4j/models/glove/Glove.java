@@ -487,6 +487,26 @@ public class Glove implements Serializable {
     }
 
 
+    /**
+     * Returns the similarity of 2 words
+     * @param word the first word
+     * @param word2 the second word
+     * @return a normalized similarity (cosine similarity)
+     */
+    public double similarity(String word,String word2) {
+        if(word.equals(word2))
+            return 1.0;
+
+        INDArray vector = Transforms.unitVec(getWordVectorMatrix(word));
+        INDArray vector2 = Transforms.unitVec(getWordVectorMatrix(word2));
+        if(vector == null || vector2 == null)
+            return -1;
+        return  Nd4j.getBlasWrapper().dot(vector,vector2);
+    }
+
+
+
+
 
 
     public static class Builder {
