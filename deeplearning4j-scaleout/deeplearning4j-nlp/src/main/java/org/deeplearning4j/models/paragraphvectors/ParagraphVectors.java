@@ -1,9 +1,18 @@
 package org.deeplearning4j.models.paragraphvectors;
 
 import com.google.common.base.Function;
+import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.documentiterator.DocumentIterator;
+import org.deeplearning4j.text.invertedindex.InvertedIndex;
+import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 
 import javax.annotation.Nullable;
@@ -24,13 +33,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
  */
 public class ParagraphVectors extends Word2Vec {
-    protected List<VocabWord> labels = new ArrayList<>();
     //labels are also vocab words
     protected Queue<LinkedList<Pair<List<VocabWord>, Collection<VocabWord>>>> jobQueue = new LinkedBlockingDeque<>(10000);
 
     /**
      * Train the model
      */
+    @Override
     public void fit() throws IOException {
         boolean loaded = buildVocab();
         //save vocab after building
@@ -276,9 +285,235 @@ public class ParagraphVectors extends Word2Vec {
 
 
         }
-
-
-
     }
+
+
+    public static class Builder extends Word2Vec.Builder {
+
+        @Override
+        public Builder index(InvertedIndex index) {
+             super.index(index);
+            return this;
+        }
+
+        @Override
+        public Builder workers(int workers) {
+             super.workers(workers);
+            return this;
+        }
+
+        @Override
+        public Builder sampling(double sample) {
+             super.sampling(sample);
+            return this;
+        }
+
+        @Override
+        public Word2Vec.Builder negativeSample(double negative) {
+             super.negativeSample(negative);
+            return this;
+        }
+
+        @Override
+        public Builder minLearningRate(double minLearningRate) {
+             super.minLearningRate(minLearningRate);
+            return this;
+        }
+
+        @Override
+        public Builder useAdaGrad(boolean useAdaGrad) {
+             super.useAdaGrad(useAdaGrad);
+            return this;
+        }
+
+        @Override
+        public
+        Builder vectorizer(TextVectorizer textVectorizer) {
+            super.vectorizer(textVectorizer);
+            return this;
+        }
+
+        @Override
+        public Builder learningRateDecayWords(int learningRateDecayWords) {
+            super.learningRateDecayWords(learningRateDecayWords);
+            return this;
+        }
+
+        @Override
+        public Builder batchSize(int batchSize) {
+             batchSize(batchSize);
+            return this;
+        }
+
+        @Override
+        public Builder saveVocab(boolean saveVocab) {
+             super.saveVocab(saveVocab);
+            return this;
+        }
+
+        @Override
+        public Builder seed(long seed) {
+             super.seed(seed);
+            return this;
+        }
+
+        @Override
+        public Builder iterations(int iterations) {
+             super.iterations(iterations);
+            return this;
+        }
+
+        @Override
+        public Builder learningRate(double lr) {
+             super.learningRate(lr);
+            return this;
+        }
+
+        @Override
+        public Builder iterate(DocumentIterator iter) {
+             super.iterate(iter);
+            return this;
+        }
+
+        @Override
+        public  Builder vocabCache(VocabCache cache) {
+             super.vocabCache(cache);
+            return this;
+        }
+
+        @Override
+        public Builder minWordFrequency(int minWordFrequency) {
+             super.minWordFrequency(minWordFrequency);
+            return this;
+        }
+
+        @Override
+        public Builder tokenizerFactory(TokenizerFactory tokenizerFactory) {
+             super.tokenizerFactory(tokenizerFactory);
+            return this;
+        }
+
+        @Override
+        public Builder layerSize(int layerSize) {
+             super.layerSize(layerSize);
+            return this;
+        }
+
+        @Override
+        public Builder stopWords(List<String> stopWords) {
+             super.stopWords(stopWords);
+            return this;
+        }
+
+        @Override
+        public Builder windowSize(int window) {
+             super.windowSize(window);
+            return this;
+        }
+
+        @Override
+        public Builder iterate(SentenceIterator iter) {
+             super.iterate(iter);
+            return this;
+        }
+
+        @Override
+        public ParagraphVectors build() {
+
+            if(iter == null) {
+                ParagraphVectors ret = new ParagraphVectors();
+                ret.layerSize = layerSize;
+                ret.window = window;
+                ret.alpha.set(lr);
+                ret.vectorizer = textVectorizer;
+                ret.stopWords = stopWords;
+                ret.setCache(vocabCache);
+                ret.numIterations = iterations;
+                ret.minWordFrequency = minWordFrequency;
+                ret.seed = seed;
+                ret.saveVocab = saveVocab;
+                ret.batchSize = batchSize;
+                ret.useAdaGrad = useAdaGrad;
+                ret.minLearningRate = minLearningRate;
+                ret.sample = sampling;
+                ret.workers = workers;
+                ret.invertedIndex = index;
+                ret.lookupTable = lookupTable;
+                try {
+                    if (tokenizerFactory == null)
+                        tokenizerFactory = new UimaTokenizerFactory();
+                }catch(Exception e) {
+                    throw new RuntimeException(e);
+                }
+
+                if(vocabCache == null) {
+                    vocabCache = new InMemoryLookupCache();
+
+                    ret.cache = vocabCache;
+                }
+
+                if(lookupTable == null) {
+                    lookupTable = new InMemoryLookupTable.Builder().negative(negative)
+                            .useAdaGrad(useAdaGrad).lr(lr).cache(vocabCache)
+                            .vectorLength(layerSize).build();
+                }
+
+
+                ret.docIter = docIter;
+                ret.lookupTable = lookupTable;
+                ret.tokenizerFactory = tokenizerFactory;
+
+                return ret;
+            }
+
+            else {
+                ParagraphVectors ret = new ParagraphVectors();
+                ret.alpha.set(lr);
+                ret.layerSize = layerSize;
+                ret.sentenceIter = iter;
+                ret.window = window;
+                ret.useAdaGrad = useAdaGrad;
+                ret.minLearningRate = minLearningRate;
+                ret.vectorizer = textVectorizer;
+                ret.stopWords = stopWords;
+                ret.minWordFrequency = minWordFrequency;
+                ret.setCache(vocabCache);
+                ret.docIter = docIter;
+                ret.minWordFrequency = minWordFrequency;
+                ret.numIterations = iterations;
+                ret.seed = seed;
+                ret.numIterations = iterations;
+                ret.saveVocab = saveVocab;
+                ret.batchSize = batchSize;
+                ret.sample = sampling;
+                ret.workers = workers;
+                ret.invertedIndex = index;
+                ret.lookupTable = lookupTable;
+
+                try {
+                    if (tokenizerFactory == null)
+                        tokenizerFactory = new UimaTokenizerFactory();
+                }catch(Exception e) {
+                    throw new RuntimeException(e);
+                }
+
+                if(vocabCache == null) {
+                    vocabCache = new InMemoryLookupCache();
+
+                    ret.cache = vocabCache;
+                }
+
+                if(lookupTable == null) {
+                    lookupTable = new InMemoryLookupTable.Builder().negative(negative)
+                            .useAdaGrad(useAdaGrad).lr(lr).cache(vocabCache)
+                            .vectorLength(layerSize).build();
+                }
+                ret.lookupTable = lookupTable;
+                ret.tokenizerFactory = tokenizerFactory;
+                return ret;
+            }
+        }
+    }
+
 
 }
