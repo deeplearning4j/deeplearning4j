@@ -3,6 +3,7 @@ package org.deeplearning4j.models.paragraphvectors;
 import com.google.common.base.Function;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -309,7 +310,7 @@ public class ParagraphVectors extends Word2Vec {
         }
 
         @Override
-        public Word2Vec.Builder negativeSample(double negative) {
+        public Builder negativeSample(double negative) {
              super.negativeSample(negative);
             return this;
         }
@@ -327,8 +328,7 @@ public class ParagraphVectors extends Word2Vec {
         }
 
         @Override
-        public
-        Builder vectorizer(TextVectorizer textVectorizer) {
+        public Builder vectorizer(TextVectorizer textVectorizer) {
             super.vectorizer(textVectorizer);
             return this;
         }
@@ -341,7 +341,7 @@ public class ParagraphVectors extends Word2Vec {
 
         @Override
         public Builder batchSize(int batchSize) {
-             batchSize(batchSize);
+             super.batchSize(batchSize);
             return this;
         }
 
@@ -414,6 +414,12 @@ public class ParagraphVectors extends Word2Vec {
         @Override
         public Builder iterate(SentenceIterator iter) {
              super.iterate(iter);
+            return this;
+        }
+
+        @Override
+        public Builder lookupTable(WeightLookupTable lookupTable) {
+             super.lookupTable(lookupTable);
             return this;
         }
 
