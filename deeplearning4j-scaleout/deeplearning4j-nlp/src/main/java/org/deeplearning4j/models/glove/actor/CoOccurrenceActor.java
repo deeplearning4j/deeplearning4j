@@ -49,7 +49,7 @@ public class CoOccurrenceActor extends UntypedActor {
 
                 }
             }
-    
+
             processed.incrementAndGet();
 
         }
