@@ -8,6 +8,7 @@ import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.models.glove.actor.CoOccurrenceActor;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
+import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -29,7 +30,7 @@ public class CoOccurrences {
     protected InvertedIndex index;
     protected transient ActorSystem trainingSystem;
 
-    private CounterMap<String,String> coOCurreneCounts = new CounterMap<>();
+    private CounterMap<String,String> coOCurreneCounts = Util.parallelCounterMap();
 
     public CoOccurrences(TokenizerFactory tokenizerFactory, SentenceIterator sentenceIterator, int windowSize, VocabCache cache, CounterMap<String, String> coOCurreneCounts) {
         this.tokenizerFactory = tokenizerFactory;
@@ -92,7 +93,7 @@ public class CoOccurrences {
         private SentenceIterator sentenceIterator;
         private int windowSize = 15;
         private VocabCache cache;
-        private CounterMap<String, String> coOCurreneCounts = new CounterMap<>();
+        private CounterMap<String, String> coOCurreneCounts = Util.parallelCounterMap();
 
         public Builder tokenizer(TokenizerFactory tokenizerFactory) {
             this.tokenizerFactory = tokenizerFactory;

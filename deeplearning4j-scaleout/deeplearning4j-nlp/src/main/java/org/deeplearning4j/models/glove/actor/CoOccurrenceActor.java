@@ -39,12 +39,16 @@ public class CoOccurrenceActor extends UntypedActor {
                 int windowStop = Math.min(i + windowSize + 1,tokens.size());
                 for(int j = i; j < windowStop; j++) {
                     int otherWord = cache.indexOf(tokens.get(j));
+                    if(cache.indexOf(tokens.get(j)) < 0)
+                        continue;
+
                     if(otherWord == wordIdx)
                         continue;
-                    if(otherWord < wordIdx)
-                        coOCurreneCounts.incrementCount(tokens.get(j),tokens.get(i),1.0 / (j - i + Nd4j.EPS_THRESHOLD));
+
+                    if(wordIdx < otherWord)
+                        coOCurreneCounts.incrementCount(tokens.get(i),tokens.get(j),1.0 / (j - i + Nd4j.EPS_THRESHOLD));
                     else
-                        coOCurreneCounts.incrementCount(tokens.get(i),tokens.get(j), 1.0 / (j - i + Nd4j.EPS_THRESHOLD));
+                        coOCurreneCounts.incrementCount(tokens.get(j),tokens.get(i), 1.0 / (j - i + Nd4j.EPS_THRESHOLD));
 
 
                 }
