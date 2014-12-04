@@ -8,6 +8,8 @@ import org.deeplearning4j.text.uima.UimaResource;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  *
@@ -48,5 +50,10 @@ public class LabelAwareUimaSentenceIterator extends UimaSentenceIterator impleme
             throw new RuntimeException(e);
         }
 
+    }
+
+    @Override
+    public List<String> currentLabels() {
+        return Arrays.asList(currentLabel());
     }
 }
