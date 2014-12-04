@@ -505,9 +505,21 @@ public class Glove implements Serializable {
     }
 
 
+    public VocabCache getCache() {
+        return cache;
+    }
 
+    public void setCache(VocabCache cache) {
+        this.cache = cache;
+    }
 
+    public GloveWeightLookupTable getLookupTable() {
+        return lookupTable;
+    }
 
+    public void setLookupTable(GloveWeightLookupTable lookupTable) {
+        this.lookupTable = lookupTable;
+    }
 
     public static class Builder {
         private VocabCache vocabCache;
