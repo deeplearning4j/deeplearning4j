@@ -11,9 +11,9 @@ highlighter: pygments
 title : Deeplearning4j - Open-source, distributed deep learning for the JVM 
 tagline: Deep Learning for Java
 author :
-  name : BLIX LLC
-  email : 1@blix.io
-  github : agibsonccc/java-deeplearning/
+  name : Skymind LLC
+  email : chris@skymind.io
+  github : SkymindIO/deeplearning4j
   twitter : dl4j1
   feedburner : feedname
 
