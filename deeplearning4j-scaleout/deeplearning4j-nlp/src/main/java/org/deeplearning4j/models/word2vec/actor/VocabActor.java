@@ -96,7 +96,7 @@ public class VocabActor extends UntypedActor {
                             break;
                         processToken(token,encountered,document,work.isStem());
                     }
-                    
+
                     if(work.getLabel() != null)
                         index.addWordsToDoc(index.numDocuments(),document,work.getLabel());
                     else
