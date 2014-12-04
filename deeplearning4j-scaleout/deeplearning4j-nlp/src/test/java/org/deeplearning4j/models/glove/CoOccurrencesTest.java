@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
+import java.util.ArrayList;
 
 /**
  * Created by agibsonccc on 12/3/14.
@@ -44,7 +45,7 @@ public class CoOccurrencesTest {
 
         if(textVectorizer == null) {
             textVectorizer = new TfidfVectorizer.Builder().tokenize(tokenizerFactory)
-                    .cache(vocabCache).iterate(iter).minWords(1)
+                    .cache(vocabCache).iterate(iter).minWords(1).stopWords(new ArrayList<String>())
                 .build();
 
             textVectorizer.fit();

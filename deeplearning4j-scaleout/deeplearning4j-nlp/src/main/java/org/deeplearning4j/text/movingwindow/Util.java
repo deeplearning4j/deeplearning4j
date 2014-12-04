@@ -6,10 +6,34 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.berkeley.MapFactory;
 
 
 public class Util {
+
+
+
+    /**
+     * Returns a thread safe counter map
+     * @return
+     */
+    public static CounterMap<String,String> parallelCounterMap() {
+        MapFactory<String,Double> factory = new MapFactory<String,Double>() {
+
+            private static final long serialVersionUID = 5447027920163740307L;
+
+            @Override
+            public Map<String, Double> buildMap() {
+                return new java.util.concurrent.ConcurrentHashMap<>();
+            }
+
+        };
+
+        CounterMap<String,String> totalWords = new CounterMap(factory,factory);
+        return totalWords;
+    }
+
 
     /**
      * Returns a thread safe counter
@@ -22,7 +46,7 @@ public class Util {
 
             @Override
             public Map<String, Double> buildMap() {
-                return new java.util.concurrent.ConcurrentHashMap<String,Double>();
+                return new java.util.concurrent.ConcurrentHashMap<>();
             }
 
         };

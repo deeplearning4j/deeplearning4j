@@ -3,6 +3,7 @@ package org.deeplearning4j.models.glove;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -38,7 +39,7 @@ public class Glove implements Serializable {
     private TokenizerFactory tokenizerFactory;
     private GloveWeightLookupTable lookupTable;
     private int layerSize = 100;
-    private double learningRate = 0.1;
+    private double learningRate = 0.05;
     private double xMax = 0.75;
     private int windowSize = 15;
     private CoOccurrences coOccurrences;
@@ -47,9 +48,11 @@ public class Glove implements Serializable {
     protected Queue<List<List<VocabWord>>> jobQueue = new LinkedBlockingDeque<>(10000);
     private int batchSize = 1000;
     private int minWordFrequency = 5;
+    private double maxCount = 100;
     public final static String UNK = Word2Vec.UNK;
+    private int iterations = 5;
 
-    public Glove(VocabCache cache, SentenceIterator sentenceIterator, TextVectorizer textVectorizer, TokenizerFactory tokenizerFactory, GloveWeightLookupTable lookupTable, int layerSize, double learningRate, double xMax, int windowSize, CoOccurrences coOccurrences, List<String> stopWords, boolean stem,int batchSize,int minWordFrequency) {
+    public Glove(VocabCache cache, SentenceIterator sentenceIterator, TextVectorizer textVectorizer, TokenizerFactory tokenizerFactory, GloveWeightLookupTable lookupTable, int layerSize, double learningRate, double xMax, int windowSize, CoOccurrences coOccurrences, List<String> stopWords, boolean stem,int batchSize,int minWordFrequency,double maxCount,int iterations) {
         this.cache = cache;
         this.sentenceIterator = sentenceIterator;
         this.textVectorizer = textVectorizer;
@@ -64,6 +67,8 @@ public class Glove implements Serializable {
         this.stem = stem;
         this.batchSize = batchSize;
         this.minWordFrequency = minWordFrequency;
+        this.maxCount = maxCount;
+        this.iterations = iterations;
     }
 
     public void fit() {
@@ -92,7 +97,7 @@ public class Glove implements Serializable {
         }
 
         if(lookupTable == null)
-            lookupTable = new GloveWeightLookupTable.Builder().xMax(xMax)
+            lookupTable = new GloveWeightLookupTable.Builder().xMax(xMax).maxCount(maxCount)
                     .cache(cache).lr(learningRate).vectorLength(layerSize)
                     .build();
 
@@ -101,55 +106,59 @@ public class Glove implements Serializable {
             lookupTable.resetWeights();
 
         final List<List<VocabWord>> miniBatches = new CopyOnWriteArrayList<>();
+        Iterator<Pair<String,String>> pairIter;
 
-        for(String s : coOccurrences.getCoOCurreneCounts().keySet()) {
-            for(String s1 : coOccurrences.getCoOCurreneCounts().getCounter(s).keySet()) {
-                VocabWord vocabWord = cache.wordFor(s);
-                VocabWord vocabWord1 = cache.wordFor(s1);
+        for(int i = 0; i < iterations; i++) {
+            pairIter = coOccurrences.getCoOCurreneCounts().getPairIterator();
+            while(pairIter.hasNext()) {
+                Pair<String,String> next = pairIter.next();
+                VocabWord vocabWord = cache.wordFor(next.getFirst());
+                VocabWord vocabWord1 = cache.wordFor(next.getSecond());
                 miniBatches.add(Arrays.asList(vocabWord, vocabWord1));
                 if(miniBatches.size() >= batchSize) {
                     jobQueue.add(new ArrayList<>(miniBatches));
                     miniBatches.clear();
                 }
             }
-        }
 
 
 
 
-        if(!miniBatches.isEmpty())
-            jobQueue.add(miniBatches);
+            if(!miniBatches.isEmpty())
+                jobQueue.add(miniBatches);
 
 
-        final AtomicInteger processed = new AtomicInteger(coOccurrences.getCoOCurreneCounts().size());
+            final AtomicInteger processed = new AtomicInteger(coOccurrences.getCoOCurreneCounts().size());
 
 
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
-        Parallelization.runInParallel(Runtime.getRuntime().availableProcessors(),new Runnable() {
-            @Override
-            public void run() {
-                while(processed.get() > 0) {
-                    List<List<VocabWord>> batch = jobQueue.poll();
-                    if(batch == null)
-                        continue;
+            Parallelization.runInParallel(Runtime.getRuntime().availableProcessors(),new Runnable() {
+                @Override
+                public void run() {
+                    while(processed.get() > 0) {
+                        List<List<VocabWord>> batch = jobQueue.poll();
+                        if(batch == null)
+                            continue;
 
-                    for(List<VocabWord> list : batch) {
-                        VocabWord w1 = list.get(0);
-                        VocabWord w2 = list.get(1);
-                        double weight = coOccurrences.getCoOCurreneCounts().getCount(w1.getWord(),w2.getWord());
-                        lookupTable.iterateSample(w1, w2, learningRate, weight);
-                        processed.decrementAndGet();
+                        for(List<VocabWord> list : batch) {
+                            VocabWord w1 = list.get(0);
+                            VocabWord w2 = list.get(1);
+                            double weight = coOccurrences.getCoOCurreneCounts().getCount(w1.getWord(),w2.getWord());
+                            lookupTable.iterateSample(w1, w2, weight);
+                            processed.decrementAndGet();
+
+                        }
 
                     }
-
                 }
-            }
-        });
+            });
+
+        }
 
 
 
@@ -157,6 +166,13 @@ public class Glove implements Serializable {
     }
 
 
+    public CoOccurrences getCoOccurrences() {
+        return coOccurrences;
+    }
+
+    public void setCoOccurrences(CoOccurrences coOccurrences) {
+        this.coOccurrences = coOccurrences;
+    }
 
     /**
      * Accuracy based on questions which are a space separated list of strings
@@ -277,7 +293,7 @@ public class Glove implements Serializable {
 
 
         if(lookupTable instanceof InMemoryLookupTable) {
-            InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
+            InMemoryLookupTable l =  lookupTable;
             INDArray syn0 = l.getSyn0();
             INDArray weights = syn0.norm2(0).rdivi(1).muli(words);
             INDArray distances = syn0.mulRowVector(weights).sum(1);
@@ -394,7 +410,7 @@ public class Glove implements Serializable {
 
         INDArray mean = words.mean(0);
         if(lookupTable instanceof  InMemoryLookupTable) {
-            InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
+            InMemoryLookupTable l =  lookupTable;
             INDArray syn0 = l.getSyn0();
             INDArray weights = syn0.norm2(0).rdivi(1).muli(mean);
             INDArray distances = syn0.mulRowVector(weights).sum(1);
@@ -528,7 +544,7 @@ public class Glove implements Serializable {
         private TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
         private GloveWeightLookupTable weightLookupTable;
         private int layerSize = 300;
-        private double learningRate = 0.5;
+        private double learningRate = 0.05;
         private double xMax = 0.75;
         private int windowSize = 5;
         private CoOccurrences coOccurrences;
@@ -536,6 +552,18 @@ public class Glove implements Serializable {
         private boolean stem = false;
         private int batchSize = 100;
         private int minWordFrequency = 5;
+        private double maxCount = 100;
+        private int iterations = 5;
+
+        public Builder iterations(int iterations) {
+            this.iterations = iterations;
+            return this;
+        }
+
+        public Builder maxCount(double maxCount) {
+            this.maxCount = maxCount;
+            return this;
+        }
 
         public Builder minWordFrequency(int minWordFrequency) {
             this.minWordFrequency = minWordFrequency;
@@ -608,7 +636,7 @@ public class Glove implements Serializable {
         }
 
         public Glove build() {
-            return new Glove(vocabCache, sentenceIterator, textVectorizer, tokenizerFactory, weightLookupTable, layerSize, learningRate, xMax, windowSize, coOccurrences, stopWords, stem, batchSize,minWordFrequency);
+            return new Glove(vocabCache, sentenceIterator, textVectorizer, tokenizerFactory, weightLookupTable, layerSize, learningRate, xMax, windowSize, coOccurrences, stopWords, stem, batchSize,minWordFrequency,maxCount,iterations);
         }
     }
 
