@@ -11,47 +11,12 @@ An example creation:
            INDArray arr = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
 
 This will create a 2 x 2 NDarray.
+###Setup
 
-The project works as follows:
+Please see:
+http://nd4j.org/getstarted.html
 
-Include the following in your pom.xml.
 
-            <dependency>
-             <artifactId>nd4j</artifactId>
-             <groupId>org.nd4j</groupId>
-             <artifactId>nd4j-api</artifactId>
-             <version>0.0.3.5.2</version>
-            </dependency>
-
-From there, you need to pick a suitable implementation. This can be either Jblas for native or Cuda for GPUs.
-
-Jblas:
-
-            <dependency>
-               <artifactId>nd4j</artifactId>
-               <groupId>org.nd4j</groupId>
-               <artifactId>nd4j-jblas</artifactId>
-               <version>0.0.3.5.2</version>
-            </dependency>
-
-Jcuda:
-
-            <dependency>
-             <artifactId>nd4j</artifactId>
-             <groupId>org.nd4j</groupId>
-             <artifactId>nd4j-jcublas</artifactId>
-             <version>0.0.3.5.2</version>
-            </dependency>
-
-We are still in the process of streamlining the release for for Jcuda. For now, please do the following:
-
-             git clone https://github.com/SkymindIO/mavenized-jcuda
-             cd mavenized-jcuda
-             mvn clean install
-
-This will install the Jcuda jar files.
-
-You need to specify a version of Jcuda to use as well. The version will depend on your GPU. Amazon supports 0.5.5.
 
 ### Basics
 
