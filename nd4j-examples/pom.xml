@@ -14,18 +14,16 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <nd4j.version>${project.version}</nd4j.version>
+
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jcublas</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jblas</artifactId>
             <version>${project.version}</version>
         </dependency>
+
     </dependencies>
 </project>

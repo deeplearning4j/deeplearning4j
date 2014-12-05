@@ -80,13 +80,7 @@ public class SimpleJCublas {
         });
     }
 
-    private static String cudaHome() {
-        String cudaHome = System.getProperty(JCUDA_HOME_PROP,System.getenv(CUDA_HOME));
-
-        if(cudaHome == null)
-            return cudaBase();
-        return cudaHome;
-    }
+ 
 
 
     private static String version() {
@@ -129,6 +123,9 @@ public class SimpleJCublas {
     private static String cudaBase() {
         LibUtils.OSType osType = LibUtils.calculateOS();
         LibUtils.ARCHType ar = LibUtils.calculateArch();
+        String cudaHome = System.getProperty(JCUDA_HOME_PROP,System.getenv(CUDA_HOME));
+        if(cudaHome != null)
+            return cudaHome;
 
         switch(osType) {
             case APPLE:
