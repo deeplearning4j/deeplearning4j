@@ -11,6 +11,7 @@ Includes the following algorithms:
 * DenoisingAutoEncoders
 * SDA- Stacked Denoising AutoEncoders
 * Deep Autoencoders
+* Word2Vec
 
 Typically building a network will look something like this.
 
@@ -72,6 +73,8 @@ Maven central and other support coming soon.
 
 ### Contact us
 
-Deeplearning4j has its own IRC channel at https://webchat.freenode.net/, a network intended primarily for developers of free and open source software. Just enter /join #deeplearning4j on IRC where you would normally type to chat.
+Our Google Group is here: https://groups.google.com/forum/#!forum/deeplearning4j
 
-Apache 2.0 licensed. 
+Deeplearning4j has its own IRC channel at https://webchat.freenode.net/, a network intended primarily for developers of free and open source software. Just enter /join #deeplearning4j on IRC where you would normally type to chat. 
+
+Apache 2.0 licensed.
