@@ -16,6 +16,6 @@ By following the links at the bottom of each page, you will learn to set up, and
 
 For a quick introduction to neural nets, please see our [overview](../overview.html).
 
-There are a lot of knobs to turn when you're training a deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers. If you have questions, please join [our Google Group](https://groups.google.com/forum/#!forum/deeplearning4j); for premium support, [contact us at Skymind](http://www.skymind.io/contact.html). The linear algebra engine powering our matrix manipulations is [ND4J](http://nd4j.org/).
+There are a lot of knobs to turn when you're training a deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers. If you have questions, please join [our Google Group](https://groups.google.com/forum/#!forum/deeplearning4j); for premium support, [contact us at Skymind](http://www.skymind.io/contact.html). [ND4J is the scientific computing engine](http://nd4j.org/) powering our matrix manipulations.
 
 ![Alt text](../img/logos_8.png)
