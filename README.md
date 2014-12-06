@@ -77,7 +77,7 @@ Initial deployment instructions:
 Bugs/Feature Requests
 =============================
 
-https://github.com/agibsonccc/java-deeplearning/issues
+https://github.com/SkymindIO/deeplearning4j/issues
 
 
 Installation
