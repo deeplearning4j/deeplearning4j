@@ -16,9 +16,9 @@ Includes the following algorithms:
 Typically building a network will look something like this.
 
         BaseMultiLayerNetwork matrix = new BaseMultiLayerNetwork.Builder<>()
-                                .numberOfInputs(conf.getInt(N_IN)).numberOfOutPuts(conf.getInt(OUT)).withClazz(conf.getClazz(CLASS))
-                                .hiddenLayerSizes(conf.getIntsWithSeparator(LAYER_SIZES, ",")).withRng(rng)
-                                .build();
+                .numberOfInputs(conf.getInt(N_IN)).numberOfOutPuts(conf.getInt(OUT)).withClazz(conf.getClazz(CLASS))
+                .hiddenLayerSizes(conf.getIntsWithSeparator(LAYER_SIZES, ",")).withRng(rng)
+                .build();
 
 Configuration is based on the constants specified in DeepLearningConfigurable.
 
