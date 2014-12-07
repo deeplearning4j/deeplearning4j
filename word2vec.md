@@ -19,25 +19,23 @@ Contents
 
 ###<a name="intro">Introduction to Word2Vec</a>
 
-Deeplearning4j implements a distributed form of Word2vec that works with GPUs.
+Deeplearning4j implements a distributed form of Word2vec for Java, which works with GPUs. Word2vec was originally conceived by a research team at Google led by Tomas Mikolov.
 
-Word2Vec is a neural net that processes textual data before they are handled by deep-learning algorithms. It is at the heart of textual analysis with deep learning. While it does not implement deep learning, Word2vec turns input into a numerical form that deep-learning nets can understand -- the vector. 
+Word2vec is a neural net that processes text before that text is handled by deep-learning algorithms. While it does not implement deep learning, Word2vec turns text into a numerical form that deep-learning nets can understand -- the vector. 
 
-Word2vec creates features without human intervention, including the context of individual words; that context comes in the form of multiword windows. Given enough data, usage and context, Word2vec can make highly accurate guesses as to a word’s meaning (for the purpose of deep learning, a word's meaning is simply a sign that helps to classify larger entities; e.g. placing a document in a cluster) based on its past appearances. 
+Word2vec creates features without human intervention, including the context of individual words. That context comes in the form of multiword windows. Given enough data, usage and context, Word2vec can make highly accurate guesses about a word’s meaning (for the purpose of deep learning, a word's meaning is simply a signal that helps to classify larger entities; e.g. placing a document in a cluster) based on its past appearances. 
 
-Word2vec expects a string of sentences as its input. Each sentence -- that is, each array of words -- is vectorized and then compared to other vectorized lists of words in an n-dimensional vector space. Related words and/or groups of words appear next to each other in that space. Vectorizing them allows us to measure their similarities with some exactitude and cluster them. Those clusters form the basis of search, sentiment analysis and recommendations. 
+Word2vec expects a string of sentences as its input. Each sentence -- that is, each array of words -- is vectorized and  compared to other vectorized lists of words in an n-dimensional vector space. Related words and/or groups of words appear next to each other in that space. Vectorizing them allows us to measure their similarities with some exactitude and cluster them. Those clusters form the basis of search, sentiment analysis and recommendations. 
 
 The output of the Word2vec neural net is a vocabulary with a vector attached to it, which can be fed into a deep-learning net for classification/labeling. 
 
-There is also a skip-gram representation which is used in the DL4J implementation. This has proven to be more accurate than other models due to the more generalizable contexts generated. 
+The skip-gram representation popularized by Mikolov and used in the DL4J implementation has proven to be more accurate than other models due to the more generalizable contexts generated. 
 
 Broadly speaking, we measure words' proximity to each other through their cosine similarity, which gauges the distance/dissimilarity between two word vectors. A perfect 90-degree angle represents identity; i.e. France equals France, while Spain has a cosine distance of 0.678515 from France, the highest of any other country.
 
 Here's a graph of words associated with "China" using Word2vec:
 
 ![Alt text](../img/word2vec.png) 
-
-The other method of preparing text for input to a deep-learning net is called [Bag of Words (BoW)](../bagofwords-tf-idf.html). BoW produces a vocabulary with word counts associated to each element of the text. Its output is a wordcount vector. That said, it does not retain context, and therefore is not useful in a granular analysis of those words' meaning.
 
 ###<a name="anatomy">Anatomy of Word2vec</a>
 
@@ -145,7 +143,7 @@ It can also be converted into a series of skip-grams.
     {“How’s”, “weather”, “there”}
     ...
 
-A skip-gram, as you can see, is a form of noncontinous n-gram.
+A skip-gram, as you can see, is a form of discontinous n-gram.
 
 In the literature, you will often see references to a "context window." In the example above, the context window is 3. Many windows use a context window of 5. 
 
