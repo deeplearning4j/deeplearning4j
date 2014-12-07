@@ -1,6 +1,6 @@
 # Deep Learning for Java
 
-DL4J leverages matrix operations built on top of the BLAS linear algebra libraries for faster performance over your standard Java libraries.
+DL4J leverages matrix operations built on top of the BLAS linear algebra libraries for faster performance over your standard Java libraries. Please see our more complete [README](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) on the master branch for installation details. 
 
 Includes the following algorithms:
 
@@ -12,6 +12,7 @@ Includes the following algorithms:
 * SDA- Stacked Denoising AutoEncoders
 * Deep Autoencoders
 * Word2Vec
+* RNTN - Recursive Neural Tensor Network
 
 Typically building a network will look something like this.
 
@@ -68,8 +69,6 @@ Usage for the command line app:
 ### Training tips
 
 For classification: Due to heavy sampling leveraged in deep learning, try to have training batches (each row in a training matrix is an individual part of a batch). It is reccomended to have one class of each label in each training batch to minimize sampling error (See Hinton's Practical Guide to RBMs).
-
-Maven central and other support coming soon.
 
 ### Contact us
 
