@@ -106,6 +106,10 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 **[Visually Debugging Restricted Boltzmann Machine Training with a 3D Example](http://yosinski.com/media/papers/Yosinski2012VisuallyDebuggingRestrictedBoltzmannMachine.pdf)**; Jason Yosinski and Hod Lipson; Cornell University
 
+**[Efficient Estimation of Word Representations in Vector Space](http://arxiv.org/pdf/1301.3781.pdf)**; Tomas Mikolov, Kai Chen, Greg Corrado, Jeffrey Dean; Google
+
+**[Exploiting Similarities among Languages for Machine Translation](http://arxiv.org/pdf/1309.4168.pdf); Tomas Mikolov, Quoc V. Le, Ilya Sutskever; Google
+
 **[word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method](http://arxiv.org/pdf/1402.3722v1.pdf)**; Yoav Goldberg and Omer Levy
 
 Personal pages of prominent deep-learning researchers:
@@ -115,6 +119,6 @@ Personal pages of prominent deep-learning researchers:
 -  [Andrew Y. Ng](http://cs.stanford.edu/people/ang/)
 -  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
 -  [Richard Socher](http://www.socher.org/)
--  [Quoc Le](http://cs.stanford.edu/~quocle/)
+-  [Quoc V. Le](http://cs.stanford.edu/~quocle/)
 
 *These lists are by no means exhaustive.*
