@@ -106,6 +106,8 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 **[Visually Debugging Restricted Boltzmann Machine Training with a 3D Example](http://yosinski.com/media/papers/Yosinski2012VisuallyDebuggingRestrictedBoltzmannMachine.pdf)**; Jason Yosinski and Hod Lipson; Cornell University
 
+**[word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method](http://arxiv.org/pdf/1402.3722v1.pdf)**; Yoav Goldberg and Omer Levy
+
 Personal pages of prominent deep-learning researchers:
 
 -  [Geoffrey Hinton](http://www.cs.toronto.edu/~hinton/)
