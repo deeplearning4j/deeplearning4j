@@ -108,7 +108,7 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 **[Efficient Estimation of Word Representations in Vector Space](http://arxiv.org/pdf/1301.3781.pdf)**; Tomas Mikolov, Kai Chen, Greg Corrado, Jeffrey Dean; Google
 
-**[Exploiting Similarities among Languages for Machine Translation](http://arxiv.org/pdf/1309.4168.pdf); Tomas Mikolov, Quoc V. Le, Ilya Sutskever; Google
+**[Exploiting Similarities among Languages for Machine Translation](http://arxiv.org/pdf/1309.4168.pdf)**; Tomas Mikolov, Quoc V. Le, Ilya Sutskever; Google
 
 **[word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method](http://arxiv.org/pdf/1402.3722v1.pdf)**; Yoav Goldberg and Omer Levy
 
