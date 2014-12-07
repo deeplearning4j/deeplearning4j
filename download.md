@@ -5,13 +5,13 @@ layout: default
 
 # ND4J
 
-DeepLearning4j uses [ND4J](http://nd4j.org/) as a computational kernel for matrix operations. To get started with Deeplearning4j, you need to pick an [ND4J backend](http://nd4j.org/downloads.html), which will rely on GPUs or native computations. 
+DeepLearning4j uses [ND4J](http://nd4j.org/) as its scientific computing kernel for matrix operations. To get started with Deeplearning4j, you need to pick an [ND4J backend](http://nd4j.org/downloads.html), which will rely on GPUs or native computations. 
 
 ##Why Swappable Backends?
 
-Many deep learning researchers have standardized on Cuda GPUs for parallel processing and matrix computations. Unfortunately, industry practicioners have to grapple with more limited options and legacy hardware. If you have a lot of legacy hardware, however, throwing CPUs at a deep-learning problem can work. 
+Many deep learning researchers have standardized on Cuda GPUs for parallel processing and matrix computations. Unfortunately, industry practicioners have to grapple with more limited options due to legacy hardware. Even facing such limitations, throwing CPUs at a deep-learning problem can significantly increase its speed. 
 
-We created ND4J because no JVM Blas-based libraries allowed users to have a swappable interface for different fast-matrix operations. Swappable backends (a la [SLF4J](http://slf4j.org/)) was the only answer. 
+We created ND4J because no JVM Blas-based libraries allowed users to have a swappable interface for different fast-matrix operations. Swappable backends (a la [SLF4J](http://slf4j.org/)) were the only answer. 
 
 In addition, we felt a common API for creating machine-learning algorithms was a worthy goal. No one wants to rewrite their libraries if they find that their matrix run-time is faster.
 
