@@ -257,7 +257,7 @@ You can shut down your Word2vec application and try to delete them.
 *A:* Try to raise the layer size via **.layerSize()** on your Word2Vec object like so
 
         Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
-                     .layerSize(300).iterate(iter).tokenizerFactory(t).build();
+                .layerSize(300).iterate(iter).tokenizerFactory(t).build();
 
 ### <a name="dbn">Fine-tuning DBNs</a>
 
@@ -273,4 +273,4 @@ Word2Vec is especially useful in preparing text-based data for information retri
 
 An example of sentiment analysis using [Word2Vec is here](http://deeplearning4j.org/sentiment_analysis_word2vec.html). 
 
-(We are still testing our recent implementations of Doc2vec and GLOVE -- watch this space!)
+(We are still testing our recent implementations of Doc2vec and GLoVE -- watch this space!)
