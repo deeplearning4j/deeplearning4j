@@ -38,7 +38,7 @@ These tools will generate the visualizations that allow you to debug your neural
 
 * Next, git clone the DL4J examples:
 
-		git clone https://github.com/SkymindIO/dl4j-examples/tree/0.0.3.2.5
+		git clone https://github.com/SkymindIO/dl4j-examples
 
 You can then manually import the Maven project into [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html),  [Intellij](https://www.jetbrains.com/idea/help/importing-project-from-maven-model.html) or [Netbeans](http://wiki.netbeans.org/MavenBestPractices).
 
