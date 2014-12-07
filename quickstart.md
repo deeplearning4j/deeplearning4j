@@ -36,7 +36,7 @@ layout: default
 
 These tools will generate the visualizations that allow you to debug your neural nets as they train. Normalish distributions are a good sign. The visualizations occasionally generate a list of errors on Macs -- that does not stop the nets from training.
 
-* Next, git clone the DL4J examples like so:
+* Next, git clone the DL4J examples:
 
 		git clone https://github.com/SkymindIO/dl4j-examples/tree/0.0.3.2.5
 
