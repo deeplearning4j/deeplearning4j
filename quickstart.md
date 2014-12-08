@@ -5,7 +5,7 @@ layout: default
 
 #Quickstart
 
-<iframe width="420" height="315" src="//www.youtube.com/embed/2lwsHKUrXMk" frameborder="0" allowfullscreen></iframe>
+<iframe width="420" height="315" src="//www.youtube.com/embed/2lwsHKUrXMk" frameborder="0" align="center" allowfullscreen></iframe>
 
 * First, test which version of Java you have (and whether you have it at all), by typing the following into the command line:
 
