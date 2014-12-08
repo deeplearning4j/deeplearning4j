@@ -3,9 +3,11 @@ title:
 layout: default
 ---
 
-#Quickstart
+#Video: Run DL4J Examples in Minutes
 
 <iframe width="840" height="610" src="//www.youtube.com/embed/2lwsHKUrXMk" frameborder="0" allowfullscreen></iframe>
+
+#Quickstart
 
 * First, test which version of Java you have (and whether you have it at all), by typing the following into the command line:
 
