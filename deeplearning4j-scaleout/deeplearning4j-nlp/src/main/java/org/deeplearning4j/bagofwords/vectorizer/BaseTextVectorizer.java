@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public abstract class BaseTextVectorizer implements TextVectorizer {
 
     protected transient VocabCache cache;
-    protected static ActorSystem trainingSystem;
+    protected  ActorSystem trainingSystem;
     protected transient TokenizerFactory tokenizerFactory;
     protected List<String> stopWords;
     private int layerSize = 0;
