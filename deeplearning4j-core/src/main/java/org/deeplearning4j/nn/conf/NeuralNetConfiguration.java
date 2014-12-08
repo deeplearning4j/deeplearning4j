@@ -89,7 +89,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private int[] stride = {2,2};
 
     private int numInFeatureMaps = 2;
-    private ObjectMapper mapper = mapper();
+    private transient ObjectMapper mapper = mapper();
 
     public NeuralNetConfiguration() {
 
