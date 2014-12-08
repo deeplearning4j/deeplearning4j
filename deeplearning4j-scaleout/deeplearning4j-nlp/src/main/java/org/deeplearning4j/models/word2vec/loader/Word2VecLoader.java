@@ -53,6 +53,8 @@ public class Word2VecLoader {
                 float[] vectors;
                 for (int i = 0; i < words; i++) {
                     word = readString(dis);
+                    if(word.isEmpty()) 
+                        continue;
                     vectors = new float[size];
                     len = 0;
                     for (int j = 0; j < size; j++) {
@@ -67,7 +69,8 @@ public class Word2VecLoader {
 
 
                     data[i] = vectors;
-
+                 
+            }
 
                     cache.addWordToIndex(cache.numWords(),word);
                     cache.addToken(new VocabWord(1,word));
