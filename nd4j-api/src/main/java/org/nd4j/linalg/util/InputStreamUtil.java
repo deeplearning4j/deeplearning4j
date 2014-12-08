@@ -6,19 +6,20 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Created by agibsonccc on 10/1/14.
+ *
+ * Input stream utils
+ *
+ * @author Adam Gibson
  */
 public class InputStreamUtil {
-
     /**
      * Count number of lines in a file
      *
-     * @param filename
+     * @param is
      * @return
      * @throws IOException
      */
-    public static int countLines(String filename) throws IOException {
-        InputStream is = new BufferedInputStream(new FileInputStream(filename));
+    public static int countLines(InputStream is) throws IOException {
         try {
             byte[] c = new byte[1024];
             int count = 0;
@@ -36,6 +37,18 @@ public class InputStreamUtil {
         } finally {
             is.close();
         }
+
+
+    }
+    /**
+     * Count number of lines in a file
+     *
+     * @param filename
+     * @return
+     * @throws IOException
+     */
+    public static int countLines(String filename) throws IOException {
+        return countLines(new BufferedInputStream(new FileInputStream(filename)));
 
 
     }

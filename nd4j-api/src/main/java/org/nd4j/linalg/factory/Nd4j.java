@@ -705,6 +705,8 @@ public class Nd4j {
 
     }
 
+
+
     /**
      * Read line via input streams
      * @param filePath the input stream ndarray
@@ -712,8 +714,8 @@ public class Nd4j {
      * @return the read txt method
      *
      */
-    public static INDArray readTxt(String filePath,String split) throws IOException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)));
+    public static INDArray readTxt(InputStream filePath,String split) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(filePath));
         String line;
         int numLines = InputStreamUtil.countLines(filePath);
         int numColumns = -1;
@@ -734,6 +736,18 @@ public class Nd4j {
         }
 
         return ret;
+    }
+
+
+    /**
+     * Read line via input streams
+     * @param filePath the input stream ndarray
+     *           @param split the split separator
+     * @return the read txt method
+     *
+     */
+    public static INDArray readTxt(String filePath,String split) throws IOException {
+       return readTxt(new FileInputStream(filePath),split);
     }
 
 

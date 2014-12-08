@@ -80,7 +80,7 @@ public class SimpleJCublas {
         });
     }
 
- 
+
 
 
     private static String version() {
