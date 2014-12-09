@@ -10,7 +10,7 @@ Many of these tips have already been discussed in the academic literature. Our p
 
 * When constructing distributed neural networks, for example, it’s important to lower the learning rate; that is, a small step size as you make your gradient descent is required. Otherwise the weights diverge, and when weights diverge, your net has ceased to learn. Why is a lower learning rate required? Distributed neural networks use parameter averaging, which speeds up learning, so you need to correct for that acceleration by slowing the algorithm down elsewhere.
 
-A default value for your learning rate is 0.01. Higher than that makes the weights diverge. Your aim is to minimize reconstruction entropy, but that can’t occur if weights can no longer learn features and classify. Each weight represents a neuron’s on-off function, the likelihood that it will be activated. If it gets too large, it becomes meaningless. 
+  A default value for your learning rate is 0.01. Higher than that makes the weights diverge. Your aim is to minimize reconstruction entropy, but that can’t occur if weights can no longer learn features and classify. Each weight represents a neuron’s on-off function, the likelihood that it will be activated. If it gets too large, it becomes meaningless. 
 
 The learning rate represents a series of calculus operations that measure the derivative of each step.
 
