@@ -717,27 +717,37 @@ public class Nd4j {
     public static INDArray readTxt(InputStream filePath,String split) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(filePath));
         String line;
-        int numLines = InputStreamUtil.countLines(filePath);
+        List<float[]> data2 = new ArrayList<>();
         int numColumns = -1;
-        INDArray ret = null;
-        int count = 0;
+        INDArray ret;
         while((line = reader.readLine()) != null) {
             String[] data = line.trim().split(split);
             if(numColumns < 0) {
                 numColumns = data.length;
-                ret = Nd4j.create(numLines,numColumns);
+
             }
             else
                 assert data.length == numColumns : "Data has inconsistent number of columns";
-            ret.putRow(count++,loadRow(data));
+            data2.add(read(data));
 
 
 
         }
 
+        ret = Nd4j.create(data2.size(),numColumns);
+        for(int i = 0; i < data2.size(); i++)
+            ret.putRow(i,Nd4j.create(Nd4j.createBuffer(data2.get(i))));
         return ret;
     }
 
+
+    private static float[] read(String[] split) {
+        float[] ret = new float[split.length];
+        for(int i = 0; i < split.length; i++) {
+            ret[i] = Float.parseFloat(split[i]);
+        }
+        return ret;
+    }
 
     /**
      * Read line via input streams

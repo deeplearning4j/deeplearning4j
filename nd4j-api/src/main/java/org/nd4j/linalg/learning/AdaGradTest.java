@@ -21,7 +21,7 @@ public class AdaGradTest {
 		AdaGrad grad = new AdaGrad(rows,cols,1e-3);
 		INDArray W = Nd4j.ones(rows, cols);
 	
-		log.info("Learning rates for 1 " + grad.getLearningRates(W));
+		log.info("Learning rates for 1 " + grad.getGradient(W));
 		
 		
 

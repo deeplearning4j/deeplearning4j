@@ -2,6 +2,7 @@ package org.nd4j.linalg.learning;
 
 
 import static org.nd4j.linalg.ops.transforms.Transforms.*;
+import static org.nd4j.linalg.ops.transforms.Transforms.pow;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -31,7 +32,6 @@ public class AdaGrad implements Serializable {
     public INDArray historicalGradient;
     public INDArray adjustedGradient;
     public double fudgeFactor = 1e-6;
-    public INDArray gradient;
     public int[] shape;
     protected int numIterations = 0;
     protected double lrDecay = 0.95;
@@ -42,8 +42,6 @@ public class AdaGrad implements Serializable {
 
     public AdaGrad( int rows, int cols, double gamma) {
         this.shape = new int[]{rows,cols};
-        createHistoricalGradient();
-        createAdjustedGradient();
         this.masterStepSize = gamma;
         this.decayLr = false;
 
@@ -57,8 +55,6 @@ public class AdaGrad implements Serializable {
      */
     public AdaGrad(int[] shape) {
         this.shape = shape;
-        createHistoricalGradient();
-        createAdjustedGradient();
         this.masterStepSize = 1e-1;
         this.decayLr = false;
 
@@ -75,13 +71,6 @@ public class AdaGrad implements Serializable {
 
     }
 
-    protected void createHistoricalGradient() {
-        this.historicalGradient = Nd4j.create(shape);
-
-    }
-    protected void createAdjustedGradient() {
-        this.adjustedGradient = Nd4j.create(shape);
-    }
 
 
 
@@ -95,18 +84,22 @@ public class AdaGrad implements Serializable {
      * @param shape  the shape of the nd array for the historical gradient
      * @return the feature specific learning rates
      */
-    public synchronized double getLearningRate(double gradient,int column,int[] shape) {
-        this.numericalGrad = gradient;
-        double squaredGradient = Math.pow(numericalGrad,2);
-        if(this.historicalGradient == null)
+    public synchronized double getGradient(double gradient, int column, int[] shape) {
+        boolean historicalInitialized = false;
+        if(this.historicalGradient == null) {
             this.historicalGradient = Nd4j.ones(shape);
-        this.historicalGradient.putScalar(column,historicalGradient.getDouble(column) + squaredGradient);
+            historicalInitialized = true;
+        }
+
+        double sqrtHistory = !historicalInitialized ? Math.sqrt(historicalGradient.getDouble(column)) : historicalGradient.getDouble(column);
+        double learningRates = (masterStepSize) / sqrtHistory;
+        double adjustedGradient = gradient * (learningRates);
+
+        historicalGradient.putScalar(column,historicalGradient.getDouble(column) + Math.pow(gradient,2));
         numIterations++;
-        double sqrtGradient = Math.sqrt(historicalGradient.getDouble(column)) + fudgeFactor;;
-        double div = Math.abs(gradient) / (sqrtGradient);
-        this.adjustedNumericalGrad = div * (masterStepSize);
+
         //ensure no zeros
-        return adjustedNumericalGrad;
+        return adjustedGradient;
     }
 
     /**
@@ -119,16 +112,20 @@ public class AdaGrad implements Serializable {
      * @param shape  the shape of the nd array for the historical gradient
      * @return the feature specific learning rates
      */
-    public synchronized INDArray getLearningRates(INDArray gradient,int slice,int[] shape) {
-        this.gradient = gradient;
-        INDArray squaredGradient = pow(this.gradient,2);
-        if(this.historicalGradient == null || this.historicalGradient.length() != this.gradient.length())
+    public synchronized INDArray getGradient(INDArray gradient, int slice, int[] shape) {
+        boolean historicalInitialized = false;
+        if(this.historicalGradient == null || this.historicalGradient.length() != gradient.length()) {
             this.historicalGradient = Nd4j.ones(shape);
-        this.historicalGradient.slice(slice).addi(squaredGradient);
+            historicalInitialized = true;
+        }
+
+        INDArray sqrtHistory = !historicalInitialized ? sqrt(historicalGradient.slice(slice)) : historicalGradient;
+        INDArray learningRates = sqrtHistory.rdivi(masterStepSize);
+        this.adjustedGradient = gradient.mul(learningRates);
+
+        this.historicalGradient.addi(pow(gradient,2));
         numIterations++;
-        INDArray sqrtGradient = sqrt(historicalGradient.slice(slice)).addi(fudgeFactor);
-        INDArray div = abs(gradient).divi(sqrtGradient);
-        this.adjustedGradient = div.muli(masterStepSize);
+
         //ensure no zeros
         return adjustedGradient;
     }
@@ -139,19 +136,23 @@ public class AdaGrad implements Serializable {
      * Adagrad keeps a history of gradients being passed in.
      * Note that each gradient passed in becomes adapted over time, hence
      * the name adagrad
-     * @param gradient the gradient to getFromOrigin learning rates for
+     * @param gradient the gradient to get learning rates for
      * @return the feature specific learning rates
      */
-    public synchronized INDArray getLearningRates(INDArray gradient) {
-        this.gradient = gradient;
-        INDArray squaredGradient = pow(this.gradient,2);
-        if(this.historicalGradient == null || this.historicalGradient.length() != this.gradient.length())
-            this.historicalGradient = Nd4j.ones(this.gradient.rows(), this.gradient.columns());
-        this.historicalGradient.addi(squaredGradient);
+    public synchronized INDArray getGradient(INDArray gradient) {
+        boolean historicalInitialized = false;
+        if(this.historicalGradient == null || this.historicalGradient.length() != gradient.length()) {
+            this.historicalGradient = Nd4j.ones(gradient.rows(), gradient.columns());
+            historicalInitialized = true;
+        }
+
+        INDArray sqrtHistory = !historicalInitialized ? sqrt(historicalGradient) : historicalGradient;
+        INDArray learningRates = sqrtHistory.rdivi(masterStepSize);
+        this.adjustedGradient = gradient.mul(learningRates);
+
+        this.historicalGradient.addi(pow(gradient,2));
         numIterations++;
-        INDArray sqrtGradient = sqrt(historicalGradient).addi(fudgeFactor);
-        INDArray div = abs(gradient).divi(sqrtGradient);
-        this.adjustedGradient = div.muli(masterStepSize);
+
         //ensure no zeros
         return adjustedGradient;
     }
