@@ -272,17 +272,16 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         INDArray netOut = output(input);
         //difference of outputs
         INDArray dy = labels.sub(netOut);
-        //weight decay
-        dy.divi(input.rows());
+
 
         INDArray wGradient = getWeightGradient();
         if(conf.isUseAdaGrad())
-            wGradient.muli(adaGrad.getLearningRates(wGradient));
+            wGradient = adaGrad.getGradient(wGradient);
         else
             wGradient.muli(lr);
 
         if(conf.isUseAdaGrad())
-            dy.muliRowVector(biasAdaGrad.getLearningRates(dy.mean(0)));
+            dy = biasAdaGrad.getGradient(dy.mean(0).broadcast(dy.shape()));
         else
             dy.muli(lr);
 

@@ -50,7 +50,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private double finetuneLearningRate = 0.01f;
     protected boolean useRegularization = false;
     //momentum after n iterations
-    protected Map<Integer,Float> momentumAfter = new HashMap<>();
+    protected Map<Integer,Double> momentumAfter = new HashMap<>();
     //reset adagrad historical gradient after n iterations
     protected int resetAdaGradIterations = -1;
     protected double dropOut = 0;
@@ -89,7 +89,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private int[] stride = {2,2};
 
     private int numInFeatureMaps = 2;
-    private ObjectMapper mapper = mapper();
+    private transient ObjectMapper mapper = mapper();
 
     public NeuralNetConfiguration() {
 
@@ -101,7 +101,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
 
-    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, int k, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Float> momentumAfter, int resetAdaGradIterations, double dropOut, boolean applySparsity, WeightInit weightInit, NeuralNetwork.OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride,int[] featureMapSize,int numInFeatureMaps) {
+    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, int k, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, double dropOut, boolean applySparsity, WeightInit weightInit, NeuralNetwork.OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride,int[] featureMapSize,int numInFeatureMaps) {
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
@@ -328,11 +328,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.useRegularization = useRegularization;
     }
 
-    public Map<Integer, Float> getMomentumAfter() {
+    public Map<Integer, Double> getMomentumAfter() {
         return momentumAfter;
     }
 
-    public void setMomentumAfter(Map<Integer, Float> momentumAfter) {
+    public void setMomentumAfter(Map<Integer, Double> momentumAfter) {
         this.momentumAfter = momentumAfter;
     }
 
@@ -814,7 +814,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private double momentum = 0.5f;
         private double l2 = 0f;
         private boolean useRegularization = false;
-        private Map<Integer, Float> momentumAfter;
+        private Map<Integer, Double> momentumAfter;
         private int resetAdaGradIterations = -1;
         private double dropOut = 0;
         private boolean applySparsity = false;
@@ -958,7 +958,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
 
-        public Builder momentumAfter(Map<Integer, Float> momentumAfter) {
+        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
             this.momentumAfter = momentumAfter;
             return this;
         }

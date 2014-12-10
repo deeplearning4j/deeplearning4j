@@ -62,6 +62,8 @@ public class Word2VecLoader {
 
                     if(word.isEmpty())
                         continue;
+
+
                     vectors = new float[size];
                     len = 0;
                     for (int j = 0; j < size; j++) {

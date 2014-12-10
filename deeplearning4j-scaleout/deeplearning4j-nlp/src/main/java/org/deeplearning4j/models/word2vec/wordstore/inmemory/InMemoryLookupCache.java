@@ -1,5 +1,7 @@
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -68,6 +70,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public   void incrementWordCount(String word, int increment) {
+        if(word == null || word.isEmpty())
+            throw new IllegalArgumentException("Word can't be empty or null");
         wordFrequencies.incrementCount(word,1);
 
         VocabWord token;
@@ -172,6 +176,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public synchronized void addWordToIndex(int index, String word) {
+        if(word == null || word.isEmpty())
+            throw new IllegalArgumentException("Word can't be empty or null");
         if(!wordFrequencies.containsKey(word))
             wordFrequencies.incrementCount(word,1);
         wordIndex.add(word,index);
@@ -183,6 +189,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public synchronized void putVocabWord(String word) {
+        if(word == null || word.isEmpty())
+            throw new IllegalArgumentException("Word can't be empty or null");
         VocabWord token = tokenFor(word);
         addWordToIndex(token.getIndex(),word);
         if(!hasToken(word))
@@ -265,6 +273,34 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     }
 
 
+    /**
+     * Load a look up cache from an input stream
+     * delimited by \n
+     * @param from the input stream to read from
+     * @return the in memory lookup cache
+     */
+    public static InMemoryLookupCache load(InputStream from) {
+        Reader inputStream = new InputStreamReader(from);
+        LineIterator iter = IOUtils.lineIterator(inputStream);
+        String line;
+        InMemoryLookupCache ret = new InMemoryLookupCache();
+        int count = 0;
+        while((iter.hasNext())) {
+            line = iter.nextLine();
+            if(line.isEmpty())
+                continue;
+            ret.incrementWordCount(line);
+            VocabWord word = new VocabWord(1.0,line);
+            word.setIndex(count);
+            ret.addToken(word);
+            ret.addWordToIndex(count,line);
+            ret.putVocabWord(line);
+            count++;
+
+        }
+
+        return ret;
+    }
 
     @Override
     public void loadVocab() {
