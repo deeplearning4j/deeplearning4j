@@ -18,19 +18,19 @@ public class Util {
      * Returns a thread safe counter map
      * @return
      */
-    public static CounterMap<String,String> parallelCounterMap() {
-        MapFactory<String,Double> factory = new MapFactory<String,Double>() {
+    public static <K,V> CounterMap<K,V> parallelCounterMap() {
+        MapFactory<K,Double> factory = new MapFactory<K,Double>() {
 
             private static final long serialVersionUID = 5447027920163740307L;
 
             @Override
-            public Map<String, Double> buildMap() {
+            public Map<K, Double> buildMap() {
                 return new java.util.concurrent.ConcurrentHashMap<>();
             }
 
         };
 
-        CounterMap<String,String> totalWords = new CounterMap(factory,factory);
+        CounterMap<K,V> totalWords = new CounterMap(factory,factory);
         return totalWords;
     }
 
@@ -39,21 +39,23 @@ public class Util {
      * Returns a thread safe counter
      * @return
      */
-    public static Counter<String> parallelCounter() {
-        MapFactory<String,Double> factory = new MapFactory<String,Double>() {
+    public static <K> Counter<K> parallelCounter() {
+        MapFactory<K,Double> factory = new MapFactory<K,Double>() {
 
             private static final long serialVersionUID = 5447027920163740307L;
 
             @Override
-            public Map<String, Double> buildMap() {
+            public Map<K, Double> buildMap() {
                 return new java.util.concurrent.ConcurrentHashMap<>();
             }
 
         };
 
-        Counter<String> totalWords = new Counter<String>(factory);
+        Counter<K> totalWords = new Counter<>(factory);
         return totalWords;
     }
+
+
 
     public static boolean matchesAnyStopWord(List<String> stopWords,String word) {
         for(String s : stopWords)

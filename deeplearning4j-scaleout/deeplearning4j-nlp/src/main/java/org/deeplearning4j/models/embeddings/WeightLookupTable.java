@@ -16,8 +16,11 @@ import java.util.concurrent.atomic.AtomicLong;
 public interface WeightLookupTable extends Serializable {
 
 
-
-
+    /**
+     * Clear out all weights regardless
+     * @param reset
+     */
+    void resetWeights(boolean reset);
 
     /**
      * Render the words via TSNE

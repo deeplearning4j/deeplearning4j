@@ -951,7 +951,7 @@ public class RNTN implements Serializable {
         if(paramAdaGrad == null)
             paramAdaGrad = new AdaGrad(1,derivative.columns());
 
-        derivative.muli(paramAdaGrad.getLearningRates(derivative));
+        derivative = paramAdaGrad.getGradient(derivative);
 
         return derivative;
     }

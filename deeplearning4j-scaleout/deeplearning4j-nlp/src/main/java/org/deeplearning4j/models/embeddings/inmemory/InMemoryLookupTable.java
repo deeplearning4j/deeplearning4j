@@ -62,6 +62,19 @@ public class InMemoryLookupTable implements WeightLookupTable {
     }
 
 
+    @Override
+    public void resetWeights(boolean reset) {
+        if(this.rng == null)
+            this.rng = new MersenneTwister(seed);
+        if(syn0 == null || syn0 != null && reset) {
+            syn0 = Nd4j.rand(new int[]{vocab.numWords() + 1, vectorLength}, rng).subi(0.5).divi(vectorLength);
+            INDArray randUnk = Nd4j.rand(1, vectorLength, rng).subi(0.5).divi(vectorLength);
+            putVector(Word2Vec.UNK, randUnk);
+        }
+        if(syn1 == null || syn1 != null && reset)
+            syn1 = Nd4j.create(syn0.shape());
+        initNegative();
+    }
 
     @Override
     public void plotVocab(Tsne tsne) {
