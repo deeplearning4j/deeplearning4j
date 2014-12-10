@@ -4,16 +4,32 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.routing.RoundRobinPool;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.LineIterator;
+import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.CounterMap;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.glove.actor.CoOccurrenceActor;
+import org.deeplearning4j.models.glove.actor.SentenceWork;
+import org.deeplearning4j.models.word2vec.actor.SentenceMessage;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -29,15 +45,21 @@ public class CoOccurrences {
     protected transient VocabCache cache;
     protected InvertedIndex index;
     protected transient ActorSystem trainingSystem;
-
+    protected boolean symmetric = true;
+    private Counter<Integer> sentenceOccurrences = Util.parallelCounter();
     private CounterMap<String,String> coOCurreneCounts = Util.parallelCounterMap();
+    private static Logger log = LoggerFactory.getLogger(CoOccurrences.class);
+    private List<Pair<String,String>> coOccurrences;
 
-    public CoOccurrences(TokenizerFactory tokenizerFactory, SentenceIterator sentenceIterator, int windowSize, VocabCache cache, CounterMap<String, String> coOCurreneCounts) {
+    private CoOccurrences() {}
+
+    public CoOccurrences(TokenizerFactory tokenizerFactory, SentenceIterator sentenceIterator, int windowSize, VocabCache cache, CounterMap<String, String> coOCurreneCounts,boolean symmetric) {
         this.tokenizerFactory = tokenizerFactory;
         this.sentenceIterator = sentenceIterator;
         this.windowSize = windowSize;
         this.cache = cache;
         this.coOCurreneCounts = coOCurreneCounts;
+        this.symmetric = symmetric;
     }
 
     public void fit() {
@@ -54,15 +76,16 @@ public class CoOccurrences {
                                 tokenizerFactory,
                                 windowSize,
                                 cache,
-                                coOCurreneCounts)));
+                                coOCurreneCounts,symmetric,sentenceOccurrences)));
 
 
         sentenceIterator.reset();
 
         final AtomicInteger queued = new AtomicInteger(0);
+        int id = 0;
         while(sentenceIterator.hasNext()) {
-            String sentence = sentenceIterator.nextSentence();
-            actor.tell(sentence,actor);
+            actor.tell(new SentenceWork(id,sentenceIterator.nextSentence()),actor);
+            id++;
             queued.incrementAndGet();
         }
 
@@ -75,9 +98,103 @@ public class CoOccurrences {
             }
         }
 
+        trainingSystem.shutdown();
+        trainingSystem = null;
 
 
+        log.info("Done processing co occurrences: ended with " + numCoOccurrences());
 
+
+    }
+
+    /**
+     * Load from an input stream with the following format:
+     * w1 w2 score
+     * @param from the input stream to read from
+     * @return the co occurrences based on the input stream
+     */
+    public static CoOccurrences load(InputStream from) {
+        CoOccurrences ret = new CoOccurrences();
+        ret.coOccurrences = new ArrayList<>();
+        CounterMap<String,String> counter = new CounterMap<>();
+        Reader inputStream = new InputStreamReader(from);
+        LineIterator iter = IOUtils.lineIterator(inputStream);
+        String line;
+        while((iter.hasNext())) {
+            line = iter.nextLine();
+            String[] split = line.split(" ");
+            if(split.length < 3)
+                continue;
+            //no empty keys
+            if(split[0].isEmpty() || split[1].isEmpty())
+                continue;
+
+            ret.coOccurrences.add(new Pair<>(split[0],split[1]));
+
+            counter.incrementCount(split[0], split[1], Double.parseDouble(split[2]));
+
+        }
+
+        ret.coOCurreneCounts = counter;
+        return ret;
+
+    }
+
+    public Counter<Integer> getSentenceOccurrences() {
+        return sentenceOccurrences;
+    }
+
+    public void setSentenceOccurrences(Counter<Integer> sentenceOccurrences) {
+        this.sentenceOccurrences = sentenceOccurrences;
+    }
+
+    /**
+     * Return a list of all of the co occurrences
+     * @return a list of all of the co occurrences
+     */
+    public List<Pair<String,String>> coOccurrenceList() {
+        if(coOccurrences != null)
+            return coOccurrences;
+        Iterator<Pair<String,String>> pairIter = coOccurrenceIterator();
+        final List<Pair<String,String>> pairList = new ArrayList<>();
+
+        while(pairIter.hasNext())
+            pairList.add(pairIter.next());
+        return pairList;
+
+    }
+
+    /**
+     * Return a randomized list of the co occurrences
+     * @return
+     */
+    public List<Pair<String,String>> randomizedList() {
+        List<Pair<String,String>> coOccurrences = coOccurrenceList();
+        Collections.shuffle(coOccurrences);
+        return coOccurrences;
+    }
+
+    /**
+     * The number of co occurrences
+     * @return
+     */
+    public int numCoOccurrences() {
+        return coOCurreneCounts.totalSize();
+    }
+
+
+    public double count(String w1,String w2) {
+        return coOCurreneCounts.getCount(w1,w2);
+    }
+
+
+    /**
+     * Get an iterator over all possible non zero
+     * co occurrences
+     * @return the iterator
+     */
+    public Iterator<Pair<String,String>> coOccurrenceIterator() {
+        return coOCurreneCounts.getPairIterator();
     }
 
     public CounterMap<String, String> getCoOCurreneCounts() {
@@ -94,6 +211,13 @@ public class CoOccurrences {
         private int windowSize = 15;
         private VocabCache cache;
         private CounterMap<String, String> coOCurreneCounts = Util.parallelCounterMap();
+        private boolean symmetric = true;
+
+
+        public Builder symmetric(boolean symmetric) {
+            this.symmetric = symmetric;
+            return this;
+        }
 
         public Builder tokenizer(TokenizerFactory tokenizerFactory) {
             this.tokenizerFactory = tokenizerFactory;
@@ -127,7 +251,7 @@ public class CoOccurrences {
             if(sentenceIterator == null)
                 throw new IllegalArgumentException("Sentence iterator must not be null");
 
-            return new CoOccurrences(tokenizerFactory, sentenceIterator, windowSize, cache, coOCurreneCounts);
+            return new CoOccurrences(tokenizerFactory, sentenceIterator, windowSize, cache, coOCurreneCounts,symmetric);
         }
     }
 

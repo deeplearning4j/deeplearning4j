@@ -260,16 +260,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @param hBiasGradient the hbias gradient to apply to
      */
     protected void applySparsity(INDArray hBiasGradient) {
+        INDArray change = hBiasGradient.mul(conf.getSparsity()).mul(-conf.getLr() * conf.getSparsity());
+        hBiasGradient.addi(change);
 
-        if(conf.isUseAdaGrad()) {
-            INDArray change = this.hBiasAdaGrad.getLearningRates(hBias).neg().muli(conf.getSparsity()).mul(hBiasGradient.mul(conf.getSparsity()));
-            hBiasGradient.addi(change);
-        }
-        else {
-            INDArray change = hBiasGradient.mul(conf.getSparsity()).mul(-conf.getLr() * conf.getSparsity());
-            hBiasGradient.addi(change);
 
-        }
     }
 
     /**
@@ -302,7 +296,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             log.info("Resetting adagrad");
         }
 
-        INDArray wLearningRates = wAdaGrad.getLearningRates(wGradient);
         //change up momentum after so many iterations if specified
         double momentum = conf.getMomentum();
         if(conf.getMomentumAfter() != null && !conf.getMomentumAfter().isEmpty()) {
@@ -314,18 +307,19 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
         if (conf.isUseAdaGrad())
-            wGradient.muli(wLearningRates);
+            wGradient = wAdaGrad.getGradient(wGradient);
+
         else
             wGradient.muli(learningRate);
 
         if (conf.isUseAdaGrad())
-            hBiasGradient.muli(hBiasAdaGrad.getLearningRates(hBiasGradient));
+            hBiasGradient = hBiasAdaGrad.getGradient(hBiasGradient);
         else
             hBiasGradient.muli(learningRate);
 
 
         if (conf.isUseAdaGrad())
-            vBiasGradient.muli(vBiasAdaGrad.getLearningRates(vBiasGradient));
+            vBiasGradient = vBiasAdaGrad.getGradient(vBiasGradient);
         else
             vBiasGradient.muli(learningRate);
 
@@ -357,7 +351,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         //simulate post gradient application  and apply the difference to the gradient to decrease the change the gradient has
         if(conf.isUseRegularization() && conf.getL2() > 0) {
             if(conf.isUseAdaGrad())
-                wGradient.subi(W.mul(conf.getL2()).muli(wLearningRates));
+                wGradient.subi(W.mul(conf.getL2()));
 
             else
                 wGradient.subi(W.mul(conf.getL2() * learningRate));
@@ -381,12 +375,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     @Override
     public double score() {
         if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                return  LossFunctions.score(
-                        input,
-                        conf.getLossFunction(),
-                        transform(input),
-                        conf.getL2(),
-                        conf.isUseRegularization());
+            return  LossFunctions.score(
+                    input,
+                    conf.getLossFunction(),
+                    transform(input),
+                    conf.getL2(),
+                    conf.isUseRegularization());
         else {
             return -LossFunctions.reconEntropy(
                     input,

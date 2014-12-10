@@ -39,8 +39,8 @@ public class DBNTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(1)
-                .weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen, 1e-2))
+                .iterations(10)
+                .weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen, 1e-3))
                 .activationFunction(Activations.tanh())
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
@@ -73,6 +73,8 @@ public class DBNTest {
         DataSet next = iter.next(100);
         next.normalizeZeroMeanZeroUnitVariance();
         d.fit(next);
+
+
 
         Evaluation eval = new Evaluation();
         INDArray output = d.output(next.getFeatureMatrix());

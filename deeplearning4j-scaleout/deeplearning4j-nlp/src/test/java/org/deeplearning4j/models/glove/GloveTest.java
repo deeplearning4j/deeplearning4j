@@ -21,7 +21,7 @@ public class GloveTest {
 
     @Before
     public void before() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/basic2/line2.txt");
+        ClassPathResource resource = new ClassPathResource("other/oneline.txt");
         File file = resource.getFile().getParentFile();
         iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
 

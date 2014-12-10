@@ -57,12 +57,22 @@ public class Parallelization {
 
     }
 
+
+
+
+
+
+
+
+
+
+
     /**
      * Run n copies of the runnable in parallel
      * @param numWorkers the number of workers
      * @param runnable the runnable to run
      */
-    public static void runInParallel(int numWorkers,Runnable runnable) {
+    public static void runInParallel(int numWorkers,Runnable runnable,boolean block) {
         ExecutorService exec = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(),
                 Runtime.getRuntime().availableProcessors(),
                 0L, TimeUnit.MILLISECONDS,
@@ -78,20 +88,37 @@ public class Parallelization {
             }
         });
 
-        runInParallel(exec,numWorkers,runnable);
+        runInParallel(exec,numWorkers,runnable,block);
     }
 
-    public static void runInParallel(ExecutorService exec,int numWorkers,Runnable runnable) {
+    public static void runInParallel(ExecutorService exec,int numWorkers,Runnable runnable,boolean block) {
 
         for(int i = 0; i < numWorkers; i++)
             exec.execute(runnable);
 
-        exec.shutdown();
-        try {
-            exec.awaitTermination(1,TimeUnit.DAYS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if(block) {
+            exec.shutdown();
+            try {
+                exec.awaitTermination(1,TimeUnit.DAYS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+
+    }
+
+
+    /**
+     * Run n copies of the runnable in parallel
+     * @param numWorkers the number of workers
+     * @param runnable the runnable to run
+     */
+    public static void runInParallel(int numWorkers,Runnable runnable) {
+        runInParallel(numWorkers,runnable,true);
+    }
+
+    public static void runInParallel(ExecutorService exec,int numWorkers,Runnable runnable) {
+        runInParallel(exec,numWorkers,runnable,true);
     }
 
 

@@ -13,7 +13,7 @@ import java.io.IOException;
 /**
  * Created by agibsonccc on 11/27/14.
  */
-public class ActivationFunctionDeSerializer extends JsonDeserializer<ActivationFunction> {
+public class ActivationFunctionDeSerializer extends JsonDeserializer<ActivationFunction>  {
     @Override
     public ActivationFunction deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
         JsonNode node = jp.getCodec().readTree(jp);
