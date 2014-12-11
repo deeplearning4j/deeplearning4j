@@ -171,8 +171,8 @@ public class GlovePerformer implements WorkerPerformer {
         //for the gradient calculation we will use the context vector
 
 
-        update(w1,w1Vector,w2Vector,gradient);
-        update(w2,w2Vector,w1Vector,gradient);
+        update(work,w1,w1Vector,w2Vector,gradient);
+        update(work,w2,w2Vector,w1Vector,gradient);
         return fDiff;
 
 

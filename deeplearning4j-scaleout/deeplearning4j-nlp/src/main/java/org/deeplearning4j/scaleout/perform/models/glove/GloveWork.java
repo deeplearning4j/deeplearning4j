@@ -38,6 +38,7 @@ public class GloveWork implements Serializable {
             addWord(coOccurrence.getFirst(),table);
             addWord(coOccurrence.getSecond(),table);
 
+
         }
 
     }
@@ -50,7 +51,8 @@ public class GloveWork implements Serializable {
         vectors.put(word.getWord(),new Pair<>(word,table.getSyn0().getRow(word.getIndex()).dup()));
         originalVectors.put(word.getWord(),table.getSyn0().getRow(word.getIndex()).dup());
         biases.put(word.getWord(),table.getBias().getDouble(word.getIndex()));
-
+        adaGrads.put(word.getWord(),table.getWeightAdaGrad().createSubset(word.getIndex()));
+        biasAdaGrads.put(word.getWord(),table.getBiasAdaGrad().createSubset(word.getIndex()));
 
     }
 
