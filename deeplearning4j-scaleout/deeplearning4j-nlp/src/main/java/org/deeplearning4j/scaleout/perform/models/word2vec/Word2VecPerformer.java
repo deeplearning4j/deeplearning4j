@@ -11,7 +11,6 @@ import org.deeplearning4j.scaleout.perform.WorkerPerformer;
 import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
-import org.deeplearning4j.util.SerializationUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -181,7 +180,7 @@ public class Word2VecPerformer implements WorkerPerformer {
 
 
     /**
-     * Configure the configuration based on the table and idnex
+     * Configure the configuration based on the table and index
      * @param table the table
      * @param index the index
      * @param conf the configuration
@@ -319,7 +318,7 @@ public class Word2VecPerformer implements WorkerPerformer {
             //score
             double f =  expTable[idx];
             //gradient
-            double g = (1 - code - f) * (useAdaGrad ?  w1.getLearningRate(i,alpha) : alpha);
+            double g = (1 - code - f) * (useAdaGrad ?  w1.getGradient(i, alpha) : alpha);
 
 
             if(neu1e.data().dataType() == DataBuffer.DOUBLE) {
@@ -358,20 +357,20 @@ public class Word2VecPerformer implements WorkerPerformer {
                 double f = Nd4j.getBlasWrapper().dot(l1, syn1Neg);
                 double g;
                 if (f > MAX_EXP)
-                    g = (label - 1) * (useAdaGrad ? w1.getLearningRate(target, alpha) : alpha);
+                    g = useAdaGrad ? w1.getGradient(target, (label - 1)) : (label - 1) *  alpha;
                 else if (f < -MAX_EXP)
-                    g = (label - 0) * (useAdaGrad ? w1.getLearningRate(target, alpha) : alpha);
+                    g = (label - 0) * (useAdaGrad ?  w1.getGradient(target, alpha) : alpha);
                 else
-                    g = (label - expTable[(int) ((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) * (useAdaGrad ? w1.getLearningRate(target, alpha) : alpha);
-                if (neu1e.data().dataType() == DataBuffer.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g, neu1e, l1);
+                    g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
+                if(syn1Neg.data().dataType() == DataBuffer.DOUBLE)
+                    Nd4j.getBlasWrapper().axpy(g,neu1e,l1);
                 else
-                    Nd4j.getBlasWrapper().axpy((float) g, neu1e, l1);
+                    Nd4j.getBlasWrapper().axpy((float) g,neu1e,l1);
 
-                if (neu1e.data().dataType() == DataBuffer.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g, syn1Neg, l1);
+                if(syn1Neg.data().dataType() == DataBuffer.DOUBLE)
+                    Nd4j.getBlasWrapper().axpy(g,syn1Neg,l1);
                 else
-                    Nd4j.getBlasWrapper().axpy((float) g, syn1Neg, l1);
+                    Nd4j.getBlasWrapper().axpy((float) g,syn1Neg,l1);
             }
         }
 

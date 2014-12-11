@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -116,7 +115,7 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
 
         double weight = Math.pow(Math.min(1.0,(score / maxCount)),xMax);
 
-        double fDiff = weight * (prediction - Math.log(score));
+        double fDiff = score > xMax ? prediction :  weight * (prediction - Math.log(score));
 
 
         //amount of change
@@ -126,8 +125,10 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
         //the gradient of the OPPOSITE word
         //for adagrad we will use the index of the word passed in
         //for the gradient calculation we will use the context vector
-        update(w1,w1Vector,w2Vector.dup(),gradient);
-        update(w2,w2Vector,w1Vector.dup(),gradient);
+
+
+        update(w1,w1Vector,w2Vector,gradient);
+        update(w2,w2Vector,w1Vector,gradient);
         return fDiff;
 
 
@@ -263,6 +264,22 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
     public void iterateSample(VocabWord w1, VocabWord w2, AtomicLong nextRandom, double alpha) {
         throw new UnsupportedOperationException();
 
+    }
+
+    public double getxMax() {
+        return xMax;
+    }
+
+    public void setxMax(double xMax) {
+        this.xMax = xMax;
+    }
+
+    public double getMaxCount() {
+        return maxCount;
+    }
+
+    public void setMaxCount(double maxCount) {
+        this.maxCount = maxCount;
     }
 
     public INDArray getBias() {

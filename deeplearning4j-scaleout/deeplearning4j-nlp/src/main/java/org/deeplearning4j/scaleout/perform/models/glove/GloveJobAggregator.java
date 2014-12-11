@@ -1,4 +1,4 @@
-package org.deeplearning4j.scaleout.perform.models.word2vec;
+package org.deeplearning4j.scaleout.perform.models.glove;
 
 
 import org.deeplearning4j.scaleout.aggregator.JobAggregator;
@@ -15,18 +15,18 @@ import java.util.*;
  * Handles creating a total word2vec model
  * @author Adam Gibson
  */
-public class Word2VecJobAggregator implements JobAggregator {
-    private List<Word2VecResult> work = new ArrayList<>();
+public class GloveJobAggregator implements JobAggregator {
+    private List<GloveResult> work = new ArrayList<>();
 
 
     @Override
     public void accumulate(Job job) {
-        if(job.getResult() instanceof Word2VecResult) {
-            Word2VecResult work = (Word2VecResult) job.getResult();
+        if(job.getResult() instanceof GloveResult) {
+            GloveResult work = (GloveResult) job.getResult();
             this.work.add(work);
         }
         else if(job.getResult() instanceof Collection) {
-            Collection<Word2VecResult> coll = (Collection<Word2VecResult>) job.getResult();
+            Collection<GloveResult> coll = (Collection<GloveResult>) job.getResult();
             work.addAll(coll);
         }
 
@@ -35,10 +35,10 @@ public class Word2VecJobAggregator implements JobAggregator {
     @Override
     public Job aggregate() {
         Job ret =  new Job("","");
-        Word2VecResult aggregateResult = new Word2VecResult();
+        GloveResult aggregateResult = new GloveResult();
         MultiDimensionalMap<String,String,List<INDArray>> workResults = MultiDimensionalMap.newHashBackedMap();
         Set<String> vocab = new HashSet<>();
-        for(Word2VecResult r : work) {
+        for(GloveResult r : work) {
             for(String syn0Key : r.getSyn0Change().keySet()) {
                 List<INDArray> syn0List = getOrPutIfNotExists(workResults,syn0Key,"syn0");
                 List<INDArray> syn1List = getOrPutIfNotExists(workResults,syn0Key,"syn1");
