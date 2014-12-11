@@ -174,11 +174,6 @@ public class InMemoryLookupTable implements WeightLookupTable {
         INDArray neu1e = Nd4j.create(vectorLength);
 
 
-        double avgChange = 0.0f;
-
-
-
-
         for(int i = 0; i < w1.getCodeLength(); i++) {
             int code = w1.getCodes().get(i);
             int point = w1.getPoints().get(i);
@@ -218,18 +213,24 @@ public class InMemoryLookupTable implements WeightLookupTable {
         //negative sampling
         if(negative > 0)
             for (int d = 0; d < negative + 1; d++) {
-                if (d == 0) {
-
+                if (d == 0)
                     label = 1;
-                } else {
+                else {
                     nextRandom.set(nextRandom.get() * 25214903917L + 11);
-                    target = table.getInt((int) (nextRandom.get() >> 16) % table.length());
-                    if (target == 0)
+                    int idx = Math.abs((int) (nextRandom.get() >> 16) % table.length());
+
+                    target = table.getInt(idx);
+                    if (target <= 0)
                         target = (int) nextRandom.get() % (vocab.numWords() - 1) + 1;
+
                     if (target == w1.getIndex())
                         continue;
                     label = 0;
                 }
+
+
+                if(target >= syn1Neg.rows() || target < 0)
+                    continue;
 
                 double f = Nd4j.getBlasWrapper().dot(l1,syn1Neg.slice(target));
                 double g;
@@ -245,9 +246,9 @@ public class InMemoryLookupTable implements WeightLookupTable {
                     Nd4j.getBlasWrapper().axpy((float) g,neu1e,l1);
 
                 if(syn0.data().dataType() == DataBuffer.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,syn1Neg,l1);
+                    Nd4j.getBlasWrapper().axpy(g,syn1Neg.slice(target),l1);
                 else
-                    Nd4j.getBlasWrapper().axpy((float) g,syn1Neg,l1);
+                    Nd4j.getBlasWrapper().axpy((float) g,syn1Neg.slice(target),l1);
             }
 
         if(syn0.data().dataType() == DataBuffer.DOUBLE)
