@@ -1,16 +1,13 @@
 package org.deeplearning4j.scaleout.perform.models.glove;
 
-import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.glove.GloveWeightLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.scaleout.api.statetracker.NewUpdateListener;
 import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.job.JobIterator;
-import org.deeplearning4j.text.invertedindex.InvertedIndex;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -18,7 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Word2vec job iterator
+ * Glove job iterator
  *
  *
  * @author Adam Gibson
