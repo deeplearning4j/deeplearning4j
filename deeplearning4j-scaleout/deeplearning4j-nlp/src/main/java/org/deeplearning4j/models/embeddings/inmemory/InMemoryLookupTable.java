@@ -202,20 +202,12 @@ public class InMemoryLookupTable implements WeightLookupTable {
             //score
             double f =  expTable[idx];
             //gradient
-            double g = (1 - code - f) * (useAdaGrad ?  w1.getLearningRate(i,alpha) : alpha);
+            double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f)) : (1 - code - f) * alpha;
 
 
+            Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
+            Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
 
-
-            avgChange += g;
-            if(syn0.data().dataType() == DataBuffer.DOUBLE) {
-                Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
-                Nd4j.getBlasWrapper().axpy(g, l1, syn1);
-            }
-            else {
-                Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
-                Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
-            }
 
 
         }
@@ -242,11 +234,11 @@ public class InMemoryLookupTable implements WeightLookupTable {
                 double f = Nd4j.getBlasWrapper().dot(l1,syn1Neg.slice(target));
                 double g;
                 if (f > MAX_EXP)
-                    g = (label - 1) * (useAdaGrad ?  w1.getLearningRate(target,alpha) : alpha);
+                    g = useAdaGrad ? w1.getGradient(target, (label - 1)) : (label - 1) *  alpha;
                 else if (f < -MAX_EXP)
-                    g = (label - 0) * (useAdaGrad ?  w1.getLearningRate(target,alpha) : alpha);
+                    g = (label - 0) * (useAdaGrad ?  w1.getGradient(target, alpha) : alpha);
                 else
-                    g = (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *  (useAdaGrad ?  w1.getLearningRate(target,alpha) : alpha);
+                    g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
                 if(syn0.data().dataType() == DataBuffer.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g,neu1e,l1);
                 else
@@ -258,26 +250,13 @@ public class InMemoryLookupTable implements WeightLookupTable {
                     Nd4j.getBlasWrapper().axpy((float) g,syn1Neg,l1);
             }
 
+        if(syn0.data().dataType() == DataBuffer.DOUBLE)
+            Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
 
-        avgChange /=  w1.getCodes().size();
-
-
-        if(useAdaGrad) {
-            if(syn0.data().dataType() == DataBuffer.DOUBLE)
-                Nd4j.getBlasWrapper().axpy(avgChange,neu1e,l1);
-            else
-                Nd4j.getBlasWrapper().axpy((float) avgChange,neu1e,l1);
+        else
+            Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
 
 
-        }
-        else {
-            if(syn0.data().dataType() == DataBuffer.DOUBLE)
-                Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
-
-            else
-                Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
-
-        }
 
 
 
@@ -317,7 +296,6 @@ public class InMemoryLookupTable implements WeightLookupTable {
         INDArray neu1e = Nd4j.create(vectorLength);
 
 
-        double avgChange = 0.0f;
 
 
         double alpha = this.lr.get();
@@ -344,9 +322,8 @@ public class InMemoryLookupTable implements WeightLookupTable {
             //score
             double f =  expTable[idx];
             //gradient
-            double g = (1 - code - f) * (useAdaGrad ?  w1.getLearningRate(i,alpha) : alpha);
+            double g = (1 - code - f) * (useAdaGrad ?  w1.getGradient(i, alpha) : alpha);
 
-            avgChange += g;
             if(syn0.data().dataType() == DataBuffer.DOUBLE) {
                 Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
                 Nd4j.getBlasWrapper().axpy(g, l1, syn1);
@@ -360,25 +337,14 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
 
 
-        avgChange /=  w1.getCodes().size();
+
+        if(syn0.data().dataType() == DataBuffer.DOUBLE)
+            Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
+
+        else
+            Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
 
 
-        if(useAdaGrad) {
-            if(syn0.data().dataType() == DataBuffer.DOUBLE)
-                Nd4j.getBlasWrapper().axpy(avgChange,neu1e,l1);
-            else
-                Nd4j.getBlasWrapper().axpy((float) avgChange,neu1e,l1);
-
-
-        }
-        else {
-            if(syn0.data().dataType() == DataBuffer.DOUBLE)
-                Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
-
-            else
-                Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
-
-        }
 
 
 
