@@ -12,7 +12,7 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * Handles creating a total word2vec model
+ * Handles creating a total glove model
  * @author Adam Gibson
  */
 public class GloveJobAggregator implements JobAggregator {
@@ -41,12 +41,7 @@ public class GloveJobAggregator implements JobAggregator {
         for(GloveResult r : work) {
             for(String syn0Key : r.getSyn0Change().keySet()) {
                 List<INDArray> syn0List = getOrPutIfNotExists(workResults,syn0Key,"syn0");
-                List<INDArray> syn1List = getOrPutIfNotExists(workResults,syn0Key,"syn1");
-                List<INDArray> negList = getOrPutIfNotExists(workResults,syn0Key,"negative");
                 syn0List.add(r.getSyn0Change().get(syn0Key));
-                syn1List.add(r.getSyn1Change().get(syn0Key));
-                if(r.getNegativeChange() != null)
-                    negList.add(r.getNegativeChange().get(syn0Key));
                 vocab.add(syn0Key);
 
             }
@@ -54,9 +49,7 @@ public class GloveJobAggregator implements JobAggregator {
 
         for(String key : vocab) {
             aggregateResult.getSyn0Change().put(key,average(workResults.get(key,"syn0")));
-            aggregateResult.getSyn1Change().put(key,average(workResults.get(key,"syn1")));
-            if(workResults.get(key,"negative") != null && workResults.get(key,"negative") != null && !workResults.get(key,"negative").isEmpty() && workResults.get(key,"negative").get(0) != null)
-                aggregateResult.getNegativeChange().put(key,average(workResults.get(key,"negative")));
+
         }
 
 
