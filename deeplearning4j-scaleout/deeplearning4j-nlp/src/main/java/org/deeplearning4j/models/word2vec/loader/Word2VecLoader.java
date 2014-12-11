@@ -36,21 +36,25 @@ public class Word2VecLoader {
     public static Word2Vec loadGoogleModel(String path,boolean binary) throws IOException {
         WeightLookupTable lookupTable;
         VocabCache cache;
-        float[][] data;
+        List<File> vectorPaths = new ArrayList<>();
+
+        File rootDir = new File("." + UUID.randomUUID().toString());
+        if(!rootDir.mkdirs())
+            throw new IllegalStateException("Unable to create directory for word vectors");
 
         if(binary) {
             DataInputStream dis = null;
             BufferedInputStream bis = null;
             double len;
             float vector;
-            int words = 0,size = 0;
+            int words,size = 0;
+
             try {
                 bis = new BufferedInputStream(new FileInputStream(path));
                 dis = new DataInputStream(bis);
                 words = Integer.parseInt(readString(dis));
                 size = Integer.parseInt(readString(dis));
 
-                data = new float[words][size];
                 cache = new InMemoryLookupCache();
                 lookupTable = new InMemoryLookupTable.Builder().cache(cache)
                         .vectorLength(size).build();
@@ -58,6 +62,7 @@ public class Word2VecLoader {
                 String word;
                 float[] vectors;
                 for (int i = 0; i < words; i++) {
+
                     word = readString(dis);
 
                     if(word.isEmpty())
@@ -76,10 +81,10 @@ public class Word2VecLoader {
                     for (int j = 0; j < size; j++)
                         vectors[j] /= len;
 
+                    File write = new File(rootDir,String.valueOf(i));
+                    vectorPaths.add(write);
 
-
-                    data[i] = vectors;
-
+                    writeVector(vectors,write);
 
                     cache.addWordToIndex(cache.numWords(),word);
                     cache.addToken(new VocabWord(1,word));
@@ -96,14 +101,16 @@ public class Word2VecLoader {
             Word2Vec ret = new Word2Vec();
             lookupTable.resetWeights();
 
-            for(int i = 0; i < data.length; i++)
-                if(cache.wordAtIndex(i) != null)
-                    lookupTable.putVector(cache.wordAtIndex(i),Nd4j.create(new FloatBuffer(data[i])));
-
+            for(int i = 0; i < vectorPaths.size(); i++) {
+               float[] read = readVec(vectorPaths.get(i),size);
+               lookupTable.putVector(cache.wordAtIndex(i),Nd4j.create(read));
+                vectorPaths.get(i).delete();
+            }
 
             ret.setCache(cache);
             ret.setLookupTable(lookupTable);
             ret.setLayerSize(size);
+            rootDir.delete();
             return ret;
 
         }
@@ -115,8 +122,6 @@ public class Word2VecLoader {
             int words = Integer.parseInt(initial[0]);
             int layerSize = Integer.parseInt(initial[1]);
             cache = new InMemoryLookupCache();
-            data = new float[words][layerSize];
-            int count = 0;
 
 
 
@@ -132,8 +137,9 @@ public class Word2VecLoader {
                     buffer[i - 1] = Float.parseFloat(split[i]);
                 }
 
-                data[count++] = buffer;
-
+                File vecFile = new File(rootDir,String.valueOf(cache.numWords()));
+                writeVector(buffer,vecFile);
+                vectorPaths.add(vecFile);
                 cache.addWordToIndex(cache.numWords(),word);
                 cache.addToken(new VocabWord(1,word));
                 cache.putVocabWord(word);
@@ -147,21 +153,52 @@ public class Word2VecLoader {
 
             lookupTable.resetWeights();
 
-            for(int i = 0; i < data.length; i++) {
-                if(cache.wordAtIndex(i) != null)
-                    lookupTable.putVector(cache.wordAtIndex(i), Nd4j.create(new FloatBuffer(data[i])));
+            for(int i = 0; i < words; i++) {
+                float[] read = readVec(vectorPaths.get(i),layerSize);
+                lookupTable.putVector(cache.wordAtIndex(i),Nd4j.create(read));
+                vectorPaths.get(i).delete();
             }
 
             Word2Vec ret = new Word2Vec();
             ret.setCache(cache);
             ret.setLookupTable(lookupTable);
             ret.setLayerSize(layerSize);
+
+            reader.close();
+            rootDir.delete();
             return ret;
 
         }
 
     }
 
+
+
+    private static float[] readVec(File from,int length) throws IOException {
+        BufferedInputStream bis = new BufferedInputStream(new FileInputStream(from));
+        DataInputStream dis = new DataInputStream(bis);
+        float[] ret = new float[length];
+        for(int i = 0; i < length; i++) {
+            ret[i] = dis.readFloat();
+        }
+
+        dis.close();
+
+        return ret;
+
+
+    }
+
+    private static void writeVector(float[] vec,File to) throws IOException {
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(to));
+        DataOutputStream dos = new DataOutputStream(bos);
+        for(int i = 0; i < vec.length; i++) {
+            dos.writeFloat(vec[i]);
+        }
+
+        bos.flush();
+        bos.close();
+    }
 
 
     /**
