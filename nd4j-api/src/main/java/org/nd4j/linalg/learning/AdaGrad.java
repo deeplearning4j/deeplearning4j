@@ -101,6 +101,22 @@ public class AdaGrad implements Serializable {
         return adjustedGradient;
     }
 
+
+    /**
+     *
+     * @param index
+     * @return
+     */
+    public AdaGrad createSubset(int index) {
+        AdaGrad a = new AdaGrad(1,historicalGradient.columns());
+        //grab only the needed elements
+        INDArray slice = historicalGradient.slice(index).dup();
+        a.historicalGradient = slice;
+        a.setMasterStepSize(masterStepSize);
+        a.setDecayLr(decayLr);
+        return a;
+    }
+
     /**
      * Gets feature specific learning rates
      * Adagrad keeps a history of gradients being passed in.
