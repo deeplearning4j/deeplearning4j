@@ -99,6 +99,16 @@ public abstract class BaseNDArray  implements INDArray {
 
 
     /**
+     * Create with the specified shape and buffer
+     * @param shape the shape
+     * @param buffer the buffer
+     */
+    public BaseNDArray(int[] shape, DataBuffer buffer) {
+        this.data = buffer;
+        initShape(shape);
+    }
+
+    /**
      * Create this ndarray with the given data and shape and 0 offset
      * @param data the data to use
      * @param shape the shape of the ndarray
@@ -2275,7 +2285,7 @@ public abstract class BaseNDArray  implements INDArray {
             switchedOrder = true;
         }
 
-        INDArray result = Nd4j.create(shape);
+        INDArray result = Nd4j.create(shape,other.data().dataType());
 
         if(switchedOrder && order != NDArrayFactory.FORTRAN)
             Nd4j.factory().setOrder(NDArrayFactory.C);

@@ -26,6 +26,10 @@ public class JCublasNDArray extends BaseNDArray {
 
     }
 
+    public JCublasNDArray(int[] shape, DataBuffer buffer) {
+        super(shape, buffer);
+    }
+
     /**
      * Create this JCublasNDArray with the given data and shape and 0 offset
      *

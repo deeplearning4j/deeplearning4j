@@ -93,6 +93,12 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         this.dtype = dtype;
     }
 
+    @Override
+    public INDArray create(int[] shape, int dataType) {
+        return create(shape,Nd4j.createBuffer(shape,dataType));
+    }
+
+
     /**
      * Returns the order for this ndarray for internal data storage
      *

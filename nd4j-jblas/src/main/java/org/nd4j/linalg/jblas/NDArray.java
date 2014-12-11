@@ -272,4 +272,9 @@ public class NDArray extends BaseNDArray {
     public NDArray(DoubleBuffer buffer, int[] shape, int offset) {
         super(buffer,shape,offset);
     }
+
+    public NDArray(int[] shape, DataBuffer buffer) {
+        this.data = buffer;
+        initShape(shape);
+    }
 }

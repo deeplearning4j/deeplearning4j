@@ -11,10 +11,10 @@ public class MatrixOperationExample {
 
     public static void main(String[] args) {
 
-        INDArray nd = Nd4j.create(new float[]{1,2},new int[]{2}); //vector as row
-        INDArray nd2 = Nd4j.create(new float[]{3,4},new int[]{2, 1}); //vector as column
-        INDArray nd3 = Nd4j.create(new float[]{1,3,2,4},new int[]{2,2}); //elements arranged column major
-        INDArray nd4 = Nd4j.create(new float[]{3,4,5,6},new int[]{2, 2});
+        INDArray nd = Nd4j.create(new double[]{1,2},new int[]{2}); //vector as row
+        INDArray nd2 = Nd4j.create(new double[]{3,4},new int[]{2, 1}); //vector as column
+        INDArray nd3 = Nd4j.create(new double[]{1,3,2,4},new int[]{2,2}); //elements arranged column major
+        INDArray nd4 = Nd4j.create(new double[]{3,4,5,6},new int[]{2, 2});
 
         // Show initial matrices
 
@@ -22,6 +22,8 @@ public class MatrixOperationExample {
         System.out.println(nd2);
         System.out.println(nd3);
 
+
+        System.out.println("Creating nd array with data type " + Nd4j.dataType());
         //create nd-array variable to show result of nondestructive operations. matrix multiply row vector by column vector to obtain dot product.
         //assign product to nd-array variable.
 
@@ -51,7 +53,7 @@ public class MatrixOperationExample {
 
         // let's see what happens if you double nd
 
-        INDArray nd5 = Nd4j.create(new float[]{1,1,2,2},new int[]{2,2}); //doubling nd
+        INDArray nd5 = Nd4j.create(new double[]{1,1,2,2},new int[]{2,2}); //doubling nd
 
         ndv = nd2.mmul(nd5);
         System.out.println(ndv); //same thing!

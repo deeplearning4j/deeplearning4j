@@ -287,4 +287,8 @@ public class NetlibBlasNDArray extends BaseNDArray {
     public NetlibBlasNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
         super(data,shape,stride,offset,ordering);
     }
+
+    public NetlibBlasNDArray(int[] shape, DataBuffer buffer) {
+        super(shape,buffer);
+    }
 }

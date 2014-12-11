@@ -74,6 +74,8 @@ public interface NDArrayFactory  {
      */
     void setDType(int dtype);
 
+    INDArray create(int[] shape, DataBuffer buffer);
+
     /**
      * Returns the order for this ndarray for internal data storage
      * @return the order (c or f)
@@ -1133,4 +1135,6 @@ public interface NDArrayFactory  {
     INDArray rand(int[] shape, double min, double max, RandomGenerator rng);
 
     INDArray create(int rows, int columns, char ordering);
+
+    INDArray create(int[] shape, int dataType);
 }

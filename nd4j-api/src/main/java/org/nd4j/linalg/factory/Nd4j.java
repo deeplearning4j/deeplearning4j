@@ -301,7 +301,16 @@ public class Nd4j {
 
 
 
-
+    /**
+     * Create a buffer equal of length prod(shape)
+     * @param shape the shape of the buffer to create
+     * @param type the type to create
+     * @return the created buffer
+     */
+    public static DataBuffer createBuffer(int[] shape,int type) {
+        int length = ArrayUtil.prod(shape);
+        return type == DataBuffer.DOUBLE ? createBuffer(new double[length]) : createBuffer(new float[length]);
+    }
     /**
      * Create a buffer equal of length prod(shape)
      * @param shape the shape of the buffer to create
@@ -2266,6 +2275,11 @@ public class Nd4j {
         return INSTANCE.create(data, rows, columns, stride, offset,ordering);
     }
 
+
+
+    public static INDArray create(int[] shape,int dataType) {
+        return INSTANCE.create(shape,dataType);
+    }
 
 
     /**

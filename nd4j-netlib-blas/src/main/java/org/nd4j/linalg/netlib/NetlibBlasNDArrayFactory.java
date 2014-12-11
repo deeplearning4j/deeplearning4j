@@ -25,6 +25,11 @@ public class NetlibBlasNDArrayFactory extends BaseNDArrayFactory {
         super(dtype,order);
     }
 
+    @Override
+    public INDArray create(int[] shape, DataBuffer buffer) {
+        return new NetlibBlasNDArray(shape,buffer);
+    }
+
     /**
      * Create float
      *

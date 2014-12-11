@@ -27,6 +27,11 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
         super(dtype,order);
     }
 
+    @Override
+    public INDArray create(int[] shape, DataBuffer buffer) {
+        return new NDArray(shape,buffer);
+    }
+
     /**
      * Create float
      *

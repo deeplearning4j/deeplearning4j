@@ -24,6 +24,11 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         super(dtype,order);
     }
 
+    @Override
+    public INDArray create(int[] shape, DataBuffer buffer) {
+        return new JCublasNDArray(shape,buffer);
+    }
+
     /**
      * Create float
      *

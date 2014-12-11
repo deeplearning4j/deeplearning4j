@@ -30,7 +30,6 @@ public class AdaGrad implements Serializable {
     protected double masterStepSize = 1e-1; // default for masterStepSize (this is the numerator)
     //protected double squaredGradientSum = 0;
     public INDArray historicalGradient;
-    public INDArray adjustedGradient;
     public double fudgeFactor = 1e-6;
     public int[] shape;
     protected int numIterations = 0;
@@ -121,7 +120,7 @@ public class AdaGrad implements Serializable {
 
         INDArray sqrtHistory = !historicalInitialized ? sqrt(historicalGradient.slice(slice)) : historicalGradient;
         INDArray learningRates = sqrtHistory.rdivi(masterStepSize);
-        this.adjustedGradient = gradient.mul(learningRates);
+        INDArray adjustedGradient = gradient.mul(learningRates);
 
         this.historicalGradient.addi(pow(gradient,2));
         numIterations++;
@@ -148,7 +147,7 @@ public class AdaGrad implements Serializable {
 
         INDArray sqrtHistory = !historicalInitialized ? sqrt(historicalGradient) : historicalGradient;
         INDArray learningRates = sqrtHistory.rdivi(masterStepSize);
-        this.adjustedGradient = gradient.mul(learningRates);
+        INDArray adjustedGradient = gradient.mul(learningRates);
 
         this.historicalGradient.addi(pow(gradient,2));
         numIterations++;
