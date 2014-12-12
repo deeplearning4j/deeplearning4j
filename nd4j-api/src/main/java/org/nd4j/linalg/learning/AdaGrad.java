@@ -83,7 +83,7 @@ public class AdaGrad implements Serializable {
      * @param shape  the shape of the nd array for the historical gradient
      * @return the feature specific learning rates
      */
-    public synchronized double getGradient(double gradient, int column, int[] shape) {
+    public  double getGradient(double gradient, int column, int[] shape) {
         boolean historicalInitialized = false;
         if(this.historicalGradient == null) {
             this.historicalGradient = Nd4j.ones(shape);
@@ -127,7 +127,7 @@ public class AdaGrad implements Serializable {
      * @param shape  the shape of the nd array for the historical gradient
      * @return the feature specific learning rates
      */
-    public synchronized INDArray getGradient(INDArray gradient, int slice, int[] shape) {
+    public  INDArray getGradient(INDArray gradient, int slice, int[] shape) {
         boolean historicalInitialized = false;
         if(this.historicalGradient == null || this.historicalGradient.length() != gradient.length()) {
             this.historicalGradient = Nd4j.ones(shape);
@@ -154,7 +154,7 @@ public class AdaGrad implements Serializable {
      * @param gradient the gradient to get learning rates for
      * @return the feature specific learning rates
      */
-    public synchronized INDArray getGradient(INDArray gradient) {
+    public  INDArray getGradient(INDArray gradient) {
         boolean historicalInitialized = false;
         if(this.historicalGradient == null || this.historicalGradient.length() != gradient.length()) {
             this.historicalGradient = Nd4j.ones(gradient.rows(), gradient.columns());

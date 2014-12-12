@@ -24,7 +24,7 @@ public class DoubleBuffer extends BaseDataBuffer {
 
 
     public DoubleBuffer(double[] buffer) {
-        this(buffer,true);
+        this(buffer,false);
     }
 
     public DoubleBuffer(double[] buffer,boolean copy) {

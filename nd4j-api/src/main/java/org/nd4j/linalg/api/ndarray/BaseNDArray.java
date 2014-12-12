@@ -870,7 +870,7 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray negi() {
-        return  Transforms.neg(this);
+        return  Transforms.neg(this,false);
     }
 
 
@@ -2949,7 +2949,7 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray rdivi(Number n) {
-        return rdivi(Nd4j.valueArrayOf(shape(), n.doubleValue()));
+        return rdivi(n,this);
     }
 
     @Override
@@ -2959,7 +2959,7 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray rsubi(Number n) {
-        return rsubi(Nd4j.valueArrayOf(shape(), n.doubleValue()));
+        return rsubi(n,this);
     }
 
     @Override

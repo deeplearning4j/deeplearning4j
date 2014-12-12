@@ -22,7 +22,7 @@ public class FloatBuffer extends BaseDataBuffer {
         this.buffer = new float[length];
     }
     public FloatBuffer(float[] buffer) {
-         this(buffer,true);
+         this(buffer,false);
     }
     public FloatBuffer(float[] buffer,boolean copy) {
         super(buffer.length);
