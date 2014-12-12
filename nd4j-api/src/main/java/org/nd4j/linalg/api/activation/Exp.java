@@ -3,6 +3,8 @@ package org.nd4j.linalg.api.activation;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.ElementWiseOp;
+import org.nd4j.linalg.ops.factory.ElementWiseOpFactories;
+import org.nd4j.linalg.ops.factory.ElementWiseOpFactory;
 
 
 /**
@@ -17,8 +19,8 @@ public class Exp extends BaseActivationFunction {
      * @return the class used for transformation
      */
     @Override
-    public Class<? extends ElementWiseOp> transformClazz() {
-        return  org.nd4j.linalg.ops.transforms.Exp.class;
+    public ElementWiseOpFactory transformFactory() {
+        return ElementWiseOpFactories.exp();
     }
 
     /**

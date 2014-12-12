@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.activation;
 import com.google.common.base.Function;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.ElementWiseOp;
+import org.nd4j.linalg.ops.factory.ElementWiseOpFactory;
 
 
 import java.io.Serializable;
@@ -19,7 +20,7 @@ public interface ActivationFunction extends Function<INDArray,INDArray>,Serializ
      * The class used for transformation
      * @return the class used for transformation
      */
-    public Class<? extends ElementWiseOp> transformClazz();
+    public ElementWiseOpFactory transformFactory();
 
     /**
      * Name of the function

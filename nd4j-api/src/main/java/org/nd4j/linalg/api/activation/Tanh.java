@@ -5,6 +5,8 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.ElementWiseOp;
+import org.nd4j.linalg.ops.factory.ElementWiseOpFactories;
+import org.nd4j.linalg.ops.factory.ElementWiseOpFactory;
 
 /**
  * Tanh activation function
@@ -25,8 +27,8 @@ public class Tanh extends BaseActivationFunction {
      * @return the class used for transformation
      */
     @Override
-    public Class<? extends ElementWiseOp> transformClazz() {
-        return org.nd4j.linalg.ops.transforms.Tanh.class;
+    public ElementWiseOpFactory transformFactory() {
+        return ElementWiseOpFactories.tanh();
     }
 
     /**

@@ -1,6 +1,7 @@
 package org.nd4j.linalg.ops;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.ops.factory.ElementWiseOpFactory;
 import org.nd4j.linalg.util.ReflectionUtil;
 
 import java.lang.reflect.Constructor;
@@ -13,7 +14,7 @@ import java.lang.reflect.Constructor;
 public class ArrayOps {
 
     private INDArray from,scalar;
-    private Class<? extends ElementWiseOp> clazz;
+    private ElementWiseOpFactory clazz;
     private Object[] extraArgs;
 
 
@@ -32,7 +33,7 @@ public class ArrayOps {
      * @param clazz the class of the operation to perform
      * @return builder pattern
      */
-    public ArrayOps op(Class<? extends ElementWiseOp> clazz) {
+    public ArrayOps op(ElementWiseOpFactory clazz) {
         this.clazz = clazz;
         return this;
     }
@@ -54,10 +55,9 @@ public class ArrayOps {
         try {
             ElementWiseOp op;
             if(extraArgs == null)
-                op = clazz.newInstance();
+                op = clazz.create();
             else {
-                Constructor c = clazz.getConstructor(ReflectionUtil.classesFor(extraArgs));
-                op = (ElementWiseOp) c.newInstance(extraArgs);
+               op =  clazz.create(extraArgs);
             }
             BaseElementWiseOp op2 = (BaseElementWiseOp) op;
             op2.from = from;

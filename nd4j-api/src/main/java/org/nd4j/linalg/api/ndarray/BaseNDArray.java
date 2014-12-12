@@ -882,7 +882,7 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray rdivi(Number n, INDArray result) {
         INDArray linear = linearView();
-        INDArray resultLinear = result.linearView();
+        INDArray resultLinear = result == this ? linear : result.linearView();
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, n.doubleValue() / linear.getDouble(i));
         }
@@ -897,7 +897,7 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray rsubi(Number n, INDArray result) {
         INDArray linear = linearView();
-        INDArray resultLinear = result.linearView();
+        INDArray resultLinear = result == this ? linear : result.linearView();
         double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, val - linear.getDouble(i));
@@ -913,7 +913,7 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray divi(Number n, INDArray result) {
         INDArray linear = linearView();
-        INDArray resultLinear = result.linearView();
+        INDArray resultLinear = result == this ? linear : result.linearView();
         double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, linear.getDouble(i) / val);
@@ -929,7 +929,7 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray muli(Number n, INDArray result) {
         INDArray linear = linearView();
-        INDArray resultLinear = result.linearView();
+        INDArray resultLinear = result == this ? linear : result.linearView();
         double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, linear.getDouble(i) * val);
@@ -945,7 +945,7 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray subi(Number n, INDArray result) {
         INDArray linear = linearView();
-        INDArray resultLinear = result.linearView();
+        INDArray resultLinear = result == this ? linear : result.linearView();
         double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, linear.getDouble(i) - val);
@@ -961,7 +961,7 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray addi(Number n, INDArray result) {
         INDArray linear = linearView();
-        INDArray resultLinear = result.linearView();
+        INDArray resultLinear = result == this ? linear :  result.linearView();
         double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, linear.getDouble(i) + val);
@@ -1107,7 +1107,7 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray put(int i, int j, Number element) {
 
-        return put(i,j, Nd4j.scalar(element));
+        return putScalar(new int[]{i,j}, element.doubleValue());
     }
 
 

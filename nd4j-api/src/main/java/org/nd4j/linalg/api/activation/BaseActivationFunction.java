@@ -51,7 +51,7 @@ public abstract class BaseActivationFunction implements ActivationFunction {
     @Override
     public INDArray apply(INDArray input) {
         ElementWiseOp op =  new ArrayOps().from(input.dup())
-                .op(transformClazz())
+                .op(transformFactory())
                 .build();
         op.exec();
         return op.from();

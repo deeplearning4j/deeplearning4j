@@ -136,13 +136,13 @@ public class AdaGrad implements Serializable {
 
         INDArray sqrtHistory = !historicalInitialized ? sqrt(historicalGradient.slice(slice)) : historicalGradient;
         INDArray learningRates = sqrtHistory.rdivi(masterStepSize);
-        INDArray adjustedGradient = gradient.mul(learningRates);
+        gradient.muli(learningRates);
 
         this.historicalGradient.addi(pow(gradient,2));
         numIterations++;
 
         //ensure no zeros
-        return adjustedGradient;
+        return gradient;
     }
 
 
@@ -163,13 +163,13 @@ public class AdaGrad implements Serializable {
 
         INDArray sqrtHistory = !historicalInitialized ? sqrt(historicalGradient) : historicalGradient;
         INDArray learningRates = sqrtHistory.rdivi(masterStepSize);
-        INDArray adjustedGradient = gradient.mul(learningRates);
+        gradient.muli(learningRates);
 
         this.historicalGradient.addi(pow(gradient,2));
         numIterations++;
 
         //ensure no zeros
-        return adjustedGradient;
+        return gradient;
     }
 
     public  double getMasterStepSize() {
@@ -180,11 +180,11 @@ public class AdaGrad implements Serializable {
         this.masterStepSize = masterStepSize;
     }
 
-    public synchronized boolean isDecayLr() {
+    public  boolean isDecayLr() {
         return decayLr;
     }
 
-    public synchronized void setDecayLr(boolean decayLr) {
+    public void setDecayLr(boolean decayLr) {
         this.decayLr = decayLr;
     }
 

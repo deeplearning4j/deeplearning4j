@@ -10,6 +10,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.ArrayOps;
 import org.nd4j.linalg.ops.BaseElementWiseOp;
 import org.nd4j.linalg.ops.ElementWiseOp;
+import org.nd4j.linalg.ops.factory.ElementWiseOpFactories;
+import org.nd4j.linalg.ops.factory.ElementWiseOpFactory;
 import org.nd4j.linalg.util.ArrayUtil;
 
 
@@ -182,7 +184,7 @@ public class Transforms {
         return neg(ndArray,true);
     }
     public static IComplexNDArray neg(IComplexNDArray ndArray) {
-       return neg(ndArray,true);
+        return neg(ndArray,true);
     }
 
 
@@ -192,7 +194,7 @@ public class Transforms {
      * @return
      */
     public static INDArray eq(INDArray ndArray) {
-       return eq(ndArray,true);
+        return eq(ndArray,true);
 
     }
 
@@ -413,32 +415,13 @@ public class Transforms {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /**
      * Binary matrix of whether the number at a given index is equal
      * @param ndArray
      * @return
      */
     public static INDArray eq(INDArray ndArray,boolean dup) {
-        return exec(ndArray,EqualTo.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.equalTo(),null,dup);
 
     }
 
@@ -448,7 +431,7 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray eq(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,EqualTo.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.equalTo(),null,dup);
     }
 
     /**
@@ -457,7 +440,7 @@ public class Transforms {
      * @return
      */
     public static INDArray neq(INDArray ndArray,boolean dup) {
-        return exec(ndArray,NotEqualTo.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.notEqualTo(),null,dup);
 
     }
 
@@ -467,7 +450,7 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray neq(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,NotEqualTo.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.notEqualTo(),null,dup);
     }
 
 
@@ -478,7 +461,7 @@ public class Transforms {
      * @return
      */
     public static INDArray floor(INDArray ndArray,boolean dup) {
-        return exec(ndArray,Floor.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.floor(),null,dup);
 
     }
 
@@ -488,7 +471,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sign(IComplexNDArray toSign,boolean dup) {
-        return exec(toSign,Sign.class,null,dup);
+        return exec(toSign,ElementWiseOpFactories.sign(),null,dup);
     }
 
     /**
@@ -497,7 +480,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sign(INDArray toSign,boolean dup) {
-        return exec(toSign,Sign.class,null,dup);
+        return exec(toSign,ElementWiseOpFactories.sign(),null,dup);
     }
 
 
@@ -507,7 +490,7 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray floor(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,Floor.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.floor(),null,dup);
     }
 
 
@@ -520,7 +503,7 @@ public class Transforms {
      * @return
      */
     public static INDArray gt(INDArray ndArray,boolean dup) {
-        return exec(ndArray,GreaterThan.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.greaterThan(),null,dup);
     }
 
 
@@ -531,7 +514,7 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray gt(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,GreaterThan.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.greaterThan(),null,dup);
     }
 
 
@@ -542,7 +525,7 @@ public class Transforms {
      * @return
      */
     public static INDArray lt(INDArray ndArray,boolean dup) {
-        return exec(ndArray,LessThan.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.lessThan(),null,dup);
 
     }
 
@@ -552,14 +535,14 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray lt(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,LessThan.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.lessThan(),null,dup);
     }
 
     public static INDArray stabilize(INDArray ndArray,double k,boolean dup) {
-        return exec(ndArray,Stabilize.class,new Object[]{k},dup);
+        return exec(ndArray,ElementWiseOpFactories.stabilize(),new Object[]{k},dup);
     }
     public static IComplexNDArray stabilize(IComplexNDArray ndArray,double k,boolean dup) {
-        return exec(ndArray,Stabilize.class,new Object[]{k},dup);
+        return exec(ndArray,ElementWiseOpFactories.stabilize(),new Object[]{k},dup);
     }
 
 
@@ -567,33 +550,33 @@ public class Transforms {
 
 
     public static INDArray abs(INDArray ndArray,boolean dup) {
-        return exec(ndArray,Abs.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.abs(),null,dup);
 
     }
     public static IComplexNDArray abs(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,Abs.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.abs(),null,dup);
     }
 
     public static INDArray exp(INDArray ndArray,boolean dup) {
-        return exec(ndArray,Exp.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.exp(),null,dup);
     }
     public static IComplexNDArray exp(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,Exp.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.exp(),null,dup);
     }
     public static INDArray hardTanh(INDArray ndArray,boolean dup) {
-        return exec(ndArray,HardTanh.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.hardTanh(),null,dup);
     }
     public static IComplexNDArray hardTanh(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,HardTanh.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.hardTanh(),null,dup);
     }
     public static INDArray identity(INDArray ndArray,boolean dup) {
-        return exec(ndArray,Identity.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.identity(),null,dup);
     }
     public static IComplexNDArray identity(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,Identity.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.identity(),null,dup);
     }
     public static INDArray max(INDArray ndArray,boolean dup) {
-        return exec(ndArray,Max.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.max(),null,dup);
     }
 
     /**
@@ -603,7 +586,7 @@ public class Transforms {
      * @return
      */
     public static INDArray max(INDArray ndArray,double max,boolean dup) {
-        return exec(ndArray,Max.class,new Object[]{max},dup);
+        return exec(ndArray,ElementWiseOpFactories.max(),new Object[]{max},dup);
     }
 
     /**
@@ -613,55 +596,55 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray max(IComplexNDArray ndArray,double max,boolean dup) {
-        return exec(ndArray,Max.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.max(),new Object[]{max},dup);
     }
     public static IComplexNDArray max(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,Max.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.max(),null,dup);
     }
     public static INDArray pow(INDArray ndArray,Number power,boolean dup) {
-        return exec(ndArray,Pow.class,new Object[]{power},dup);
+        return exec(ndArray,ElementWiseOpFactories.pow(),new Object[]{power},dup);
     }
     public static IComplexNDArray pow(IComplexNDArray ndArray,IComplexNumber power,boolean dup) {
-        return exec(ndArray,Pow.class,new Object[]{power},dup);
+        return exec(ndArray,ElementWiseOpFactories.pow(),new Object[]{power},dup);
     }
     public static INDArray round(INDArray ndArray,boolean dup) {
-        return exec(ndArray,Round.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.round(),null,dup);
     }
     public static IComplexNDArray round(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,Round.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.round(),null,dup);
     }
     public static INDArray sigmoid(INDArray ndArray,boolean dup) {
-        return exec(ndArray,Sigmoid.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.sigmoid(),null,dup);
     }
     public static IComplexNDArray sigmoid(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,Sigmoid.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.sigmoid(),null,dup);
     }
     public static INDArray sqrt(INDArray ndArray,boolean dup) {
-        return exec(ndArray,Sqrt.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.sqrt(),null,dup);
     }
     public static IComplexNDArray sqrt(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,Sqrt.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.sqrt(),null,dup);
     }
     public static INDArray tanh(INDArray ndArray,boolean dup) {
-        return exec(ndArray,Tanh.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.tanh(),null,dup);
     }
     public static IComplexNDArray tanh(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,Tanh.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.tanh(),null,dup);
     }
     public static INDArray log(INDArray ndArray,boolean dup) {
-        return exec(ndArray,Log.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.log(),null,dup);
     }
     public static IComplexNDArray log(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,Log.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.log(),null,dup);
     }
 
 
 
     public static INDArray neg(INDArray ndArray,boolean dup) {
-        return exec(ndArray,Negative.class,null,dup);
+        return exec(ndArray,ElementWiseOpFactories.negative(),null,dup);
     }
     public static IComplexNDArray neg(IComplexNDArray ndArray,boolean dup) {
-        return exec(ndArray,Negative.class,null,dup);
+        return exec(ndArray, ElementWiseOpFactories.negative(),null,dup);
     }
 
 
@@ -678,11 +661,11 @@ public class Transforms {
 
 
 
-    private static INDArray exec(INDArray indArray,Class<? extends BaseElementWiseOp> clazz,Object[] extraArgs,boolean dup) {
+    private static INDArray exec(INDArray indArray,ElementWiseOpFactory factory,Object[] extraArgs,boolean dup) {
 
         ElementWiseOp ops = new ArrayOps().
                 from(dup ? indArray.dup() : indArray)
-                .op(clazz)
+                .op(factory)
                 .extraArgs(extraArgs)
                 .build();
         ops.exec();
@@ -690,11 +673,11 @@ public class Transforms {
         return ops.from();
     }
 
-    private static IComplexNDArray exec(IComplexNDArray indArray,Class<? extends BaseElementWiseOp> clazz,Object[] extraArgs,boolean dup) {
+    private static IComplexNDArray exec(IComplexNDArray indArray,ElementWiseOpFactory factory,Object[] extraArgs,boolean dup) {
 
         ElementWiseOp ops = new ArrayOps().
                 from(dup ? indArray.dup() : indArray)
-                .op(clazz)
+                .op(factory)
                 .extraArgs(extraArgs)
                 .build();
         ops.exec();

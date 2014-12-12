@@ -2,6 +2,8 @@ package org.nd4j.linalg.util;
 
 /**
  * Reflect utilities
+ *
+ * @author Adam Gibson
  */
 public final class ReflectionUtil {
 

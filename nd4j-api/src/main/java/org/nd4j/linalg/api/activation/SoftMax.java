@@ -6,6 +6,8 @@ import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.ArrayOps;
 import org.nd4j.linalg.ops.ElementWiseOp;
+import org.nd4j.linalg.ops.factory.ElementWiseOpFactories;
+import org.nd4j.linalg.ops.factory.ElementWiseOpFactory;
 
 /**
  * Softmax function 
@@ -55,7 +57,7 @@ public class SoftMax extends BaseActivationFunction {
                 INDArray diff = input.subColumnVector(max);
                 new ArrayOps()
                         .from(diff)
-                        .op(org.nd4j.linalg.ops.transforms.Exp.class)
+                        .op(ElementWiseOpFactories.exp())
                         .build().exec();
                 diff.diviColumnVector(diff.sum(1).transpose());
                 return diff;
@@ -67,7 +69,7 @@ public class SoftMax extends BaseActivationFunction {
                 INDArray diff = input.subColumnVector(max);
                 new ArrayOps()
                         .from(diff)
-                        .op(org.nd4j.linalg.ops.transforms.Exp.class)
+                        .op(ElementWiseOpFactories.exp())
                         .build().exec();
                 diff.diviColumnVector(diff.sum(1).transpose());
                 return diff;
@@ -84,7 +86,7 @@ public class SoftMax extends BaseActivationFunction {
                 INDArray diff =  input.subRowVector(max);
                 new ArrayOps()
                         .from(diff)
-                        .op(org.nd4j.linalg.ops.transforms.Exp.class)
+                        .op(ElementWiseOpFactories.exp())
                         .build().exec();
                 diff.diviRowVector(diff.sum(0));
                 return diff;
@@ -94,7 +96,7 @@ public class SoftMax extends BaseActivationFunction {
                 INDArray diff =  input.subRowVector(max);
                 new ArrayOps()
                         .from(diff)
-                        .op(org.nd4j.linalg.ops.transforms.Exp.class)
+                        .op(ElementWiseOpFactories.exp())
                         .build().exec();
                 diff.diviRowVector(diff.sum(0));
                 return diff;
@@ -123,7 +125,7 @@ public class SoftMax extends BaseActivationFunction {
      * @return the class used for transformation
      */
     @Override
-    public Class<? extends ElementWiseOp> transformClazz() {
+    public ElementWiseOpFactory transformFactory() {
         return null;
     }
 
