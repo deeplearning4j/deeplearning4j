@@ -11,10 +11,10 @@ public class ElementWiseOperationExample {
 
     public static void main(String[] args) {
 
-        INDArray nd = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
-        INDArray nd2 = Nd4j.create(new float[]{5,6},new int[]{2,1}); //vector as column
-        INDArray nd3 = Nd4j.create(new float[]{5,6},new int[]{2}); //vector as row
-        INDArray nd4 = Nd4j.create(new float[]{5,6,7,8},new int[]{2,2});
+        INDArray nd = Nd4j.create(new double[]{1,2,3,4},new int[]{2,2});
+        INDArray nd2 = Nd4j.create(new double[]{5,6},new int[]{2,1}); //vector as column
+        INDArray nd3 = Nd4j.create(new double[]{5,6},new int[]{2}); //vector as row
+        INDArray nd4 = Nd4j.create(new double[]{5,6,7,8},new int[]{2,2});
 
         // Show initial matrices
 
