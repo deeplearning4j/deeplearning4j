@@ -8,6 +8,7 @@ import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.glove.Glove;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
@@ -365,7 +366,42 @@ public class Word2VecLoader {
         return new Pair<>((WeightLookupTable) l,cache);
     }
 
+    /**
+     * Write the tsne format
+     * @param vec the word vectors to use for labeling
+     * @param tsne the tsne array to write
+     * @param csv the file to use
+     * @throws Exception
+     */
+    public static void writeTsneFormat(Glove vec,INDArray tsne,File csv) throws Exception {
+        BufferedWriter write = new BufferedWriter(new FileWriter(csv));
+        int words = 0;
+        InMemoryLookupCache l = (InMemoryLookupCache) vec.getCache();
+        for(String word : vec.getCache().words()) {
+            if(word == null)
+                continue;
+            StringBuffer sb = new StringBuffer();
+            INDArray wordVector = tsne.getRow(l.wordFor(word).getIndex());
+            for(int j = 0; j < wordVector.length(); j++) {
+                sb.append(wordVector.getDouble(j));
+                if(j < wordVector.length() - 1)
+                    sb.append(",");
+            }
+            sb.append(",");
+            sb.append(word);
+            sb.append(" ");
 
+            sb.append("\n");
+            write.write(sb.toString());
+
+        }
+
+        System.out.println("Wrote " + words + " with size of " + vec.getLookupTable().getVectorLength());
+        write.flush();
+        write.close();
+
+
+    }
     /**
      * Write the tsne format
      * @param vec the word vectors to use for labeling

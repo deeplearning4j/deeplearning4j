@@ -11,6 +11,7 @@ import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.glove.actor.CoOccurrenceActor;
 import org.deeplearning4j.models.glove.actor.SentenceWork;
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.actor.SentenceMessage;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
@@ -26,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -38,9 +40,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Adam Gibson
  */
-public class CoOccurrences {
-    private TokenizerFactory tokenizerFactory;
-    private SentenceIterator sentenceIterator;
+public class CoOccurrences implements Serializable {
+    private transient  TokenizerFactory tokenizerFactory;
+    private transient SentenceIterator sentenceIterator;
     private int windowSize = 15;
     protected transient VocabCache cache;
     protected InvertedIndex index;
@@ -50,6 +52,7 @@ public class CoOccurrences {
     private CounterMap<String,String> coOCurreneCounts = Util.parallelCounterMap();
     private static Logger log = LoggerFactory.getLogger(CoOccurrences.class);
     private List<Pair<String,String>> coOccurrences;
+
 
     private CoOccurrences() {}
 
@@ -90,6 +93,12 @@ public class CoOccurrences {
         }
 
 
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         while(processed.get() < queued.get()) {
             try {
                 Thread.sleep(10000);
@@ -105,6 +114,64 @@ public class CoOccurrences {
         log.info("Done processing co occurrences: ended with " + numCoOccurrences());
 
 
+    }
+
+
+
+    public class CoOccurrenceBatchIterator implements Iterator<List<Pair<VocabWord,VocabWord>>> {
+        private Iterator<Pair<VocabWord,VocabWord>> iter = coOccurrenceIteratorVocab();
+        private int batchSize = 100;
+
+        public CoOccurrenceBatchIterator(int batchSize) {
+            this.batchSize = batchSize;
+        }
+
+        public CoOccurrenceBatchIterator() {
+            this(100);
+        }
+
+
+        @Override
+        public boolean hasNext() {
+            return iter.hasNext();
+        }
+
+        @Override
+        public List<Pair<VocabWord, VocabWord>> next() {
+            List<Pair<VocabWord,VocabWord>> list = new ArrayList<>(batchSize);
+            for(int i = 0; i < batchSize; i++) {
+                if(!iter.hasNext())
+                    break;
+                Pair<VocabWord,VocabWord> next = iter.next();
+                list.add(next);
+            }
+
+            return list;
+        }
+    }
+
+
+    public class CoOccurrenceIterator implements Iterator<Pair<VocabWord,VocabWord>> {
+        private Iterator<Pair<String,String>> iter = coOccurrenceIterator();
+
+        @Override
+        public boolean hasNext() {
+            return iter.hasNext();
+        }
+
+        @Override
+        public Pair<VocabWord, VocabWord> next() {
+            Pair<String,String> next = iter.next();
+            Pair<VocabWord,VocabWord> ret = new Pair<>(cache.wordFor(next.getFirst()),cache.wordFor(next.getSecond()));
+            return ret;
+        }
+    }
+
+    public Iterator<List<Pair<VocabWord,VocabWord>>> coOccurrenceIteratorVocabBatch(int batchSize) {
+        return new CoOccurrenceBatchIterator(batchSize);
+    }
+    public Iterator<Pair<VocabWord,VocabWord>> coOccurrenceIteratorVocab() {
+        return new CoOccurrenceIterator();
     }
 
     /**
@@ -184,7 +251,7 @@ public class CoOccurrences {
 
 
     public double count(String w1,String w2) {
-        return coOCurreneCounts.getCount(w1,w2);
+        return coOCurreneCounts.getCount(w1, w2);
     }
 
 

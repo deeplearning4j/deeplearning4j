@@ -77,19 +77,7 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
      */
     @Override
     public void resetWeights() {
-        if(rng == null)
-            this.rng = new MersenneTwister(seed);
-
-        //note the +2 which is the unk vocab word and the bias
-        syn0  = Nd4j.rand(new int[]{vocab.numWords() + 1, vectorLength}, rng).subi(0.5).divi((double) vectorLength);
-        weightAdaGrad = new AdaGrad(new int[]{vocab.numWords() + 1, vectorLength});
-        weightAdaGrad.setMasterStepSize(lr.get());
-        INDArray randUnk = Nd4j.rand(1,vectorLength,rng).subi(0.5).divi(vectorLength);
-        putVector(Word2Vec.UNK,randUnk);
-        //right after unknown
-        bias = Nd4j.create(syn0.rows());
-        biasAdaGrad = new AdaGrad(bias.shape());
-        biasAdaGrad.setMasterStepSize(lr.get());
+        resetWeights(true);
 
     }
 
@@ -175,9 +163,9 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
      * @throws IOException
      */
     public static GloveWeightLookupTable loadRawArray(InputStream is,VocabCache vocab,int vectorLength) throws IOException {
-       GloveWeightLookupTable ret = new GloveWeightLookupTable.Builder()
-               .cache(vocab).vectorLength(vectorLength)
-               .build();
+        GloveWeightLookupTable ret = new GloveWeightLookupTable.Builder()
+                .cache(vocab).vectorLength(vectorLength)
+                .build();
         INDArray syn0 = Nd4j.readTxt(is," ");
         ret.setSyn0(syn0);
         ret.resetWeights(false);

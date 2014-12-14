@@ -43,9 +43,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Glove implements Serializable {
 
     private VocabCache cache;
-    private SentenceIterator sentenceIterator;
-    private TextVectorizer textVectorizer;
-    private TokenizerFactory tokenizerFactory;
+    private transient SentenceIterator sentenceIterator;
+    private transient TextVectorizer textVectorizer;
+    private transient TokenizerFactory tokenizerFactory;
     private GloveWeightLookupTable lookupTable;
     private int layerSize = 100;
     private double learningRate = 0.05;
@@ -62,9 +62,9 @@ public class Glove implements Serializable {
     private int iterations = 5;
     private static Logger log = LoggerFactory.getLogger(Glove.class);
     private boolean symmetric = true;
-    private RandomGenerator gen;
+    private transient RandomGenerator gen;
     private boolean shuffle = true;
-    private Random shuffleRandom;
+    private transient Random shuffleRandom;
     private int numWorkers = Runtime.getRuntime().availableProcessors();
 
     private Glove(){}
@@ -155,6 +155,7 @@ public class Glove implements Serializable {
         if(shuffle)
             Collections.shuffle(pairList,shuffleRandom);
         List<List<Pair<String,String>>> miniBatches = Lists.partition(pairList,batchSize);
+        int count = 0;
         for(List<Pair<String,String>> batch : miniBatches) {
             List<Pair<VocabWord,VocabWord>> send = new ArrayList<>();
             for (Pair<String, String> next : batch) {
@@ -167,6 +168,8 @@ public class Glove implements Serializable {
             }
 
             jobQueue.add(new Pair<>(i,send));
+            log.info("Queued batch " + count + " of " + miniBatches.size());
+            count++;
         }
 
 
@@ -191,6 +194,8 @@ public class Glove implements Serializable {
                         }
                         errorPerIteration.incrementCount(work.getFirst(),lookupTable.iterateSample(w1,w2,weight));
                         countUp.incrementAndGet();
+                        if(countUp.get() % 10000 == 0)
+                            log.info("Processed " + countUp.get() + " co occurrences");
                         processed.decrementAndGet();
                     }
 
