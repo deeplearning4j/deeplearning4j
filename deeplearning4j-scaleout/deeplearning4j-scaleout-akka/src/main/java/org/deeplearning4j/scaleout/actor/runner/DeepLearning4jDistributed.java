@@ -392,14 +392,6 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
      */
     public void train() {
         log.info("Publishing to results for training");
-        //wait for cluster to be up
-        try {
-            log.info("Waiting for cluster to go up...");
-            Thread.sleep(30000);
-            log.info("Done waiting");
-        } catch (InterruptedException e1) {
-            Thread.currentThread().interrupt();
-        }
 
 
         log.info("Started pipeline");

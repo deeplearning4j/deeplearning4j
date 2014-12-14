@@ -5,6 +5,8 @@ import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.util.CasPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Resource holder for uima
@@ -15,8 +17,9 @@ public class UimaResource {
 
 	private AnalysisEngine analysisEngine;
 	private CasPool casPool;
-	
-	public UimaResource(AnalysisEngine analysisEngine) throws ResourceInitializationException {
+    private static Logger log = LoggerFactory.getLogger(UimaResource.class);
+
+    public UimaResource(AnalysisEngine analysisEngine) throws ResourceInitializationException {
 		this.analysisEngine = analysisEngine;
 		this.casPool = new CasPool(Runtime.getRuntime().availableProcessors() * 10,analysisEngine);
 
@@ -52,19 +55,19 @@ public class UimaResource {
 	/**
 	 * Use the given analysis engine and process the given text
 	 * You must release the return cas yourself
-	 * @param text the text to rpocess
+	 * @param text the text to process
 	 * @return the processed cas
 	 */
 	public  CAS process(String text) {
 		CAS cas = retrieve();
-		
+		if(cas == null)
+            return null;
+
 		cas.setDocumentText(text);
 		try {
 			analysisEngine.process(cas);
 		} catch (AnalysisEngineProcessException e) {
-			if(text != null && !text.isEmpty())
-                return process(text);
-            throw new RuntimeException(e);
+			log.warn("Unable to process text " + text,e);
 		}
 		
 		return cas;
