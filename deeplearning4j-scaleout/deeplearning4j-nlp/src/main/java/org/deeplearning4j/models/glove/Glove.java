@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.glove;
 
+import akka.actor.ActorSystem;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -150,27 +151,29 @@ public class Glove implements Serializable {
     }
 
 
-    public void doIteration(int i,List<Pair<String,String>> pairList, final Counter<Integer> errorPerIteration,final AtomicInteger processed,final AtomicInteger countUp) {
+    public void doIteration(final int i,List<Pair<String,String>> pairList, final Counter<Integer> errorPerIteration,final AtomicInteger processed,final AtomicInteger countUp) {
         log.info("Iteration " + i);
         if(shuffle)
             Collections.shuffle(pairList,shuffleRandom);
         List<List<Pair<String,String>>> miniBatches = Lists.partition(pairList,batchSize);
-        int count = 0;
-        for(List<Pair<String,String>> batch : miniBatches) {
-            List<Pair<VocabWord,VocabWord>> send = new ArrayList<>();
-            for (Pair<String, String> next : batch) {
-                String w1 = next.getFirst();
-                String w2 = next.getSecond();
-                VocabWord vocabWord = cache.wordFor(w1);
-                VocabWord vocabWord1 = cache.wordFor(w2);
-                send.add(new Pair<>(vocabWord, vocabWord1));
+        ActorSystem actor = ActorSystem.create();
+        Parallelization.iterateInParallel(miniBatches,new Parallelization.RunnableWithParams<List<Pair<String, String>>>() {
+            @Override
+            public void run(List<Pair<String, String>> currentItem, Object[] args) {
+                List<Pair<VocabWord,VocabWord>> send = new ArrayList<>();
+                for (Pair<String, String> next : currentItem) {
+                    String w1 = next.getFirst();
+                    String w2 = next.getSecond();
+                    VocabWord vocabWord = cache.wordFor(w1);
+                    VocabWord vocabWord1 = cache.wordFor(w2);
+                    send.add(new Pair<>(vocabWord, vocabWord1));
 
+                }
+
+                jobQueue.add(new Pair<>(i, send));
             }
+        },actor);
 
-            jobQueue.add(new Pair<>(i,send));
-            log.info("Queued batch " + count + " of " + miniBatches.size());
-            count++;
-        }
 
 
         Parallelization.runInParallel(numWorkers,new Runnable() {
