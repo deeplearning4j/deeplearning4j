@@ -1,6 +1,18 @@
 Deep Learning for Java
 =======================
 
+Reporting an Issue/Bugs
+========================================
+If you post to either the mailing list or the github, please use this format:
+
+Version: Version of the software you're running
+Type of Neural Net: RBM, DBN, RNTN, Word2Vec
+Configuration: Your neural net configuration. This can be code or a reasonable list.
+Data: Description of the data you're using.
+Number of examples: Number of examples used
+Description of problem: Your specific problem goes here.
+
+
 Deep learning is a form of state-of-the-art machine learning that can learn to recognize patterns in data unsupervised.
 
 Unsupervised pattern recognition saves time during data analysis, trend discovery and labeling of certain types of data, such as image, text, sound and time series.
