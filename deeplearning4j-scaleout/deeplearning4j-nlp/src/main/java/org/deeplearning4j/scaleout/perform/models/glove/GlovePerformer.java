@@ -1,6 +1,7 @@
 package org.deeplearning4j.scaleout.perform.models.glove;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.glove.CoOccurrences;
 import org.deeplearning4j.models.glove.GloveWeightLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -10,6 +11,8 @@ import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.perform.WorkerPerformer;
 import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
+import org.deeplearning4j.scaleout.perform.models.word2vec.Word2VecJobAggregator;
+import org.deeplearning4j.scaleout.perform.models.word2vec.Word2VecPerformerFactory;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -101,7 +104,9 @@ public class GlovePerformer implements WorkerPerformer {
 
 
 
-
+        coOccurrences = stateTracker.get(GloveJobIterator.CO_OCCURRENCES);
+        if(coOccurrences == null)
+            throw new IllegalStateException("Please specify co occurrences");
     }
 
 
@@ -120,8 +125,11 @@ public class GlovePerformer implements WorkerPerformer {
      * @param conf the configuration
      */
     public static void configure(GloveWeightLookupTable table,InvertedIndex index,Configuration conf) {
+        if(table.getSyn0() == null)
+            throw new IllegalStateException("Unable to configure glove: missing look up table size. Please call table.resetWeights() first");
         conf.setInt(VECTOR_LENGTH, table.getVectorLength());
         conf.setFloat(ALPHA,(float) table.getLr().get());
+        conf.setStrings(LOOKUPTABLE_SIZE,String.valueOf(table.getSyn0().rows()),String.valueOf(table.getSyn0().columns()));
         conf.setInt(NUM_WORDS, index.totalWords());
         conf.set(JobAggregator.AGGREGATOR, GloveJobAggregator.class.getName());
         conf.set(WorkerPerformerFactory.WORKER_PERFORMER,GlovePerformerFactory.class.getName());
@@ -197,6 +205,8 @@ public class GlovePerformer implements WorkerPerformer {
 
 
     }
+
+
 
 
 

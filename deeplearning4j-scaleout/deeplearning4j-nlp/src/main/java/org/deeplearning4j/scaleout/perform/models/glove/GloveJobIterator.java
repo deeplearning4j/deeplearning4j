@@ -1,6 +1,7 @@
 package org.deeplearning4j.scaleout.perform.models.glove;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.glove.CoOccurrences;
 import org.deeplearning4j.models.glove.GloveWeightLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -26,15 +27,17 @@ public class GloveJobIterator implements JobIterator {
     private GloveWeightLookupTable table;
     private VocabCache cache;
     private int batchSize = 100;
+    public final static String CO_OCCURRENCES = "cooccurrences";
 
 
 
-    public GloveJobIterator(Iterator<List<Pair<VocabWord,VocabWord>>> sentenceIterator, GloveWeightLookupTable table, VocabCache cache, StateTracker stateTracker, int batchSize) {
-        this.sentenceIterator = sentenceIterator;
+    public GloveJobIterator(CoOccurrences coc, GloveWeightLookupTable table, VocabCache cache, StateTracker stateTracker, int batchSize) {
+        this.sentenceIterator = coc.coOccurrenceIteratorVocabBatch(batchSize);
         this.table = table;
         this.cache = cache;
         addListener(stateTracker);
         this.batchSize = batchSize;
+        stateTracker.define(CO_OCCURRENCES,coc);
 
     }
 
