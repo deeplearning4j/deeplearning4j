@@ -72,7 +72,12 @@ public class SimpleJCublas {
         JCublas.setLogLevel(LogLevel.LOG_DEBUG);
 
         JCublas.setExceptionsEnabled(true);
-        JCublas.cublasInit();
+        try {
+            JCublas.cublasInit();
+
+        }catch(Exception e) {
+            throw new RuntimeException("Error was " + JCublas.cublasGetError());
+        }
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 JCublas.cublasShutdown();

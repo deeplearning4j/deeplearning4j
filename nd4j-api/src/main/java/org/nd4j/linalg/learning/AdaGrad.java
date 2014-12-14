@@ -6,6 +6,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.pow;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.Shape;
 
 import java.io.Serializable;
 
@@ -108,13 +109,28 @@ public class AdaGrad implements Serializable {
      * @return
      */
     public AdaGrad createSubset(int index) {
-        AdaGrad a = new AdaGrad(1,historicalGradient.columns());
-        //grab only the needed elements
-        INDArray slice = historicalGradient.slice(index).dup();
-        a.historicalGradient = slice;
-        a.setMasterStepSize(masterStepSize);
-        a.setDecayLr(decayLr);
-        return a;
+        if(historicalGradient == null)
+            this.historicalGradient = Nd4j.ones(shape);
+
+        if(Shape.isMatrix(shape)) {
+            AdaGrad a = new AdaGrad(1,historicalGradient.columns());
+            //grab only the needed elements
+            INDArray slice = historicalGradient.slice(index).dup();
+            a.historicalGradient = slice;
+            a.setMasterStepSize(masterStepSize);
+            a.setDecayLr(decayLr);
+            return a;
+        }
+        else {
+            AdaGrad a = new AdaGrad(1,1);
+            //grab only the needed elements
+            INDArray slice = Nd4j.scalar(historicalGradient.getDouble(index));
+            a.historicalGradient = slice;
+            a.setMasterStepSize(masterStepSize);
+            a.setDecayLr(decayLr);
+            return a;
+        }
+
     }
 
     /**
@@ -134,7 +150,12 @@ public class AdaGrad implements Serializable {
             historicalInitialized = true;
         }
 
-        INDArray sqrtHistory = !historicalInitialized ? sqrt(historicalGradient.slice(slice)) : historicalGradient;
+        INDArray sqrtHistory = null;
+        if(historicalGradient.isVector())
+            sqrtHistory = sqrt(historicalGradient);
+
+        else
+            sqrtHistory = !historicalInitialized ? sqrt(historicalGradient.slice(slice)) : historicalGradient;
         INDArray learningRates = sqrtHistory.rdivi(masterStepSize);
         gradient.muli(learningRates);
 

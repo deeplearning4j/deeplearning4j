@@ -2825,7 +2825,7 @@ public abstract class BaseNDArray  implements INDArray {
         if (shape.length == 0)
             throw new IllegalArgumentException("Can't slice a 0-d NDArray");
 
-            //slice of a vector is a scalar
+        //slice of a vector is a scalar
         else if (shape.length == 1) {
             if(size(0) == 1)
                 return Nd4j.create(data, ArrayUtil.empty(), ArrayUtil.empty(), offset + slice);
