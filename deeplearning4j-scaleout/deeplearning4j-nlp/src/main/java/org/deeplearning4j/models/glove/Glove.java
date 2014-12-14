@@ -176,6 +176,8 @@ public class Glove implements Serializable {
 
 
 
+        actor.shutdown();
+
         Parallelization.runInParallel(numWorkers,new Runnable() {
             @Override
             public void run() {
