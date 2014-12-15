@@ -26,7 +26,7 @@ DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/d
 
 ### ND4J: Numpy for the JVM
 
-[ND4J is the Java scientific computing engine](http://nd4j.org/) powering our matrix manipulations.The getting started page is [here](http://nd4j.org/getstarted.html), and you need to install it to run DL4J.
+[ND4J is the Java scientific computing engine](http://nd4j.org/) powering our matrix manipulations.The ND4J getting started page is [here](http://nd4j.org/getstarted.html), and you need to install it to run DL4J. (It's also fun in and of itself...)
 
 ### Maven
 
