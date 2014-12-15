@@ -19,7 +19,7 @@ Contents
 
 ###<a name="intro">Introduction to Word2Vec</a>
 
-Deeplearning4j implements a distributed form of Word2vec for Java, which works with GPUs. Word2vec was originally conceived by a research team at Google led by Tomas Mikolov.
+[Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java, which works with GPUs. Word2vec was originally conceived by a research team at Google led by Tomas Mikolov. 
 
 Word2vec is a neural net that processes text before that text is handled by deep-learning algorithms. While it does not implement deep learning, Word2vec turns text into a numerical form that deep-learning nets can understand -- the vector. 
 
