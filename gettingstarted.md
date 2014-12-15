@@ -28,6 +28,15 @@ DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/d
 
 [ND4J is the Java scientific computing engine](http://nd4j.org/) powering our matrix manipulations.The ND4J getting started page is [here](http://nd4j.org/getstarted.html), and you need to install it to run DL4J. (It's also fun in and of itself...)
 
+### Github
+
+* Download Github for [Macs](https://mac.github.com/), [Windows](https://windows.github.com/), etc. Then enter this command
+
+      git clone https://github.com/SkymindIO/deeplearning4j
+      //then cd into the deeplearning4j directory
+      //switch to snapshot
+      git checkout 0.0.3.3
+
 ### Maven
 
 You can install both ND4J and Deeplearning4j separately via [Maven](https://maven.apache.org/download.cgi), a build automation tool used for Java projects. Using Maven to install other software requires you to: 
@@ -35,7 +44,7 @@ You can install both ND4J and Deeplearning4j separately via [Maven](https://mave
 * Create your root directory; e.g. deeplearning4j or nd4j. 
 * Create pom.xml files within that directory and each major subdirectory. You'll find the pom files you need to add in [DL4J's Github repo](https://github.com/SkymindIO/deeplearning4j/).
 * Add optional dependencies and other information to that POM file. See the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for dependencies dealing with NLP, scaling out with Akka, and snapshots. 
-* Choose your IDE -- [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html), [IntelliJ](https://www.jetbrains.com/idea/help/importing-project-from-maven-model.html) or [Netbeans](http://wiki.netbeans.org/MavenBestPractices) -- and import the project via Maven.
+* Choose an IDE to download -- [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html), [IntelliJ](https://www.jetbrains.com/idea/help/importing-project-from-maven-model.html) or [Netbeans](http://wiki.netbeans.org/MavenBestPractices) -- and import the project via Maven.
 
 Alternatively, you can install DL4J using our [downloads](http://deeplearning4j.org/download.html). If you prefer the downloads over Maven, then you have to manually import the jar files into [Eclipse](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse), [Intellij](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project) or [Netbeans](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/).
 
