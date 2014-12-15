@@ -5,7 +5,7 @@ layout: default
 
 #Video: Run DL4J Examples in Minutes
 
-<iframe width="840" height="610" src="//www.youtube.com/embed/2lwsHKUrXMk" frameborder="0" allowfullscreen></iframe>
+<iframe width="750" height="560" src="//www.youtube.com/embed/2lwsHKUrXMk" frameborder="0" allowfullscreen></iframe>
 
 #Quickstart
 
