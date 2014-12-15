@@ -30,13 +30,12 @@ DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/d
 
 ### Maven
 
-You can install both ND4J and Deeplearning4j separately via [Maven](https://maven.apache.org/download.cgi), a build automation tool used for Java projects. Maven installations require you to: 
+You can install both ND4J and Deeplearning4j separately via [Maven](https://maven.apache.org/download.cgi), a build automation tool used for Java projects. Using Maven to install other software requires you to: 
 
-* Create your root directory; e.g. deeplearning4j or nd4j.
-* Create a pom.xml file within that directory.
-* Add dependencies and other information to that POM file. See the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for dependencies. 
-* Choose your IDE -- [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html), [IntelliJ](https://www.jetbrains.com/idea/help/importing-project-from-maven-model.html) or [Netbeans](http://wiki.netbeans.org/MavenBestPractices) -- and import the project via Maven. (Alternatively, you can run *mvn install* within the root.)
-* Note that by using Maven you never run a command similar to *git clone* (everything is called from the POM), and you never have to deal with source code, only byte code and jar files. 
+* Create your root directory; e.g. deeplearning4j or nd4j. 
+* Create pom.xml files within that directory and each major subdirectory. You'll find the pom files you need to add in [DL4J's Github repo](https://github.com/SkymindIO/deeplearning4j/).
+* Add optional dependencies and other information to that POM file. See the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for dependencies dealing with NLP, scaling out with Akka, and snapshots. 
+* Choose your IDE -- [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html), [IntelliJ](https://www.jetbrains.com/idea/help/importing-project-from-maven-model.html) or [Netbeans](http://wiki.netbeans.org/MavenBestPractices) -- and import the project via Maven.
 
 Alternatively, you can install DL4J using our [downloads](http://deeplearning4j.org/download.html). If you prefer the downloads over Maven, then you have to manually import the jar files into [Eclipse](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse), [Intellij](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project) or [Netbeans](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/).
 
@@ -72,15 +71,17 @@ If you're using IntelliJ as your IDE, this should work already.
 
 ### <a name="windows">Windows</a>
 
+* The [Maven download page](http://maven.apache.org/download.cgi) has extensive instructions on how to download both Maven and Java under the "Windows section." Proper configuration entails [setting certain environment variables](http://www.computerhope.com/issues/ch000549.htm). 
+
 * Install [Anaconda](http://docs.continuum.io/anaconda/install.html#windows-install). If your system doesn't like the default 64-bit install, try the 32-bit offered on the same download page. (Deeplearning4j depends on Anaconda to use the graphics generator matplotlib.) 
 
-* Install [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/). Lapack will ask if you have Intel compilers. You do not.
+* Install [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/). (Lapack will ask if you have Intel compilers. You do not.)
 
-* Instead, you will need to install [MinGW 32 bits](http://www.mingw.org/) even if you have a 64-bit computer (the download button is on the upper right), and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). 
+* To do so, you will need to install [MinGW 32 bits](http://www.mingw.org/) even if you have a 64-bit computer (the download button is on the upper right), and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). 
 
 * Lapack offers the alternative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). 
 
-* *For developers of DL4J only:* Install [Github](https://windows.github.com/). Click on the Git Shell alias. Within that shell, enter the commands below to git clone the code repositories of ND4J and Deeplearning4j. 
+* *For DL4J developers:* Install [Github](https://windows.github.com/). Click on the Git Shell alias. Within that shell, enter the commands below to **git clone** the code repositories of ND4J and Deeplearning4j. 
 
       git clone https://github.com/SkymindIO/nd4j
       git clone https://github.com/SkymindIO/deeplearning4j
