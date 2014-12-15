@@ -8,6 +8,8 @@ import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.glove.Glove;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
@@ -105,8 +107,8 @@ public class WordVectorSerializer {
             lookupTable.resetWeights();
 
             for(int i = 0; i < vectorPaths.size(); i++) {
-               float[] read = readVec(vectorPaths.get(i),size);
-               lookupTable.putVector(cache.wordAtIndex(i),Nd4j.create(read));
+                float[] read = readVec(vectorPaths.get(i),size);
+                lookupTable.putVector(cache.wordAtIndex(i),Nd4j.create(read));
                 vectorPaths.get(i).delete();
             }
 
@@ -330,6 +332,19 @@ public class WordVectorSerializer {
     }
 
 
+    /**
+     * Loads an in memory cache from the given path (sets syn0 and the vocab)
+     * @param path the path of the file to load
+     * @return the
+     */
+    public static WordVectors loadTxtVectors(File path) throws FileNotFoundException {
+        Pair<WeightLookupTable,VocabCache> pair = loadTxt(path);
+        WordVectorsImpl vectors = new WordVectorsImpl();
+        vectors.setLookupTable(pair.getFirst());
+        vectors.setVocab(pair.getSecond());
+        vectors.setLayerSize(pair.getFirst().layerSize());
+        return vectors;
+    }
     /**
      * Loads an in memory cache from the given path (sets syn0 and the vocab)
      * @param path the path of the file to load
