@@ -53,7 +53,7 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 	private DataSet fromCache() {
 		INDArray outcomes = null;
 		INDArray input = null;
-		input =  Nd4j.create(batch, vec.getLayerSize() * vec.getWindow());
+		input =  Nd4j.create(batch, vec.lookupTable().layerSize() * vec.getWindow());
 		outcomes =Nd4j.create(batch, labels.size());
 		for(int i = 0; i < batch; i++) {
 			input.putRow(i, Nd4j.create(WindowConverter.asExample(cache.get(i), vec)));
@@ -86,7 +86,7 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 		              continue;
 				
 				if(windows.size() < batch) {
-					input = Nd4j.create(windows.size(),vec.getLayerSize() * vec.getWindow());
+					input = Nd4j.create(windows.size(),vec.lookupTable().layerSize() * vec.getWindow());
 					outcomes = Nd4j.create(batch,labels.size());
 					for(int i = 0; i < windows.size(); i++) {
 						input.putRow(i,Nd4j.create(WindowConverter.asExample(windows.get(i), vec)));
@@ -101,7 +101,7 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 
 				}
 				else {
-					input = Nd4j.create(batch,vec.getLayerSize() * vec.getWindow());
+					input = Nd4j.create(batch,vec.lookupTable().layerSize() * vec.getWindow());
 					outcomes = Nd4j.create(batch,labels.size());
 					for(int i = 0; i < batch; i++) {
 						input.putRow(i,Nd4j.create(WindowConverter.asExample(windows.get(i), vec)));
@@ -141,7 +141,7 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 
 	@Override
 	public int inputColumns() {
-		return vec.getLayerSize() * vec.getWindow();
+		return vec.lookupTable().layerSize() * vec.getWindow();
 	}
 
 	@Override

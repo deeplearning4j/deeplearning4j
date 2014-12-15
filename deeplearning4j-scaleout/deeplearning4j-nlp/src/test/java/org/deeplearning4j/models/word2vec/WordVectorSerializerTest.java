@@ -28,14 +28,14 @@ public class WordVectorSerializerTest {
     @Test
     public void testLoaderText() throws IOException {
         Word2Vec vec = WordVectorSerializer.loadGoogleModel(textFile.getAbsolutePath(), false);
-        assertEquals(5,vec.getCache().numWords());
-        assertTrue(vec.getCache().numWords() > 0);
+        assertEquals(5,vec.vocab().numWords());
+        assertTrue(vec.vocab().numWords() > 0);
     }
 
     @Test
     public void testLoaderBinary() throws  IOException {
         Word2Vec vec = WordVectorSerializer.loadGoogleModel(binaryFile.getAbsolutePath(), true);
-        assertEquals(5,vec.getCache().numWords());
+        assertEquals(5,vec.vocab().numWords());
 
     }
 

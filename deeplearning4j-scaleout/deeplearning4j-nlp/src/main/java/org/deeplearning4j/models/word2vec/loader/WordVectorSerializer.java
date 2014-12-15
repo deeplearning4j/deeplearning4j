@@ -110,7 +110,7 @@ public class WordVectorSerializer {
                 vectorPaths.get(i).delete();
             }
 
-            ret.setCache(cache);
+            ret.setVocab(cache);
             ret.setLookupTable(lookupTable);
             ret.setLayerSize(size);
             rootDir.delete();
@@ -163,7 +163,7 @@ public class WordVectorSerializer {
             }
 
             Word2Vec ret = new Word2Vec();
-            ret.setCache(cache);
+            ret.setVocab(cache);
             ret.setLookupTable(lookupTable);
             ret.setLayerSize(layerSize);
 
@@ -304,7 +304,7 @@ public class WordVectorSerializer {
     public static void writeWordVectors(Word2Vec vec,String path) throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path),false));
         int words = 0;
-        for(String word : vec.getCache().words()) {
+        for(String word : vec.vocab().words()) {
             if(word == null)
                 continue;
             StringBuffer sb = new StringBuffer();
@@ -322,7 +322,7 @@ public class WordVectorSerializer {
         }
 
 
-        log.info("Wrote " + words + " with size of " + vec.getLayerSize());
+        log.info("Wrote " + words + " with size of " + vec.lookupTable().layerSize());
         write.flush();
         write.close();
 
@@ -379,8 +379,8 @@ public class WordVectorSerializer {
     public static void writeTsneFormat(Glove vec,INDArray tsne,File csv) throws Exception {
         BufferedWriter write = new BufferedWriter(new FileWriter(csv));
         int words = 0;
-        InMemoryLookupCache l = (InMemoryLookupCache) vec.getCache();
-        for(String word : vec.getCache().words()) {
+        InMemoryLookupCache l = (InMemoryLookupCache) vec.vocab();
+        for(String word : vec.vocab().words()) {
             if(word == null)
                 continue;
             StringBuffer sb = new StringBuffer();
@@ -415,8 +415,8 @@ public class WordVectorSerializer {
     public static void writeTsneFormat(Word2Vec vec,INDArray tsne,File csv) throws Exception {
         BufferedWriter write = new BufferedWriter(new FileWriter(csv));
         int words = 0;
-        InMemoryLookupCache l = (InMemoryLookupCache) vec.getCache();
-        for(String word : vec.getCache().words()) {
+        InMemoryLookupCache l = (InMemoryLookupCache) vec.vocab();
+        for(String word : vec.vocab().words()) {
             if(word == null)
                 continue;
             StringBuffer sb = new StringBuffer();
@@ -435,7 +435,7 @@ public class WordVectorSerializer {
 
         }
 
-        log.info("Wrote " + words + " with size of " + vec.getLayerSize());
+        log.info("Wrote " + words + " with size of " + vec.lookupTable().layerSize());
         write.flush();
         write.close();
 
