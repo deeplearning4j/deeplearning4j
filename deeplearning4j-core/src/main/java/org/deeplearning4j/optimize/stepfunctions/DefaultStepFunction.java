@@ -4,14 +4,15 @@ import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * Created by agibsonccc on 11/1/14.
+ * Default step function
+ * @author Adam Gibson
  */
 public class DefaultStepFunction implements StepFunction {
     @Override
     public void step(INDArray x, INDArray line, Object[] params) {
         double alam = (double) params[0];
         double oldAlam = (double) params[1];
-        x.addi(line.mul(alam - oldAlam));
+        x.addi(line.muli(alam - oldAlam));
     }
 
     @Override

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.api;
 
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 
@@ -44,6 +45,8 @@ public interface Classifier extends Model {
      * @return the number of possible labels for this classifier
      */
     int numLabels();
+
+    void fit(DataSetIterator iter);
 
     /**
      * Takes in a list of examples
