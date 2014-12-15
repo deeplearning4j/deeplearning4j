@@ -41,8 +41,8 @@ DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/d
 
 You can install both ND4J and Deeplearning4j separately via [Maven](https://maven.apache.org/download.cgi), a build automation tool used for Java projects. Using Maven to install other software requires you to: 
 
-* Create your root directory; e.g. deeplearning4j or nd4j. 
-* Create pom.xml files within that directory and each major subdirectory. You'll find the pom files you need to add in [DL4J's Github repo](https://github.com/SkymindIO/deeplearning4j/).
+* Go to your root directory; e.g. deeplearning4j or nd4j. 
+* Make sure the pom.xml files within that directory and each major subdirectory are properly configured. 
 * Add optional dependencies and other information to that POM file. See the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for dependencies dealing with NLP, scaling out with Akka, and snapshots. 
 * Choose an IDE to download -- [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html), [IntelliJ](https://www.jetbrains.com/idea/help/importing-project-from-maven-model.html) or [Netbeans](http://wiki.netbeans.org/MavenBestPractices) -- and import the project **deeplearning4j** via Maven.
 
