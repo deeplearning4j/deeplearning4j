@@ -16,15 +16,17 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Loads word 2 vec models
  * @author Adam Gibson
  */
-public class Word2VecLoader {
+public class WordVectorSerializer {
 
     private static final int MAX_SIZE = 50;
-
+    private static Logger log = LoggerFactory.getLogger(WordVectorSerializer.class);
 
 
 
@@ -320,7 +322,7 @@ public class Word2VecLoader {
         }
 
 
-        System.out.println("Wrote " + words + " with size of " + vec.getLayerSize());
+        log.info("Wrote " + words + " with size of " + vec.getLayerSize());
         write.flush();
         write.close();
 
@@ -335,10 +337,11 @@ public class Word2VecLoader {
      */
     public static Pair<WeightLookupTable,VocabCache> loadTxt(File path) throws FileNotFoundException {
         BufferedReader write = new BufferedReader(new FileReader(path));
-        InMemoryLookupTable l = (InMemoryLookupTable) new InMemoryLookupTable.Builder().vectorLength(100)
-                .useAdaGrad(false)
-                .build();
         VocabCache cache = new InMemoryLookupCache();
+
+        InMemoryLookupTable l = (InMemoryLookupTable) new InMemoryLookupTable.Builder().vectorLength(100)
+                .useAdaGrad(false).cache(cache)
+                .build();
 
         LineIterator iter = IOUtils.lineIterator(write);
         List<INDArray> arrays = new ArrayList<>();
@@ -396,7 +399,7 @@ public class Word2VecLoader {
 
         }
 
-        System.out.println("Wrote " + words + " with size of " + vec.getLookupTable().getVectorLength());
+        log.info("Wrote " + words + " with size of " + vec.getLookupTable().getVectorLength());
         write.flush();
         write.close();
 
@@ -432,7 +435,7 @@ public class Word2VecLoader {
 
         }
 
-        System.out.println("Wrote " + words + " with size of " + vec.getLayerSize());
+        log.info("Wrote " + words + " with size of " + vec.getLayerSize());
         write.flush();
         write.close();
 

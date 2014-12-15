@@ -301,6 +301,11 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
         return 0;
     }
 
+    @Override
+    public void pretrain(DataSetIterator iter) {
+
+    }
+
     /**
      * Returns the number of possible labels
      *
@@ -378,35 +383,6 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
 
 
 
-        /**
-         * Use gauss newton back prop - this is for hessian free
-         *
-         * @param useGaussNewtonVectorProductBackProp whether to use gauss newton vector backprop
-         * @return
-         */
-        @Override
-        public Builder useGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
-            super.useGaussNewtonVectorProductBackProp(useGaussNewtonVectorProductBackProp);
-            return this;
-        }
-
-        /**
-         * Use drop connect on activations or not
-         *
-         * @param useDropConnect use drop connect or not
-         * @return builder pattern
-         */
-        @Override
-        public Builder useDropConnection(boolean useDropConnect) {
-            super.useDropConnection(useDropConnect);
-            return this;
-        }
-
-
-
-
-
-
         @Override
         public Builder withVisibleBiasTransforms(Map<Integer, MatrixTransform> visibleBiasTransforms) {
             super.withVisibleBiasTransforms(visibleBiasTransforms);
@@ -419,28 +395,7 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
             return this;
         }
 
-        /**
-         * Forces use of number of epochs for training
-         * SGD style rather than conjugate gradient
-         *
-         * @return
-         */
-        @Override
-        public Builder forceIterations() {
-            super.forceIterations();
-            return this;
-        }
 
-        /**
-         * Disables back propagation
-         *
-         * @return
-         */
-        @Override
-        public Builder disableBackProp() {
-            super.disableBackProp();
-            return this;
-        }
 
         /**
          * Transform the weights at the given layer
@@ -602,9 +557,6 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
 
 
             e.setDefaultConfiguration(conf);
-            e.setUseGaussNewtonVectorProductBackProp(encoder.isUseGaussNewtonVectorProductBackProp());
-            e.setSampleFromHiddenActivations(encoder.isSampleFromHiddenActivations());
-            e.setForceNumEpochs(shouldForceEpochs);
 
             MultiLayerConfiguration confs = new MultiLayerConfiguration.Builder().build();
             for(int i = 0; i <  e.layers.length; i++)

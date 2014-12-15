@@ -4,6 +4,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 import java.io.Serializable;
 
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -377,6 +378,12 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     @Override
     public int numLabels() {
         return labels.columns();
+    }
+
+    @Override
+    public void fit(DataSetIterator iter) {
+        while(iter.hasNext())
+            fit(iter.next());
     }
 
     /**

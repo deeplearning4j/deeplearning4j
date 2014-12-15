@@ -70,7 +70,7 @@ public class DBN extends BaseMultiLayerNetwork {
      * usually gives very good results and is the default in quite a few situations.
      */
     public void pretrain(DataSetIterator iter) {
-        if(!pretrain)
+        if(!layerWiseConfigurations.isPretrain())
             return;
 
         INDArray layerInput;
@@ -87,7 +87,7 @@ public class DBN extends BaseMultiLayerNetwork {
                     }
                     else
                         setInput(input);
-                    if(forceNumIterations()) {
+                    if(layerWiseConfigurations.isForceNumIterations()) {
                         for(int iteration = 0; iteration < getNeuralNets()[i].conf().getNumIterations(); iteration++) {
                             log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
                             getNeuralNets()[i].iterate(next.getFeatureMatrix());
@@ -107,14 +107,14 @@ public class DBN extends BaseMultiLayerNetwork {
                     DataSet next = iter.next();
                     layerInput = next.getFeatureMatrix();
                     for(int j = 1; j <= i; j++)
-                        layerInput = activationFromPrevLayer(j,layerInput);
+                        layerInput = activationFromPrevLayer(j - 1,layerInput);
 
 
 
 
                     log.info("Training on layer " + (i + 1));
                     //override learning rate where present
-                    if(forceNumIterations()) {
+                    if(layerWiseConfigurations.isForceNumIterations()) {
                         for(int iteration = 0; iteration < getNeuralNets()[i].conf().getNumIterations(); iteration++) {
                             log.info("Error on epoch " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
                             getNeuralNets()[i].iterate(layerInput);
@@ -144,12 +144,9 @@ public class DBN extends BaseMultiLayerNetwork {
      */
     public void pretrain(INDArray input) {
 
-        if(!pretrain)
+        if(!layerWiseConfigurations.isPretrain())
             return;
 
-        if(isUseGaussNewtonVectorProductBackProp()) {
-            log.warn("WARNING; Gauss newton back vector back propagation is primarily used for hessian free which does not involve pretrain; just finetune. Use this at your own risk");
-        }
 
 
         /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
@@ -170,9 +167,8 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
             log.info("Training on layer " + (i + 1));
-            //override learning rate where present
-            double realLearningRate = layers[i].conf().getLr();
-            if(forceNumIterations()) {
+
+            if(layerWiseConfigurations.isForceNumIterations()) {
                 for(int iteration = 0; iteration < layers[i].conf().getNumIterations(); iteration++) {
                     log.info("Error on epoch " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
                     getNeuralNets()[i].iterate(layerInput);
@@ -225,22 +221,8 @@ public class DBN extends BaseMultiLayerNetwork {
             return this;
         }
 
-        public Builder useGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
-            super.useGaussNewtonVectorProductBackProp(useGaussNewtonVectorProductBackProp);
-            return this;
-        }
 
-        /**
-         * Use drop connect on activations or not
-         *
-         * @param useDropConnect use drop connect or not
-         * @return builder pattern
-         */
-        @Override
-        public  Builder useDropConnection(boolean useDropConnect) {
-            super.useDropConnection(useDropConnect);
-            return this;
-        }
+
 
 
         @Override
@@ -263,24 +245,6 @@ public class DBN extends BaseMultiLayerNetwork {
             return this;
         }
 
-        /**
-         * Forces use of number of epochs for training
-         * SGD style rather than conjugate gradient
-         * @return
-         */
-        public Builder forceIterations() {
-            shouldForceEpochs = true;
-            return this;
-        }
-
-        /**
-         * Disables back propagation
-         * @return
-         */
-        public Builder disableBackProp() {
-            backProp = false;
-            return this;
-        }
 
         /**
          * Transform the weights at the given layer
@@ -325,15 +289,6 @@ public class DBN extends BaseMultiLayerNetwork {
             return this;
         }
 
-        /**
-         * Whether to pretrain or not
-         * @param pretrain
-         * @return
-         */
-        public Builder pretrain(boolean pretrain) {
-            this.pretrain = pretrain;
-            return this;
-        }
 
 
         @Override

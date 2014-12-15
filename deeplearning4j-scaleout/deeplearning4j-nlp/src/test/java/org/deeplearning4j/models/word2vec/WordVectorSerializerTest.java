@@ -2,9 +2,8 @@ package org.deeplearning4j.models.word2vec;
 
 import static org.junit.Assert.*;
 
-import org.deeplearning4j.models.word2vec.loader.Word2VecLoader;
+import org.deeplearning4j.models.word2vec.loader.WordVectorSerializer;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
@@ -14,7 +13,7 @@ import java.io.IOException;
 /**
  * Created by agibsonccc on 9/21/14.
  */
-public class Word2VecLoaderTest {
+public class WordVectorSerializerTest {
 
     private File textFile,binaryFile;
 
@@ -28,14 +27,14 @@ public class Word2VecLoaderTest {
 
     @Test
     public void testLoaderText() throws IOException {
-        Word2Vec vec = Word2VecLoader.loadGoogleModel(textFile.getAbsolutePath(),false);
+        Word2Vec vec = WordVectorSerializer.loadGoogleModel(textFile.getAbsolutePath(), false);
         assertEquals(5,vec.getCache().numWords());
         assertTrue(vec.getCache().numWords() > 0);
     }
 
     @Test
     public void testLoaderBinary() throws  IOException {
-        Word2Vec vec = Word2VecLoader.loadGoogleModel(binaryFile.getAbsolutePath(),true);
+        Word2Vec vec = WordVectorSerializer.loadGoogleModel(binaryFile.getAbsolutePath(), true);
         assertEquals(5,vec.getCache().numWords());
 
     }

@@ -60,8 +60,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
                     } else
                         setInput(input);
                     //override learning rate where present
-                    double realLearningRate = layerWiseConfigurations.getConf(i).getLr();
-                    if (forceNumIterations()) {
+                    if (layerWiseConfigurations.isForceNumIterations()) {
                         for (int iteration = 0; iteration < iterations; iteration++) {
                             log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
                             getNeuralNets()[i].iterate(next.getFeatureMatrix());
@@ -84,8 +83,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
 
                     log.info("Training on layer " + (i + 1));
                     //override learning rate where present
-                    double realLearningRate = layerWiseConfigurations.getConf(i).getLr();
-                    if (forceNumIterations()) {
+                    if (layerWiseConfigurations.isForceNumIterations()) {
                         for (int iteration = 0; iteration < iterations; iteration++) {
                             log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
                             getNeuralNets()[i].iterate(layerInput);
@@ -105,6 +103,70 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
     }
 
 
+    @Override
+    public void pretrain(DataSetIterator iter) {
+        if(!layerWiseConfigurations.isPretrain())
+            return;
+
+        INDArray layerInput;
+
+        for(int i = 0; i < getnLayers(); i++) {
+            if(i == 0) {
+                while(iter.hasNext()) {
+                    DataSet next = iter.next();
+                    this.input = next.getFeatureMatrix();
+                      /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
+                    if(this.getInput() == null || this.getNeuralNets() == null || this.getNeuralNets()[0] == null || this.getNeuralNets() == null || this.getNeuralNets()[0] == null) {
+                        setInput(input);
+                        initializeLayers(input);
+                    }
+                    else
+                        setInput(input);
+                    if(layerWiseConfigurations.isForceNumIterations()) {
+                        for(int iteration = 0; iteration < getNeuralNets()[i].conf().getNumIterations(); iteration++) {
+                            log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
+                            getNeuralNets()[i].iterate(next.getFeatureMatrix());
+                            getNeuralNets()[i].iterationDone(iteration);
+                        }
+                    }
+                    else
+                        getNeuralNets()[i].fit(next.getFeatureMatrix());
+
+                }
+
+                iter.reset();
+            }
+
+            else {
+                while (iter.hasNext()) {
+                    DataSet next = iter.next();
+                    layerInput = next.getFeatureMatrix();
+                    for(int j = 1; j <= i; j++)
+                        layerInput = activationFromPrevLayer(j,layerInput);
+
+
+
+
+                    log.info("Training on layer " + (i + 1));
+                    //override learning rate where present
+                    if(layerWiseConfigurations.isForceNumIterations()) {
+                        for(int iteration = 0; iteration < getNeuralNets()[i].conf().getNumIterations(); iteration++) {
+                            log.info("Error on epoch " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
+                            getNeuralNets()[i].iterate(layerInput);
+                            getNeuralNets()[i].iterationDone(iteration);
+                        }
+                    }
+                    else
+                        getNeuralNets()[i].fit(layerInput);
+
+                }
+
+                iter.reset();
+
+
+            }
+        }
+    }
 
     /**
      * Unsupervised pretraining based on reconstructing the input
@@ -117,10 +179,8 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
         if (this.getInput() == null)
             initializeLayers(input.dup());
 
-        if(!pretrain)
+        if(!layerWiseConfigurations.isPretrain())
             return;
-        if (isUseGaussNewtonVectorProductBackProp())
-            log.warn("Warning; using gauss newton vector back prop with pretrain is known to cause issues with obscenely large activations.");
 
         this.input = input;
 
@@ -132,7 +192,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
                 layerInput = input;
             else
                 layerInput = this.getNeuralNets()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
-            if (forceNumIterations()) {
+            if (layerWiseConfigurations.isForceNumIterations()) {
                 for (int iteration = 0; iteration < layerWiseConfigurations.getConf(i).getNumIterations(); iteration++) {
                     getNeuralNets()[i].iterate(layerInput);
                     log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
@@ -177,33 +237,8 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
             super.configure(conf);
             return this;
         }
-        public Builder useGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
-            super.useGaussNewtonVectorProductBackProp(useGaussNewtonVectorProductBackProp);
-            return this;
-        }
-
-        /**
-         * Whether to pretrain or not
-         * @param pretrain
-         * @return
-         */
-        public Builder pretrain(boolean pretrain) {
-            this.pretrain = pretrain;
-            return this;
-        }
 
 
-        /**
-         * Use drop connect on activations or not
-         *
-         * @param useDropConnect use drop connect or not
-         * @return builder pattern
-         */
-        @Override
-        public Builder useDropConnection(boolean useDropConnect) {
-            super.useDropConnection(useDropConnect);
-            return this;
-        }
 
 
 
@@ -218,26 +253,6 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
             return this;
         }
 
-        /**
-         * Forces use of number of epochs for training
-         * SGD style rather than conjugate gradient
-         *
-         * @return
-         */
-        public Builder forceIterations() {
-            shouldForceEpochs = true;
-            return this;
-        }
-
-        /**
-         * Disables back propagation
-         *
-         * @return
-         */
-        public Builder disableBackProp() {
-            backProp = false;
-            return this;
-        }
 
         /**
          * Transform the weights at the given layer
