@@ -456,13 +456,6 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
 
     }
 
-    public WeightLookupTable getLookupTable() {
-        return lookupTable;
-    }
-
-    public void setLookupTable(WeightLookupTable lookupTable) {
-        this.lookupTable = lookupTable;
-    }
 
     /**
      * Note that calling a setter on this

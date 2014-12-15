@@ -45,7 +45,7 @@ public class ParagraphVectors extends Word2Vec {
         boolean loaded = buildVocab();
         //save vocab after building
         if (!loaded && saveVocab)
-            cache.saveVocab();
+            vocab().saveVocab();
         if (stopWords == null)
             readStopWords();
 
@@ -151,7 +151,7 @@ public class ParagraphVectors extends Word2Vec {
 
                 Collection<VocabWord> docLabels = new ArrayList<>();
                 for(String s : input.getSecond())
-                    docLabels.add(cache.wordFor(s));
+                    docLabels.add(vocab().wordFor(s));
 
                 for (int i = 0; i < numIterations; i++) {
                     batch2.add(new Pair<>(batch, docLabels));
@@ -433,7 +433,7 @@ public class ParagraphVectors extends Word2Vec {
                 ret.alpha.set(lr);
                 ret.vectorizer = textVectorizer;
                 ret.stopWords = stopWords;
-                ret.setCache(vocabCache);
+                ret.setVocab(vocabCache);
                 ret.numIterations = iterations;
                 ret.minWordFrequency = minWordFrequency;
                 ret.seed = seed;
@@ -455,7 +455,7 @@ public class ParagraphVectors extends Word2Vec {
                 if(vocabCache == null) {
                     vocabCache = new InMemoryLookupCache();
 
-                    ret.cache = vocabCache;
+                    ret.setVocab(vocabCache);
                 }
 
                 if(lookupTable == null) {
@@ -483,7 +483,7 @@ public class ParagraphVectors extends Word2Vec {
                 ret.vectorizer = textVectorizer;
                 ret.stopWords = stopWords;
                 ret.minWordFrequency = minWordFrequency;
-                ret.setCache(vocabCache);
+                ret.setVocab(vocabCache);
                 ret.docIter = docIter;
                 ret.minWordFrequency = minWordFrequency;
                 ret.numIterations = iterations;
@@ -506,7 +506,7 @@ public class ParagraphVectors extends Word2Vec {
                 if(vocabCache == null) {
                     vocabCache = new InMemoryLookupCache();
 
-                    ret.cache = vocabCache;
+                    ret.setVocab(vocabCache);
                 }
 
                 if(lookupTable == null) {
