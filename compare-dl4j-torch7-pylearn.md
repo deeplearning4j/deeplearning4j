@@ -36,3 +36,5 @@ Java can also be used natively from other popular languages like Scala, Clojure,
 While Java is not as fast as C or C++, we've built a distributed system that can accelerate with the addition of more nodes. That is, if you want speed, just throw more boxes at it. 
 
 Finally, we are building the basic applications of Numpy, including ND-Array, in Java for DL4J. Other features, such as GPU interoperability based on company-backed plugins, will be released shortly. We believe that many of Java's shortcomings can be solved quickly, and many of its advantages will continue for some time. 
+
+To really understand the differences between DL4J and other frameworks, you may just have to [try us out](http://deeplearning4j.org/quickstart.html).
