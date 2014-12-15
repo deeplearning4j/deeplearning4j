@@ -17,6 +17,12 @@ public interface WeightLookupTable extends Serializable {
 
 
     /**
+     * The layer size for the lookup table
+     * @return the layer size for the lookup table
+     */
+    int layerSize();
+
+    /**
      * Clear out all weights regardless
      * @param reset
      */

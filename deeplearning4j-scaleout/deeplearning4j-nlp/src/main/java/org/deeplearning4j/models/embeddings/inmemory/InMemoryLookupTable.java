@@ -63,6 +63,11 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
 
     @Override
+    public int layerSize() {
+        return vectorLength;
+    }
+
+    @Override
     public void resetWeights(boolean reset) {
         if(this.rng == null)
             this.rng = new MersenneTwister(seed);

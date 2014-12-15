@@ -1000,7 +1000,7 @@ public class RNTN implements Serializable {
         }
 
         public Builder setFeatureVectors(Word2Vec vec) {
-            return setFeatureVectors(vec.getLookupTable());
+            return setFeatureVectors(vec.lookupTable());
         }
 
         public Builder setNumHidden(int numHidden) {
