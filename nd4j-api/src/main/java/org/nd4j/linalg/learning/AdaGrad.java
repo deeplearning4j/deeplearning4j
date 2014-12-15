@@ -145,10 +145,14 @@ public class AdaGrad implements Serializable {
      */
     public  INDArray getGradient(INDArray gradient, int slice, int[] shape) {
         boolean historicalInitialized = false;
-        if(this.historicalGradient == null || this.historicalGradient.length() != gradient.length()) {
+        if(this.historicalGradient == null) {
             this.historicalGradient = Nd4j.ones(shape);
             historicalInitialized = true;
         }
+
+
+        else if(!this.historicalGradient.isVector() && this.historicalGradient.slice(slice).length() != gradient.length())
+            throw new IllegalArgumentException("Illegal gradient");
 
         INDArray sqrtHistory = null;
         if(historicalGradient.isVector())
@@ -159,7 +163,7 @@ public class AdaGrad implements Serializable {
         INDArray learningRates = sqrtHistory.rdivi(masterStepSize);
         gradient.muli(learningRates);
 
-        this.historicalGradient.addi(pow(gradient,2));
+        this.historicalGradient.slice(slice).addi(pow(gradient,2));
         numIterations++;
 
         //ensure no zeros
@@ -177,10 +181,15 @@ public class AdaGrad implements Serializable {
      */
     public  INDArray getGradient(INDArray gradient) {
         boolean historicalInitialized = false;
-        if(this.historicalGradient == null || this.historicalGradient.length() != gradient.length()) {
+        if(this.historicalGradient == null) {
             this.historicalGradient = Nd4j.ones(gradient.rows(), gradient.columns());
             historicalInitialized = true;
         }
+
+
+        else if(this.historicalGradient.length() != gradient.length())
+            throw new IllegalArgumentException("Illegal gradient");
+
 
         INDArray sqrtHistory = !historicalInitialized ? sqrt(historicalGradient) : historicalGradient;
         INDArray learningRates = sqrtHistory.rdivi(masterStepSize);
