@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.classifiers.sae;
 
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.models.featuredetectors.autoencoder.AutoEncoder;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork;
@@ -30,7 +31,13 @@ public class  StackedAutoEncoder extends BaseMultiLayerNetwork {
     }
 
     @Override
+    public void pretrain(DataSetIterator iter) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void pretrain(INDArray examples) {
+        throw new UnsupportedOperationException();
 
     }
 

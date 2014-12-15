@@ -28,6 +28,13 @@ public class MultiLayerConfiguration implements Serializable {
 
     private int[] hiddenLayerSizes;
     private List<NeuralNetConfiguration> confs;
+    private boolean forceNumIterations = false;
+    private boolean useDropConnect = false;
+    private boolean useGaussNewtonVectorProductBackProp = false;
+    protected boolean pretrain = true;
+    /* Sample if true, otherwise use the straight activation function */
+    protected boolean sampleFromHiddenActivations = true;
+    private boolean useRBMPropUpAsActivations = true;
 
     private MultiLayerConfiguration() {}
 
@@ -35,6 +42,54 @@ public class MultiLayerConfiguration implements Serializable {
 
     public NeuralNetConfiguration getConf(int i) {
         return confs.get(i);
+    }
+
+    public boolean isUseRBMPropUpAsActivations() {
+        return useRBMPropUpAsActivations;
+    }
+
+    public void setUseRBMPropUpAsActivations(boolean useRBMPropUpAsActivations) {
+        this.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
+    }
+
+    public boolean isSampleFromHiddenActivations() {
+        return sampleFromHiddenActivations;
+    }
+
+    public void setSampleFromHiddenActivations(boolean sampleFromHiddenActivations) {
+        this.sampleFromHiddenActivations = sampleFromHiddenActivations;
+    }
+
+    public boolean isForceNumIterations() {
+        return forceNumIterations;
+    }
+
+    public void setForceNumIterations(boolean forceNumIterations) {
+        this.forceNumIterations = forceNumIterations;
+    }
+
+    public boolean isUseDropConnect() {
+        return useDropConnect;
+    }
+
+    public void setUseDropConnect(boolean useDropConnect) {
+        this.useDropConnect = useDropConnect;
+    }
+
+    public boolean isUseGaussNewtonVectorProductBackProp() {
+        return useGaussNewtonVectorProductBackProp;
+    }
+
+    public void setUseGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
+        this.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
+    }
+
+    public boolean isPretrain() {
+        return pretrain;
+    }
+
+    public void setPretrain(boolean pretrain) {
+        this.pretrain = pretrain;
     }
 
     public int[] getHiddenLayerSizes() {
@@ -123,6 +178,43 @@ public class MultiLayerConfiguration implements Serializable {
 
         private List<NeuralNetConfiguration> confs = new ArrayList<>();
         private int[] hiddenLayerSizes;
+        private boolean forceNumIterations = false;
+        private boolean useDropConnect = false;
+        private boolean useGaussNewtonVectorProductBackProp = false;
+        protected boolean pretrain = true;
+        protected boolean sampleFromHiddenActivations = true;
+        protected boolean useRBMPropUpAsActivations = false;
+
+
+        public Builder useRBMPropUpAsActivations(boolean useRBMPropUpAsActivations) {
+            this.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
+            return this;
+        }
+
+        public Builder sampleFromHiddenActivations(boolean sampleFromHiddenActivations) {
+            this.sampleFromHiddenActivations = sampleFromHiddenActivations;
+            return this;
+        }
+
+        public Builder useGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
+            this.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
+            return this;
+        }
+
+        public Builder pretrain(boolean pretrain) {
+            this.pretrain = pretrain;
+            return this;
+        }
+
+        public Builder useDropConnect(boolean useDropConnect) {
+            this.useDropConnect = useDropConnect;
+            return this;
+        }
+
+        public Builder forceNumIterations(boolean forceNumIterations) {
+            this.forceNumIterations = forceNumIterations;
+            return this;
+        }
 
         public Builder confs(List<NeuralNetConfiguration> confs) {
             this.confs = confs;
@@ -139,7 +231,13 @@ public class MultiLayerConfiguration implements Serializable {
         public MultiLayerConfiguration build() {
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
+            conf.forceNumIterations = forceNumIterations;
             conf.hiddenLayerSizes = this.hiddenLayerSizes;
+            conf.useDropConnect = useDropConnect;
+            conf.pretrain = pretrain;
+            conf.sampleFromHiddenActivations = sampleFromHiddenActivations;
+            conf.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
+            conf.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
             return conf;
 
         }

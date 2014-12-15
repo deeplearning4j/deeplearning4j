@@ -407,17 +407,29 @@ public class Tsne implements Serializable {
 
 
     /**
-     * Plot tsne
+     * Plot tsne (write the coordinates file)
      * @param matrix the matrix to plot
      * @param nDims the number
      * @param labels
      * @throws IOException
      */
     public void plot(INDArray matrix,int nDims,List<String> labels) throws IOException {
+         plot(matrix,nDims,labels,"coords.csv");
+    }
+
+    /**
+     * Plot tsne
+     * @param matrix the matrix to plot
+     * @param nDims the number
+     * @param labels
+     * @param path the path to write
+     * @throws IOException
+     */
+    public void plot(INDArray matrix,int nDims,List<String> labels,String path) throws IOException {
 
         calculate(matrix,nDims,perplexity);
 
-        BufferedWriter write = new BufferedWriter(new FileWriter(new File("coords.csv"),true));
+        BufferedWriter write = new BufferedWriter(new FileWriter(new File(path),true));
 
         for(int i = 0; i < y.rows(); i++) {
             if(i >= labels.size())

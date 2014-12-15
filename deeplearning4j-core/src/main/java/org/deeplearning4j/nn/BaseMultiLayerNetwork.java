@@ -50,8 +50,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     private static Logger log = LoggerFactory.getLogger(BaseMultiLayerNetwork.class);
     private static final long serialVersionUID = -5029161847383716484L;
-    //the hidden layer sizes at each layer
-    protected int[] hiddenLayerSizes;
     //the hidden neuralNets
     protected Layer[] layers;
     //default training examples and associated neuralNets
@@ -64,13 +62,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     protected Map<Integer, MatrixTransform> hiddenBiasTransforms = new HashMap<>();
     //visible bias transforms for initialization
     protected Map<Integer, MatrixTransform> visibleBiasTransforms = new HashMap<>();
-
-    //whether to only iterate a certain number of epochs
-    protected boolean forceNumEpochs = false;
     protected boolean initCalled = false;
-    /* Sample if true, otherwise use the straight activation function */
-    protected boolean sampleFromHiddenActivations = true;
-    protected boolean pretrain = true;
     protected NeuralNetConfiguration defaultConfiguration;
     protected MultiLayerConfiguration layerWiseConfigurations;
 
@@ -107,21 +99,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     protected INDArray mask;
 
-    /*
-      Use drop connect knob
-     */
-    protected boolean useDropConnect = false;
 
     /*
        Damping factor for gradient
      */
     protected double dampingFactor = 10;
 
-
-    /*
-      Use gauss newton vector product: hessian free
-     */
-    protected boolean useGaussNewtonVectorProductBackProp = false;
 
 
     /* Reflection/factory constructor */
@@ -135,7 +118,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     protected BaseMultiLayerNetwork( int[] hiddenLayerSizes
             , int nLayers, INDArray input, INDArray labels) {
-        this.hiddenLayerSizes = hiddenLayerSizes;
         this.input = input.dup();
         this.labels = labels.dup();
 
@@ -172,7 +154,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         //add a default configuration for each hidden layer + output layer
         if(layerWiseConfigurations == null || layerWiseConfigurations.getConfs().isEmpty())
-            for(int i = 0; i < hiddenLayerSizes.length + 1; i++) {
+            for(int i = 0; i < layerWiseConfigurations.getHiddenLayerSizes().length + 1; i++) {
                 layerWiseConfigurations.getConfs().add(defaultConfiguration.clone());
             }
 
@@ -254,7 +236,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     public void initializeLayers(INDArray input) {
         if (input == null)
             throw new IllegalArgumentException("Unable to initialize neuralNets with empty input");
-
+        int[] hiddenLayerSizes = getLayerWiseConfigurations().getHiddenLayerSizes();
         if (input.columns() != defaultConfiguration.getnIn())
             throw new IllegalArgumentException(String.format("Unable to iterate on number of inputs; columns should be equal to number of inputs. Number of inputs was %d while number of columns was %d", defaultConfiguration.getnIn(), input.columns()));
 
@@ -286,7 +268,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         if (getnLayers() < 1)
             throw new IllegalStateException("Unable to createComplex network neuralNets; number specified is less than 1");
 
-
+        int[] hiddenLayerSizes = layerWiseConfigurations.getHiddenLayerSizes();
         if (this.neuralNets == null || neuralNets == null || this.neuralNets[0] == null || this.neuralNets[0] == null) {
             this.neuralNets = new NeuralNetwork[getnLayers()];
             // construct multi-layer
@@ -295,11 +277,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                 if (i == 0)
                     inputSize = defaultConfiguration.getnIn();
                 else
-                    inputSize = this.hiddenLayerSizes[i - 1];
+                    inputSize = hiddenLayerSizes[i - 1];
 
                 if (i == 0) {
                     layerWiseConfigurations.getConf(i).setnIn(inputSize);
-                    layerWiseConfigurations.getConf(i).setnOut(this.hiddenLayerSizes[i]);
+                    layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
                     // construct sigmoid_layer
                     layers[i] = createHiddenLayer(i,layerInput);
                 } else {
@@ -307,7 +289,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                         layerInput = activationFromPrevLayer(i - 1,layerInput);
 
                     layerWiseConfigurations.getConf(i).setnIn(inputSize);
-                    layerWiseConfigurations.getConf(i).setnOut(this.hiddenLayerSizes[i]);
+                    layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
                     // construct sigmoid_layer
                     layers[i] = createHiddenLayer(i, layerInput);
 
@@ -461,7 +443,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param input the input to apply drop connect to
      */
     protected void applyDropConnectIfNecessary(INDArray input) {
-        if (useDropConnect) {
+        if (layerWiseConfigurations.isUseDropConnect()) {
             INDArray mask = Sampling.binomial(Nd4j.valueArrayOf(input.rows(), input.columns(), 0.5), 1, defaultConfiguration.getRng());
             input.muli(mask);
             //apply l2 for drop connect
@@ -843,7 +825,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param eval   the evaluator for stopping
      */
     public void backProp(TrainingEvaluator eval) {
-        if (useGaussNewtonVectorProductBackProp) {
+        if (layerWiseConfigurations.isUseGaussNewtonVectorProductBackProp()) {
             BackPropROptimizer opt = new BackPropROptimizer(this, defaultConfiguration.getLr(), defaultConfiguration.getNumIterations());
             opt.optimize(eval);
 
@@ -1057,7 +1039,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
         INDArray gradient = pack(list);
-        INDArray params = params().mul(defaultConfiguration.getL2());
         //gradient.addi(mask.mul(params));
         list = unPack(gradient);
 
@@ -1068,7 +1049,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     /**
      * Unpacks a parameter matrix in to a
-     * applyTransformToDestination of pairs(w,hbias)
+     * transform of pairs(w,hbias)
      * triples with layer wise
      * @param param the param vector
      * @return a segmented list of the param vector
@@ -1231,13 +1212,21 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
+    @Override
+    public void fit(DataSetIterator iter) {
+        pretrain(iter);
+        iter.reset();
+        finetune(iter);
+    }
+
+    public abstract void pretrain(DataSetIterator iter);
+
     /**
      * Run SGD based on the given labels
      *
      * @param iter       fine tune based on the labels
-     * @param lr         the learning rate during training
      */
-    public void finetune(DataSetIterator iter, double lr) {
+    public void finetune(DataSetIterator iter) {
         iter.reset();
 
         while (iter.hasNext()) {
@@ -1248,35 +1237,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             setInput(data.getFeatureMatrix());
             setLabels(data.getLabels());
             feedForward();
-            optimizer = new MultiLayerNetworkOptimizer(this, lr);
+            optimizer = new MultiLayerNetworkOptimizer(this, getOutputLayer().conf().getLr());
             optimizer.optimize(data.getLabels());
-        }
-
-
-    }
-
-    /**
-     * Run training algorithm based on the datastet iterator
-     *
-     * @param iter       the labels to use
-     * @param lr         the learning rate during training
-     * @param iterations the number of times to iterate
-     */
-    public void finetune(DataSetIterator iter, double lr, int iterations, TrainingEvaluator eval) {
-        iter.reset();
-
-        while (iter.hasNext()) {
-            DataSet data = iter.next();
-            if (data.getFeatureMatrix() == null || data.getLabels() == null)
-                break;
-
-
-            setInput(data.getFeatureMatrix());
-            setLabels(data.getLabels());
-
-
-            optimizer = new MultiLayerNetworkOptimizer(this, lr);
-            optimizer.optimize(this.labels, eval);
         }
 
 
@@ -1295,21 +1257,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         optimizer = new MultiLayerNetworkOptimizer(this, defaultConfiguration.getLr());
         optimizer.optimize(this.labels);
 
-    }
-
-    /**
-     * Run training algorithm based on the given labels
-     *
-     * @param labels     the labels to use
-     */
-    public void finetune(INDArray labels, TrainingEvaluator eval) {
-        feedForward();
-
-        if (labels != null)
-            this.labels = labels;
-
-        optimizer = new MultiLayerNetworkOptimizer(this, defaultConfiguration.getLr());
-        optimizer.optimize(this.labels, eval);
     }
 
 
@@ -1351,7 +1298,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     public void fit(INDArray examples, INDArray labels) {
         pretrain(examples);
         //just in case: examples need to be set
-        if(!pretrain)
+        if(!layerWiseConfigurations.isPretrain())
             this.input = examples;
         finetune(labels);
     }
@@ -1359,12 +1306,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     @Override
     public void fit(INDArray data) {
-       pretrain(data);
+        pretrain(data);
     }
 
     @Override
     public void iterate(INDArray input) {
-       pretrain(input);
+        pretrain(input);
     }
 
 
@@ -1489,18 +1436,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                 }
         }
 
-        this.hiddenLayerSizes = network.hiddenLayerSizes;
         this.defaultConfiguration = network.defaultConfiguration;
         this.errorTolerance = network.errorTolerance;
-        this.forceNumEpochs = network.forceNumEpochs;
         this.input = network.input;
         this.labels = network.labels;
         this.learningRateUpdate = network.learningRateUpdate;
         this.weightTransforms = network.weightTransforms;
         this.visibleBiasTransforms = network.visibleBiasTransforms;
         this.hiddenBiasTransforms = network.hiddenBiasTransforms;
-        this.useDropConnect = network.useDropConnect;
-        this.useGaussNewtonVectorProductBackProp = network.useGaussNewtonVectorProductBackProp;
 
         if (network.neuralNets != null && network.neuralNets.length > 0) {
             this.neuralNets = new NeuralNetwork[network.neuralNets.length];
@@ -1705,18 +1648,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    public boolean forceNumIterations() {
-        return forceNumEpochs;
-    }
-
-
-    public int[] getHiddenLayerSizes() {
-        return hiddenLayerSizes;
-    }
-
-    public void setHiddenLayerSizes(int[] hiddenLayerSizes) {
-        this.hiddenLayerSizes = hiddenLayerSizes;
-    }
 
 
     public Map<Integer, MatrixTransform> getWeightTransforms() {
@@ -1728,19 +1659,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.labels = labels;
     }
 
-    public void setForceNumEpochs(boolean forceNumEpochs) {
-        this.forceNumEpochs = forceNumEpochs;
-    }
-
-
-    public boolean isSampleFromHiddenActivations() {
-        return sampleFromHiddenActivations;
-    }
-
-    public void setSampleFromHiddenActivations(
-            boolean sampleFromHiddenActivations) {
-        this.sampleFromHiddenActivations = sampleFromHiddenActivations;
-    }
 
 
     public Map<Integer, MatrixTransform> getHiddenBiasTransforms() {
@@ -1765,13 +1683,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.neuralNets = layers;
     }
 
-    public boolean isUseGaussNewtonVectorProductBackProp() {
-        return useGaussNewtonVectorProductBackProp;
-    }
-
-    public void setUseGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
-        this.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
-    }
 
 
     public INDArray getMask() {
@@ -1913,13 +1824,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         protected Class<? extends BaseMultiLayerNetwork> clazz;
         private INDArray input, labels;
         protected Map<Integer, MatrixTransform> weightTransforms = new HashMap<>();
-        protected boolean backProp = true;
-        protected boolean shouldForceEpochs = false;
         private Map<Integer, MatrixTransform> hiddenBiasTransforms = new HashMap<>();
         private Map<Integer, MatrixTransform> visibleBiasTransforms = new HashMap<>();
-        private boolean useDropConnect = false;
-        private boolean useGaussNewtonVectorProductBackProp = false;
-        protected boolean pretrain = true;
+
         protected MultiLayerConfiguration multiLayerConfiguration;
         protected NeuralNetConfiguration conf;
 
@@ -1935,31 +1842,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             return this;
         }
 
-        /**
-         * Use gauss newton back prop - this is for hessian free
-         *
-         * @param useGaussNewtonVectorProductBackProp whether to use gauss newton vector backprop
-         * @return
-         */
-        public Builder<E> useGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
-            this.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
-            return this;
-        }
-
-
-        /**
-         * Use drop connect on activations or not
-         *
-         * @param useDropConnect use drop connect or not
-         * @return builder pattern
-         */
-        public Builder<E> useDropConnection(boolean useDropConnect) {
-            this.useDropConnect = useDropConnect;
-            return this;
-        }
-
-
-
 
         public Builder<E> withVisibleBiasTransforms(Map<Integer, MatrixTransform> visibleBiasTransforms) {
             this.visibleBiasTransforms = visibleBiasTransforms;
@@ -1971,26 +1853,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             return this;
         }
 
-        /**
-         * Forces use of number of epochs for training
-         * SGD style rather than conjugate gradient
-         *
-         * @return
-         */
-        public Builder<E> forceIterations() {
-            shouldForceEpochs = true;
-            return this;
-        }
-
-        /**
-         * Disables back propagation
-         *
-         * @return
-         */
-        public Builder<E> disableBackProp() {
-            backProp = false;
-            return this;
-        }
 
         /**
          * Transform the weights at the given layer
@@ -2061,21 +1923,17 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
                 ret = (E) c.newInstance();
                 ret.setDefaultConfiguration(conf);
-                ret.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
                 ret.setInput(this.input);
                 ret.setLabels(this.labels);
-                ret.setHiddenLayerSizes(this.multiLayerConfiguration.getHiddenLayerSizes());
                 ret.setnLayers(this.multiLayerConfiguration.getHiddenLayerSizes().length);
                 ret.setLayerWiseConfigurations(multiLayerConfiguration);
                 ret.neuralNets = new NeuralNetwork[this.multiLayerConfiguration.getHiddenLayerSizes().length];
                 ret.setInput(this.input);
                 ret.setLabels(labels);
-                ret.setForceNumEpochs(shouldForceEpochs);
                 ret.getWeightTransforms().putAll(weightTransforms);
                 ret.getVisibleBiasTransforms().putAll(visibleBiasTransforms);
                 ret.getHiddenBiasTransforms().putAll(hiddenBiasTransforms);
                 ret.layerWiseConfigurations = multiLayerConfiguration;
-                ret.pretrain = pretrain;
                 if(ret.defaultConfiguration == null)
                     ret.defaultConfiguration = multiLayerConfiguration.getConf(0);
 

@@ -155,7 +155,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
     @Override
     public double getValue() {
-        return - network.score();
+        return -network.score();
 
     }
 
