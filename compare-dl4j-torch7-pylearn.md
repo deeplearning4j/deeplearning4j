@@ -15,7 +15,7 @@ Pylearn2 is a normal (non-distributed) framework that includes everything necess
 
 Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. 
 
-Licensing is another distinction: Torch7 employs a BSD License, which contains no patent clause. Deeplearning4j is distributed under an [Apache 2.0 License](http://en.swpat.org/wiki/Patent_clauses_in_software_licences#Apache_License_2.0), which contains both a patent grant and a patent retaliation clause.
+Licensing is another distinction: Both Theano and Torch employ a BSD License, which does not address patents or patent disputes. Deeplearning4j and ND4J are distributed under an [Apache 2.0 License](http://en.swpat.org/wiki/Patent_clauses_in_software_licences#Apache_License_2.0), which contains both a patent grant and a patent retaliation clause.
 
 While both Torch7 and DL4J employ parallelism, DL4J's **parallelism is automatic**. That is, we automate the setting up of worker nodes and connections, allowing users to bypass libs while creating a massively parallel network. Deeplearning4j is best suited for solving specific problems, and doing so quickly. 
 
