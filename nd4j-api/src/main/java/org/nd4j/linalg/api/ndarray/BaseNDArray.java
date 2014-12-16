@@ -881,11 +881,16 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray rdivi(Number n, INDArray result) {
+        if(Double.isNaN(n.doubleValue()))
+            n = Nd4j.EPS_THRESHOLD;
+
         INDArray linear = linearView();
         INDArray resultLinear = result == this ? linear : result.linearView();
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, n.doubleValue() / linear.getDouble(i));
         }
+        if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
+           Nd4j.clearNans(result);
         return result;
     }
 
@@ -896,12 +901,18 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray rsubi(Number n, INDArray result) {
+        if(Double.isNaN(n.doubleValue()))
+            n = Nd4j.EPS_THRESHOLD;
+
         INDArray linear = linearView();
         INDArray resultLinear = result == this ? linear : result.linearView();
         double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, val - linear.getDouble(i));
         }
+
+        if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
+               Nd4j.clearNans(result);
         return result;
     }
 
@@ -912,12 +923,19 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray divi(Number n, INDArray result) {
+        if(Double.isNaN(n.doubleValue()))
+            n = Nd4j.EPS_THRESHOLD;
+
         INDArray linear = linearView();
         INDArray resultLinear = result == this ? linear : result.linearView();
         double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, linear.getDouble(i) / val);
         }
+
+        if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
+            Nd4j.clearNans(result);
+
         return result;
     }
 
@@ -928,12 +946,18 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray muli(Number n, INDArray result) {
+        if(Double.isNaN(n.doubleValue()))
+            n = Nd4j.EPS_THRESHOLD;
         INDArray linear = linearView();
         INDArray resultLinear = result == this ? linear : result.linearView();
         double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, linear.getDouble(i) * val);
         }
+
+        if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
+           Nd4j.clearNans(result);
+
         return result;
     }
 
@@ -944,12 +968,18 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray subi(Number n, INDArray result) {
+        if(Double.isNaN(n.doubleValue()))
+            n = Nd4j.EPS_THRESHOLD;
         INDArray linear = linearView();
         INDArray resultLinear = result == this ? linear : result.linearView();
         double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, linear.getDouble(i) - val);
         }
+
+        if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
+            Nd4j.clearNans(result);
+
         return result;
     }
 
@@ -960,12 +990,18 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray addi(Number n, INDArray result) {
+        if(Double.isNaN(n.doubleValue()))
+            n = Nd4j.EPS_THRESHOLD;
         INDArray linear = linearView();
         INDArray resultLinear = result == this ? linear :  result.linearView();
         double val = n.doubleValue();
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, linear.getDouble(i) + val);
         }
+
+        if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
+            Nd4j.clearNans(result);
+
         return result;
     }
 
@@ -989,7 +1025,10 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray linear = linearView();
         INDArray retLinear = ret.linearView();
         for(int i = 0; i < ret.length(); i++) {
-            retLinear.putScalar(i,linear.getDouble(i));
+            double put = linear.getDouble(i);
+            if(Double.isNaN(put))
+                put = Nd4j.EPS_THRESHOLD;
+            retLinear.putScalar(i,put);
         }
         return ret;
     }
@@ -2477,6 +2516,9 @@ public abstract class BaseNDArray  implements INDArray {
                     Nd4j.getBlasWrapper().gemm(1.0f,this,otherArray,0.0f,resultArray);
             }
         }
+
+        if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
+            Nd4j.clearNans(resultArray);
         return resultArray;
     }
 
@@ -2514,6 +2556,8 @@ public abstract class BaseNDArray  implements INDArray {
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, linearView.getDouble(i) / otherLinear.getDouble(i));
         }
+        if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
+             Nd4j.clearNans(result);
         return result;
     }
 
@@ -2551,6 +2595,10 @@ public abstract class BaseNDArray  implements INDArray {
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, linearView.getDouble(i) * otherLinear.getDouble(i));
         }
+
+        if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
+            Nd4j.clearNans(result);
+
         return result;
     }
 
@@ -2610,6 +2658,10 @@ public abstract class BaseNDArray  implements INDArray {
             }
 
         }
+
+        if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
+            Nd4j.clearNans(result);
+
         return result;
     }
 
@@ -2667,6 +2719,9 @@ public abstract class BaseNDArray  implements INDArray {
             }
 
         }
+
+        if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
+            Nd4j.clearNans(result);
 
         return result;
     }

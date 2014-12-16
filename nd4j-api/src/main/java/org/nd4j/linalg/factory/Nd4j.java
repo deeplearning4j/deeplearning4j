@@ -11,6 +11,9 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.InputStreamUtil;
 import org.nd4j.linalg.util.Shape;
@@ -36,6 +39,7 @@ public class Nd4j {
     public final static String LINALG_PROPS = "/nd4j.properties";
     public final static String REAL_CLASS_PROP = "real.class";
     public final static String COMPLEX_CLASS_PROP = "complex.class";
+    public final static String NUMERICAL_STABILITY = "force.stability";
     public final static String DTYPE = "dtype";
     public final static String BLAS_OPS = "blas.ops";
     public static int dtype = DataBuffer.FLOAT;
@@ -51,6 +55,7 @@ public class Nd4j {
     //number of elements to print in begin and end
     public static int MAX_ELEMENTS_PER_SLICE = 3;
     public static int MAX_SLICES_TO_PRINT = 3;
+    public static boolean ENFORCE_NUMERICAL_STABILITY = false;
 
 
     static {
@@ -69,6 +74,7 @@ public class Nd4j {
             UNIT = Nd4j.createFloat(1, 0);
             ZERO = Nd4j.createFloat(1, 0);
             NEG_UNIT = Nd4j.createFloat(-1, 0);
+            ENFORCE_NUMERICAL_STABILITY = Boolean.parseBoolean(System.getProperty(NUMERICAL_STABILITY,String.valueOf(false)));
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
@@ -850,6 +856,14 @@ public class Nd4j {
 
     }
 
+
+    /**
+     * Clear nans from an ndarray
+     * @param arr the array to clear
+     */
+    public static void clearNans(INDArray arr) {
+        BooleanIndexing.applyWhere(arr, Conditions.isNan(),new Value(Nd4j.EPS_THRESHOLD));
+    }
 
     /**
      * Create an ndarray based on the given data layout
