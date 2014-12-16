@@ -45,15 +45,15 @@ public class WordVectorsImpl implements WordVectors {
         INDArray words = Nd4j.create(layerSize);
         Set<String> union = SetUtils.union(new HashSet<>(positive), new HashSet<>(negative));
         for(String s : positive)
-            words.addi(lookupTable.vector(s));
+            words.addi(lookupTable().vector(s));
 
 
         for(String s : negative)
             words.addi(lookupTable.vector(s).mul(-1));
 
 
-        if(lookupTable instanceof InMemoryLookupTable) {
-            InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
+        if(lookupTable() instanceof InMemoryLookupTable) {
+            InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
             INDArray syn0 = l.getSyn0();
             INDArray weights = syn0.norm2(0).rdivi(1).muli(words);
             INDArray distances = syn0.mulRowVector(weights).sum(1);
@@ -72,7 +72,7 @@ public class WordVectorsImpl implements WordVectors {
                         break;
                     continue;
                 }
-                ret.add(vocab.wordAtIndex(sort.getInt(i)));
+                ret.add(vocab().wordAtIndex(sort.getInt(i)));
             }
 
 
@@ -81,7 +81,7 @@ public class WordVectorsImpl implements WordVectors {
 
         Counter<String> distances = new Counter<>();
 
-        for(String s : vocab.words()) {
+        for(String s : vocab().words()) {
             INDArray otherVec = getWordVectorMatrix(s);
             double sim = Transforms.cosineSim(words, otherVec);
             distances.incrementCount(s, sim);
@@ -105,7 +105,7 @@ public class WordVectorsImpl implements WordVectors {
         INDArray vec = Transforms.unitVec(this.getWordVectorMatrix(word));
 
 
-        if(lookupTable instanceof InMemoryLookupTable) {
+        if(lookupTable() instanceof InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
             INDArray syn0 = l.getSyn0();
             INDArray weights = syn0.norm2(0).rdivi(1).muli(vec);
@@ -224,14 +224,14 @@ public class WordVectorsImpl implements WordVectors {
         int i = vocab().indexOf(word);
 
         if(i < 0)
-            return lookupTable.vector(UNK);
-        INDArray r =  lookupTable.vector(word);
+            return lookupTable().vector(UNK);
+        INDArray r =  lookupTable().vector(word);
         return r.div(Nd4j.getBlasWrapper().nrm2(r));
     }
 
     @Override
     public INDArray getWordVectorMatrix(String word) {
-        return null;
+        return lookupTable().vector(word);
     }
 
 
@@ -244,7 +244,7 @@ public class WordVectorsImpl implements WordVectors {
      */
     public Collection<String> wordsNearest(List<String> positive,List<String> negative,int top) {
         for(String p : SetUtils.union(new HashSet<>(positive),new HashSet<>(negative))) {
-            if(!vocab.containsWord(p)) {
+            if(!vocab().containsWord(p)) {
                 return new ArrayList<>();
             }
         }
@@ -254,15 +254,15 @@ public class WordVectorsImpl implements WordVectors {
         int row = 0;
         Set<String> union = SetUtils.union(new HashSet<>(positive),new HashSet<>(negative));
         for(String s : positive) {
-            words.putRow(row++,lookupTable.vector(s));
+            words.putRow(row++,lookupTable().vector(s));
         }
 
         for(String s : negative) {
-            words.putRow(row++, lookupTable.vector(s).mul(-1));
+            words.putRow(row++, lookupTable().vector(s).mul(-1));
         }
 
         INDArray mean = words.isMatrix() ? words.mean(0) : words;
-        if(lookupTable instanceof  InMemoryLookupTable) {
+        if(lookupTable() instanceof  InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
             INDArray syn0 = l.getSyn0();
             INDArray weights = mean;
@@ -292,7 +292,7 @@ public class WordVectorsImpl implements WordVectors {
 
         Counter<String> distances = new Counter<>();
 
-        for(String s : vocab.words()) {
+        for(String s : vocab().words()) {
             INDArray otherVec = getWordVectorMatrix(s);
             double sim = Transforms.cosineSim(mean,otherVec);
             distances.incrementCount(s, sim);

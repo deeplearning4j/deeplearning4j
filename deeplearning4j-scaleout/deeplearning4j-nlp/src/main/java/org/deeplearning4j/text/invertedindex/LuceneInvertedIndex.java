@@ -659,17 +659,6 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
             initReader();
             DirectoryReader reader = readerManager.acquire();
             numDocs = reader.numDocs();
-
-            while(numDocs <= 1) {
-                readerManager.release(reader);
-                this.getWriter().getIndexWriter().commit();
-                reader = readerManager.acquire();
-                numDocs = reader.numDocs();
-            }
-
-            if(numDocs < 1) {
-                throw new IllegalStateException("No documents found after finishing");
-            }
             readerManager.release(reader);
         } catch (IOException e) {
             throw new RuntimeException(e);

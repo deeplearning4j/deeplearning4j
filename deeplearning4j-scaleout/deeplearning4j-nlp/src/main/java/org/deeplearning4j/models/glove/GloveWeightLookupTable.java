@@ -104,8 +104,8 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
         double weight = Math.pow(Math.min(1.0,(score / maxCount)),xMax);
 
         double fDiff = score > xMax ? prediction :  weight * (prediction - Math.log(score));
-
-
+        if(Double.isNaN(fDiff))
+            fDiff = Nd4j.EPS_THRESHOLD;
         //amount of change
         double gradient =  fDiff;
 
