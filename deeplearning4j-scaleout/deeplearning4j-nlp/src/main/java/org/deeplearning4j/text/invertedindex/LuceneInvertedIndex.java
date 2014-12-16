@@ -138,7 +138,9 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
             reader.close();
             String[] values = doc.getValues(WORD_FIELD);
             for(String s : values) {
-                ret.add(vocabCache.wordFor(s));
+                VocabWord word = vocabCache.wordFor(s);
+                if(word != null)
+                    ret.add(vocabCache.wordFor(s));
             }
 
 
