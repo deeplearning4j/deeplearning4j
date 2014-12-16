@@ -10,7 +10,6 @@ import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -22,17 +21,13 @@ import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.util.MathUtils;
-import org.deeplearning4j.util.SetUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,12 +39,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class Glove  extends WordVectorsImpl {
 
-    private VocabCache cache;
     private transient SentenceIterator sentenceIterator;
     private transient TextVectorizer textVectorizer;
     private transient TokenizerFactory tokenizerFactory;
-    private GloveWeightLookupTable lookupTable;
-    private int layerSize = 100;
     private double learningRate = 0.05;
     private double xMax = 0.75;
     private int windowSize = 15;
@@ -73,7 +65,7 @@ public class Glove  extends WordVectorsImpl {
     public Glove(VocabCache cache, SentenceIterator sentenceIterator, TextVectorizer textVectorizer, TokenizerFactory tokenizerFactory, GloveWeightLookupTable lookupTable, int layerSize, double learningRate, double xMax, int windowSize, CoOccurrences coOccurrences, List<String> stopWords, boolean stem,int batchSize,int minWordFrequency,double maxCount,int iterations,boolean symmetric,RandomGenerator gen,boolean shuffle,long seed,int numWorkers) {
         this.numWorkers = numWorkers;
         this.gen = gen;
-        this.cache = cache;
+        this.vocab = cache;
         this.shuffle = shuffle;
         this.sentenceIterator = sentenceIterator;
         this.textVectorizer = textVectorizer;
@@ -97,14 +89,14 @@ public class Glove  extends WordVectorsImpl {
     public void fit() {
         boolean cacheFresh = false;
 
-        if(cache == null) {
+        if(vocab() == null) {
             cacheFresh  = true;
-            cache = new InMemoryLookupCache();
+            setVocab(new InMemoryLookupCache());
         }
 
         if(textVectorizer == null && cacheFresh) {
             textVectorizer = new TfidfVectorizer.Builder().tokenize(tokenizerFactory)
-                    .cache(cache).iterate(sentenceIterator).minWords(minWordFrequency)
+                    .cache(vocab()).iterate(sentenceIterator).minWords(minWordFrequency)
                     .stopWords(stopWords).stem(stem).build();
 
             textVectorizer.fit();
@@ -115,7 +107,7 @@ public class Glove  extends WordVectorsImpl {
 
         if(coOccurrences == null) {
             coOccurrences = new CoOccurrences.Builder()
-                    .cache(cache).iterate(sentenceIterator).symmetric(symmetric)
+                    .cache(vocab()).iterate(sentenceIterator).symmetric(symmetric)
                     .tokenizer(tokenizerFactory).windowSize(windowSize)
                     .build();
 
@@ -124,13 +116,13 @@ public class Glove  extends WordVectorsImpl {
         }
 
         if(lookupTable == null)
-            lookupTable = new GloveWeightLookupTable.Builder().xMax(xMax).maxCount(maxCount)
-                    .cache(cache).lr(learningRate).vectorLength(layerSize).gen(gen)
-                    .build();
+           setLookupTable(new GloveWeightLookupTable.Builder().xMax(xMax).maxCount(maxCount)
+                    .cache(vocab()).lr(learningRate).vectorLength(layerSize).gen(gen)
+                    .build());
 
 
-        if(lookupTable.getSyn0() == null)
-            lookupTable.resetWeights();
+        if(lookupTable().getSyn0() == null)
+            lookupTable().resetWeights();
         final List<Pair<String,String>> pairList = coOccurrences.coOccurrenceList();
         if(shuffle)
             Collections.shuffle(pairList,shuffleRandom);
@@ -164,8 +156,8 @@ public class Glove  extends WordVectorsImpl {
                 for (Pair<String, String> next : currentItem) {
                     String w1 = next.getFirst();
                     String w2 = next.getSecond();
-                    VocabWord vocabWord = cache.wordFor(w1);
-                    VocabWord vocabWord1 = cache.wordFor(w2);
+                    VocabWord vocabWord = vocab().wordFor(w1);
+                    VocabWord vocabWord1 = vocab().wordFor(w2);
                     send.add(new Pair<>(vocabWord, vocabWord1));
 
                 }
@@ -197,7 +189,7 @@ public class Glove  extends WordVectorsImpl {
                             continue;
 
                         }
-                        errorPerIteration.incrementCount(work.getFirst(),lookupTable.iterateSample(w1,w2,weight));
+                        errorPerIteration.incrementCount(work.getFirst(),lookupTable().iterateSample(w1, w2, weight));
                         countUp.incrementAndGet();
                         if(countUp.get() % 10000 == 0)
                             log.info("Processed " + countUp.get() + " co occurrences");
@@ -233,28 +225,28 @@ public class Glove  extends WordVectorsImpl {
                 continue;
             String[] split = line.split(" ");
             String word = split[0];
-            if(glove.cache == null)
-                glove.cache = new InMemoryLookupCache();
+            if(glove.vocab() == null)
+                glove.setVocab(new InMemoryLookupCache());
 
-            if(glove.getLookupTable() == null) {
+            if(glove.lookupTable() == null) {
                 glove.lookupTable = new GloveWeightLookupTable.Builder()
-                        .cache(glove.cache).vectorLength(split.length - 1)
+                        .cache(glove.vocab()).vectorLength(split.length - 1)
                         .build();
 
             }
 
             if(word.isEmpty())
                 continue;
-            float[] read = read(split,glove.lookupTable.getVectorLength());
+            float[] read = read(split,glove.lookupTable().getVectorLength());
             if(read.length < 1)
                 continue;
 
             VocabWord w1 = new VocabWord(1,word);
-            glove.layerSize = glove.lookupTable.getVectorLength();
+            glove.layerSize = glove.lookupTable().getVectorLength();
             w1.setIndex(count);
-            glove.cache.addToken(w1);
-            glove.cache.addWordToIndex(count, word);
-            glove.cache.putVocabWord(word);
+            glove.vocab().addToken(w1);
+            glove.vocab().addWordToIndex(count, word);
+            glove.vocab().putVocabWord(word);
             wordVectors.put(word,read);
             count++;
 
@@ -262,13 +254,13 @@ public class Glove  extends WordVectorsImpl {
 
         }
 
-        glove.lookupTable.setSyn0(weights(glove,wordVectors));
+        glove.lookupTable().setSyn0(weights(glove,wordVectors));
 
 
 
         iter.close();
 
-        glove.lookupTable.setBias(Nd4j.readTxt(biases," "));
+        glove.lookupTable().setBias(Nd4j.readTxt(biases," "));
 
         return glove;
 
@@ -278,14 +270,14 @@ public class Glove  extends WordVectorsImpl {
 
 
     private static INDArray weights(Glove glove,Map<String,float[]> data) {
-        INDArray ret = Nd4j.create(data.size(),glove.getLookupTable().getVectorLength());
+        INDArray ret = Nd4j.create(data.size(),glove.lookupTable().getVectorLength());
         for(String key : data.keySet()) {
             INDArray row = Nd4j.create(Nd4j.createBuffer(data.get(key)));
-            if(row.length() != glove.getLookupTable().getVectorLength())
+            if(row.length() != glove.lookupTable().getVectorLength())
                 continue;
-            if(glove.getCache().indexOf(key) >= data.size())
+            if(glove.vocab().indexOf(key) >= data.size())
                 continue;
-            ret.putRow(glove.getCache().indexOf(key), row);
+            ret.putRow(glove.vocab().indexOf(key), row);
         }
         return ret;
     }
@@ -318,16 +310,9 @@ public class Glove  extends WordVectorsImpl {
 
 
 
-    public VocabCache getCache() {
-        return cache;
-    }
-
-    public void setCache(VocabCache cache) {
-        this.cache = cache;
-    }
-
-    public GloveWeightLookupTable getLookupTable() {
-        return lookupTable;
+    @Override
+    public GloveWeightLookupTable lookupTable() {
+        return (GloveWeightLookupTable) lookupTable;
     }
 
     public void setLookupTable(GloveWeightLookupTable lookupTable) {
