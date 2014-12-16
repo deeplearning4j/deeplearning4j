@@ -91,7 +91,7 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
         this.vectorizer = vectorizer;
     }
 
-   
+
 
     /**
      * Train the model
@@ -113,7 +113,17 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
             docIter.reset();
 
 
-        final int[] docs = vectorizer.index().allDocs();
+        int[] docs = vectorizer.index().allDocs();
+
+        if(docs.length < 1) {
+            vectorizer.fit();
+        }
+
+        docs = vectorizer.index().allDocs();
+        if(docs.length < 1) {
+           throw new IllegalStateException("No documents found");
+        }
+
 
         totalWords = vectorizer.numWordsEncountered();
         if(totalWords < 1)
@@ -322,9 +332,10 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
                     .cache(vocab()).iterate(docIter).iterate(sentenceIter).batchSize(batchSize)
                     .minWords(minWordFrequency).stopWords(stopWords)
                     .tokenize(tokenizerFactory).build();
+            vectorizer.fit();
+
         }
 
-        vectorizer.fit();
 
         setup();
 

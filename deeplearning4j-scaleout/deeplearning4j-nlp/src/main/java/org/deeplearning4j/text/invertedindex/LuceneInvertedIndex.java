@@ -45,7 +45,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     private int numDocs = 0;
     private List<List<VocabWord>> words = new ArrayList<>();
-    private boolean cache = true;
+    private boolean cache = false;
     private AtomicBoolean indexBeingCreated = new AtomicBoolean(false);
     private static Logger log = LoggerFactory.getLogger(LuceneInvertedIndex.class);
     public final static String INDEX_PATH = "word2vec-index";
@@ -133,7 +133,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     public synchronized List<VocabWord> document(int index) {
         List<VocabWord> ret = new CopyOnWriteArrayList<>();
         try {
-            IndexReader reader = getReader();
+            DirectoryReader reader = readerManager.acquire();
             Document doc = reader.document(index);
             reader.close();
             String[] values = doc.getValues(WORD_FIELD);
@@ -183,11 +183,10 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     @Override
     public int numDocuments() {
         try {
-            initReader();
             readerManager.maybeRefresh();
-            reader = readerManager.acquire();
+            DirectoryReader reader = readerManager.acquire();
             int ret = reader.numDocs();
-            reader.close();
+            readerManager.release(reader);
             return ret;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -205,7 +204,13 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         }
 
 
-        IndexReader reader = getReader();
+        DirectoryReader reader = null;
+        try {
+            readerManager.maybeRefreshBlocking();
+            reader = readerManager.acquire();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         int[] docIds = new int[reader.maxDoc()];
         int count = 0;
         Bits liveDocs = MultiFields.getLiveDocs(reader);
@@ -236,7 +241,6 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     public void addWordToDoc(int doc, VocabWord word) {
         Field f = new TextField(WORD_FIELD,word.getWord(),Field.Store.YES);
         try {
-            initReader();
             IndexSearcher searcher = searcherManager.acquire();
             Document doc2 = searcher.doc(doc);
             if(doc2 != null)
@@ -310,7 +314,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         List<VocabWord> ret = new CopyOnWriteArrayList<>();
         String label = "NONE";
         try {
-            IndexReader reader = getReader();
+            DirectoryReader reader = readerManager.acquire();
             Document doc = reader.document(index);
             reader.close();
             String[] values = doc.getValues(WORD_FIELD);
@@ -340,9 +344,9 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         Collection<String> labels = new ArrayList<>();
 
         try {
-            IndexReader reader = getReader();
+            DirectoryReader reader = readerManager.acquire();
             Document doc = reader.document(index);
-            reader.close();
+            readerManager.release(reader);
             String[] values = doc.getValues(WORD_FIELD);
             String[] labels2 = doc.getValues(LABEL);
 
@@ -372,11 +376,11 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     @Override
     public void addLabelForDoc(int doc, String label) {
-        IndexReader reader = getReader();
         try {
+            DirectoryReader reader = readerManager.acquire();
             Document doc2 = reader.document(doc);
             doc2.add(new TextField(LABEL,label,Field.Store.YES));
-            reader.close();
+            readerManager.release(reader);
             TrackingIndexWriter writer = getWriter();
             Term term = new Term(LABEL,label);
             writer.updateDocument(term,doc2);
@@ -396,8 +400,10 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
         totalWords.set(totalWords.get() + words.size());
         addWords(words);
+
         try {
             getWriter().addDocument(d);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -410,12 +416,13 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     @Override
     public void addLabelsForDoc(int doc, List<VocabWord> label) {
-        IndexReader reader = getReader();
         try {
+            DirectoryReader reader = readerManager.acquire();
+
             Document doc2 = reader.document(doc);
             for(VocabWord s : label)
                 doc2.add(new TextField(LABEL,s.getWord(),Field.Store.YES));
-            reader.close();
+            readerManager.release(reader);
             TrackingIndexWriter writer = getWriter();
             List<Term> terms = new ArrayList<>();
             for(VocabWord s : label) {
@@ -430,12 +437,13 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     @Override
     public void addLabelsForDoc(int doc, Collection<String> label) {
-        IndexReader reader = getReader();
         try {
+            DirectoryReader reader = readerManager.acquire();
+
             Document doc2 = reader.document(doc);
             for(String s : label)
                 doc2.add(new TextField(LABEL,s,Field.Store.YES));
-            reader.close();
+            readerManager.release(reader);
             TrackingIndexWriter writer = getWriter();
             List<Term> terms = new ArrayList<>();
             for(String s : label) {
@@ -647,10 +655,20 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     public void finish() {
         try {
             initReader();
-            IndexReader reader = readerManager.acquire();
-            indexWriter.getIndexWriter().commit();
+            DirectoryReader reader = readerManager.acquire();
             numDocs = reader.numDocs();
-            reader.close();
+
+            while(numDocs <= 1) {
+                readerManager.release(reader);
+                this.getWriter().getIndexWriter().commit();
+                reader = readerManager.acquire();
+                numDocs = reader.numDocs();
+            }
+
+            if(numDocs < 1) {
+                throw new IllegalStateException("No documents found after finishing");
+            }
+            readerManager.release(reader);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -816,7 +834,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         private  IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_CURRENT, analyzer);
         private VocabCache vocabCache;
         private List<String> stopWords = StopWords.getStopWords();
-        private boolean cache = true;
+        private boolean cache = false;
         private int batchSize = 1000;
         private double sample = 0;
         private boolean miniBatch = false;

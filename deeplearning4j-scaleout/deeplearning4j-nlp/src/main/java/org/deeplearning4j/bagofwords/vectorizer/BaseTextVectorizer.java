@@ -88,7 +88,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
 
     @Override
     public void fit() {
-        if(trainingSystem == null)
+        if(trainingSystem == null || trainingSystem.isTerminated())
             trainingSystem = ActorSystem.create();
 
 
