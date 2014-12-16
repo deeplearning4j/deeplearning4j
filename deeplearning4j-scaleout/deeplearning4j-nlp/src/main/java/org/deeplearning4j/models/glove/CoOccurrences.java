@@ -148,6 +148,11 @@ public class CoOccurrences implements Serializable {
 
             return list;
         }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
     }
 
 
@@ -164,6 +169,11 @@ public class CoOccurrences implements Serializable {
             Pair<String,String> next = iter.next();
             Pair<VocabWord,VocabWord> ret = new Pair<>(cache.wordFor(next.getFirst()),cache.wordFor(next.getSecond()));
             return ret;
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
         }
     }
 
