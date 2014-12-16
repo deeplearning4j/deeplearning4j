@@ -368,7 +368,7 @@ public class WordVectorSerializer {
             cache.addToken(word1);
             cache.addWordToIndex(cache.numWords(),word);
             cache.putVocabWord(word);
-            INDArray row = Nd4j.create(new FloatBuffer(split.length - 1));
+            INDArray row = Nd4j.create(Nd4j.createBuffer(split.length - 1));
             for(int i = 1; i < split.length; i++)
                 row.putScalar(i - 1,Float.parseFloat(split[i]));
             arrays.add(row);
