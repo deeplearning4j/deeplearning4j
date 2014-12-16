@@ -201,40 +201,41 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
         });
 
         final Queue<List<VocabWord>> batch2 = new ConcurrentLinkedDeque<>();
-        vectorizer.index().eachDoc(new Function<List<VocabWord>, Void>() {
-            @Override
-            public Void apply(List<VocabWord> input) {
-                List<VocabWord> batch = new ArrayList<>();
-                addWords(input, nextRandom, batch);
-                if(batch.isEmpty())
-                    return null;
 
-                for(int i = 0; i < numIterations; i++) {
+        for(int i = 0; i < numIterations; i++)
+            vectorizer.index().eachDoc(new Function<List<VocabWord>, Void>() {
+                @Override
+                public Void apply(List<VocabWord> input) {
+                    List<VocabWord> batch = new ArrayList<>();
+                    addWords(input, nextRandom, batch);
+                    if(batch.isEmpty())
+                        return null;
+
                     batch2.add(batch);
-                }
 
-                if(batch2.size() >= 100 || batch2.size() >= numDocs) {
-                    boolean added = false;
-                    while(!added) {
-                        try {
-                            jobQueue.add(new LinkedList<>(batch2));
-                            batch2.clear();
-                            added = true;
-                        }catch(Exception e) {
-                            continue;
+
+                    if(batch2.size() >= 100 || batch2.size() >= numDocs) {
+                        boolean added = false;
+                        while(!added) {
+                            try {
+                                jobQueue.add(new LinkedList<>(batch2));
+                                batch2.clear();
+                                added = true;
+                            }catch(Exception e) {
+                                continue;
+                            }
                         }
+
                     }
 
+
+                    doc.incrementAndGet();
+                    if(doc.get() > 0 && doc.get() % 10000 == 0)
+                        log.info("Doc " + doc.get() + " done so far");
+
+                    return null;
                 }
-
-
-                doc.incrementAndGet();
-                if(doc.get() > 0 && doc.get() % 10000 == 0)
-                    log.info("Doc " + doc.get() + " done so far");
-
-                return null;
-            }
-        },exec);
+            },exec);
 
         if(!batch2.isEmpty())
             jobQueue.add(new LinkedList<>(batch2));
