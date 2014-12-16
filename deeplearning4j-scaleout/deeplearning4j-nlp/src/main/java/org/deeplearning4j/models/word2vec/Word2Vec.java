@@ -59,7 +59,6 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
     protected int window = 5;
     protected transient  RandomGenerator g;
     protected static Logger log = LoggerFactory.getLogger(Word2Vec.class);
-    protected List<String> stopWords;
     protected boolean shouldReset = true;
     //number of iterations to run
     protected int numIterations = 1;
@@ -71,7 +70,6 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
     protected int learningRateDecayWords = 10000;
     protected InvertedIndex invertedIndex;
     protected boolean useAdaGrad = false;
-    protected WeightLookupTable lookupTable;
     protected int workers = Runtime.getRuntime().availableProcessors();
     protected Queue<List<List<VocabWord>>> jobQueue = new LinkedBlockingDeque<>(10000);
 
