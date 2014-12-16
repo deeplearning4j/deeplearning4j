@@ -121,7 +121,7 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
 
         docs = vectorizer.index().allDocs();
         if(docs.length < 1) {
-           throw new IllegalStateException("No documents found");
+            throw new IllegalStateException("No documents found");
         }
 
 
@@ -320,21 +320,26 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
             return true;
         }
 
+
+        if(invertedIndex == null)
+            invertedIndex = new LuceneInvertedIndex.Builder()
+                    .cache(vocab()).stopWords(stopWords)
+                    .build();
         //vectorizer will handle setting up vocab meta data
         if(vectorizer == null) {
-
-            if(invertedIndex == null)
-                invertedIndex = new LuceneInvertedIndex.Builder()
-                        .cache(vocab()).stopWords(stopWords)
-                        .build();
-
             vectorizer = new TfidfVectorizer.Builder().index(invertedIndex)
                     .cache(vocab()).iterate(docIter).iterate(sentenceIter).batchSize(batchSize)
                     .minWords(minWordFrequency).stopWords(stopWords)
                     .tokenize(tokenizerFactory).build();
+
             vectorizer.fit();
 
         }
+        //includes unk
+        else if(vocab().numWords() < 2) {
+            vectorizer.fit();
+        }
+
 
 
         setup();
