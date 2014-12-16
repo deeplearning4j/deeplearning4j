@@ -204,9 +204,18 @@ public class InMemoryLookupTable implements WeightLookupTable {
             //gradient
             double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f)) : (1 - code - f) * alpha;
 
+            if(neu1e.data().dataType() == DataBuffer.FLOAT) {
+                Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
+                Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
 
-            Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
-            Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
+            }
+
+             else {
+                Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
+                Nd4j.getBlasWrapper().axpy(g, l1, syn1);
+
+            }
+
 
 
 
