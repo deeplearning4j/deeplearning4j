@@ -232,7 +232,7 @@ public class ComplexNDArrayUtil {
             return nd;
 
         IComplexNDArray ret = Nd4j.createComplex(targetShape);
-        System.arraycopy(nd.data(), 0, ret.data(), 0, nd.data().length());
+        System.arraycopy(nd.data().asDouble(), 0, ret.data().asDouble(), 0, nd.data().length());
         return ret;
 
     }
