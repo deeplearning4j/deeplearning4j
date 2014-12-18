@@ -1,6 +1,7 @@
 package org.deeplearning4j.optimize.optimizers;
 
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
 import org.deeplearning4j.optimize.solvers.IterationGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.BackPropStepFunction;
 import org.deeplearning4j.plot.NeuralNetPlotter;
@@ -18,6 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * Optimizes via back prop gradients
@@ -57,8 +60,13 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
     private void lineSearchBackProp(TrainingEvaluator eval) {
         NeuralNetwork.OptimizationAlgorithm optimizationAlgorithm = network.getDefaultConfiguration().getOptimizationAlgo();
         network.feedForward();
+        Collection<IterationListener> listeners = new ArrayList<>();
+        listeners.add(this);
+        listeners.addAll(network.getOutputLayer().conf().getListeners());
+        IterationListener listener = new ComposableIterationListener(listeners);
+
         if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT) {
-            VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(this,new BackPropStepFunction(network),this);
+            VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(this,new BackPropStepFunction(network),listener);
             g.setTrainingEvaluator(eval);
             if(network.getOutputLayer().conf().getRenderWeightIterations() > 0) {
 
@@ -68,11 +76,11 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
 
         }
         else if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT) {
-            IterationGradientDescent g = new IterationGradientDescent(this,network.getOutputLayer().conf().getNumIterations());
+            IterationGradientDescent g = new IterationGradientDescent(this,listener,network.getOutputLayer().conf().getNumIterations());
             g.optimize();
         }
         else if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
-            StochasticHessianFree s = new StochasticHessianFree(this,network);
+            StochasticHessianFree s = new StochasticHessianFree(this,listener,network);
             s.setTrainingEvaluator(eval);
             s.setMaxIterations(network.getOutputLayer().conf().getNumIterations());
             s.optimize(network.getOutputLayer().conf().getNumIterations());
@@ -82,7 +90,7 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
 
 
         else {
-            VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(this,1e-1,this,new BackPropStepFunction(network));
+            VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(this,1e-1,listener,new BackPropStepFunction(network));
             g.setTrainingEvaluator(eval);
             g.optimize(network.getOutputLayer().conf().getNumIterations());
 
