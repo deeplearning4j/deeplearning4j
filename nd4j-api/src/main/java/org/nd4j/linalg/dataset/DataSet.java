@@ -61,9 +61,26 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
 
 
 
+
+
     @Override
     public INDArray getFeatures() {
         return features;
+    }
+
+    @Override
+    public Map<Integer, Double> labelCounts() {
+        Map<Integer,Double> ret = new HashMap<>();
+        if(labels == null)
+            return ret;
+        for(int i = 0; i < labels.rows(); i++) {
+            int maxIdx = Nd4j.getBlasWrapper().iamax(labels.getRow(i));
+            if(ret.get(maxIdx) == null)
+                ret.put(maxIdx,1.0);
+            else
+                ret.put(maxIdx,ret.get(maxIdx) + 1.0);
+        }
+        return ret;
     }
 
     @Override

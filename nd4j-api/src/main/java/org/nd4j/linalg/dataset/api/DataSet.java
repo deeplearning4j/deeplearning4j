@@ -9,6 +9,7 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by agibsonccc on 8/26/14.
@@ -16,6 +17,8 @@ import java.util.List;
 public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>,Serializable {
     INDArray getFeatures();
 
+
+    Map<Integer,Double> labelCounts();
 
     void apply(Condition condition,Function<Number,Number> function);
 
