@@ -39,7 +39,7 @@ import org.deeplearning4j.optimize.solvers.VectorizedNonZeroStoppingConjugateGra
  * @author Adam Gibson
  *
  */
-public class OutputLayer extends BaseLayer implements Serializable,Classifier,IterationListener {
+public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     private static final long serialVersionUID = -7065564817460914364L;
     //current input and label matrices
