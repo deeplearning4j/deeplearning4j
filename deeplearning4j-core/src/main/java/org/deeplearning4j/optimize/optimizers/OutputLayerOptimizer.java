@@ -4,13 +4,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
-import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
+import org.deeplearning4j.optimize.api.OptimizableByGradientValue;
 
 /**
  * Output layer optimizer
  * @author Adam Gibson
  */
-public class OutputLayerOptimizer implements OptimizableByGradientValueMatrix {
+public class OutputLayerOptimizer implements OptimizableByGradientValue {
 
     private OutputLayer logReg;
     private double lr;

@@ -1,19 +1,17 @@
 package org.deeplearning4j.optimize.optimizers;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
+import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
 import org.deeplearning4j.optimize.solvers.IterationGradientDescent;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
+import org.deeplearning4j.optimize.api.OptimizableByGradientValue;
 import org.deeplearning4j.optimize.solvers.VectorizedDeepLearningGradientAscent;
 import org.deeplearning4j.optimize.solvers.VectorizedNonZeroStoppingConjugateGradient;
 import org.deeplearning4j.plot.NeuralNetPlotter;
@@ -27,7 +25,7 @@ import org.slf4j.LoggerFactory;
  * @author Adam Gibson
  *
  */
-public abstract class NeuralNetworkOptimizer implements OptimizableByGradientValueMatrix,Serializable,IterationListener {
+public abstract class NeuralNetworkOptimizer implements OptimizableByGradientValue,Serializable,IterationListener {
 
 
 
@@ -43,6 +41,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     protected  NeuralNetPlotter plotter = new NeuralNetPlotter();
     protected double maxStep = -1;
     protected int currIteration = -1;
+    protected IterationListener jointListeners;
     /**
      *
      * @param network
@@ -52,17 +51,23 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     }
 
     private void createOptimizationAlgorithm() {
+        if(network.conf().getListeners() != null && !network.conf().getListeners().isEmpty()) {
+            Set<IterationListener> listeners = new HashSet<>(network.conf().getListeners());
+            listeners.add(this);
+            jointListeners = new ComposableIterationListener(listeners);
+        }
+
         if(network.conf().getOptimizationAlgo() == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
-            opt = new VectorizedNonZeroStoppingConjugateGradient(this,this);
+            opt = new VectorizedNonZeroStoppingConjugateGradient(this,jointListeners != null ? jointListeners : this);
             opt.setTolerance(tolerance);
         }
         else if(network.conf().getOptimizationAlgo() == OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT) {
-            opt = new IterationGradientDescent(this,this,network.conf().getNumIterations());
+            opt = new IterationGradientDescent(this,jointListeners != null ? jointListeners : this,network.conf().getNumIterations());
 
         }
 
         else {
-            opt = new VectorizedDeepLearningGradientAscent(this,this);
+            opt = new VectorizedDeepLearningGradientAscent(this,jointListeners != null ? jointListeners : this);
             opt.setTolerance(tolerance);
             if(maxStep > 0)
                 ((VectorizedDeepLearningGradientAscent) opt).setMaxStepSize(maxStep);
@@ -133,20 +138,6 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     }
 
 
-    private int getAdjustedIndex(int index) {
-        int wLength = network.getW().length();
-        int vBiasLength = network.getvBias().length();
-        if(index < wLength)
-            return index;
-        else if(index >= wLength + vBiasLength) {
-            int hIndex = index - wLength - vBiasLength;
-            return hIndex;
-        }
-        else {
-            int vIndex = index - wLength;
-            return vIndex;
-        }
-    }
 
 
     @Override

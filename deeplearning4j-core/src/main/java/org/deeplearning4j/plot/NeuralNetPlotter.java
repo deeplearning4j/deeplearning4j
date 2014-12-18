@@ -30,6 +30,7 @@ public class NeuralNetPlotter implements Serializable {
 
     private static 	ClassPathResource r = new ClassPathResource("/scripts/plot.py");
     private static Logger log = LoggerFactory.getLogger(NeuralNetPlotter.class);
+    private static   FilterRenderer render = new FilterRenderer();
 
 
     static {
@@ -65,7 +66,6 @@ public class NeuralNetPlotter implements Serializable {
 
         plotActivations(network);
 
-        FilterRenderer render = new FilterRenderer();
         try {
             if(network.getW().shape().length > 2) {
                 INDArray w =  network.getW().dup();
@@ -80,6 +80,26 @@ public class NeuralNetPlotter implements Serializable {
         } catch (Exception e) {
             log.error("Unable to plot filter, continuing...",e);
         }
+    }
+
+    public void hist(NeuralNetwork network,NeuralNetworkGradient gradient) {
+        histogram(
+                new String[]{"W", "hbias", "vbias", "w-gradient", "hbias-gradient", "vbias-gradient"},
+
+                new INDArray[]{
+                        network.getW(),
+                        network.gethBias(),
+                        network.getvBias(),
+                        gradient.getwGradient(),
+                        gradient.gethBiasGradient(),
+                        gradient.getvBiasGradient()
+
+                });
+    }
+
+
+    public void hist(NeuralNetwork network) {
+        hist(network,network.getGradient());
     }
 
     public void plotNetworkGradient(NeuralNetwork network,NeuralNetworkGradient gradient,int patchesPerRow) {
