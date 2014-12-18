@@ -6,6 +6,8 @@ import java.io.Serializable;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
 import org.deeplearning4j.optimize.solvers.IterationGradientDescent;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,7 +39,7 @@ import org.deeplearning4j.optimize.solvers.VectorizedNonZeroStoppingConjugateGra
  * @author Adam Gibson
  *
  */
-public class OutputLayer extends BaseLayer implements Serializable,Classifier {
+public class OutputLayer extends BaseLayer implements Serializable,Classifier,IterationListener {
 
     private static final long serialVersionUID = -7065564817460914364L;
     //current input and label matrices
@@ -155,9 +157,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         OutputLayerOptimizer opt = new OutputLayerOptimizer(this, learningRate);
         adaGrad.setMasterStepSize(learningRate);
         biasAdaGrad.setMasterStepSize(learningRate);
-
+        IterationListener listener = conf.getListeners() != null ? new ComposableIterationListener(conf.getListeners()) : null;
         if(conf.getOptimizationAlgo()  == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
-            VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt);
+            VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt,listener);
             g.setTolerance(1e-3f);
             g.setTrainingEvaluator(eval);
             g.setMaxIterations(numIterations);
@@ -165,11 +167,11 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
         }
         else if(conf.getOptimizationAlgo() == OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT) {
-            IterationGradientDescent g = new IterationGradientDescent(opt,conf.getNumIterations());
+            IterationGradientDescent g = new IterationGradientDescent(opt,listener,conf.getNumIterations());
             g.optimize();
         }
         else {
-            VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(opt);
+            VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(opt,listener);
             g.setTolerance(1e-3f);
             g.setTrainingEvaluator(eval);
             g.optimize(numIterations);
@@ -234,7 +236,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         this.input = x;
         this.labels = y;
 
-        //INDArray regularized = W.transpose().mul(l2);
         OutputLayerGradient gradient = getGradient(lr);
 
 
@@ -286,14 +287,14 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             wGradient.muli(lr);
 
         if(conf.isUseAdaGrad())
-            dy = biasAdaGrad.getGradient(dy.mean(0).broadcast(dy.shape()));
+            dy = biasAdaGrad.getGradient(dy.sum(0).broadcast(dy.shape()));
         else
             dy.muli(lr);
 
         dy.divi(input.rows());
 
 
-        INDArray bGradient = dy.mean(0);
+        INDArray bGradient = dy.sum(0);
         if(conf.isConstrainGradientToUnitNorm()) {
             wGradient.divi(wGradient.norm2(Integer.MAX_VALUE));
             bGradient.divi(bGradient.norm2(Integer.MAX_VALUE));
@@ -370,7 +371,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public double score(INDArray examples, INDArray labels) {
         Evaluation eval = new Evaluation();
         eval.eval(labels,labelProbabilities(examples));
-        return (double) eval.f1();
+        return  eval.f1();
 
     }
 
