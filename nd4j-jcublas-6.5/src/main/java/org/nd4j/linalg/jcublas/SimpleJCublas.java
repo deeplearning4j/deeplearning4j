@@ -43,16 +43,17 @@ public class SimpleJCublas {
         log.info("Loading jcublas from " + name);
         ClassPathResource resource = new ClassPathResource(name);
         String home = findWritableLibDir();
-
-
         File cuBlastmp = new File(home);
         File shared = new File(cuBlastmp,resourceName().replace("X","x"));
         try {
+            if(shared.exists())
+                shared.delete();
             shared.createNewFile();
             BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(shared));
             IOUtils.copy(resource.getInputStream(),bos);
             bos.flush();
             bos.close();
+            shared.deleteOnExit();
 
         } catch (IOException e) {
             throw new RuntimeException("Unable to initialize jcublas",e);
@@ -76,14 +77,8 @@ public class SimpleJCublas {
 
 
         JCublas.setLogLevel(LogLevel.LOG_DEBUG);
-
         JCublas.setExceptionsEnabled(true);
-        try {
-            JCublas.cublasInit();
-
-        }catch(Exception e) {
-            throw new RuntimeException("Error was " + JCublas.cublasGetError());
-        }
+        JCublas.cublasInit();
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 JCublas.cublasShutdown();
