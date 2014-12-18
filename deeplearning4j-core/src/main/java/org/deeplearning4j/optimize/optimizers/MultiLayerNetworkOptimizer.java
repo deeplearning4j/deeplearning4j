@@ -1,15 +1,13 @@
 package org.deeplearning4j.optimize.optimizers;
 
 import java.io.Serializable;
-import java.util.List;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 
-import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
+import org.deeplearning4j.optimize.api.OptimizableByGradientValue;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +20,7 @@ import org.slf4j.LoggerFactory;
  * @author Adam Gibson
  *
  */
-public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGradientValueMatrix {
+public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGradientValue {
 
     private static final long serialVersionUID = -3012638773299331828L;
 

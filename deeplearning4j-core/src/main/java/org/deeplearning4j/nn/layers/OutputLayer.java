@@ -109,10 +109,10 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     /**
      * Run the optimization algorithm for training
      * @param learningRate the learning rate to iterate with
-     * @param numEpochs the number of epochs
+     * @param numIterations the number of epochs
      * @param eval the training evaluator to use for early stopping (where applicable)
      */
-    public  void trainTillConvergence(INDArray labels,double learningRate, int numEpochs,TrainingEvaluator eval) {
+    public  void trainTillConvergence(INDArray labels,double learningRate, int numIterations,TrainingEvaluator eval) {
 
         this.labels = labels;
         OutputLayerOptimizer opt = new OutputLayerOptimizer(this, learningRate);
@@ -123,22 +123,22 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt);
             g.setTolerance(1e-3f);
             g.setTrainingEvaluator(eval);
-            g.setMaxIterations(numEpochs);
-            g.optimize(numEpochs);
+            g.setMaxIterations(numIterations);
+            g.optimize(numIterations);
 
         }
         else if(conf.getOptimizationAlgo()  == OptimizationAlgorithm.HESSIAN_FREE) {
             StochasticHessianFree o = new StochasticHessianFree(opt,null);
             o.setTolerance(1e-3f);
             o.setTrainingEvaluator(eval);
-            o.optimize(numEpochs);
+            o.optimize(numIterations);
         }
 
         else {
             VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(opt);
             g.setTolerance(1e-3f);
             g.setTrainingEvaluator(eval);
-            g.optimize(numEpochs);
+            g.optimize(numIterations);
 
         }
 
@@ -148,10 +148,10 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     /**
      * Run the optimization algorithm for training
      * @param learningRate the learning rate to iterate with
-     * @param numEpochs the number of epochs
+     * @param numIterations the number of epochs
      * @param eval the training evaluator to use for early stopping (where applicable)
      */
-    public  void trainTillConvergence(double learningRate, int numEpochs,TrainingEvaluator eval) {
+    public  void trainTillConvergence(double learningRate, int numIterations,TrainingEvaluator eval) {
         OutputLayerOptimizer opt = new OutputLayerOptimizer(this, learningRate);
         adaGrad.setMasterStepSize(learningRate);
         biasAdaGrad.setMasterStepSize(learningRate);
@@ -160,8 +160,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt);
             g.setTolerance(1e-3f);
             g.setTrainingEvaluator(eval);
-            g.setMaxIterations(numEpochs);
-            g.optimize(numEpochs);
+            g.setMaxIterations(numIterations);
+            g.optimize(numIterations);
 
         }
         else if(conf.getOptimizationAlgo() == OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT) {
@@ -172,7 +172,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(opt);
             g.setTolerance(1e-3f);
             g.setTrainingEvaluator(eval);
-            g.optimize(numEpochs);
+            g.optimize(numIterations);
 
         }
 
@@ -183,10 +183,10 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     /**
      * Run conjugate gradient
      * @param learningRate the learning rate to iterate with
-     * @param numEpochs the number of epochs
+     * @param numIterations the number of epochs
      */
-    public  void trainTillConvergence(double learningRate, int numEpochs) {
-        trainTillConvergence(learningRate,numEpochs,null);
+    public  void trainTillConvergence(double learningRate, int numIterations) {
+        trainTillConvergence(learningRate,numIterations,null);
     }
 
 

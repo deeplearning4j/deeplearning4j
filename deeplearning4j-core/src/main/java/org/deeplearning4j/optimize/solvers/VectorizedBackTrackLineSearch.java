@@ -39,7 +39,7 @@ import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.deeplearning4j.optimize.api.LineOptimizerMatrix;
-import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
+import org.deeplearning4j.optimize.api.OptimizableByGradientValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,15 +50,15 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 {
     private static Logger logger = LoggerFactory.getLogger(VectorizedBackTrackLineSearch.class.getName());
 
-    OptimizableByGradientValueMatrix function;
+    OptimizableByGradientValue function;
     StepFunction stepFunction;
 
-    public VectorizedBackTrackLineSearch(OptimizableByGradientValueMatrix function, StepFunction stepFunction) {
+    public VectorizedBackTrackLineSearch(OptimizableByGradientValue function, StepFunction stepFunction) {
         this.function = function;
         this.stepFunction = stepFunction;
     }
 
-    public VectorizedBackTrackLineSearch (OptimizableByGradientValueMatrix optimizable) {
+    public VectorizedBackTrackLineSearch (OptimizableByGradientValue optimizable) {
         this(optimizable, new DefaultStepFunction());
     }
 
