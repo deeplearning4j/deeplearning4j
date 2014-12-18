@@ -71,7 +71,6 @@ public class Glove  extends WordVectorsImpl {
         this.textVectorizer = textVectorizer;
         this.tokenizerFactory = tokenizerFactory;
         this.lookupTable = lookupTable;
-        this.layerSize = layerSize;
         this.learningRate = learningRate;
         this.xMax = xMax;
         this.windowSize = windowSize;
@@ -116,9 +115,7 @@ public class Glove  extends WordVectorsImpl {
         }
 
         if(lookupTable == null)
-           setLookupTable(new GloveWeightLookupTable.Builder().xMax(xMax).maxCount(maxCount)
-                    .cache(vocab()).lr(learningRate).vectorLength(layerSize).gen(gen)
-                    .build());
+           throw new IllegalStateException("Please specify a lookup table");
 
 
         if(lookupTable().getSyn0() == null)
@@ -242,7 +239,6 @@ public class Glove  extends WordVectorsImpl {
                 continue;
 
             VocabWord w1 = new VocabWord(1,word);
-            glove.layerSize = glove.lookupTable().getVectorLength();
             w1.setIndex(count);
             glove.vocab().addToken(w1);
             glove.vocab().addWordToIndex(count, word);
