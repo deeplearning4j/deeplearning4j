@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimize.solvers;
 
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.util.OptimizerMatrix;
@@ -17,6 +18,14 @@ public class IterationGradientDescent implements OptimizerMatrix {
     private int iterations = 100;
     private double score = 0.0;
     private static Logger log = LoggerFactory.getLogger(IterationGradientDescent.class);
+    private IterationListener listener;
+
+    public IterationGradientDescent(OptimizableByGradientValueMatrix optimizable,IterationListener listener,int iterations) {
+        this.optimizable = optimizable;
+        this.iterations = iterations;
+        this.listener = listener;
+    }
+
 
     public IterationGradientDescent(OptimizableByGradientValueMatrix optimizable,int iterations) {
         this.optimizable = optimizable;
@@ -38,6 +47,10 @@ public class IterationGradientDescent implements OptimizerMatrix {
                     break;
                 }
             }
+
+            if(listener != null)
+                listener.iterationDone(i);
+
         }
         return true;
     }
