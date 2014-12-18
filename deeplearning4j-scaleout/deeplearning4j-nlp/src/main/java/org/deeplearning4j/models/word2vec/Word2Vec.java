@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 
+import akka.actor.ActorSystem;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -16,6 +17,7 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.eclipse.jetty.util.ConcurrentHashSet;
@@ -183,8 +185,6 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
 
 
         final AtomicLong nextRandom = new AtomicLong(5);
-        final AtomicInteger doc = new AtomicInteger(0);
-        final int numDocs = vectorizer.index().numDocuments() * numIterations;
         ExecutorService exec = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(),
                 Runtime.getRuntime().availableProcessors(),
                 0L, TimeUnit.MILLISECONDS,
@@ -201,64 +201,56 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
         });
 
         final Queue<List<VocabWord>> batch2 = new ConcurrentLinkedDeque<>();
-
-        for(int i = 0; i < numIterations; i++)
-            vectorizer.index().eachDoc(new Function<List<VocabWord>, Void>() {
-                @Override
-                public Void apply(List<VocabWord> input) {
-                    List<VocabWord> batch = new ArrayList<>();
-                    addWords(input, nextRandom, batch);
-                    if(batch.isEmpty())
-                        return null;
-
-                    batch2.add(batch);
-
-
-                    if(batch2.size() >= 100 || batch2.size() >= numDocs) {
-                        boolean added = false;
-                        while(!added) {
-                            try {
-                                jobQueue.add(new LinkedList<>(batch2));
-                                batch2.clear();
-                                added = true;
-                            }catch(Exception e) {
-                                continue;
-                            }
-                        }
-
-                    }
-
-
-                    doc.incrementAndGet();
-                    if(doc.get() > 0 && doc.get() % 10000 == 0)
-                        log.info("Doc " + doc.get() + " done so far");
-
+        vectorizer.index().eachDoc(new Function<List<VocabWord>, Void>() {
+            @Override
+            public Void apply(List<VocabWord> input) {
+                List<VocabWord> batch = new ArrayList<>();
+                addWords(input, nextRandom, batch);
+                if(batch.isEmpty())
                     return null;
-                }
-            },exec);
 
-        if(!batch2.isEmpty())
-            jobQueue.add(new LinkedList<>(batch2));
-
-
-
+                batch2.add(batch);
+                return null;
+            }
+        },exec);
 
         exec.shutdown();
+
         try {
             exec.awaitTermination(1,TimeUnit.DAYS);
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            e.printStackTrace();
         }
 
+        for(int i = 0; i < numIterations; i++)
+            doIteration(batch2,numWordsSoFar,nextRandom);
 
-        for(Thread t : work)
-            try {
-                t.join();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+
+    }
+
+
+
+    private void doIteration(Collection<List<VocabWord>> batch2,final AtomicLong numWordsSoFar,final AtomicLong nextRandom) {
+        ActorSystem actorSystem = ActorSystem.create();
+        final AtomicLong lastReported = new AtomicLong(System.currentTimeMillis());
+        Parallelization.iterateInParallel(batch2,new Parallelization.RunnableWithParams<List<VocabWord>>() {
+            @Override
+            public void run(List<VocabWord> sentence, Object[] args) {
+                double alpha = Math.max(minLearningRate, Word2Vec.this.alpha.get() * (1 - (1.0 * numWordsSoFar.get() / (double) totalWords)));
+                long now = System.currentTimeMillis();
+                long diff = Math.abs(now - lastReported.get());
+                if(numWordsSoFar.get() > 0 && diff > 10000) {
+                    lastReported.set(now);
+                    log.info("Words so far " + numWordsSoFar.get() + " with alpha at " + alpha);
+                }
+
+
+                trainSentence(sentence, nextRandom, alpha);
+                numWordsSoFar.set(numWordsSoFar.get() + sentence.size());
+
+
             }
-
-
+        },actorSystem);
     }
 
 
@@ -512,15 +504,6 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
 
 
 
-    public void setCache(WeightLookupTable lookupTable) {
-        this.lookupTable = lookupTable;
-        if(vocab() instanceof InMemoryLookupTable) {
-            InMemoryLookupTable l = (InMemoryLookupTable) vocab();
-            if(l.getSyn0() != null && l.getSyn0().columns() != layerSize)
-                layerSize = l.getSyn0().columns();
-        }
-    }
-
 
 
     public static class Builder {
@@ -670,7 +653,6 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
 
             if(iter == null) {
                 Word2Vec ret = new Word2Vec();
-                ret.layerSize = layerSize;
                 ret.window = window;
                 ret.alpha.set(lr);
                 ret.vectorizer = textVectorizer;
@@ -717,7 +699,6 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
             else {
                 Word2Vec ret = new Word2Vec();
                 ret.alpha.set(lr);
-                ret.layerSize = layerSize;
                 ret.sentenceIter = iter;
                 ret.window = window;
                 ret.useAdaGrad = useAdaGrad;

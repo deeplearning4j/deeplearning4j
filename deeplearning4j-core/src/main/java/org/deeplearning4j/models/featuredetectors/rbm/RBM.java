@@ -98,9 +98,9 @@ public  class RBM extends BaseNeuralNetwork {
     public void contrastiveDivergence() {
         this.lastMiniBatchSize = input.rows();
         NeuralNetworkGradient gradient = getGradient();
-        getW().addi(gradient.getwGradient());
-        gethBias().addi(gradient.gethBiasGradient());
-        getvBias().addi(gradient.getvBiasGradient());
+        getW().subi(gradient.getwGradient());
+        gethBias().subi(gradient.gethBiasGradient());
+        getvBias().subi(gradient.getvBiasGradient());
 
     }
 

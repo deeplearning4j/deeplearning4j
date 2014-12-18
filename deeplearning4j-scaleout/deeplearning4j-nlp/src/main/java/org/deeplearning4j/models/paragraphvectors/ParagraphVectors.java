@@ -428,7 +428,6 @@ public class ParagraphVectors extends Word2Vec {
 
             if(iter == null) {
                 ParagraphVectors ret = new ParagraphVectors();
-                ret.layerSize = layerSize;
                 ret.window = window;
                 ret.alpha.set(lr);
                 ret.vectorizer = textVectorizer;
@@ -475,7 +474,6 @@ public class ParagraphVectors extends Word2Vec {
             else {
                 ParagraphVectors ret = new ParagraphVectors();
                 ret.alpha.set(lr);
-                ret.layerSize = layerSize;
                 ret.sentenceIter = iter;
                 ret.window = window;
                 ret.useAdaGrad = useAdaGrad;

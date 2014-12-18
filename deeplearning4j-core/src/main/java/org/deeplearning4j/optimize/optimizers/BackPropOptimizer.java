@@ -1,6 +1,7 @@
 package org.deeplearning4j.optimize.optimizers;
 
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.solvers.IterationGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.BackPropStepFunction;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -66,7 +67,10 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
             g.optimize(network.getOutputLayer().conf().getNumIterations());
 
         }
-
+        else if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT) {
+            IterationGradientDescent g = new IterationGradientDescent(this,network.getOutputLayer().conf().getNumIterations());
+            g.optimize();
+        }
         else if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
             StochasticHessianFree s = new StochasticHessianFree(this,network);
             s.setTrainingEvaluator(eval);

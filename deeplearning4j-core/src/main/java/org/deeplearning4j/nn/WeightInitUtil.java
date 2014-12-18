@@ -20,6 +20,16 @@ public class WeightInitUtil {
 
 
     /**
+     * Normalized weight init
+     * @param shape shape
+     * @param nIn number of inputs
+     * @return the weights
+     */
+    public static INDArray normalized(int[] shape,int nIn) {
+        return Nd4j.rand(shape).subi(0.5).divi((double) nIn);
+    }
+
+    /**
      * Generate a random matrix with respect to the number of inputs and outputs.
      * This is a bound uniform distribution with the specified minimum and maximum
      * @param shape the shape of the matrix
@@ -47,9 +57,10 @@ public class WeightInitUtil {
      * distribution based on the initialization scheme
      */
     public static INDArray initWeights(int nIn,int nOut,WeightInit initScheme,ActivationFunction act,RealDistribution dist) {
-        INDArray ret = Nd4j.randn(nIn,nOut);
+        INDArray ret = Nd4j.rand(nIn,nOut);
         switch(initScheme) {
-
+            case NORMALIZED:
+                return ret.subi(0.5).divi(nIn);
             case  VI:
                 double r = Math.sqrt(6) / Math.sqrt(nIn + nOut + 1);
                 ret.muli(2).muli(r).subi(r);

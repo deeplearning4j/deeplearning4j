@@ -114,7 +114,6 @@ public class WordVectorSerializer {
 
             ret.setVocab(cache);
             ret.setLookupTable(lookupTable);
-            ret.setLayerSize(size);
             rootDir.delete();
             return ret;
 
@@ -167,7 +166,6 @@ public class WordVectorSerializer {
             Word2Vec ret = new Word2Vec();
             ret.setVocab(cache);
             ret.setLookupTable(lookupTable);
-            ret.setLayerSize(layerSize);
 
             reader.close();
             rootDir.delete();
@@ -342,7 +340,6 @@ public class WordVectorSerializer {
         WordVectorsImpl vectors = new WordVectorsImpl();
         vectors.setLookupTable(pair.getFirst());
         vectors.setVocab(pair.getSecond());
-        vectors.setLayerSize(pair.getFirst().layerSize());
         return vectors;
     }
     /**
@@ -354,9 +351,7 @@ public class WordVectorSerializer {
         BufferedReader write = new BufferedReader(new FileReader(path));
         VocabCache cache = new InMemoryLookupCache();
 
-        InMemoryLookupTable l = (InMemoryLookupTable) new InMemoryLookupTable.Builder().vectorLength(100)
-                .useAdaGrad(false).cache(cache)
-                .build();
+        InMemoryLookupTable l = null;
 
         LineIterator iter = IOUtils.lineIterator(write);
         List<INDArray> arrays = new ArrayList<>();
@@ -377,6 +372,11 @@ public class WordVectorSerializer {
         INDArray syn = Nd4j.create(new int[]{arrays.size(),arrays.get(0).columns()});
         for(int i = 0; i < syn.rows(); i++)
             syn.putRow(i,arrays.get(i));
+
+       l =  (InMemoryLookupTable) new InMemoryLookupTable.Builder().vectorLength(arrays.get(0).columns())
+                .useAdaGrad(false).cache(cache)
+                .build();
+        Nd4j.clearNans(syn);
         l.setSyn0(syn);
 
         iter.close();

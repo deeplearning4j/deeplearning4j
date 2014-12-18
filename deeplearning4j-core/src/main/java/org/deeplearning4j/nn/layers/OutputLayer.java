@@ -6,6 +6,7 @@ import java.io.Serializable;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.optimize.solvers.IterationGradientDescent;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -163,7 +164,10 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             g.optimize(numEpochs);
 
         }
-
+        else if(conf.getOptimizationAlgo() == OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT) {
+            IterationGradientDescent g = new IterationGradientDescent(opt,conf.getNumIterations());
+            g.optimize();
+        }
         else {
             VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(opt);
             g.setTolerance(1e-3f);
