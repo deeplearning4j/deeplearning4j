@@ -1038,9 +1038,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         }
 
 
-        INDArray gradient = pack(list);
+        //INDArray gradient = pack(list);
         //gradient.addi(mask.mul(params));
-        list = unPack(gradient);
+        //list = unPack(gradient);
 
         return list;
 

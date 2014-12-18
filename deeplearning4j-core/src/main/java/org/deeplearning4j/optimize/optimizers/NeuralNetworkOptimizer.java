@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.deeplearning4j.optimize.solvers.IterationGradientDescent;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -55,7 +56,10 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
             opt = new VectorizedNonZeroStoppingConjugateGradient(this,this);
             opt.setTolerance(tolerance);
         }
+        else if(network.conf().getOptimizationAlgo() == OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT) {
+            opt = new IterationGradientDescent(this,network.conf().getNumIterations());
 
+        }
 
         else {
             opt = new VectorizedDeepLearningGradientAscent(this,this);

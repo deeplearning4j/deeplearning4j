@@ -148,7 +148,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 
         }
 
-        INDArray testMatrix = Transforms.abs(line).div(maxOldParams);
+        INDArray testMatrix = Transforms.abs(line).divi(maxOldParams);
 
         test = testMatrix.max(Integer.MAX_VALUE).getDouble(0);
 

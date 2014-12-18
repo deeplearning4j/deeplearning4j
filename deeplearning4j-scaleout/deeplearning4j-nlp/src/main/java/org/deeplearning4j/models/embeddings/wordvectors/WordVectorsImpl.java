@@ -24,7 +24,6 @@ public class WordVectorsImpl implements WordVectors {
     protected WeightLookupTable lookupTable;
     protected VocabCache vocab;
     public final static String UNK = "UNK";
-    protected int layerSize = 100;
     protected List<String> stopWords = StopWords.getStopWords();
     /**
      * Returns true if the model has this word in the vocab
@@ -42,7 +41,7 @@ public class WordVectorsImpl implements WordVectors {
      * @return the words nearest the mean of the words
      */
     public Collection<String> wordsNearestSum(List<String> positive,List<String> negative,int top) {
-        INDArray words = Nd4j.create(layerSize);
+        INDArray words = Nd4j.create(lookupTable().layerSize());
         Set<String> union = SetUtils.union(new HashSet<>(positive), new HashSet<>(negative));
         for(String s : positive)
             words.addi(lookupTable().vector(s));
@@ -250,7 +249,7 @@ public class WordVectorsImpl implements WordVectors {
         }
 
 
-        INDArray words = Nd4j.create(positive.size() + negative.size(), layerSize);
+        INDArray words = Nd4j.create(positive.size() + negative.size(), lookupTable().layerSize());
         int row = 0;
         Set<String> union = SetUtils.union(new HashSet<>(positive),new HashSet<>(negative));
         for(String s : positive) {
@@ -353,7 +352,4 @@ public class WordVectorsImpl implements WordVectors {
         this.vocab = vocab;
     }
 
-    public void setLayerSize(int layerSize) {
-        this.layerSize = layerSize;
-    }
 }
