@@ -57,7 +57,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
             opt.setTolerance(tolerance);
         }
         else if(network.conf().getOptimizationAlgo() == OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT) {
-            opt = new IterationGradientDescent(this,network.conf().getNumIterations());
+            opt = new IterationGradientDescent(this,this,network.conf().getNumIterations());
 
         }
 
