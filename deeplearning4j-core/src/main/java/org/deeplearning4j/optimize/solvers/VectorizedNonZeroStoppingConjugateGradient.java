@@ -43,7 +43,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
     private static Logger logger = LoggerFactory.getLogger(VectorizedNonZeroStoppingConjugateGradient.class);
 
     boolean converged = false;
-    OptimizableByGradientValueMatrix optimizable;
+    OptimizableByGradientValue optimizable;
     VectorizedBackTrackLineSearch lineMaximizer;
     TrainingEvaluator eval;
     double initialStepSize = 1;
@@ -65,7 +65,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
     // to exactly zero function value
     final double eps = 1.0e-10f;
 
-    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, double initialStepSize) {
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValue function, double initialStepSize) {
         this.initialStepSize = initialStepSize;
         this.optimizable = function;
         this.lineMaximizer = new VectorizedBackTrackLineSearch(function);
@@ -75,27 +75,27 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 
     }
 
-    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function,IterationListener listener) {
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValue function,IterationListener listener) {
         this(function, 0.01f);
         this.listener = listener;
 
     }
 
-    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, double initialStepSize,IterationListener listener) {
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValue function, double initialStepSize,IterationListener listener) {
         this(function,initialStepSize);
         this.listener = listener;
 
 
     }
 
-    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function,StepFunction stepFunction) {
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValue function,StepFunction stepFunction) {
         this(function, stepFunction,0.01f);
     }
 
 
 
 
-    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, StepFunction stepFunction,double initialStepSize) {
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValue function, StepFunction stepFunction,double initialStepSize) {
         this.initialStepSize = initialStepSize;
         this.optimizable = function;
         this.lineMaximizer = new VectorizedBackTrackLineSearch(function,stepFunction);
@@ -105,20 +105,20 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 
     }
 
-    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function,StepFunction stepFunction,IterationListener listener) {
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValue function,StepFunction stepFunction,IterationListener listener) {
         this(function, stepFunction,0.01f);
         this.listener = listener;
 
     }
 
-    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, double initialStepSize,StepFunction stepFunction,IterationListener listener) {
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValue function, double initialStepSize,StepFunction stepFunction,IterationListener listener) {
         this(function,stepFunction,initialStepSize);
         this.listener = listener;
 
 
     }
 
-    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function) {
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValue function) {
         this(function, 0.01f);
     }
 

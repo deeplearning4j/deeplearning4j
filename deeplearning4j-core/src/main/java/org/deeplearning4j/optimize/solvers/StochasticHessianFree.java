@@ -6,7 +6,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
+import org.deeplearning4j.optimize.api.OptimizableByGradientValue;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.util.OptimizerMatrix;
 
@@ -25,7 +25,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
     private static Logger logger = LoggerFactory.getLogger(StochasticHessianFree.class);
 
     boolean converged = false;
-    OptimizableByGradientValueMatrix optimizable;
+    OptimizableByGradientValue optimizable;
     TrainingEvaluator eval;
     double initialStepSize = 1f;
     double tolerance = 1e-5f;
@@ -46,27 +46,27 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
 
 
-    public StochasticHessianFree(OptimizableByGradientValueMatrix function, double initialStepSize,BaseMultiLayerNetwork network) {
+    public StochasticHessianFree(OptimizableByGradientValue function, double initialStepSize,BaseMultiLayerNetwork network) {
         this.initialStepSize = initialStepSize;
         this.optimizable = function;
         this.network = network;
 
     }
 
-    public StochasticHessianFree(OptimizableByGradientValueMatrix function, IterationListener listener,BaseMultiLayerNetwork network) {
+    public StochasticHessianFree(OptimizableByGradientValue function, IterationListener listener,BaseMultiLayerNetwork network) {
         this(function, 0.01f,network);
         this.listener = listener;
 
     }
 
-    public StochasticHessianFree(OptimizableByGradientValueMatrix function, double initialStepSize, IterationListener listener,BaseMultiLayerNetwork network) {
+    public StochasticHessianFree(OptimizableByGradientValue function, double initialStepSize, IterationListener listener,BaseMultiLayerNetwork network) {
         this(function,initialStepSize,network);
         this.listener = listener;
 
 
     }
 
-    public StochasticHessianFree(OptimizableByGradientValueMatrix function,BaseMultiLayerNetwork network) {
+    public StochasticHessianFree(OptimizableByGradientValue function,BaseMultiLayerNetwork network) {
         this(function, 0.01f,network);
         this.network = network;
     }

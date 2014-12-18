@@ -33,7 +33,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.LinAlgExceptions;
-import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
+import org.deeplearning4j.optimize.api.OptimizableByGradientValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,9 +44,9 @@ public class VectorizedBackTrackLineSearchMinimum
 {
     private static Logger logger = LoggerFactory.getLogger(VectorizedBackTrackLineSearchMinimum.class.getName());
 
-    OptimizableByGradientValueMatrix function;
+    OptimizableByGradientValue function;
 
-    public VectorizedBackTrackLineSearchMinimum(OptimizableByGradientValueMatrix optimizable) {
+    public VectorizedBackTrackLineSearchMinimum(OptimizableByGradientValue optimizable) {
         this.function = optimizable;
     }
 

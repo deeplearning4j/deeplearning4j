@@ -8,7 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 
 import org.deeplearning4j.nn.api.NeuralNetwork;
-import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
+import org.deeplearning4j.optimize.api.OptimizableByGradientValue;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
 import org.deeplearning4j.optimize.solvers.VectorizedDeepLearningGradientAscent;
@@ -23,7 +23,7 @@ import java.io.Serializable;
  * Optimizes via back prop gradients
  * @author Adam Gibson
  */
-public class BackPropOptimizer implements Serializable,OptimizableByGradientValueMatrix,IterationListener {
+public class BackPropOptimizer implements Serializable,OptimizableByGradientValue,IterationListener {
 
     private BaseMultiLayerNetwork network;
     private int length = -1;

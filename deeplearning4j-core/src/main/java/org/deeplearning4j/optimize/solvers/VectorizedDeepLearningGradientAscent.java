@@ -3,11 +3,9 @@ package org.deeplearning4j.optimize.solvers;
 
 import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.optimizers.BackPropOptimizer;
-import org.deeplearning4j.optimize.stepfunctions.BackPropStepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
+import org.deeplearning4j.optimize.api.OptimizableByGradientValue;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.util.OptimizerMatrix;
 import org.slf4j.Logger;
@@ -24,7 +22,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 
     private IterationListener listener;
     boolean converged = false;
-    OptimizableByGradientValueMatrix optimizable;
+    OptimizableByGradientValue optimizable;
     private double maxStep = 1.0f;
 
     static final double initialStepSize = 0.2f;
@@ -42,7 +40,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 
 
 
-    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function, double initialStepSize,StepFunction step) {
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValue function, double initialStepSize,StepFunction step) {
         this.optimizable = function;
         this.lineMaximizer = new VectorizedBackTrackLineSearch(function,step);
         lineMaximizer.setAbsTolx(tolerance);
@@ -52,13 +50,13 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 
     }
 
-    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function,IterationListener listener,StepFunction step) {
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValue function,IterationListener listener,StepFunction step) {
         this(function, 0.01f,step);
         this.listener = listener;
 
     }
 
-    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function, double initialStepSize,IterationListener listener,StepFunction step) {
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValue function, double initialStepSize,IterationListener listener,StepFunction step) {
         this(function,initialStepSize,step);
         this.listener = listener;
 
@@ -68,7 +66,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 
 
 
-    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function, double initialStepSize) {
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValue function, double initialStepSize) {
         this.optimizable = function;
         this.lineMaximizer = new VectorizedBackTrackLineSearch(function);
         lineMaximizer.setAbsTolx(tolerance);
@@ -77,20 +75,20 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 
     }
 
-    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function,IterationListener listener) {
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValue function,IterationListener listener) {
         this(function, 0.01f);
         this.listener = listener;
 
     }
 
-    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function, double initialStepSize,IterationListener listener) {
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValue function, double initialStepSize,IterationListener listener) {
         this(function,initialStepSize);
         this.listener = listener;
 
 
     }
 
-    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValueMatrix function) {
+    public VectorizedDeepLearningGradientAscent(OptimizableByGradientValue function) {
         this(function, 0.01f);
     }
 
@@ -99,7 +97,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
         this.maxIterations = maxIterations;
     }
 
-    public OptimizableByGradientValueMatrix getOptimizable () { return this.optimizable; }
+    public OptimizableByGradientValue getOptimizable () { return this.optimizable; }
     public boolean isConverged () { return converged; }
 
 

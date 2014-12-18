@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.conf;
 
-import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -18,6 +17,7 @@ import org.deeplearning4j.nn.conf.deserializers.RandomGeneratorDeSerializer;
 import org.deeplearning4j.nn.conf.serializers.ActivationFunctionSerializer;
 import org.deeplearning4j.nn.conf.serializers.DistributionSerializer;
 import org.deeplearning4j.nn.conf.serializers.RandomGeneratorSerializer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -69,6 +69,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected long seed = 123;
     protected transient RandomGenerator rng;
     protected transient RealDistribution dist;
+    protected transient Collection<IterationListener> listeners;
+
+
     private void readObject(java.io.ObjectInputStream in)
             throws IOException, ClassNotFoundException {
         in.defaultReadObject();
@@ -101,7 +104,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
 
-    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, int k, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, double dropOut, boolean applySparsity, WeightInit weightInit, NeuralNetwork.OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride,int[] featureMapSize,int numInFeatureMaps) {
+    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, int k, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, double dropOut, boolean applySparsity, WeightInit weightInit, NeuralNetwork.OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride,int[] featureMapSize,int numInFeatureMaps,Collection<IterationListener> listeners) {
+        this.listeners = listeners;
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
@@ -686,6 +690,36 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
     }
 
+    public void setSparsity(double sparsity) {
+        this.sparsity = sparsity;
+    }
+
+    public void setCorruptionLevel(double corruptionLevel) {
+        this.corruptionLevel = corruptionLevel;
+    }
+
+    public void setMomentum(double momentum) {
+        this.momentum = momentum;
+    }
+
+    public double getPretrainLearningRate() {
+        return pretrainLearningRate;
+    }
+
+    public void setDropOut(double dropOut) {
+        this.dropOut = dropOut;
+    }
+
+    public Collection<IterationListener> getListeners() {
+        if(listeners == null)
+            listeners = new ArrayList<>();
+        return listeners;
+    }
+
+    public void setListeners(Collection<IterationListener> listeners) {
+        this.listeners = listeners;
+    }
+
     /**
      * Object mapper for serialization of configurations
      * @return
@@ -842,6 +876,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int numInFeatureMaps = 2;
         //subsampling layers
         private int[] stride;
+        private Collection<IterationListener> listeners;
 
 
 
@@ -862,12 +897,29 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     .concatBiases(concatBiases).constrainGradientToUnitNorm(constrainGradientToUnitNorm)
                     .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize)
                     .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr).useAdaGrad(adagrad)
-                    .lossFunction(lossFunction).momentumAfter(momentumAfter).momentum(momentum)
+                    .lossFunction(lossFunction).momentumAfter(momentumAfter).momentum(momentum).listeners(listeners)
                     .nIn(nIn).nOut(nOut).numFeatureMaps(numFeatureMaps).optimizationAlgo(optimizationAlgo)
                     .regularization(useRegularization).render(renderWeightsEveryNumEpochs).resetAdaGradIterations(resetAdaGradIterations)
                     .rng(rng).seed(seed).sparsity(sparsity).stride(stride).useAdaGrad(useAdaGrad).visibleUnit(visibleUnit)
                     .weightInit(weightInit).weightShape(weightShape).withActivationType(activationType);
             return b;
+        }
+
+
+        public Builder iterationListener(IterationListener listener) {
+            if(listeners != null)
+                listeners.add(listener);
+            else {
+                listeners = new ArrayList<>();
+                listeners.add(listener);
+            }
+
+            return this;
+        }
+
+        public Builder  listeners(Collection<IterationListener> listeners) {
+            this.listeners = listeners;
+            return this;
         }
 
 
@@ -1012,7 +1064,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,  renderWeightsEveryNumEpochs,
                     concatBiases,  constrainGradientToUnitNorm,  rng,
-                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType,weightShape,filterSize,numFeatureMaps,stride,featureMapSize,numInFeatureMaps);
+                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType,weightShape,filterSize,numFeatureMaps,stride,featureMapSize,numInFeatureMaps,listeners);
             ret.useAdaGrad = this.adagrad;
 
             return ret;

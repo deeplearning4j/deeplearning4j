@@ -5,7 +5,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 
-import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
+import org.deeplearning4j.optimize.api.OptimizableByGradientValue;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
 import org.deeplearning4j.optimize.solvers.VectorizedDeepLearningGradientAscent;
@@ -20,7 +20,7 @@ import java.io.Serializable;
  * the r operator, used in hessian free operators
  * @author Adam Gibson
  */
-public class BackPropROptimizer implements Serializable,OptimizableByGradientValueMatrix {
+public class BackPropROptimizer implements Serializable,OptimizableByGradientValue {
 
     private BaseMultiLayerNetwork network;
     private int length = -1;
