@@ -3,7 +3,7 @@ package org.deeplearning4j.optimize.api;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-public interface OptimizableByGradientValueMatrix {
+public interface OptimizableByGradientValue {
 
 	public int getNumParameters ();
 
