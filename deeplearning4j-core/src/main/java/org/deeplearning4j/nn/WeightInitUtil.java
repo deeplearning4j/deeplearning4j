@@ -60,12 +60,14 @@ public class WeightInitUtil {
         INDArray ret = null;
         switch(initScheme) {
             case NORMALIZED:
+                ret = Nd4j.rand(nIn,nOut);
                 return ret.subi(0.5).divi(nIn);
             case UNIFORM:
                 double a = 1 / nIn;
                 return Nd4j.rand(new int[]{nIn,nOut},-a,a,new MersenneTwister(123));
 
             case  VI:
+                ret = Nd4j.rand(nIn,nOut);
                 double r = Math.sqrt(6) / Math.sqrt(nIn + nOut + 1);
                 ret.muli(2).muli(r).subi(r);
                 return ret;

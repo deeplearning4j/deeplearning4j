@@ -14,7 +14,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
-import org.deeplearning4j.optimize.optimizers.BackPropOptimizer;
+import org.deeplearning4j.optimize.optimizers.SoftMaxOptimizer;
 import org.deeplearning4j.optimize.optimizers.BackPropROptimizer;
 import org.deeplearning4j.optimize.optimizers.MultiLayerNetworkOptimizer;
 import org.deeplearning4j.util.Dl4jReflection;
@@ -830,7 +830,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             opt.optimize(eval);
 
         } else {
-            BackPropOptimizer opt = new BackPropOptimizer(this, defaultConfiguration.getLr(), defaultConfiguration.getNumIterations());
+            SoftMaxOptimizer opt = new SoftMaxOptimizer(this, defaultConfiguration.getLr(), defaultConfiguration.getNumIterations());
             opt.optimize(eval);
 
         }
