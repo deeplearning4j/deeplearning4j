@@ -57,16 +57,21 @@ public class WeightInitUtil {
      * distribution based on the initialization scheme
      */
     public static INDArray initWeights(int nIn,int nOut,WeightInit initScheme,ActivationFunction act,RealDistribution dist) {
-        INDArray ret = Nd4j.rand(nIn,nOut);
+        INDArray ret = null;
         switch(initScheme) {
             case NORMALIZED:
                 return ret.subi(0.5).divi(nIn);
+            case UNIFORM:
+                double a = 1 / nIn;
+                return Nd4j.rand(new int[]{nIn,nOut},-a,a,new MersenneTwister(123));
+
             case  VI:
                 double r = Math.sqrt(6) / Math.sqrt(nIn + nOut + 1);
                 ret.muli(2).muli(r).subi(r);
                 return ret;
 
             case DISTRIBUTION:
+                ret = Nd4j.rand(nIn,nOut);
                 for(int i = 0; i < ret.rows(); i++) {
                     ret.putRow(i,Nd4j.create(dist.sample(ret.columns())));
                 }

@@ -40,10 +40,6 @@ public class OutputLayerOptimizer implements OptimizableByGradientValue {
         for(int i = 0; i < buffer.length; i++) {
             buffer[i] = getParameter(i);
         }
-
-
-
-
     }
 
 
@@ -70,7 +66,7 @@ public class OutputLayerOptimizer implements OptimizableByGradientValue {
 
 
     public void getValueGradient(double[] buffer) {
-        OutputLayerGradient grad = logReg.getGradient(lr);
+        OutputLayerGradient grad = logReg.getGradient();
         for(int i = 0; i < buffer.length; i++) {
             if(i < logReg.getW().length())
                 buffer[i] = (double) grad.getwGradient().getScalar(i).element();
@@ -100,7 +96,7 @@ public class OutputLayerOptimizer implements OptimizableByGradientValue {
     @Override
     public INDArray getValueGradient(int currIteration) {
         this.currIteration = currIteration;
-        OutputLayerGradient grad = logReg.getGradient(lr);
+        OutputLayerGradient grad = logReg.getGradient();
         if(logReg.getW().length() != grad.getwGradient().length())
             throw new IllegalStateException("Illegal length for gradient");
         if(logReg.getB().length() != grad.getbGradient().length())

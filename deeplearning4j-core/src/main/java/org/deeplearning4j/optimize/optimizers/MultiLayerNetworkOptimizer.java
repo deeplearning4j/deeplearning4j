@@ -51,8 +51,6 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
      */
     public void optimize(INDArray labels) {
         optimize(labels,null);
-
-
     }
 
 
@@ -124,7 +122,7 @@ public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGra
 
 
     public void getValueGradient(double[] buffer) {
-        OutputLayerGradient gradient = network.getOutputLayer().getGradient(lr);
+        OutputLayerGradient gradient = network.getOutputLayer().getGradient();
 
         INDArray weightGradient = gradient.getwGradient();
         INDArray biasGradient = gradient.getbGradient();

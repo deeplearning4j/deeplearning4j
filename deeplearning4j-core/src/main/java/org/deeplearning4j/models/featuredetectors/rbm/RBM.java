@@ -236,7 +236,7 @@ public  class RBM extends BaseNeuralNetwork {
     public double freeEnergy(INDArray visibleSample) {
         INDArray wxB = visibleSample.mmul(W).addiRowVector(hBias);
         double vBiasTerm = Nd4j.getBlasWrapper().dot(visibleSample, vBias);
-        double hBiasTerm = (double) log(exp(wxB).add(1)).sum(Integer.MAX_VALUE).element();
+        double hBiasTerm = (double) log(exp(wxB).add(1)).sum(Integer.MAX_VALUE).getDouble(0);
         return -hBiasTerm - vBiasTerm;
     }
 

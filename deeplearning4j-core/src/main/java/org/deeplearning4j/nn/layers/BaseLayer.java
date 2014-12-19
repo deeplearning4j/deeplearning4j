@@ -94,7 +94,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public  INDArray activate() {
-        INDArray activation =  conf.getActivationFunction().apply(getInput().mmul(getW()).addRowVector(getB()));
+        INDArray activation =  conf.getActivationFunction().apply(getInput().mmul(getW()).addiRowVector(getB()));
         return activation;
     }
 
