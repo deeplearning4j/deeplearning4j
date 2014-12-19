@@ -59,15 +59,8 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
                         initializeLayers(input);
                     } else
                         setInput(input);
-                    //override learning rate where present
-                    if (layerWiseConfigurations.isForceNumIterations()) {
-                        for (int iteration = 0; iteration < iterations; iteration++) {
-                            log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
-                            getNeuralNets()[i].iterate(next.getFeatureMatrix());
-                            getNeuralNets()[i].iterationDone(iteration);
-                        }
-                    } else
-                        getNeuralNets()[i].fit(next.getFeatureMatrix());
+
+                    getNeuralNets()[i].fit(next.getFeatureMatrix());
 
                 }
 
@@ -82,15 +75,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
 
 
                     log.info("Training on layer " + (i + 1));
-                    //override learning rate where present
-                    if (layerWiseConfigurations.isForceNumIterations()) {
-                        for (int iteration = 0; iteration < iterations; iteration++) {
-                            log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
-                            getNeuralNets()[i].iterate(layerInput);
-                            getNeuralNets()[i].iterationDone(iteration);
-                        }
-                    } else
-                        getNeuralNets()[i].fit(layerInput);
+                    getNeuralNets()[i].fit(layerInput);
 
 
                 }
@@ -122,15 +107,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
                     }
                     else
                         setInput(input);
-                    if(layerWiseConfigurations.isForceNumIterations()) {
-                        for(int iteration = 0; iteration < getNeuralNets()[i].conf().getNumIterations(); iteration++) {
-                            log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
-                            getNeuralNets()[i].iterate(next.getFeatureMatrix());
-                            getNeuralNets()[i].iterationDone(iteration);
-                        }
-                    }
-                    else
-                        getNeuralNets()[i].fit(next.getFeatureMatrix());
+                    getNeuralNets()[i].fit(next.getFeatureMatrix());
 
                 }
 
@@ -148,16 +125,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
 
 
                     log.info("Training on layer " + (i + 1));
-                    //override learning rate where present
-                    if(layerWiseConfigurations.isForceNumIterations()) {
-                        for(int iteration = 0; iteration < getNeuralNets()[i].conf().getNumIterations(); iteration++) {
-                            log.info("Error on epoch " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
-                            getNeuralNets()[i].iterate(layerInput);
-                            getNeuralNets()[i].iterationDone(iteration);
-                        }
-                    }
-                    else
-                        getNeuralNets()[i].fit(layerInput);
+                    getNeuralNets()[i].fit(layerInput);
 
                 }
 
@@ -173,7 +141,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
      * from a corrupted version
      *
      * @param input           the input to iterate on
-       */
+     */
     public void pretrain(INDArray input) {
 
         if (this.getInput() == null)
@@ -192,15 +160,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork {
                 layerInput = input;
             else
                 layerInput = this.getNeuralNets()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
-            if (layerWiseConfigurations.isForceNumIterations()) {
-                for (int iteration = 0; iteration < layerWiseConfigurations.getConf(i).getNumIterations(); iteration++) {
-                    getNeuralNets()[i].iterate(layerInput);
-                    log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
-                    getNeuralNets()[i].iterationDone(iteration);
-
-                }
-            } else
-                getNeuralNets()[i].fit(layerInput);
+            getNeuralNets()[i].fit(layerInput);
 
 
         }

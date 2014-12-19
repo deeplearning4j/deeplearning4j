@@ -39,20 +39,19 @@ public class DBNTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(10)
-                .weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen, 1e-3))
+                .iterations(1000)
                 .activationFunction(Activations.tanh())
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT)
-                .rng(gen)
-                .learningRate(1e-2f)
-                .nIn(4).nOut(3).list(2).hiddenLayerSizes(new int[]{3})
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT).weightInit(WeightInit.VI)
+                .optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .rng(gen).constrainGradientToUnitNorm(true)
+                .learningRate(1e-3f)
+                .nIn(4).nOut(3).list(3).hiddenLayerSizes(new int[]{3,2})
                 .override(new NeuralNetConfiguration.ConfOverride() {
                     @Override
                     public void override(int i, NeuralNetConfiguration.Builder builder) {
 
-                        if (i == 1) {
+                        if (i == 2) {
                             builder.weightInit(WeightInit.ZERO);
                             builder.activationFunction(Activations.softMaxRows());
                             builder.lossFunction(LossFunctions.LossFunction.MCXENT);
@@ -88,10 +87,12 @@ public class DBNTest {
     public void testDbn() throws IOException {
         RandomGenerator gen = new MersenneTwister(123);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().withActivationType(NeuralNetConfiguration.ActivationType.NET_ACTIVATION)
-                .momentum(9e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen,1e-1))
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).iterations(10)
-                .learningRate(1e-1f).nIn(784).nOut(10).list(4).hiddenLayerSizes(new int[]{500, 250, 200}).override(new NeuralNetConfiguration.ConfOverride() {
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .withActivationType(NeuralNetConfiguration.ActivationType.HIDDEN_LAYER_ACTIVATION)
+                .momentum(9e-1f).weightInit(WeightInit.UNIFORM)
+                .optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).iterations(1000)
+                .learningRate(1e-1f).nIn(784).nOut(10).list(4).hiddenLayerSizes(new int[]{500, 400, 300}).override(new NeuralNetConfiguration.ConfOverride() {
                     @Override
                     public void override(int i, NeuralNetConfiguration.Builder builder) {
                         if(i == 3) {
@@ -109,7 +110,6 @@ public class DBNTest {
         DBN d = new DBN.Builder().layerWiseConfiguration(conf)
                 .build();
 
-        NeuralNetConfiguration.setClassifier(d.getOutputLayer().conf());
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         fetcher.fetch(10);
         DataSet d2 = fetcher.next();

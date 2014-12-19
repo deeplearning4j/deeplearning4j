@@ -33,7 +33,6 @@ public class DBN extends BaseMultiLayerNetwork {
 
     private static final long serialVersionUID = -9068772752220902983L;
     private static Logger log = LoggerFactory.getLogger(DBN.class);
-    private boolean useRBMPropUpAsActivations = true;
 
     public DBN() {}
 
@@ -87,15 +86,7 @@ public class DBN extends BaseMultiLayerNetwork {
                     }
                     else
                         setInput(input);
-                    if(layerWiseConfigurations.isForceNumIterations()) {
-                        for(int iteration = 0; iteration < getNeuralNets()[i].conf().getNumIterations(); iteration++) {
-                            log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
-                            getNeuralNets()[i].iterate(next.getFeatureMatrix());
-                            getNeuralNets()[i].iterationDone(iteration);
-                        }
-                    }
-                    else
-                        getNeuralNets()[i].fit(next.getFeatureMatrix());
+                    getNeuralNets()[i].fit(next.getFeatureMatrix());
 
                 }
 
@@ -109,20 +100,8 @@ public class DBN extends BaseMultiLayerNetwork {
                     for(int j = 1; j <= i; j++)
                         layerInput = activationFromPrevLayer(j - 1,layerInput);
 
-
-
-
                     log.info("Training on layer " + (i + 1));
-                    //override learning rate where present
-                    if(layerWiseConfigurations.isForceNumIterations()) {
-                        for(int iteration = 0; iteration < getNeuralNets()[i].conf().getNumIterations(); iteration++) {
-                            log.info("Error on epoch " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
-                            getNeuralNets()[i].iterate(layerInput);
-                            getNeuralNets()[i].iterationDone(iteration);
-                        }
-                    }
-                    else
-                        getNeuralNets()[i].fit(layerInput);
+                    getNeuralNets()[i].fit(layerInput);
 
                 }
 
@@ -168,15 +147,8 @@ public class DBN extends BaseMultiLayerNetwork {
 
             log.info("Training on layer " + (i + 1));
 
-            if(layerWiseConfigurations.isForceNumIterations()) {
-                for(int iteration = 0; iteration < layers[i].conf().getNumIterations(); iteration++) {
-                    log.info("Error on epoch " + iteration + " for layer " + (i + 1) + " is " + getNeuralNets()[i].score());
-                    getNeuralNets()[i].iterate(layerInput);
-                    getNeuralNets()[i].iterationDone(iteration);
-                }
-            }
-            else
-                getNeuralNets()[i].fit(layerInput);
+
+            getNeuralNets()[i].fit(layerInput);
 
 
         }
@@ -294,7 +266,6 @@ public class DBN extends BaseMultiLayerNetwork {
         @Override
         public DBN build() {
             DBN ret = super.build();
-            ret.useRBMPropUpAsActivations = useRBMPropUpAsActivation;
             ret.initializeLayers(Nd4j.zeros(1, ret.defaultConfiguration.getnIn()));
             return ret;
         }
