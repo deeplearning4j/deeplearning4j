@@ -88,7 +88,7 @@ public class DBNTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .withActivationType(NeuralNetConfiguration.ActivationType.HIDDEN_LAYER_ACTIVATION)
+                .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE)
                 .momentum(9e-1f).weightInit(WeightInit.UNIFORM)
                 .optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).iterations(1000)
