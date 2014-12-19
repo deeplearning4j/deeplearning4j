@@ -28,7 +28,6 @@ public class MultiLayerConfiguration implements Serializable {
 
     private int[] hiddenLayerSizes;
     private List<NeuralNetConfiguration> confs;
-    private boolean forceNumIterations = false;
     private boolean useDropConnect = false;
     private boolean useGaussNewtonVectorProductBackProp = false;
     protected boolean pretrain = true;
@@ -60,13 +59,6 @@ public class MultiLayerConfiguration implements Serializable {
         this.sampleFromHiddenActivations = sampleFromHiddenActivations;
     }
 
-    public boolean isForceNumIterations() {
-        return forceNumIterations;
-    }
-
-    public void setForceNumIterations(boolean forceNumIterations) {
-        this.forceNumIterations = forceNumIterations;
-    }
 
     public boolean isUseDropConnect() {
         return useDropConnect;
@@ -231,7 +223,6 @@ public class MultiLayerConfiguration implements Serializable {
         public MultiLayerConfiguration build() {
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
-            conf.forceNumIterations = forceNumIterations;
             conf.hiddenLayerSizes = this.hiddenLayerSizes;
             conf.useDropConnect = useDropConnect;
             conf.pretrain = pretrain;

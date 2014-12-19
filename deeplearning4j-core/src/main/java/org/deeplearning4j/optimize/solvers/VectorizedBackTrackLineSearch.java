@@ -250,8 +250,6 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 
         }
 
-        if(iteration >= maxIterations)
-            throw new IllegalStateException ("Too many iterations.");
         return 0.0f;
     }
 

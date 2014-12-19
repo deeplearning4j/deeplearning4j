@@ -562,8 +562,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         //errors
         for (int i = weights.size() - 1; i >= 0; i--) {
             deltas[i] = activations.get(i).transpose().mmul(ix);
-            log.info("Delta sum at " + i + " is " + deltas[i].sum(Integer.MAX_VALUE));
-            preCons[i] = Transforms.pow(activations.get(i).transpose(), 2).mmul(Transforms.pow(ix, 2)).mul(labels.rows());
+            log.info("Delta sum at " + i + " is " + deltas[i].mean(Integer.MAX_VALUE));
+            preCons[i] = Transforms.pow(activations.get(i).transpose(), 2).mmul(Transforms.pow(ix, 2)).muli(labels.rows());
             applyDropConnectIfNecessary(deltas[i]);
 
             if (i > 0) {
@@ -677,8 +677,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     public void backPropStep() {
         List<Pair<INDArray, INDArray>> deltas = backPropGradient();
         for (int i = 0; i < layers.length; i++) {
-            layers[i].getW().subi(deltas.get(i).getFirst());
-            layers[i].getB().subi(deltas.get(i).getSecond());
+            layers[i].getW().addi(deltas.get(i).getFirst());
+            layers[i].getB().addi(deltas.get(i).getSecond());
             if(i < neuralNets.length) {
                 neuralNets[i].setW(layers[i].getW());
                 neuralNets[i].sethBias(layers[i].getB());
@@ -997,7 +997,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
             //update hidden bias
-            INDArray deltaColumnSums = deltas.get(l).isVector() ? deltas.get(l) : deltas.get(l).sum(0);
+            INDArray deltaColumnSums = deltas.get(l).isVector() ? deltas.get(l) : deltas.get(l).mean(0);
 
 
             list.add(new Pair<>(gradientChange, deltaColumnSums));
@@ -1505,7 +1505,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      */
     @Override
     public double score() {
-        feedForward();
+        if(getOutputLayer().getInput() == null)
+            feedForward();
         return getOutputLayer().score();
     }
 

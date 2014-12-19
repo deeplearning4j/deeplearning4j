@@ -65,10 +65,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     /**
      * Train with current input and labels
      * with the given learning rate
-     * @param lr the learning rate to use
      */
-    public  void train(double lr) {
-        train(input,labels,lr);
+    public  void train() {
+        train(input,labels);
     }
 
 
@@ -77,49 +76,32 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * Train with the given input
      * and the currently applyTransformToDestination labels
      * @param x the input to use
-     * @param lr the learning rate to use
      */
-    public  void train(INDArray x,double lr) {
+    public  void train(INDArray x) {
+        double lr = conf.getLr();
         adaGrad.setMasterStepSize(lr);
         biasAdaGrad.setMasterStepSize(lr);
 
         LinAlgExceptions.assertRows(x,labels);
 
-        train(x,labels,lr);
+        train(x,labels);
 
     }
 
-    /**
-     * Run conjugate gradient with the given x and y
-     * @param x the input to use
-     * @param y the labels to use
-     * @param learningRate
-     * @param epochs
-     */
-    public  void trainTillConvergence(INDArray x,INDArray y, double learningRate,int epochs) {
-        LinAlgExceptions.assertRows(x,y);
-        adaGrad.setMasterStepSize(learningRate);
-        biasAdaGrad.setMasterStepSize(learningRate);
-
-        this.input = x;
-        this.labels = y;
-        trainTillConvergence(learningRate,epochs);
-
-    }
 
 
     /**
      * Run the optimization algorithm for training
-     * @param learningRate the learning rate to iterate with
-     * @param numIterations the number of epochs
      * @param eval the training evaluator to use for early stopping (where applicable)
      */
-    public  void trainTillConvergence(INDArray labels,double learningRate, int numIterations,TrainingEvaluator eval) {
-
+    public  void trainTillConvergence(INDArray labels,TrainingEvaluator eval) {
+        double learningRate = conf.getLr();
+        int numIterations = conf.getNumIterations();
         this.labels = labels;
         OutputLayerOptimizer opt = new OutputLayerOptimizer(this, learningRate);
         adaGrad.setMasterStepSize(learningRate);
         biasAdaGrad.setMasterStepSize(learningRate);
+        IterationListener listener = conf.getListeners() != null ? new ComposableIterationListener(conf.getListeners()) : null;
 
         if(conf.getOptimizationAlgo() == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
             VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt);
@@ -129,6 +111,11 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             g.optimize(numIterations);
 
         }
+        else if(conf.getOptimizationAlgo() == OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT) {
+            IterationGradientDescent g = new IterationGradientDescent(opt,listener,conf.getNumIterations());
+            g.optimize();
+        }
+
         else if(conf.getOptimizationAlgo()  == OptimizationAlgorithm.HESSIAN_FREE) {
             StochasticHessianFree o = new StochasticHessianFree(opt,null);
             o.setTolerance(1e-3f);
@@ -182,16 +169,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     }
 
 
-    /**
-     * Run conjugate gradient
-     * @param learningRate the learning rate to iterate with
-     * @param numIterations the number of epochs
-     */
-    public  void trainTillConvergence(double learningRate, int numIterations) {
-        trainTillConvergence(learningRate,numIterations,null);
-    }
-
-
 
 
     /**
@@ -223,10 +200,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * caching.
      * @param x the inputs to iterate on
      * @param y the labels to iterate on
-     * @param lr the learning rate
      */
-    public  void train(INDArray x,INDArray y, double lr) {
-
+    public  void train(INDArray x,INDArray y) {
+        double lr = conf.getLr();
         adaGrad.setMasterStepSize(lr);
         biasAdaGrad.setMasterStepSize(lr);
 
@@ -236,7 +212,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         this.input = x;
         this.labels = y;
 
-        OutputLayerGradient gradient = getGradient(lr);
+        OutputLayerGradient gradient = getGradient();
 
 
 
@@ -264,12 +240,11 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     /**
      * Gets the gradient from one training iteration
-     * @param lr the learning rate to use for training
      * @return the gradient (bias and weight matrix)
      */
-    public OutputLayerGradient getGradient(double lr) {
+    public OutputLayerGradient getGradient() {
         LinAlgExceptions.assertRows(input,labels);
-
+        double lr = conf.getLr();
         adaGrad.setMasterStepSize(lr);
         biasAdaGrad.setMasterStepSize(lr);
 
@@ -425,7 +400,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        trainTillConvergence(examples, labels, conf.getLr(), conf.getNumIterations());
+        this.input = examples;
+        trainTillConvergence(labels,null);
     }
 
     /**
@@ -438,7 +414,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         fit(data.getFeatureMatrix(),data.getLabels());
     }
 
-      /**
+    /**
      * Fit the model
      *
      * @param examples the examples to classify (one example in each row)
@@ -507,7 +483,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray data) {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override

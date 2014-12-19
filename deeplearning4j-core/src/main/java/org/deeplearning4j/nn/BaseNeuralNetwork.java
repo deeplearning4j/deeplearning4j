@@ -98,9 +98,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
 
-    public double l2RegularizedCoefficient() {
-        return ((double) pow(getW(),2).sum(Integer.MAX_VALUE).element()/ 2.0f)  * conf.getL2() + 1e-6f;
-    }
 
     /**
      * Initialize weights.
