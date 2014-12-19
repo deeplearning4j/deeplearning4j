@@ -103,7 +103,8 @@ public class SimpleJCublas {
     }
 
     private static String libDir() {
-        return cudaBase() + File.separator  + libFolder() + thirtyTwoOrSixtyFour();
+        int bits =  thirtyTwoOrSixtyFour();
+        return cudaBase() + File.separator  + libFolder() + (bits == 64 ? "64" : "");
     }
 
 

@@ -58,7 +58,7 @@ public class LossFunctions {
                 INDArray xEntLogZ2 = Transforms.log(z.dup());
                 INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
                 INDArray xEntOneMinusLogOneMinusZ2 = Transforms.log(z).rsubi(1);
-                ret = - labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).mul(xEntOneMinusLogOneMinusZ2).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
+                ret = - labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case MCXENT:
                 INDArray columnSums = labels.mul(log(z));
@@ -68,7 +68,7 @@ public class LossFunctions {
                 INDArray xEntLogZ =  log(z);
                 INDArray xEntOneMinusLabelsOut = labels.rsub(1);
                 INDArray xEntOneMinusLogOneMinusZ =  log(z).rsubi(1);
-                ret = -labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).mul(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
+                ret = -labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).muli(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case RMSE_XENT:
                 INDArray rmseXentDiff = labels.sub(z);
@@ -78,11 +78,11 @@ public class LossFunctions {
                 break;
             case MSE:
                 INDArray mseDelta = labels.sub(z);
-                ret = 0.5f *   pow(mseDelta, 2).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
+                ret = 0.5 *  pow(mseDelta, 2).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case EXPLL:
                 INDArray expLLLogZ = log(z);
-                ret =  -   z.sub(labels.mul(expLLLogZ)).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
+                ret =  -z.sub(labels.mul(expLLLogZ)).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case SQUARED_LOSS:
                 ret =  pow(labels.sub(z), 2).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
@@ -97,6 +97,8 @@ public class LossFunctions {
 
         }
 
+        if(useRegularization)
+            ret += reg;
 
         return ret;
 
