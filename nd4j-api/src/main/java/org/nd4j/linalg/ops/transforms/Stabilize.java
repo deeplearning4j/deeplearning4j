@@ -24,7 +24,7 @@ public class Stabilize extends BaseElementWiseOp {
         this.k = k;
     }
 
-    public Stabilize(float k) {
+    public Stabilize(double k) {
         this.k = k;
     }
     public Stabilize() {
@@ -39,15 +39,15 @@ public class Stabilize extends BaseElementWiseOp {
      */
     @Override
     public Object apply(INDArray from,Object value, int i) {
-        float realMin =  1.1755e-38f;
-        float cutOff = (float) FastMath.log(realMin);
+        double realMin =  1.1755e-38f;
+        double cutOff =  FastMath.log(realMin);
         if(value instanceof IComplexNumber) {
             IComplexNumber c = (IComplexNumber) value;
-            float curr = c.realComponent().floatValue();
+            double curr = c.realComponent().doubleValue();
             if(curr * k > -cutOff)
-                return Nd4j.createDouble(-cutOff / k, c.imaginaryComponent().floatValue());
+                return Nd4j.createDouble(-cutOff / k, c.imaginaryComponent().doubleValue());
             else if(curr * k < cutOff)
-                return Nd4j.createDouble(cutOff / k, c.imaginaryComponent().floatValue());
+                return Nd4j.createDouble(cutOff / k, c.imaginaryComponent().doubleValue());
 
 
         }

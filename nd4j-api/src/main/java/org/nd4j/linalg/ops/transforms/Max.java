@@ -6,7 +6,7 @@ import org.nd4j.linalg.ops.BaseElementWiseOp;
 
 /**
  *
- * Max function
+ * Max function. (The max of zero and a number)
  * @author Adam Gibson
  */
 public class Max extends BaseElementWiseOp {

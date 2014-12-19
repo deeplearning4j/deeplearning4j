@@ -3,12 +3,12 @@ package org.nd4j.linalg.ops.reduceops.scalarops;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- *
+ * Returns the max of the ndarray
  * @author Adam Gibson
  */
 public class Max extends BaseScalarOp {
     public Max() {
-        super(Double.MIN_VALUE);
+        super(0.0);
     }
 
     @Override
