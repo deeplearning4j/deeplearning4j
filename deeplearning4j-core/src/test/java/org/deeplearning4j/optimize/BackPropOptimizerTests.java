@@ -2,14 +2,12 @@ package org.deeplearning4j.optimize;
 
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork.ParamRange;
 
 import org.deeplearning4j.models.classifiers.dbn.DBN;
-import org.deeplearning4j.models.featuredetectors.rbm.RBM;
-import org.deeplearning4j.optimize.optimizers.BackPropOptimizer;
+import org.deeplearning4j.optimize.optimizers.SoftMaxOptimizer;
 import org.junit.Test;
 
 import org.slf4j.Logger;
@@ -55,7 +53,7 @@ public class BackPropOptimizerTests {
         dbn.setLabels(Nd4j.create(1, nOuts));
 
 
-        BackPropOptimizer op = new BackPropOptimizer(dbn,1e-1f,1000);
+        SoftMaxOptimizer op = new SoftMaxOptimizer(dbn,1e-1f,1000);
         INDArray layerParams = op.getParameters();
 
         ParamRange r = dbn.startIndexForLayer(0);

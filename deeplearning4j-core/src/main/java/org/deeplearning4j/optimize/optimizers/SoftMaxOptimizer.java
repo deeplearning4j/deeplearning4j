@@ -1,10 +1,7 @@
 package org.deeplearning4j.optimize.optimizers;
 
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.api.OptimizableByGradientValue;
-import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
 import org.deeplearning4j.optimize.solvers.IterationGradientDescent;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
@@ -13,6 +10,10 @@ import org.deeplearning4j.optimize.solvers.VectorizedNonZeroStoppingConjugateGra
 import org.deeplearning4j.optimize.stepfunctions.BackPropStepFunction;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+
+import org.deeplearning4j.optimize.api.OptimizableByGradientValue;
+import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,18 +26,18 @@ import java.util.Collection;
  * Optimizes via back prop gradients
  * @author Adam Gibson
  */
-public class BackPropOptimizer implements Serializable,OptimizableByGradientValue,IterationListener {
+public class SoftMaxOptimizer implements Serializable,OptimizableByGradientValue,IterationListener {
 
     private BaseMultiLayerNetwork network;
     private int length = -1;
     private double lr  = 1e-1f;
     private int iterations = 1000;
-    private static Logger log = LoggerFactory.getLogger(BackPropOptimizer.class);
+    private static Logger log = LoggerFactory.getLogger(SoftMaxOptimizer.class);
     private int currentIteration = -1;
     protected NeuralNetPlotter plotter = new NeuralNetPlotter();
 
 
-    public BackPropOptimizer(BaseMultiLayerNetwork network, double lr, int epochs) {
+    public SoftMaxOptimizer(BaseMultiLayerNetwork network, double lr, int epochs) {
         this.network = network;
         this.lr = lr;
         this.iterations = epochs;
@@ -50,7 +51,7 @@ public class BackPropOptimizer implements Serializable,OptimizableByGradientValu
     public void optimize(TrainingEvaluator eval) {
         if(network.getOutputLayer().getInput() == null)
             network.feedForward();
-        lineSearchBackProp(eval);
+        network.getOutputLayer().fit(new DataSet(network.getOutputLayer().getInput(),network.getOutputLayer().getLabels()));
 
 
 
