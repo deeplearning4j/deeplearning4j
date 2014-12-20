@@ -1,17 +1,17 @@
-package org.deeplearning4j.iterativereduce.impl;
+package org.deeplearning4j.iterativereduce.impl.single;
 
-
-
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.util.Collection;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ToolRunner;
+import org.deeplearning4j.iterativereduce.impl.ParameterVectorUpdateable;
 import org.deeplearning4j.iterativereduce.runtime.ComputableMaster;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appmaster.ApplicationMaster;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.Collection;
 
 
 public class Master implements ComputableMaster<ParameterVectorUpdateable> {
