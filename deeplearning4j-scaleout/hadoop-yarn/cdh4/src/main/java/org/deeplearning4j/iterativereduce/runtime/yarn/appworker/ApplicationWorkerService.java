@@ -99,7 +99,7 @@ public class ApplicationWorkerService<T extends Updateable> {
     this.recordParser = parser;
     this.computable = computable;
     this.updateable = updateable;
-    this.progressCounters = new HashMap<String, Integer>();
+    this.progressCounters = new HashMap<>();
     
     this.conf = conf;
   }
@@ -239,8 +239,7 @@ public class ApplicationWorkerService<T extends Updateable> {
   
             countCurrent = 0;
         
-        computable.IncrementIteration();
-        
+
         
     } // while
 

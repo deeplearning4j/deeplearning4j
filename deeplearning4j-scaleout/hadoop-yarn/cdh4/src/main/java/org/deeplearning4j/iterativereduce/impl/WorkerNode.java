@@ -1,19 +1,21 @@
 package org.deeplearning4j.iterativereduce.impl;
 
-import java.io.ByteArrayOutputStream;
 import java.util.List;
 
-import org.apache.commons.lang.time.StopWatch;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.math.random.MersenneTwister;
-import org.apache.commons.math.random.RandomGenerator;
+
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ToolRunner;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.iterativereduce.runtime.io.RecordParser;
 import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWorker;
+import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
+import org.nd4j.linalg.dataset.DataSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -22,16 +24,11 @@ import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWork
  * @author josh
  *
  */
-public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable> {
+public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,DeepLearningConfigurable {
 
-    private static final Log LOG = LogFactory.getLog(WorkerNode.class);
-
-
-
-    StopWatch watch = new StopWatch();
-//	watch.start();
-
-
+    private static final Logger LOG = LoggerFactory.getLogger(WorkerNode.class);
+    private BaseMultiLayerNetwork multiLayerNetwork;
+    private RecordParser recordParser;
 
 
     /**
@@ -75,7 +72,12 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable> {
      */
     @Override
     public ParameterVectorUpdateable compute() {
-        return null;
+        while(recordParser.hasMoreRecords()) {
+            DataSet params = (DataSet) recordParser.nextRecord();
+            multiLayerNetwork.fit(params);
+        }
+
+        return new ParameterVectorUpdateable(multiLayerNetwork.paramsWithVisible());
     }
 
 
@@ -89,7 +91,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable> {
 
     @Override
     public ParameterVectorUpdateable getResults() {
-        return null;
+        return new ParameterVectorUpdateable(multiLayerNetwork.paramsWithVisible());
     }
 
     /**
@@ -98,8 +100,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable> {
      */
     @Override
     public void setRecordParser(RecordParser lineParser) {
-
-
+        this.recordParser = lineParser;
 
     }
 
@@ -108,12 +109,18 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable> {
      *
      */
     @Override
-    public void setup(Configuration c) {
+    public void setup(Configuration conf) {
+        MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(conf.get(MULTI_LAYER_CONF));
+        try {
+            multiLayerNetwork = new BaseMultiLayerNetwork.Builder<>().layerWiseConfiguration(conf2)
+                    .withClazz((Class<? extends BaseMultiLayerNetwork>) Class.forName(conf.get(CLASS)))
+                    .build();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
 
 
 
-
-        this.watch.start();
 
 
     }
@@ -126,11 +133,8 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable> {
      *
      */
     @Override
-    public void update(ParameterVectorUpdateable master_update_updateable) {
-
-
-
-
+    public void update(ParameterVectorUpdateable masterUpdateUpdateable) {
+        multiLayerNetwork.setParameters(masterUpdateUpdateable.get());
     }
 
 
@@ -147,5 +151,8 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable> {
     }
 
 
+    @Override
+    public void setup(org.deeplearning4j.scaleout.conf.Configuration conf) {
 
+    }
 }
