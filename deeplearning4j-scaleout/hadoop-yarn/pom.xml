@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>hadoop-yarn</artifactId>
     <modules>
-        <module>cdh5</module>
+        <module>cdh4</module>
     </modules>
     <parent>
         <groupId>org.deeplearning4j</groupId>
