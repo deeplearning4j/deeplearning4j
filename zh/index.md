@@ -16,6 +16,3 @@ DL4J包含了分布式深度学习和正常深度学习的框架（即它能单�
 如果想要了解神经网络的基本，请参阅我们的概述。在这里，你将会一步一步的学习如何训练深度学习网络。我们尽我们最大的能力解释为你解释，让您了解DL4J，希望能让DL4J变成一个Java，Scala 和 Clojure 程序员的自制工具。如果您有任何疑问，请加入我们的谷歌讨论组分享您的问题；如果您需要高级支持服务，请到 [Skymind](http://www.skymind.io/contact.html) 联系我们。Java 编写的N二维数组（[N-Dimensional Arrays for Java: ND4J](http://nd4j.org/)）是提供我们矩阵操作的Java科学计算引擎。
 
 ![Alt text](../img/logos_8.png)
-
-© 2014. DL4J是在Apache 2.0许可证下发布。
-[Github上库](https://github.com/SkymindIO/deeplearning4j) // <a href="https://twitter.com/dl4j1">Twitter微博</a> // <a href="https://webchat.freenode.net/">#deeplearning4j @IRC</a> // [谷歌讨论组](https://groups.google.com/forum/#!forum/deeplearning4j)
