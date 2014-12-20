@@ -6,10 +6,12 @@ layout: zh-default
 # 快速入门
 
 * 首先，测试您的Java版本（也测试您是否拥有Java） ，通过键入以下文本到命令行：
-    java -version
+
+		java -version
 
 * 如果您的计算机（电脑）上没有安装Java 7，请到这里下载 Java开发工具包（ JDK ）。Java的下载方法将因不同的操作系统而异。对于较新的苹果操作系统，您会看到在在第一行的文件提及Mac OS X（每一次的更新的，jdk -7U后的数字将增加）。您讲会看到类似以下的文本：
-    Mac OS X x64 185.94 MB -  jdk-7u67-macosx-x64.dmg
+
+		Mac OS X x64 185.94 MB -  jdk-7u67-macosx-x64.dmg
 
 * 由于我们依赖Jblas（Java线性代数库）的处理器 ，原生绑定的BLA是必需的。
 
@@ -27,8 +29,8 @@ layout: zh-default
 
 * 由于DL4J的数据可视化和调试采用跨平台的工具来呼叫Python程式，您也必须要拥有Anaconda科学计算包（点击这里下载）。安装了Anaconda科学计算包后，您可以通过Python窗口中输入以下文本以测试您是拥有否有必要的科学计算包：
 
-    import numpy
-    import pylab as pl
+		import numpy
+		import pylab as pl
 
 ![Alt text](../img/python_shot.png)
 
@@ -36,7 +38,7 @@ layout: zh-default
 
 * 接下来，git 复制（git clone）DL4J的例子：
 
-    git clone https://github.com/SkymindIO/dl4j-examples
+		git clone https://github.com/SkymindIO/dl4j-examples
 
 接下来，您可以手动导入Maven项目到Eclipse、 /IntelliJ或Netbeans 平台中。
 
