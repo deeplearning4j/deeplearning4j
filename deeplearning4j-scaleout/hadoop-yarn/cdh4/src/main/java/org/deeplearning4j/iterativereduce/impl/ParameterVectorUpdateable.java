@@ -1,53 +1,76 @@
 package org.deeplearning4j.iterativereduce.impl;
 
+import org.apache.commons.compress.utils.IOUtils;
 import org.deeplearning4j.iterativereduce.runtime.Updateable;
-import org.deeplearning4j.scaleout.job.Job;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 
+/**
+ * Parameter vecotr updateable
+ * @author Adam Gibson
+ */
+public class ParameterVectorUpdateable implements Updateable<INDArray> {
 
-public class ParameterVectorUpdateable implements Updateable<Job> {
-
-    Job param_msg = null;
+    INDArray paramMessage = null;
 
     public ParameterVectorUpdateable() {
     }
 
-    public ParameterVectorUpdateable(Job g) {
-        this.param_msg = g;
+    public ParameterVectorUpdateable(INDArray g) {
+        this.paramMessage = g;
     }
 
     @Override
     public void fromBytes(ByteBuffer b) {
-
         b.rewind();
+        DataInputStream dis = new DataInputStream(new ByteArrayInputStream(b.array()));
+        try {
+            paramMessage = Nd4j.read(dis);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
+        IOUtils.closeQuietly(dis);
 
     }
 
     @Override
-    public Job get() {
-        return this.param_msg;
+    public INDArray get() {
+        return this.paramMessage;
     }
 
     @Override
-    public void set(Job t) {
-        this.param_msg = t;
+    public void set(INDArray t) {
+        this.paramMessage = t;
     }
 
     @Override
     public ByteBuffer toBytes() {
-        byte[] bytes = null;
-
+        byte[] bytes = paramMessage.data().asBytes();
         ByteBuffer buf = ByteBuffer.wrap(bytes);
-
         return buf;
     }
 
     @Override
     public void fromString(String s) {
-
+        String[] split = s.split(" ");
+        paramMessage = Nd4j.create(split.length);
+        if(Nd4j.dataType() == DataBuffer.DOUBLE) {
+            for(int i = 0 ;i < split.length; i++) {
+                paramMessage.putScalar(i,Double.valueOf(split[i]));
+            }
+        }
+        else {
+            for(int i = 0 ;i < split.length; i++) {
+                paramMessage.putScalar(i,Float.valueOf(split[i]));
+            }
+        }
     }
 }
