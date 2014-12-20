@@ -97,7 +97,7 @@ public class SimpleJCublas {
         String ret =  base + (bits == 64 ? "64" : "");
         File test = new File(ret);
         if(!test.exists()) {
-            File maybeThirtyTwoBit = new File(ret);
+            File maybeThirtyTwoBit = new File(base);
             if(bits == 64 && maybeThirtyTwoBit.exists()) {
                 log.warn("Loading 32 bit cuda...no 64 bit found");
                 return base;
