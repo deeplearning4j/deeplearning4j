@@ -135,12 +135,10 @@
     <modules>
         <module>nd4j-api</module>
         <module>nd4j-jblas</module>
-        <module>nd4j-jcublas-6.5</module>
-        <module>nd4j-jcublas-5.5</module>
-        <module>nd4j-jcublas-6.0</module>
         <module>nd4j-examples</module>
         <module>nd4j-jdbc</module>
         <module>nd4j-netlib-blas</module>
+        <module>nd4j-jcublas-parent</module>
     </modules>
 
     <properties>
