@@ -10,14 +10,15 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ToolRunner;
 import org.deeplearning4j.iterativereduce.runtime.ComputableMaster;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appmaster.ApplicationMaster;
-
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 
 public class Master implements ComputableMaster<ParameterVectorUpdateable> {
 
     ParameterVectorUpdateable lastMasterUpdate = null;
     protected Configuration conf = null;
-
+    protected INDArray paramVector;
 
 
     /**
@@ -29,7 +30,7 @@ public class Master implements ComputableMaster<ParameterVectorUpdateable> {
     public void complete(DataOutputStream osStream) throws IOException {
 
         System.out.println( "IR DBN Master Node: Complete!" );
-        //this.dbn_averaged_master.write( osStream );
+        Nd4j.write(paramVector,osStream);
 
 
     }
@@ -47,8 +48,17 @@ public class Master implements ComputableMaster<ParameterVectorUpdateable> {
             Collection<ParameterVectorUpdateable> masterUpdates) {
 
         System.out.println( "--------------- Master::Compute() -------------- " );
+        ParameterVectorUpdateable first = null;
+        for(ParameterVectorUpdateable update : workerUpdates) {
+            if(first == null)
+                first = update;
+            else
+                first.get().addi(update.get());
+        }
 
-        return null;
+        first.get().divi(workerUpdates.size());
+
+        return first;
     }
 
 
@@ -63,7 +73,6 @@ public class Master implements ComputableMaster<ParameterVectorUpdateable> {
 
     @Override
     public void setup(Configuration c) {
-
 
 
     }
