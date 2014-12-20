@@ -93,7 +93,21 @@ public class SimpleJCublas {
 
     private static String libDir() {
         int bits =  thirtyTwoOrSixtyFour();
-        return cudaBase() + File.separator  + libFolder() + (bits == 64 ? "64" : "");
+        String base = cudaBase() + File.separator  + libFolder();
+        String ret =  base + (bits == 64 ? "64" : "");
+        File test = new File(ret);
+        if(!test.exists()) {
+            File maybeThirtyTwoBit = new File(ret);
+            if(bits == 64 && maybeThirtyTwoBit.exists()) {
+                log.warn("Loading 32 bit cuda...no 64 bit found");
+                return base;
+            }
+        }
+        else {
+            throw new IllegalStateException("No lib directory found");
+        }
+
+        return ret;
     }
 
 
