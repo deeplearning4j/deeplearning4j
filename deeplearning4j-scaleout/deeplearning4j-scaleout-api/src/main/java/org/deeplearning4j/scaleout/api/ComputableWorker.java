@@ -7,7 +7,7 @@ import org.deeplearning4j.scaleout.job.Job;
 
 /**
  * Shamelessly based on iterative reduce work done by cloudera:
- * https://github.com/emsixteeen/IterativeReduce/blob/master/src/main/java/com/cloudera/iterativereduce/ComputableWorker.java
+ * https://github.com/emsixteeen/IterativeReduce/blob/master/src/main/java/com/cloudera/org.deeplearning4j.iterativereduce/ComputableWorker.java
  * @author Adam Gibson
  *
  */
