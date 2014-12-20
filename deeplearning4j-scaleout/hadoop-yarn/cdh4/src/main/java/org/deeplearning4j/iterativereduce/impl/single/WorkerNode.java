@@ -1,21 +1,23 @@
-package org.deeplearning4j.iterativereduce.impl;
-
-import java.util.List;
-
-
+package org.deeplearning4j.iterativereduce.impl.single;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ToolRunner;
+import org.deeplearning4j.iterativereduce.impl.ParameterVectorUpdateable;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.iterativereduce.runtime.io.RecordParser;
 import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWorker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 
 /**
@@ -27,7 +29,7 @@ import org.slf4j.LoggerFactory;
 public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,DeepLearningConfigurable {
 
     private static final Logger LOG = LoggerFactory.getLogger(WorkerNode.class);
-    private BaseMultiLayerNetwork multiLayerNetwork;
+    private NeuralNetwork neuralNetwork;
     private RecordParser recordParser;
 
 
@@ -74,10 +76,10 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     public ParameterVectorUpdateable compute() {
         while(recordParser.hasMoreRecords()) {
             DataSet params = (DataSet) recordParser.nextRecord();
-            multiLayerNetwork.fit(params);
+            neuralNetwork.fit(params.getFeatureMatrix());
         }
 
-        return new ParameterVectorUpdateable(multiLayerNetwork.paramsWithVisible());
+        return new ParameterVectorUpdateable(neuralNetwork.paramsWithVisible());
     }
 
 
@@ -91,7 +93,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
     @Override
     public ParameterVectorUpdateable getResults() {
-        return new ParameterVectorUpdateable(multiLayerNetwork.paramsWithVisible());
+        return new ParameterVectorUpdateable(neuralNetwork.paramsWithVisible());
     }
 
     /**
@@ -110,10 +112,10 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
      */
     @Override
     public void setup(Configuration conf) {
-        MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(conf.get(MULTI_LAYER_CONF));
+        NeuralNetConfiguration conf2 = NeuralNetConfiguration.fromJson(conf.get(NEURAL_NET_CONF));
         try {
-            multiLayerNetwork = new BaseMultiLayerNetwork.Builder<>().layerWiseConfiguration(conf2)
-                    .withClazz((Class<? extends BaseMultiLayerNetwork>) Class.forName(conf.get(CLASS)))
+            neuralNetwork = new BaseNeuralNetwork.Builder<>().configure(conf2)
+                    .withClazz((Class<? extends BaseNeuralNetwork>) Class.forName(conf.get(CLASS)))
                     .build();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -134,7 +136,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
      */
     @Override
     public void update(ParameterVectorUpdateable masterUpdateUpdateable) {
-        multiLayerNetwork.setParameters(masterUpdateUpdateable.get());
+        neuralNetwork.setParams(masterUpdateUpdateable.get());
     }
 
 
