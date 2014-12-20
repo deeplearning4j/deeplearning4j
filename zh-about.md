@@ -13,6 +13,6 @@ Deeplearning4j是Java的开源，分布式的深学习项目的人Skymind ，一
 
 有很多旋钮，当你训练的分布式深学习网络转。我们已经竭尽所能来解释他们，让Deeplearning4j可以作为DIY工具为[Java](https://zh.wikipedia.org/wiki/Java) ， [Scala](https://zh.wikipedia.org/wiki/Scala)和[Clojure](https://zh.wikipedia.org/wiki/Clojure)的程序员工作在[Hadoop](https://zh.wikipedia.org/wiki/Apache_Hadoop)和其他文件系统。如果您需要支持或定制超出这些教程，请联系我们[Skymind](mailto:chris@skymind.io) 。
 
-Deeplearning4j已刊登在有线， GigaOm等，商业周刊， VentureBeat的和华尔街日报。 DL4J车间通过GalvanizeU在旧金山提供。
+Deeplearning4j已刊登在有线， GigaOm等，商业周刊， VentureBeat的和华尔街日报。 DL4J车间通过[GalvanizeU](http://www.galvanizeu.com/)在旧金山提供。
 
 [ND4J]()是Java科学计算引擎提供动力我们的矩阵操作。 （看到这里的[Github](https://github.com/SkymindIO/nd4j/)上回购。 ）
