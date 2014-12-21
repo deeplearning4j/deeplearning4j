@@ -13,6 +13,6 @@ DL4J包含了分布式深度学习和正常深度学习的框架（即它能单�
 
 随着每个页面底部的链接，您将能学习如何建立和训练DL4J的样本数据，以及多种类型的深度学习网络。这些包括单一和多线程网络，限制波尔兹曼机（[Restricted Boltzmann Machines](https://zh.wikipedia.org/wiki/%E5%8F%97%E9%99%90%E7%8E%BB%E5%B0%94%E5%85%B9%E6%9B%BC%E6%9C%BA)），深层信任网络Deep-Belief Networks），深度稀疏自编码（Deep AutoEncoder），递归神经张量网络（Recursive Neurol Tensor Networks），卷积神经元网络 （Convolutional Nets） 和堆叠去噪自动编码器 （Stacked Denoising AutoEconders)。
 
-如果想要了解神经网络的基本，请参阅我们的概述。在这里，你将会一步一步的学习如何训练深度学习网络。我们尽我们最大的能力解释为你解释，让您了解DL4J，希望能让DL4J变成一个Java，Scala 和 Clojure 程序员的自制工具。如果您有任何疑问，请加入我们的谷歌讨论组分享您的问题；如果您需要高级支持服务，请到 [Skymind](http://www.skymind.io/contact.html) 联系我们。Java 编写的N二维数组（[N-Dimensional Arrays for Java: ND4J](http://nd4j.org/)）是提供我们矩阵操作的Java科学计算引擎。
+如果想要了解神经网络的基本，请参阅我们的概述。在这里，你将会一步一步的学习如何训练深度学习网络。我们尽我们最大的能力解释为你解释，让您了解DL4J，希望能让DL4J变成一个Java，Scala 和 Clojure 程序员的自制工具。如果您有任何疑问，请加入我们的谷歌讨论组分享您的问题；如果您需要高级支持服务，请到 [Skymind](http://www.skymind.io/contact.html) 联系我们。Java 编写的N二维数组（[N-Dimensional Arrays for Java: ND4J](http://nd4j.org/zh-getstarted.html)）是提供我们矩阵操作的Java科学计算引擎。
 
 ![Alt text](../img/logos_8.png)
