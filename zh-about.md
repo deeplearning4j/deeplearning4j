@@ -15,4 +15,4 @@ Deeplearning4j是Java的开源，分布式的深学习项目的人Skymind ，一
 
 Deeplearning4j已刊登在有线， GigaOm等，商业周刊， VentureBeat的和华尔街日报。 DL4J车间通过[GalvanizeU](http://www.galvanizeu.com/)在旧金山提供。
 
-[ND4J]()是Java科学计算引擎提供动力我们的矩阵操作。 （看到这里的[Github](https://github.com/SkymindIO/nd4j/)上回购。 ）
+[ND4J](http://nd4j.org/zh-getstarted.html)是Java科学计算引擎提供动力我们的矩阵操作。 （看到这里的[Github](https://github.com/SkymindIO/nd4j/)上回购。 ）
