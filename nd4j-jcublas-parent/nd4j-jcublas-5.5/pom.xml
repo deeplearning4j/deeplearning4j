@@ -5,8 +5,9 @@
     <packaging>jar</packaging>
 
 
+
     <parent>
-        <artifactId>nd4j</artifactId>
+        <artifactId>nd4j-jcublas-parent</artifactId>
         <groupId>org.nd4j</groupId>
         <version>0.0.3.5.5-SNAPSHOT</version>
     </parent>
