@@ -15,8 +15,10 @@ import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.deeplearning4j.iterativereduce.runtime.ComputableMaster;
 import org.deeplearning4j.iterativereduce.runtime.ConfigFields;
 import org.deeplearning4j.iterativereduce.runtime.Updateable;
+import org.deeplearning4j.iterativereduce.runtime.Utils;
 import org.deeplearning4j.iterativereduce.runtime.yarn.ContainerManagerHandler;
 import org.deeplearning4j.iterativereduce.runtime.yarn.ResourceManagerHandler;
+import org.deeplearning4j.iterativereduce.runtime.yarn.avro.generated.FileSplit;
 import org.deeplearning4j.iterativereduce.runtime.yarn.avro.generated.StartupConfiguration;
 import org.deeplearning4j.iterativereduce.runtime.yarn.avro.generated.WorkerId;
 
@@ -199,9 +201,9 @@ public class ApplicationMaster<T extends Updateable> extends Configured
 	
 //	Path workDir = new Path( "/tmp/inputs/" );
 	
-	FileInputFormat.setInputPaths( job,  inputPath );
+	FileInputFormat.setInputPaths(job, inputPath);
     
-	InputSplit[] splits = 
+	InputSplit[] splits =
 		       job.getInputFormat().getSplits( job, job.getNumMapTasks() );		
 
 //	for ( int splitIndex = 0; splitIndex < splits.length; splitIndex++ ) {
@@ -365,7 +367,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
       */
 
       ResourceRequest request = Utils.createResourceRequest("*",
-      entry.getValue(), memory);
+              entry.getValue(), memory);
       
       requestedContainers.add(request);
     }
