@@ -68,32 +68,13 @@
             <artifactId>nd4j-jcublas-common</artifactId>
             <version>${project.version}</version>
         </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.11</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>jcuda</artifactId>
-            <version>${jcuda.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>jcufft</artifactId>
-            <version>${jcuda.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>jcurand</artifactId>
-            <version>${jcuda.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>jcusparse</artifactId>
-            <version>${jcuda.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>

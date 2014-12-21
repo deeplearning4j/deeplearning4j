@@ -96,7 +96,10 @@ public class SimpleJCublas {
         String base = cudaBase() + File.separator  + libFolder();
         String ret =  base + (bits == 64 ? "64" : "");
         File test = new File(ret);
-        if(!test.exists()) {
+        boolean exists = test.exists();
+        if(exists)
+            return ret;
+        if(!exists) {
             File maybeThirtyTwoBit = new File(base);
             if(bits == 64 && maybeThirtyTwoBit.exists()) {
                 log.warn("Loading 32 bit cuda...no 64 bit found");
@@ -104,7 +107,11 @@ public class SimpleJCublas {
             }
         }
         else {
-            throw new IllegalStateException("No lib directory found");
+            File testOther = new File(base);
+            if(!exists && !testOther.exists())
+                throw new IllegalStateException("No lib directory found");
+            else
+                return base;
         }
 
         return ret;
@@ -161,12 +168,32 @@ public class SimpleJCublas {
         String[] libPath = System.getProperty("java.library.path").split(File.pathSeparator);
         for(String s : libPath) {
             File dir = new File(s);
-            if(dir.canWrite())
+            if(canWrite(dir))
                 return s;
         }
 
         throw new IllegalStateException("Unable to write to any library directories for jcublas");
     }
+
+    private static boolean canWrite(File dir) {
+        if(!dir.exists())
+            return false;
+        else if(dir.isFile())
+            throw new IllegalArgumentException("Tests only directories");
+        else {
+            File newFile = new File(dir,"dummyfile");
+            newFile.deleteOnExit();
+            try {
+                if(!newFile.createNewFile())
+                    return false;
+            }catch(IOException e) {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
 
     public static void free(Pointer...pointers) {
         for(Pointer arr : pointers)
