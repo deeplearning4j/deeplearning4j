@@ -9,6 +9,8 @@
         <artifactId>nd4j-jcublas-osx-parent</artifactId>
         <groupId>org.nd4j</groupId>
         <version>0.0.3.5.5-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+
     </parent>
 
     <name>nd4j-jcublas</name>
