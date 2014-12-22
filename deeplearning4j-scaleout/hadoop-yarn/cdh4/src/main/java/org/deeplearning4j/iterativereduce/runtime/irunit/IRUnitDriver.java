@@ -21,7 +21,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Properties;
 
-//import tv.floe.metronome.utils.Utils;
 
 /**
  * A very basic way to simulate an IterativeReduce application in order to simply develop/test a new 
