@@ -70,6 +70,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected transient RandomGenerator rng;
     protected transient RealDistribution dist;
     protected transient Collection<IterationListener> listeners;
+    //recurrent output
+    protected int recurrentOutput = 100;
 
 
     private void readObject(java.io.ObjectInputStream in)
@@ -104,7 +106,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
 
-    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, int k, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, double dropOut, boolean applySparsity, WeightInit weightInit, NeuralNetwork.OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride,int[] featureMapSize,int numInFeatureMaps,Collection<IterationListener> listeners) {
+    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, int k, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, double dropOut, boolean applySparsity, WeightInit weightInit, NeuralNetwork.OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride,int[] featureMapSize,int numInFeatureMaps,Collection<IterationListener> listeners,int recurrentOutput) {
+        this.recurrentOutput = recurrentOutput;
         this.listeners = listeners;
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
@@ -181,10 +184,20 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.numFeatureMaps = neuralNetConfiguration.numFeatureMaps;
         this.filterSize = neuralNetConfiguration.filterSize;
         this.featureMapSize = neuralNetConfiguration.featureMapSize;
+        this.recurrentOutput = neuralNetConfiguration.recurrentOutput;
         if(dist == null)
             this.dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
         this.hiddenUnit = neuralNetConfiguration.hiddenUnit;
+    }
+
+
+    public int getRecurrentOutput() {
+        return recurrentOutput;
+    }
+
+    public void setRecurrentOutput(int recurrentOutput) {
+        this.recurrentOutput = recurrentOutput;
     }
 
     public int getNumInFeatureMaps() {
@@ -877,6 +890,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         //subsampling layers
         private int[] stride;
         private Collection<IterationListener> listeners;
+        private int recurrentOutput = 100;
 
 
 
@@ -895,7 +909,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             Builder b = new Builder().activationFunction(activationFunction)
                     .adagradResetIterations(resetAdaGradIterations).applySparsity(applySparsity)
                     .concatBiases(concatBiases).constrainGradientToUnitNorm(constrainGradientToUnitNorm)
-                    .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize)
+                    .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize).recurrentOutput(recurrentOutput)
                     .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr).useAdaGrad(adagrad)
                     .lossFunction(lossFunction).momentumAfter(momentumAfter).momentum(momentum).listeners(listeners)
                     .nIn(nIn).nOut(nOut).numFeatureMaps(numFeatureMaps).optimizationAlgo(optimizationAlgo)
@@ -905,6 +919,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return b;
         }
 
+        public Builder recurrentOutput(int recurrentOutput) {
+            this.recurrentOutput = recurrentOutput;
+            return this;
+        }
 
         public Builder iterationListener(IterationListener listener) {
             if(listeners != null)
@@ -1064,7 +1082,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,  renderWeightsEveryNumEpochs,
                     concatBiases,  constrainGradientToUnitNorm,  rng,
-                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType,weightShape,filterSize,numFeatureMaps,stride,featureMapSize,numInFeatureMaps,listeners);
+                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType,weightShape,filterSize,numFeatureMaps,stride,featureMapSize,numInFeatureMaps,listeners,recurrentOutput);
             ret.useAdaGrad = this.adagrad;
 
             return ret;
