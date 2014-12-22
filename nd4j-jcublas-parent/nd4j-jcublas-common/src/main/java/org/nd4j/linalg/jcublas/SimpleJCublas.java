@@ -43,6 +43,13 @@ public class SimpleJCublas {
         ClassPathResource resource = new ClassPathResource(name);
         if(!resource.exists() && name.startsWith("/lib/"))
             resource = new ClassPathResource(name.replaceAll("/lib/",""));
+        else if(!resource.exists()) {
+            resource = new ClassPathResource(resourceName().replace("X","x"));
+        }
+
+        if(!resource.exists())
+            throw new IllegalStateException("Unable to find resource with name " + resource.getFilename());
+
         log.info("Loading jcublas from " + resource.getFilename());
 
         String home = findWritableLibDir();
