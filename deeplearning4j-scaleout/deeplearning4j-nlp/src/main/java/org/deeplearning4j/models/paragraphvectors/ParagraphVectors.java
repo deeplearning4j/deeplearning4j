@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.paragraphvectors;
 
+import akka.actor.ActorSystem;
 import com.google.common.base.Function;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.berkeley.Pair;
@@ -9,6 +10,7 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -58,7 +60,6 @@ public class ParagraphVectors extends Word2Vec {
             docIter.reset();
 
 
-        final int[] docs = vectorizer.index().allDocs();
 
         totalWords = vectorizer.numWordsEncountered();
         totalWords *= numIterations;
@@ -68,60 +69,11 @@ public class ParagraphVectors extends Word2Vec {
         log.info("Processing sentences...");
 
 
-        List<Thread> work = new ArrayList<>();
-        final AtomicInteger processed = new AtomicInteger(0);
-        final int allDocs = docs.length * numIterations;
         final AtomicLong numWordsSoFar = new AtomicLong(0);
-        final AtomicLong lastReport = new AtomicLong(0);
-        for(int i = 0; i < workers; i++) {
-            final Set<List<VocabWord>> set = new ConcurrentHashSet<>();
-
-            Thread t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    final AtomicLong nextRandom = new AtomicLong(5);
-                    long checked = 0;
-                    while(true) {
-                        if(checked > 0 && checked % 1000 == 0 && processed.get() >= allDocs)
-                            return;
-                        checked++;
-                        List<Pair<List<VocabWord>, Collection<VocabWord>>> job = jobQueue.poll();
-                        if(job == null || job.isEmpty() || set.contains(job))
-                            continue;
-
-                        log.info("Job of " + job.size());
-                        double alpha = Math.max(minLearningRate, ParagraphVectors.this.alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) totalWords)));
-                        long diff = Math.abs(lastReport.get() - numWordsSoFar.get());
-                        if(numWordsSoFar.get() > 0 && diff >=  10000) {
-                            log.info("Words so far " + numWordsSoFar.get() + " with alpha at " + alpha);
-                            lastReport.set(numWordsSoFar.get());
-                        }
-                        long increment = 0;
-                        double diff2 = 0.0;
-                        for(Pair<List<VocabWord>, Collection<VocabWord>> sentenceWithLabel : job) {
-                            trainSentence(sentenceWithLabel, nextRandom, alpha);
-                            increment += sentenceWithLabel.getFirst().size();
-                        }
-
-                        log.info("Train sentence avg took " + diff2 / (double) job.size());
-                        numWordsSoFar.set(numWordsSoFar.get() + increment);
-                        processed.set(processed.get() + job.size());
-
-
-
-                    }
-                }
-            });
-
-            t.setName("worker" + i);
-            t.start();
-            work.add(t);
-        }
 
 
         final AtomicLong nextRandom = new AtomicLong(5);
         final AtomicInteger doc = new AtomicInteger(0);
-        final int numDocs = vectorizer.index().numDocuments() * numIterations;
         ExecutorService exec = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(),
                 Runtime.getRuntime().availableProcessors(),
                 0L, TimeUnit.MILLISECONDS,
@@ -139,6 +91,9 @@ public class ParagraphVectors extends Word2Vec {
 
 
         final Queue<Pair<List<VocabWord>,Collection<VocabWord>>> batch2 = new ConcurrentLinkedDeque<>();
+        int[] docs = vectorizer.index().allDocs();
+        if(docs.length < 1)
+            throw new IllegalStateException("No documents found");
 
         vectorizer.index().eachDocWithLabels(new Function<Pair<List<VocabWord>, Collection<String>>, Void>() {
             @Override
@@ -152,25 +107,7 @@ public class ParagraphVectors extends Word2Vec {
                 Collection<VocabWord> docLabels = new ArrayList<>();
                 for(String s : input.getSecond())
                     docLabels.add(vocab().wordFor(s));
-
-                for (int i = 0; i < numIterations; i++) {
-                    batch2.add(new Pair<>(batch, docLabels));
-                }
-
-                if (batch2.size() >= 100 || batch2.size() >= numDocs) {
-                    boolean added = false;
-                    while (!added) {
-                        try {
-                            jobQueue.add(new LinkedList<>(batch2));
-                            batch2.clear();
-                            added = true;
-                        } catch (Exception e) {
-                            continue;
-                        }
-                    }
-
-                }
-
+                batch2.add(new Pair<>(batch, docLabels));
 
                 doc.incrementAndGet();
                 if (doc.get() > 0 && doc.get() % 10000 == 0)
@@ -182,6 +119,8 @@ public class ParagraphVectors extends Word2Vec {
 
 
         }, exec);
+
+
 
         if(!batch2.isEmpty()) {
             jobQueue.add(new LinkedList<>(batch2));
@@ -196,14 +135,8 @@ public class ParagraphVectors extends Word2Vec {
             Thread.currentThread().interrupt();
         }
 
-
-        for(Thread t : work)
-            try {
-                t.join();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
+        for(int i = 0; i < numIterations; i++)
+            doIteration(batch2,numWordsSoFar,nextRandom);
 
     }
 
@@ -289,41 +222,66 @@ public class ParagraphVectors extends Word2Vec {
     }
 
 
+    private void doIteration(Queue<Pair<List<VocabWord>,Collection<VocabWord>>> batch2,final AtomicLong numWordsSoFar,final AtomicLong nextRandom) {
+        ActorSystem actorSystem = ActorSystem.create();
+        final AtomicLong lastReport = new AtomicLong(System.currentTimeMillis());
+        Parallelization.iterateInParallel(batch2, new Parallelization.RunnableWithParams<Pair<List<VocabWord>, Collection<VocabWord>>>() {
+            @Override
+            public void run(Pair<List<VocabWord>, Collection<VocabWord>> sentenceWithLabel, Object[] args) {
+                double alpha = Math.max(minLearningRate, ParagraphVectors.this.alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) totalWords)));
+                long diff = Math.abs(lastReport.get() - numWordsSoFar.get());
+                if(numWordsSoFar.get() > 0 && diff >=  10000) {
+                    log.info("Words so far " + numWordsSoFar.get() + " with alpha at " + alpha);
+                    lastReport.set(numWordsSoFar.get());
+                }
+                long increment = 0;
+                double diff2 = 0.0;
+                trainSentence(sentenceWithLabel, nextRandom, alpha);
+                increment += sentenceWithLabel.getFirst().size();
+
+
+                log.info("Train sentence avg took " + diff2 / (double) sentenceWithLabel.getFirst().size());
+                numWordsSoFar.set(numWordsSoFar.get() + increment);
+            }
+        },actorSystem);
+    }
+
+
     public static class Builder extends Word2Vec.Builder {
 
         @Override
         public Builder index(InvertedIndex index) {
-             super.index(index);
+            super.index(index);
             return this;
         }
 
         @Override
         public Builder workers(int workers) {
-             super.workers(workers);
+            super.workers(workers);
             return this;
         }
 
         @Override
         public Builder sampling(double sample) {
-             super.sampling(sample);
+            super.sampling(sample);
             return this;
         }
 
         @Override
         public Builder negativeSample(double negative) {
-             super.negativeSample(negative);
+            super.negativeSample(negative);
             return this;
         }
 
         @Override
         public Builder minLearningRate(double minLearningRate) {
-             super.minLearningRate(minLearningRate);
+            super.minLearningRate(minLearningRate);
             return this;
         }
 
         @Override
         public Builder useAdaGrad(boolean useAdaGrad) {
-             super.useAdaGrad(useAdaGrad);
+            super.useAdaGrad(useAdaGrad);
             return this;
         }
 
@@ -341,85 +299,85 @@ public class ParagraphVectors extends Word2Vec {
 
         @Override
         public Builder batchSize(int batchSize) {
-             super.batchSize(batchSize);
+            super.batchSize(batchSize);
             return this;
         }
 
         @Override
         public Builder saveVocab(boolean saveVocab) {
-             super.saveVocab(saveVocab);
+            super.saveVocab(saveVocab);
             return this;
         }
 
         @Override
         public Builder seed(long seed) {
-             super.seed(seed);
+            super.seed(seed);
             return this;
         }
 
         @Override
         public Builder iterations(int iterations) {
-             super.iterations(iterations);
+            super.iterations(iterations);
             return this;
         }
 
         @Override
         public Builder learningRate(double lr) {
-             super.learningRate(lr);
+            super.learningRate(lr);
             return this;
         }
 
         @Override
         public Builder iterate(DocumentIterator iter) {
-             super.iterate(iter);
+            super.iterate(iter);
             return this;
         }
 
         @Override
         public  Builder vocabCache(VocabCache cache) {
-             super.vocabCache(cache);
+            super.vocabCache(cache);
             return this;
         }
 
         @Override
         public Builder minWordFrequency(int minWordFrequency) {
-             super.minWordFrequency(minWordFrequency);
+            super.minWordFrequency(minWordFrequency);
             return this;
         }
 
         @Override
         public Builder tokenizerFactory(TokenizerFactory tokenizerFactory) {
-             super.tokenizerFactory(tokenizerFactory);
+            super.tokenizerFactory(tokenizerFactory);
             return this;
         }
 
         @Override
         public Builder layerSize(int layerSize) {
-             super.layerSize(layerSize);
+            super.layerSize(layerSize);
             return this;
         }
 
         @Override
         public Builder stopWords(List<String> stopWords) {
-             super.stopWords(stopWords);
+            super.stopWords(stopWords);
             return this;
         }
 
         @Override
         public Builder windowSize(int window) {
-             super.windowSize(window);
+            super.windowSize(window);
             return this;
         }
 
         @Override
         public Builder iterate(SentenceIterator iter) {
-             super.iterate(iter);
+            super.iterate(iter);
             return this;
         }
 
         @Override
         public Builder lookupTable(WeightLookupTable lookupTable) {
-             super.lookupTable(lookupTable);
+            super.lookupTable(lookupTable);
             return this;
         }
 
