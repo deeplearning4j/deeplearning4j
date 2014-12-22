@@ -40,8 +40,11 @@ public class SimpleJCublas {
     static {
         //write the file to somewhere on java.library.path where there is permissions
         String name = "/" + resourceName().substring(3).replace("X","x");
-        log.info("Loading jcublas from " + name);
         ClassPathResource resource = new ClassPathResource(name);
+        if(!resource.exists() && name.startsWith("/lib/"))
+            resource = new ClassPathResource(name.replaceAll("/lib/",""));
+        log.info("Loading jcublas from " + resource.getFilename());
+
         String home = findWritableLibDir();
         File cuBlastmp = new File(home);
         File shared = new File(cuBlastmp,resourceName().replace("X","x"));
