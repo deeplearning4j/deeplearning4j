@@ -198,12 +198,6 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     @Override
     public int[] allDocs() {
-        if(cache){
-            int[] ret = new int[words.size()];
-            for(int i = 0; i < words.size(); i++)
-                ret[i] = i;
-            return ret;
-        }
 
 
         DirectoryReader reader = null;
@@ -214,6 +208,8 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
             e.printStackTrace();
         }
         int[] docIds = new int[reader.maxDoc()];
+        if(docIds.length < 1)
+            throw new IllegalStateException("No documents found");
         int count = 0;
         Bits liveDocs = MultiFields.getLiveDocs(reader);
 

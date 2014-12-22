@@ -130,6 +130,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
 
         }
 
+
        if(getSentenceIterator() instanceof LabelAwareSentenceIterator) {
            this.labelSentenceIter = (LabelAwareSentenceIterator) getSentenceIterator();
            while(getSentenceIterator() != null && getSentenceIterator().hasNext()) {
@@ -178,7 +179,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
 
         long diff = Long.MAX_VALUE;
 
-        while(latch.get() < queued.get() && queued.get() > 100 && diff > 5) {
+        while(latch.get() < queued.get() && diff > 5) {
             diff = Math.abs(latch.get() - queued.get());
             try {
                 Thread.sleep(10000);

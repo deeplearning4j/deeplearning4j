@@ -1,7 +1,11 @@
 package org.deeplearning4j.text.sentenceiterator.labelaware;
 
 import org.apache.uima.analysis_engine.AnalysisEngine;
+import org.apache.uima.fit.factory.AnalysisEngineFactory;
 import org.apache.uima.resource.ResourceInitializationException;
+import org.deeplearning4j.text.annotator.SentenceAnnotator;
+import org.deeplearning4j.text.annotator.TokenizerAnnotator;
+import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentencePreProcessor;
 import org.deeplearning4j.text.uima.UimaResource;
@@ -46,12 +50,26 @@ public class LabelAwareUimaSentenceIterator extends UimaSentenceIterator impleme
             f.setAccessible(true);
             File file = (File) f.get(reader);
             return file.getParentFile().getName();
-        }catch(Exception e) {
+        }
+
+        catch (NullPointerException e1) {
+            return "NONE";
+        }
+        catch(Exception e) {
             throw new RuntimeException(e);
         }
 
     }
 
+    /**
+     * Creates a uima sentence iterator with the given path
+     * @param path the path to the root directory or file to read from
+     * @return the uima sentence iterator for the given root dir or file
+     * @throws Exception
+     */
+    public static LabelAwareSentenceIterator createWithPath(String path) throws Exception {
+        return new LabelAwareUimaSentenceIterator(null,path,new UimaResource(AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(TokenizerAnnotator.getDescription(), SentenceAnnotator.getDescription()))));
+    }
     @Override
     public List<String> currentLabels() {
         return Arrays.asList(currentLabel());

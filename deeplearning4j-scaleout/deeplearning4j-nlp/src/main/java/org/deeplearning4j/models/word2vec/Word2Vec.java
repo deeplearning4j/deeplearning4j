@@ -136,54 +136,7 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
         log.info("Processing sentences...");
 
 
-        List<Thread> work = new ArrayList<>();
-        final AtomicInteger processed = new AtomicInteger(0);
-        final int allDocs = docs.length * numIterations;
-        final AtomicLong numWordsSoFar = new AtomicLong(0);
-        final AtomicLong lastReport = new AtomicLong(0);
-        for(int i = 0; i < workers; i++) {
-            final Set<List<VocabWord>> set = new ConcurrentHashSet<>();
-
-            Thread t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    final AtomicLong nextRandom = new AtomicLong(5);
-                    long checked = 0;
-                    while(true) {
-                        if(checked > 0 && checked % 1000 == 0 && processed.get() >= allDocs)
-                            return;
-                        checked++;
-                        List<List<VocabWord>> job = jobQueue.poll();
-                        if(job == null || job.isEmpty() || set.contains(job))
-                            continue;
-
-                        double alpha = Math.max(minLearningRate, Word2Vec.this.alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) totalWords)));
-                        long diff = Math.abs(lastReport.get() - numWordsSoFar.get());
-                        if(numWordsSoFar.get() > 0 && diff >=  10000) {
-                            log.info("Words so far " + numWordsSoFar.get() + " with alpha at " + alpha);
-                            lastReport.set(numWordsSoFar.get());
-                        }
-                        long increment = 0;
-                        for(List<VocabWord> sentence : job) {
-                            trainSentence(sentence, nextRandom, alpha);
-                            increment += sentence.size();
-                        }
-
-                        numWordsSoFar.set(numWordsSoFar.get() + increment);
-                        processed.set(processed.get() + job.size());
-
-
-
-                    }
-                }
-            });
-
-            t.setName("worker" + i);
-            t.start();
-            work.add(t);
-        }
-
-
+        AtomicLong numWordsSoFar = new AtomicLong(0);
         final AtomicLong nextRandom = new AtomicLong(5);
         ExecutorService exec = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(),
                 Runtime.getRuntime().availableProcessors(),

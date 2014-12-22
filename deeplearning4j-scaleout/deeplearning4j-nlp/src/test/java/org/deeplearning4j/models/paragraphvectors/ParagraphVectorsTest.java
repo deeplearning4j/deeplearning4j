@@ -1,12 +1,10 @@
 package org.deeplearning4j.models.paragraphvectors;
 
 
-import org.deeplearning4j.models.embeddings.WeightLookupTable;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
-import org.deeplearning4j.models.word2vec.Word2Vec;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareUimaSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.Before;
@@ -35,22 +33,17 @@ public class ParagraphVectorsTest {
     public void testWord2VecRunThroughVectors() throws Exception {
         ClassPathResource resource = new ClassPathResource("/basic2/line2.txt");
         File file = resource.getFile().getParentFile();
-        SentenceIterator iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
+        LabelAwareSentenceIterator iter = LabelAwareUimaSentenceIterator.createWithPath(file.getAbsolutePath());
         new File("cache.ser").delete();
-        InMemoryLookupCache cache = new InMemoryLookupCache();
 
 
         TokenizerFactory t = new UimaTokenizerFactory();
 
-        WeightLookupTable table = new InMemoryLookupTable
-                .Builder().vectorLength(100).useAdaGrad(false).cache(cache)
-                .lr(0.025f).build();
 
         ParagraphVectors vec = new ParagraphVectors.Builder()
                 .minWordFrequency(1).iterations(5)
-                .layerSize(100).lookupTable(table)
+                .layerSize(100)
                 .stopWords(new ArrayList<String>())
-                .vocabCache(cache)
                 .windowSize(5).iterate(iter).tokenizerFactory(t).build();
 
         assertEquals(new ArrayList<String>(), vec.getStopWords());
