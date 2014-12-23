@@ -13,6 +13,8 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -37,15 +39,14 @@ public class DBNTest {
     @Test
     public void testIris() {
         RandomGenerator gen = new MersenneTwister(123);
-
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(1000)
+                .iterations(10)
+                .weightInit(WeightInit.SIZE).optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .activationFunction(Activations.tanh())
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT).weightInit(WeightInit.VI)
-                .optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .rng(gen).constrainGradientToUnitNorm(true)
-                .learningRate(1e-3f)
+                .learningRate(1e-1f)
                 .nIn(4).nOut(3).list(3).hiddenLayerSizes(new int[]{3,2})
                 .override(new NeuralNetConfiguration.ConfOverride() {
                     @Override
@@ -62,22 +63,27 @@ public class DBNTest {
 
 
 
+
         DBN d = new DBN.Builder().layerWiseConfiguration(conf)
                 .build();
 
 
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
+        DataSet next = iter.next();
+        next.shuffle();
+        SplitTestAndTrain split = next.splitTestAndTrain(140);
+        DataSet train = split.getTrain();
+        train.normalizeZeroMeanZeroUnitVariance();
+        d.fit(train);
 
-        DataSet next = iter.next(100);
-        next.normalizeZeroMeanZeroUnitVariance();
-        d.fit(next);
-
-
+        DataSet test = split.getTest();
+        test.normalizeZeroMeanZeroUnitVariance();
 
         Evaluation eval = new Evaluation();
-        INDArray output = d.output(next.getFeatureMatrix());
-        eval.eval(next.getLabels(),output);
+        INDArray output = d.output(test.getFeatureMatrix());
+        eval.eval(test.getLabels(),output);
         log.info("Score " + eval.stats());
 
 
