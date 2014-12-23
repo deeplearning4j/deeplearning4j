@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.paragraphvectors;
 
 
+import org.deeplearning4j.models.word2vec.loader.WordVectorSerializer;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
@@ -50,8 +51,6 @@ public class ParagraphVectorsTest {
 
 
         vec.fit();
-
-
         double sim = vec.similarity("Adam","deeplearning4j");
         new File("cache.ser").delete();
 
