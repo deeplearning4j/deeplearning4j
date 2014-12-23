@@ -138,12 +138,14 @@
         <module>nd4j-jdbc</module>
         <module>nd4j-netlib-blas</module>
         <module>nd4j-jcublas-parent</module>
+        <module>nd4j-jcublas-osx-parent</module>
+        <module>nd4j-jcublas-windows64-parent</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>4.11</junit.version>
-        <slf4j.version>1.7.5</slf4j.version>
+        <slf4j.version>1.7.6</slf4j.version>
 
     </properties>
     <developers>
