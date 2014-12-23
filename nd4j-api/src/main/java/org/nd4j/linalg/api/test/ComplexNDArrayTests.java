@@ -625,7 +625,7 @@ public abstract class ComplexNDArrayTests {
         assertEquals(d3,c.data());
 
         IComplexNDArray needsToBeFlattened = Nd4j.createComplex(Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2}));
-        double[] d2 = {1,0,2,0,3,0,4,0};
+        float[] d2 = {1,0,2,0,3,0,4,0};
         DataBuffer create = Nd4j.createBuffer(d2);
         assertEquals(create,needsToBeFlattened.data());
 

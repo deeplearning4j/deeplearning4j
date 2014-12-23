@@ -72,7 +72,7 @@ public class Nd4j {
             blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS,props.get(BLAS_OPS).toString()));
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
             UNIT = Nd4j.createFloat(1, 0);
-            ZERO = Nd4j.createFloat(1, 0);
+            ZERO = Nd4j.createFloat(0, 0);
             NEG_UNIT = Nd4j.createFloat(-1, 0);
             ENFORCE_NUMERICAL_STABILITY = Boolean.parseBoolean(System.getProperty(NUMERICAL_STABILITY,String.valueOf(false)));
         }catch(Exception e) {

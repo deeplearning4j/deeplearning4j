@@ -10,11 +10,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class LinAlgExceptions {
 
     public static void assertSameShape(INDArray n,INDArray n2) {
-        assert Shape.shapeEquals(n.shape(), n2.shape()) : "Mis matched shapes";
+        if(!Shape.shapeEquals(n.shape(), n2.shape()))
+            throw new IllegalStateException("Mis matched shapes");
     }
 
     public static void assertRows(INDArray n,INDArray n2) {
-        assert n.rows() == n2.rows() : "Mis matched rows";
+         if(n.rows() != n2.rows())
+             throw new IllegalStateException("Mis matched rows");
     }
 
     /**
@@ -23,20 +25,23 @@ public class LinAlgExceptions {
      * @param nd2 the right ndarray
      */
     public static void assertMultiplies(INDArray nd1,INDArray nd2) {
-        assert nd1.columns() == nd2.rows() : "Column of left " + nd1.columns() + " != rows of right " + nd2.rows();
+        if(nd1.columns() != nd2.rows())
+            throw new IllegalStateException("Column of left " + nd1.columns() + " != rows of right " + nd2.rows());
     }
 
 
 
     public static void assertColumns(INDArray n,INDArray n2) {
-        assert n.columns() == n2.columns() : "Mis matched rows";
+        if(n.columns() != n2.columns())
+            throw new IllegalStateException("Mis matched rows");
     }
 
     public static void assertValidNum(INDArray n) {
-        n = n.ravel();
-        for(int i = 0; i < n.length(); i++) {
-            double d =  n.getDouble(i);
-            assert !(Double.isNaN(d) || Double.isInfinite(d)) : "Found infinite or nan";
+        INDArray linear = n.linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            double d =  linear.getDouble(i);
+            if(Double.isNaN(d) || Double.isInfinite(d))
+                throw new IllegalStateException("Found infinite or nan");
 
         }
     }

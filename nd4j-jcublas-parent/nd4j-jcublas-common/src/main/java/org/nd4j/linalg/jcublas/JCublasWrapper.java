@@ -157,12 +157,13 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a, IComplexNDArray x, IComplexDouble beta, IComplexNDArray y) {
-        return null;
+        return SimpleJCublas.gemv(a,x,alpha,y,beta);
+
     }
 
     @Override
     public IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y) {
-        return null;
+        return SimpleJCublas.gemv(a,x,alpha,y,beta);
     }
 
     @Override

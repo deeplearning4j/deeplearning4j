@@ -1286,9 +1286,5 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray gti(IComplexNumber other);
 
 
-
-
-
-
-
+    void assign(IComplexNumber aDouble);
 }

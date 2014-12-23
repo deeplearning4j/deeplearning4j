@@ -1890,7 +1890,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             data.put(ix + 1,element2.imaginaryComponent().doubleValue());
         }
         else {
-            double element2 = (double) element.element();
+            double element2 = element.getDouble(0);
             data.put(ix,element2);
             data.put(ix + 1,0);
         }
@@ -2177,6 +2177,16 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
         return this;
     }
+
+    @Override
+    public void assign(IComplexNumber aDouble) {
+        IComplexNDArray linear = linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            linear.putScalar(i,aDouble);
+        }
+
+    }
+
     /**
      * Get whole rows from the passed indices.
      *
@@ -3221,9 +3231,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                     Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asFloat(),this,otherArray,Nd4j.ZERO.asFloat(),resultArray);
             else
             if(data.dataType() == (DataBuffer.FLOAT))
-                Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), resultArray);
+                Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asFloat(), this, otherArray, Nd4j.ZERO.asFloat(), resultArray);
             else
-                Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asFloat(),this,otherArray,Nd4j.ZERO.asFloat(),resultArray);
+                Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asDouble(),this,otherArray,Nd4j.ZERO.asDouble(),resultArray);
 
         }
         return resultArray;

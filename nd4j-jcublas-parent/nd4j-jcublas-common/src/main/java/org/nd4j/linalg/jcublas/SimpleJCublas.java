@@ -540,7 +540,7 @@ public class SimpleJCublas {
         JCublas.cublasCgemv(
                 'n', //trans
                 A.rows(),  // m
-                A.rows(), // n
+                A.columns(), // n
                 alpha,
                 cAPointer, // A
                 A.rows(),  // lda

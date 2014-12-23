@@ -137,6 +137,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return ret;
     }
 
+
+
     @Override
     public DataBuffer createBuffer(DataBuffer[] buffers) {
         assertAllSameType(buffers);
@@ -766,7 +768,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public IComplexNDArray complexValueOf(int num, double value) {
         IComplexNDArray ones = complexOnes(num);
-        ones.assign(Nd4j.complexScalar(value));
+        ones.assign(Nd4j.createDouble(value,0.0));
         return ones;
     }
 
