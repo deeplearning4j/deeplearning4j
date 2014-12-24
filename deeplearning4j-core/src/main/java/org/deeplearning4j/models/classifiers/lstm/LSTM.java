@@ -9,6 +9,7 @@ import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.nn.WeightInitUtil;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -34,6 +35,8 @@ public class LSTM implements Serializable,Model {
     private INDArray decoderBias;
     private NeuralNetConfiguration conf;
     private INDArray iFog,iFogF,c,x,hIn,hOut,u,u2;
+    private INDArray xi;
+    private INDArray xs;
 
 
 
@@ -111,7 +114,7 @@ public class LSTM implements Serializable,Model {
     }
 
 
-    public void backward(INDArray y) {
+    public LSTMGradient backward(INDArray y) {
         INDArray dY = Nd4j.vstack(Nd4j.zeros(y.columns()),y);
         INDArray dWd = hOut.transpose().mmul(dY);
         INDArray dBd = Nd4j.sum(dWd,0);
@@ -173,6 +176,8 @@ public class LSTM implements Serializable,Model {
 
 
         clear();
+
+        return new LSTMGradient(dY,dWd,dBd,dHout,dIFog,dIFogF,dRecurrentWeights,dHin,dC,dx);
 
     }
 
@@ -304,6 +309,123 @@ public class LSTM implements Serializable,Model {
     }
 
 
+    public static class LSTMGradient implements Gradient {
+        INDArray dY;
+        INDArray dWd;
+        INDArray dBd;
+        INDArray dHout;
+        INDArray dIFog;
+        INDArray dIFogF;
+        INDArray dRecurrentWeights;
+        INDArray dHin;
+        INDArray dC;
+        INDArray dx;
+
+        public LSTMGradient(INDArray dY, INDArray dWd, INDArray dBd, INDArray dHout, INDArray dIFog, INDArray dIFogF, INDArray dRecurrentWeights, INDArray dHin, INDArray dC, INDArray dx) {
+            this.dY = dY;
+            this.dWd = dWd;
+            this.dBd = dBd;
+            this.dHout = dHout;
+            this.dIFog = dIFog;
+            this.dIFogF = dIFogF;
+            this.dRecurrentWeights = dRecurrentWeights;
+            this.dHin = dHin;
+            this.dC = dC;
+            this.dx = dx;
+        }
+
+        public INDArray getdY() {
+            return dY;
+        }
+
+        public void setdY(INDArray dY) {
+            this.dY = dY;
+        }
+
+        public INDArray getdWd() {
+            return dWd;
+        }
+
+        public void setdWd(INDArray dWd) {
+            this.dWd = dWd;
+        }
+
+        public INDArray getdBd() {
+            return dBd;
+        }
+
+        public void setdBd(INDArray dBd) {
+            this.dBd = dBd;
+        }
+
+        public INDArray getdHout() {
+            return dHout;
+        }
+
+        public void setdHout(INDArray dHout) {
+            this.dHout = dHout;
+        }
+
+        public INDArray getdIFog() {
+            return dIFog;
+        }
+
+        public void setdIFog(INDArray dIFog) {
+            this.dIFog = dIFog;
+        }
+
+        public INDArray getdIFogF() {
+            return dIFogF;
+        }
+
+        public void setdIFogF(INDArray dIFogF) {
+            this.dIFogF = dIFogF;
+        }
+
+        public INDArray getdRecurrentWeights() {
+            return dRecurrentWeights;
+        }
+
+        public void setdRecurrentWeights(INDArray dRecurrentWeights) {
+            this.dRecurrentWeights = dRecurrentWeights;
+        }
+
+        public INDArray getdHin() {
+            return dHin;
+        }
+
+        public void setdHin(INDArray dHin) {
+            this.dHin = dHin;
+        }
+
+        public INDArray getdC() {
+            return dC;
+        }
+
+        public void setdC(INDArray dC) {
+            this.dC = dC;
+        }
+
+        public INDArray getDx() {
+            return dx;
+        }
+
+        public void setDx(INDArray dx) {
+            this.dx = dx;
+        }
+
+        @Override
+        public INDArray gradient() {
+            return Nd4j.concat(0,dY.linearView(),dWd.linearView(),dBd.linearView(), dHout.linearView(),dIFog.linearView(),dIFogF.linearView(),dHin.linearView(),dRecurrentWeights.linearView(),dHin.linearView(),dC.linearView(),dx.linearView());
+        }
+
+        @Override
+        public void clear() {
+
+        }
+    }
+
+
     private static class Beam {
         private double logProba = 0.0;
         private List<Integer> indices;
@@ -413,6 +535,11 @@ public class LSTM implements Serializable,Model {
     @Override
     public void iterate(INDArray input) {
 
+    }
+
+    @Override
+    public Gradient getGradient() {
+        return backward(forward(xi,xs));
     }
 
 

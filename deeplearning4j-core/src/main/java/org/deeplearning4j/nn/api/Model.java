@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.api;
 
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -59,4 +60,9 @@ public interface Model {
     public void iterate(INDArray input);
 
 
+    /**
+     * Calculate a gradient
+     * @return the gradient for this model
+     */
+    Gradient getGradient();
 }
