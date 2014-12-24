@@ -74,6 +74,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,IterationListener,
     public void setVBiasAdaGrad(AdaGrad adaGrad);
 
 
+    @Override
     public NeuralNetworkGradient getGradient();
 
 

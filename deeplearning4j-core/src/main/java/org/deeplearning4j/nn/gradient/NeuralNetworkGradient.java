@@ -16,7 +16,7 @@ import org.deeplearning4j.nn.api.Persistable;
  * @author Adam Gibson
  *
  */
-public class NeuralNetworkGradient implements Serializable,Persistable {
+public class NeuralNetworkGradient implements Serializable,Persistable,Gradient {
 	
 	private static final long serialVersionUID = 5611230066214840732L;
 	private INDArray wGradient;
@@ -144,4 +144,16 @@ public class NeuralNetworkGradient implements Serializable,Persistable {
                 ", hBiasGradient=" + hBiasGradient +
                 '}';
     }
+
+	@Override
+	public INDArray gradient() {
+		return Nd4j.concat(0,wGradient.linearView(),vBiasGradient.linearView(),hBiasGradient.linearView());
+	}
+
+	@Override
+	public void clear() {
+		wGradient = null;
+		vBiasGradient = null;
+		hBiasGradient = null;
+	}
 }

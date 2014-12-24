@@ -6,13 +6,15 @@ import java.util.List;
 
 import org.deeplearning4j.nn.api.Persistable;
 import org.deeplearning4j.util.SerializationUtils;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Gradient for a whole multi layer network
  * @author Adam Gibson
  *
  */
-public class MultiLayerGradient implements Persistable,Cloneable {
+public class MultiLayerGradient implements Persistable,Cloneable,Gradient {
 
 	/**
 	 * 
@@ -81,5 +83,19 @@ public class MultiLayerGradient implements Persistable,Cloneable {
 		this.logRegGradient = logRegGradient;
 	}
 
-	
+
+	@Override
+	public INDArray gradient() {
+		INDArray[] gradients = new INDArray[this.gradients.size() + 1];
+		for(int i = 0; i < gradients.length; i++)
+			gradients[i] = this.getGradients().get(i).gradient();
+		gradients[gradients.length - 1] = logRegGradient.gradient();
+		return Nd4j.concat(0,gradients);
+	}
+
+	@Override
+	public void clear() {
+        gradients.clear();
+		logRegGradient = null;
+	}
 }
