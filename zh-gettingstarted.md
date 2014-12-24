@@ -10,8 +10,8 @@ layout: zh-default
 * 快速入门
 * 安装Deeplearning4j（所有系统）
 -- Linux
---OSX
---Windows
+-- OSX
+-- Windows
 * 操作来源
 * Eclipse
 * 故障排除
@@ -67,7 +67,7 @@ Java 编写的ND4J是提供我们矩阵操作的Java科学计算引擎。[请点
 
 ### 安装
 
-您只需要到GitHub上下载的Mac ，Windows等复制ND4J文件，输入以下的指令到您的终端（ Mac）或Git Shell（ Windows）中：
+您只需要到GitHub上下载的[Mac](https://mac.github.com/) ，[Windows](https://windows.github.com/)等复制ND4J文件，输入以下的指令到您的终端（ Mac）或Git Shell（ Windows）中：
 
         git clone https://github.com/SkymindIO/deeplearning4j
         cd deeplearning4j
@@ -138,11 +138,11 @@ OSX已经安装了Jblas。
 
 ## Windows
 
-* 在Maven的下载页那里的 ”Window” 部分有着详细的解释如何下载Maven和Java，如何正确的配置、设置某些环境变量。
-* 安装Anaconda。如果您的系统不能兼容64位安装，请到同个下载页面上去下载32位的。（ Deeplearning4j取决于Anaconda使用matplotlib图形产生器 ）。
+* 在[Maven](http://maven.apache.org/download.cgi)的下载页那里的 ”Window” 部分有着详细的解释如何下载Maven和Java，如何正确的配置、[设置某些环境变量](http://www.computerhope.com/issues/ch000549.htm)。
+* 安装[Anaconda](http://docs.continuum.io/anaconda/install.html#windows-install)。如果您的系统不能兼容64位安装，请到同个下载页面上去下载32位的。（ Deeplearning4j取决于Anaconda使用matplotlib图形产生器 ）。
 * 安装LAPACK 。 （ LAPACK会问您是否有英特尔的编译器 ，您应该没有）。
-* 要完成这一步，你必须安装32位的MinGW，不管你是否有一个64位的计算机或电脑（下载按键在位右上角） ，然后下载Mingw的预建动态库。
-* LAPACK提供一个替代的[VS Studio](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke)的解决方案。您也可以看看的基础线性代数子程序库（ Basic Linear Algebra Subprograms: BLAS ）的文档。
+* 要完成这一步，你必须安装[32位的MinGW](http://www.mingw.org/)，不管你是否有一个64位的计算机或电脑（下载按键在位右上角） ，然后下载[Mingw的预建动态库](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw)。
+* LAPACK提供一个替代的[VS Studio](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke)的解决方案。您也可以看看的基础线性代数子程序库（ [Basic Linear Algebra Subprograms: BLAS](http://www.netlib.org/blas/) ）的文档。
 
 ## 操作来源
 
