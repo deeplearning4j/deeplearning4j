@@ -7,24 +7,21 @@ layout: zh-default
 
 内容
 
-<a name="quickstart">Quickstart</a>
-* <a href="#quickstart">Quickstart</a>
-
 * <a href="#quickstart">快速入门</a>
-* 安装Deeplearning4j（所有系统）
--- Linux
--- OSX
--- Windows
-* 操作来源
-* Eclipse
-* 故障排除
-* 下一步
+* <a href="#all">安装Deeplearning4j（所有系统)</a>
+-- <a href="#linux">Linux</a>
+-- <a href="#osx">OSX</a>
+-- <a href="#windows">Windows</a>
+* <a href="#source">操作来源</a>
+* <a href="#eclipse">Eclipse</a>
+* <a href="#trouble">故障排除</a>
+* <a href="#next">下一步</a>
 
 ## <a name="quickstart">快速入门</a>
 
 [我们快速入门j将向您展示如何运行您的第一个例子](http://deeplearning4j.org/zh-quickstart.html)。
 
-## 完成安装：所有的操作系统
+## <a name="all">完成安装：所有的操作系统</a>
 
 DeepLearning4J需要[Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html)或以上的版本。
 
@@ -109,7 +106,7 @@ Java 编写的ND4J是提供我们矩阵操作的Java科学计算引擎。[请点
 
 除此之外，您也可以通过我们的[下载网页](http://deeplearning4j.org/download.html)安装DL4J 。如果您从我们的网页下载，那么你必须手动导入jar文件到Eclipse 、IntelliJ或Netbeans。
 
-## Linux
+## <a name="linux">Linux</a>
 
 * 由于我们依赖Jblas（Java线性代数库）的处理器 ，原生绑定的BLA是必需的。
 
@@ -135,11 +132,11 @@ Java 编写的ND4J是提供我们矩阵操作的Java科学计算引擎。[请点
 
 如果你使用的IntelliJ作为您的IDE，这一切应该能正常运行了。
 
-## OSX
+## <a name="osx">OSX</a>
 
 OSX已经安装了Jblas。
 
-## Windows
+## <a name="windows">Windows</a>
 
 * 在[Maven](http://maven.apache.org/download.cgi)的下载页那里的 ”Window” 部分有着详细的解释如何下载Maven和Java，如何正确的配置、[设置某些环境变量](http://www.computerhope.com/issues/ch000549.htm)。
 * 安装[Anaconda](http://docs.continuum.io/anaconda/install.html#windows-install)。如果您的系统不能兼容64位安装，请到同个下载页面上去下载32位的。（ Deeplearning4j取决于Anaconda使用matplotlib图形产生器 ）。
@@ -147,13 +144,13 @@ OSX已经安装了Jblas。
 * 要完成这一步，你必须安装[32位的MinGW](http://www.mingw.org/)，不管你是否有一个64位的计算机或电脑（下载按键在位右上角） ，然后下载[Mingw的预建动态库](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw)。
 * LAPACK提供一个替代的[VS Studio](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke)的解决方案。您也可以看看的基础线性代数子程序库（ [Basic Linear Algebra Subprograms: BLAS](http://www.netlib.org/blas/) ）的文档。
 
-## 操作来源
+## <a name="source">操作来源</a>
 
 对于想要深入了解DL4J的，请到我们的[Github](https://github.com/SkymindIO/deeplearning4j/)库上查看。如果你想开发Deeplearning4j ， 只需安装适用于Mac或Windows的Github 。然后 git clone 这个知识库，并运行此Maven的命令 ：
 
     mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
-## Eclipse
+## <a name="eclipse">Eclipse</a>
 
 运行一个Git clone后，输入以下命令
 
@@ -161,12 +158,12 @@ OSX已经安装了Jblas。
 
 这将导入来源并帮您设置一切。
 
-## 故障排除
+## <a name="trouble">故障排除</a>
 
 * 如果您在过去已经安装了DL4J，然而现在却看到例子引发错误，请在与DL4J同一个根目录上对[ND4J](http://nd4j.org/zh-getstarted.html)运行 git clone；在ND4J内安装一个全新的Maven；重新安装DL4J ；在DL4J内安装一个全新的Maven，然后看看是否能解决问题。
 * 当你运行一个例子时，您可能会得到较低的[F1](http://deeplearning4j.org/glossary.html#f1)分数 ，这通常是表示神经网络的分类是准确的。在这种情况下，一个低F1值并不是表现差，这是因为在例子里我们训练较小的数据集。我们在例子里给予较小的数据集以便可以快速运行。由于小数据集的代表性比大数据集少，所以它们所产生的结果差别也很大。就拿我们的例子来说，在极小的样本数据，我们深度信念网的F1值目前是在0.32和1.0之间徘徊。
 * 请到这里查找[Javadoc](http://deeplearning4j.org/doc/)列表中的Deeplearning4j教学和方法。
 
-## 下一步：MNIST和运行例子
+## <a name="next">下一步：MNIST和运行例子</a>
 
 请看看[MNIST](http://deeplearning4j.org/mnist-tutorial.html)教程。如果您清楚的知道深度学习是如何运行，有个明确的概念您要如何操作它，请直到访我们的[自定数据集](http://deeplearning4j.org/customdatasets.html)章节。
