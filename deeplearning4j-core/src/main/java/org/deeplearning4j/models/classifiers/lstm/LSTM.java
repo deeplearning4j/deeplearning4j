@@ -169,21 +169,41 @@ public class LSTM implements Serializable,Model {
             if(conf.getDropOut() > 0) {
                 dx.muli(u);
             }
-
-
-
         }
-    }
 
 
-
-
-
-    public void predict(INDArray xi,INDArray ws) {
+        clear();
 
     }
 
 
+    /**
+     * Prediction with beam search
+     * @param xi
+     * @param ws
+     * @return
+     */
+    public Collection<Pair<List<Integer>,Double>> predict(INDArray xi,INDArray ws) {
+        int d = decoderWeights.rows();
+        Triple<INDArray,INDArray,INDArray> yhc = lstmTick(xi,Nd4j.zeros(d),Nd4j.zeros(d));
+        BeamSearch search = new BeamSearch(20,ws,yhc.getSecond(),yhc.getThird());
+        Collection<Pair<List<Integer>,Double>> ret = search.search();
+        return ret;
+
+    }
+
+
+
+    private void clear() {
+        u = null;
+        hIn = null;
+        hOut = null;
+        iFog = null;
+        iFogF = null;
+        c = null;
+        x = null;
+        u2 = null;
+    }
 
 
     private  class BeamSearch {
@@ -192,10 +212,11 @@ public class LSTM implements Serializable,Model {
         private INDArray h,c;
         private INDArray ws;
         private int beamSize = 5;
-        public BeamSearch(int nSteps, INDArray h, INDArray c) {
+        public BeamSearch(int nSteps,INDArray ws, INDArray h, INDArray c) {
             this.nSteps = nSteps;
             this.h = h;
             this.c = c;
+            this.ws = ws;
             beams.add(new Beam(0.0,new ArrayList<Integer>(),h,c));
 
         }
@@ -371,7 +392,7 @@ public class LSTM implements Serializable,Model {
 
     @Override
     public INDArray params() {
-        return null;
+        return Nd4j.concat(0,recurrentWeights.linearView(),decoderWeights.linearView(),decoderBias.linearView());
     }
 
     @Override
@@ -393,4 +414,25 @@ public class LSTM implements Serializable,Model {
     public void iterate(INDArray input) {
 
     }
+
+
+    public static class Builder {
+        private NeuralNetConfiguration conf;
+
+
+        public Builder configure(NeuralNetConfiguration conf) {
+            this.conf = conf;
+            return this;
+        }
+
+
+        public LSTM build() {
+            LSTM ret = new LSTM();
+            ret.conf = conf;
+            ret.init();
+            return ret;
+        }
+
+    }
+
 }
