@@ -167,7 +167,7 @@ public class SimpleJCublas {
             case SUN:
                 return String.format("libJCublas-linux-%s.so",ar.toString());
             case WINDOWS:
-                return "libJCublas-windows-%s.dll";
+                return String.format("libJCublas-windows-%s.dll",ar.toString());
             default:
                 return null;
         }
