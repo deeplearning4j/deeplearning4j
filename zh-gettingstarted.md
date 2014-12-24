@@ -7,7 +7,10 @@ layout: zh-default
 
 内容
 
-* 快速入门
+<a name="quickstart">Quickstart</a>
+* <a href="#quickstart">Quickstart</a>
+
+* <a href="#quickstart">快速入门</a>
 * 安装Deeplearning4j（所有系统）
 -- Linux
 -- OSX
@@ -17,9 +20,9 @@ layout: zh-default
 * 故障排除
 * 下一步
 
-## 快速入门
+## <a name="quickstart">快速入门</a>
 
-我们快速入门j将向您展示如何运行您的第一个例子。
+[我们快速入门j将向您展示如何运行您的第一个例子](http://deeplearning4j.org/zh-quickstart.html)。
 
 ## 完成安装：所有的操作系统
 
