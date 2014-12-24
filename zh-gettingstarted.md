@@ -9,9 +9,9 @@ layout: zh-default
 
 * <a href="#quickstart">快速入门</a>
 * <a href="#all">安装Deeplearning4j（所有系统)</a>
--- <a href="#linux">Linux</a>
--- <a href="#osx">OSX</a>
--- <a href="#windows">Windows</a>
+--<a href="#linux">Linux</a>
+--<a href="#osx">OSX</a>
+--<a href="#windows">Windows</a>
 * <a href="#source">操作来源</a>
 * <a href="#eclipse">Eclipse</a>
 * <a href="#trouble">故障排除</a>
