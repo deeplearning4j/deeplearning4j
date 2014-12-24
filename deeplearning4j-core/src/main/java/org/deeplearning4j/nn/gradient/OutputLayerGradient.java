@@ -5,8 +5,12 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 
-
-public class OutputLayerGradient implements Serializable {
+/**
+ * Output layer gradient
+ *
+ * @author Adam Gibson
+ */
+public class OutputLayerGradient implements Serializable,Gradient {
 
 	
 	private static final long serialVersionUID = -2843336269630396562L;
@@ -86,7 +90,16 @@ public class OutputLayerGradient implements Serializable {
     public void setbGradient(INDArray bGradient) {
 		this.bGradient = bGradient;
 	}
-	
-	
 
+
+	@Override
+	public INDArray gradient() {
+		return Nd4j.concat(0,wGradient.linearView(),bGradient.linearView());
+	}
+
+	@Override
+	public void clear() {
+		wGradient = null;
+		bGradient = null;
+	}
 }
