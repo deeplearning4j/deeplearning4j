@@ -13,7 +13,6 @@ import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.plot.NeuralNetPlotter;
-import org.deeplearning4j.optimize.optimizers.da.DenoisingAutoEncoderOptimizer;
 
 
 /**
@@ -178,14 +177,6 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
 
-    @Override
-    public void fit(INDArray input) {
-        if(input != null)
-            this.input = input;
-        this.lastMiniBatchSize = input.rows();
-        optimizer = new DenoisingAutoEncoderOptimizer(this);
-        optimizer.train(input);
-    }
 
 
 
@@ -193,7 +184,6 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
     @Override
     public void iterate(INDArray input ) {
-        double corruptionLevel = conf.getCorruptionLevel();
         if(input != null )
             this.input = preProcessInput(input);
         this.lastMiniBatchSize = input.rows();
@@ -247,7 +237,6 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
         INDArray vBiasGradient = visibleLoss.mean(0);
 
         NeuralNetworkGradient gradient = new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
-        updateGradientAccordingToParams(gradient,iteration, lr);
 
         return gradient;
     }

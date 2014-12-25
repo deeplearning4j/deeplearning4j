@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.api;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -10,9 +11,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  */
 public interface Model {
-
-
-
+    /**
+     * The score for the model
+     * @return the score for the model
+     */
     public double score();
 
     /**
@@ -65,4 +67,17 @@ public interface Model {
      * @return the gradient for this model
      */
     Gradient getGradient();
+
+    /**
+     * Get the gradient and score
+     * @return the gradient and score
+     */
+    Pair<Gradient,Double> gradientAndScore();
+
+    /**
+     * The current inputs batch size
+     * @return the current inputs batch size
+     */
+    public int batchSize();
+
 }

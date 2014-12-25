@@ -4,7 +4,6 @@ package org.deeplearning4j.models.featuredetectors.autoencoder;
 
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.optimize.optimizers.autoencoder.AutoEncoderOptimizer;
 import org.deeplearning4j.berkeley.Pair;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -74,7 +73,6 @@ public class AutoEncoder extends BaseNeuralNetwork {
         INDArray vBiasGradient = Nd4j.zeros(vBias.rows(), vBias.columns());
 
         NeuralNetworkGradient ret =  new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
-        updateGradientAccordingToParams(ret, iterations,lr);
         return ret;
 
     }
@@ -140,16 +138,6 @@ public class AutoEncoder extends BaseNeuralNetwork {
         return new Pair<>(out,out);
     }
 
-    /**
-     * Trains via an optimization algorithm such as SGD or Conjugate Gradient
-     *
-     * @param input  the input to iterate on
-     */
-    @Override
-    public void fit(INDArray input) {
-        AutoEncoderOptimizer o = new AutoEncoderOptimizer(this);
-        o.train(input);
-    }
 
 
     public static class Builder extends BaseNeuralNetwork.Builder<AutoEncoder> {

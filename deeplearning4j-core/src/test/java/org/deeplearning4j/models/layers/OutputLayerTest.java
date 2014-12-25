@@ -35,7 +35,7 @@ public class OutputLayerTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT)
                 .activationFunction(Activations.softMaxRows())
                 .iterations(100).weightInit(WeightInit.ZERO)
                 .rng(gen).regularization(true).l2(2e-4).momentum(0.9)
