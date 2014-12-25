@@ -57,6 +57,8 @@ public class StochasticHessianFree extends BaseOptimizer {
 
 
     void setup() {
+        if(!(model instanceof BaseMultiLayerNetwork))
+            return;
         network = (BaseMultiLayerNetwork) model;
         xi = network.pack();
         ch = Nd4j.zeros(1, xi.length());
@@ -106,13 +108,7 @@ public class StochasticHessianFree extends BaseOptimizer {
             }
 
 
-            double val = 0.5 * Nd4j.getBlasWrapper().dot(b.neg().add(r).transpose(), x);
-
-            log.info("Iteration on conjugate gradient " + iterationCount + " with value " + val);
-
-
-
-
+            //double val = 0.5 * Nd4j.getBlasWrapper().dot(b.neg().addi(r).transpose(), x);
 
             //step size
             double alpha = deltaNew / pAp;
@@ -197,19 +193,17 @@ public class StochasticHessianFree extends BaseOptimizer {
     public Pair<INDArray,Double> cgBackTrack(List<INDArray> chs,INDArray p) {
         INDArray params = network.params();
         double score = network.score(p.add(params));
-        double currMin = network.score();
+        double currMin = -network.score();
         int i = chs.size() - 2;
 
         for(; i > 0; i--) {
-            double score2 = network.score(params.add(chs.get(i)));
+            double score2 = -network.score(params.add(chs.get(i)));
             if(score2 < score || score2 < currMin) {
                 i++;
                 score = score2;
-                log.info("Breaking on new score " + score2 + " with iteration " + i + " with current minimum of " + currMin);
                 break;
             }
 
-            log.info("Trial " + i + " with trial score of " + score2);
 
         }
 
@@ -222,63 +216,57 @@ public class StochasticHessianFree extends BaseOptimizer {
 
     @Override
     public boolean optimize() {
+        if(!(model instanceof BaseMultiLayerNetwork))
+            return true;
+
         myName = Thread.currentThread().getName();
         if (converged)
             return true;
 
-        score = network.score();
+        score = -network.score();
 
         xi = network.params();
 
 
 
+       for(int i = 0; i < conf.getNumIterations(); i++) {
+           //initial gradient, precon/conjugate gradient conditioner
+           Pair<INDArray,INDArray> backPropGradient = network.getBackPropGradient2();
 
-        //initial gradient, precon/conjugate gradient conditioner
-        Pair<INDArray,INDArray> backPropGradient = network.getBackPropGradient2();
+           gradient = backPropGradient.getFirst().neg();
+           //log.info("Gradient sum " + gradient.sum());
 
-        gradient = backPropGradient.getFirst().neg();
-        //log.info("Gradient sum " + gradient.sum());
+           INDArray preCon = backPropGradient.getSecond();
 
-        INDArray preCon = backPropGradient.getSecond();
+           if(ch == null)
+               setup();
 
-        if(ch == null)
-            setup();
+           ch.muli(pi);
 
-        ch.muli(pi);
+           Triple<INDArray,List<INDArray>,INDArray>  cg = runConjugateGradient(preCon,conf.getNumIterations());
 
-        Triple<INDArray,List<INDArray>,INDArray>  cg = runConjugateGradient(preCon,conf.getNumIterations());
+           INDArray p = cg.getFirst();
 
-        INDArray p = cg.getFirst();
+           Pair<INDArray,Double> cgBackTrack = cgBackTrack(cg.getSecond(),p);
 
-        Pair<INDArray,Double> cgBackTrack = cgBackTrack(cg.getSecond(),p);
+           p = cgBackTrack.getFirst();
 
-        p = cgBackTrack.getFirst();
+           double rho = network.reductionRatio(cgBackTrack.getFirst(), -network.score(), cgBackTrack.getSecond(), gradient);
+           double newScore = -network.score(cgBackTrack.getFirst());
 
-        double rho = network.reductionRatio(cgBackTrack.getFirst(), network.score(), cgBackTrack.getSecond(), gradient);
-        double newScore = network.score(cgBackTrack.getFirst());
+           step = lineSearch(newScore,gradient,p);
+           network.dampingUpdate(rho,boost,decrease);
 
-        step = lineSearch(newScore,gradient,p);
-        network.dampingUpdate(rho,boost,decrease);
-
-        INDArray proposedUpdate = xi.add(p.mul(f * step));
-        network.setParameters(proposedUpdate);
+           INDArray proposedUpdate = xi.add(p.mul(f * step));
+           network.setParameters(proposedUpdate);
+           log.info("Score at iteration " + i + " was " + newScore);
+       }
 
         return true;
     }
 
 
 
-    public void reset() {
-        xi = null;
-    }
-
-    public int getMaxIterations() {
-        return maxIterations;
-    }
-
-    public void setMaxIterations(int maxIterations) {
-        this.maxIterations = maxIterations;
-    }
 
 
 }

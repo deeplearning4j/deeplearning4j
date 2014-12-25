@@ -40,11 +40,11 @@ public class DBNTest {
     public void testIris() {
         RandomGenerator gen = new MersenneTwister(123);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(1000)
-                .weightInit(WeightInit.SIZE).optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.LBFGS)
+                .iterations(10)
+                .weightInit(WeightInit.SIZE).optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE)
                 .activationFunction(Activations.tanh()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .rng(gen).constrainGradientToUnitNorm(false)
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .rng(gen).constrainGradientToUnitNorm(true)
                 .learningRate(1e-1f)
                 .nIn(4).nOut(3).list(3).hiddenLayerSizes(new int[]{3,2})
                 .override(new NeuralNetConfiguration.ConfOverride() {
