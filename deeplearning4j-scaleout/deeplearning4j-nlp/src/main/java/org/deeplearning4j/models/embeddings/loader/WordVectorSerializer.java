@@ -1,4 +1,4 @@
-package org.deeplearning4j.models.word2vec.loader;
+package org.deeplearning4j.models.embeddings.loader;
 
 import java.io.*;
 import java.util.*;
@@ -13,7 +13,6 @@ import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.glove.Glove;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.models.word2vec.VocabWord;

@@ -40,12 +40,11 @@ public class DBNTest {
     public void testIris() {
         RandomGenerator gen = new MersenneTwister(123);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(10)
-                .weightInit(WeightInit.SIZE).optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
-                .activationFunction(Activations.tanh())
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .iterations(1000)
+                .weightInit(WeightInit.SIZE).optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.LBFGS)
+                .activationFunction(Activations.tanh()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .rng(gen).constrainGradientToUnitNorm(true)
+                .rng(gen).constrainGradientToUnitNorm(false)
                 .learningRate(1e-1f)
                 .nIn(4).nOut(3).list(3).hiddenLayerSizes(new int[]{3,2})
                 .override(new NeuralNetConfiguration.ConfOverride() {
@@ -72,14 +71,13 @@ public class DBNTest {
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         DataSet next = iter.next();
+        next.normalizeZeroMeanZeroUnitVariance();
         next.shuffle();
         SplitTestAndTrain split = next.splitTestAndTrain(140);
         DataSet train = split.getTrain();
-        train.normalizeZeroMeanZeroUnitVariance();
         d.fit(train);
 
         DataSet test = split.getTest();
-        test.normalizeZeroMeanZeroUnitVariance();
 
         Evaluation eval = new Evaluation();
         INDArray output = d.output(test.getFeatureMatrix());
@@ -96,7 +94,7 @@ public class DBNTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE)
                 .momentum(9e-1f).weightInit(WeightInit.UNIFORM)
-                .optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).iterations(1000)
                 .learningRate(1e-1f).nIn(784).nOut(10).list(4).hiddenLayerSizes(new int[]{500, 400, 300}).override(new NeuralNetConfiguration.ConfOverride() {
                     @Override

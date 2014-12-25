@@ -12,7 +12,7 @@ public class DefaultStepFunction implements StepFunction {
     public void step(INDArray x, INDArray line, Object[] params) {
         double alam = (double) params[0];
         double oldAlam = (double) params[1];
-        x.addi(line.muli(alam - oldAlam));
+        x.addi(line.mul(alam - oldAlam));
     }
 
     @Override

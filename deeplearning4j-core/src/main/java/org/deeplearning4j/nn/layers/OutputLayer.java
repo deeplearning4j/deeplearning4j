@@ -4,11 +4,11 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 import java.io.Serializable;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
-import org.deeplearning4j.optimize.solvers.IterationGradientDescent;
+import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -21,16 +21,10 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.deeplearning4j.nn.api.*;
-import org.deeplearning4j.nn.api.NeuralNetwork.OptimizationAlgorithm;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 import org.nd4j.linalg.learning.AdaGrad;
-import org.deeplearning4j.optimize.api.TrainingEvaluator;
-import org.deeplearning4j.optimize.optimizers.OutputLayerOptimizer;
-import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
-import org.deeplearning4j.optimize.solvers.VectorizedDeepLearningGradientAscent;
-import org.deeplearning4j.optimize.solvers.VectorizedNonZeroStoppingConjugateGradient;
 
 
 /**
@@ -45,9 +39,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     //current input and label matrices
     private INDArray labels;
     private AdaGrad adaGrad,biasAdaGrad;
-
-
-
 
 
 
@@ -90,84 +81,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
 
 
-    /**
-     * Run the optimization algorithm for training
-     * @param eval the training evaluator to use for early stopping (where applicable)
-     */
-    public  void trainTillConvergence(INDArray labels,TrainingEvaluator eval) {
-        double learningRate = conf.getLr();
-        int numIterations = conf.getNumIterations();
-        this.labels = labels;
-        OutputLayerOptimizer opt = new OutputLayerOptimizer(this, learningRate);
-        adaGrad.setMasterStepSize(learningRate);
-        biasAdaGrad.setMasterStepSize(learningRate);
-        IterationListener listener = conf.getListeners() != null ? new ComposableIterationListener(conf.getListeners()) : null;
-
-        if(conf.getOptimizationAlgo() == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
-            VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt);
-            g.setTolerance(1e-3f);
-            g.setTrainingEvaluator(eval);
-            g.setMaxIterations(numIterations);
-            g.optimize(numIterations);
-
-        }
-        else if(conf.getOptimizationAlgo() == OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT) {
-            IterationGradientDescent g = new IterationGradientDescent(opt,listener,conf.getNumIterations());
-            g.optimize();
-        }
-
-        else if(conf.getOptimizationAlgo()  == OptimizationAlgorithm.HESSIAN_FREE) {
-            StochasticHessianFree o = new StochasticHessianFree(opt,null);
-            o.setTolerance(1e-3f);
-            o.setTrainingEvaluator(eval);
-            o.optimize(numIterations);
-        }
-
-        else {
-            VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(opt);
-            g.setTolerance(1e-3f);
-            g.setTrainingEvaluator(eval);
-            g.optimize(numIterations);
-
-        }
-
-
-    }
-
-    /**
-     * Run the optimization algorithm for training
-     * @param learningRate the learning rate to iterate with
-     * @param numIterations the number of epochs
-     * @param eval the training evaluator to use for early stopping (where applicable)
-     */
-    public  void trainTillConvergence(double learningRate, int numIterations,TrainingEvaluator eval) {
-        OutputLayerOptimizer opt = new OutputLayerOptimizer(this, learningRate);
-        adaGrad.setMasterStepSize(learningRate);
-        biasAdaGrad.setMasterStepSize(learningRate);
-        IterationListener listener = conf.getListeners() != null ? new ComposableIterationListener(conf.getListeners()) : null;
-        if(conf.getOptimizationAlgo()  == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
-            VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt,listener);
-            g.setTolerance(1e-3f);
-            g.setTrainingEvaluator(eval);
-            g.setMaxIterations(numIterations);
-            g.optimize(numIterations);
-
-        }
-        else if(conf.getOptimizationAlgo() == OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT) {
-            IterationGradientDescent g = new IterationGradientDescent(opt,listener,conf.getNumIterations());
-            g.optimize();
-        }
-        else {
-            VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(opt,listener);
-            g.setTolerance(1e-3f);
-            g.setTrainingEvaluator(eval);
-            g.optimize(numIterations);
-
-        }
-
-
-    }
-
 
 
 
@@ -185,7 +98,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
             return  LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
 
-        return  LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
+        return  -LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
 
 
     }
@@ -212,7 +125,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         this.input = x;
         this.labels = y;
 
-        OutputLayerGradient gradient = getGradient();
+        OutputLayerGradient gradient = (OutputLayerGradient) getGradient();
 
 
 
@@ -242,7 +155,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * Gets the gradient from one training iteration
      * @return the gradient (bias and weight matrix)
      */
-    public OutputLayerGradient getGradient() {
+    @Override
+    public Gradient getGradient() {
         LinAlgExceptions.assertRows(input,labels);
         double lr = conf.getLr();
         adaGrad.setMasterStepSize(lr);
@@ -279,6 +193,16 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         return new OutputLayerGradient(wGradient,bGradient);
 
 
+    }
+
+    @Override
+    public Pair<Gradient, Double> gradientAndScore() {
+        return new Pair<>(getGradient(),score());
+    }
+
+    @Override
+    public int batchSize() {
+        return input.rows();
     }
 
 
@@ -401,7 +325,11 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     @Override
     public void fit(INDArray examples, INDArray labels) {
         this.input = examples;
-        trainTillConvergence(labels,null);
+        this.labels = labels;
+        Solver solver = new Solver.Builder()
+                .configure(conf()).listeners(conf.getListeners())
+                .model(this).build();
+        solver.optimize();
     }
 
     /**

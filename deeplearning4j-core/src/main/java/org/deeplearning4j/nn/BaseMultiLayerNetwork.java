@@ -12,11 +12,11 @@ import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.api.Persistable;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.gradient.MultiLayerGradient;
+import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
+import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.optimize.api.TrainingEvaluator;
-import org.deeplearning4j.optimize.optimizers.SoftMaxOptimizer;
-import org.deeplearning4j.optimize.optimizers.BackPropROptimizer;
-import org.deeplearning4j.optimize.optimizers.MultiLayerNetworkOptimizer;
 import org.deeplearning4j.util.Dl4jReflection;
 import org.deeplearning4j.util.SerializationUtils;
 import org.nd4j.linalg.api.activation.ActivationFunction;
@@ -54,7 +54,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     protected Layer[] layers;
     //default training examples and associated neuralNets
     protected INDArray input, labels;
-    protected MultiLayerNetworkOptimizer optimizer;
     //sometimes we may need to applyTransformToOrigin weights; this allows a
     //weight applyTransformToOrigin upon layer setup
     protected Map<Integer, MatrixTransform> weightTransforms = new HashMap<>();
@@ -197,6 +196,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     }
 
+    @Override
+    public int batchSize() {
+        return input.rows();
+    }
 
     /**
      * Transform the data based on the model's output.
@@ -435,6 +438,18 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         return feedForward();
     }
 
+    @Override
+    public Gradient getGradient() {
+        List<NeuralNetworkGradient> gradients = new ArrayList<>();
+        for(NeuralNetwork n : neuralNets)
+            gradients.add(n.getGradient());
+        return new MultiLayerGradient(gradients,(OutputLayerGradient) getOutputLayer().getGradient());
+    }
+
+    @Override
+    public Pair<Gradient, Double> gradientAndScore() {
+        return null;
+    }
 
     /**
      * Applies drop connect relative to connections.
@@ -820,30 +835,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    /**
-     * Backpropagation of errors for weights
-     * @param eval   the evaluator for stopping
-     */
-    public void backProp(TrainingEvaluator eval) {
-        if (layerWiseConfigurations.isUseGaussNewtonVectorProductBackProp()) {
-            BackPropROptimizer opt = new BackPropROptimizer(this, defaultConfiguration.getLr(), defaultConfiguration.getNumIterations());
-            opt.optimize(eval);
 
-        } else {
-            SoftMaxOptimizer opt = new SoftMaxOptimizer(this, defaultConfiguration.getLr(), defaultConfiguration.getNumIterations());
-            opt.optimize(eval);
-
-        }
-    }
-
-    /**
-     * Backpropagation of errors for weights
-     *
-     */
-    public void backProp() {
-        backProp( null);
-
-    }
 
 
 
@@ -1237,8 +1229,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             setInput(data.getFeatureMatrix());
             setLabels(data.getLabels());
             feedForward();
-            optimizer = new MultiLayerNetworkOptimizer(this, getOutputLayer().conf().getLr());
-            optimizer.optimize(data.getLabels());
+            getOutputLayer().fit(iter);
         }
 
 
@@ -1254,8 +1245,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.labels = labels;
         if (labels != null)
             this.labels = labels;
-        optimizer = new MultiLayerNetworkOptimizer(this, defaultConfiguration.getLr());
-        optimizer.optimize(this.labels);
+        feedForward();
+        getOutputLayer().fit(getOutputLayer().getInput(),labels);
+
 
     }
 

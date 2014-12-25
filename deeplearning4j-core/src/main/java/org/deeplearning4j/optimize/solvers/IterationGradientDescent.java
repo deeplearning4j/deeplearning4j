@@ -1,82 +1,54 @@
 package org.deeplearning4j.optimize.solvers;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.api.OptimizableByGradientValue;
-import org.deeplearning4j.optimize.api.TrainingEvaluator;
-import org.deeplearning4j.util.OptimizerMatrix;
+import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
 
 /**
- * Normal iteration based gradient descent with basic early stopping
+ * No line search gradient descent
  * @author Adam Gibson
  */
-public class IterationGradientDescent implements OptimizerMatrix {
-    private OptimizableByGradientValue optimizable;
-    private int iterations = 100;
-    private double score = 0.0;
-    private static Logger log = LoggerFactory.getLogger(IterationGradientDescent.class);
-    private IterationListener listener;
+public class IterationGradientDescent extends BaseOptimizer {
 
-    public IterationGradientDescent(OptimizableByGradientValue optimizable,IterationListener listener,int iterations) {
-        this.optimizable = optimizable;
-        this.iterations = iterations;
-        this.listener = listener;
+
+    public IterationGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
+        super(conf, stepFunction, iterationListeners, model);
     }
 
-
-    public IterationGradientDescent(OptimizableByGradientValue optimizable,int iterations) {
-        this.optimizable = optimizable;
-        this.iterations = iterations;
+    public IterationGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
+        super(conf, stepFunction, iterationListeners, terminationConditions, model);
     }
+
 
     @Override
     public boolean optimize() {
-
-        for(int i = 0; i < iterations; i++) {
-            INDArray params = optimizable.getParameters();
-            optimizable.setParameters(params.addi(optimizable.getValueGradient(0)));
-            double score = optimizable.getValue();
-            log.info("Score at iteration " + i + " is "  + score);
-            if(this.score != 0) {
-                double diff = Math.abs(score - this.score);
-                if(diff < Nd4j.EPS_THRESHOLD) {
-                    log.info("Breaking early...no change");
-                    break;
-                }
-            }
-
-            if(listener != null)
+        for(int i = 0; i < conf.getNumIterations(); i++) {
+            Pair<Gradient,Double> score = model.gradientAndScore();
+            INDArray gradient = score.getFirst().gradient();
+            INDArray params = model.params();
+            updateGradientAccordingToParams(gradient,params,model.batchSize());
+            model.setParams(params.addi(gradient));
+            for(IterationListener listener : conf.getListeners())
                 listener.iterationDone(i);
-
+            log.info("Error at iteration " + i + " was " + model.score());
         }
         return true;
     }
 
     @Override
-    public boolean optimize(int numIterations) {
-        return optimize();
-    }
-
-    @Override
-    public boolean isConverged() {
-        return true;
-    }
-
-    @Override
-    public void setMaxIterations(int maxIterations) {
+    public void preProcessLine(INDArray line) {
 
     }
 
     @Override
-    public void setTolerance(double tolerance) {
-
-    }
-
-    @Override
-    public void setTrainingEvaluator(TrainingEvaluator eval) {
+    public void postStep() {
 
     }
 }

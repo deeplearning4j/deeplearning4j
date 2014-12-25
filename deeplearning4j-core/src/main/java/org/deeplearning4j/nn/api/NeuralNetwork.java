@@ -24,7 +24,11 @@ public interface NeuralNetwork extends Serializable,Cloneable,IterationListener,
      *
      */
     public static enum OptimizationAlgorithm {
-        GRADIENT_DESCENT,CONJUGATE_GRADIENT,HESSIAN_FREE,ITERATION_GRADIENT_DESCENT
+        GRADIENT_DESCENT,
+        CONJUGATE_GRADIENT,
+        HESSIAN_FREE,
+        LBFGS,
+        ITERATION_GRADIENT_DESCENT
     }
 
 
