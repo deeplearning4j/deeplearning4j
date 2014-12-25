@@ -137,7 +137,7 @@ public class Word2VecLoader {
             ret.setLayerSize(layerSize);
             return ret;
 
-        }
+        
 
     }
 
