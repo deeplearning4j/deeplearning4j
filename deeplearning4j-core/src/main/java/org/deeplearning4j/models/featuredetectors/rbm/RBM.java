@@ -16,9 +16,6 @@ import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
-import org.deeplearning4j.optimize.optimizers.NeuralNetworkOptimizer;
-import org.deeplearning4j.plot.NeuralNetPlotter;
-import org.deeplearning4j.optimize.optimizers.rbm.RBMOptimizer;
 import org.deeplearning4j.util.RBMUtil;
 
 
@@ -69,7 +66,6 @@ public  class RBM extends BaseNeuralNetwork {
      *
      */
     private static final long serialVersionUID = 6189188205731511957L;
-    protected NeuralNetworkOptimizer optimizer;
     protected INDArray sigma,hiddenSigma;
 
 
@@ -197,7 +193,6 @@ public  class RBM extends BaseNeuralNetwork {
         INDArray  vBiasGradient = input.sub(nvSamples).mean(0);
         NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 
-        updateGradientAccordingToParams(ret, 0,learningRate);
         return ret;
     }
 
@@ -466,15 +461,13 @@ public  class RBM extends BaseNeuralNetwork {
             this.sigma.divi(input.rows());
         }
 
-        optimizer = new RBMOptimizer(this);
-        optimizer.train(input);
+        super.fit(input);
     }
 
 
     @Override
     public String toString() {
         return "RBM{" +
-                "optimizer=" + optimizer +
                 ", visibleType=" + conf.getVisibleUnit() +
                 ", hiddenType=" + conf.getVisibleUnit() +
                 ", sigma=" + sigma +

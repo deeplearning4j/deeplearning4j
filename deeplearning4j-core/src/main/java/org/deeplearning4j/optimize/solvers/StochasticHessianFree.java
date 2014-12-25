@@ -2,18 +2,21 @@ package org.deeplearning4j.optimize.solvers;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
+import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.api.OptimizableByGradientValue;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
-import org.deeplearning4j.util.OptimizerMatrix;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -21,11 +24,10 @@ import java.util.List;
  * by Ryan Kiros http://www.cs.toronto.edu/~rkiros/papers/shf13.pdf
  * @author Adam Gibson
  */
-public class StochasticHessianFree implements OptimizerMatrix {
+public class StochasticHessianFree extends BaseOptimizer {
     private static Logger logger = LoggerFactory.getLogger(StochasticHessianFree.class);
 
     boolean converged = false;
-    OptimizableByGradientValue optimizable;
     TrainingEvaluator eval;
     double initialStepSize = 1f;
     double tolerance = 1e-5f;
@@ -36,7 +38,6 @@ public class StochasticHessianFree implements OptimizerMatrix {
     private static Logger log = LoggerFactory.getLogger(StochasticHessianFree.class);
     /* decay, current gradient/direction/current point in vector space,preCondition on conjugate gradient,current parameters */
     private INDArray ch,gradient,xi;
-    private IterationListener listener;
     private double pi = 0.5f;
     private double decrease = 0.99f;
     private double boost = 1.0f / decrease;
@@ -44,37 +45,21 @@ public class StochasticHessianFree implements OptimizerMatrix {
     /* current score, step size */
     private double score,step;
 
-
-
-    public StochasticHessianFree(OptimizableByGradientValue function, double initialStepSize,BaseMultiLayerNetwork network) {
-        this.initialStepSize = initialStepSize;
-        this.optimizable = function;
-        this.network = network;
-
+    public StochasticHessianFree(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
+        super(conf, stepFunction, iterationListeners, model);
+        setup();
     }
 
-    public StochasticHessianFree(OptimizableByGradientValue function, IterationListener listener,BaseMultiLayerNetwork network) {
-        this(function, 0.01f,network);
-        this.listener = listener;
-
-    }
-
-    public StochasticHessianFree(OptimizableByGradientValue function, double initialStepSize, IterationListener listener,BaseMultiLayerNetwork network) {
-        this(function,initialStepSize,network);
-        this.listener = listener;
-
-
-    }
-
-    public StochasticHessianFree(OptimizableByGradientValue function,BaseMultiLayerNetwork network) {
-        this(function, 0.01f,network);
-        this.network = network;
+    public StochasticHessianFree(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
+        super(conf, stepFunction, iterationListeners, terminationConditions, model);
+        setup();
     }
 
 
     void setup() {
-        ch = Nd4j.zeros(1,optimizable.getNumParameters());
+        network = (BaseMultiLayerNetwork) model;
         xi = network.pack();
+        ch = Nd4j.zeros(1, xi.length());
     }
 
 
@@ -83,8 +68,14 @@ public class StochasticHessianFree implements OptimizerMatrix {
     }
 
 
-    public boolean optimize() {
-        return optimize(maxIterations);
+    @Override
+    public void preProcessLine(INDArray line) {
+
+    }
+
+    @Override
+    public void postStep() {
+
     }
 
 
@@ -92,7 +83,6 @@ public class StochasticHessianFree implements OptimizerMatrix {
     public Pair<List<Integer>,List<INDArray>> conjGradient(INDArray b,INDArray x0,INDArray preCon,int numIterations) {
         List<Integer> is = new ArrayList<>();
         List<INDArray> xs = new ArrayList<>();
-        //log.info("B sum " + b.sum());
         //in the pseudo code the gradient is b
         //x0 is ch
         INDArray r = network.getBackPropRGradient(x0).subi(b);
@@ -129,13 +119,13 @@ public class StochasticHessianFree implements OptimizerMatrix {
             //step
             x.addi(p.mul(alpha));
 
-           //conjugate gradient
+            //conjugate gradient
             INDArray rNew = r.add(Ap.mul(alpha));
             INDArray yNew = rNew.div(preCon);
             double deltaOld = deltaNew;
             deltaNew =  rNew.mul(yNew).sum(Integer.MAX_VALUE).getDouble(0);
             double beta = deltaNew / deltaOld;
-            p = yNew.neg().add(p.mul(beta));
+            p = yNew.neg().addi(p.mul(beta));
 
             r = rNew;
             //append to the steps taken
@@ -198,7 +188,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
 
     /**
-     * Iterate through the current applyTransformToDestination of gradients
+     * Iterate through the current list of gradients
      * and backtrack upon an optimal step
      * that improves the current score
      * @param chs the proposed changes
@@ -230,8 +220,8 @@ public class StochasticHessianFree implements OptimizerMatrix {
     }
 
 
-
-    public boolean optimize(int numIterations) {
+    @Override
+    public boolean optimize() {
         myName = Thread.currentThread().getName();
         if (converged)
             return true;
@@ -256,7 +246,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
         ch.muli(pi);
 
-        Triple<INDArray,List<INDArray>,INDArray>  cg = runConjugateGradient(preCon,numIterations);
+        Triple<INDArray,List<INDArray>,INDArray>  cg = runConjugateGradient(preCon,conf.getNumIterations());
 
         INDArray p = cg.getFirst();
 
@@ -276,15 +266,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
         return true;
     }
 
-    /**
-     * Sets the training evaluator
-     *
-     * @param eval the evaluator to use
-     */
-    @Override
-    public void setTrainingEvaluator(TrainingEvaluator eval) {
-        this.eval = eval;
-    }
+
 
     public void reset() {
         xi = null;
@@ -298,13 +280,5 @@ public class StochasticHessianFree implements OptimizerMatrix {
         this.maxIterations = maxIterations;
     }
 
-    /**
-     * The tolerance for change when running
-     *
-     * @param tolerance
-     */
-    @Override
-    public void setTolerance(double tolerance) {
 
-    }
 }

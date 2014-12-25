@@ -6,7 +6,7 @@ import org.deeplearning4j.optimize.api.TrainingEvaluator;
  * Optimizer that handles optimizing parameters. Handles line search
  * and all the components involved with early stopping
  */
-public interface OptimizerMatrix {
+public interface Optimizer {
 
     /**
      * Run optimize

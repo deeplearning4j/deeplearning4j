@@ -1,9 +1,7 @@
 package org.deeplearning4j.models.paragraphvectors;
 
 
-import org.deeplearning4j.models.word2vec.loader.WordVectorSerializer;
-import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
+import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareUimaSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;

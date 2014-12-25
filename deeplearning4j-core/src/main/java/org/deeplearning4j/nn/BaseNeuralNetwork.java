@@ -1,7 +1,6 @@
 package org.deeplearning4j.nn;
 
 
-import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,6 +11,9 @@ import java.lang.reflect.Constructor;
 import java.util.Arrays;
 
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.models.classifiers.dbn.DBN;
@@ -20,9 +22,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.api.Persistable;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.nd4j.linalg.learning.AdaGrad;
-import org.deeplearning4j.optimize.optimizers.NeuralNetworkOptimizer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.Dl4jReflection;
 
@@ -50,7 +50,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     protected INDArray vBias;
     /* input to the network */
     protected INDArray input;
-    protected transient NeuralNetworkOptimizer optimizer;
     protected INDArray doMask;
     private static Logger log = LoggerFactory.getLogger(BaseNeuralNetwork.class);
     //previous gradient used for updates
@@ -87,6 +86,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     }
 
+    @Override
+    public int batchSize() {
+        return input.rows();
+    }
+
     /**
      * Returns the parameters of the neural network
      *
@@ -97,7 +101,23 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         return Nd4j.toFlattened(W,vBias,hBias);
     }
 
+    @Override
+    public Pair<Gradient, Double> gradientAndScore() {
+        return new Pair<>((Gradient) getGradient(),score());
+    }
 
+
+    @Override
+    public void fit(INDArray input) {
+        if(input != null)
+            this.input = input;
+        this.lastMiniBatchSize = input.rows();
+        Solver solver = new Solver.Builder()
+                .model(this).configure(conf()).listeners(conf.getListeners())
+                .build();
+
+        solver.optimize();
+    }
 
     /**
      * Initialize weights.
@@ -263,116 +283,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     }
 
-    /**
-     * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
-     * @param gradient the gradient to modify
-     * @param iteration the current iteration
-     * @param learningRate the learning rate for the current iteration
-     */
-    protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,int iteration,double learningRate) {
-        INDArray wGradient = gradient.getwGradient();
-
-        INDArray hBiasGradient = gradient.gethBiasGradient();
-        INDArray vBiasGradient = gradient.getvBiasGradient();
-
-        //reset adagrad history
-        if(iteration != 0 && conf.getResetAdaGradIterations() > 0 &&  iteration % conf.getResetAdaGradIterations() == 0) {
-            wAdaGrad.historicalGradient = null;
-            hBiasAdaGrad.historicalGradient = null;
-            vBiasAdaGrad.historicalGradient = null;
-            if(this.W != null && this.wAdaGrad == null)
-                this.wAdaGrad = new AdaGrad(this.W.rows(),this.W.columns());
-
-            if(this.vBias != null && this.vBiasAdaGrad == null)
-                this.vBiasAdaGrad = new AdaGrad(this.vBias.rows(),this.vBias.columns());
-
-
-            if(this.hBias != null && this.hBiasAdaGrad == null)
-                this.hBiasAdaGrad = new AdaGrad(this.hBias.rows(),this.hBias.columns());
-
-            log.info("Resetting adagrad");
-        }
-
-        //change up momentum after so many iterations if specified
-        double momentum = conf.getMomentum();
-        if(conf.getMomentumAfter() != null && !conf.getMomentumAfter().isEmpty()) {
-            int key = conf.getMomentumAfter().keySet().iterator().next();
-            if(iteration >= key) {
-                momentum = conf.getMomentumAfter().get(key);
-            }
-        }
-
-
-        if (conf.isUseAdaGrad())
-            wGradient = wAdaGrad.getGradient(wGradient);
-
-        else
-            wGradient.muli(learningRate);
-
-        if (conf.isUseAdaGrad())
-            hBiasGradient = hBiasAdaGrad.getGradient(hBiasGradient);
-        else
-            hBiasGradient.muli(learningRate);
-
-
-        if (conf.isUseAdaGrad())
-            vBiasGradient = vBiasAdaGrad.getGradient(vBiasGradient);
-        else
-            vBiasGradient.muli(learningRate);
-
-
-
-        //only do this with binary hidden neuralNets
-        if (this.hBiasGradient != null && conf.getSparsity() != 0)
-            applySparsity(hBiasGradient);
-
-
-        if (momentum != 0 && this.wGradient != null)
-            wGradient.addi(this.wGradient.mul(momentum).addi(wGradient.mul(1 - momentum)));
-
-
-        if(momentum != 0 && this.vBiasGradient != null)
-            vBiasGradient.addi(this.vBiasGradient.mul(momentum).addi(vBiasGradient.mul(1 - momentum)));
-
-        if(momentum != 0 && this.hBiasGradient != null)
-            hBiasGradient.addi(this.hBiasGradient.mul(momentum).addi(hBiasGradient.mul(1 - momentum)));
-
-
-
-
-        wGradient.divi(lastMiniBatchSize);
-        vBiasGradient.divi(lastMiniBatchSize);
-        hBiasGradient.divi(lastMiniBatchSize);
-
-
-        //simulate post gradient application  and apply the difference to the gradient to decrease the change the gradient has
-        if(conf.isUseRegularization() && conf.getL2() > 0) {
-            if(conf.isUseAdaGrad())
-                wGradient.subi(W.mul(conf.getL2()));
-
-            else
-                wGradient.subi(W.mul(conf.getL2() * learningRate));
-
-        }
-
-        if(conf.isConstrainGradientToUnitNorm()) {
-            wGradient.divi(wGradient.norm2(Integer.MAX_VALUE));
-            vBiasGradient.divi(vBiasGradient.norm2(Integer.MAX_VALUE));
-            hBiasGradient.divi(hBiasGradient.norm2(Integer.MAX_VALUE));
-        }
-
-
-        this.wGradient = wGradient;
-        this.vBiasGradient = vBiasGradient;
-        this.hBiasGradient = hBiasGradient;
-
-    }
 
 
     @Override
     public double score() {
         if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-            return  LossFunctions.score(
+            return  -LossFunctions.score(
                     input,
                     conf.getLossFunction(),
                     transform(input),

@@ -10,9 +10,11 @@ import org.deeplearning4j.nn.WeightInitUtil;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.AdaGrad;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -37,7 +39,7 @@ public class LSTM implements Serializable,Model {
     private INDArray iFog,iFogF,c,x,hIn,hOut,u,u2;
     private INDArray xi;
     private INDArray xs;
-
+    private AdaGrad adaGrad;
 
 
     private void init() {
@@ -53,6 +55,8 @@ public class LSTM implements Serializable,Model {
 
     public INDArray forward(INDArray xi,INDArray xs) {
         x = Nd4j.vstack(xi,xs);
+        this.xs = xs;
+        this.xi = xi;
         if(conf.getDropOut() > 0) {
             double scale = 1 / (1 - conf.getDropOut());
             u = Nd4j.rand(x.shape()).lti(1 - conf.getDropOut()).muli(scale);
@@ -182,6 +186,25 @@ public class LSTM implements Serializable,Model {
     }
 
 
+
+
+    protected void postProcessGradient(INDArray gradient) {
+        //divide by batch size
+        gradient.divi(xs.rows());
+        if(conf.isUseAdaGrad()) {
+            if(adaGrad == null)
+                adaGrad = new AdaGrad(1,gradient.columns());
+            gradient = adaGrad.getGradient(gradient);
+        }
+        else
+            gradient.muli(conf.getLr());
+
+        if(conf.getMomentum() > 0)
+            gradient.muli(conf.getMomentum());
+
+
+    }
+
     /**
      * Prediction with beam search
      * @param xi
@@ -289,8 +312,7 @@ public class LSTM implements Serializable,Model {
                         break;
                 }
 
-                return Collections.singletonList(new Pair<List<Integer>,Double>(predix,predictedLogProba));
-                // predictions = [(predlogprob, predix)]
+                return Collections.singletonList(new Pair<>(predix,predictedLogProba));
 
             }
 
@@ -504,12 +526,13 @@ public class LSTM implements Serializable,Model {
 
     @Override
     public double score() {
-        return 0;
+        INDArray forward = Activations.softMaxRows().apply(forward(xi, xs));
+        return -log(forward.sum(Integer.MAX_VALUE)).getDouble(0);
     }
 
     @Override
     public INDArray transform(INDArray data) {
-        return null;
+        return Activations.softMaxRows().apply(forward(xi,xs));
     }
 
     @Override
@@ -524,7 +547,31 @@ public class LSTM implements Serializable,Model {
 
     @Override
     public void setParams(INDArray params) {
+       int count = 0;
+        INDArray recurrentWeightsLinear = recurrentWeights.linearView();
+        INDArray decoderWeightsLinear = decoderWeights.linearView();
+        INDArray decoderBiasLinear = decoderBias.linearView();
+        int recurrentPlusDecoder = recurrentWeightsLinear.length() + decoderWeightsLinear.length();
+        boolean pastRecurrentWeights = false;
+        for(int i = 0; i < params.length(); i++) {
+           //reset once for normal recurrent weights
+            if(count == recurrentWeightsLinear.length()) {
+                count = 0;
+                pastRecurrentWeights = true;
+            }
+            //reset again for decoder weights, no need to do this as this sets up the bias count properly
+            else if(count == decoderWeightsLinear.length() && pastRecurrentWeights)
+                count = 0;
 
+            if(i < recurrentWeights.length())
+                recurrentWeights.linearView().putScalar(count++,params.getDouble(i));
+
+            else if(i < recurrentPlusDecoder)
+                decoderWeightsLinear.putScalar(count++,params.getDouble(i));
+            else
+                decoderBiasLinear.putScalar(count++,params.getDouble(i));
+
+        }
     }
 
     @Override
@@ -539,7 +586,19 @@ public class LSTM implements Serializable,Model {
 
     @Override
     public Gradient getGradient() {
-        return backward(forward(xi,xs));
+        INDArray forward = forward(xi,xs);
+        INDArray probas = Activations.softmax().applyDerivative(forward);
+        return backward(probas);
+    }
+
+    @Override
+    public Pair<Gradient, Double> gradientAndScore() {
+        return null;
+    }
+
+    @Override
+    public int batchSize() {
+        return 0;
     }
 
 
