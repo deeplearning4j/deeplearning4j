@@ -33,12 +33,12 @@ public class Word2VecLoader {
         InMemoryLookupCache cache;
         float[][] data;
 
-        if(binary) {
+        if (binary) {
             DataInputStream dis = null;
             BufferedInputStream bis = null;
             double len;
             float vector;
-            int words = 0,size = 0;
+            int words = 0, size = 0;
             try {
                 bis = new BufferedInputStream(new FileInputStream(path));
                 dis = new DataInputStream(bis);
@@ -49,11 +49,11 @@ public class Word2VecLoader {
 
                 cache = new InMemoryLookupCache.Builder().vectorLength(size).build();
 
-                String word;
+                String word = null;
                 float[] vectors;
                 for (int i = 0; i < words; i++) {
                     word = readString(dis);
-                    if(word.isEmpty()) 
+                    if (word.isEmpty())
                         continue;
                     vectors = new float[size];
                     len = 0;
@@ -69,16 +69,15 @@ public class Word2VecLoader {
 
 
                     data[i] = vectors;
-                 
-            }
 
-                    cache.addWordToIndex(cache.numWords(),word);
-                    cache.addToken(new VocabWord(1,word));
-                    cache.putVocabWord(word);
-                    dis.read();
                 }
-            }
-            finally {
+
+                cache.addWordToIndex(cache.numWords(), word);
+                cache.addToken(new VocabWord(1, word));
+                cache.putVocabWord(word);
+                dis.read();
+
+            } finally {
                 bis.close();
                 dis.close();
             }
@@ -87,17 +86,15 @@ public class Word2VecLoader {
             Word2Vec ret = new Word2Vec();
             cache.resetWeights();
 
-            for(int i = 0; i < data.length; i++)
-               cache.putVector(cache.wordAtIndex(i),Nd4j.create(new FloatBuffer(data[i])));
+            for (int i = 0; i < data.length; i++)
+                cache.putVector(cache.wordAtIndex(i), Nd4j.create(new FloatBuffer(data[i])));
 
 
             ret.setCache(cache);
             ret.setLayerSize(size);
             return ret;
 
-        }
-
-        else {
+        } else {
             BufferedReader reader = new BufferedReader(new FileReader(new File(path)));
             String line = reader.readLine();
             String[] initial = line.split(" ");
@@ -109,27 +106,26 @@ public class Word2VecLoader {
             int count = 0;
 
 
-
-            while((line = reader.readLine()) != null) {
+            while ((line = reader.readLine()) != null) {
                 String[] split = line.split(" ");
                 String word = split[0];
                 float[] buffer = new float[layerSize];
-                for(int i = 1; i < split.length; i++) {
+                for (int i = 1; i < split.length; i++) {
                     buffer[i - 1] = Float.parseFloat(split[i]);
                 }
 
                 data[count++] = buffer;
 
-                cache.addWordToIndex(cache.numWords(),word);
-                cache.addToken(new VocabWord(1,word));
+                cache.addWordToIndex(cache.numWords(), word);
+                cache.addToken(new VocabWord(1, word));
                 cache.putVocabWord(word);
 
             }
 
             cache.resetWeights();
 
-            for(int i = 0; i < data.length; i++)
-                cache.putVector(cache.wordAtIndex(i),Nd4j.create(new FloatBuffer(data[i])));
+            for (int i = 0; i < data.length; i++)
+                cache.putVector(cache.wordAtIndex(i), Nd4j.create(new FloatBuffer(data[i])));
 
 
             Word2Vec ret = new Word2Vec();
@@ -137,19 +133,19 @@ public class Word2VecLoader {
             ret.setLayerSize(layerSize);
             return ret;
 
-        
 
+        }
     }
 
 
 
-    /**
-     * Read a string from a data input stream
-     * Credit to: https://github.com/NLPchina/Word2VEC_java/blob/master/src/com/ansj/vec/Word2VEC.java
-     * @param dis
-     * @return
-     * @throws IOException
-     */
+        /**
+         * Read a string from a data input stream
+         * Credit to: https://github.com/NLPchina/Word2VEC_java/blob/master/src/com/ansj/vec/Word2VEC.java
+         * @param dis
+         * @return
+         * @throws IOException
+         */
     private static String readString(DataInputStream dis) throws IOException {
         byte[] bytes = new byte[MAX_SIZE];
         byte b = dis.readByte();
