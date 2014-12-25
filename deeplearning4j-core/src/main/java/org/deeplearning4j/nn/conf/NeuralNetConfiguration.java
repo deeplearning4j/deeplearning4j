@@ -18,6 +18,9 @@ import org.deeplearning4j.nn.conf.serializers.ActivationFunctionSerializer;
 import org.deeplearning4j.nn.conf.serializers.DistributionSerializer;
 import org.deeplearning4j.nn.conf.serializers.RandomGeneratorSerializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -70,6 +73,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected transient RandomGenerator rng;
     protected transient RealDistribution dist;
     protected transient Collection<IterationListener> listeners;
+    protected transient StepFunction stepFunction = new GradientStepFunction();
     //recurrent output
     protected int recurrentOutput = 100;
 
@@ -191,6 +195,13 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.hiddenUnit = neuralNetConfiguration.hiddenUnit;
     }
 
+    public StepFunction getStepFunction() {
+        return stepFunction;
+    }
+
+    public void setStepFunction(StepFunction stepFunction) {
+        this.stepFunction = stepFunction;
+    }
 
     public int getRecurrentOutput() {
         return recurrentOutput;
@@ -891,8 +902,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int[] stride;
         private Collection<IterationListener> listeners;
         private int recurrentOutput = 100;
+        private StepFunction stepFunction = new GradientStepFunction();
 
 
+
+        public Builder stepFunction(StepFunction stepFunction) {
+            this.stepFunction = stepFunction;
+            return this;
+        }
 
         public ListBuilder list(int size) {
             if(size < 2)
@@ -910,7 +927,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     .adagradResetIterations(resetAdaGradIterations).applySparsity(applySparsity)
                     .concatBiases(concatBiases).constrainGradientToUnitNorm(constrainGradientToUnitNorm)
                     .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize).recurrentOutput(recurrentOutput)
-                    .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr).useAdaGrad(adagrad)
+                    .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr).useAdaGrad(adagrad).stepFunction(stepFunction)
                     .lossFunction(lossFunction).momentumAfter(momentumAfter).momentum(momentum).listeners(listeners)
                     .nIn(nIn).nOut(nOut).numFeatureMaps(numFeatureMaps).optimizationAlgo(optimizationAlgo)
                     .regularization(useRegularization).render(renderWeightsEveryNumEpochs).resetAdaGradIterations(resetAdaGradIterations)
@@ -1084,7 +1101,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     concatBiases,  constrainGradientToUnitNorm,  rng,
                     dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType,weightShape,filterSize,numFeatureMaps,stride,featureMapSize,numInFeatureMaps,listeners,recurrentOutput);
             ret.useAdaGrad = this.adagrad;
-
+            ret.stepFunction = stepFunction;
             return ret;
         }
 
