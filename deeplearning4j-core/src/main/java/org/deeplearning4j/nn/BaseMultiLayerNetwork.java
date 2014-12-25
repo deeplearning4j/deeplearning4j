@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.gradient.MultiLayerGradient;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 import org.deeplearning4j.nn.layers.OutputLayer;
+import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
 import org.deeplearning4j.util.Dl4jReflection;
 import org.deeplearning4j.util.SerializationUtils;
 import org.nd4j.linalg.api.activation.ActivationFunction;
@@ -448,7 +449,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return null;
+        return new Pair<>(getGradient(),getOutputLayer().score());
     }
 
     /**
@@ -510,7 +511,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                 double sum = deltas[i].sum(Integer.MAX_VALUE).getDouble(0);
                 if(sum > 0)
                     deltaRet.add(deltas[i].div(deltas[i].norm2(Integer.MAX_VALUE)));
-
+                else
+                    deltaRet.add(deltas[i]);
             }
 
             else
@@ -558,7 +560,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         //- y - h
         INDArray ix = activations.get(activations.size() - 1).sub(labels).div(labels.rows());
-        log.info("Ix mean " + ix.sum(Integer.MAX_VALUE));
 
        	/*
 		 * Precompute activations and z's (pre activation network outputs)
@@ -577,7 +578,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         //errors
         for (int i = weights.size() - 1; i >= 0; i--) {
             deltas[i] = activations.get(i).transpose().mmul(ix);
-            log.info("Delta sum at " + i + " is " + deltas[i].mean(Integer.MAX_VALUE));
             preCons[i] = Transforms.pow(activations.get(i).transpose(), 2).mmul(Transforms.pow(ix, 2)).muli(labels.rows());
             applyDropConnectIfNecessary(deltas[i]);
 
@@ -1228,8 +1228,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
             setInput(data.getFeatureMatrix());
             setLabels(data.getLabels());
-            feedForward();
-            getOutputLayer().fit(iter);
+            if(getOutputLayer().conf().getOptimizationAlgo() != NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
+                feedForward();
+                getOutputLayer().fit(iter);
+            }
+            else {
+                StochasticHessianFree hessianFree = new StochasticHessianFree(getOutputLayer().conf(),getOutputLayer().conf().getStepFunction(),getOutputLayer().conf().getListeners(),this);
+                hessianFree.optimize();
+            }
+
         }
 
 
@@ -1245,10 +1252,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.labels = labels;
         if (labels != null)
             this.labels = labels;
-        feedForward();
-        getOutputLayer().fit(getOutputLayer().getInput(),labels);
-
-
+        if(getOutputLayer().conf().getOptimizationAlgo() != NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
+            feedForward();
+            getOutputLayer().fit(labels);
+        }
+        else {
+            feedForward();
+            getOutputLayer().setLabels(labels);
+            StochasticHessianFree hessianFree = new StochasticHessianFree(getOutputLayer().conf(),getOutputLayer().conf().getStepFunction(),getOutputLayer().conf().getListeners(),this);
+            hessianFree.optimize();
+        }
     }
 
 

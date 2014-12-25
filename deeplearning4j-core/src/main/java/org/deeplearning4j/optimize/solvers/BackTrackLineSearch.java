@@ -38,6 +38,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.indexing.conditions.Or;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.LinAlgExceptions;
@@ -124,7 +125,7 @@ public class BackTrackLineSearch implements LineOptimizer
                     +	line.norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+ FastMath.max(Float.NEGATIVE_INFINITY,Transforms.abs(line).max(Integer.MAX_VALUE).getDouble(0)));
         }
 
-        BooleanIndexing.applyWhere(g, Conditions.isNan(),new Value(Nd4j.EPS_THRESHOLD));
+        BooleanIndexing.applyWhere(g, new Or(Conditions.isNan(),Conditions.isInfinite()),new Value(Nd4j.EPS_THRESHOLD));
         LinAlgExceptions.assertValidNum(g);
         double sum = line.norm2(Integer.MAX_VALUE).getDouble(0);
         if(sum > stpmax) {
