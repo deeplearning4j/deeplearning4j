@@ -4,10 +4,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.solvers.*;
-import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
-
 import java.util.Collection;
 
 /**
@@ -48,7 +45,6 @@ public class Solver {
 
     public static class Builder {
         private NeuralNetConfiguration conf;
-        private StepFunction stepFunction = new DefaultStepFunction();
         private Collection<IterationListener> listeners;
         private Model model;
 
@@ -58,10 +54,7 @@ public class Solver {
             return this;
         }
 
-        public Builder stepFunction(StepFunction stepFunction) {
-            this.stepFunction = stepFunction;
-            return this;
-        }
+
 
         public Builder listeners(Collection<IterationListener> listeners) {
             this.listeners = listeners;
