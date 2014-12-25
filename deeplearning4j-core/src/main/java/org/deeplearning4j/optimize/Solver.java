@@ -16,7 +16,6 @@ import java.util.Collection;
  */
 public class Solver {
     private NeuralNetConfiguration conf;
-    private StepFunction stepFunction = new DefaultStepFunction();
     private Collection<IterationListener> listeners;
     private Model model;
     private BaseOptimizer optimizer;
@@ -33,15 +32,15 @@ public class Solver {
         NeuralNetwork.OptimizationAlgorithm algo = conf.getOptimizationAlgo();
         switch(algo) {
             case LBFGS:
-                return new LBFGS(conf,stepFunction,listeners,model);
+                return new LBFGS(conf,conf.getStepFunction(),listeners,model);
             case GRADIENT_DESCENT:
-                return new GradientAscent(conf,stepFunction,listeners,model);
+                return new GradientAscent(conf,conf.getStepFunction(),listeners,model);
             case HESSIAN_FREE:
-                return new StochasticHessianFree(conf,stepFunction,listeners,model);
+                return new StochasticHessianFree(conf,conf.getStepFunction(),listeners,model);
             case CONJUGATE_GRADIENT:
-                return new ConjugateGradient(conf,stepFunction,listeners,model);
+                return new ConjugateGradient(conf,conf.getStepFunction(),listeners,model);
             case ITERATION_GRADIENT_DESCENT:
-                return new IterationGradientDescent(conf,stepFunction,listeners,model);
+                return new IterationGradientDescent(conf,conf.getStepFunction(),listeners,model);
         }
 
         throw new IllegalStateException("No optimizer found");
@@ -78,7 +77,6 @@ public class Solver {
             Solver solver = new Solver();
             solver.conf = conf;
             solver.listeners = listeners;
-            solver.stepFunction = stepFunction;
             solver.model = model;
             return solver;
         }
