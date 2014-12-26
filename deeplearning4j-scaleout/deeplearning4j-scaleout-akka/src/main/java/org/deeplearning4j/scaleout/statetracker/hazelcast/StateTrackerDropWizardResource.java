@@ -134,13 +134,10 @@ public class StateTrackerDropWizardResource extends Application<HazelCastConf> i
 
 
     public void shutdown() {
-        env.getAdminContext().shutdown();
-        try {
+        if(env.getAdminContext() != null)
             env.getAdminContext().shutdown();
-            env.getAdminContext().getServer().stop();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        else
+            return;
 
     }
 
