@@ -65,18 +65,6 @@ public interface NeuralNetwork extends Serializable,Cloneable,IterationListener,
 
     INDArray hBiasMean();
 
-    public AdaGrad getAdaGrad();
-    public void setAdaGrad(AdaGrad adaGrad);
-
-
-
-    public AdaGrad gethBiasAdaGrad();
-    public void setHbiasAdaGrad(AdaGrad adaGrad);
-
-
-    public AdaGrad getVBiasAdaGrad();
-    public void setVBiasAdaGrad(AdaGrad adaGrad);
-
 
     @Override
     public NeuralNetworkGradient getGradient();

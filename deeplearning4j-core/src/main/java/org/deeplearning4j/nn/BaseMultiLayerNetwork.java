@@ -1254,7 +1254,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             this.labels = labels;
         if(getOutputLayer().conf().getOptimizationAlgo() != NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
             feedForward();
-            getOutputLayer().fit(labels);
+            getOutputLayer().fit(getOutputLayer().getInput(),labels);
         }
         else {
             feedForward();

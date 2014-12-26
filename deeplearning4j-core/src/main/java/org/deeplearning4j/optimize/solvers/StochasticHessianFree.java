@@ -70,15 +70,6 @@ public class StochasticHessianFree extends BaseOptimizer {
     }
 
 
-    @Override
-    public void preProcessLine(INDArray line) {
-
-    }
-
-    @Override
-    public void postStep() {
-
-    }
 
 
     /* run conjugate gradient for numIterations */
@@ -96,8 +87,6 @@ public class StochasticHessianFree extends BaseOptimizer {
 
 
         for (int iterationCount = 0; iterationCount < numIterations; iterationCount++) {
-            //log.info("P sum at iteration " + iterationCount + " is " + p.sum());
-            //log.info("R sum at iteration " + iterationCount + " is " + r.sum());
 
             INDArray Ap = network.getBackPropRGradient(p);
             //log.info("Ap sum at iteration " + iterationCount + " is " + Ap.sum());
@@ -116,7 +105,7 @@ public class StochasticHessianFree extends BaseOptimizer {
             x.addi(p.mul(alpha));
 
             //conjugate gradient
-            INDArray rNew = r.add(Ap.mul(alpha));
+            INDArray rNew = r.addi(Ap.mul(alpha));
             INDArray yNew = rNew.div(preCon);
             double deltaOld = deltaNew;
             deltaNew =  rNew.mul(yNew).sum(Integer.MAX_VALUE).getDouble(0);
@@ -159,7 +148,7 @@ public class StochasticHessianFree extends BaseOptimizer {
                 log.info("Iteration " + j + " on line search with current rate of " + rate);
             }
             //converged
-            if(newScore <=   gradient.mul(p).mul(score + c * rate).sum(Integer.MAX_VALUE).getDouble(0)) {
+            if(newScore <=   gradient.mul(p).muli(score + c * rate).sum(Integer.MAX_VALUE).getDouble(0)) {
                 break;
             }
             else {
@@ -168,7 +157,7 @@ public class StochasticHessianFree extends BaseOptimizer {
             }
 
             //explore in this direction and obtain a score
-            newScore = network.score(params.add(p.mul(rate)));
+            newScore = -network.score(params.add(p.mul(rate)));
         }
 
         if(j == numSearches) {

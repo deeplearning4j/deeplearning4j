@@ -109,12 +109,6 @@ public  class RBM extends BaseNeuralNetwork {
         int k = conf.getK();
         double learningRate = conf.getLr();
 
-        if(wAdaGrad != null)
-            wAdaGrad.setMasterStepSize(learningRate);
-        if(hBiasAdaGrad != null )
-            hBiasAdaGrad.setMasterStepSize(learningRate);
-        if(vBiasAdaGrad != null)
-            vBiasAdaGrad.setMasterStepSize(learningRate);
 
 		/*
 		 * Cost and updates dictionary.
@@ -231,7 +225,7 @@ public  class RBM extends BaseNeuralNetwork {
     public double freeEnergy(INDArray visibleSample) {
         INDArray wxB = visibleSample.mmul(W).addiRowVector(hBias);
         double vBiasTerm = Nd4j.getBlasWrapper().dot(visibleSample, vBias);
-        double hBiasTerm = (double) log(exp(wxB).add(1)).sum(Integer.MAX_VALUE).getDouble(0);
+        double hBiasTerm = log(exp(wxB).add(1)).sum(Integer.MAX_VALUE).getDouble(0);
         return -hBiasTerm - vBiasTerm;
     }
 

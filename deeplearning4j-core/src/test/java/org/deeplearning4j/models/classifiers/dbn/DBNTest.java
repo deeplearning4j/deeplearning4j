@@ -92,10 +92,10 @@ public class DBNTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE)
-                .momentum(9e-1f).weightInit(WeightInit.UNIFORM)
-                .optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).iterations(1000)
+                .withActivationType(NeuralNetConfiguration.ActivationType.HIDDEN_LAYER_ACTIVATION)
+                .weightInit(WeightInit.NORMALIZED).momentum(0.5)
+                .optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).iterations(100)
                 .learningRate(1e-1f).nIn(784).nOut(10).list(4).hiddenLayerSizes(new int[]{500, 400, 300}).override(new NeuralNetConfiguration.ConfOverride() {
                     @Override
                     public void override(int i, NeuralNetConfiguration.Builder builder) {
@@ -114,8 +114,8 @@ public class DBNTest {
         DBN d = new DBN.Builder().layerWiseConfiguration(conf)
                 .build();
 
-        MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        fetcher.fetch(10);
+        MnistDataFetcher fetcher = new MnistDataFetcher(false);
+        fetcher.fetch(100);
         DataSet d2 = fetcher.next();
         d.fit(d2);
 

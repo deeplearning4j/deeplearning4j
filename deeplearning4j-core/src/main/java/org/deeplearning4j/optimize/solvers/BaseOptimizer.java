@@ -238,12 +238,16 @@ public abstract class BaseOptimizer   {
      * Pre process the line (scaling and the like)
      * @param line the line to pre process
      */
-    public abstract void preProcessLine(INDArray line);
+    public  void preProcessLine(INDArray line) {
+        //no-op
+    }
     /**
      * Post step (conjugate gradient among other methods needs this)
 
      */
-    public abstract void postStep();
+    public  void postStep() {
+        //no-op
+    }
 
     /**
      * Setup the initial search state
