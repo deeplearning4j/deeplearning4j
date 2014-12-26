@@ -78,7 +78,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected transient StepFunction stepFunction = new GradientStepFunction();
     //recurrent output
     protected int recurrentOutput = 100;
-
+    protected double dampingFactor = 100;
 
     private void readObject(java.io.ObjectInputStream in)
             throws IOException, ClassNotFoundException {
@@ -195,6 +195,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
         this.hiddenUnit = neuralNetConfiguration.hiddenUnit;
+    }
+
+    public double getDampingFactor() {
+        return dampingFactor;
+    }
+
+    public void setDampingFactor(double dampingFactor) {
+        this.dampingFactor = dampingFactor;
     }
 
     public StepFunction getStepFunction() {
@@ -895,8 +903,13 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private Collection<IterationListener> listeners;
         private int recurrentOutput = 100;
         private StepFunction stepFunction = new GradientStepFunction();
+        private double dampingFactor = 100;
 
 
+        public Builder dampingFactor(double dampingFactor) {
+            this.dampingFactor = dampingFactor;
+            return this;
+        }
 
         public Builder stepFunction(StepFunction stepFunction) {
             this.stepFunction = stepFunction;

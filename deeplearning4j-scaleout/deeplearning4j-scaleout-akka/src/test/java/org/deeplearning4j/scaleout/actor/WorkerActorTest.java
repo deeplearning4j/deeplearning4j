@@ -11,22 +11,20 @@ import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 /**
  * Created by agibsonccc on 11/27/14.
  */
 public class WorkerActorTest implements DeepLearningConfigurable {
 
-    private StateTracker stateTracker;
-    private ActorSystem testSystem;
-    private Props test;
-    private Configuration conf;
-    private TestPerformer testPerformer;
+    private static StateTracker stateTracker;
+    private static ActorSystem testSystem;
+    private static Props test;
+    private static Configuration conf;
+    private static TestPerformer testPerformer;
 
-    @Before
+    @BeforeClass
     public void before() throws Exception {
         stateTracker = new HazelCastStateTracker();
         if(testSystem == null)
@@ -38,7 +36,7 @@ public class WorkerActorTest implements DeepLearningConfigurable {
 
     }
 
-    @After
+    @AfterClass
     public void after() {
         if(stateTracker != null) {
             stateTracker.finish();

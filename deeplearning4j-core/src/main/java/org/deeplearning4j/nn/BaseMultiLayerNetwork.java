@@ -6,10 +6,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.models.featuredetectors.autoencoder.AutoEncoder;
-import org.deeplearning4j.nn.api.Classifier;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.NeuralNetwork;
-import org.deeplearning4j.nn.api.Persistable;
+import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -53,44 +50,34 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     private static final long serialVersionUID = -5029161847383716484L;
     //the hidden neuralNets
     protected Layer[] layers;
+    /*
+       * Any neural networks used as neuralNets.
+       * This will always have an equivalent sigmoid layer
+       * with shared weight matrices for training.
+       *
+       * Typically, this is some mix of:
+       *        RBMs,Denoising AutoEncoders, or their Continuous counterparts
+       */
+    protected NeuralNetwork[] neuralNets;
+
+    protected LayerFactory[] layerFactories;
+
+
     //default training examples and associated neuralNets
     protected INDArray input, labels;
-    //sometimes we may need to applyTransformToOrigin weights; this allows a
-    //weight applyTransformToOrigin upon layer setup
+    //sometimes we may need to transform weights; this allows a
+    //weight transform upon layer setup
     protected Map<Integer, MatrixTransform> weightTransforms = new HashMap<>();
     //hidden bias transforms; for initialization
     protected Map<Integer, MatrixTransform> hiddenBiasTransforms = new HashMap<>();
     //visible bias transforms for initialization
     protected Map<Integer, MatrixTransform> visibleBiasTransforms = new HashMap<>();
     protected boolean initCalled = false;
+
+
     protected NeuralNetConfiguration defaultConfiguration;
     protected MultiLayerConfiguration layerWiseConfigurations;
 
-    /*
-     * Hinton's Practical guide to RBMS:
-     *
-     * Learning rate updates over time.
-     * Usually when weights have a large fan in (starting point for a random distribution during initialization)
-     * you want a smaller update rate.
-     *
-     * For biases this can be bigger.
-     */
-    protected double learningRateUpdate = 0.95f;
-    /*
-     * Any neural networks used as neuralNets.
-     * This will always have an equivalent sigmoid layer
-     * with shared weight matrices for training.
-     *
-     * Typically, this is some mix of:
-     *        RBMs,Denoising AutoEncoders, or their Continuous counterparts
-     */
-    protected NeuralNetwork[] neuralNets;
-
-    /*
-     * The delta from the previous iteration to this iteration for
-     * cross entropy must change >= this amount in order to continue.
-     */
-    protected double errorTolerance = 0.0001f;
 
 
 
@@ -100,34 +87,21 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     protected INDArray mask;
 
 
-    /*
-       Damping factor for gradient
-     */
-    protected double dampingFactor = 10;
 
 
 
     /* Reflection/factory constructor */
-    protected BaseMultiLayerNetwork() {
-    }
-
-    protected BaseMultiLayerNetwork(  int[] hiddenLayerSizes ,int nLayers) {
-        this(hiddenLayerSizes,nLayers, null, null);
-    }
+    protected BaseMultiLayerNetwork() {}
 
 
-    protected BaseMultiLayerNetwork( int[] hiddenLayerSizes
-            , int nLayers, INDArray input, INDArray labels) {
+    protected BaseMultiLayerNetwork( int[] hiddenLayerSizes,INDArray input, INDArray labels) {
         this.input = input.dup();
         this.labels = labels.dup();
 
-        if (hiddenLayerSizes.length != nLayers)
-            throw new IllegalArgumentException("The number of hidden layer sizes must be equivalent to the nLayers argument which is a value of " + nLayers);
-
-        this.setnLayers(nLayers);
+        this.setnLayers(hiddenLayerSizes.length);
 
         //+ output layer
-        this.layers = new org.deeplearning4j.nn.layers.Layer[nLayers + 1];
+        this.layers = new org.deeplearning4j.nn.layers.Layer[hiddenLayerSizes.length + 1];
 
         intializeConfigurations();
 
@@ -358,15 +332,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    /**
-     * Finetunes with the current cached labels
-     *
-     *
-     */
-    public void finetune() {
-        finetune(this.labels);
 
-    }
 
     /**
      * Sets the input and labels from this dataset
@@ -527,23 +493,26 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     //damping update after line search
     public void dampingUpdate(double rho, double boost, double decrease) {
-        if (rho < 0.25 || Double.isNaN(rho)) {
-            this.dampingFactor *= boost;
-        } else if (rho > 0.75)
-            this.dampingFactor *= decrease;
+        if (rho < 0.25 || Double.isNaN(rho))
+            layerWiseConfigurations.setDampingFactor(getLayerWiseConfigurations().getDampingFactor() * boost);
+
+
+        else if (rho > 0.75)
+            layerWiseConfigurations.setDampingFactor(getLayerWiseConfigurations().getDampingFactor() * decrease);
+
 
 
     }
 
     /* p and gradient are same length */
     public double reductionRatio(INDArray p, double currScore, double score, INDArray gradient) {
-        double currentDamp = dampingFactor;
-        this.dampingFactor = 0;
+        double currentDamp = layerWiseConfigurations.getDampingFactor();
+        layerWiseConfigurations.setDampingFactor(0);
         INDArray denom = getBackPropRGradient(p);
         denom.muli(0.5).muli(p.mul(denom)).sum(0);
         denom.subi(gradient.mul(p).sum(0));
         double rho = (currScore - score) / (double) denom.getScalar(0).element();
-        this.dampingFactor = currentDamp;
+        layerWiseConfigurations.setDampingFactor(currentDamp);
         if (score - currScore > 0)
             return Float.NEGATIVE_INFINITY;
         return rho;
@@ -600,29 +569,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    /**
-     * Set the parameters for this model.
-     * This expects a linear ndarray which then be unpacked internally
-     * relative to the expected ordering of the model
-     *
-     * @param params the parameters for the model
-     */
-    @Override
-    public void setParams(INDArray params) {
-        int start = 0;
-        //loop to output layer
-        for(int i = 0; i < neuralNets.length; i++) {
-            int numParams = getNeuralNets()[i].numParams();
-            //set the params for the neural net AND bias, note that these are the same reference, not duplications
-            getNeuralNets()[i].setParams(params.get(NDArrayIndex.interval(start,start + numParams)));
-            getLayers()[i].setW(getNeuralNets()[i].getW());
-            getLayers()[i].setB(getNeuralNets()[i].gethBias());
-            start += numParams;
-        }
-
-        getOutputLayer().setParams(params.get(NDArrayIndex.interval(start, params.length())));
-
-    }
 
 
     /* delta computation for back prop */
@@ -703,39 +649,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    /**
-     * One step of back prop with the R operator
-     *
-     * @param v for gaussian vector, this is for g * v. This is optional.
-     */
-    public void backPropStepR(INDArray v) {
-        List<Pair<INDArray, INDArray>> deltas = backPropGradientR(v);
-        for (int i = 0; i < neuralNets.length; i++) {
-            if (deltas.size() < neuralNets.length) {
-                neuralNets[i].getW().subi(deltas.get(i).getFirst());
-                neuralNets[i].gethBias().subi(deltas.get(i).getSecond());
-                layers[i].setW(neuralNets[i].getW());
-                layers[i].setB(neuralNets[i].gethBias());
-            }
 
-        }
-
-        getOutputLayer().getW().subi(deltas.get(deltas.size() - 1).getFirst());
-        getOutputLayer().getB().subi(deltas.get(deltas.size() - 1).getSecond());
-
-    }
-
-    public Layer[] getLayers() {
-        return layers;
-    }
-
-    public void setLayers(Layer[] layers) {
-        this.layers = layers;
-    }
-
-    public void setNeuralNets(NeuralNetwork[] neuralNets) {
-        this.neuralNets = neuralNets;
-    }
 
     /**
      * Gets the back prop gradient with the r operator (gauss vector)
@@ -794,45 +708,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    /**
-     * Feed forward with the r operator
-     *
-     * @param v the v for the r operator
-     * @return the activations based on the r operator
-     */
-    public List<INDArray> feedForwardR(List<INDArray> acts, INDArray v) {
-        List<INDArray> R = new ArrayList<>();
-        R.add(Nd4j.zeros(input.rows(), input.columns()));
-        List<Pair<INDArray, INDArray>> vWvB = unPack(v);
-        List<INDArray> W = weightMatrices();
 
-        for (int i = 0; i < neuralNets.length; i++) {
-            ActivationFunction derivative = getNeuralNets()[i].conf().getActivationFunction();
-            if (getNeuralNets()[i] instanceof AutoEncoder) {
-                AutoEncoder a = (AutoEncoder) getNeuralNets()[i];
-                derivative = a.conf.getActivationFunction();
-            }
-
-            //R[i] * W[i] + acts[i] * (vW[i] + vB[i]) .* f'([acts[i + 1])
-            R.add(R.get(i).mmul(W.get(i)).addi(acts.get(i).mmul(vWvB.get(i).getFirst().addRowVector(vWvB.get(i).getSecond()))).muli((derivative.applyDerivative(acts.get(i + 1)))));
-        }
-
-        //R[i] * W[i] + acts[i] * (vW[i] + vB[i]) .* f'([acts[i + 1])
-        R.add(R.get(R.size() - 1).mmul(W.get(W.size() - 1)).addi(acts.get(acts.size() - 2).mmul(vWvB.get(vWvB.size() - 1).getFirst().addRowVector(vWvB.get(vWvB.size() - 1).getSecond()))).muli((getOutputLayer().conf().getActivationFunction().applyDerivative(acts.get(acts.size() - 1)))));
-
-        return R;
-    }
-
-
-    /**
-     * Feed forward with the r operator
-     *
-     * @param v the v for the r operator
-     * @return the activations based on the r operator
-     */
-    public List<INDArray> feedForwardR(INDArray v) {
-        return feedForwardR(feedForward(), v);
-    }
 
 
 
@@ -875,6 +751,18 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         params.add(getOutputLayer().params());
         return Nd4j.toFlattened(params);
     }
+    /**
+     * Set the parameters for this model.
+     * This expects a linear ndarray which then be unpacked internally
+     * relative to the expected ordering of the model
+     *
+     * @param params the parameters for the model
+     */
+    @Override
+    public void setParams(INDArray params) {
+        setParameters(params);
+
+    }
 
 
     /**
@@ -887,12 +775,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     @Override
     public int numParams() {
         int length = 0;
-
-
-        for (int i = 0; i < neuralNets.length; i++) {
+        for (int i = 0; i < neuralNets.length; i++)
             length += neuralNets[i].numParams() - neuralNets[i].getvBias().length();
-        }
-
         length += getOutputLayer().numParams();
 
         return length;
@@ -967,7 +851,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     public List<Pair<INDArray, INDArray>> backPropGradient() {
         //feedforward to compute activations
         //initial error
-        //log.info("Back prop step " + epoch);
 
         //precompute deltas
         List<INDArray> deltas = computeDeltas();
@@ -1024,15 +907,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                 assert Arrays.equals(biasGradientForLayer.shape(),getOutputLayer().getB().shape()) :
                         "Illegal shape for output layer  bias   gradient, should have been " +
                                 Arrays.toString(getOutputLayer().getB().shape()) + " but was " + Arrays.toString(biasGradientForLayer.shape());
-                ;
+
 
             }
         }
 
 
-        //INDArray gradient = pack(list);
-        //gradient.addi(mask.mul(params));
-        //list = unPack(gradient);
+
 
         return list;
 
@@ -1091,7 +972,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     protected List<Pair<Pair<INDArray, INDArray>, Pair<INDArray, INDArray>>> backPropGradient2() {
         //feedforward to compute activations
         //initial error
-        //log.info("Back prop step " + epoch);
 
         //precompute deltas
         List<Pair<INDArray, INDArray>> deltas = computeDeltas2();
@@ -1136,7 +1016,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         g.addi(theta.mul(defaultConfiguration.getL2()).muli(mask));
 
-        INDArray conAdd = Transforms.pow(mask.mul(defaultConfiguration.getL2()).add(Nd4j.valueArrayOf(g.rows(), g.columns(), dampingFactor)), 3.0 / 4.0);
+        INDArray conAdd = Transforms.pow(mask.mul(defaultConfiguration.getL2()).add(Nd4j.valueArrayOf(g.rows(), g.columns(), layerWiseConfigurations.getDampingFactor())), 3.0 / 4.0);
 
         con.addi(conAdd);
 
@@ -1153,55 +1033,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    /**
-     * Do a back prop iteration.
-     * This involves computing the activations, tracking the last neuralNets weights
-     * to revert to in case of convergence, the learning rate being used to iterate
-     * and the current epoch
-     *
-     * @param v the v in gaussian newton vector g * v
-     * @return whether the training should converge or not
-     */
-    protected List<Pair<INDArray, INDArray>> backPropGradientR(INDArray v) {
-        //feedforward to compute activations
-        //initial error
-        //log.info("Back prop step " + epoch);
-        if (mask == null)
-            initMask();
-        //precompute deltas
-        List<INDArray> deltas = computeDeltasR(v);
-        //compute derivatives and gradients given activations
-
-
-        List<Pair<INDArray, INDArray>> list = new ArrayList<>();
-
-        for (int l = 0; l < getnLayers(); l++) {
-            INDArray gradientChange = deltas.get(l);
-
-            if (gradientChange.length() != getNeuralNets()[l].getW().length())
-                throw new IllegalStateException("Gradient change not equal to weight change");
-
-
-            //update hidden bias
-            INDArray deltaColumnSums = deltas.get(l).mean(0);
-            if (deltaColumnSums.length() != layers[l].getB().length())
-                throw new IllegalStateException("Bias change not equal to weight change");
-
-
-            list.add(new Pair<>(gradientChange, deltaColumnSums));
-
-
-        }
-
-        INDArray logLayerGradient = deltas.get(getnLayers());
-        INDArray biasGradient = deltas.get(getnLayers()).mean(0);
-
-        list.add(new Pair<>(logLayerGradient, biasGradient));
-
-        INDArray pack = pack(list).addi(mask.mul(defaultConfiguration.getL2()).mul(v)).addi(v.mul(dampingFactor));
-        return unPack(pack);
-
-    }
 
 
     @Override
@@ -1211,6 +1042,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         finetune(iter);
     }
 
+    /**
+     * Pretrain the weights
+     * @param iter the dataset to pretrain on
+     */
     public abstract void pretrain(DataSetIterator iter);
 
     /**
@@ -1442,10 +1277,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         }
 
         this.defaultConfiguration = network.defaultConfiguration;
-        this.errorTolerance = network.errorTolerance;
         this.input = network.input;
         this.labels = network.labels;
-        this.learningRateUpdate = network.learningRateUpdate;
         this.weightTransforms = network.weightTransforms;
         this.visibleBiasTransforms = network.visibleBiasTransforms;
         this.hiddenBiasTransforms = network.hiddenBiasTransforms;
@@ -1563,7 +1396,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     public abstract NeuralNetwork createLayer(INDArray input, INDArray W, INDArray hbias, INDArray vBias, int index);
 
 
-
+    /**
+     * Creates the neural networks.
+     * @param numLayers the number of layers to create
+     * @return
+     */
     public abstract NeuralNetwork[] createNetworkLayers(int numLayers);
 
 
@@ -1616,9 +1453,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    public INDArray getLabels() {
-        return labels;
-    }
 
 
     /**
@@ -1645,59 +1479,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    public INDArray getInput() {
-        return input;
-    }
-
-    public synchronized NeuralNetwork[] getNeuralNets() {
-        return neuralNets;
-    }
 
 
-
-
-    public Map<Integer, MatrixTransform> getWeightTransforms() {
-        return weightTransforms;
-    }
-
-
-    public void setLabels(INDArray labels) {
-        this.labels = labels;
-    }
-
-
-
-    public Map<Integer, MatrixTransform> getHiddenBiasTransforms() {
-        return hiddenBiasTransforms;
-    }
-
-    public Map<Integer, MatrixTransform> getVisibleBiasTransforms() {
-        return visibleBiasTransforms;
-    }
-
-    public int getnLayers() {
-        return neuralNets.length;
-    }
-
-    public void setnLayers(int nLayers) {
-        this.neuralNets = createNetworkLayers(nLayers);
-    }
-
-
-
-    public void setLayers(NeuralNetwork[] layers) {
-        this.neuralNets = layers;
-    }
-
-
-
-    public INDArray getMask() {
-        return mask;
-    }
-
-    public void setMask(INDArray mask) {
-        this.mask = mask;
-    }
 
 
     /**
@@ -1712,10 +1495,18 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     }
 
+    /**
+     * Get the input layer
+     * @return
+     */
     public Layer getInputLayer() {
         return  getLayers()[0];
     }
 
+    /**
+     * Get the output layer
+     * @return
+     */
     public OutputLayer getOutputLayer() {
         return (OutputLayer) getLayers()[getLayers().length - 1];
     }
@@ -1780,6 +1571,191 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
 
+
+    /**
+     * One step of back prop with the R operator
+     *
+     * @param v for gaussian vector, this is for g * v. This is optional.
+     */
+    public void backPropStepR(INDArray v) {
+        List<Pair<INDArray, INDArray>> deltas = backPropGradientR(v);
+        for (int i = 0; i < neuralNets.length; i++) {
+            if (deltas.size() < neuralNets.length) {
+                neuralNets[i].getW().subi(deltas.get(i).getFirst());
+                neuralNets[i].gethBias().subi(deltas.get(i).getSecond());
+                layers[i].setW(neuralNets[i].getW());
+                layers[i].setB(neuralNets[i].gethBias());
+            }
+
+        }
+
+        getOutputLayer().getW().subi(deltas.get(deltas.size() - 1).getFirst());
+        getOutputLayer().getB().subi(deltas.get(deltas.size() - 1).getSecond());
+
+    }
+
+    /**
+     * Feed forward with the r operator
+     *
+     * @param v the v for the r operator
+     * @return the activations based on the r operator
+     */
+    public List<INDArray> feedForwardR(List<INDArray> acts, INDArray v) {
+        List<INDArray> R = new ArrayList<>();
+        R.add(Nd4j.zeros(input.rows(), input.columns()));
+        List<Pair<INDArray, INDArray>> vWvB = unPack(v);
+        List<INDArray> W = weightMatrices();
+
+        for (int i = 0; i < neuralNets.length; i++) {
+            ActivationFunction derivative = getNeuralNets()[i].conf().getActivationFunction();
+            if (getNeuralNets()[i] instanceof AutoEncoder) {
+                AutoEncoder a = (AutoEncoder) getNeuralNets()[i];
+                derivative = a.conf.getActivationFunction();
+            }
+
+            //R[i] * W[i] + acts[i] * (vW[i] + vB[i]) .* f'([acts[i + 1])
+            R.add(R.get(i).mmul(W.get(i)).addi(acts.get(i).mmul(vWvB.get(i).getFirst().addRowVector(vWvB.get(i).getSecond()))).muli((derivative.applyDerivative(acts.get(i + 1)))));
+        }
+
+        //R[i] * W[i] + acts[i] * (vW[i] + vB[i]) .* f'([acts[i + 1])
+        R.add(R.get(R.size() - 1).mmul(W.get(W.size() - 1)).addi(acts.get(acts.size() - 2).mmul(vWvB.get(vWvB.size() - 1).getFirst().addRowVector(vWvB.get(vWvB.size() - 1).getSecond()))).muli((getOutputLayer().conf().getActivationFunction().applyDerivative(acts.get(acts.size() - 1)))));
+
+        return R;
+    }
+
+
+    /**
+     * Feed forward with the r operator
+     *
+     * @param v the v for the r operator
+     * @return the activations based on the r operator
+     */
+    public List<INDArray> feedForwardR(INDArray v) {
+        return feedForwardR(feedForward(), v);
+    }
+
+    /**
+     * Do a back prop iteration.
+     * This involves computing the activations, tracking the last neuralNets weights
+     * to revert to in case of convergence, the learning rate being used to iterate
+     * and the current epoch
+     *
+     * @param v the v in gaussian newton vector g * v
+     * @return whether the training should converge or not
+     */
+    protected List<Pair<INDArray, INDArray>> backPropGradientR(INDArray v) {
+        //feedforward to compute activations
+        //initial error
+        //log.info("Back prop step " + epoch);
+        if (mask == null)
+            initMask();
+        //precompute deltas
+        List<INDArray> deltas = computeDeltasR(v);
+        //compute derivatives and gradients given activations
+
+
+        List<Pair<INDArray, INDArray>> list = new ArrayList<>();
+
+        for (int l = 0; l < getnLayers(); l++) {
+            INDArray gradientChange = deltas.get(l);
+
+            if (gradientChange.length() != getNeuralNets()[l].getW().length())
+                throw new IllegalStateException("Gradient change not equal to weight change");
+
+
+            //update hidden bias
+            INDArray deltaColumnSums = deltas.get(l).mean(0);
+            if (deltaColumnSums.length() != layers[l].getB().length())
+                throw new IllegalStateException("Bias change not equal to weight change");
+
+
+            list.add(new Pair<>(gradientChange, deltaColumnSums));
+
+
+        }
+
+        INDArray logLayerGradient = deltas.get(getnLayers());
+        INDArray biasGradient = deltas.get(getnLayers()).mean(0);
+
+        list.add(new Pair<>(logLayerGradient, biasGradient));
+
+        INDArray pack = pack(list).addi(mask.mul(defaultConfiguration.getL2()).mul(v)).addi(v.mul(layerWiseConfigurations.getDampingFactor()));
+        return unPack(pack);
+
+    }
+
+
+
+
+    public INDArray getLabels() {
+        return labels;
+    }
+
+    public INDArray getInput() {
+        return input;
+    }
+
+    public synchronized NeuralNetwork[] getNeuralNets() {
+        return neuralNets;
+    }
+
+
+
+
+    public Map<Integer, MatrixTransform> getWeightTransforms() {
+        return weightTransforms;
+    }
+
+
+    public void setLabels(INDArray labels) {
+        this.labels = labels;
+    }
+
+
+
+    public Map<Integer, MatrixTransform> getHiddenBiasTransforms() {
+        return hiddenBiasTransforms;
+    }
+
+    public Map<Integer, MatrixTransform> getVisibleBiasTransforms() {
+        return visibleBiasTransforms;
+    }
+
+    public int getnLayers() {
+        return neuralNets.length;
+    }
+
+    public void setnLayers(int nLayers) {
+        this.neuralNets = createNetworkLayers(nLayers);
+    }
+
+
+
+    public void setLayers(NeuralNetwork[] layers) {
+        this.neuralNets = layers;
+    }
+
+    public Layer[] getLayers() {
+        return layers;
+    }
+
+    public void setLayers(Layer[] layers) {
+        this.layers = layers;
+    }
+
+    public void setNeuralNets(NeuralNetwork[] neuralNets) {
+        this.neuralNets = neuralNets;
+    }
+
+
+
+    public INDArray getMask() {
+        return mask;
+    }
+
+    public void setMask(INDArray mask) {
+        this.mask = mask;
+    }
 
 
 

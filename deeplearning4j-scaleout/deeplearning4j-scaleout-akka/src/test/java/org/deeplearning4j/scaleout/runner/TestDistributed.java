@@ -49,6 +49,8 @@ public class TestDistributed {
     public void finish() throws Exception {
         testJobs.clear();
         stateTracker.finish();
+        stateTracker.shutdown();
+
     }
 
     @Test
@@ -56,6 +58,7 @@ public class TestDistributed {
         DeepLearning4jDistributed distributed = new DeepLearning4jDistributed(testIterator,stateTracker);
         distributed.setup(conf);
         distributed.train();
+        distributed.shutdown();
 
 
 

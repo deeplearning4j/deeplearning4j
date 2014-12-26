@@ -174,13 +174,12 @@ public class DBN extends BaseMultiLayerNetwork {
 
     @Override
     public NeuralNetwork[] createNetworkLayers(int numLayers) {
-        return new RBM[numLayers];
+        return new NeuralNetwork[numLayers];
     }
 
 
 
     public static class Builder extends BaseMultiLayerNetwork.Builder<DBN> {
-        private boolean useRBMPropUpAsActivation = false;
 
         public Builder() {
             this.clazz = DBN.class;
