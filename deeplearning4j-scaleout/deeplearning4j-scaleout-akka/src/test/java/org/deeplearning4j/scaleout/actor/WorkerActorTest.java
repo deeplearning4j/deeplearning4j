@@ -28,7 +28,8 @@ public class WorkerActorTest implements DeepLearningConfigurable {
     @Before
     public void before() throws Exception {
         stateTracker = new HazelCastStateTracker();
-        testSystem = ActorSystem.create();
+        if(testSystem == null)
+            testSystem = ActorSystem.create();
         conf = new Configuration();
         testPerformer = new TestPerformer();
         test = WorkerActor.propsFor(conf, stateTracker,testPerformer);
@@ -38,8 +39,10 @@ public class WorkerActorTest implements DeepLearningConfigurable {
 
     @After
     public void after() {
-        if(stateTracker != null)
+        if(stateTracker != null) {
             stateTracker.finish();
+            stateTracker.shutdown();
+        }
         if(testSystem != null)
             testSystem.shutdown();
     }
