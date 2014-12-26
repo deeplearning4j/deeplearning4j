@@ -14,7 +14,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
  * @author Adam Gibson
  *
  */
-public interface NeuralNetwork extends Serializable,Cloneable,IterationListener,Model {
+public interface NeuralNetwork extends Serializable,Cloneable,IterationListener,Model,Layer {
 
 
 

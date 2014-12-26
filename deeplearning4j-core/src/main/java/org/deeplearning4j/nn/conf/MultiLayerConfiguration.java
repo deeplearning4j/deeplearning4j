@@ -1,18 +1,6 @@
 package org.deeplearning4j.nn.conf;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.nn.conf.deserializers.ActivationFunctionDeSerializer;
-import org.deeplearning4j.nn.conf.deserializers.DistributionDeSerializer;
-import org.deeplearning4j.nn.conf.deserializers.RandomGeneratorDeSerializer;
-import org.deeplearning4j.nn.conf.serializers.ActivationFunctionSerializer;
-import org.deeplearning4j.nn.conf.serializers.DistributionSerializer;
-import org.deeplearning4j.nn.conf.serializers.RandomGeneratorSerializer;
-import org.nd4j.linalg.api.activation.ActivationFunction;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -34,13 +22,21 @@ public class MultiLayerConfiguration implements Serializable {
     /* Sample if true, otherwise use the straight activation function */
     protected boolean sampleFromHiddenActivations = true;
     private boolean useRBMPropUpAsActivations = true;
-
+    private double dampingFactor = 100;
     private MultiLayerConfiguration() {}
 
 
 
     public NeuralNetConfiguration getConf(int i) {
         return confs.get(i);
+    }
+
+    public double getDampingFactor() {
+        return dampingFactor;
+    }
+
+    public void setDampingFactor(double dampingFactor) {
+        this.dampingFactor = dampingFactor;
     }
 
     public boolean isUseRBMPropUpAsActivations() {
@@ -157,7 +153,13 @@ public class MultiLayerConfiguration implements Serializable {
         protected boolean pretrain = true;
         protected boolean sampleFromHiddenActivations = true;
         protected boolean useRBMPropUpAsActivations = false;
+        protected double dampingFactor = 100;
 
+
+        public Builder dampingFactor(double dampingFactor) {
+            this.dampingFactor = dampingFactor;
+            return this;
+        }
 
         public Builder useRBMPropUpAsActivations(boolean useRBMPropUpAsActivations) {
             this.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
@@ -210,6 +212,7 @@ public class MultiLayerConfiguration implements Serializable {
             conf.sampleFromHiddenActivations = sampleFromHiddenActivations;
             conf.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
             conf.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
+            conf.dampingFactor = dampingFactor;
             return conf;
 
         }
