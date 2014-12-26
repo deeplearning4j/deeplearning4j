@@ -52,13 +52,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     protected INDArray input;
     protected INDArray doMask;
     private static Logger log = LoggerFactory.getLogger(BaseNeuralNetwork.class);
-    //previous gradient used for updates
-    protected INDArray wGradient,vBiasGradient,hBiasGradient;
 
     protected int lastMiniBatchSize = 1;
-
-    //adaptive learning rate for each of the biases and weights
-    protected AdaGrad wAdaGrad,hBiasAdaGrad,vBiasAdaGrad;
 
     //configuration of the neural net
     protected NeuralNetConfiguration conf;
@@ -69,19 +64,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         this.input = input;
         this.W = W;
         this.conf = conf;
-        if(this.W != null)
-            this.wAdaGrad = new AdaGrad(this.W.rows(),this.W.columns());
-
         this.vBias = vbias;
-        if(this.vBias != null)
-            this.vBiasAdaGrad = new AdaGrad(this.vBias.rows(),this.vBias.columns());
-
-
         this.hBias = hbias;
-        if(this.hBias != null)
-            this.hBiasAdaGrad = new AdaGrad(this.hBias.rows(),this.hBias.columns());
-
-
         initWeights();
 
     }
@@ -159,7 +143,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
         }
 
-        this.wAdaGrad = new AdaGrad(this.W.rows(),this.W.columns());
 
         if(this.hBias == null) {
             this.hBias = Nd4j.zeros(nHidden);
@@ -170,7 +153,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             //this.hBias.subi(4);
         }
 
-        this.hBiasAdaGrad = new AdaGrad(hBias.rows(),hBias.columns());
 
 
         if(this.vBias == null) {
@@ -184,7 +166,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 this.vBias = Nd4j.zeros(nVisible);
         }
 
-        this.vBiasAdaGrad = new AdaGrad(vBias.rows(),vBias.columns());
 
 
     }
@@ -312,15 +293,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         this.input = null;
     }
 
-    @Override
-    public AdaGrad getAdaGrad() {
-        return this.wAdaGrad;
-    }
-    @Override
-    public void setAdaGrad(AdaGrad adaGrad) {
-        this.wAdaGrad = adaGrad;
-    }
-
 
 
     @Override
@@ -329,7 +301,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             Constructor<?> c =  Dl4jReflection.getEmptyConstructor(getClass());
             c.setAccessible(true);
             NeuralNetwork ret = (NeuralNetwork) c.newInstance();
-            ret.setVBiasAdaGrad(hBiasAdaGrad);
             ret.sethBias(vBias.dup());
             ret.setConf(conf);
             ret.setvBias(Nd4j.zeros(hBias.rows(),hBias.columns()));
@@ -359,12 +330,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             c.setAccessible(true);
             NeuralNetwork ret = (NeuralNetwork) c.newInstance();
             ret.setConf(conf);
-            ret.setHbiasAdaGrad(hBiasAdaGrad);
-            ret.setVBiasAdaGrad(vBiasAdaGrad);
-            ret.sethBias(hBias.dup());
+             ret.sethBias(hBias.dup());
             ret.setvBias(vBias.dup());
             ret.setW(W.dup());
-            ret.setAdaGrad(wAdaGrad);
             return ret;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -394,9 +362,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         this.conf = n.conf;
         this.hBias = n.hBias;
         this.vBias = n.vBias;
-        this.wAdaGrad = n.wAdaGrad;
-        this.hBiasAdaGrad = n.hBiasAdaGrad;
-        this.vBiasAdaGrad = n.vBiasAdaGrad;
+
     }
 
     /**
@@ -490,23 +456,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
 
-    @Override
-    public AdaGrad gethBiasAdaGrad() {
-        return hBiasAdaGrad;
-    }
-    @Override
-    public void setHbiasAdaGrad(AdaGrad adaGrad) {
-        this.hBiasAdaGrad = adaGrad;
-    }
-    @Override
-    public AdaGrad getVBiasAdaGrad() {
-        return this.vBiasAdaGrad;
-    }
-    @Override
-    public void setVBiasAdaGrad(AdaGrad adaGrad) {
-        this.vBiasAdaGrad = adaGrad;
-    }
-    /**
+       /**
      * Write this to an object output stream
      * @param os the output stream to write to
      */

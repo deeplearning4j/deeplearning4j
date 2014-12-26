@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.WeightInitUtil;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -39,7 +40,6 @@ public class LSTM implements Serializable,Model {
     private INDArray iFog,iFogF,c,x,hIn,hOut,u,u2;
     private INDArray xi;
     private INDArray xs;
-    private AdaGrad adaGrad;
 
 
     private void init() {
@@ -118,6 +118,11 @@ public class LSTM implements Serializable,Model {
     }
 
 
+    /**
+     * Back propagation in the given input
+     * @param y
+     * @return
+     */
     public LSTMGradient backward(INDArray y) {
         INDArray dY = Nd4j.vstack(Nd4j.zeros(y.columns()),y);
         INDArray dWd = hOut.transpose().mmul(dY);
@@ -188,22 +193,7 @@ public class LSTM implements Serializable,Model {
 
 
 
-    protected void postProcessGradient(INDArray gradient) {
-        //divide by batch size
-        gradient.divi(xs.rows());
-        if(conf.isUseAdaGrad()) {
-            if(adaGrad == null)
-                adaGrad = new AdaGrad(1,gradient.columns());
-            gradient = adaGrad.getGradient(gradient);
-        }
-        else
-            gradient.muli(conf.getLr());
 
-        if(conf.getMomentum() > 0)
-            gradient.muli(conf.getMomentum());
-
-
-    }
 
     /**
      * Prediction with beam search
@@ -542,7 +532,7 @@ public class LSTM implements Serializable,Model {
 
     @Override
     public int numParams() {
-        return 0;
+        return recurrentWeights.length() + decoderWeights.length() + decoderBias.length();
     }
 
     @Override
@@ -576,7 +566,10 @@ public class LSTM implements Serializable,Model {
 
     @Override
     public void fit(INDArray data) {
-
+         Solver solver = new Solver.Builder()
+                 .configure(conf).model(this)
+                 .listeners(conf.getListeners()).build();
+        solver.optimize();
     }
 
     @Override
@@ -593,12 +586,12 @@ public class LSTM implements Serializable,Model {
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return null;
+        return new Pair<>(getGradient(),score());
     }
 
     @Override
     public int batchSize() {
-        return 0;
+        return xi.rows();
     }
 
 
