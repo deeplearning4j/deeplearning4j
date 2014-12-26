@@ -9,7 +9,9 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import java.io.IOException;
 
 /**
- * Created by agibsonccc on 11/27/14.
+ *
+ *
+ * @author Adam Gibson
  */
 public class DistributionSerializer extends JsonSerializer<RealDistribution> {
     @Override
