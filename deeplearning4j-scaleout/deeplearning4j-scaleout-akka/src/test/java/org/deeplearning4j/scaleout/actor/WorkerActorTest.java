@@ -38,8 +38,10 @@ public class WorkerActorTest implements DeepLearningConfigurable {
 
     @After
     public void after() {
-        stateTracker.finish();
-        testSystem.shutdown();
+        if(stateTracker != null)
+            stateTracker.finish();
+        if(testSystem != null)
+            testSystem.shutdown();
     }
 
 
