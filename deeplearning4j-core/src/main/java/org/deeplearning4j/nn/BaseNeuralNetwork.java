@@ -170,6 +170,48 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     }
 
+    @Override
+    public INDArray activationMean() {
+        INDArray hbiasMean = getInput().mmul(getW()).addRowVector(getB());
+        return hbiasMean;
+    }
+
+    @Override
+    public void setConfiguration(NeuralNetConfiguration conf) {
+         this.conf = conf;
+    }
+
+    @Override
+    public INDArray preOutput(INDArray x) {
+        INDArray hbiasMean = x.mmul(getW()).addiRowVector(getB());
+        return hbiasMean;
+    }
+
+    @Override
+    public INDArray activate() {
+        return activate(input);
+    }
+
+    @Override
+    public INDArray activate(INDArray input) {
+        return transform(input);
+    }
+
+    @Override
+    public INDArray hiddenActivation(INDArray input) {
+        return transform(input);
+    }
+
+    @Override
+    public INDArray getB() {
+        return hBias;
+    }
+
+    @Override
+    public void setB(INDArray b) {
+        this.hBias = b;
+    }
+
     /**
      * The number of parameters for the model
      *
@@ -330,7 +372,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             c.setAccessible(true);
             NeuralNetwork ret = (NeuralNetwork) c.newInstance();
             ret.setConf(conf);
-             ret.sethBias(hBias.dup());
+            ret.sethBias(hBias.dup());
             ret.setvBias(vBias.dup());
             ret.setW(W.dup());
             return ret;
@@ -456,7 +498,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
 
-       /**
+    /**
      * Write this to an object output stream
      * @param os the output stream to write to
      */
