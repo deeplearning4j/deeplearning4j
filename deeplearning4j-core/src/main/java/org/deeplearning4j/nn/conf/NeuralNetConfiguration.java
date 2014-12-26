@@ -14,9 +14,11 @@ import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.deserializers.ActivationFunctionDeSerializer;
 import org.deeplearning4j.nn.conf.deserializers.DistributionDeSerializer;
 import org.deeplearning4j.nn.conf.deserializers.RandomGeneratorDeSerializer;
+import org.deeplearning4j.nn.conf.deserializers.StepFunctionDeSerializer;
 import org.deeplearning4j.nn.conf.serializers.ActivationFunctionSerializer;
 import org.deeplearning4j.nn.conf.serializers.DistributionSerializer;
 import org.deeplearning4j.nn.conf.serializers.RandomGeneratorSerializer;
+import org.deeplearning4j.nn.conf.serializers.StepFunctionSerializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
@@ -255,9 +257,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return corruptionLevel;
     }
 
-    public void setCorruptionLevel(float corruptionLevel) {
-        this.corruptionLevel = corruptionLevel;
-    }
 
     public RBM.HiddenUnit getHiddenUnit() {
         return hiddenUnit;
@@ -312,9 +311,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return sparsity;
     }
 
-    public void setSparsity(float sparsity) {
-        this.sparsity = sparsity;
-    }
 
     public boolean isUseAdaGrad() {
         return useAdaGrad;
@@ -336,9 +332,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return momentum;
     }
 
-    public void setMomentum(float momentum) {
-        this.momentum = momentum;
-    }
 
     public double getL2() {
         return l2;
@@ -376,9 +369,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return dropOut;
     }
 
-    public void setDropOut(float dropOut) {
-        this.dropOut = dropOut;
-    }
 
     public boolean isApplySparsity() {
         return applySparsity;
@@ -690,7 +680,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public String toJson() {
         try {
             String ret =  mapper.writeValueAsString(this);
-            return ret.replaceAll("\"activationFunction\",","").replaceAll("\"rng\",","").replaceAll("\"dist\",","");
+            return ret.replaceAll("\"activationFunction\",","").replaceAll("\"rng\",","").replaceAll("\"dist\",","").replaceAll("\"stepFunction\",","");
 
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -753,11 +743,13 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         SimpleModule module = new SimpleModule();
-        module.addDeserializer(ActivationFunction.class,new ActivationFunctionDeSerializer());
+        module.addSerializer(StepFunction.class,new StepFunctionSerializer());
+        module.addDeserializer(ActivationFunction.class, new ActivationFunctionDeSerializer());
         module.addSerializer(ActivationFunction.class, new ActivationFunctionSerializer());
         module.addDeserializer(RandomGenerator.class, new RandomGeneratorDeSerializer());
         module.addSerializer(RandomGenerator.class, new RandomGeneratorSerializer());
         module.addSerializer(RealDistribution.class, new DistributionSerializer());
+        module.addDeserializer(StepFunction.class,new StepFunctionDeSerializer());
         module.addDeserializer(RealDistribution.class, new DistributionDeSerializer());
         ret.registerModule(module);
         return ret;

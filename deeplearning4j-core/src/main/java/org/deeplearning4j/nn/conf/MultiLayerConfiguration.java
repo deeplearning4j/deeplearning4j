@@ -101,32 +101,13 @@ public class MultiLayerConfiguration implements Serializable {
     }
 
     /**
-     * Object mapper for serialization of configurations
-     * @return
-     */
-    public static ObjectMapper mapper() {
-        ObjectMapper ret = new ObjectMapper();
-        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-        SimpleModule module = new SimpleModule();
-        module.addDeserializer(ActivationFunction.class,new ActivationFunctionDeSerializer());
-        module.addSerializer(ActivationFunction.class, new ActivationFunctionSerializer());
-        module.addDeserializer(RandomGenerator.class, new RandomGeneratorDeSerializer());
-        module.addSerializer(RandomGenerator.class, new RandomGeneratorSerializer());
-        module.addSerializer(RealDistribution.class, new DistributionSerializer());
-        module.addDeserializer(RealDistribution.class, new DistributionDeSerializer());
-        ret.registerModule(module);
-        return ret;
-    }
-
-    /**
      *
      * @return
      */
     public String toJson() {
-        ObjectMapper mapper = mapper();
+        ObjectMapper mapper = NeuralNetConfiguration.mapper();
         try {
-            return mapper.writeValueAsString(this).replaceAll("\"activationFunction\",","").replaceAll("\"rng\",","").replaceAll("\"dist\",", "");
+            return mapper.writeValueAsString(this).replaceAll("\"activationFunction\",","").replaceAll("\"rng\",","").replaceAll("\"dist\",", "").replaceAll("\"stepFunction\",","");
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -138,7 +119,7 @@ public class MultiLayerConfiguration implements Serializable {
      * @return
      */
     public static MultiLayerConfiguration fromJson(String json) {
-        ObjectMapper mapper = mapper();
+        ObjectMapper mapper = NeuralNetConfiguration.mapper();
         try {
             return mapper.readValue(json, MultiLayerConfiguration.class);
         } catch (IOException e) {
