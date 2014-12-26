@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import com.hazelcast.core.Hazelcast;
 import org.deeplearning4j.scaleout.actor.core.actor.WorkerActor;
 import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
@@ -45,6 +46,7 @@ public class WorkerActorTest implements DeepLearningConfigurable {
         }
         if(testSystem != null)
             testSystem.shutdown();
+        Hazelcast.shutdownAll();
     }
 
 
