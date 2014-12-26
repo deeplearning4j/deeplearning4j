@@ -745,8 +745,10 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
 
     @Override
     public void shutdown() {
-        if(h != null)
+        if(h != null) {
             h.shutdown();
+            h.getLifecycleService().shutdown();
+        }
         if(resource != null)
             resource.shutdown();
 
