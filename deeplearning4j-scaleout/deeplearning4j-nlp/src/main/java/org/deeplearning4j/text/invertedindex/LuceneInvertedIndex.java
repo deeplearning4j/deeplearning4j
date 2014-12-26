@@ -791,6 +791,11 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
             }
             return ret;
         }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
     }
 
 
@@ -807,6 +812,11 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         @Override
         public List<VocabWord> next() {
             return document(docs[currIndex++]);
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
         }
     }
 

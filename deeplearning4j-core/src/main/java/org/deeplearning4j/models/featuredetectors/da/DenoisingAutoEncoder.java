@@ -211,16 +211,6 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     public  NeuralNetworkGradient getGradient() {
 
         double corruptionLevel = conf.getCorruptionLevel();
-        double lr = conf.getLr();
-        int iteration = conf.getNumIterations();
-
-        if(wAdaGrad != null)
-            this.wAdaGrad.setMasterStepSize(lr);
-        if(hBiasAdaGrad != null )
-            this.hBiasAdaGrad.setMasterStepSize(lr);
-        if(vBiasAdaGrad != null)
-            vBiasAdaGrad.setMasterStepSize(lr);
-
 
         INDArray corruptedX = getCorruptedInput(input, corruptionLevel);
         INDArray y = getHiddenValues(corruptedX);
