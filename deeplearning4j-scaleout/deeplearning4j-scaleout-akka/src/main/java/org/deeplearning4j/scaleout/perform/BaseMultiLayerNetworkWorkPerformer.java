@@ -20,13 +20,7 @@ public class BaseMultiLayerNetworkWorkPerformer implements WorkerPerformer {
     @Override
     public void setup(Configuration conf) {
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(conf.get(MULTI_LAYER_CONF));
-        try {
-            multiLayerNetwork = new MultiLayerNetwork.Builder<>().layerWiseConfiguration(conf2)
-                    .withClazz((Class<? extends MultiLayerNetwork>) Class.forName(conf.get(CLASS)))
-            .build();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        multiLayerNetwork = new MultiLayerNetwork(conf2);
     }
 
     @Override
@@ -35,7 +29,7 @@ public class BaseMultiLayerNetworkWorkPerformer implements WorkerPerformer {
         if(work instanceof DataSet) {
             DataSet data = (DataSet) work;
             multiLayerNetwork.fit(data);
-            job.setResult(multiLayerNetwork.paramsWithVisible());
+            job.setResult(multiLayerNetwork.params());
         }
     }
 

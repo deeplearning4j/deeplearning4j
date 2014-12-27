@@ -53,6 +53,9 @@ import org.deeplearning4j.util.RBMUtil;
  */
 public  class RBM extends BasePretrainNetwork {
 
+    public RBM(NeuralNetConfiguration conf) {
+        super(conf);
+    }
 
     public RBM(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);

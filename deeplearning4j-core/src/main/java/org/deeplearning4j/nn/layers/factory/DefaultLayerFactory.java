@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,7 +30,7 @@ public class DefaultLayerFactory implements LayerFactory {
 
     @Override
     public Layer create(NeuralNetConfiguration conf) {
-        Layer ret = getInstance();
+        Layer ret = getInstance(conf);
         Map<String,INDArray> params = getParams(conf);
         ret.setParamTable(params);
         ret.setConfiguration(conf);
@@ -37,15 +38,13 @@ public class DefaultLayerFactory implements LayerFactory {
     }
 
 
-    protected Layer getInstance() {
+    protected Layer getInstance(NeuralNetConfiguration conf) {
         try {
-            Layer ret = layerClazz.newInstance();
+            Constructor<?> constructor = layerClazz.getConstructor(NeuralNetConfiguration.class);
+            Layer ret = (Layer) constructor.newInstance(conf);
             return ret;
-        } catch (InstantiationException e) {
+        } catch (Exception e) {
             throw new IllegalStateException(e);
-        } catch (IllegalAccessException e) {
-            throw new IllegalStateException(e);
-
         }
 
     }
