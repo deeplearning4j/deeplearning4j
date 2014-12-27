@@ -4,7 +4,7 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.deeplearning4j.nn.MultiLayerNetwork;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 /**
  * Reconstruction renders for a multi layer network

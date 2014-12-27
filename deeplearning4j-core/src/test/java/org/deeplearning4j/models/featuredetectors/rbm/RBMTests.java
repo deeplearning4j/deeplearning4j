@@ -10,11 +10,12 @@ import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.deeplearning4j.nn.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -68,7 +69,7 @@ public class RBMTests {
                 nOut(3).build();
 
 
-        LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
+        LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
         RBM r = layerFactory.create(conf);
         r.fit(d.getFeatureMatrix());
 

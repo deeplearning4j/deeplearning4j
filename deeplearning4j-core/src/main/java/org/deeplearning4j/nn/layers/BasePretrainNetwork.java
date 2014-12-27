@@ -1,10 +1,9 @@
-package org.deeplearning4j.nn;
+package org.deeplearning4j.nn.layers;
 
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.Solver;

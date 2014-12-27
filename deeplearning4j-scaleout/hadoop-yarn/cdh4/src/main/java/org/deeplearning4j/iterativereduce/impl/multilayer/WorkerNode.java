@@ -11,7 +11,7 @@ import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.iterativereduce.runtime.io.RecordParser;
 import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWorker;
-import org.deeplearning4j.nn.MultiLayerNetwork;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.nd4j.linalg.dataset.DataSet;

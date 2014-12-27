@@ -1,6 +1,6 @@
 package org.deeplearning4j.nn.params;
 
-import org.deeplearning4j.nn.WeightInitUtil;
+import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;

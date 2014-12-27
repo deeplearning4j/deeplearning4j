@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn;
+package org.deeplearning4j.nn.weights;
 
 /**
  * Weight initialization scheme
