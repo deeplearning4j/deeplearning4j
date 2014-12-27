@@ -9,7 +9,10 @@ import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.nn.WeightInitUtil;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -30,31 +33,25 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class LSTM implements Serializable,Model {
+public class LSTM extends BaseLayer {
     //recurrent weights
-    private INDArray recurrentWeights;
-
-    private INDArray decoderWeights;
-    private INDArray decoderBias;
-    private NeuralNetConfiguration conf;
     private INDArray iFog,iFogF,c,x,hIn,hOut,u,u2;
     private INDArray xi;
     private INDArray xs;
 
-
-    private void init() {
-        //Includex x_t, h_t - 1 and the bias unit
-        //output is the 3 gates and the cell signal
-        recurrentWeights = WeightInitUtil.initWeights(conf.getnIn() + conf.getnOut() + 1,conf.getnOut() * 4,conf.getWeightInit(),conf.getActivationFunction(),conf.getDist());
-        decoderWeights = WeightInitUtil.initWeights(conf.getnOut(),conf.getRecurrentOutput(),conf.getWeightInit(),conf.getActivationFunction(),conf.getDist());
-        decoderBias = Nd4j.zeros(conf.getRecurrentOutput());
-
-
+    public LSTM(NeuralNetConfiguration conf, INDArray input) {
+        super(conf, input);
     }
+
+
 
 
     public INDArray forward(INDArray xi,INDArray xs) {
         x = Nd4j.vstack(xi,xs);
+        INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
+        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
+        INDArray decoderBias = getParam(LSTMParamInitializer.DECODER_BIAS);
+
         this.xs = xs;
         this.xi = xi;
         if(conf.getDropOut() > 0) {
@@ -123,7 +120,10 @@ public class LSTM implements Serializable,Model {
      * @param y
      * @return
      */
-    public LSTMGradient backward(INDArray y) {
+    public Gradient backward(INDArray y) {
+        INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
+        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
+
         INDArray dY = Nd4j.vstack(Nd4j.zeros(y.columns()),y);
         INDArray dWd = hOut.transpose().mmul(dY);
         INDArray dBd = Nd4j.sum(dWd,0);
@@ -186,7 +186,11 @@ public class LSTM implements Serializable,Model {
 
         clear();
 
-        return new LSTMGradient(dY,dWd,dBd,dHout,dIFog,dIFogF,dRecurrentWeights,dHin,dC,dx);
+        Gradient gradient = new DefaultGradient();
+        gradient.gradientLookupTable().put(LSTMParamInitializer.DECODER_BIAS,dBd);
+        gradient.gradientLookupTable().put(LSTMParamInitializer.DECODER_WEIGHTS,dWd);
+        gradient.gradientLookupTable().put(LSTMParamInitializer.RECURRENT_WEIGHTS,dRecurrentWeights);
+        return gradient;
 
     }
 
@@ -202,6 +206,8 @@ public class LSTM implements Serializable,Model {
      * @return
      */
     public Collection<Pair<List<Integer>,Double>> predict(INDArray xi,INDArray ws) {
+        INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
+
         int d = decoderWeights.rows();
         Triple<INDArray,INDArray,INDArray> yhc = lstmTick(xi,Nd4j.zeros(d),Nd4j.zeros(d));
         BeamSearch search = new BeamSearch(20,ws,yhc.getSecond(),yhc.getThird());
@@ -321,121 +327,6 @@ public class LSTM implements Serializable,Model {
     }
 
 
-    public static class LSTMGradient implements Gradient {
-        INDArray dY;
-        INDArray dWd;
-        INDArray dBd;
-        INDArray dHout;
-        INDArray dIFog;
-        INDArray dIFogF;
-        INDArray dRecurrentWeights;
-        INDArray dHin;
-        INDArray dC;
-        INDArray dx;
-
-        public LSTMGradient(INDArray dY, INDArray dWd, INDArray dBd, INDArray dHout, INDArray dIFog, INDArray dIFogF, INDArray dRecurrentWeights, INDArray dHin, INDArray dC, INDArray dx) {
-            this.dY = dY;
-            this.dWd = dWd;
-            this.dBd = dBd;
-            this.dHout = dHout;
-            this.dIFog = dIFog;
-            this.dIFogF = dIFogF;
-            this.dRecurrentWeights = dRecurrentWeights;
-            this.dHin = dHin;
-            this.dC = dC;
-            this.dx = dx;
-        }
-
-        public INDArray getdY() {
-            return dY;
-        }
-
-        public void setdY(INDArray dY) {
-            this.dY = dY;
-        }
-
-        public INDArray getdWd() {
-            return dWd;
-        }
-
-        public void setdWd(INDArray dWd) {
-            this.dWd = dWd;
-        }
-
-        public INDArray getdBd() {
-            return dBd;
-        }
-
-        public void setdBd(INDArray dBd) {
-            this.dBd = dBd;
-        }
-
-        public INDArray getdHout() {
-            return dHout;
-        }
-
-        public void setdHout(INDArray dHout) {
-            this.dHout = dHout;
-        }
-
-        public INDArray getdIFog() {
-            return dIFog;
-        }
-
-        public void setdIFog(INDArray dIFog) {
-            this.dIFog = dIFog;
-        }
-
-        public INDArray getdIFogF() {
-            return dIFogF;
-        }
-
-        public void setdIFogF(INDArray dIFogF) {
-            this.dIFogF = dIFogF;
-        }
-
-        public INDArray getdRecurrentWeights() {
-            return dRecurrentWeights;
-        }
-
-        public void setdRecurrentWeights(INDArray dRecurrentWeights) {
-            this.dRecurrentWeights = dRecurrentWeights;
-        }
-
-        public INDArray getdHin() {
-            return dHin;
-        }
-
-        public void setdHin(INDArray dHin) {
-            this.dHin = dHin;
-        }
-
-        public INDArray getdC() {
-            return dC;
-        }
-
-        public void setdC(INDArray dC) {
-            this.dC = dC;
-        }
-
-        public INDArray getDx() {
-            return dx;
-        }
-
-        public void setDx(INDArray dx) {
-            this.dx = dx;
-        }
-
-        @Override
-        public INDArray gradient() {
-            return Nd4j.concat(0,dY.linearView(),dWd.linearView(),dBd.linearView(), dHout.linearView(),dIFog.linearView(),dIFogF.linearView(),dHin.linearView(),dRecurrentWeights.linearView(),dHin.linearView(),dC.linearView(),dx.linearView());
-        }
-
-        @Override
-        public void clear() {
-
-        }
-    }
 
 
     private static class Beam {
@@ -485,6 +376,10 @@ public class LSTM implements Serializable,Model {
     }
 
     private Triple<INDArray,INDArray,INDArray> lstmTick(INDArray x,INDArray hPrev,INDArray cPrev) {
+        INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
+        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
+        INDArray decoderBias = getParam(LSTMParamInitializer.DECODER_BIAS);
+
         int t = 0;
         int d = decoderWeights.rows();
         INDArray hIn = Nd4j.zeros(1,recurrentWeights.rows());
@@ -515,6 +410,19 @@ public class LSTM implements Serializable,Model {
 
 
     @Override
+    public void fit() {
+        Solver solver = new Solver.Builder()
+                .model(this).configure(conf())
+                .listeners(conf().getListeners()).build();
+        solver.optimize();
+    }
+
+    @Override
+    public void update(Gradient gradient) {
+        setParams(params().addi(gradient.gradient()));
+    }
+
+    @Override
     public double score() {
         INDArray forward = Activations.softMaxRows().apply(forward(xi, xs));
         return -log(forward.sum(Integer.MAX_VALUE)).getDouble(0);
@@ -525,26 +433,22 @@ public class LSTM implements Serializable,Model {
         return Activations.softMaxRows().apply(forward(xi,xs));
     }
 
-    @Override
-    public INDArray params() {
-        return Nd4j.concat(0,recurrentWeights.linearView(),decoderWeights.linearView(),decoderBias.linearView());
-    }
 
-    @Override
-    public int numParams() {
-        return recurrentWeights.length() + decoderWeights.length() + decoderBias.length();
-    }
 
     @Override
     public void setParams(INDArray params) {
-       int count = 0;
+        int count = 0;
+        INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
+        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
+        INDArray decoderBias = getParam(LSTMParamInitializer.DECODER_BIAS);
+
         INDArray recurrentWeightsLinear = recurrentWeights.linearView();
         INDArray decoderWeightsLinear = decoderWeights.linearView();
         INDArray decoderBiasLinear = decoderBias.linearView();
         int recurrentPlusDecoder = recurrentWeightsLinear.length() + decoderWeightsLinear.length();
         boolean pastRecurrentWeights = false;
         for(int i = 0; i < params.length(); i++) {
-           //reset once for normal recurrent weights
+            //reset once for normal recurrent weights
             if(count == recurrentWeightsLinear.length()) {
                 count = 0;
                 pastRecurrentWeights = true;
@@ -566,9 +470,9 @@ public class LSTM implements Serializable,Model {
 
     @Override
     public void fit(INDArray data) {
-         Solver solver = new Solver.Builder()
-                 .configure(conf).model(this)
-                 .listeners(conf.getListeners()).build();
+        Solver solver = new Solver.Builder()
+                .configure(conf).model(this)
+                .listeners(conf.getListeners()).build();
         solver.optimize();
     }
 
@@ -595,23 +499,7 @@ public class LSTM implements Serializable,Model {
     }
 
 
-    public static class Builder {
-        private NeuralNetConfiguration conf;
 
 
-        public Builder configure(NeuralNetConfiguration conf) {
-            this.conf = conf;
-            return this;
-        }
-
-
-        public LSTM build() {
-            LSTM ret = new LSTM();
-            ret.conf = conf;
-            ret.init();
-            return ret;
-        }
-
-    }
 
 }

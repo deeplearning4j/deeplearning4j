@@ -7,7 +7,9 @@ import java.io.Serializable;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -23,8 +25,6 @@ import org.nd4j.linalg.util.LinAlgExceptions;
 import org.deeplearning4j.nn.api.*;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.OutputLayerGradient;
-import org.nd4j.linalg.learning.AdaGrad;
 
 
 /**
@@ -38,51 +38,19 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     private static final long serialVersionUID = -7065564817460914364L;
     //current input and label matrices
     private INDArray labels;
-    private AdaGrad adaGrad,biasAdaGrad;
 
-
-
-    public OutputLayer(NeuralNetConfiguration conf,INDArray input, INDArray labels) {
-        super(conf,null,null,input);
-        this.labels = labels;
-
-        adaGrad = new AdaGrad(conf.getnIn(),conf.getnOut());
-        b = Nd4j.zeros(1,conf.getnOut());
-        biasAdaGrad = new AdaGrad(b.rows(),b.columns());
-    }
-
-
-
-    /**
-     * Train with current input and labels
-     * with the given learning rate
-     */
-    public  void train() {
-        train(input,labels);
-    }
-
-
-
-    /**
-     * Train with the given input
-     * and the currently applyTransformToDestination labels
-     * @param x the input to use
-     */
-    public  void train(INDArray x) {
-        double lr = conf.getLr();
-        adaGrad.setMasterStepSize(lr);
-        biasAdaGrad.setMasterStepSize(lr);
-
-        LinAlgExceptions.assertRows(x,labels);
-
-        train(x,labels);
-
+    public OutputLayer(NeuralNetConfiguration conf, INDArray input) {
+        super(conf, input);
     }
 
 
 
 
 
+    @Override
+    public void update(Gradient gradient) {
+        setParams(params().addi(gradient.gradient()));
+    }
 
     /**
      * Objective function:  the specified objective
@@ -106,49 +74,11 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
 
 
-    /**
-     * Train on the given inputs and labels.
-     * This will assign the passed in values
-     * as fields to this logistic function for
-     * caching.
-     * @param x the inputs to iterate on
-     * @param y the labels to iterate on
-     */
-    public  void train(INDArray x,INDArray y) {
-        double lr = conf.getLr();
-        adaGrad.setMasterStepSize(lr);
-        biasAdaGrad.setMasterStepSize(lr);
-
-
-        LinAlgExceptions.assertRows(input,labels);
-
-        this.input = x;
-        this.labels = y;
-
-        OutputLayerGradient gradient = (OutputLayerGradient) getGradient();
-
-
-
-        W.addi(gradient.getwGradient());
-        b.addi(gradient.getbGradient());
-
-    }
 
 
 
 
 
-    @Override
-    public  org.deeplearning4j.nn.api.Layer clone()  {
-        OutputLayer reg = new OutputLayer(conf,W,b);
-        if(this.labels != null)
-            reg.labels = this.labels.dup();
-        reg.biasAdaGrad = this.biasAdaGrad;
-        reg.adaGrad = this.adaGrad;
-        if(this.input != null)
-            reg.input = this.input.dup();
-        return    reg;
-    }
 
 
     /**
@@ -158,9 +88,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     @Override
     public Gradient getGradient() {
         LinAlgExceptions.assertRows(input,labels);
-        double lr = conf.getLr();
-        adaGrad.setMasterStepSize(lr);
-        biasAdaGrad.setMasterStepSize(lr);
 
 
         //input activation
@@ -170,27 +97,13 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
 
         INDArray wGradient = getWeightGradient();
-        if(conf.isUseAdaGrad())
-            wGradient = adaGrad.getGradient(wGradient);
-        else
-            wGradient.muli(lr);
-
-        if(conf.isUseAdaGrad())
-            dy = biasAdaGrad.getGradient(dy.sum(0).broadcast(dy.shape()));
-        else
-            dy.muli(lr);
-
-        dy.divi(input.rows());
-
-
         INDArray bGradient = dy.sum(0);
-        if(conf.isConstrainGradientToUnitNorm()) {
-            wGradient.divi(wGradient.norm2(Integer.MAX_VALUE));
-            bGradient.divi(bGradient.norm2(Integer.MAX_VALUE));
-        }
+        Gradient g = new DefaultGradient();
 
+        g.gradientLookupTable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
+        g.gradientLookupTable().put(DefaultParamInitializer.BIAS_KEY,bGradient);
 
-        return new OutputLayerGradient(wGradient,bGradient);
+        return g;
 
 
     }
@@ -368,25 +281,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         return preOutput(data);
     }
 
-    /**
-     * Returns the coefficients for this classifier as a raveled vector
-     *
-     * @return a copy of this classifier's params
-     */
-    @Override
-    public INDArray params() {
-        return Nd4j.hstack(W.linearView(),b.linearView());
-    }
 
-    /**
-     * The number of parameters for the model
-     *
-     * @return the number of parameters for the model
-     */
-    @Override
-    public int numParams() {
-        return conf.getnIn() * conf.getnOut() + conf.getnOut();
-    }
 
     /**
      * Set the parameters for this model.
@@ -398,11 +293,14 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     @Override
     public void setParams(INDArray params) {
         INDArray wParams = params.get(NDArrayIndex.interval(0, conf.getnIn() * conf.getnOut()));
-        INDArray wLinear = getW().linearView();
+        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
+        INDArray wLinear = W.linearView();
         for(int i = 0; i < wParams.length(); i++) {
             wLinear.putScalar(i,wParams.getDouble(i));
         }
-        setB(params.get(NDArrayIndex.interval(conf.getnIn() * conf.getnOut(), params.length())));
+
+        INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
+        bias.assign(params.get(NDArrayIndex.interval(conf.getnIn() * conf.getnOut(), params.length())).dup());
     }
     /**
      * Fit the model to the given data
@@ -420,14 +318,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     }
 
 
-    @Override
-    public String toString() {
-        return "OutputLayer{" +
-                "labels=" + labels +
-                ", adaGrad=" + adaGrad +
-                ", biasAdaGrad=" + biasAdaGrad +
-                "} " + super.toString();
-    }
+
 
     /**
      * Classify input
@@ -459,80 +350,5 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         this.labels = labels;
     }
 
-
-
-    public AdaGrad getBiasAdaGrad() {
-        return biasAdaGrad;
-    }
-
-
-    public AdaGrad getAdaGrad() {
-        return adaGrad;
-    }
-
-
-    public void setAdaGrad(AdaGrad adaGrad) {
-        this.adaGrad = adaGrad;
-    }
-
-    public void setBiasAdaGrad(AdaGrad biasAdaGrad) {
-        this.biasAdaGrad = biasAdaGrad;
-    }
-
-
-
-    public static class Builder {
-        private INDArray W;
-        private OutputLayer ret;
-        private NeuralNetConfiguration conf;
-        private INDArray b;
-        private INDArray input;
-        private INDArray labels;
-
-
-        public Builder configure(NeuralNetConfiguration conf) {
-            this.conf = conf;
-            return this;
-        }
-
-
-        public Builder input(INDArray input) {
-            this.input = input;
-            return this;
-        }
-
-
-        public Builder withLabels(INDArray labels)  {
-            this.labels = labels;
-            return this;
-        }
-
-
-
-
-
-
-        public Builder withWeights(INDArray W) {
-            this.W = W;
-            return this;
-        }
-
-        public Builder withBias(INDArray b) {
-            this.b = b;
-            return this;
-        }
-
-
-        public OutputLayer build() {
-            ret = new OutputLayer(conf,input, labels);
-            if(W != null)
-                ret.W = W;
-            if(b != null)
-                ret.b = b;
-            ret.conf = conf;
-            return ret;
-        }
-
-    }
 
 }

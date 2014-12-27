@@ -2,21 +2,19 @@ package org.deeplearning4j.nn;
 
 
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.models.featuredetectors.autoencoder.AutoEncoder;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.gradient.MultiLayerGradient;
-import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
-import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 import org.deeplearning4j.nn.layers.OutputLayer;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
-import org.deeplearning4j.util.Dl4jReflection;
-import org.deeplearning4j.util.SerializationUtils;
+import org.deeplearning4j.util.MultiLayerUtil;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -29,11 +27,7 @@ import org.nd4j.linalg.util.LinAlgExceptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
 import java.util.*;
 
 
@@ -43,23 +37,13 @@ import java.util.*;
  * @author Adam Gibson
  *
  */
-public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,Classifier {
+public  class MultiLayerNetwork implements Serializable,Classifier {
 
 
-    private static Logger log = LoggerFactory.getLogger(BaseMultiLayerNetwork.class);
+    private static Logger log = LoggerFactory.getLogger(MultiLayerNetwork.class);
     private static final long serialVersionUID = -5029161847383716484L;
     //the hidden neuralNets
     protected Layer[] layers;
-    /*
-       * Any neural networks used as neuralNets.
-       * This will always have an equivalent sigmoid layer
-       * with shared weight matrices for training.
-       *
-       * Typically, this is some mix of:
-       *        RBMs,Denoising AutoEncoders, or their Continuous counterparts
-       */
-    protected NeuralNetwork[] neuralNets;
-
     protected LayerFactory[] layerFactories;
 
 
@@ -91,18 +75,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
     /* Reflection/factory constructor */
-    protected BaseMultiLayerNetwork() {}
+    protected MultiLayerNetwork() {}
 
 
-    protected BaseMultiLayerNetwork( int[] hiddenLayerSizes,INDArray input, INDArray labels) {
+    protected MultiLayerNetwork(INDArray input, INDArray labels) {
         this.input = input.dup();
         this.labels = labels.dup();
-
-        this.setnLayers(hiddenLayerSizes.length);
-
-        //+ output layer
-        this.layers = new org.deeplearning4j.nn.layers.Layer[hiddenLayerSizes.length + 1];
-
         intializeConfigurations();
 
         if (input != null)
@@ -119,8 +97,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         if(layers == null)
             layers = new Layer[getnLayers() + 1];
-        if(neuralNets == null)
-            neuralNets = new NeuralNetwork[getnLayers()];
 
         if(defaultConfiguration == null)
             defaultConfiguration = new NeuralNetConfiguration.Builder()
@@ -136,44 +112,117 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    /* sanity check for hidden layer and inter layer dimensions */
-    public void dimensionCheck() {
-        assert layers.length == neuralNets.length + 1 : "Missing output layer";
 
-        for (int i = 0; i < getnLayers(); i++) {
-            Layer h = layers[i];
-            NeuralNetwork network = neuralNets[i];
-            LinAlgExceptions.assertSameShape(network.getW(), h.getW());
-            LinAlgExceptions.assertSameShape(h.getB(), network.gethBias());
+    /**
+     * This unsupervised learning method runs
+     * contrastive divergence on each RBM layer in the network.
+     * @param iter the input to iterate on
+     * The typical tip is that the higher k is the closer to the model
+     * you will be approximating due to more sampling. K = 1
+     * usually gives very good results and is the default in quite a few situations.
+     */
+    public void pretrain(DataSetIterator iter) {
+        if(!layerWiseConfigurations.isPretrain())
+            return;
 
-            assert h.conf().getnIn() == h.getW().rows() : "Number of inputs not consistent with number of rows in weight matrix";
-            assert h.conf().getnOut() == h.getW().columns()  : "Number of inputs not consistent with number of rows in weight matrix";
+        INDArray layerInput;
 
-            if (i < getnLayers() - 1) {
-                Layer h1 = layers[i + 1];
-                NeuralNetwork network1 = neuralNets[i + 1];
+        for(int i = 0; i < getnLayers(); i++) {
+            if(i == 0) {
+                while(iter.hasNext()) {
+                    DataSet next = iter.next();
+                    this.input = next.getFeatureMatrix();
+                      /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
+                    if(this.getInput() == null || this.getLayers() == null || this.getLayers()[0] == null || this.getLayers() == null || this.getLayers()[0] == null) {
+                        setInput(input);
+                        initializeLayers(input);
+                    }
+                    else
+                        setInput(input);
+                    getLayers()[i].fit(next.getFeatureMatrix());
 
+                }
 
+                iter.reset();
+            }
 
-                assert h1.conf().getnIn() == h1.getW().rows() : "Number of inputs not consistent with number of rows in weight matrix";
-                assert h1.conf().getnOut() == h1.getW().columns()  : "Number of inputs not consistent with number of rows in weight matrix";
-                assert network1.conf().getnIn() == network1.getW().rows() : "Number of inputs not consistent with number of rows in weight matrix";
-                assert network1.conf().getnOut() == network1.getW().columns()  : "Number of inputs not consistent with number of rows in weight matrix";
+            else {
+                while (iter.hasNext()) {
+                    DataSet next = iter.next();
+                    layerInput = next.getFeatureMatrix();
+                    for(int j = 1; j <= i; j++)
+                        layerInput = activationFromPrevLayer(j - 1,layerInput);
 
-                if (h1.conf().getnIn() != h.conf().getnOut())
-                    throw new IllegalStateException("Invalid structure: hidden layer in for " + (i + 1) + " not equal to number of ins " + i);
-                if (network.conf().getnOut() != network1.conf().getnIn())
-                    throw new IllegalStateException("Invalid structure: network hidden for " + (i + 1) + " not equal to number of visible " + i);
+                    log.info("Training on layer " + (i + 1));
+                    getLayers()[i].fit(layerInput);
+
+                }
+
+                iter.reset();
+
 
             }
         }
-
-
     }
+
+
+    /**
+     * This unsupervised learning method runs
+     * contrastive divergence on each RBM layer in the network.
+     * @param input the input to iterate on
+     * The typical tip is that the higher k is the closer to the model
+     * you will be approximating due to more sampling. K = 1
+     * usually gives very good results and is the default in quite a few situations.
+     */
+    public void pretrain(INDArray input) {
+
+        if(!layerWiseConfigurations.isPretrain())
+            return;
+
+
+
+        /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
+        if(this.getInput() == null || this.getLayers() == null || this.getLayers()[0] == null || this.getLayers() == null || this.getLayers()[0] == null) {
+            setInput(input);
+            initializeLayers(input);
+        }
+        else
+            setInput(input);
+
+        INDArray layerInput = null;
+
+        for(int i = 0; i < getnLayers(); i++) {
+            if(i == 0)
+                layerInput = getInput();
+            else
+                layerInput = activationFromPrevLayer(i -1,layerInput);
+
+
+            log.info("Training on layer " + (i + 1));
+
+
+            getLayers()[i].fit(layerInput);
+
+
+        }
+    }
+
+
+
 
     @Override
     public int batchSize() {
         return input.rows();
+    }
+
+    @Override
+    public NeuralNetConfiguration conf() {
+        return null;
+    }
+
+    @Override
+    public void setConf(NeuralNetConfiguration conf) {
+
     }
 
     /**
@@ -218,8 +267,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         if (input.columns() != defaultConfiguration.getnIn())
             throw new IllegalArgumentException(String.format("Unable to iterate on number of inputs; columns should be equal to number of inputs. Number of inputs was %d while number of columns was %d", defaultConfiguration.getnIn(), input.columns()));
 
-        if (this.neuralNets == null)
-            this.neuralNets = new NeuralNetwork[getnLayers()];
 
         for (int i = 0; i < hiddenLayerSizes.length; i++)
             if (hiddenLayerSizes[i] < 1)
@@ -247,8 +294,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             throw new IllegalStateException("Unable to createComplex network neuralNets; number specified is less than 1");
 
         int[] hiddenLayerSizes = layerWiseConfigurations.getHiddenLayerSizes();
-        if (this.neuralNets == null || neuralNets == null || this.neuralNets[0] == null || this.neuralNets[0] == null) {
-            this.neuralNets = new NeuralNetwork[getnLayers()];
+        if (this.layers == null || this.layers[0] == null) {
+            //
+            this.layers = new Layer[hiddenLayerSizes.length + 1];
             // construct multi-layer
             for (int i = 0; i < this.getnLayers(); i++) {
 
@@ -261,21 +309,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                     layerWiseConfigurations.getConf(i).setnIn(inputSize);
                     layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
                     // construct sigmoid_layer
-                    layers[i] = createHiddenLayer(i,layerInput);
-                } else {
+                    layers[i] = layerFactories[i].create(layerWiseConfigurations.getConf(i));
+                }
+                else {
                     if (input != null)
-                        layerInput = activationFromPrevLayer(i - 1,layerInput);
+                        layerInput = activationFromPrevLayer(i - 1, layerInput);
 
                     layerWiseConfigurations.getConf(i).setnIn(inputSize);
                     layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
-                    // construct sigmoid_layer
-                    layers[i] = createHiddenLayer(i, layerInput);
-
 
 
                 }
 
-                this.neuralNets[i] = createLayer(layerInput,  this.layers[i].getW(), this.layers[i].getB(), null, i);
+
 
             }
 
@@ -287,12 +333,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         last.setnIn(secondToLast.getnOut());
 
 
-        this.layers[layers.length - 1] = new OutputLayer.Builder().configure(last).build();
+        this.layers[layers.length - 1] = layerFactories[layers.length - 1].create(last);
 
-
-
-        dimensionCheck();
-        applyTransforms();
         initCalled = true;
         initMask();
 
@@ -307,7 +349,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @return the activation of the last hidden layer given the last input to the network
      */
     public INDArray activate() {
-        return getLayers()[getNeuralNets().length - 1].activate();
+        return getLayers()[getLayers().length - 1].activate();
     }
 
     /**
@@ -352,14 +394,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     public INDArray activationFromPrevLayer(int curr,INDArray input) {
         //output layer
-        if(curr == neuralNets.length) {
+        if(curr == layers.length) {
             return getOutputLayer().labelProbabilities(input);
         }
 
         switch(layers[curr].conf().getActivationType()) {
             case HIDDEN_LAYER_ACTIVATION: return layers[curr].activate(input);
-            case NET_ACTIVATION: return neuralNets[curr].hiddenActivation(input);
-            case SAMPLE: return neuralNets[curr].sampleHiddenGivenVisible(input).getSecond();
+            case NET_ACTIVATION: return layers[curr].activate(input);
+            //case SAMPLE: return layers[curr].sampleHiddenGivenVisible(input).getSecond();
             default: throw new IllegalStateException("Invalid activation type");
         }
     }
@@ -407,10 +449,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     @Override
     public Gradient getGradient() {
-        List<NeuralNetworkGradient> gradients = new ArrayList<>();
-        for(NeuralNetwork n : neuralNets)
-            gradients.add(n.getGradient());
-        return new MultiLayerGradient(gradients,(OutputLayerGradient) getOutputLayer().getGradient());
+        Gradient ret = new DefaultGradient();
+        for(int i = 0; i < layers.length; i+= 2) {
+            ret.gradientLookupTable().put(String.valueOf(i),layers[i].getGradient().gradient());
+        }
+
+        return ret;
     }
 
     @Override
@@ -451,8 +495,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
         for (int j = 0; j < getLayers().length; j++) {
-            weights.add(getLayers()[j].getW());
-            biases.add(getLayers()[j].getB());
+            weights.add(getLayers()[j].getParam(DefaultParamInitializer.WEIGHT_KEY));
+            biases.add(getLayers()[j].getParam(DefaultParamInitializer.BIAS_KEY));
             activationFunctions.add(getLayers()[j].conf().getActivationFunction());
         }
 
@@ -538,8 +582,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         List<ActivationFunction> activationFunctions = new ArrayList<>();
         for (int j = 0; j < getLayers().length; j++) {
-            weights.add(getLayers()[j].getW());
-            biases.add(getLayers()[j].getB());
+            weights.add(getLayers()[j].getParam(DefaultParamInitializer.WEIGHT_KEY));
+            biases.add(getLayers()[j].getParam(DefaultParamInitializer.BIAS_KEY));
             activationFunctions.add(getLayers()[j].conf().getActivationFunction());
         }
 
@@ -588,15 +632,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         List<INDArray> biases = new ArrayList<>();
 
         List<ActivationFunction> activationFunctions = new ArrayList<>();
-        for (int j = 0; j < getNeuralNets().length; j++) {
-            weights.add(getNeuralNets()[j].getW());
-            biases.add(getNeuralNets()[j].gethBias());
+        for (int j = 0; j < getLayers().length; j++) {
+            weights.add(getLayers()[j].getParam(DefaultParamInitializer.WEIGHT_KEY));
+            biases.add(getLayers()[j].getParam(DefaultParamInitializer.BIAS_KEY));
             activationFunctions.add(getLayers()[j].conf().getActivationFunction());
         }
 
 
-        weights.add(getOutputLayer().getW());
-        biases.add(getOutputLayer().getB());
+        weights.add(getOutputLayer().getParam(DefaultParamInitializer.WEIGHT_KEY));
+        biases.add(getOutputLayer().getParam(DefaultParamInitializer.BIAS_KEY));
         activationFunctions.add(getOutputLayer().conf().getActivationFunction());
 
 
@@ -638,12 +682,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     public void backPropStep() {
         List<Pair<INDArray, INDArray>> deltas = backPropGradient();
         for (int i = 0; i < layers.length; i++) {
-            layers[i].getW().addi(deltas.get(i).getFirst());
-            layers[i].getB().addi(deltas.get(i).getSecond());
-            if(i < neuralNets.length) {
-                neuralNets[i].setW(layers[i].getW());
-                neuralNets[i].sethBias(layers[i].getB());
-            }
+            layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).addi(deltas.get(i).getFirst());
+            layers[i].getParam(DefaultParamInitializer.BIAS_KEY).addi(deltas.get(i).getSecond());
+
         }
 
     }
@@ -685,8 +726,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
     @Override
-    public BaseMultiLayerNetwork clone() {
-        BaseMultiLayerNetwork ret = null;
+    public MultiLayerNetwork clone() {
+        MultiLayerNetwork ret = null;
         try {
             ret = getClass().newInstance();
         } catch (InstantiationException e) {
@@ -699,40 +740,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    public List<INDArray> weightMatrices() {
-        List<INDArray> ret = new ArrayList<>();
-        for (int i = 0; i < neuralNets.length; i++)
-            ret.add(neuralNets[i].getW());
-        ret.add(getOutputLayer().getW());
-        return ret;
-    }
 
-
-
-
-
-
-
-
-
-
-    /**
-     * Returns a 1 x m vector where the vector is composed of
-     * a flattened vector of all of the weights for the
-     * various neuralNets(w,hbias NOT VBIAS) and output layer
-     *
-     * @return the params for this neural net
-     */
-    public INDArray paramsWithVisible() {
-        List<INDArray> params = new ArrayList<>();
-        for(int i = 0; i < getnLayers(); i++) {
-            params.add(getNeuralNets()[i].getW());
-            params.add(getNeuralNets()[i].getvBias());
-            params.add(getNeuralNets()[i].gethBias());
-        }
-        params.add(getOutputLayer().params());
-        return Nd4j.toFlattened(params);
-    }
 
     /**
      * Returns a 1 x m vector where the vector is composed of
@@ -744,11 +752,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     @Override
     public INDArray params() {
         List<INDArray> params = new ArrayList<>();
-        for(int i = 0; i < getnLayers(); i++) {
-            params.add(getNeuralNets()[i].getW());
-            params.add(getNeuralNets()[i].gethBias());
+        for(int i = 0; i < layers.length; i++) {
+            params.add(getLayers()[i].getParam(DefaultParamInitializer.WEIGHT_KEY));
+            params.add(getLayers()[i].getParam(DefaultParamInitializer.BIAS_KEY));
         }
-        params.add(getOutputLayer().params());
         return Nd4j.toFlattened(params);
     }
     /**
@@ -775,9 +782,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     @Override
     public int numParams() {
         int length = 0;
-        for (int i = 0; i < neuralNets.length; i++)
-            length += neuralNets[i].numParams() - neuralNets[i].getvBias().length();
-        length += getOutputLayer().numParams();
+        for (int i = 0; i < layers.length; i++)
+            length += layers[i].numParams();
 
         return length;
 
@@ -793,11 +799,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     public INDArray pack() {
         List<Pair<INDArray, INDArray>> vWvB = new ArrayList<>();
-        for (int i = 0; i < neuralNets.length; i++) {
-            vWvB.add(new Pair<>(neuralNets[i].getW(), neuralNets[i].gethBias()));
-        }
-
-        vWvB.add(new Pair<>(getOutputLayer().getW(), getOutputLayer().getB()));
+        for (int i = 0; i < layers.length; i++)
+            vWvB.add(new Pair<>(layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY), layers[i].getParam(DefaultParamInitializer.BIAS_KEY)));
 
         return pack(vWvB);
 
@@ -810,10 +813,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @return a singular matrix of all of the neuralNets packed in to one matrix
      */
     public INDArray pack(List<Pair<INDArray, INDArray>> layers) {
-        if (layers.size() != this.neuralNets.length + 1)
-            throw new IllegalArgumentException("Illegal number of neuralNets passed in. Was " + layers.size() + " when should have been " + (this.neuralNets.length + 1));
-
         List<INDArray> list = new ArrayList<>();
+
         for(int i = 0; i < layers.size(); i++) {
             list.add(layers.get(i).getFirst());
             list.add(layers.get(i).getSecond());
@@ -856,18 +857,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         List<INDArray> deltas = computeDeltas();
 
         List<Pair<INDArray, INDArray>> vWvB = new ArrayList<>();
-        for (int i = 0; i < neuralNets.length; i++)
-            vWvB.add(new Pair<>(neuralNets[i].getW(), neuralNets[i].gethBias()));
-
-
-        vWvB.add(new Pair<>(getOutputLayer().getW(), getOutputLayer().getB()));
+        for (int i = 0; i < layers.length; i++)
+            vWvB.add(new Pair<>(layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY), layers[i].getParam(DefaultParamInitializer.BIAS_KEY)));
 
 
         List<Pair<INDArray, INDArray>> list = new ArrayList<>();
 
         for (int l = 0; l < getnLayers() + 1; l++) {
             INDArray gradientChange = deltas.get(l);
-            if (gradientChange.length() != getLayers()[l].getW().length())
+            if (gradientChange.length() != getLayers()[l].getParam(DefaultParamInitializer.WEIGHT_KEY).length())
                 throw new IllegalStateException("Gradient change not equal to weight change");
 
 
@@ -883,36 +881,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         if (mask == null)
             initMask();
-
-
-
-        for(int i = 0; i < list.size(); i++) {
-            if(i < getnLayers()) {
-                INDArray weightGradientForLayer = list.get(i).getFirst();
-                INDArray biasGradientForLayer = list.get(i).getSecond();
-                assert Arrays.equals(weightGradientForLayer.shape(),getNeuralNets()[i].getW().shape()) :
-                        "Illegal shape for layer " + i + " weight gradient, should have been " +
-                                Arrays.toString(getNeuralNets()[i].getW().shape()) + " but was " + Arrays.toString(weightGradientForLayer.shape()) ;
-                assert Arrays.equals(biasGradientForLayer.shape(),getNeuralNets()[i].gethBias().shape()) :
-                        "Illegal shape for layer " + i + " bias   gradient, should have been " +
-                                Arrays.toString(getNeuralNets()[i].gethBias().shape()) + " but was " + Arrays.toString(biasGradientForLayer.shape());
-            }
-            else {
-                INDArray weightGradientForLayer = list.get(i).getFirst();
-                INDArray biasGradientForLayer = list.get(i).getSecond();
-                assert Arrays.equals(weightGradientForLayer.shape(),getOutputLayer().getW().shape()) :
-                        "Illegal shape for output  weight gradient, should have been " +
-                                Arrays.toString(getOutputLayer().getW().shape()) + " but was " + Arrays.toString(weightGradientForLayer.shape());
-                ;
-                assert Arrays.equals(biasGradientForLayer.shape(),getOutputLayer().getB().shape()) :
-                        "Illegal shape for output layer  bias   gradient, should have been " +
-                                Arrays.toString(getOutputLayer().getB().shape()) + " but was " + Arrays.toString(biasGradientForLayer.shape());
-
-
-            }
-        }
-
-
 
 
         return list;
@@ -937,23 +905,23 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         List<Pair<INDArray,INDArray>> ret = new ArrayList<>();
         int curr = 0;
         for(int i = 0; i < layers.length; i++) {
-            int layerLength = layers[i].getW().length() + layers[i].getB().length();
+            int layerLength = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).length() + layers[i].getParam(DefaultParamInitializer.BIAS_KEY).length();
             INDArray subMatrix = param.get(NDArrayIndex.interval(curr,curr + layerLength));
-            INDArray weightPortion = subMatrix.get(NDArrayIndex.interval(0,layers[i].getW().length()));
+            INDArray weightPortion = subMatrix.get(NDArrayIndex.interval(0,layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).length()));
 
-            int beginHBias = layers[i].getW().length();
+            int beginHBias = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).length();
             int endHbias = subMatrix.length();
             INDArray hBiasPortion = subMatrix.get(NDArrayIndex.interval(beginHBias,endHbias ));
             int layerLengthSum = weightPortion.length() + hBiasPortion.length();
             if(layerLengthSum != layerLength) {
-                if(hBiasPortion.length() != layers[i].getB().length())
+                if(hBiasPortion.length() != layers[i].getParam(DefaultParamInitializer.BIAS_KEY).length())
                     throw new IllegalStateException("Hidden bias on layer " + i + " was off");
-                if(weightPortion.length() != layers[i].getW().length())
+                if(weightPortion.length() != layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).length())
                     throw new IllegalStateException("Weight portion on layer " + i + " was off");
 
             }
 
-            ret.add(new Pair<>(weightPortion.reshape(layers[i].getW().rows(),layers[i].getW().columns()),hBiasPortion.reshape(layers[i].getB().rows(),layers[i].getB().columns())));
+            ret.add(new Pair<>(weightPortion.reshape(layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).rows(),layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).columns()),hBiasPortion.reshape(layers[i].getParam(DefaultParamInitializer.BIAS_KEY).rows(),layers[i].getParam(DefaultParamInitializer.BIAS_KEY).columns())));
             curr += layerLength;
         }
 
@@ -986,11 +954,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             INDArray preConGradientChange = deltas.get(l).getSecond();
 
 
-            if (l < layers.length && gradientChange.length() != layers[l].getW().length())
+            if (l < layers.length && gradientChange.length() != layers[l].getParam(DefaultParamInitializer.WEIGHT_KEY).length())
                 throw new IllegalStateException("Gradient change not equal to weight change");
-            else if (l == getNeuralNets().length && gradientChange.length() != getOutputLayer().getW().length())
-                throw new IllegalStateException("Gradient change not equal to weight change");
-
 
             //update hidden bias
             INDArray deltaColumnSums = deltas.get(l).getFirst().mean(0);
@@ -998,9 +963,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
             grad.add(new Pair<>(gradientChange, deltaColumnSums));
             preCon.add(new Pair<>(preConGradientChange, preConColumnSums));
-            if (l < layers.length && deltaColumnSums.length() != layers[l].getB().length())
+            if (l < layers.length && deltaColumnSums.length() != layers[l].getParam(DefaultParamInitializer.BIAS_KEY).length())
                 throw new IllegalStateException("Bias change not equal to weight change");
-            else if (l == getLayers().length && deltaColumnSums.length() != getOutputLayer().getB().length())
+            else if (l == getLayers().length && deltaColumnSums.length() != getOutputLayer().getParam(DefaultParamInitializer.BIAS_KEY).length())
                 throw new IllegalStateException("Bias change not equal to weight change");
 
 
@@ -1043,12 +1008,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
     /**
-     * Pretrain the weights
-     * @param iter the dataset to pretrain on
-     */
-    public abstract void pretrain(DataSetIterator iter);
-
-    /**
      * Run SGD based on the given labels
      *
      * @param iter       fine tune based on the labels
@@ -1063,7 +1022,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
             setInput(data.getFeatureMatrix());
             setLabels(data.getLabels());
-            if(getOutputLayer().conf().getOptimizationAlgo() != NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
+            if(getOutputLayer().conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
                 feedForward();
                 getOutputLayer().fit(iter);
             }
@@ -1087,7 +1046,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.labels = labels;
         if (labels != null)
             this.labels = labels;
-        if(getOutputLayer().conf().getOptimizationAlgo() != NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
+        if(getOutputLayer().conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
             feedForward();
             getOutputLayer().fit(getOutputLayer().getInput(),labels);
         }
@@ -1155,11 +1114,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    /**
-     * Pretrain on the given data
-     * @param examples
-     */
-    public abstract void pretrain(INDArray examples);
+
 
     /**
      * Fit the model
@@ -1237,21 +1192,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         log.info(sb.toString());
     }
 
-    @Override
-    public void write(OutputStream os) {
-        SerializationUtils.writeObject(this, os);
-    }
-
-    /**
-     * Load (using {@link ObjectInputStream}
-     *
-     * @param is the input stream to load from (usually a file)
-     */
-    @Override
-    public void load(InputStream is) {
-        BaseMultiLayerNetwork loaded = SerializationUtils.readObject(is);
-        update(loaded);
-    }
 
 
     /**
@@ -1260,35 +1200,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      *
      * @param network the network to getFromOrigin parameters from
      */
-    public void update(BaseMultiLayerNetwork network) {
-
-        if (network.neuralNets != null && network.getnLayers() > 0) {
-            this.setnLayers(network.getNeuralNets().length);
-            this.neuralNets = new NeuralNetwork[network.getNeuralNets().length];
-            for (int i = 0; i < neuralNets.length; i++)
-                if ((this.getnLayers()) > i && (network.getnLayers() > i)) {
-                    if (network.getNeuralNets()[i] == null) {
-                        throw new IllegalStateException("Will not clone uninitialized network, layer " + i + " of network was null");
-                    }
-
-                    this.getNeuralNets()[i] = network.getNeuralNets()[i].clone();
-
-                }
-        }
-
+    public void update(MultiLayerNetwork network) {
         this.defaultConfiguration = network.defaultConfiguration;
         this.input = network.input;
         this.labels = network.labels;
         this.weightTransforms = network.weightTransforms;
         this.visibleBiasTransforms = network.visibleBiasTransforms;
         this.hiddenBiasTransforms = network.hiddenBiasTransforms;
-
-        if (network.neuralNets != null && network.neuralNets.length > 0) {
-            this.neuralNets = new NeuralNetwork[network.neuralNets.length];
-            for (int i = 0; i < neuralNets.length; i++)
-                this.getNeuralNets()[i] = network.getNeuralNets()[i].clone();
-
-        }
+        this.layers = ArrayUtils.clone(network.layers);
 
 
     }
@@ -1336,6 +1255,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
+    @Override
+    public void fit() {
+        fit(input,labels);
+    }
+
+    @Override
+    public void update(Gradient gradient) {
+
+    }
+
     /**
      * Score of the model (relative to the objective function)
      *
@@ -1365,62 +1294,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    protected void applyTransforms() {
-        if (neuralNets == null || neuralNets.length < 1) {
-            throw new IllegalStateException("Layers not initialized");
-        }
-
-        for (int i = 0; i < neuralNets.length; i++) {
-            if (weightTransforms.containsKey(i))
-                neuralNets[i].setW(weightTransforms.get(i).apply(neuralNets[i].getW()));
-            if (hiddenBiasTransforms.containsKey(i))
-                neuralNets[i].sethBias(getHiddenBiasTransforms().get(i).apply(neuralNets[i].gethBias()));
-            if (this.visibleBiasTransforms.containsKey(i))
-                neuralNets[i].setvBias(getVisibleBiasTransforms().get(i).apply(neuralNets[i].getvBias()));
-        }
-    }
-
-
-    /**
-     * Creates a layer depending on the index.
-     * The main reason this matters is for continuous variations such as the {@link org.deeplearning4j.models.classifiers.dbn.DBN}
-     * where the first layer needs to be an {@link org.deeplearning4j.models.featuredetectors.rbm.RBM} for continuous inputs.
-     *
-     * @param input    the input to the layer
-     * @param W        the weight vector
-     * @param hbias    the hidden bias
-     * @param vBias    the visible bias
-     * @param index    the index of the layer
-     * @return a neural network layer such as {@link org.deeplearning4j.models.featuredetectors.rbm.RBM}
-     */
-    public abstract NeuralNetwork createLayer(INDArray input, INDArray W, INDArray hbias, INDArray vBias, int index);
-
-
-    /**
-     * Creates the neural networks.
-     * @param numLayers the number of layers to create
-     * @return
-     */
-    public abstract NeuralNetwork[] createNetworkLayers(int numLayers);
-
-
-    /**
-     * Creates a hidden layer with the given parameters.
-     * The default implementation is a binomial sampling
-     * hidden layer, but this can be overridden
-     * for other kinds of hidden units
-     * @param layerInput the layer starting input
-     *                   for generating weights
-     * @return a hidden layer with the given parameters
-     */
-    public Layer createHiddenLayer(int index, INDArray layerInput) {
-
-        return new org.deeplearning4j.nn.layers.Layer.Builder()
-                .withInput(layerInput).conf(layerWiseConfigurations.getConf(index))
-                .build();
-
-    }
-
 
     /**
      * Merges this network with the other one.
@@ -1436,16 +1309,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param batchSize the batch size (number of training examples)
      *                  to average by
      */
-    public void merge(BaseMultiLayerNetwork network, int batchSize) {
-        if (network.getnLayers() != getnLayers())
+    public void merge(MultiLayerNetwork network, int batchSize) {
+        if (network.layers.length != layers.length)
             throw new IllegalArgumentException("Unable to merge networks that are not of equal length");
         for (int i = 0; i < getnLayers(); i++) {
-            NeuralNetwork n = neuralNets[i];
-            NeuralNetwork otherNetwork = network.neuralNets[i];
+            Layer n = layers[i];
+            Layer otherNetwork = network.layers[i];
             n.merge(otherNetwork, batchSize);
-            //tied weights: must be updated at the same time
-            getLayers()[i].setB(n.gethBias());
-            getLayers()[i].setW(n.getW());
 
         }
 
@@ -1463,7 +1333,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param input
      */
     public void setInput(INDArray input) {
-        if (input != null && this.neuralNets == null)
+        if (input != null && this.layers == null)
             this.initializeLayers(input);
         this.input = input;
 
@@ -1482,18 +1352,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
 
-
-    /**
-     * Clears the input from all of the neuralNets
-     */
-    public void clearInput() {
-        this.input = null;
-        for (int i = 0; i < neuralNets.length; i++) {
-            neuralNets[i].clearInput();
-            layers[i].setInput(null);
-        }
-
-    }
 
     /**
      * Get the input layer
@@ -1523,23 +1381,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param params a parameter vector equal 1,numParameters
      */
     public void setParameters(INDArray params) {
-        for (int i = 0; i < getNeuralNets().length; i++) {
+        for (int i = 0; i < getLayers().length; i++) {
             ParamRange range = startIndexForLayer(i);
             INDArray w = params.get(NDArrayIndex.interval(range.getwStart(), range.getwEnd()));
             INDArray bias = params.get(NDArrayIndex.interval(range.getBiasStart(), range.getBiasEnd()));
-            int rows = getNeuralNets()[i].getW().rows(), columns = getNeuralNets()[i].getW().columns();
-            getNeuralNets()[i].setW(w.reshape(rows, columns));
-            getNeuralNets()[i].sethBias(bias.reshape(getNeuralNets()[i].gethBias().rows(), getNeuralNets()[i].gethBias().columns()));
+            int rows = getLayers()[i].getParam(DefaultParamInitializer.WEIGHT_KEY).rows(), columns = getLayers()[i].getParam(DefaultParamInitializer.WEIGHT_KEY).columns();
+
+            getLayers()[i].setParam(DefaultParamInitializer.WEIGHT_KEY,w.reshape(rows, columns));
+            getLayers()[i].setParam(DefaultParamInitializer.BIAS_KEY,bias.reshape(getLayers()[i].getParam(DefaultParamInitializer.BIAS_KEY).shape()));
         }
-
-
-        ParamRange range = startIndexForLayer(getNeuralNets().length);
-        INDArray w = params.get(NDArrayIndex.interval(range.getwStart(), range.getwEnd()));
-        INDArray bias = params.get( NDArrayIndex.interval(range.getBiasStart(), range.getBiasEnd()));
-        int rows = getOutputLayer().getW().rows(), columns = getOutputLayer().getW().columns();
-        getOutputLayer().setW(w.reshape(rows, columns));
-        getOutputLayer().setB(bias.reshape(getOutputLayer().getB().rows(), getOutputLayer().getB().columns()));
-
 
     }
 
@@ -1553,16 +1403,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     public ParamRange startIndexForLayer(int layer) {
         int start = 0;
         for (int i = 0; i < layer; i++) {
-            start += getNeuralNets()[i].getW().length();
-            start += getNeuralNets()[i].gethBias().length();
+            start += getLayers()[i].getParam(DefaultParamInitializer.WEIGHT_KEY).length();
+            start += getLayers()[i].getParam(DefaultParamInitializer.BIAS_KEY).length();
         }
-        if (layer < getNeuralNets().length) {
-            int wEnd = start + getNeuralNets()[layer].getW().length();
-            return new ParamRange(start, wEnd, wEnd, wEnd + getNeuralNets()[layer].gethBias().length());
+        if (layer < getLayers().length) {
+            int wEnd = start + getLayers()[layer].getParam(DefaultParamInitializer.WEIGHT_KEY).length();
+            return new ParamRange(start, wEnd, wEnd, wEnd + getLayers()[layer].getParam(DefaultParamInitializer.BIAS_KEY).length());
 
         } else {
-            int wEnd = start + getOutputLayer().getW().length();
-            return new ParamRange(start, wEnd, wEnd, wEnd + getOutputLayer().getB().length());
+            int wEnd = start + getOutputLayer().getParam(DefaultParamInitializer.WEIGHT_KEY).length();
+            return new ParamRange(start, wEnd, wEnd, wEnd + getOutputLayer().getParam(DefaultParamInitializer.BIAS_KEY).length());
 
         }
 
@@ -1572,27 +1422,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
 
-    /**
-     * One step of back prop with the R operator
-     *
-     * @param v for gaussian vector, this is for g * v. This is optional.
-     */
-    public void backPropStepR(INDArray v) {
-        List<Pair<INDArray, INDArray>> deltas = backPropGradientR(v);
-        for (int i = 0; i < neuralNets.length; i++) {
-            if (deltas.size() < neuralNets.length) {
-                neuralNets[i].getW().subi(deltas.get(i).getFirst());
-                neuralNets[i].gethBias().subi(deltas.get(i).getSecond());
-                layers[i].setW(neuralNets[i].getW());
-                layers[i].setB(neuralNets[i].gethBias());
-            }
-
-        }
-
-        getOutputLayer().getW().subi(deltas.get(deltas.size() - 1).getFirst());
-        getOutputLayer().getB().subi(deltas.get(deltas.size() - 1).getSecond());
-
-    }
 
     /**
      * Feed forward with the r operator
@@ -1604,15 +1433,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         List<INDArray> R = new ArrayList<>();
         R.add(Nd4j.zeros(input.rows(), input.columns()));
         List<Pair<INDArray, INDArray>> vWvB = unPack(v);
-        List<INDArray> W = weightMatrices();
+        List<INDArray> W = MultiLayerUtil.weightMatrices(this);
 
-        for (int i = 0; i < neuralNets.length; i++) {
-            ActivationFunction derivative = getNeuralNets()[i].conf().getActivationFunction();
-            if (getNeuralNets()[i] instanceof AutoEncoder) {
-                AutoEncoder a = (AutoEncoder) getNeuralNets()[i];
-                derivative = a.conf.getActivationFunction();
-            }
-
+        for (int i = 0; i < layers.length; i++) {
+            ActivationFunction derivative = getLayers()[i].conf().getActivationFunction();
             //R[i] * W[i] + acts[i] * (vW[i] + vB[i]) .* f'([acts[i + 1])
             R.add(R.get(i).mmul(W.get(i)).addi(acts.get(i).mmul(vWvB.get(i).getFirst().addRowVector(vWvB.get(i).getSecond()))).muli((derivative.applyDerivative(acts.get(i + 1)))));
         }
@@ -1659,13 +1483,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         for (int l = 0; l < getnLayers(); l++) {
             INDArray gradientChange = deltas.get(l);
 
-            if (gradientChange.length() != getNeuralNets()[l].getW().length())
+            if (gradientChange.length() != getLayers()[l].getParam(DefaultParamInitializer.WEIGHT_KEY).length())
                 throw new IllegalStateException("Gradient change not equal to weight change");
 
 
             //update hidden bias
             INDArray deltaColumnSums = deltas.get(l).mean(0);
-            if (deltaColumnSums.length() != layers[l].getB().length())
+            if (deltaColumnSums.length() != layers[l].getParam(DefaultParamInitializer.BIAS_KEY).length())
                 throw new IllegalStateException("Bias change not equal to weight change");
 
 
@@ -1695,9 +1519,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         return input;
     }
 
-    public synchronized NeuralNetwork[] getNeuralNets() {
-        return neuralNets;
-    }
 
 
 
@@ -1722,18 +1543,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
     public int getnLayers() {
-        return neuralNets.length;
-    }
-
-    public void setnLayers(int nLayers) {
-        this.neuralNets = createNetworkLayers(nLayers);
+        return layers.length / 2;
     }
 
 
 
-    public void setLayers(NeuralNetwork[] layers) {
-        this.neuralNets = layers;
-    }
+
 
     public Layer[] getLayers() {
         return layers;
@@ -1743,9 +1558,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.layers = layers;
     }
 
-    public void setNeuralNets(NeuralNetwork[] neuralNets) {
-        this.neuralNets = neuralNets;
-    }
 
 
 
@@ -1802,130 +1614,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         }
     }
 
-    public static class Builder<E extends BaseMultiLayerNetwork> {
-        protected Class<? extends BaseMultiLayerNetwork> clazz;
-        private INDArray input, labels;
-        protected Map<Integer, MatrixTransform> weightTransforms = new HashMap<>();
-        private Map<Integer, MatrixTransform> hiddenBiasTransforms = new HashMap<>();
-        private Map<Integer, MatrixTransform> visibleBiasTransforms = new HashMap<>();
 
-        protected MultiLayerConfiguration multiLayerConfiguration;
-        protected NeuralNetConfiguration conf;
-
-
-
-        public Builder<E> layerWiseConfiguration(MultiLayerConfiguration layerWiseConfiguration) {
-            this.multiLayerConfiguration = layerWiseConfiguration;
-            return this;
-        }
-
-        public Builder<E> configure(NeuralNetConfiguration conf) {
-            this.conf = conf;
-            return this;
-        }
-
-
-        public Builder<E> withVisibleBiasTransforms(Map<Integer, MatrixTransform> visibleBiasTransforms) {
-            this.visibleBiasTransforms = visibleBiasTransforms;
-            return this;
-        }
-
-        public Builder<E> withHiddenBiasTransforms(Map<Integer, MatrixTransform> hiddenBiasTransforms) {
-            this.hiddenBiasTransforms = hiddenBiasTransforms;
-            return this;
-        }
-
-
-        /**
-         * Transform the weights at the given layer
-         *
-         * @param layer     the layer to applyTransformToOrigin
-         * @param transform the function used for transformation
-         * @return
-         */
-        public Builder<E> transformWeightsAt(int layer, MatrixTransform transform) {
-            weightTransforms.put(layer, transform);
-            return this;
-        }
-
-        /**
-         * A map of transformations for transforming
-         * the given neuralNets
-         *
-         * @param transforms
-         * @return
-         */
-        public Builder<E> transformWeightsAt(Map<Integer, MatrixTransform> transforms) {
-            weightTransforms.putAll(transforms);
-            return this;
-        }
-
-
-
-
-
-
-        public Builder<E> withInput(INDArray input) {
-            this.input = input;
-            return this;
-        }
-
-        public Builder<E> withLabels(INDArray labels) {
-            this.labels = labels;
-            return this;
-        }
-
-        public Builder<E> withClazz(Class<? extends BaseMultiLayerNetwork> clazz) {
-            this.clazz = clazz;
-            return this;
-        }
-
-
-        @SuppressWarnings("unchecked")
-        public E buildEmpty() {
-            try {
-                E ret;
-                Constructor<?> c = Dl4jReflection.getEmptyConstructor(clazz);
-                c.setAccessible(true);
-
-                ret = (E) c.newInstance();
-
-                return ret;
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @SuppressWarnings("unchecked")
-        public E build() {
-            try {
-                E ret;
-                Constructor<?> c = Dl4jReflection.getEmptyConstructor(clazz);
-                c.setAccessible(true);
-
-                ret = (E) c.newInstance();
-                ret.setDefaultConfiguration(conf);
-                ret.setInput(this.input);
-                ret.setLabels(this.labels);
-                ret.setnLayers(this.multiLayerConfiguration.getHiddenLayerSizes().length);
-                ret.setLayerWiseConfigurations(multiLayerConfiguration);
-                ret.neuralNets = new NeuralNetwork[this.multiLayerConfiguration.getHiddenLayerSizes().length];
-                ret.setInput(this.input);
-                ret.setLabels(labels);
-                ret.getWeightTransforms().putAll(weightTransforms);
-                ret.getVisibleBiasTransforms().putAll(visibleBiasTransforms);
-                ret.getHiddenBiasTransforms().putAll(hiddenBiasTransforms);
-                ret.layerWiseConfigurations = multiLayerConfiguration;
-                if(ret.defaultConfiguration == null)
-                    ret.defaultConfiguration = multiLayerConfiguration.getConf(0);
-
-                return ret;
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-
-        }
-    }
 }
 
 

@@ -8,9 +8,12 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.nn.api.NeuralNetwork;
-import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.gradient.Gradient;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +62,7 @@ public class NeuralNetPlotter implements Serializable {
                 new String[]{"W", "w-gradient"},
 
                 new INDArray[]{
-                        network.getW(),
+                        network.getParam(DefaultParamInitializer.WEIGHT_KEY),
                         gradient
 
                 });
@@ -67,14 +70,14 @@ public class NeuralNetPlotter implements Serializable {
         plotActivations(network);
 
         try {
-            if(network.getW().shape().length > 2) {
-                INDArray w =  network.getW().dup();
+            if(network.getParam(DefaultParamInitializer.WEIGHT_KEY).shape().length > 2) {
+                INDArray w =  network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
                 INDArray render2 = w.transpose();
                 render.renderFilters(render2, "currimg.png", w.columns() , w.rows(),w.slices());
 
             }
             else
-                render.renderFilters(network.getW().dup(), "currimg.png", (int)Math.sqrt(network.getW().rows()) , (int) Math.sqrt( network.getW().rows()),patchesPerRow);
+                render.renderFilters(network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup(), "currimg.png", (int)Math.sqrt(network.getParam(DefaultParamInitializer.WEIGHT_KEY).rows()) , (int) Math.sqrt( network.getParam(DefaultParamInitializer.WEIGHT_KEY).rows()),patchesPerRow);
 
 
         } catch (Exception e) {
@@ -82,51 +85,50 @@ public class NeuralNetPlotter implements Serializable {
         }
     }
 
-    public void hist(NeuralNetwork network,NeuralNetworkGradient gradient) {
+    public void hist(Layer network,Gradient gradient) {
         histogram(
                 new String[]{"W", "hbias", "vbias", "w-gradient", "hbias-gradient", "vbias-gradient"},
 
                 new INDArray[]{
-                        network.getW(),
-                        network.gethBias(),
-                        network.getvBias(),
-                        gradient.getwGradient(),
-                        gradient.gethBiasGradient(),
-                        gradient.getvBiasGradient()
-
+                        network.getParam(DefaultParamInitializer.WEIGHT_KEY),
+                        network.getParam(PretrainParamInitializer.BIAS_KEY),
+                        network.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY),
+                        gradient.gradientLookupTable().get(DefaultParamInitializer.WEIGHT_KEY),
+                        gradient.gradientLookupTable().get(DefaultParamInitializer.BIAS_KEY),
+                        gradient.gradientLookupTable().get(PretrainParamInitializer.VISIBLE_BIAS_KEY)
                 });
     }
 
 
-    public void hist(NeuralNetwork network) {
+    public void hist(Layer network) {
         hist(network,network.getGradient());
     }
 
-    public void plotNetworkGradient(NeuralNetwork network,NeuralNetworkGradient gradient,int patchesPerRow) {
+    public void plotNetworkGradient(Layer network,Gradient gradient,int patchesPerRow) {
         histogram(
                 new String[]{"W", "hbias", "vbias", "w-gradient", "hbias-gradient", "vbias-gradient"},
 
                 new INDArray[]{
-                        network.getW(),
-                        network.gethBias(),
-                        network.getvBias(),
-                        gradient.getwGradient(),
-                        gradient.gethBiasGradient(),
-                        gradient.getvBiasGradient()
+                        network.getParam(DefaultParamInitializer.WEIGHT_KEY),
+                        network.getParam(PretrainParamInitializer.BIAS_KEY),
+                        network.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY),
+                        gradient.gradientLookupTable().get(DefaultParamInitializer.WEIGHT_KEY),
+                        gradient.gradientLookupTable().get(DefaultParamInitializer.BIAS_KEY),
+                        gradient.gradientLookupTable().get(PretrainParamInitializer.VISIBLE_BIAS_KEY)
 
                 });
         plotActivations(network);
 
         FilterRenderer render = new FilterRenderer();
         try {
-            if(network.getW().shape().length > 2) {
-                INDArray w =  network.getW().dup();
+            if(network.getParam(DefaultParamInitializer.WEIGHT_KEY).shape().length > 2) {
+                INDArray w =  network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
                 INDArray render2 = w.transpose();
                 render.renderFilters(render2, "currimg.png", w.columns() , w.rows(),w.slices());
 
             }
             else
-                render.renderFilters(network.getW().dup(), "currimg.png", (int)Math.sqrt(network.getW().rows()) , (int) Math.sqrt( network.getW().rows()),patchesPerRow);
+                render.renderFilters(network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup(), "currimg.png", (int)Math.sqrt(network.getParam(DefaultParamInitializer.WEIGHT_KEY).rows()) , (int) Math.sqrt( network.getParam(DefaultParamInitializer.WEIGHT_KEY).rows()),patchesPerRow);
 
 
         } catch (Exception e) {
@@ -232,31 +234,6 @@ public class NeuralNetPlotter implements Serializable {
                 throw new IllegalStateException("Unable to plot; missing input");
 
             INDArray hbiasMean = network.activationMean();
-
-
-            String filePath = writeMatrix(hbiasMean);
-
-            Process is = Runtime.getRuntime().exec("python /tmp/plot.py hbias " + filePath);
-
-            Thread.sleep(10000);
-            is.destroy();
-
-
-            log.info("Rendering hbias " + filePath);
-            log.error(IOUtils.readLines(is.getErrorStream()).toString());
-
-        }catch(Exception e) {
-            log.warn("Image closed");
-
-        }
-    }
-
-    public void plotActivations(NeuralNetwork network) {
-        try {
-            if(network.getInput() == null)
-                throw new IllegalStateException("Unable to plot; missing input");
-
-            INDArray hbiasMean = network.hBiasMean();
 
 
             String filePath = writeMatrix(hbiasMean);

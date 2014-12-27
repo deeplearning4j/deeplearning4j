@@ -11,7 +11,7 @@ import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.iterativereduce.runtime.io.RecordParser;
 import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWorker;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.nn.MultiLayerNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.nd4j.linalg.dataset.DataSet;
@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,DeepLearningConfigurable {
 
     private static final Logger LOG = LoggerFactory.getLogger(WorkerNode.class);
-    private BaseMultiLayerNetwork multiLayerNetwork;
+    private MultiLayerNetwork multiLayerNetwork;
     private RecordParser recordParser;
 
 
@@ -113,8 +113,8 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     public void setup(Configuration conf) {
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(conf.get(MULTI_LAYER_CONF));
         try {
-            multiLayerNetwork = new BaseMultiLayerNetwork.Builder<>().layerWiseConfiguration(conf2)
-                    .withClazz((Class<? extends BaseMultiLayerNetwork>) Class.forName(conf.get(CLASS)))
+            multiLayerNetwork = new MultiLayerNetwork.Builder<>().layerWiseConfiguration(conf2)
+                    .withClazz((Class<? extends MultiLayerNetwork>) Class.forName(conf.get(CLASS)))
                     .build();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();

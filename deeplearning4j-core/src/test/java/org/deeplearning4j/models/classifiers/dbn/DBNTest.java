@@ -5,10 +5,9 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
-import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -25,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by agibsonccc on 8/28/14.
@@ -41,7 +39,7 @@ public class DBNTest {
         RandomGenerator gen = new MersenneTwister(123);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(10)
-                .weightInit(WeightInit.SIZE).optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE)
+                .weightInit(WeightInit.SIZE).optimizationAlgo(OptimizationAlgorithm.HESSIAN_FREE)
                 .activationFunction(Activations.tanh()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .rng(gen).constrainGradientToUnitNorm(true)
@@ -94,7 +92,7 @@ public class DBNTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .withActivationType(NeuralNetConfiguration.ActivationType.HIDDEN_LAYER_ACTIVATION)
                 .weightInit(WeightInit.NORMALIZED).momentum(0.5)
-                .optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).iterations(100)
                 .learningRate(1e-1f).nIn(784).nOut(10).list(4).hiddenLayerSizes(new int[]{500, 400, 300}).override(new NeuralNetConfiguration.ConfOverride() {
                     @Override

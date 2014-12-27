@@ -7,15 +7,17 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
+import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.sampling.Sampling;
-import org.deeplearning4j.nn.BaseNeuralNetwork;
-import org.deeplearning4j.nn.api.NeuralNetwork;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
+import org.deeplearning4j.nn.BasePretrainNetwork;
 import org.deeplearning4j.util.RBMUtil;
 
 
@@ -49,9 +51,12 @@ import org.deeplearning4j.util.RBMUtil;
  * @author Adam Gibson
  *
  */
-@SuppressWarnings("unused")
-public  class RBM extends BaseNeuralNetwork {
+public  class RBM extends BasePretrainNetwork {
 
+
+    public RBM(NeuralNetConfiguration conf, INDArray input) {
+        super(conf, input);
+    }
 
     public  static enum VisibleUnit {
         BINARY,GAUSSIAN,SOFTMAX,LINEAR
@@ -70,12 +75,6 @@ public  class RBM extends BaseNeuralNetwork {
 
 
 
-    protected RBM() {}
-
-    public RBM(INDArray input, INDArray W, INDArray hbias, INDArray vbias,NeuralNetConfiguration conf) {
-        super(input, W, hbias, vbias,conf);
-
-    }
 
 
 
@@ -92,17 +91,17 @@ public  class RBM extends BaseNeuralNetwork {
 
      */
     public void contrastiveDivergence() {
-        this.lastMiniBatchSize = input.rows();
-        NeuralNetworkGradient gradient = getGradient();
-        getW().subi(gradient.getwGradient());
-        gethBias().subi(gradient.gethBiasGradient());
-        getvBias().subi(gradient.getvBiasGradient());
+        Gradient gradient = getGradient();
+        getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).subi(gradient.gradientLookupTable().get(PretrainParamInitializer.VISIBLE_BIAS_KEY));
+        getParam(PretrainParamInitializer.BIAS_KEY).subi(gradient.gradientLookupTable().get(PretrainParamInitializer.BIAS_KEY));
+        getParam(PretrainParamInitializer.WEIGHT_KEY).subi(gradient.gradientLookupTable().get(PretrainParamInitializer.WEIGHT_KEY));
+
 
     }
 
 
     @Override
-    public NeuralNetworkGradient getGradient() {
+    public Gradient getGradient() {
 
 
 
@@ -185,7 +184,10 @@ public  class RBM extends BaseNeuralNetwork {
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
         INDArray  vBiasGradient = input.sub(nvSamples).mean(0);
-        NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
+        Gradient ret = new DefaultGradient();
+        ret.gradientLookupTable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
+        ret.gradientLookupTable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
+        ret.gradientLookupTable().put(PretrainParamInitializer.WEIGHT_KEY,wGradient);
 
         return ret;
     }
@@ -193,7 +195,7 @@ public  class RBM extends BaseNeuralNetwork {
 
 
     @Override
-    public NeuralNetwork transpose() {
+    public Layer transpose() {
         RBM r = (RBM) super.transpose();
         HiddenUnit h = RBMUtil.inverse(conf.getVisibleUnit());
         VisibleUnit v = RBMUtil.inverse(conf.getHiddenUnit());
@@ -207,13 +209,7 @@ public  class RBM extends BaseNeuralNetwork {
         return r;
     }
 
-    @Override
-    public NeuralNetwork clone() {
-        RBM r = (RBM) super.clone();
-        r.sigma = sigma;
-        r.hiddenSigma = hiddenSigma;
-        return r;
-    }
+
 
     /**
      * Free energy for an RBM
@@ -223,6 +219,10 @@ public  class RBM extends BaseNeuralNetwork {
      * @return the free energy for this sample
      */
     public double freeEnergy(INDArray visibleSample) {
+        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
+        INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
+        INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
+
         INDArray wxB = visibleSample.mmul(W).addiRowVector(hBias);
         double vBiasTerm = Nd4j.getBlasWrapper().dot(visibleSample, vBias);
         double hBiasTerm = log(exp(wxB).add(1)).sum(Integer.MAX_VALUE).getDouble(0);
@@ -350,6 +350,9 @@ public  class RBM extends BaseNeuralNetwork {
      * @return the approximated activations of the visible layer
      */
     public INDArray propUp(INDArray v) {
+        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
+        INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
+
         if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN)
             this.sigma = v.var(0).divi(input.rows());
 
@@ -382,10 +385,6 @@ public  class RBM extends BaseNeuralNetwork {
 
     }
 
-    @Override
-    public INDArray hiddenActivation(INDArray input) {
-        return propUp(input);
-    }
 
 
 
@@ -396,6 +395,9 @@ public  class RBM extends BaseNeuralNetwork {
      * @return the approximated output of the hidden layer
      */
     public INDArray propDown(INDArray h) {
+        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
+        INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
+
         INDArray vMean = h.mmul(W.transpose());
         if(conf.isConcatBiases())
             vMean = Nd4j.hstack(vMean, vBias);
@@ -448,7 +450,6 @@ public  class RBM extends BaseNeuralNetwork {
     public void fit(INDArray input) {
         if(input != null)
             this.input = Transforms.stabilize(input, 1);
-        this.lastMiniBatchSize = input.rows();
 
         if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN) {
             this.sigma = input.var(0);
@@ -480,68 +481,6 @@ public  class RBM extends BaseNeuralNetwork {
         contrastiveDivergence();
     }
 
-    public static class Builder extends BaseNeuralNetwork.Builder<RBM> {
-
-        public Builder() {
-            clazz =  RBM.class;
-        }
-
-
-
-
-
-        @Override
-        public RBM buildEmpty() {
-            return super.buildEmpty();
-        }
-
-        @Override
-        public Builder withClazz(Class<? extends BaseNeuralNetwork> clazz) {
-            super.withClazz(clazz);
-            return this;
-        }
-
-
-
-        @Override
-        public Builder withInput(INDArray input) {
-            super.withInput(input);
-            return this;
-        }
-
-        @Override
-        public Builder asType(Class<RBM> clazz) {
-            super.asType(clazz);
-            return this;
-        }
-
-        @Override
-        public Builder withWeights(INDArray W) {
-            super.withWeights(W);
-            return this;
-        }
-
-        @Override
-        public Builder withVisibleBias(INDArray vBias) {
-            super.withVisibleBias(vBias);
-            return this;
-        }
-
-        @Override
-        public Builder withHBias(INDArray hBias) {
-            super.withHBias(hBias);
-            return this;
-        }
-
-
-
-
-        public RBM build() {
-            RBM ret = super.build();
-            return ret;
-        }
-
-    }
 
 
 
