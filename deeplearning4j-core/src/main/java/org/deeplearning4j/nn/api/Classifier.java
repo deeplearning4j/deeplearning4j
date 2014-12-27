@@ -13,13 +13,7 @@ import org.nd4j.linalg.dataset.api.DataSet;
 public interface Classifier extends Model {
 
 
-    /**
-     * Assuming an input and labels are already set
-     * will score based on what's already set
-     * @return the f1 score for the already
-     * set input/output
-     */
-    double score();
+
 
     /**
      * Sets the input and labels and returns a score for the prediction

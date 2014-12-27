@@ -1,6 +1,6 @@
 package org.deeplearning4j.scaleout.perform;
 
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.nn.MultiLayerNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
@@ -14,15 +14,15 @@ import java.io.Serializable;
  * @author Adam Gibson
  */
 public class BaseMultiLayerNetworkWorkPerformer implements WorkerPerformer {
-    private BaseMultiLayerNetwork multiLayerNetwork;
+    private MultiLayerNetwork multiLayerNetwork;
 
 
     @Override
     public void setup(Configuration conf) {
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(conf.get(MULTI_LAYER_CONF));
         try {
-            multiLayerNetwork = new BaseMultiLayerNetwork.Builder<>().layerWiseConfiguration(conf2)
-                    .withClazz((Class<? extends BaseMultiLayerNetwork>) Class.forName(conf.get(CLASS)))
+            multiLayerNetwork = new MultiLayerNetwork.Builder<>().layerWiseConfiguration(conf2)
+                    .withClazz((Class<? extends MultiLayerNetwork>) Class.forName(conf.get(CLASS)))
             .build();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();

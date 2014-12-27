@@ -10,7 +10,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.WeightInit;
-import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.deserializers.ActivationFunctionDeSerializer;
 import org.deeplearning4j.nn.conf.deserializers.DistributionDeSerializer;
 import org.deeplearning4j.nn.conf.deserializers.RandomGeneratorDeSerializer;
@@ -21,7 +21,6 @@ import org.deeplearning4j.nn.conf.serializers.RandomGeneratorSerializer;
 import org.deeplearning4j.nn.conf.serializers.StepFunctionSerializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Activations;
@@ -63,7 +62,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected boolean applySparsity = false;
     //weight init scheme, this can either be a distribution or a applyTransformToDestination scheme
     protected WeightInit weightInit = WeightInit.VI;
-    protected NeuralNetwork.OptimizationAlgorithm optimizationAlgo = NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT;
+    protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
     protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
     protected int renderWeightsEveryNumEpochs = -1;
     //whether to concat hidden bias or add it
@@ -112,7 +111,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
 
-    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, int k, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, double dropOut, boolean applySparsity, WeightInit weightInit, NeuralNetwork.OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride,int[] featureMapSize,int numInFeatureMaps,Collection<IterationListener> listeners,int recurrentOutput) {
+    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, int k, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, double dropOut, boolean applySparsity, WeightInit weightInit, OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride,int[] featureMapSize,int numInFeatureMaps,Collection<IterationListener> listeners,int recurrentOutput) {
         this.recurrentOutput = recurrentOutput;
         this.listeners = listeners;
         this.sparsity = sparsity;
@@ -394,11 +393,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.weightInit = weightInit;
     }
 
-    public NeuralNetwork.OptimizationAlgorithm getOptimizationAlgo() {
+    public OptimizationAlgorithm getOptimizationAlgo() {
         return optimizationAlgo;
     }
 
-    public void setOptimizationAlgo(NeuralNetwork.OptimizationAlgorithm optimizationAlgo) {
+    public void setOptimizationAlgo(OptimizationAlgorithm optimizationAlgo) {
         this.optimizationAlgo = optimizationAlgo;
     }
 
@@ -877,7 +876,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private double dropOut = 0;
         private boolean applySparsity = false;
         private WeightInit weightInit = WeightInit.VI;
-        private NeuralNetwork.OptimizationAlgorithm optimizationAlgo = NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT;
+        private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private int renderWeightsEveryNumEpochs = -1;
         private boolean concatBiases = false;
         private boolean constrainGradientToUnitNorm = false;
@@ -1138,7 +1137,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
 
-        public Builder optimizationAlgo(NeuralNetwork.OptimizationAlgorithm optimizationAlgo) {
+        public Builder optimizationAlgo(OptimizationAlgorithm optimizationAlgo) {
             this.optimizationAlgo = optimizationAlgo;
             return this;
         }

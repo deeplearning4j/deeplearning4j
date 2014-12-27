@@ -1,8 +1,6 @@
 package org.deeplearning4j.util;
 
-import static org.junit.Assert.*;
-
-import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +15,7 @@ public class EnumUtilTest {
     @Test
     public void testGetEnum() {
         String val = "0";
-        log.info(String.valueOf(EnumUtil.parse(val, NeuralNetwork.OptimizationAlgorithm.class)));
+        log.info(String.valueOf(EnumUtil.parse(val, OptimizationAlgorithm.class)));
 
     }
 

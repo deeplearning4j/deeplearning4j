@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.api;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -11,6 +12,18 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  */
 public interface Model {
+
+    /**
+     * All models have a fit method
+     */
+    void fit();
+
+    /**
+     * Perform one update  applying the gradient
+     * @param gradient the gradient to apply
+     */
+    void update(Gradient gradient);
+
     /**
      * The score for the model
      * @return the score for the model
@@ -34,7 +47,7 @@ public interface Model {
     /**
      * The number of parameters for the model
      * @return the number of parameters for the model
-     * 
+     *
      */
     int numParams();
 
@@ -79,5 +92,18 @@ public interface Model {
      * @return the current inputs batch size
      */
     public int batchSize();
+
+
+    /**
+     * The configuration for the neural network
+     * @return the configuration for the neural network
+     */
+    NeuralNetConfiguration conf();
+
+    /**
+     * Setter for the configuration
+     * @param conf
+     */
+    void setConf(NeuralNetConfiguration conf);
 
 }

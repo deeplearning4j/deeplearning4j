@@ -3,11 +3,9 @@ package org.deeplearning4j.models.classifiers.sda;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -22,7 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by agibsonccc on 8/28/14.
@@ -45,7 +42,7 @@ public class StackedDenoisingAutoEncoderTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(5e-1f).weightInit(WeightInit.SIZE).constrainGradientToUnitNorm(false)
                 .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE).iterations(10)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE)
+                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).optimizationAlgo(OptimizationAlgorithm.HESSIAN_FREE)
                 .learningRate(1e-1f).nIn(d2.numInputs()).nOut(d2.numOutcomes()).list(4).hiddenLayerSizes(new int[]{600, 300, 200}).override(new NeuralNetConfiguration.ConfOverride() {
                     @Override
                     public void override(int i, NeuralNetConfiguration.Builder builder) {

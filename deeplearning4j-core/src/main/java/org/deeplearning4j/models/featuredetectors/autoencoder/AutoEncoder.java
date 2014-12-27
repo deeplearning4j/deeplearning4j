@@ -2,28 +2,29 @@ package org.deeplearning4j.models.featuredetectors.autoencoder;
 
 
 
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.berkeley.Pair;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.nn.BasePretrainNetwork;
 
-import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 
 /**
  * Normal 2 layer back propagation network
  * @author Adam Gibson
  */
-public class AutoEncoder extends BaseNeuralNetwork {
+public class AutoEncoder extends BasePretrainNetwork {
 
 
-    private AutoEncoder(){}
-    public AutoEncoder(INDArray input, INDArray W, INDArray hbias, INDArray vbias,NeuralNetConfiguration conf) {
-        super(input, W, hbias, vbias,conf);
+    public AutoEncoder(NeuralNetConfiguration conf, INDArray input) {
+        super(conf, input);
     }
-   /**
+
+    /**
      * All neural networks are based on this idea of
      * minimizing reconstruction error.
      * Both RBMs and Denoising AutoEncoders
@@ -38,30 +39,11 @@ public class AutoEncoder extends BaseNeuralNetwork {
     }
 
 
-    @Override
-    public INDArray hiddenActivation(INDArray input) {
-        return getHiddenValues(input);
-
-    }
-
-    /**
-     * iterate one iteration of the network
-     *
-     * @param input  the input to iterate on
-     */
-    @Override
-    public void iterate(INDArray input) {
-        NeuralNetworkGradient gradient = getGradient();
-        vBias.addi(gradient.getvBiasGradient());
-        W.addi(gradient.getwGradient());
-        hBias.addi(gradient.gethBiasGradient());
-    }
 
     @Override
-    public NeuralNetworkGradient getGradient() {
-        double lr = conf.getLr();
-        int iterations = conf.getNumIterations();
-
+    public Gradient getGradient() {
+        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
+        INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
 
         //feed forward
         INDArray out = transform(input);
@@ -72,7 +54,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
         INDArray hBiasGradient = wGradient.sum(1);
         INDArray vBiasGradient = Nd4j.zeros(vBias.rows(), vBias.columns());
 
-        NeuralNetworkGradient ret =  new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
+        Gradient ret =  createGradient(wGradient, vBiasGradient, hBiasGradient);
         return ret;
 
     }
@@ -81,6 +63,9 @@ public class AutoEncoder extends BaseNeuralNetwork {
 
     // Encode
     public INDArray getHiddenValues(INDArray x) {
+        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
+        INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
+
         INDArray preAct;
         if(conf.isConcatBiases()) {
             INDArray concat = Nd4j.vstack(W,hBias.transpose());
@@ -96,6 +81,9 @@ public class AutoEncoder extends BaseNeuralNetwork {
 
     // Decode
     public INDArray getReconstructedInput(INDArray y) {
+        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
+        INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
+
         if(conf.isConcatBiases()) {
             //row already accounted for earlier
             INDArray preAct = y.mmul(W.transpose());
@@ -139,25 +127,6 @@ public class AutoEncoder extends BaseNeuralNetwork {
     }
 
 
-
-    public static class Builder extends BaseNeuralNetwork.Builder<AutoEncoder> {
-
-        public Builder() {
-            this.clazz = AutoEncoder.class;
-        }
-
-
-
-
-        @Override
-        public AutoEncoder build() {
-            AutoEncoder ret = super.build();
-            return ret;
-        }
-
-
-
-    }
 
 
 

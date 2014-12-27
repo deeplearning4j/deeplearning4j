@@ -5,8 +5,6 @@ import static org.junit.Assert.*;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.models.featuredetectors.da.DenoisingAutoEncoder;
-import org.deeplearning4j.models.featuredetectors.rbm.RBM;
-import org.deeplearning4j.nn.api.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;

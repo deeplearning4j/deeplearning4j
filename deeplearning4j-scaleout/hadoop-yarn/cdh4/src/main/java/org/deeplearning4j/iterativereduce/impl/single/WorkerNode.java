@@ -7,10 +7,8 @@ import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.iterativereduce.runtime.io.RecordParser;
 import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWorker;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.nn.BasePretrainNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.nd4j.linalg.dataset.DataSet;
@@ -114,8 +112,8 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     public void setup(Configuration conf) {
         NeuralNetConfiguration conf2 = NeuralNetConfiguration.fromJson(conf.get(NEURAL_NET_CONF));
         try {
-            neuralNetwork = new BaseNeuralNetwork.Builder<>().configure(conf2)
-                    .withClazz((Class<? extends BaseNeuralNetwork>) Class.forName(conf.get(CLASS)))
+            neuralNetwork = new BasePretrainNetwork.Builder<>().configure(conf2)
+                    .withClazz((Class<? extends BasePretrainNetwork>) Class.forName(conf.get(CLASS)))
                     .build();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
