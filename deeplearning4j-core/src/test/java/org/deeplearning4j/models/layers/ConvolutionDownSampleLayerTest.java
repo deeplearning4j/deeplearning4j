@@ -27,7 +27,7 @@ public class ConvolutionDownSampleLayerTest {
                 .filterSize(new int[]{2,2}).numFeatureMaps(2)
                 .weightShape(new int[]{2, 3, 9, 9}).build();
 
-        ConvolutionDownSampleLayer c = new ConvolutionDownSampleLayer(n);
+        ConvolutionDownSampleLayer c = new ConvolutionDownSampleLayer(n,d.getFeatureMatrix());
 
         INDArray convolved = c.activate(d.getFeatureMatrix());
 

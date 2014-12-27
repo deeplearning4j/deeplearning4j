@@ -26,6 +26,10 @@ public class DenoisingAutoEncoder extends BasePretrainNetwork  {
 
     private static final long serialVersionUID = -6445530486350763837L;
 
+    public DenoisingAutoEncoder(NeuralNetConfiguration conf) {
+        super(conf);
+    }
+
     public DenoisingAutoEncoder(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }

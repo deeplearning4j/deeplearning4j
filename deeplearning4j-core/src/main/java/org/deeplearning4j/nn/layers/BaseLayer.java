@@ -31,6 +31,12 @@ public abstract class BaseLayer implements Layer {
     protected ParamInitializer paramInitializer;
 
 
+    public BaseLayer(NeuralNetConfiguration conf) {
+        this.conf = conf;
+
+
+    }
+
     public BaseLayer(NeuralNetConfiguration conf, INDArray input) {
         this.input = input;
         this.conf = conf;
@@ -38,6 +44,10 @@ public abstract class BaseLayer implements Layer {
 
     }
 
+    @Override
+    public void fit() {
+
+    }
 
     @Override
     public void setConf(NeuralNetConfiguration conf) {

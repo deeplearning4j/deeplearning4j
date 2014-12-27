@@ -20,8 +20,6 @@ public class MultiLayerUtil {
     public static List<INDArray> weightMatrices(MultiLayerNetwork network) {
         List<INDArray> ret = new ArrayList<>();
         for(int i = 0; i < network.getLayers().length; i++) {
-            if(network.getLayerWiseConfigurations().isDuplicate(i))
-                continue;
             ret.add(network.getLayers()[i].getParam(DefaultParamInitializer.WEIGHT_KEY));
         }
         return ret;
