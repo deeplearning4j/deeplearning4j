@@ -196,7 +196,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
         INDArray layerInput = null;
 
-        for(int i = 0; i < getnLayers(); i++) {
+        for(int i = 0; i < getnLayers() - 1; i++) {
             if(i == 0)
                 layerInput = getInput();
             else
@@ -828,8 +828,6 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
 
         INDArray ret = Nd4j.toFlattened(list);
-        if(ret.length() != numParams())
-            throw new IllegalStateException("Illegal number of parameters found in the layers with a difference of " + Math.abs(ret.length() - numParams()));
         return ret;
     }
 
@@ -903,8 +901,6 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     public  List<Pair<INDArray,INDArray>> unPack(INDArray param) {
         //more sanity checks!
         int numParams = numParams();
-        if(param.length() != numParams)
-            throw new IllegalArgumentException("Parameter vector not equal of length to " + numParams);
         if(param.rows() != 1)
             param = param.reshape(1,param.length());
         List<Pair<INDArray,INDArray>> ret = new ArrayList<>();
