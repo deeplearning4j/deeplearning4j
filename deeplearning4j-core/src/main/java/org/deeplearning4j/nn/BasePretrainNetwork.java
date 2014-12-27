@@ -10,7 +10,6 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.deeplearning4j.models.classifiers.dbn.DBN;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -21,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Baseline class for any Neural Network used
- * as a layer in a deep network such as an {@link DBN}
+ * as a layer in a deep network *
  * @author Adam Gibson
  *
  */
@@ -35,7 +34,9 @@ public abstract class BasePretrainNetwork extends BaseLayer {
     protected INDArray doMask;
     private static Logger log = LoggerFactory.getLogger(BasePretrainNetwork.class);
 
-
+    public BasePretrainNetwork(NeuralNetConfiguration conf) {
+        super(conf);
+    }
 
     public BasePretrainNetwork(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);

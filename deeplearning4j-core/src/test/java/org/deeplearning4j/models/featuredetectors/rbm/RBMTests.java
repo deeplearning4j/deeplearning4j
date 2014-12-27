@@ -7,14 +7,15 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
+import org.deeplearning4j.nn.api.LayerFactory;
+import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.nn.WeightInit;
-import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,8 +44,9 @@ public class RBMTests {
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(rng)
                 .learningRate(1e-1f).nIn(d.numInputs()).nOut(nOut).build();
 
-        Model rbm = new RBM.Builder().configure(conf)
-                .withInput(d.getFeatureMatrix()).build();
+        LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
+        RBM rbm = layerFactory.create(conf);
+
         rbm.fit(d.getFeatureMatrix());
 
 
@@ -66,8 +68,8 @@ public class RBMTests {
                 nOut(3).build();
 
 
-        RBM r = new RBM.Builder().configure(conf)
-                .build();
+        LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
+        RBM r = layerFactory.create(conf);
         r.fit(d.getFeatureMatrix());
 
     }
@@ -93,7 +95,8 @@ public class RBMTests {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-1f).nIn(6).nOut(4).build();
-        Model rbm = new RBM.Builder().configure(conf).withInput(input).build();
+        LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
+        RBM rbm = layerFactory.create(conf);
         rbm.fit(input);
 
 
@@ -112,8 +115,8 @@ public class RBMTests {
 
         INDArray input = d2.getFeatureMatrix();
 
-        RBM rbm = new RBM.Builder()
-                .configure(conf).withInput(input).build();
+        LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
+        RBM rbm = layerFactory.create(conf);
 
         rbm.fit(input);
 
@@ -128,7 +131,8 @@ public class RBMTests {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-1f).nIn(6).nOut(4).build();
-        Model rbm = new RBM.Builder().configure(conf).build();
+        LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
+        RBM rbm = layerFactory.create(conf);
         INDArray rand2 = Nd4j.rand(new int[]{1, rbm.numParams()});
         rbm.setParams(rand2);
         INDArray getParams = rbm.params();
@@ -158,7 +162,8 @@ public class RBMTests {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-1f).nIn(6).nOut(4).build();
-        RBM rbm = new RBM.Builder().configure(conf).withInput(input).build();
+        LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
+        RBM rbm = layerFactory.create(conf);
         rbm.setInput(input);
         double value = rbm.score();
         rbm.contrastiveDivergence();
@@ -187,12 +192,13 @@ public class RBMTests {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-1f).nIn(6).nOut(4).build();
-        RBM rbm = new RBM.Builder().configure(conf).withInput(input).build();
+        LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
+        RBM rbm = layerFactory.create(conf);
         rbm.setInput(input);
         double value = rbm.score();
 
 
-        NeuralNetworkGradient grad2 = rbm.getGradient();
+        Gradient grad2 = rbm.getGradient();
         rbm.fit(input);
 
     }

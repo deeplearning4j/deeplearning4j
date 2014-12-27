@@ -39,6 +39,10 @@ public class LSTM extends BaseLayer {
     private INDArray xi;
     private INDArray xs;
 
+    public LSTM(NeuralNetConfiguration conf) {
+        super(conf);
+    }
+
     public LSTM(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }

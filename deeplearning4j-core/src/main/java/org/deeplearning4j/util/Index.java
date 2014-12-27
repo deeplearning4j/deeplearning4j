@@ -1,6 +1,5 @@
 package org.deeplearning4j.util;
 
-import org.deeplearning4j.nn.api.Persistable;
 
 import java.io.*;
 import java.util.Map;
@@ -14,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  */
 @SuppressWarnings({"rawtypes","unchecked"})
-public class Index implements Serializable,Persistable {
+public class Index implements Serializable {
 
     /**
      *
@@ -84,27 +83,4 @@ public class Index implements Serializable,Persistable {
 
     }
 
-    @Override
-    public void write(OutputStream os) {
-        try {
-            ObjectOutputStream os2 = new ObjectOutputStream(os);
-            os2.writeObject(this);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-
-
-    @Override
-    public void load(InputStream is) {
-        try {
-            Index i = (Index) new ObjectInputStream(is).readObject();
-            this.indexes = i.indexes;
-            this.objects = i.objects;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

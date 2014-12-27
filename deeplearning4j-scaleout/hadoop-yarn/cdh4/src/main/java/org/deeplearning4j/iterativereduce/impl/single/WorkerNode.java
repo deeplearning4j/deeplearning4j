@@ -8,7 +8,7 @@ import org.deeplearning4j.iterativereduce.runtime.io.RecordParser;
 import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWorker;
 import org.deeplearning4j.nn.BasePretrainNetwork;
-import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.nd4j.linalg.dataset.DataSet;
@@ -27,7 +27,7 @@ import java.util.List;
 public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,DeepLearningConfigurable {
 
     private static final Logger LOG = LoggerFactory.getLogger(WorkerNode.class);
-    private NeuralNetwork neuralNetwork;
+    private Layer neuralNetwork;
     private RecordParser recordParser;
 
 
@@ -77,7 +77,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
             neuralNetwork.fit(params.getFeatureMatrix());
         }
 
-        return new ParameterVectorUpdateable(neuralNetwork.paramsWithVisible());
+        return new ParameterVectorUpdateable(neuralNetwork.params());
     }
 
 
@@ -91,7 +91,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
     @Override
     public ParameterVectorUpdateable getResults() {
-        return new ParameterVectorUpdateable(neuralNetwork.paramsWithVisible());
+        return new ParameterVectorUpdateable(neuralNetwork.params());
     }
 
     /**
@@ -111,16 +111,8 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     @Override
     public void setup(Configuration conf) {
         NeuralNetConfiguration conf2 = NeuralNetConfiguration.fromJson(conf.get(NEURAL_NET_CONF));
-        try {
-            neuralNetwork = new BasePretrainNetwork.Builder<>().configure(conf2)
-                    .withClazz((Class<? extends BasePretrainNetwork>) Class.forName(conf.get(CLASS)))
-                    .build();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
 
-
-
+        neuralNetwork = conf2.getLayerFactory().create(conf2);
 
 
     }

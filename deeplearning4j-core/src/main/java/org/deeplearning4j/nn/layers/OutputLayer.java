@@ -39,6 +39,10 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     //current input and label matrices
     private INDArray labels;
 
+    public OutputLayer(NeuralNetConfiguration conf) {
+        super(conf);
+    }
+
     public OutputLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }

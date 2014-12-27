@@ -4,8 +4,6 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.distributions.Distributions;
-import org.deeplearning4j.models.classifiers.dbn.DBN;
-import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -46,7 +44,6 @@ public class MultiLayerWorkPerformerTests extends NeuralNetWorkPerformerTest {
 
         Configuration conf2 = new Configuration();
         conf2.set(DeepLearningConfigurable.MULTI_LAYER_CONF,json);
-        conf2.set(DeepLearningConfigurable.CLASS,DBN.class.getName());
         WorkerPerformer performer = new BaseMultiLayerNetworkWorkPerformer();
         performer.setup(conf2);
         IrisDataFetcher fetcher = new IrisDataFetcher();

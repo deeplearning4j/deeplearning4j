@@ -1,7 +1,6 @@
 package org.deeplearning4j.scaleout.perform;
 
-import org.deeplearning4j.nn.BasePretrainNetwork;
-import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
@@ -15,7 +14,7 @@ import java.io.Serializable;
  * @author Adam Gibson
  */
 public class NeuralNetWorkPerformer implements WorkerPerformer {
-    protected NeuralNetwork neuralNetwork;
+    protected Layer neuralNetwork;
 
     public NeuralNetWorkPerformer() {
 
@@ -47,12 +46,7 @@ public class NeuralNetWorkPerformer implements WorkerPerformer {
     @Override
     public void setup(Configuration conf) {
         NeuralNetConfiguration conf2 = NeuralNetConfiguration.fromJson(conf.get(NEURAL_NET_CONF));
-        try {
-            this.neuralNetwork = new BasePretrainNetwork.Builder <>()
-                    .asType((Class<BasePretrainNetwork>) Class.forName(conf.get(CLASS)))
-                    .configure(conf2).build();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+
+        this.neuralNetwork = conf2.getLayerFactory().create(conf2);
     }
 }

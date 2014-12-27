@@ -5,8 +5,11 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.WeightInit;
+import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -30,14 +33,13 @@ public class OutputLayerTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .activationFunction(Activations.softMaxRows())
                 .iterations(100).weightInit(WeightInit.ZERO)
                 .rng(gen).regularization(true).l2(2e-4).momentum(0.9)
-                .learningRate(1e-3).nIn(4).nOut(3).build();
-
-        OutputLayer l = new OutputLayer.Builder()
-                .configure(conf).build();
+                .learningRate(1e-1).nIn(4).nOut(3).build();
+        LayerFactory layerFactory = new DefaultLayerFactory(OutputLayer.class);
+        OutputLayer l = layerFactory.create(conf);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
 

@@ -10,6 +10,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.WeightInit;
+import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.deserializers.ActivationFunctionDeSerializer;
 import org.deeplearning4j.nn.conf.deserializers.DistributionDeSerializer;
@@ -75,6 +76,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected transient RealDistribution dist;
     protected transient Collection<IterationListener> listeners;
     protected transient StepFunction stepFunction = new GradientStepFunction();
+    protected transient LayerFactory layerFactory;
     //recurrent output
     protected int recurrentOutput = 100;
     protected double dampingFactor = 100;
@@ -111,7 +113,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
 
-    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, int k, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, double dropOut, boolean applySparsity, WeightInit weightInit, OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride,int[] featureMapSize,int numInFeatureMaps,Collection<IterationListener> listeners,int recurrentOutput) {
+    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, int k, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, double dropOut, boolean applySparsity, WeightInit weightInit, OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride,int[] featureMapSize,int numInFeatureMaps,Collection<IterationListener> listeners,int recurrentOutput,LayerFactory layerFactory) {
+        this.layerFactory = layerFactory;
         this.recurrentOutput = recurrentOutput;
         this.listeners = listeners;
         this.sparsity = sparsity;
@@ -155,6 +158,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
     public NeuralNetConfiguration(NeuralNetConfiguration neuralNetConfiguration) {
+        this.layerFactory = neuralNetConfiguration.layerFactory;
+        this.recurrentOutput = neuralNetConfiguration.recurrentOutput;
         this.sparsity = neuralNetConfiguration.sparsity;
         this.useAdaGrad = neuralNetConfiguration.useAdaGrad;
         this.lr = neuralNetConfiguration.lr;
@@ -194,6 +199,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
         this.hiddenUnit = neuralNetConfiguration.hiddenUnit;
+    }
+
+    public LayerFactory getLayerFactory() {
+        return layerFactory;
+    }
+
+    public void setLayerFactory(LayerFactory layerFactory) {
+        this.layerFactory = layerFactory;
     }
 
     public double getDampingFactor() {
@@ -902,13 +915,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private Collection<IterationListener> listeners;
         private int recurrentOutput = 100;
         private StepFunction stepFunction = new GradientStepFunction();
-        private double dampingFactor = 100;
+        private LayerFactory layerFactory;
 
 
-        public Builder dampingFactor(double dampingFactor) {
-            this.dampingFactor = dampingFactor;
+        public Builder layerFactory(LayerFactory layerFactory) {
+            this.layerFactory = layerFactory;
             return this;
         }
+
 
         public Builder stepFunction(StepFunction stepFunction) {
             this.stepFunction = stepFunction;
@@ -1103,7 +1117,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,  renderWeightsEveryNumEpochs,
                     concatBiases,  constrainGradientToUnitNorm,  rng,
-                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType,weightShape,filterSize,numFeatureMaps,stride,featureMapSize,numInFeatureMaps,listeners,recurrentOutput);
+                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType,weightShape,filterSize,numFeatureMaps,stride,featureMapSize,numInFeatureMaps,listeners,recurrentOutput,layerFactory);
             ret.useAdaGrad = this.adagrad;
             ret.stepFunction = stepFunction;
             return ret;

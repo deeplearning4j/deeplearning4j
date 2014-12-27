@@ -20,8 +20,6 @@ import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache
 import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
-import org.eclipse.jetty.util.ConcurrentHashSet;
-import org.deeplearning4j.nn.api.Persistable;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
@@ -41,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * @author Adam Gibson
  *
  */
-public class Word2Vec extends WordVectorsImpl implements Persistable {
+public class Word2Vec extends WordVectorsImpl  {
 
 
     protected static final long serialVersionUID = -2367495638286018038L;
@@ -383,38 +381,6 @@ public class Word2Vec extends WordVectorsImpl implements Persistable {
 
 
 
-
-    @Override
-    public void write(OutputStream os) {
-        try {
-            ObjectOutputStream dos = new ObjectOutputStream(os);
-
-            dos.writeObject(this);
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-    @Override
-    public void load(InputStream is) {
-        try {
-            ObjectInputStream ois = new ObjectInputStream(is);
-            Word2Vec vec = (Word2Vec) ois.readObject();
-            this.alpha = vec.alpha;
-            this.minWordFrequency = vec.minWordFrequency;
-            this.sample = vec.sample;
-            this.stopWords = vec.stopWords;
-            this.window = vec.window;
-
-        }catch(Exception e) {
-            throw new RuntimeException(e);
-        }
-
-
-
-    }
 
 
     /**

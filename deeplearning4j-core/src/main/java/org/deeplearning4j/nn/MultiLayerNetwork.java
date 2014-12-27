@@ -44,7 +44,6 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     private static final long serialVersionUID = -5029161847383716484L;
     //the hidden neuralNets
     protected Layer[] layers;
-    protected LayerFactory[] layerFactories;
 
 
     //default training examples and associated neuralNets
@@ -77,6 +76,11 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     /* Reflection/factory constructor */
     protected MultiLayerNetwork() {}
 
+
+
+    public MultiLayerNetwork(MultiLayerConfiguration conf) {
+        this.layerWiseConfigurations = conf;
+    }
 
     protected MultiLayerNetwork(INDArray input, INDArray labels) {
         this.input = input.dup();
@@ -309,7 +313,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
                     layerWiseConfigurations.getConf(i).setnIn(inputSize);
                     layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
                     // construct sigmoid_layer
-                    layers[i] = layerFactories[i].create(layerWiseConfigurations.getConf(i));
+                    layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(layerWiseConfigurations.getConf(i));
                 }
                 else {
                     if (input != null)
@@ -333,7 +337,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
         last.setnIn(secondToLast.getnOut());
 
 
-        this.layers[layers.length - 1] = layerFactories[layers.length - 1].create(last);
+        this.layers[layers.length - 1] = last.getLayerFactory().create(last);
 
         initCalled = true;
         initMask();

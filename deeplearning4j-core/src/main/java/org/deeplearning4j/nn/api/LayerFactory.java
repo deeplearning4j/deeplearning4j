@@ -23,7 +23,7 @@ public interface LayerFactory {
      * @param numLayers the number of total layers in the net work
      * @return the created layer
      */
-    Layer create(NeuralNetConfiguration conf,int index,int numLayers);
+    <E extends Layer> E create(NeuralNetConfiguration conf,int index,int numLayers);
 
     /**
      *
@@ -31,7 +31,7 @@ public interface LayerFactory {
      * @param conf the configuration to create the layer based on
      * @return the created layer
      */
-    Layer create(NeuralNetConfiguration conf);
+    <E extends Layer> E create(NeuralNetConfiguration conf);
 
 
     /**
