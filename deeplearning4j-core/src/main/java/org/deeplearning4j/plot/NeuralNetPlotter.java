@@ -41,16 +41,12 @@ public class NeuralNetPlotter implements Serializable {
     }
 
 
-    public void renderFilter(INDArray w,int r,int c,long length) {
+    public void renderFilter(INDArray w) {
+        INDArray render2 = w.transpose();
         try {
-            String filePath = writeMatrix(w);
-            Process is = Runtime.getRuntime().exec("python /tmp/plot.py filter " + filePath + " " + r + " " + c + " " + length);
-            log.info("Std out " + IOUtils.readLines(is.getInputStream()).toString());
-            log.info("Rendering weights " + filePath);
-            log.error(IOUtils.readLines(is.getErrorStream()).toString());
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            render.renderFilters(render2, "currimg.png", w.columns() , w.rows(),w.slices());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
     }
@@ -121,14 +117,11 @@ public class NeuralNetPlotter implements Serializable {
 
         FilterRenderer render = new FilterRenderer();
         try {
-            if(network.getParam(DefaultParamInitializer.WEIGHT_KEY).shape().length > 2) {
-                INDArray w =  network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
-                INDArray render2 = w.transpose();
-                render.renderFilters(render2, "currimg.png", w.columns() , w.rows(),w.slices());
+            INDArray w =  network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
+            INDArray render2 = w;
+            render.renderFilters(render2, "currimg.png", (int)Math.sqrt(render2.rows()) , (int) Math.sqrt( render2.rows()),patchesPerRow);
 
-            }
-            else
-                render.renderFilters(network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup(), "currimg.png", (int)Math.sqrt(network.getParam(DefaultParamInitializer.WEIGHT_KEY).rows()) , (int) Math.sqrt( network.getParam(DefaultParamInitializer.WEIGHT_KEY).rows()),patchesPerRow);
+
 
 
         } catch (Exception e) {

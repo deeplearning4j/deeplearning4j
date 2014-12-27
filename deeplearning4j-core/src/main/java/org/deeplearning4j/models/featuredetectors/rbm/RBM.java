@@ -109,10 +109,7 @@ public  class RBM extends BasePretrainNetwork {
 
 
         int k = conf.getK();
-        double learningRate = conf.getLr();
-
-
-		/*
+/*
 		 * Cost and updates dictionary.
 		 * This is the update rules for weights and biases
 		 */
@@ -451,9 +448,6 @@ public  class RBM extends BasePretrainNetwork {
      */
     @Override
     public void fit(INDArray input) {
-        if(input != null)
-            this.input = Transforms.stabilize(input, 1);
-
         if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN) {
             this.sigma = input.var(0);
             this.sigma.divi(input.rows());
