@@ -34,4 +34,11 @@ public interface LayerFactory {
     Layer create(NeuralNetConfiguration conf);
 
 
+    /**
+     * Get the param initializer used for initializing layers
+     * @return the param initializer
+     */
+    ParamInitializer getInitializer();
+
+
 }

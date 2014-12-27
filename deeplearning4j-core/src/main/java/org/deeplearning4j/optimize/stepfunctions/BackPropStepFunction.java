@@ -1,6 +1,6 @@
 package org.deeplearning4j.optimize.stepfunctions;
 
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.nn.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -11,9 +11,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class BackPropStepFunction  implements StepFunction {
 
-    private BaseMultiLayerNetwork network;
+    private MultiLayerNetwork network;
 
-    public BackPropStepFunction(BaseMultiLayerNetwork network) {
+    public BackPropStepFunction(MultiLayerNetwork network) {
         this.network = network;
     }
 

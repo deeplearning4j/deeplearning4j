@@ -3,9 +3,7 @@ package org.deeplearning4j.nn.conf;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * Configuration for a multi layer network
@@ -23,7 +21,9 @@ public class MultiLayerConfiguration implements Serializable {
     protected boolean sampleFromHiddenActivations = true;
     private boolean useRBMPropUpAsActivations = true;
     private double dampingFactor = 100;
+
     private MultiLayerConfiguration() {}
+
 
 
 
@@ -147,7 +147,6 @@ public class MultiLayerConfiguration implements Serializable {
 
         private List<NeuralNetConfiguration> confs = new ArrayList<>();
         private int[] hiddenLayerSizes;
-        private boolean forceNumIterations = false;
         private boolean useDropConnect = false;
         private boolean useGaussNewtonVectorProductBackProp = false;
         protected boolean pretrain = true;
@@ -186,10 +185,7 @@ public class MultiLayerConfiguration implements Serializable {
             return this;
         }
 
-        public Builder forceNumIterations(boolean forceNumIterations) {
-            this.forceNumIterations = forceNumIterations;
-            return this;
-        }
+
 
         public Builder confs(List<NeuralNetConfiguration> confs) {
             this.confs = confs;

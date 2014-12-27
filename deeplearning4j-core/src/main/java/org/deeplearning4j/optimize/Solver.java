@@ -1,7 +1,7 @@
 package org.deeplearning4j.optimize;
 
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.solvers.*;
@@ -26,7 +26,7 @@ public class Solver {
     }
 
     public BaseOptimizer getOptimizer() {
-        NeuralNetwork.OptimizationAlgorithm algo = conf.getOptimizationAlgo();
+        OptimizationAlgorithm algo = conf.getOptimizationAlgo();
         switch(algo) {
             case LBFGS:
                 return new LBFGS(conf,conf.getStepFunction(),listeners,model);

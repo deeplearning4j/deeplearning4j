@@ -8,7 +8,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.sampling.Sampling;
-import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.nn.BasePretrainNetwork;
 
 
 
@@ -22,7 +22,7 @@ public class LoadAndDraw {
 		@SuppressWarnings("unchecked")
 		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[0]));
 		
-		BaseNeuralNetwork network = (BaseNeuralNetwork) ois.readObject();
+		BasePretrainNetwork network = (BasePretrainNetwork) ois.readObject();
 		
 		
 		DataSet test = null;

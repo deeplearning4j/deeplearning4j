@@ -1,7 +1,7 @@
 package org.deeplearning4j.optimize;
 
 import org.nd4j.linalg.dataset.DataSet;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.nn.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OutputLayerTrainingEvaluator implements TrainingEvaluator {
 
-    private BaseMultiLayerNetwork network;
+    private MultiLayerNetwork network;
     private double patience;
     private double patienceIncrease;
     private double bestLoss;
@@ -24,7 +24,7 @@ public class OutputLayerTrainingEvaluator implements TrainingEvaluator {
     private static Logger log = LoggerFactory.getLogger(OutputLayerTrainingEvaluator.class);
 
 
-    public OutputLayerTrainingEvaluator(BaseMultiLayerNetwork network, double patience, double patienceIncrease, double bestLoss, int validationEpochs, int miniBatchSize, DataSet testSet, double improvementThreshold) {
+    public OutputLayerTrainingEvaluator(MultiLayerNetwork network, double patience, double patienceIncrease, double bestLoss, int validationEpochs, int miniBatchSize, DataSet testSet, double improvementThreshold) {
         this.network = network;
         this.patience = 4 * miniBatchSize;
         this.patienceIncrease = patienceIncrease;
@@ -112,7 +112,7 @@ public class OutputLayerTrainingEvaluator implements TrainingEvaluator {
 
 
     public static class Builder {
-        private BaseMultiLayerNetwork network;
+        private MultiLayerNetwork network;
         private double patience;
         private double patienceIncrease;
         private double bestLoss;
@@ -122,7 +122,7 @@ public class OutputLayerTrainingEvaluator implements TrainingEvaluator {
         private double improvementThreshold;
 
 
-        public Builder withNetwork(BaseMultiLayerNetwork network) {
+        public Builder withNetwork(MultiLayerNetwork network) {
             this.network = network;
             return this;
         }

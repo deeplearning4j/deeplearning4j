@@ -3,7 +3,7 @@ package org.deeplearning4j.models.featuredetectors.autoencoder;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.nn.MultiLayerNetwork;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -85,13 +85,13 @@ import java.util.Map;
  *
  *
  */
-public class SemanticHashing extends BaseMultiLayerNetwork {
+public class SemanticHashing extends MultiLayerNetwork {
 
     /**
      *
      */
     private static final long serialVersionUID = -3571832097247806784L;
-    private BaseMultiLayerNetwork encoder;
+    private MultiLayerNetwork encoder;
     private static Logger log = LoggerFactory.getLogger(SemanticHashing.class);
 
     public SemanticHashing(){}
@@ -276,11 +276,11 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
 
 
 
-    public BaseMultiLayerNetwork getEncoder() {
+    public MultiLayerNetwork getEncoder() {
         return encoder;
     }
 
-    public void setEncoder(BaseMultiLayerNetwork encoder) {
+    public void setEncoder(MultiLayerNetwork encoder) {
         this.encoder = encoder;
     }
 
@@ -368,14 +368,14 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
 
 
 
-    public static class Builder extends BaseMultiLayerNetwork.Builder<SemanticHashing> {
-        private  BaseMultiLayerNetwork encoder;
+    public static class Builder extends MultiLayerNetwork.Builder<SemanticHashing> {
+        private MultiLayerNetwork encoder;
 
         public Builder() {
             clazz = SemanticHashing.class;
         }
 
-        public Builder withEncoder(BaseMultiLayerNetwork encoder) {
+        public Builder withEncoder(MultiLayerNetwork encoder) {
             this.encoder = encoder;
             return this;
         }
@@ -449,7 +449,7 @@ public class SemanticHashing extends BaseMultiLayerNetwork {
         }
 
         @Override
-        public Builder withClazz(Class<? extends BaseMultiLayerNetwork> clazz) {
+        public Builder withClazz(Class<? extends MultiLayerNetwork> clazz) {
             super.withClazz(clazz);
             return this;
         }

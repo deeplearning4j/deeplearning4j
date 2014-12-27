@@ -8,7 +8,7 @@ import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.nn.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
 
@@ -32,7 +32,7 @@ public class StochasticHessianFree extends BaseOptimizer {
     double initialStepSize = 1f;
     double tolerance = 1e-5f;
     double gradientTolerance = 0f;
-    private BaseMultiLayerNetwork network;
+    private MultiLayerNetwork network;
     int maxIterations = 10000;
     private String myName = "";
     private static Logger log = LoggerFactory.getLogger(StochasticHessianFree.class);
@@ -57,9 +57,9 @@ public class StochasticHessianFree extends BaseOptimizer {
 
 
     void setup() {
-        if(!(model instanceof BaseMultiLayerNetwork))
+        if(!(model instanceof MultiLayerNetwork))
             return;
-        network = (BaseMultiLayerNetwork) model;
+        network = (MultiLayerNetwork) model;
         xi = network.pack();
         ch = Nd4j.zeros(1, xi.length());
     }
@@ -205,7 +205,7 @@ public class StochasticHessianFree extends BaseOptimizer {
 
     @Override
     public boolean optimize() {
-        if(!(model instanceof BaseMultiLayerNetwork))
+        if(!(model instanceof MultiLayerNetwork))
             return true;
 
         myName = Thread.currentThread().getName();

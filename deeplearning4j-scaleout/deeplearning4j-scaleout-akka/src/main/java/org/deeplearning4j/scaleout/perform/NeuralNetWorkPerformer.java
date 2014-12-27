@@ -1,6 +1,6 @@
 package org.deeplearning4j.scaleout.perform;
 
-import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.nn.BasePretrainNetwork;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.scaleout.conf.Configuration;
@@ -48,8 +48,8 @@ public class NeuralNetWorkPerformer implements WorkerPerformer {
     public void setup(Configuration conf) {
         NeuralNetConfiguration conf2 = NeuralNetConfiguration.fromJson(conf.get(NEURAL_NET_CONF));
         try {
-            this.neuralNetwork = new BaseNeuralNetwork.Builder <>()
-                    .asType((Class<BaseNeuralNetwork>) Class.forName(conf.get(CLASS)))
+            this.neuralNetwork = new BasePretrainNetwork.Builder <>()
+                    .asType((Class<BasePretrainNetwork>) Class.forName(conf.get(CLASS)))
                     .configure(conf2).build();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
