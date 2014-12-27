@@ -1,6 +1,6 @@
 package org.deeplearning4j.optimize.stepfunctions;
 
-import org.deeplearning4j.nn.MultiLayerNetwork;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 

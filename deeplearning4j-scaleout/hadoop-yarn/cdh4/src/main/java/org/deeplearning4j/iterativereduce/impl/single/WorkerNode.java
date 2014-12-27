@@ -7,7 +7,6 @@ import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.iterativereduce.runtime.io.RecordParser;
 import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWorker;
-import org.deeplearning4j.nn.BasePretrainNetwork;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;

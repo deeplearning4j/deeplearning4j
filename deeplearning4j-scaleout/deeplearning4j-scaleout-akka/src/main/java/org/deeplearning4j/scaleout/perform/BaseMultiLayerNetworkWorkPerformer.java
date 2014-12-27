@@ -1,6 +1,6 @@
 package org.deeplearning4j.scaleout.perform;
 
-import org.deeplearning4j.nn.MultiLayerNetwork;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.scaleout.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;

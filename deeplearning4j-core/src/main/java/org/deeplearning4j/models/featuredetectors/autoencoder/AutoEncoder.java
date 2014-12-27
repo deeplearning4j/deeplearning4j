@@ -10,7 +10,7 @@ import org.deeplearning4j.berkeley.Pair;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.deeplearning4j.nn.BasePretrainNetwork;
+import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 
 
 /**

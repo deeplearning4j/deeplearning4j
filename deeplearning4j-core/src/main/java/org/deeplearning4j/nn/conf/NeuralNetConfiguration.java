@@ -9,7 +9,7 @@ import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
-import org.deeplearning4j.nn.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.deserializers.ActivationFunctionDeSerializer;
@@ -941,7 +941,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
         public Builder clone() {
-            Builder b = new Builder().activationFunction(activationFunction)
+            Builder b = new Builder().activationFunction(activationFunction).layerFactory(layerFactory)
                     .adagradResetIterations(resetAdaGradIterations).applySparsity(applySparsity)
                     .concatBiases(concatBiases).constrainGradientToUnitNorm(constrainGradientToUnitNorm)
                     .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize).recurrentOutput(recurrentOutput)

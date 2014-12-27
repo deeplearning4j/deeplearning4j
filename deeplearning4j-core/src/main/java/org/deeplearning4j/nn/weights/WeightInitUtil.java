@@ -1,15 +1,12 @@
-package org.deeplearning4j.nn;
+package org.deeplearning4j.nn.weights;
 
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.distributions.Distributions;
 import org.nd4j.linalg.api.activation.ActivationFunction;
-import org.nd4j.linalg.api.activation.RectifiedLinear;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.util.ArrayUtil;
 
 
 /**

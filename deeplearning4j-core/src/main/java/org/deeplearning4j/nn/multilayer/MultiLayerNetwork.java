@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn;
+package org.deeplearning4j.nn.multilayer;
 
 
 
@@ -80,6 +80,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
         this.layerWiseConfigurations = conf;
+        this.defaultConfiguration = conf.getConf(0);
     }
 
     protected MultiLayerNetwork(INDArray input, INDArray labels) {
@@ -315,13 +316,13 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
                     // construct sigmoid_layer
                     layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(layerWiseConfigurations.getConf(i));
                 }
-                else {
+                else if(i < getLayers().length - 1) {
                     if (input != null)
                         layerInput = activationFromPrevLayer(i - 1, layerInput);
 
                     layerWiseConfigurations.getConf(i).setnIn(inputSize);
                     layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
-
+                    layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(layerWiseConfigurations.getConf(i));
 
                 }
 
@@ -1547,7 +1548,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     }
 
     public int getnLayers() {
-        return layers.length / 2;
+        return layerWiseConfigurations.getHiddenLayerSizes().length + 1;
     }
 
 
