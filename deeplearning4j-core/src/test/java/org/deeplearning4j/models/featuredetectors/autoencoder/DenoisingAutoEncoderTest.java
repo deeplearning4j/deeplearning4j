@@ -8,6 +8,8 @@ import org.deeplearning4j.models.featuredetectors.da.DenoisingAutoEncoder;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -28,14 +30,15 @@ public class DenoisingAutoEncoderTest {
                 DataSet d2 = fetcher.next();
 
                 INDArray input = d2.getFeatureMatrix();
-                LayerFactory layerFactory = new DefaultLayerFactory(DenoisingAutoEncoder.class);
+                LayerFactory layerFactory = LayerFactories.getFactory(DenoisingAutoEncoder.class);
                 DenoisingAutoEncoder da = layerFactory.create(conf);
 
-                assertEquals(471000,da.params().length());
+                assertEquals(471784,da.params().length());
 
                 da.fit(input);
 
-
+                NeuralNetPlotter plotter = new NeuralNetPlotter();
+                plotter.plotNetworkGradient(da,da.getGradient(),10);
         }
 
 

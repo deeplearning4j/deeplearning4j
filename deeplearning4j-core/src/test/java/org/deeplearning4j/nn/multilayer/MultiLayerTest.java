@@ -11,7 +11,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
-import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,7 +32,10 @@ public class MultiLayerTest {
     public void testDbn() {
         LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
+                .optimizationAlgo(OptimizationAlgorithm.HESSIAN_FREE)
+                .constrainGradientToUnitNorm(true).l2(2e-4)
+                .regularization(true).iterations(100)
+                .activationFunction(Activations.tanh())
                 .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
                 .list(3).hiddenLayerSizes(new int[]{3, 2}).override(new NeuralNetConfiguration.ConfOverride() {
                     @Override

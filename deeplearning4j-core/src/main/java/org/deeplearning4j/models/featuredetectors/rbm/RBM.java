@@ -223,7 +223,7 @@ public  class RBM extends BasePretrainNetwork {
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
         INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
 
-        INDArray wxB = visibleSample.mmul(W).addiRowVector(hBias);
+        INDArray wxB = visibleSample.mmul(W).addRowVector(hBias);
         double vBiasTerm = Nd4j.getBlasWrapper().dot(visibleSample, vBias);
         double hBiasTerm = log(exp(wxB).add(1)).sum(Integer.MAX_VALUE).getDouble(0);
         return -hBiasTerm - vBiasTerm;
