@@ -164,7 +164,7 @@ public  class RBM extends BasePretrainNetwork {
 		/*
 		 * Update gradient parameters
 		 */
-        INDArray wGradient = input.transpose().mmul(probHidden.getSecond()).sub(
+        INDArray wGradient = input.transpose().mmul(probHidden.getSecond()).subi(
                 nvSamples.transpose().mmul(nhMeans)
         );
 
@@ -174,7 +174,7 @@ public  class RBM extends BasePretrainNetwork {
 
         if(conf.getSparsity() != 0)
             //all hidden units must stay around this number
-            hBiasGradient = probHidden.getSecond().rsubi(conf.getSparsity()).mean(0);
+            hBiasGradient = probHidden.getSecond().rsub(conf.getSparsity()).mean(0);
         else
             //update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
             hBiasGradient = probHidden.getSecond().sub(nhMeans).mean(0);
