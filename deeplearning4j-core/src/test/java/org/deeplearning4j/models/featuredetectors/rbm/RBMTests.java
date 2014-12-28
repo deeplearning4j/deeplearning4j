@@ -136,8 +136,6 @@ public class RBMTests {
         rbm.fit(input);
 
 
-        NeuralNetPlotter plotter = new NeuralNetPlotter();
-        plotter.plotNetworkGradient(rbm,rbm.getGradient(),10);
 
 
 
