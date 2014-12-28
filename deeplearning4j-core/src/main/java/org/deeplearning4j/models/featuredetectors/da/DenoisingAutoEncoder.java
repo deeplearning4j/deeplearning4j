@@ -134,14 +134,14 @@ public class DenoisingAutoEncoder extends BasePretrainNetwork  {
 
         INDArray z = getReconstructedInput(y);
         INDArray visibleLoss =  input.sub(z);
-        INDArray hiddenLoss = conf.getSparsity() == 0 ? visibleLoss.mmul(W).mul(y).mul(y.rsub(1)) :
-        	visibleLoss.mmul(W).mul(y).mul(y.add(- conf.getSparsity()));
+        INDArray hiddenLoss = conf.getSparsity() == 0 ? visibleLoss.mmul(W).muli(y).muli(y.rsub(1)) :
+        	visibleLoss.mmul(W).muli(y).mul(y.addi(- conf.getSparsity()));
 
 
-        INDArray wGradient = corruptedX.transpose().mmul(hiddenLoss).add(visibleLoss.transpose().mmul(y));
+        INDArray wGradient = corruptedX.transpose().mmul(hiddenLoss).addi(visibleLoss.transpose().mmul(y));
 
-        INDArray hBiasGradient = hiddenLoss.mean(0);
-        INDArray vBiasGradient = visibleLoss.mean(0);
+        INDArray hBiasGradient = hiddenLoss.sum(0);
+        INDArray vBiasGradient = visibleLoss.sum(0);
 
         Gradient gradient = createGradient(wGradient, vBiasGradient, hBiasGradient);
 

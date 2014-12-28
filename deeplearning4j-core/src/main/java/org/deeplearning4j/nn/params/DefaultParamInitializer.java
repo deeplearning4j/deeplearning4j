@@ -21,7 +21,8 @@ public class DefaultParamInitializer implements ParamInitializer {
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
         params.put(WEIGHT_KEY,createWeightMatrix(conf));
         params.put(BIAS_KEY,createBias(conf));
-
+        conf.getGradientList().add(WEIGHT_KEY);
+        conf.getGradientList().add(BIAS_KEY);
 
     }
 

@@ -79,8 +79,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected transient LayerFactory layerFactory;
     //recurrent output
     protected int recurrentOutput = 100;
-    protected double dampingFactor = 100;
-
+    //gradient keys used for ensuring order when getting and setting the gradient
+    protected List<String> gradientList = new ArrayList<>();
     private void readObject(java.io.ObjectInputStream in)
             throws IOException, ClassNotFoundException {
         in.defaultReadObject();
@@ -209,12 +209,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.layerFactory = layerFactory;
     }
 
-    public double getDampingFactor() {
-        return dampingFactor;
+    public List<String> getGradientList() {
+        return gradientList;
     }
 
-    public void setDampingFactor(double dampingFactor) {
-        this.dampingFactor = dampingFactor;
+    public void setGradientList(List<String> gradientList) {
+        this.gradientList = gradientList;
     }
 
     public StepFunction getStepFunction() {

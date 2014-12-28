@@ -16,6 +16,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -66,7 +68,10 @@ public abstract class BaseLayer implements Layer {
      */
     @Override
     public INDArray params() {
-        return Nd4j.toFlattened(params.values());
+        List<INDArray> ret = new ArrayList<>();
+        for(String s : conf.getGradientList())
+            ret.add(params.get(s));
+        return Nd4j.toFlattened(ret);
     }
 
     @Override
@@ -201,7 +206,7 @@ public abstract class BaseLayer implements Layer {
      */
     @Override
     public void merge(Layer l,int batchSize) {
-          setParams(params().addi(l.params().divi(batchSize)));
+        setParams(params().addi(l.params().divi(batchSize)));
     }
 
 
