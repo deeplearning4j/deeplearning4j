@@ -120,7 +120,7 @@ public class RBMTests {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9)
-                .iterations(100)
+                .iterations(100).weightInit(WeightInit.NORMALIZED)
                 .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT).constrainGradientToUnitNorm(true)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(new MersenneTwister(123))
                 .learningRate(1e-1f).nIn(784).nOut(600).build();
@@ -136,8 +136,8 @@ public class RBMTests {
         rbm.fit(input);
 
 
-       // NeuralNetPlotter plotter = new NeuralNetPlotter();
-       // plotter.plotNetworkGradient(rbm,rbm.getGradient(),10);
+        NeuralNetPlotter plotter = new NeuralNetPlotter();
+        plotter.plotNetworkGradient(rbm,rbm.getGradient(),10);
 
 
 
