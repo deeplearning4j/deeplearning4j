@@ -157,7 +157,7 @@ public class StochasticHessianFree extends BaseOptimizer {
             }
 
             //explore in this direction and obtain a score
-            newScore = -network.score(params.add(p.mul(rate)));
+            newScore = network.score(params.add(p.mul(rate)));
         }
 
         if(j == numSearches) {
@@ -182,11 +182,11 @@ public class StochasticHessianFree extends BaseOptimizer {
     public Pair<INDArray,Double> cgBackTrack(List<INDArray> chs,INDArray p) {
         INDArray params = network.params();
         double score = network.score(p.add(params));
-        double currMin = -network.score();
+        double currMin = network.score();
         int i = chs.size() - 2;
 
         for(; i > 0; i--) {
-            double score2 = -network.score(params.add(chs.get(i)));
+            double score2 = network.score(params.add(chs.get(i)));
             if(score2 < score || score2 < currMin) {
                 i++;
                 score = score2;
@@ -212,7 +212,7 @@ public class StochasticHessianFree extends BaseOptimizer {
         if (converged)
             return true;
 
-        score = -network.score();
+        score = network.score();
 
         xi = network.params();
 
@@ -240,8 +240,8 @@ public class StochasticHessianFree extends BaseOptimizer {
 
            p = cgBackTrack.getFirst();
 
-           double rho = network.reductionRatio(cgBackTrack.getFirst(), -network.score(), cgBackTrack.getSecond(), gradient);
-           double newScore = -network.score(cgBackTrack.getFirst());
+           double rho = network.reductionRatio(cgBackTrack.getFirst(), network.score(), cgBackTrack.getSecond(), gradient);
+           double newScore = network.score(cgBackTrack.getFirst());
 
            step = lineSearch(newScore,gradient,p);
            network.dampingUpdate(rho,boost,decrease);

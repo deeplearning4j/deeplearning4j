@@ -356,11 +356,6 @@ public class FilterRenderer {
 
 
         outer:  for ( int col = 0; col < data.columns(); col++ ) {
-
-
-
-
-
             int curX = (col % patchesPerRow ) * (patchWidth + patchBorder );
             int curY = col / patchesPerRow * ( patchHeight + patchBorder );
 

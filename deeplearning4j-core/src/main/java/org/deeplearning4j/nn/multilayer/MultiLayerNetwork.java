@@ -510,7 +510,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
         LinAlgExceptions.assertValidNum(rix);
 
         //errors
-        for (int i = getnLayers(); i >= 0; i--) {
+        for (int i = getnLayers() - 1; i >= 0; i--) {
             //W^t * error^l + 1
             deltas[i] = activations.get(i).transpose().mmul(rix);
             applyDropConnectIfNecessary(deltas[i]);
@@ -521,7 +521,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
         }
 
-        for (int i = 0; i < deltas.length; i++) {
+        for (int i = 0; i < deltas.length - 1; i++) {
             if (defaultConfiguration.isConstrainGradientToUnitNorm()) {
                 double sum = deltas[i].sum(Integer.MAX_VALUE).getDouble(0);
                 if(sum > 0)
@@ -900,7 +900,6 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
      */
     public  List<Pair<INDArray,INDArray>> unPack(INDArray param) {
         //more sanity checks!
-        int numParams = numParams();
         if(param.rows() != 1)
             param = param.reshape(1,param.length());
         List<Pair<INDArray,INDArray>> ret = new ArrayList<>();
@@ -1442,9 +1441,6 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
             R.add(R.get(i).mmul(W.get(i)).addi(acts.get(i).mmul(vWvB.get(i).getFirst().addRowVector(vWvB.get(i).getSecond()))).muli((derivative.applyDerivative(acts.get(i + 1)))));
         }
 
-        //R[i] * W[i] + acts[i] * (vW[i] + vB[i]) .* f'([acts[i + 1])
-        R.add(R.get(R.size() - 1).mmul(W.get(W.size() - 1)).addi(acts.get(acts.size() - 2).mmul(vWvB.get(vWvB.size() - 1).getFirst().addRowVector(vWvB.get(vWvB.size() - 1).getSecond()))).muli((getOutputLayer().conf().getActivationFunction().applyDerivative(acts.get(acts.size() - 1)))));
-
         return R;
     }
 
@@ -1499,12 +1495,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
         }
 
-        INDArray logLayerGradient = deltas.get(getnLayers());
-        INDArray biasGradient = deltas.get(getnLayers()).mean(0);
-
-        list.add(new Pair<>(logLayerGradient, biasGradient));
-
-        INDArray pack = pack(list).addi(mask.mul(defaultConfiguration.getL2()).mul(v)).addi(v.mul(layerWiseConfigurations.getDampingFactor()));
+        INDArray pack = pack(list).addi(mask.mul(defaultConfiguration.getL2()).muli(v)).addi(v.mul(layerWiseConfigurations.getDampingFactor()));
         return unPack(pack);
 
     }
