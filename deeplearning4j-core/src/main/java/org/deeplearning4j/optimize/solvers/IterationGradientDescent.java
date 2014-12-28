@@ -31,7 +31,7 @@ public class IterationGradientDescent extends BaseOptimizer {
     public boolean optimize() {
         for(int i = 0; i < conf.getNumIterations(); i++) {
             Pair<Gradient,Double> score = model.gradientAndScore();
-            INDArray gradient = score.getFirst().gradient();
+            INDArray gradient = score.getFirst().gradient(conf.getGradientList());
             INDArray params = model.params();
             updateGradientAccordingToParams(gradient,params,model.batchSize());
             model.setParams(params.addi(gradient));

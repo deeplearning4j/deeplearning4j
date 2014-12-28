@@ -180,7 +180,7 @@ public abstract class BaseOptimizer   {
             //update the gradient after step
             score = pair.getSecond();
             //new gradient post step
-            gradient = pair.getFirst().gradient();
+            gradient = pair.getFirst().gradient(conf.getGradientList());
             //update gradient
             searchState.put(GRADIENT_KEY,gradient);
             //update score
@@ -254,7 +254,7 @@ public abstract class BaseOptimizer   {
      * @param pair
      */
     public  void setupSearchState(Pair<Gradient, Double> pair) {
-        INDArray gradient = pair.getFirst().gradient();
+        INDArray gradient = pair.getFirst().gradient(conf.getGradientList());
         INDArray params = model.params();
         updateGradientAccordingToParams(gradient,params,batchSize());
         searchState.put(GRADIENT_KEY,gradient);

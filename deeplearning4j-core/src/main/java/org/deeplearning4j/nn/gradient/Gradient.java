@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -17,9 +18,14 @@ public interface Gradient extends Serializable {
      * @return the gradient look up table
      */
     Map<String,INDArray> gradientLookupTable();
+    /**
+     * The full gradient as one flat vector
+     * @return
+     */
+    INDArray gradient(List<String> order);
 
     /**
-     * The ful gradient as one flat vector
+     * The full gradient as one flat vector
      * @return
      */
     INDArray gradient();
