@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.multilayer;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.models.featuredetectors.da.DenoisingAutoEncoder;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -11,6 +12,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -32,9 +35,8 @@ public class MultiLayerTest {
     public void testDbn() {
         LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.HESSIAN_FREE)
-                .constrainGradientToUnitNorm(true).l2(2e-4)
-                .regularization(true).iterations(100)
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+               .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
                 .activationFunction(Activations.tanh())
                 .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
                 .list(3).hiddenLayerSizes(new int[]{3, 2}).override(new NeuralNetConfiguration.ConfOverride() {
@@ -54,13 +56,12 @@ public class MultiLayerTest {
 
 
         DataSet next = iter.next();
+        next.normalizeZeroMeanZeroUnitVariance();
         SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
-        trainTest.getTrain().normalizeZeroMeanZeroUnitVariance();
         network.fit(trainTest.getTrain());
 
 
         DataSet test = trainTest.getTest();
-        test.normalizeZeroMeanZeroUnitVariance();
         Evaluation eval = new Evaluation();
         INDArray output = network.output(test.getFeatureMatrix());
         eval.eval(test.getLabels(),output);

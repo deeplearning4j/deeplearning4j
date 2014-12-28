@@ -53,7 +53,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public void update(Gradient gradient) {
-        setParams(params().addi(gradient.gradient()));
+        setParams(params().addi(gradient.gradient(conf.getGradientList())));
     }
 
     /**
@@ -101,7 +101,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
 
         INDArray wGradient = getWeightGradient();
-        INDArray bGradient = dy.sum(0);
+        INDArray bGradient = dy.mean(0);
         Gradient g = new DefaultGradient();
 
         g.gradientLookupTable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
@@ -117,10 +117,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         return new Pair<>(getGradient(),score());
     }
 
-    @Override
-    public int batchSize() {
-        return input.rows();
-    }
 
 
     private INDArray getWeightGradient() {

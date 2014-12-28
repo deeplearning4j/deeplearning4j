@@ -35,10 +35,7 @@ public class DenoisingAutoEncoderTest {
                 assertEquals(471784,da.params().length());
 
                 da.fit(input);
-
-                NeuralNetPlotter plotter = new NeuralNetPlotter();
-                plotter.plotNetworkGradient(da,da.getGradient(),100);
-        }
+    }
 
 
 
