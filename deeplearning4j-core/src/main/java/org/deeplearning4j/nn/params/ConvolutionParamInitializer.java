@@ -32,9 +32,9 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
 
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf) {
-        float prod = ArrayUtil.prod(ArrayUtil.removeIndex(conf.getWeightShape(), 0));
-        float min = -1 / prod;
-        float max = 1 / prod;
+        double prod = ArrayUtil.prod(ArrayUtil.removeIndex(conf.getWeightShape(), 0));
+        double min = -1 / prod;
+        double max = 1 / prod;
         RealDistribution dist = new UniformRealDistribution(conf.getRng(),min,max);
         return Nd4j.rand(conf.getWeightShape(),dist);
     }

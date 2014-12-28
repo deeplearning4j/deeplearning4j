@@ -7,6 +7,8 @@ import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.Shape;
 
 /**
  * Convolution layer
@@ -16,7 +18,10 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 public class ConvolutionDownSampleLayer extends BaseLayer {
 
 
-    
+    public ConvolutionDownSampleLayer(NeuralNetConfiguration conf) {
+        super(conf);
+    }
+
     public ConvolutionDownSampleLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
@@ -30,7 +35,8 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
         INDArray convolution = Convolution.conv2d(input,W, Convolution.Type.VALID);
         INDArray pooled = Transforms.maxPool(convolution, conf.getFilterSize(),true);
         INDArray bias = b.dimShuffle(new Object[]{'x',0,'x','x'},new int[]{0},new boolean[]{false});
-        pooled.addi(bias.broadcast(pooled.shape()));
+        INDArray broadCastedBias = bias.broadcast(pooled.shape());
+        pooled.addi(broadCastedBias);
         return f.apply(pooled);
     }
 
