@@ -5,7 +5,6 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -28,9 +27,7 @@ import java.util.List;
 public class StackedDenoisingAutoEncoderTest {
 
 
-    private static Logger log = LoggerFactory.getLogger(StackedDenoisingAutoEncoderTest.class);
-
-
+    private static Logger LOG = LoggerFactory.getLogger(StackedDenoisingAutoEncoderTest.class);
 
     @Test
     public void testDbn() throws IOException {
@@ -38,7 +35,6 @@ public class StackedDenoisingAutoEncoderTest {
         DataSetIterator iter = new MultipleEpochsIterator(2,new MnistDataSetIterator(100,1000));
 
         DataSet d2 = iter.next();
-
 
         List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
                 .momentum(5e-1f).weightInit(WeightInit.SIZE).constrainGradientToUnitNorm(false)
@@ -53,20 +49,12 @@ public class StackedDenoisingAutoEncoderTest {
                     }
                 }).build();
 
-
-
-
-
         StackedDenoisingAutoEncoder d = new StackedDenoisingAutoEncoder.Builder().layerWiseConfiguration(conf)
                 .hiddenLayerSizes(new int[]{600, 300, 200})
                 .build();
 
-
-
-
         NeuralNetConfiguration.setClassifier(d.getOutputLayer().conf());
         d.fit(d2);
-
 
         while(iter.hasNext()) {
             d2 = iter.next();
@@ -77,11 +65,8 @@ public class StackedDenoisingAutoEncoderTest {
 
         Evaluation eval = new Evaluation();
         eval.eval(d2.getLabels(),predict2);
-        log.info(eval.stats());
+        LOG.info(eval.stats());
         int[] predict = d.predict(d2.getFeatureMatrix());
-        log.info("Predict " + Arrays.toString(predict));
-
-
+        LOG.info("Predict " + Arrays.toString(predict));
     }
-
 }
