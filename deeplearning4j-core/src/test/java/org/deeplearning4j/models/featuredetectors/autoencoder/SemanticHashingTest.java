@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SemanticHashingTest {
 
-    private static Logger log = LoggerFactory.getLogger(SemanticHashingTest.class);
+    private static Logger LOG = LoggerFactory.getLogger(SemanticHashingTest.class);
 
     @Test
     public void testSemanticHashingMnist() throws Exception {
@@ -37,14 +37,9 @@ public class SemanticHashingTest {
 
         dbn.fit(next);
 
-
         SemanticHashing hashing = new SemanticHashing.Builder()
                 .withEncoder(dbn).configure(conf).build();
         next.setLabels(next.getFeatureMatrix());
         hashing.fit(next);
-
-
     }
-
-
 }

@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by mjk on 9/15/14.
@@ -18,7 +19,7 @@ public class SerializationUtilsTest {
     @Test
     public void testWriteRead() {
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
-        String irisData = new String("irisData.dat");
+        String irisData = "irisData.dat";
 
         DataSet freshDataSet = iter.next(150);
 
@@ -32,7 +33,7 @@ public class SerializationUtilsTest {
             FileUtils.forceDelete(new File(irisData));
         } catch (IOException e) {
             e.printStackTrace();
+            assertTrue("File deletion failed", false);
         }
-
     }
 }

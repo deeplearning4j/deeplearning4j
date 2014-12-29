@@ -29,9 +29,7 @@ import java.util.List;
  */
 public class DBNTest {
 
-    private static Logger log = LoggerFactory.getLogger(DBNTest.class);
-
-
+    private static Logger LOG = LoggerFactory.getLogger(DBNTest.class);
 
     @Test
     public void testIris() {
@@ -60,11 +58,8 @@ public class DBNTest {
                 }).build();
 
 
-
         DBN d = new DBN.Builder().layerWiseConfiguration(conf)
                 .hiddenLayerSizes(new int[]{3}).build();
-
-
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
@@ -75,9 +70,7 @@ public class DBNTest {
         Evaluation eval = new Evaluation();
         INDArray output = d.output(next.getFeatureMatrix());
         eval.eval(next.getLabels(),output);
-        log.info("Score " + eval.stats());
-
-
+        LOG.info("Score " + eval.stats());
     }
 
     @Test
@@ -89,29 +82,24 @@ public class DBNTest {
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).iterations(10)
                 .learningRate(1e-1f).nIn(784).nOut(10).build();
 
-
-
-        DBN d = new DBN.Builder().configure(conf)
+        DBN dbn = new DBN.Builder().configure(conf)
                 .hiddenLayerSizes(new int[]{500, 250, 200})
                 .build();
 
-        d.getInputLayer().conf().setRenderWeightIterations(10);
-        NeuralNetConfiguration.setClassifier(d.getOutputLayer().conf());
+        dbn.getInputLayer().conf().setRenderWeightIterations(10);
+        NeuralNetConfiguration.setClassifier(dbn.getOutputLayer().conf());
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         fetcher.fetch(10);
-        DataSet d2 = fetcher.next();
-        d.fit(d2);
+        DataSet dataSet = fetcher.next();
+        dbn.fit(dataSet);
 
-
-        INDArray predict2 = d.output(d2.getFeatureMatrix());
+        INDArray predictions = dbn.output(dataSet.getFeatureMatrix());
 
         Evaluation eval = new Evaluation();
-        eval.eval(d2.getLabels(),predict2);
-        log.info(eval.stats());
-        int[] predict = d.predict(d2.getFeatureMatrix());
-        log.info("Predict " + Arrays.toString(predict));
-
-
+        eval.eval(dataSet.getLabels(), predictions);
+        LOG.info(eval.stats());
+        int[] predict = dbn.predict(dataSet.getFeatureMatrix());
+        LOG.info("Predict " + Arrays.toString(predict));
     }
 
 }
