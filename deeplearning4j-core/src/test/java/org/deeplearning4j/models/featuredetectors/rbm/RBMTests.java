@@ -1,14 +1,12 @@
 package org.deeplearning4j.models.featuredetectors.rbm;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
-import org.deeplearning4j.distributions.Distributions;
-import org.deeplearning4j.distributions.DistributionsTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -26,7 +24,7 @@ import org.slf4j.LoggerFactory;
  * Created by agibsonccc on 8/27/14.
  */
 public class RBMTests {
-    private static Logger log = LoggerFactory.getLogger(RBMTests.class);
+    private static Logger LOG = LoggerFactory.getLogger(RBMTests.class);
 
     @Test
     public void testLfw() {
@@ -48,10 +46,6 @@ public class RBMTests {
         Model rbm = new RBM.Builder().configure(conf)
                 .withInput(d.getFeatureMatrix()).build();
         rbm.fit(d.getFeatureMatrix());
-
-
-
-
     }
 
     @Test
@@ -67,11 +61,9 @@ public class RBMTests {
                 .nIn(d.numInputs()).rng(g).
                 nOut(3).build();
 
-
         RBM r = new RBM.Builder().configure(conf)
                 .build();
         r.fit(d.getFeatureMatrix());
-
     }
 
 
@@ -89,7 +81,6 @@ public class RBMTests {
                         {0,0,1,1,1,0}
                 };
 
-
         INDArray input = Nd4j.create(data);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -97,9 +88,6 @@ public class RBMTests {
                 .learningRate(1e-1f).nIn(6).nOut(4).build();
         Model rbm = new RBM.Builder().configure(conf).withInput(input).build();
         rbm.fit(input);
-
-
-
     }
 
     @Test
@@ -118,10 +106,6 @@ public class RBMTests {
                 .configure(conf).withInput(input).build();
 
         rbm.fit(input);
-
-
-
-
     }
 
 
@@ -136,10 +120,6 @@ public class RBMTests {
         INDArray getParams = rbm.params();
         assertEquals(rand2,getParams);
     }
-
-
-
-
 
     @Test
     public void testCg() {
@@ -165,9 +145,6 @@ public class RBMTests {
         double value = rbm.score();
         rbm.contrastiveDivergence(1e-1,1,input);
         value = rbm.score();
-
-
-
     }
 
     @Test
@@ -183,7 +160,6 @@ public class RBMTests {
                         {0,0,1,1,1,0}
                 };
 
-
         INDArray input = Nd4j.create(data);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -192,13 +168,7 @@ public class RBMTests {
         RBM rbm = new RBM.Builder().configure(conf).withInput(input).build();
         rbm.setInput(input);
         double value = rbm.score();
-
-
         NeuralNetworkGradient grad2 = rbm.getGradient(new Object[]{1});
         rbm.fit(input);
-
     }
-
-
-
 }

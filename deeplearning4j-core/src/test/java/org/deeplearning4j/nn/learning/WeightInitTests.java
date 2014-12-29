@@ -16,5 +16,4 @@ public class WeightInitTests {
     public void testSi() {
         WeightInitUtil.initWeights(1,2, WeightInit.VI, Activations.linear(), Distributions.normal(new MersenneTwister(123),1));
     }
-
 }

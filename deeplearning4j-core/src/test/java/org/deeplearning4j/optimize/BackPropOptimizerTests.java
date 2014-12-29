@@ -1,12 +1,10 @@
 package org.deeplearning4j.optimize;
 
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork.ParamRange;
 
 import org.deeplearning4j.models.classifiers.dbn.DBN;
-import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.optimize.optimizers.BackPropOptimizer;
 import org.junit.Test;
 
@@ -20,7 +18,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class BackPropOptimizerTests {
 
-    private static Logger log = LoggerFactory.getLogger(BackPropOptimizerTests.class);
+    private static Logger LOG = LoggerFactory.getLogger(BackPropOptimizerTests.class);
 
 
     @Test
@@ -75,7 +73,6 @@ public class BackPropOptimizerTests {
         assertEquals(op.getNumParameters(),op.getParameters().length());
         assertEquals(op.getNumParameters(),op.getValueGradient(0).length());
         assertEquals(op.getParameters().length(),op.getValueGradient(0).length());
-
 
         assertEquals(dbn.getNeuralNets()[1].gethBias().length(),Math.abs(r2.getBiasStart() - r2.getBiasEnd()));
 
