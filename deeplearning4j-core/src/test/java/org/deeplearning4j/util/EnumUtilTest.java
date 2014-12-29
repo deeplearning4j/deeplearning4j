@@ -12,15 +12,11 @@ import org.slf4j.LoggerFactory;
  */
 public class EnumUtilTest {
 
-    private static Logger log = LoggerFactory.getLogger(EnumUtil.class);
+    private static Logger LOG = LoggerFactory.getLogger(EnumUtil.class);
 
     @Test
     public void testGetEnum() {
         String val = "0";
-        log.info(String.valueOf(EnumUtil.parse(val, NeuralNetwork.OptimizationAlgorithm.class)));
-
+        LOG.info(String.valueOf(EnumUtil.parse(val, NeuralNetwork.OptimizationAlgorithm.class)));
     }
-
-
-
 }
