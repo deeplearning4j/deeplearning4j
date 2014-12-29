@@ -13,7 +13,6 @@ import org.nd4j.linalg.dataset.api.DataSet;
  */
 public class ConvolutionDownSampleLayerTest {
 
-
     @Test
     @Ignore
     public void testConvolution() throws Exception {
@@ -28,11 +27,6 @@ public class ConvolutionDownSampleLayerTest {
                 .weightShape(new int[]{2, 3, 9, 9}).build();
 
         ConvolutionDownSampleLayer c = new ConvolutionDownSampleLayer(n);
-
         INDArray convolved = c.activate(d.getFeatureMatrix());
-
-
     }
-
-
 }
