@@ -45,7 +45,7 @@ public class FFTSliceOp implements SliceOp {
 
             INDArray result = new VectorFFT(n).apply(Nd4j.createComplex(a)).getReal();
             for(int i = 0; i < result.length(); i++)
-                a.putScalar(i,result.getFloat(i));
+                a.putScalar(i,result.getDouble(i));
         }
         else if(nd.getResult() instanceof IComplexNDArray) {
             IComplexNDArray a = (IComplexNDArray) nd.getResult();
@@ -71,13 +71,13 @@ public class FFTSliceOp implements SliceOp {
 
             INDArray result = new VectorFFT(n).apply(Nd4j.createComplex(a)).getReal();
             for(int i = 0; i < result.length(); i++)
-                a.putScalar(i,result.getFloat(i));
+                a.putScalar(i,result.getDouble(i));
         }
         else if(nd instanceof IComplexNDArray) {
             IComplexNDArray a = (IComplexNDArray) nd;
             IComplexNDArray result = new VectorFFT(n).apply(a);
             for(int i = 0; i <result.length(); i++) {
-                a.put(i,result.getScalar(i));
+                a.putScalar(i,result.getComplex(i));
             }
 
         }

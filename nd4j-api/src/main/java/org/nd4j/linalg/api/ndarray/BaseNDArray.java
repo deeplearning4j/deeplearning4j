@@ -890,7 +890,7 @@ public abstract class BaseNDArray  implements INDArray {
             resultLinear.putScalar(i, n.doubleValue() / linear.getDouble(i));
         }
         if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
-           Nd4j.clearNans(result);
+            Nd4j.clearNans(result);
         return result;
     }
 
@@ -912,7 +912,7 @@ public abstract class BaseNDArray  implements INDArray {
         }
 
         if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
-               Nd4j.clearNans(result);
+            Nd4j.clearNans(result);
         return result;
     }
 
@@ -956,7 +956,7 @@ public abstract class BaseNDArray  implements INDArray {
         }
 
         if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
-           Nd4j.clearNans(result);
+            Nd4j.clearNans(result);
 
         return result;
     }
@@ -1214,8 +1214,9 @@ public abstract class BaseNDArray  implements INDArray {
         if(put.isScalar())
             return;
 
-
-
+        //edge case for column vectors
+        if(Shape.isColumnVectorShape(sliceShape))
+            return;
         assert Shape.shapeEquals(sliceShape,requiredShape) : String.format("Invalid shape size of %s . Should have been %s ",Arrays.toString(sliceShape),Arrays.toString(requiredShape));
 
     }
@@ -2557,7 +2558,7 @@ public abstract class BaseNDArray  implements INDArray {
             resultLinear.putScalar(i, linearView.getDouble(i) / otherLinear.getDouble(i));
         }
         if(Nd4j.ENFORCE_NUMERICAL_STABILITY)
-             Nd4j.clearNans(result);
+            Nd4j.clearNans(result);
         return result;
     }
 
@@ -2880,7 +2881,7 @@ public abstract class BaseNDArray  implements INDArray {
         if (shape.length == 0)
             throw new IllegalArgumentException("Can't slice a 0-d NDArray");
 
-        //slice of a vector is a scalar
+            //slice of a vector is a scalar
         else if (shape.length == 1) {
             if(size(0) == 1)
                 return Nd4j.create(data, ArrayUtil.empty(), ArrayUtil.empty(), offset + slice);
@@ -3880,36 +3881,63 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray broadcast(int[] shape) {
-        int dims = this.shape.length;
-        int targetDimensions = shape.length;
-
-
-        if (targetDimensions < dims) {
-            throw new IllegalArgumentException("Invalid shape to broad cast " + Arrays.toString(shape));
-        }
-        else if(isColumnVector()) {
-            int n = shape[1];
-            INDArray ret = Nd4j.create(shape);
-            for(int i = 0; i < n; i++) {
-                ret.putColumn(i,this);
+        if(Shape.shapeEquals(shape,shape()))
+            return this;
+        boolean compatible = true;
+        int count = shape.length - 1;
+        int thisCount = this.shape.length - 1;
+        for(int i = shape.length - 1; i > 0; i--) {
+            if(count < 0 || thisCount < 0)
+                break;
+            if(shape[count] != shape()[thisCount] && shape[count] != 1 && shape()[thisCount] != 1) {
+                compatible = false;
+                break;
             }
+
+            count--;
+            thisCount--;
+        }
+
+        if(!compatible)
+            throw new IllegalArgumentException("Incompatible broadcast from " + Arrays.toString(shape()) + " to " + Arrays.toString(shape));
+        //broadcast to shape
+        if(isScalar()) {
+            INDArray ret = Nd4j.valueArrayOf(shape, getDouble(0));
+            return ret;
+        }
+        else if(isColumnVector() && Shape.isMatrix(shape)) {
+            INDArray ret = Nd4j.create(shape);
+            for(int i = 0; i < ret.columns(); i++)
+                ret.putColumn(i,this.dup());
+
+
             return ret;
         }
 
 
-        //edge case where column vector looks like a matrix
-        else if (dims == targetDimensions && !isColumnVector()) {
-            if(isVector())
-                return this;
-            if (Shape.shapeEquals(shape, this.shape()))
-                return this;
-            throw new IllegalArgumentException("Invalid shape to broad cast " + Arrays.toString(shape));
+        int[] retShape = new int[shape.length];
+
+        for(int i = 0; i < retShape.length; i++) {
+            if(i < shape().length)
+                retShape[i] = Math.max(shape[i],shape()[i]);
+            else
+                retShape[i] = shape[i];
         }
-        else {
-            int n = shape[0];
-            INDArray s = broadcast(Arrays.copyOfRange(shape, 1, targetDimensions));
-            return Nd4j.repeat(s,n);
+
+        INDArray ret = Nd4j.create(retShape);
+        INDArray linear = ret.linearView();
+        INDArray thisLinear = linearView();
+        int bufferIdx = 0;
+        for(int i = 0; i < ret.length(); i++) {
+            linear.putScalar(i,thisLinear.getDouble(bufferIdx));
+            bufferIdx++;
+            if(bufferIdx >= length())
+                bufferIdx = 0;
         }
+
+        return ret;
+
+
     }
 
 

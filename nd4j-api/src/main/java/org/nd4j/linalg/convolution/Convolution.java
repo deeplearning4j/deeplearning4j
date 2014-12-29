@@ -6,6 +6,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.fft.FFT;
 
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
 import org.nd4j.linalg.util.Shape;
@@ -84,7 +85,7 @@ public class Convolution {
             case SAME:
                 return ComplexNDArrayUtil.center(convolution, input.shape()).getReal();
             case VALID:
-                int[] shape2 = ArrayUtil.toInts(ArrayUtil.toNDArray(input.shape()).sub(ArrayUtil.toNDArray(kernel.shape())).addi(1));
+                int[] shape2 = ArrayUtil.toInts(Transforms.abs(ArrayUtil.toNDArray(input.shape()).sub(ArrayUtil.toNDArray(kernel.shape())).addi(1)));
                 return ComplexNDArrayUtil.center(convolution,shape2).getReal();
 
         }
@@ -121,7 +122,7 @@ public class Convolution {
             case SAME:
                 return ComplexNDArrayUtil.center(ret,input.shape());
             case VALID:
-                return ComplexNDArrayUtil.center(ret,ArrayUtil.toInts(ArrayUtil.toNDArray(input.shape()).sub(ArrayUtil.toNDArray(kernel.shape())).addi(1)));
+                return ComplexNDArrayUtil.center(ret,ArrayUtil.toInts(Transforms.abs(ArrayUtil.toNDArray(input.shape()).sub(ArrayUtil.toNDArray(kernel.shape())).addi(1))));
 
         }
 

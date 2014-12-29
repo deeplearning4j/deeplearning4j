@@ -97,17 +97,20 @@ public class ComplexNDArrayUtil {
             return arr;
 
         INDArray shapeMatrix = ArrayUtil.toNDArray(shape);
+        for(int i = 0; i < shape.length; i++)
+            if(shape.length < 1)
+                throw new IllegalArgumentException("Illegal shape passed in with value < 0");
         INDArray currShape =  ArrayUtil.toNDArray(arr.shape());
 
         INDArray startIndex = currShape.sub(shapeMatrix).divi(Nd4j.scalar(2));
         INDArray endIndex = startIndex.add(shapeMatrix);
         if (shapeMatrix.length() > 1) {
-            arr = Nd4j.createComplex(arr.get(NDArrayIndex.interval((int) startIndex.getFloat(0),(int) endIndex.getFloat(0)), NDArrayIndex.interval((int) startIndex.getFloat(1), (int) endIndex.getFloat(1))));
+            arr = Nd4j.createComplex(arr.get(NDArrayIndex.interval((int) startIndex.getDouble(0),(int) endIndex.getDouble(0)), NDArrayIndex.interval((int) startIndex.getDouble(1), (int) endIndex.getDouble(1))));
         }
         else {
-            IComplexNDArray ret = Nd4j.createComplex(new int[]{(int) shapeMatrix.getFloat(0)});
-            int start = (int) startIndex.getFloat(0);
-            int end = (int) endIndex.getFloat(0);
+            IComplexNDArray ret = Nd4j.createComplex(new int[]{(int) shapeMatrix.getDouble(0)});
+            int start = (int) startIndex.getDouble(0);
+            int end = (int) endIndex.getDouble(0);
             int count = 0;
             for (int i = start; i < end; i++) {
                 ret.putScalar(count++, arr.getComplex(i));

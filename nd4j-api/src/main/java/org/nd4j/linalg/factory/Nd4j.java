@@ -324,7 +324,7 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(int[] shape) {
         int length = ArrayUtil.prod(shape);
-         return createBuffer(length);
+        return createBuffer(length);
     }
 
     /**
@@ -337,7 +337,7 @@ public class Nd4j {
             return createBuffer(new float[(int) length]);
 
         }
-         return createBuffer(new double[(int) length]);
+        return createBuffer(new double[(int) length]);
     }
 
     public static DataBuffer createBuffer(float[] data) {
@@ -349,7 +349,7 @@ public class Nd4j {
     }
 
     public static <E> DataBuffer createBuffer(E[] data) {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
     public static void setFactory(NDArrayFactory factory) {
         INSTANCE = factory;
@@ -623,7 +623,9 @@ public class Nd4j {
         List<INDArray> list = new ArrayList<>();
         for(int i = 0; i < num; i++)
             list.add(n.dup());
-        return Nd4j.create(list, Ints.concat(new int[]{num},n.shape()));
+        int[] shape = n.isColumnVector() ? new int[]{n.shape()[0]} : n.shape();
+        int[] retShape = Ints.concat(new int[]{num},shape);
+        return Nd4j.create(list,retShape);
     }
 
     /**
@@ -772,7 +774,7 @@ public class Nd4j {
      *
      */
     public static INDArray readTxt(String filePath,String split) throws IOException {
-       return readTxt(new FileInputStream(filePath),split);
+        return readTxt(new FileInputStream(filePath),split);
     }
 
 
@@ -966,8 +968,11 @@ public class Nd4j {
      * @param imag imag component
      * @return
      */
-    public static IComplexFloat createComplexNumber(Number real,Number imag) {
-        return INSTANCE.createFloat(real.floatValue(), imag.floatValue());
+    public static IComplexNumber createComplexNumber(Number real,Number imag) {
+        if(dataType() == DataBuffer.FLOAT)
+            return INSTANCE.createFloat(real.floatValue(), imag.floatValue());
+        return INSTANCE.createDouble(real.doubleValue(), imag.doubleValue());
+
     }
     /**
      * Create double
@@ -2025,7 +2030,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(int[] shape) {
+    public static IComplexNDArray createComplex(int...shape) {
         return createComplex(shape,order());
     }
 
@@ -2035,7 +2040,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return the instance
      */
-    public static INDArray create(int[] shape) {
+    public static INDArray create(int...shape) {
         return create(shape,order());
     }
 
@@ -2666,7 +2671,7 @@ public class Nd4j {
     }
 
     public static IComplexNDArray createComplex(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering) {
-         return INSTANCE.createComplex(data,newDims,newStrides,offset,ordering);
+        return INSTANCE.createComplex(data,newDims,newStrides,offset,ordering);
     }
 
     public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int offset, char ordering) {
