@@ -1,9 +1,7 @@
 package org.deeplearning4j.base;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URL;
 
 import org.apache.commons.io.FileUtils;
@@ -14,7 +12,7 @@ import org.slf4j.LoggerFactory;
 public class MnistFetcher {
 
 	private File fileDir;
-	private static Logger log = LoggerFactory.getLogger(MnistFetcher.class);
+	private static final Logger LOG = LoggerFactory.getLogger(MnistFetcher.class);
 	private static final String trainingFilesURL = "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz";
 
 	private static final String trainingFilesFilename = "images-idx1-ubyte.gz";
@@ -25,8 +23,8 @@ public class MnistFetcher {
 	public static final String trainingFileLabelsFilename_unzipped = "labels-idx1-ubyte";
 	private static final String LOCAL_DIR_NAME = "MNIST";
 
-	
-	
+
+
 	public  File downloadAndUntar() throws IOException {
 		if(fileDir != null) {
 			return fileDir;
@@ -41,69 +39,26 @@ public class MnistFetcher {
 		}
 
 
-		log.info("Downloading mnist...");
+		LOG.info("Downloading mnist...");
 		// getFromOrigin training records
 		File tarFile = new File(baseDir, trainingFilesFilename);
 
 		if(!tarFile.isFile()) {
-			FileUtils.copyURLToFile(new URL(trainingFilesURL), tarFile);      
+			FileUtils.copyURLToFile(new URL(trainingFilesURL), tarFile);
 		}
 
-	    ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(),baseDir.getAbsolutePath());
+		ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(),baseDir.getAbsolutePath());
 
+		// getFromOrigin training records
+		File labels = new File(baseDir, trainingFileLabelsFilename);
 
+		if(!labels.isFile()) {
+			FileUtils.copyURLToFile(new URL(trainingFileLabelsURL), labels);
+		}
 
+		ArchiveUtils.unzipFileTo(labels.getAbsolutePath(),baseDir.getAbsolutePath());
 
-        // getFromOrigin training records
-        File labels = new File(baseDir, trainingFileLabelsFilename);
-
-        if(!labels.isFile()) {
-            FileUtils.copyURLToFile(new URL(trainingFileLabelsURL), labels);
-        }
-
-        ArchiveUtils.unzipFileTo(labels.getAbsolutePath(),baseDir.getAbsolutePath());
-
-
-
-        fileDir = baseDir;
+		fileDir = baseDir;
 		return fileDir;
 	}
-
-	public  void untarFile(File baseDir, File tarFile) throws IOException {
-
-		log.info("Untaring File: " + tarFile.toString());
-
-		Process p = Runtime.getRuntime().exec(String.format("tar -C %s -xvf %s", 
-				baseDir.getAbsolutePath(), tarFile.getAbsolutePath()));
-		BufferedReader stdError = new BufferedReader(new 
-				InputStreamReader(p.getErrorStream()));
-		log.info("Here is the standard error of the command (if any):\n");
-		String s;
-		while ((s = stdError.readLine()) != null) {
-			log.info(s);
-		}
-		stdError.close();
-
-
-	}
-
-	public static void gunzipFile(File baseDir, File gzFile) throws IOException {
-
-		log.info("gunzip'ing File: " + gzFile.toString());
-
-		Process p = Runtime.getRuntime().exec(String.format("gunzip %s", 
-				gzFile.getAbsolutePath()));
-		BufferedReader stdError = new BufferedReader(new 
-				InputStreamReader(p.getErrorStream()));
-		log.info("Here is the standard error of the command (if any):\n");
-		String s;
-		while ((s = stdError.readLine()) != null) {
-			log.info(s);
-		}
-		stdError.close();
-
-
-	}
-
-
 }
