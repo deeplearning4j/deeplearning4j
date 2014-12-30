@@ -73,10 +73,9 @@ public class LSTM extends BaseLayer {
         INDArray prev;
 
         for(int t = 0; t < n ; t++) {
-            //prev = np.zeros(d) if t == 0 else Hout[t-1]
             prev = t == 0 ? Nd4j.zeros(d) : hOut.getRow(t - 1);
             hIn.put(t, 0, 1.0);
-            hIn.slice(t).put(new NDArrayIndex[]{interval(1,1 + d)},hOut.getRow(t - 1));
+            hIn.slice(t).put(new NDArrayIndex[]{interval(1,1 + d)},x.slice(t));
             hIn.slice(t).put(new NDArrayIndex[]{interval(1 + d,hIn.columns())},prev);
 
             //compute all gate activations. dots:
@@ -108,7 +107,7 @@ public class LSTM extends BaseLayer {
         }
 
 
-        INDArray y = hOut.getRows(interval(1,hOut.rows()).indices()).mmul(decoderWeights).addiRowVector(decoderBias);
+        INDArray y = hOut.get(interval(1,hOut.rows())).mmul(decoderWeights).addiRowVector(decoderBias);
         return y;
 
 
@@ -127,7 +126,7 @@ public class LSTM extends BaseLayer {
         INDArray dY = Nd4j.vstack(Nd4j.zeros(y.columns()),y);
         INDArray dWd = hOut.transpose().mmul(dY);
         INDArray dBd = Nd4j.sum(dWd,0);
-        INDArray dHout = dY.mmul(decoderWeights);
+        INDArray dHout = dY.mmul(decoderWeights.transpose());
         if(conf.getDropOut() > 0) {
             dHout.muli(u2);
         }
@@ -141,8 +140,8 @@ public class LSTM extends BaseLayer {
 
         INDArray dC = Nd4j.zeros(c.shape());
         INDArray dx = Nd4j.zeros(x.shape());
-        int n = x.rows();
-        int d = decoderWeights.rows();
+        int n = hOut.rows();
+        int d = hOut.columns();
 
 
         for(int t = n -1; t > 0; t--) {
@@ -168,10 +167,13 @@ public class LSTM extends BaseLayer {
             y = iFogF.slice(t).get(interval(0,3 * d));
             dIFogF.slice(t).get(interval(0, 3 * d)).assign(y.mul(y.rsub(1)).mul(dIFogF.slice(t).get(interval(0, 3 * d))));
 
-            dRecurrentWeights.addi(hIn.slice(t).mmul(dIFogF.slice(t)));
+            dRecurrentWeights.addi(hIn.slice(t).transpose().mmul(dIFog.slice(t)));
             dHin.slice(t).assign(dIFog.slice(t).mmul(recurrentWeights.transpose()));
 
-            dx.slice(t).assign(dHin.slice(t).get(interval(1, 1 + d)));
+
+            INDArray get = dHin.slice(t).get(interval(1, 1 + d));
+
+            dx.slice(t).assign(get);
 
             if(t > 0) {
                 dHout.slice(t - 1).addi(dHin.slice(t).get(interval(1 + d, dHin.columns())));
@@ -470,6 +472,11 @@ public class LSTM extends BaseLayer {
 
     @Override
     public void fit(INDArray data) {
+        xi = data.slice(0);
+        NDArrayIndex[] everythingElse = {
+            NDArrayIndex.interval(1,data.rows()),NDArrayIndex.interval(0,data.columns())
+        };
+        xs = data.get(everythingElse);
         Solver solver = new Solver.Builder()
                 .configure(conf).model(this)
                 .listeners(conf.getListeners()).build();
@@ -484,7 +491,7 @@ public class LSTM extends BaseLayer {
     @Override
     public Gradient getGradient() {
         INDArray forward = forward(xi,xs);
-        INDArray probas = Activations.softmax().applyDerivative(forward);
+        INDArray probas = Activations.softMaxRows().applyDerivative(forward);
         return backward(probas);
     }
 
