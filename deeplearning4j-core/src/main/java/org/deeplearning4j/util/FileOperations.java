@@ -1,17 +1,14 @@
 package org.deeplearning4j.util;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
+import java.util.logging.Logger;
 
 public class FileOperations {
 
+	private static final Logger LOG = Logger.getLogger(FileOperations.class.getName());
+
 	private FileOperations() {}
-	
-	
-	
+
 	public static OutputStream createAppendingOutputStream(File to) {
 		try {
 			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(to,true));
@@ -32,5 +29,40 @@ public class FileOperations {
 		}
 		
 	}
+
+	public  void untarFile(File baseDir, File tarFile) throws IOException {
+
+		LOG.info("Untaring File: " + tarFile.toString());
+
+		Process p = Runtime.getRuntime().exec(String.format("tar -C %s -xvf %s",
+				baseDir.getAbsolutePath(), tarFile.getAbsolutePath()));
+		BufferedReader stdError = new BufferedReader(new
+				InputStreamReader(p.getErrorStream()));
+		LOG.info("Here is the standard error of the command (if any):\n");
+		String s;
+		while ((s = stdError.readLine()) != null) {
+			LOG.info(s);
+		}
+		stdError.close();
+
+
+	}
+
+	public static void gunzipFile(File baseDir, File gzFile) throws IOException {
+
+		LOG.info("gunzip'ing File: " + gzFile.toString());
+
+		Process p = Runtime.getRuntime().exec(String.format("gunzip %s",
+				gzFile.getAbsolutePath()));
+		BufferedReader stdError = new BufferedReader(new
+				InputStreamReader(p.getErrorStream()));
+		LOG.info("Here is the standard error of the command (if any):\n");
+		String s;
+		while ((s = stdError.readLine()) != null) {
+			LOG.info(s);
+		}
+		stdError.close();
+	}
+
 
 }
