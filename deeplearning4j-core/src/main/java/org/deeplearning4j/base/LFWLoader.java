@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,28 +36,29 @@ public class LFWLoader {
     private File lfwDir = new File(baseDir,LFW);
     public final static String LFW_URL = "http://vis-www.cs.umass.edu/lfw/lfw.tgz";
     private File lfwTarFile = new File(lfwDir,"lfw.tgz");
-    private static Logger log = LoggerFactory.getLogger(LFWLoader.class);
+    private static Logger LOG = LoggerFactory.getLogger(LFWLoader.class);
     private int numNames;
     private int numPixelColumns;
-    private ImageLoader loader = new ImageLoader(28,28);
-    private List<String> images = new ArrayList<String>();
-    private List<String> outcomes = new ArrayList<String>();
-
-
+    private ImageLoader loader;
+    private List<String> images = Lists.newArrayList();
+    private List<String> outcomes = Lists.newArrayList();
 
     public LFWLoader() {
-        this(28,28);
+        this(28, 28);
     }
 
-
-    public LFWLoader(int imageWidth,int imageHeight) {
-        loader = new ImageLoader(imageWidth,imageHeight);
+    public LFWLoader(int imageWidth, int imageHeight) {
+        loader = new ImageLoader(imageWidth, imageHeight);
     }
 
     public void getIfNotExists() throws Exception {
+        getIfNotExists(2); // try two attempts and bail
+    }
+
+    public void getIfNotExists(int numAttempts) throws Exception {
         if(!lfwDir.exists()) {
             lfwDir.mkdir();
-            log.info("Grabbing LFW...");
+            LOG.info("Grabbing LFW...");
 
             URL website = new URL(LFW_URL);
             ReadableByteChannel rbc = Channels.newChannel(website.openStream());
@@ -67,21 +69,23 @@ public class LFWLoader {
             fos.flush();
             IOUtils.closeQuietly(fos);
             rbc.close();
-            log.info("Downloaded lfw");
-            untarFile(baseDir,lfwTarFile);
-
+            LOG.info("Downloaded lfw");
+            untarFile(baseDir, lfwTarFile);
         }
 
 
         File firstImage = null;
         try {
             firstImage = lfwDir.listFiles()[0].listFiles()[0];
-
         }catch(Exception e) {
-            FileUtils.deleteDirectory(lfwDir);
-            log.warn("Error opening first image; probably corrupt download...trying again",e);
-            getIfNotExists();
-
+            LOG.warn("Exception while fetching LFW dataset; attempt no. " + numAttempts, e);
+            if (numAttempts > 0) {
+                FileUtils.deleteDirectory(lfwDir);
+                LOG.info("Trying again");
+                getIfNotExists(--numAttempts);
+            } else {
+                throw e;
+            }
         }
 
 
@@ -92,26 +96,30 @@ public class LFWLoader {
         numNames = lfwDir.getAbsoluteFile().listFiles().length;
 
         @SuppressWarnings("unchecked")
-        Collection<File> allImages = FileUtils.listFiles(lfwDir, org.apache.commons.io.filefilter.FileFileFilter.FILE, org.apache.commons.io.filefilter.DirectoryFileFilter.DIRECTORY);
+        Collection<File> allImages =
+            FileUtils.listFiles(lfwDir, org.apache.commons.io.filefilter.FileFileFilter.FILE,
+                                   org.apache.commons.io.filefilter.DirectoryFileFilter.DIRECTORY);
+
         for(File f : allImages) {
             images.add(f.getAbsolutePath());
         }
-        for(File dir : lfwDir.getAbsoluteFile().listFiles())
-            outcomes.add(dir.getAbsolutePath());
 
+        for(File dir : lfwDir.getAbsoluteFile().listFiles()) {
+            outcomes.add(dir.getAbsolutePath());
+        }
     }
 
 
 
     public DataSet convertListPairs(List<DataSet> images) {
         INDArray inputs = Nd4j.create(images.size(), numPixelColumns);
-        INDArray outputs = Nd4j.create(images.size(),numNames);
+        INDArray outputs = Nd4j.create(images.size(), numNames);
 
         for(int i = 0; i < images.size(); i++) {
             inputs.putRow(i,images.get(i).getFeatureMatrix());
             outputs.putRow(i,images.get(i).getLabels());
         }
-        return new DataSet(inputs,outputs);
+        return new DataSet(inputs, outputs);
     }
 
 
@@ -174,37 +182,22 @@ public class LFWLoader {
         return ret;
     }
 
-
     public DataSet fromImageFile(int label,File image) throws Exception {
         INDArray outcome = FeatureUtil.toOutcomeVector(label, numNames);
         INDArray image2 = ArrayUtil.toNDArray(loader.flattenedImageFromFile(image));
         return new DataSet(image2,outcome);
     }
 
-
-
     public  void untarFile(File baseDir, File tarFile) throws IOException {
-
-
-        log.info("Untaring File: " + tarFile.toString());
-
+        LOG.info("Untaring File: " + tarFile.toString());
         ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(),baseDir.getAbsolutePath());
-
     }
-
-
-
 
     public int getNumNames() {
         return numNames;
     }
 
-
-
     public int getNumPixelColumns() {
         return numPixelColumns;
     }
-
-
-
 }
