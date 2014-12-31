@@ -6,7 +6,7 @@ import org.deeplearning4j.models.glove.CoOccurrences;
 import org.deeplearning4j.models.glove.GloveWeightLookupTable;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.scaleout.conf.Configuration;
+import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.scaleout.job.JobIterator;
 import org.deeplearning4j.scaleout.testsupport.BaseTestDistributed;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;

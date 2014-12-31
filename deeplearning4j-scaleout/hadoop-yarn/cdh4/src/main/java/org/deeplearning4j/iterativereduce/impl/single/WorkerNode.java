@@ -9,7 +9,7 @@ import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWorker;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
+import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,7 +143,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
 
     @Override
-    public void setup(org.deeplearning4j.scaleout.conf.Configuration conf) {
+    public void setup(org.deeplearning4j.nn.conf.Configuration conf) {
 
     }
 }

@@ -45,7 +45,7 @@ public interface Model {
     INDArray params();
 
     /**
-     * The number of parameters for the model
+     * the number of parameters for the model
      * @return the number of parameters for the model
      *
      */

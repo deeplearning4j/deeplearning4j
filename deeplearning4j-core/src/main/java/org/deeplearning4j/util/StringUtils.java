@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.deeplearning4j.scaleout.util;
+package org.deeplearning4j.util;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
