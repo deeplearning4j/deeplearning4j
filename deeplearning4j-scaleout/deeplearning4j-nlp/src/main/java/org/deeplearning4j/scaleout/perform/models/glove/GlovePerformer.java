@@ -1,18 +1,15 @@
 package org.deeplearning4j.scaleout.perform.models.glove;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.glove.CoOccurrences;
 import org.deeplearning4j.models.glove.GloveWeightLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.scaleout.aggregator.JobAggregator;
 import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
-import org.deeplearning4j.scaleout.conf.Configuration;
+import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.perform.WorkerPerformer;
 import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
-import org.deeplearning4j.scaleout.perform.models.word2vec.Word2VecJobAggregator;
-import org.deeplearning4j.scaleout.perform.models.word2vec.Word2VecPerformerFactory;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.nd4j.linalg.api.ndarray.INDArray;

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.params;
 
+import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -26,6 +27,11 @@ public class DefaultParamInitializer implements ParamInitializer {
 
     }
 
+    @Override
+    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, Configuration extraConf) {
+         init(params,conf);
+
+    }
 
 
     protected INDArray createBias(NeuralNetConfiguration conf) {
@@ -42,6 +48,7 @@ public class DefaultParamInitializer implements ParamInitializer {
                 conf.getDist());
         return W;
     }
+
 
 
 }

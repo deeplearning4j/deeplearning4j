@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.params;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -24,6 +25,10 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         params.put(CONVOLUTION_WEIGHTS,createWeightMatrix(conf));
     }
 
+    @Override
+    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, Configuration extraConf) {
+        init(params,conf);
+    }
 
 
     protected INDArray createBias(NeuralNetConfiguration conf) {
@@ -32,9 +37,9 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
 
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf) {
-        float prod = ArrayUtil.prod(ArrayUtil.removeIndex(conf.getWeightShape(), 0));
-        float min = -1 / prod;
-        float max = 1 / prod;
+        double prod = ArrayUtil.prod(ArrayUtil.removeIndex(conf.getWeightShape(), 0));
+        double min = -1 / prod;
+        double max = 1 / prod;
         RealDistribution dist = new UniformRealDistribution(conf.getRng(),min,max);
         return Nd4j.rand(conf.getWeightShape(),dist);
     }
