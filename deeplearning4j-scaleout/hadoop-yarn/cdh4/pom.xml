@@ -14,6 +14,7 @@
     <url>http://deeplearning4j.org</url>
     <properties>
         <hadoop.version>2.0.0-cdh4.6.0</hadoop.version>
+         <nd4j.version>0.0.3.5.5-SNAPSHOT</nd4j.version>
     </properties>
     <repositories>
         <repository>
@@ -93,5 +94,20 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
+<!--
+        <dependency>
+            <groupId>org.jblas</groupId>
+            <artifactId>jblas</artifactId>
+            <version>1.2.3</version>
+            <scope>test</scope>
+        </dependency>
+-->        
+		<dependency>
+			<groupId>org.nd4j</groupId>
+			<artifactId>nd4j-jblas</artifactId>
+			<version>${nd4j.version}</version>
+			<scope>test</scope>
+		</dependency>
+        
     </dependencies>
 </project>
