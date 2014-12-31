@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.classifiers.lstm;
 
 import org.deeplearning4j.nn.api.LayerFactory;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -26,11 +27,13 @@ public class LSTMTest {
         LayerFactory factory = LayerFactories.getFactory(LSTM.class);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layerFactory(factory)
+                .layerFactory(factory).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .nIn(4).nOut(4).build();
         LSTM l = factory.create(conf);
         INDArray predict = FeatureUtil.toOutcomeMatrix(new int[]{0,1,2,3},4);
         l.fit(predict);
+        INDArray out = l.activate(predict);
+        log.info("Out " + out);
     }
 
 }
