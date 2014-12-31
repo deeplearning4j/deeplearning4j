@@ -2,6 +2,7 @@ package org.deeplearning4j.models.word2vec;
 
 import static org.junit.Assert.*;
 
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,6 +24,7 @@ public class WordVectorSerializerTest {
             textFile = new ClassPathResource("vec.txt").getFile();
         if(binaryFile == null)
             binaryFile = new ClassPathResource("vec.bin").getFile();
+        FileUtils.deleteDirectory(new File("word2vec-index"));
     }
 
     @Test

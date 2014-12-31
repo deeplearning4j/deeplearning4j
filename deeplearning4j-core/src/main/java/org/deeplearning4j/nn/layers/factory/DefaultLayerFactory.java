@@ -51,14 +51,19 @@ public class DefaultLayerFactory implements LayerFactory {
 
 
     protected Map<String,INDArray> getParams(NeuralNetConfiguration conf) {
-        ParamInitializer init = getInitializer();
+        ParamInitializer init = initializer();
         Map<String,INDArray> params = new LinkedHashMap<>();
         init.init(params,conf);
         return params;
     }
 
     @Override
-    public ParamInitializer getInitializer() {
+    public String layerClazzName() {
+        return layerClazz.getName();
+    }
+
+    @Override
+    public ParamInitializer initializer() {
         return new DefaultParamInitializer();
     }
 }

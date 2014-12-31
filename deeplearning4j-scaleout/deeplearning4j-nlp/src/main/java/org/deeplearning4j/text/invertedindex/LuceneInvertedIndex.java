@@ -76,6 +76,11 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         this.vocabCache = vocabCache;
         this.cache = cache;
         this.indexPath = indexPath;
+        if(new File(indexPath).exists()) {
+            String id = UUID.randomUUID().toString();
+            log.warn("Changing index path to" + id);
+            indexPath = id;
+        }
         initReader();
     }
 
@@ -523,6 +528,8 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     private void ensureDirExists() throws Exception {
         if(dir == null) {
+            log.info("Creating directory " + indexPath);
+            FileUtils.deleteDirectory(new File(indexPath));
             dir = FSDirectory.open(new File(indexPath));
             File dir2 = new File(indexPath);
             if (!dir2.exists())
@@ -533,20 +540,6 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
 
-    private synchronized IndexReader getReader() {
-        if(reader != null)
-            try {
-                readerManager.maybeRefresh();
-                return readerManager.acquire();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        else {
-            initReader();
-            return reader;
-        }
-    }
-
 
     private synchronized TrackingIndexWriter getWriterWithRetry() {
         if(this.indexWriter != null)
@@ -554,6 +547,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
         IndexWriterConfig iwc;
         IndexWriter writer = null;
+
         try {
             if(analyzer == null)
                 analyzer  = new StandardAnalyzer(new InputStreamReader(new ByteArrayInputStream("".getBytes())));
@@ -561,39 +555,22 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
             ensureDirExists();
 
-            if(IndexWriter.isLocked(dir)) {
-                IndexWriter.unlock(dir);
-            }
 
             if(this.indexWriter == null) {
                 indexBeingCreated.set(true);
-                if(IndexWriter.isLocked(dir)) {
-                    IndexWriter.unlock(dir);
-                }
-                if(new File(indexPath).exists()) {
-                    FileUtils.deleteDirectory(new File(indexPath));
-                }
+
+
 
                 iwc = new IndexWriterConfig(Version.LATEST, analyzer);
                 iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
                 iwc.setWriteLockTimeout(1000);
 
-                dir = FSDirectory.open(new File(indexPath));
                 log.info("Creating new index writer");
                 while((writer = tryCreateWriter(iwc)) == null) {
                     log.warn("Failed to create writer...trying again");
                     iwc = new IndexWriterConfig(Version.LATEST, analyzer);
-
                     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
                     iwc.setWriteLockTimeout(1000);
-                    if(dir != null) {
-
-                        dir.clearLock(IndexWriter.WRITE_LOCK_NAME);
-                        dir.close();
-                    }
-                    dir = FSDirectory.open(new File(indexPath),lockFactory);
-                    lockFactory.clearLock(IndexWriter.WRITE_LOCK_NAME);
-                    dir.clearLock(IndexWriter.WRITE_LOCK_NAME);
 
                     Thread.sleep(10000);
                 }
@@ -615,13 +592,22 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
 
     private IndexWriter tryCreateWriter(IndexWriterConfig iwc) {
+
         try {
-            dir.clearLock(IndexWriter.WRITE_LOCK_NAME);
+            dir.close();
+            dir = null;
+            FileUtils.deleteDirectory(new File(indexPath));
+
+            ensureDirExists();
             if(lockFactory == null)
                 lockFactory = new NativeFSLockFactory(new File(indexPath));
             lockFactory.clearLock(IndexWriter.WRITE_LOCK_NAME);
             return new IndexWriter(dir,iwc);
-        } catch (IOException e) {
+        }
+        catch (Exception e) {
+            String id = UUID.randomUUID().toString();
+            indexPath = id;
+            log.warn("Setting index path to " + id);
             log.warn("Couldn't create index ",e);
             return null;
         }
@@ -656,6 +642,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
             DirectoryReader reader = readerManager.acquire();
             numDocs = reader.numDocs();
             readerManager.release(reader);
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

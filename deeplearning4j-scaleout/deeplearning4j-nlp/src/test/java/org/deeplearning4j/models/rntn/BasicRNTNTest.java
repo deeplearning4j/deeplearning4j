@@ -54,10 +54,12 @@ public class BasicRNTNTest {
             sentenceIter = new CollectionSentenceIterator(Arrays.asList(sentence));
         File vectors = new File("wordvectors.ser");
         vectors.delete();
-        if(lookupTable == null)
-            lookupTable = new InMemoryLookupTable.Builder().vectorLength(100).build();
-        if(cache == null)
+       if(cache == null)
             cache = new InMemoryLookupCache();
+        if(lookupTable == null)
+            lookupTable = new InMemoryLookupTable.Builder().cache(cache)
+                    .vectorLength(100).build();
+
         if(index == null)
             index = new LuceneInvertedIndex.Builder()
                     .indexDir(new File("rntn-index")).cache(cache).build();

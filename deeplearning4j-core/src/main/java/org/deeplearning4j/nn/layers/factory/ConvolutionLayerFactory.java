@@ -14,7 +14,7 @@ public class ConvolutionLayerFactory extends DefaultLayerFactory {
     }
 
     @Override
-    public ParamInitializer getInitializer() {
+    public ParamInitializer initializer() {
         return new ConvolutionParamInitializer();
     }
 }

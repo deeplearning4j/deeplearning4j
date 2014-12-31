@@ -18,7 +18,7 @@ public class PretrainLayerFactory extends DefaultLayerFactory {
 
 
     @Override
-    public ParamInitializer getInitializer() {
+    public ParamInitializer initializer() {
         return new PretrainParamInitializer();
     }
 }

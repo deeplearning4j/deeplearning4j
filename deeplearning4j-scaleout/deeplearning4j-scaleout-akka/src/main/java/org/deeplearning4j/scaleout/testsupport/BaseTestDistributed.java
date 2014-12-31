@@ -7,6 +7,8 @@ import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
 import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
 
+import java.io.File;
+
 /**
  * Baseline test support for testing a distributed app
  * @author Adam Gibson
@@ -19,6 +21,10 @@ public abstract class BaseTestDistributed {
     private Configuration conf;
 
     public void init() throws Exception {
+        if(stateTracker != null) {
+            stateTracker.finish();
+            stateTracker.shutdown();
+        }
         stateTracker = createStateTracker();
         iterator = createIterator();
         workPerformFactoryClassName = workPerformFactoryClassName();
@@ -30,8 +36,11 @@ public abstract class BaseTestDistributed {
 
 
     public void tearDown() throws Exception {
+        stateTracker.finish();
         stateTracker.shutdown();
         distributed.shutdown();
+        new File("model-saver").delete();
+        Thread.sleep(10000);
     }
 
 
@@ -42,6 +51,10 @@ public abstract class BaseTestDistributed {
     }
 
     public StateTracker createStateTracker() throws  Exception {
+        if(stateTracker != null) {
+            stateTracker.finish();
+            stateTracker.shutdown();
+        }
         return new HazelCastStateTracker();
     }
 

@@ -4,8 +4,10 @@ package org.deeplearning4j.scaleout.statetracker.hazelcast;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.deeplearning4j.scaleout.actor.util.PortTaken;
 import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.util.SerializationUtils;
+import org.eclipse.jetty.server.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,14 +31,12 @@ public class StateTrackerDropWizardResource extends Application<HazelCastConf> i
 
     private StateTracker stateTracker;
     private Environment env;
-
     public StateTrackerDropWizardResource(StateTracker stateTracker) {
         this.stateTracker = stateTracker;
     }
 
     @Override
     public void initialize(Bootstrap<HazelCastConf> hazelCastConfBootstrap) {
-
     }
 
     @Override
