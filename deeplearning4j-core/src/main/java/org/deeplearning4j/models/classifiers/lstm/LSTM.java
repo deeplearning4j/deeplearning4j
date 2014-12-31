@@ -201,7 +201,7 @@ public class LSTM extends BaseLayer {
         }
 
 
-        INDArray y = conf.getActivationFunction().apply(hOut.get(interval(1,hOut.rows())).mmul(decoderWeights).addiRowVector(decoderBias));
+        INDArray y = hOut.get(interval(1,hOut.rows())).mmul(decoderWeights).addiRowVector(decoderBias);
         return y;
 
 

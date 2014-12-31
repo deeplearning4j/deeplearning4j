@@ -12,8 +12,8 @@ import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import org.deeplearning4j.scaleout.actor.core.protocol.Ack;
 import org.deeplearning4j.scaleout.actor.core.protocol.ClearWorker;
 import org.deeplearning4j.scaleout.actor.core.ClusterListener;
-import org.deeplearning4j.scaleout.conf.Configuration;
-import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
+import org.deeplearning4j.nn.conf.Configuration;
+import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.perform.WorkerPerformer;

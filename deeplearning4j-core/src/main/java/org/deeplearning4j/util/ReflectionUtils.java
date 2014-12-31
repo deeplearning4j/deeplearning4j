@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-package org.deeplearning4j.scaleout.util;
+package org.deeplearning4j.util;
 
 
 
-import org.deeplearning4j.scaleout.conf.Configuration;
 
-import java.io.IOException;
+import org.deeplearning4j.nn.conf.Configuration;
+
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;

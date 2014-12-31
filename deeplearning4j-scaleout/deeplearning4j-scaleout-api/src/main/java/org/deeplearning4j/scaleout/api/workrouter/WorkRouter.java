@@ -1,7 +1,7 @@
 package org.deeplearning4j.scaleout.api.workrouter;
 
 import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
-import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
+import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.job.Job;
 
 /**
