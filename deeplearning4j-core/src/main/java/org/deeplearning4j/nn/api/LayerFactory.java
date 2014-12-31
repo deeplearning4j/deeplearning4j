@@ -12,8 +12,11 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 public interface LayerFactory {
 
 
-
-
+    /**
+     * Return the layer class name
+     * @return the layer class name
+     */
+    String layerClazzName();
     /**
      *
      * Create a layer based on the based in configuration
@@ -38,7 +41,7 @@ public interface LayerFactory {
      * Get the param initializer used for initializing layers
      * @return the param initializer
      */
-    ParamInitializer getInitializer();
+    ParamInitializer initializer();
 
 
 }

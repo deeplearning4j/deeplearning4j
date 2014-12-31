@@ -17,7 +17,6 @@ public class RandomGeneratorDeSerializer extends JsonDeserializer<RandomGenerato
         JsonNode node = jp.getCodec().readTree(jp);
         String rngClazz = node.textValue();
         int seed = node.asInt();
-        JsonNode rngClazz1 = node.get("rng");
         try {
             Class<? extends RandomGenerator> clazz = (Class<? extends RandomGenerator>) Class.forName(rngClazz);
             RandomGenerator gen = clazz.newInstance();

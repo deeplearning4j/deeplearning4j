@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
@@ -9,17 +10,11 @@ import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.deeplearning4j.nn.conf.deserializers.*;
+import org.deeplearning4j.nn.conf.serializers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.deserializers.ActivationFunctionDeSerializer;
-import org.deeplearning4j.nn.conf.deserializers.DistributionDeSerializer;
-import org.deeplearning4j.nn.conf.deserializers.RandomGeneratorDeSerializer;
-import org.deeplearning4j.nn.conf.deserializers.StepFunctionDeSerializer;
-import org.deeplearning4j.nn.conf.serializers.ActivationFunctionSerializer;
-import org.deeplearning4j.nn.conf.serializers.DistributionSerializer;
-import org.deeplearning4j.nn.conf.serializers.RandomGeneratorSerializer;
-import org.deeplearning4j.nn.conf.serializers.StepFunctionSerializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
@@ -77,8 +72,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected transient Collection<IterationListener> listeners;
     protected transient StepFunction stepFunction = new GradientStepFunction();
     protected transient LayerFactory layerFactory;
-    //recurrent output
-    protected int recurrentOutput = 100;
+
     //gradient keys used for ensuring order when getting and setting the gradient
     protected List<String> gradientList = new ArrayList<>();
     private void readObject(java.io.ObjectInputStream in)
@@ -113,9 +107,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
 
-    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, int k, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, double dropOut, boolean applySparsity, WeightInit weightInit, OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride,int[] featureMapSize,int numInFeatureMaps,Collection<IterationListener> listeners,int recurrentOutput,LayerFactory layerFactory) {
+    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, int k, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, double dropOut, boolean applySparsity, WeightInit weightInit, OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean concatBiases, boolean constrainGradientToUnitNorm, RandomGenerator rng, RealDistribution dist, long seed, int nIn, int nOut, ActivationFunction activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, ActivationType activationType,int[] weightShape,int[] filterSize,int numFeatureMaps,int[] stride,int[] featureMapSize,int numInFeatureMaps,Collection<IterationListener> listeners,LayerFactory layerFactory) {
         this.layerFactory = layerFactory;
-        this.recurrentOutput = recurrentOutput;
         this.listeners = listeners;
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
@@ -159,7 +152,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     public NeuralNetConfiguration(NeuralNetConfiguration neuralNetConfiguration) {
         this.layerFactory = neuralNetConfiguration.layerFactory;
-        this.recurrentOutput = neuralNetConfiguration.recurrentOutput;
         this.sparsity = neuralNetConfiguration.sparsity;
         this.useAdaGrad = neuralNetConfiguration.useAdaGrad;
         this.lr = neuralNetConfiguration.lr;
@@ -194,7 +186,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.numFeatureMaps = neuralNetConfiguration.numFeatureMaps;
         this.filterSize = neuralNetConfiguration.filterSize;
         this.featureMapSize = neuralNetConfiguration.featureMapSize;
-        this.recurrentOutput = neuralNetConfiguration.recurrentOutput;
         if(dist == null)
             this.dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
@@ -225,13 +216,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.stepFunction = stepFunction;
     }
 
-    public int getRecurrentOutput() {
-        return recurrentOutput;
-    }
-
-    public void setRecurrentOutput(int recurrentOutput) {
-        this.recurrentOutput = recurrentOutput;
-    }
 
     public int getNumInFeatureMaps() {
         return numInFeatureMaps;
@@ -698,9 +682,16 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
      * @return this configuration represented as json
      */
     public String toJson() {
+        ObjectMapper mapper = mapper();
+
         try {
             String ret =  mapper.writeValueAsString(this);
-            return ret.replaceAll("\"activationFunction\",","").replaceAll("\"rng\",","").replaceAll("\"dist\",","").replaceAll("\"stepFunction\",","");
+            return ret
+                    .replaceAll("\"activationFunction\",","")
+                    .replaceAll("\"rng\",","")
+                    .replaceAll("\"dist\",","")
+                    .replaceAll("\"layerFactory\",","")
+                    .replaceAll("\"stepFunction\",","");
 
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -761,16 +752,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public static ObjectMapper mapper() {
         ObjectMapper ret = new ObjectMapper();
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS,false);
         SimpleModule module = new SimpleModule();
+        module.addSerializer(LayerFactory.class,new LayerFactorySerializer());
         module.addSerializer(StepFunction.class,new StepFunctionSerializer());
         module.addDeserializer(ActivationFunction.class, new ActivationFunctionDeSerializer());
         module.addSerializer(ActivationFunction.class, new ActivationFunctionSerializer());
         module.addDeserializer(RandomGenerator.class, new RandomGeneratorDeSerializer());
         module.addSerializer(RandomGenerator.class, new RandomGeneratorSerializer());
         module.addSerializer(RealDistribution.class, new DistributionSerializer());
-        module.addDeserializer(StepFunction.class,new StepFunctionDeSerializer());
+        module.addDeserializer(StepFunction.class, new StepFunctionDeSerializer());
         module.addDeserializer(RealDistribution.class, new DistributionDeSerializer());
+        module.addDeserializer(LayerFactory.class,new LayerFactoryDeSerializer());
         ret.registerModule(module);
         return ret;
     }
@@ -913,7 +906,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         //subsampling layers
         private int[] stride;
         private Collection<IterationListener> listeners;
-        private int recurrentOutput = 100;
         private StepFunction stepFunction = new GradientStepFunction();
         private LayerFactory layerFactory;
 
@@ -944,7 +936,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             Builder b = new Builder().activationFunction(activationFunction).layerFactory(layerFactory)
                     .adagradResetIterations(resetAdaGradIterations).applySparsity(applySparsity)
                     .concatBiases(concatBiases).constrainGradientToUnitNorm(constrainGradientToUnitNorm)
-                    .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize).recurrentOutput(recurrentOutput)
+                    .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize)
                     .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr).useAdaGrad(adagrad).stepFunction(stepFunction)
                     .lossFunction(lossFunction).momentumAfter(momentumAfter).momentum(momentum).listeners(listeners)
                     .nIn(nIn).nOut(nOut).numFeatureMaps(numFeatureMaps).optimizationAlgo(optimizationAlgo)
@@ -954,10 +946,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return b;
         }
 
-        public Builder recurrentOutput(int recurrentOutput) {
-            this.recurrentOutput = recurrentOutput;
-            return this;
-        }
+
 
         public Builder iterationListener(IterationListener listener) {
             if(listeners != null)
@@ -1117,7 +1106,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,  renderWeightsEveryNumEpochs,
                     concatBiases,  constrainGradientToUnitNorm,  rng,
-                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType,weightShape,filterSize,numFeatureMaps,stride,featureMapSize,numInFeatureMaps,listeners,recurrentOutput,layerFactory);
+                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,  activationType,weightShape,filterSize,numFeatureMaps,stride,featureMapSize,numInFeatureMaps,listeners,layerFactory);
             ret.useAdaGrad = this.adagrad;
             ret.stepFunction = stepFunction;
             return ret;

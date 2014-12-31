@@ -20,9 +20,11 @@ import java.util.*;
  */
 public class WordVectorsImpl implements WordVectors {
 
-
+    //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
+    protected int minWordFrequency = 5;
     protected WeightLookupTable lookupTable;
     protected VocabCache vocab;
+    protected int layerSize = 100;
     public final static String UNK = "UNK";
     protected List<String> stopWords = StopWords.getStopWords();
     /**

@@ -16,6 +16,8 @@ import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.parallel.Parallelization;
+import org.deeplearning4j.text.invertedindex.InvertedIndex;
+import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.stopwords.StopWords;
@@ -66,6 +68,7 @@ public class Glove  extends WordVectorsImpl {
         this.numWorkers = numWorkers;
         this.gen = gen;
         this.vocab = cache;
+        this.layerSize = layerSize;
         this.shuffle = shuffle;
         this.sentenceIterator = sentenceIterator;
         this.textVectorizer = textVectorizer;
@@ -94,7 +97,8 @@ public class Glove  extends WordVectorsImpl {
         }
 
         if(textVectorizer == null && cacheFresh) {
-            textVectorizer = new TfidfVectorizer.Builder().tokenize(tokenizerFactory)
+            InvertedIndex index = new LuceneInvertedIndex(vocab(),false,"glove-index");
+            textVectorizer = new TfidfVectorizer.Builder().tokenize(tokenizerFactory).index(index)
                     .cache(vocab()).iterate(sentenceIterator).minWords(minWordFrequency)
                     .stopWords(stopWords).stem(stem).build();
 
@@ -114,8 +118,12 @@ public class Glove  extends WordVectorsImpl {
 
         }
 
-        if(lookupTable == null)
-           throw new IllegalStateException("Please specify a lookup table");
+        if(lookupTable == null) {
+            lookupTable = new GloveWeightLookupTable.Builder()
+                    .cache(textVectorizer.vocab()).lr(learningRate)
+                    .vectorLength(layerSize).maxCount(maxCount)
+                    .gen(gen).build();
+        }
 
 
         if(lookupTable().getSyn0() == null)

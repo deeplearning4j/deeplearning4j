@@ -46,7 +46,6 @@ public class NeuralNetWorkPerformer implements WorkerPerformer {
     @Override
     public void setup(Configuration conf) {
         NeuralNetConfiguration conf2 = NeuralNetConfiguration.fromJson(conf.get(NEURAL_NET_CONF));
-
         this.neuralNetwork = conf2.getLayerFactory().create(conf2);
     }
 }
