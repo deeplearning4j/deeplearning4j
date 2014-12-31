@@ -14,7 +14,7 @@ This open-source, distributed deep-learning framework is made for data input and
 
 By following the links at the bottom of each page, you will learn to set up, and train with sample data, several types of deep-learning networks. These include single- and multithread networks, [Restricted Boltzmann machines](../restrictedboltzmannmachine.html), [deep-belief networks](../deepbeliefnetwork.html), [Deep Autoencoders](http://deeplearning4j.org/deepautoencoder.html), [Recursive Neural Tensor Networks](http://deeplearning4j.org/recursiveneuraltensornetwork.html), [Convolutional Nets](http://deeplearning4j.org/convolutionalnets.html) and [Stacked Denoising Autoencoders](../stackeddenoisingautoencoder.html). 
 
-For a quick introduction to neural nets, please see our [overview](../overview.html).
+For a quick introduction to neural nets, please see our [overview](../overview.html). In a nutshell, Deeplearning4j lets you compose deep nets from various shallow nets, each of which form a layer. This flexibility allows you to combine restricted Boltzmann machines, autoencoders, convolutional nets and recurrent nets as you prefer -- all in a distributed, production-grade framework.
 
 There are a lot of knobs to turn when you're training a deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers. If you have questions, please join [our Google Group](https://groups.google.com/forum/#!forum/deeplearning4j); for premium support, [contact us at Skymind](http://www.skymind.io/contact.html). [ND4J is the Java scientific computing engine](http://nd4j.org/) powering our matrix manipulations.
 
