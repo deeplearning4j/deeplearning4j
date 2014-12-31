@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.params;
 
+import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -31,5 +32,10 @@ public class LSTMParamInitializer implements ParamInitializer {
         params.put(DECODER_WEIGHTS,WeightInitUtil.initWeights(hiddenSize,outputSize,conf.getWeightInit(),conf.getActivationFunction(),conf.getDist()));
         params.put(DECODER_BIAS, Nd4j.zeros(outputSize));
 
+    }
+
+    @Override
+    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, Configuration extraConf) {
+        init(params,conf);
     }
 }

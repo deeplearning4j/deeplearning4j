@@ -5,7 +5,7 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.scaleout.aggregator.JobAggregator;
-import org.deeplearning4j.scaleout.conf.Configuration;
+import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
 
 import java.util.HashSet;

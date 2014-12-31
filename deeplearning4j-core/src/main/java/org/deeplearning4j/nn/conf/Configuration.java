@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-package org.deeplearning4j.scaleout.conf;
+package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import org.deeplearning4j.scaleout.util.ReflectionUtils;
-import org.deeplearning4j.scaleout.util.StringUtils;
+import org.deeplearning4j.util.ReflectionUtils;
+import org.deeplearning4j.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.*;

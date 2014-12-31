@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import org.deeplearning4j.scaleout.conf.Configuration;
-import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
+import org.deeplearning4j.nn.conf.Configuration;
+import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.zookeeper.ZooKeeperConfigurationRegister;
 import org.deeplearning4j.scaleout.zookeeper.ZooKeeperRunner;
 import org.slf4j.Logger;
