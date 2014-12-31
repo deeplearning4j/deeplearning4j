@@ -1000,6 +1000,7 @@ public class RNTN implements Serializable {
         }
 
         public Builder setFeatureVectors(Word2Vec vec) {
+            vocabCache = vec.vocab();
             return setFeatureVectors(vec.lookupTable());
         }
 
@@ -1103,19 +1104,19 @@ public class RNTN implements Serializable {
 
         public RNTN build() {
             RNTN rt =  new RNTN(   numHidden,
-                                   rng,
-                                   useINd4j,
-                                   combineClassification,
-                                   simplifiedModel,
-                                   randomFeatureVectors,
-                                   scalingForInit,
-                                  lowerCasefeatureNames,
-                                  activationFunction,
-                                  adagradResetFrequency,
-                                    regTransformINDArray,
-                                  featureVectors,
-                                  vocabCache,
-                                  numBinaryMatrices, binaryTransformSize, binaryINd4jize, binaryClassificationSize, numUnaryMatrices, unaryClassificationSize, classWeights);
+                    rng,
+                    useINd4j,
+                    combineClassification,
+                    simplifiedModel,
+                    randomFeatureVectors,
+                    scalingForInit,
+                    lowerCasefeatureNames,
+                    activationFunction,
+                    adagradResetFrequency,
+                    regTransformINDArray,
+                    featureVectors,
+                    vocabCache,
+                    numBinaryMatrices, binaryTransformSize, binaryINd4jize, binaryClassificationSize, numUnaryMatrices, unaryClassificationSize, classWeights);
 
             return rt;
         }

@@ -2,6 +2,7 @@ package org.deeplearning4j.models.glove;
 
 import static org.junit.Assert.*;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
@@ -36,6 +37,7 @@ public class CoOccurrencesTest {
 
     @Before
     public void before() throws Exception {
+        FileUtils.deleteDirectory(new File("word2vec-index"));
         ClassPathResource resource = new ClassPathResource("other/oneline.txt");
         File file = resource.getFile();
         iter = new LineSentenceIterator(file);
@@ -45,52 +47,6 @@ public class CoOccurrencesTest {
                 return StringCleaning.stripPunct(sentence);
             }
         });
-
-
-    }
-
-
-    @Test
-    public void testCoOccurrences() {
-        if(vocabCache == null)
-            vocabCache = new InMemoryLookupCache();
-
-        if(textVectorizer == null) {
-            textVectorizer = new TfidfVectorizer.Builder().tokenize(tokenizerFactory)
-                    .cache(vocabCache).iterate(iter).minWords(1).stopWords(new ArrayList<String>())
-                    .build();
-
-            textVectorizer.fit();
-        }
-
-        if(coOccurrences == null) {
-            coOccurrences = new CoOccurrences.Builder()
-                    .cache(vocabCache).iterate(iter).symmetric(false)
-                    .tokenizer(tokenizerFactory).windowSize(15)
-                    .build();
-
-            coOccurrences.fit();
-            assertEquals(16,coOccurrences.getCoOCurreneCounts().totalSize());
-            log.info(coOccurrences.getCoOCurreneCounts().toString());
-
-        }
-
-    }
-
-
-    @Test
-    public void testWeights() throws Exception {
-        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
-        File file = resource.getFile();
-        iter = new LineSentenceIterator(file);
-        iter.setPreProcessor(new SentencePreProcessor() {
-            @Override
-            public String preProcess(String sentence) {
-                return sentence.toLowerCase();
-            }
-        });
-
-
         vocabCache = new InMemoryLookupCache();
 
         textVectorizer = new TfidfVectorizer.Builder().tokenize(tokenizerFactory)
@@ -104,69 +60,12 @@ public class CoOccurrencesTest {
                 .tokenizer(tokenizerFactory).windowSize(15)
                 .build();
 
-        coOccurrences.fit();
-        List<String> occurrences = IOUtils.readLines(new ClassPathResource("big/coc.txt").getInputStream());
-        for(int i = 0; i < occurrences.size(); i++) {
-            String[] split = occurrences.get(i).split(" ");
-            //punctuation can vary: not a huge deal here
-            if (split.length < 3 || StringCleaning.stripPunct(split[0]).isEmpty() || StringCleaning.stripPunct(split[1]).isEmpty())
-                continue;
-            double count = coOccurrences.count(split[0], split[1]);
-            if(count == 0)
-                count = coOccurrences.count(split[1], split[0]);
-            //weighting doesn't need to be exact but should be reasonably close
-            assertEquals("Failed on " + split[0] + " " + split[1], count, Double.parseDouble(split[2]), 5);
-        }
-
-
-
-
-
-
     }
 
 
-    @Test
-    public void testNumOccurrences() throws Exception {
-        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
-        File file = resource.getFile();
-        iter = new LineSentenceIterator(file);
-        iter.setPreProcessor(new SentencePreProcessor() {
-            @Override
-            public String preProcess(String sentence) {
-                return sentence.toLowerCase();
-            }
-        });
-
-
-        vocabCache = new InMemoryLookupCache();
-
-        textVectorizer = new TfidfVectorizer.Builder().tokenize(tokenizerFactory)
-                .cache(vocabCache).iterate(iter).minWords(1).stopWords(new ArrayList<String>())
-                .build();
-
-        textVectorizer.fit();
-
-        coOccurrences = new CoOccurrences.Builder()
-                .cache(vocabCache).iterate(iter).symmetric(false)
-                .tokenizer(tokenizerFactory).windowSize(15)
-                .build();
-
-        coOccurrences.fit();
-        List<String> occurrences = IOUtils.readLines(new ClassPathResource("big/occurrences.txt").getInputStream());
-        for(int i = 0; i < occurrences.size(); i++) {
-            String[] split = occurrences.get(i).split(" ");
-            assertEquals(i,Integer.parseInt(split[0]));
-            assertEquals("Failed on id " + i,Double.parseDouble(split[1]),coOccurrences.getSentenceOccurrences().getCount(i),6);
-        }
-
-        log.info(String.valueOf(coOccurrences.numCoOccurrences()));
 
 
 
-
-
-    }
 
     @Test
     public void testTokens() throws Exception {

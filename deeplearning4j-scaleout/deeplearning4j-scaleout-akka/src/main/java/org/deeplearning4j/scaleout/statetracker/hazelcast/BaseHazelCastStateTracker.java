@@ -1,9 +1,11 @@
 package org.deeplearning4j.scaleout.statetracker.hazelcast;
 
+
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.*;
 import com.hazelcast.core.*;
+
 
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.scaleout.actor.util.PortTaken;
@@ -155,19 +157,38 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
      */
     @Override
     public void startRestApi() {
-        resource = new StateTrackerDropWizardResource(this);
+        String startApi = System.getProperty("startapi","false");
+        Boolean b = Boolean.parseBoolean(startApi);
+        if(!b)
+            return;
         try {
+            if(PortTaken.portTaken(8080) || PortTaken.portTaken(8180)) {
+                log.warn("Port taken for rest api");
+                return;
+            }
             InputStream is = new ClassPathResource("/hazelcast/dropwizard.yml").getInputStream();
+
+
+            resource = new StateTrackerDropWizardResource(this);
             File tmpConfig = new File("hazelcast/dropwizard.yml");
             if(!tmpConfig.getParentFile().exists())
                 tmpConfig.getParentFile().mkdirs();
             BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpConfig));
             IOUtils.copy(is, bos);
             bos.flush();
+
+
             resource.run(new String[]{"server",tmpConfig.getAbsolutePath()});
             tmpConfig.deleteOnExit();
-        } catch(Exception e) {
-            throw new RuntimeException(e);
+        }
+
+
+        catch(Error e1) {
+            log.warn("Unable to start server",e1);
+
+        }
+        catch(Exception e) {
+            log.warn("Unable to start server",e);
         }
 
     }

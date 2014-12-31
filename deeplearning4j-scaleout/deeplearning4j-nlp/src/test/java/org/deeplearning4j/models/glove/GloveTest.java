@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.glove;
 
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.junit.Before;
@@ -21,6 +22,7 @@ public class GloveTest {
 
     @Before
     public void before() throws Exception {
+
         ClassPathResource resource = new ClassPathResource("other/oneline.txt");
         File file = resource.getFile().getParentFile();
         iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
@@ -30,11 +32,14 @@ public class GloveTest {
 
 
     @Test
-    public void testGlove() {
-       glove = new Glove.Builder().iterate(iter).minWordFrequency(1)
-               .build();
+    public void testGlove() throws Exception {
+        FileUtils.deleteDirectory(new File("word2vec-index"));
+        log.info("Deleted directory " + new File("word2vec-index").getAbsolutePath());
+        glove = new Glove.Builder().iterate(iter)
+                .minWordFrequency(1)
+                .build();
 
-       glove.fit();
+        glove.fit();
 
 
 

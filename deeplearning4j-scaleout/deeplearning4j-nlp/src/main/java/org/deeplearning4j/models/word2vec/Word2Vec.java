@@ -53,8 +53,7 @@ public class Word2Vec extends WordVectorsImpl  {
     protected AtomicInteger rateOfChange = new AtomicInteger(0);
     //learning rate
     protected AtomicDouble alpha = new AtomicDouble(0.025);
-    //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
-    protected int minWordFrequency = 5;
+
     //context to use for gathering word frequencies
     protected int window = 5;
     protected transient  RandomGenerator g;
@@ -71,7 +70,6 @@ public class Word2Vec extends WordVectorsImpl  {
     protected InvertedIndex invertedIndex;
     protected boolean useAdaGrad = false;
     protected int workers = Runtime.getRuntime().availableProcessors();
-    protected Queue<List<List<VocabWord>>> jobQueue = new LinkedBlockingDeque<>(10000);
 
     public Word2Vec() {}
 
@@ -277,10 +275,11 @@ public class Word2Vec extends WordVectorsImpl  {
             vectorizer.fit();
 
         }
+
         //includes unk
-        else if(vocab().numWords() < 2) {
+        else if(vocab().numWords() < 2)
             vectorizer.fit();
-        }
+
 
 
 
