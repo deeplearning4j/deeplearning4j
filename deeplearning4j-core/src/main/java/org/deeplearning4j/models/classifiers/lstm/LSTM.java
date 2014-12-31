@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,13 +48,102 @@ public class LSTM extends BaseLayer {
 
 
     public INDArray forward(INDArray xi,INDArray xs) {
+        this.xs = xs;
+        this.xi = xi;
         x = Nd4j.vstack(xi,xs);
+        return activate(x);
+    }
+
+
+    /**
+     * Back propagation in the given input
+     * @param y
+     * @return
+     */
+    public Gradient backward(INDArray y) {
+        INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
+        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
+
+        INDArray dY = Nd4j.vstack(Nd4j.zeros(y.columns()),y);
+        INDArray dWd = hOut.transpose().mmul(dY);
+        INDArray dBd = Nd4j.sum(dWd,0);
+        INDArray dHout = dY.mmul(decoderWeights.transpose());
+        if(conf.getDropOut() > 0) {
+            dHout.muli(u2);
+        }
+
+
+
+        INDArray dIFog = Nd4j.zeros(iFog.shape());
+        INDArray dIFogF = Nd4j.zeros(iFogF.shape());
+        INDArray dRecurrentWeights = Nd4j.zeros(recurrentWeights.shape());
+        INDArray dHin = Nd4j.zeros(hIn.shape());
+
+        INDArray dC = Nd4j.zeros(c.shape());
+        INDArray dx = Nd4j.zeros(x.shape());
+        int n = hOut.rows();
+        int d = hOut.columns();
+
+
+        for(int t = n -1; t > 0; t--) {
+            if(conf.getActivationFunction().type().equals("tanh")) {
+                INDArray tanhCt = tanh(c.slice(t));
+                dIFogF.slice(t).put(new NDArrayIndex[]{interval(2 * d,3 * d)},tanhCt.mul(dHout.slice(t)));
+                dC.slice(t).addi(pow(tanhCt,2).rsubi(1).muli(iFogF.slice(t).get(interval(2 * d, 3 * d)).mul(dHout.slice(t))));
+            }
+            else {
+                dIFogF.slice(t).put(new NDArrayIndex[]{interval(2 * d,3 * d)},c.slice(t).mul(dHout.slice(t)));
+                dC.slice(t).addi(iFogF.slice(t).get(interval(2 * d,3 * d)).mul(dHout.slice(t)));
+            }
+
+            if(t > 0) {
+                dIFogF.slice(t).put(new NDArrayIndex[]{interval(d, 2 * d)},c.slice(t - 1).mul(dC.slice(t)));
+                dC.slice(t - 1).addi(iFogF.slice(t).get(interval(d,2 * d)).mul(dC.slice(t)));
+            }
+
+            dIFogF.slice(t).put(new NDArrayIndex[]{interval(0, d)}, iFogF.slice(t).get(interval(3 * d, iFogF.columns())).mul(dC.slice(t)));
+            dIFogF.slice(t).put(new NDArrayIndex[]{interval(3 * d, dIFogF.columns())},iFogF.slice(t).get(interval(0,d)).mul(dC.slice(t)));
+
+            dIFog.slice(t).put(new NDArrayIndex[]{interval(3 * d,dIFog.columns())},pow(iFogF.slice(t).get(interval(3 * d,iFogF.columns())),2).rsubi(1).mul(dIFogF.slice(t).get(interval(3 * d,dIFogF.columns()))));
+            y = iFogF.slice(t).get(interval(0,3 * d));
+            dIFogF.slice(t).put(new NDArrayIndex[]{interval(0, 3 * d)}, y.mul(y.rsub(1)).mul(dIFogF.slice(t).get(interval(0, 3 * d))));
+
+            dRecurrentWeights.addi(hIn.slice(t).transpose().mmul(dIFog.slice(t)));
+            dHin.slice(t).assign(dIFog.slice(t).mmul(recurrentWeights.transpose()));
+
+
+            INDArray get = dHin.slice(t).get(interval(1, 1 + d));
+
+            dx.slice(t).assign(get);
+            if(t > 0)
+                dHout.slice(t - 1).addi(dHin.slice(t).get(interval(1 + d, dHin.columns())));
+
+
+
+            if(conf.getDropOut() > 0)
+                dx.muli(u);
+
+        }
+
+
+        clear();
+
+        Gradient gradient = new DefaultGradient();
+        gradient.gradientLookupTable().put(LSTMParamInitializer.DECODER_BIAS,dBd);
+        gradient.gradientLookupTable().put(LSTMParamInitializer.DECODER_WEIGHTS,dWd);
+        gradient.gradientLookupTable().put(LSTMParamInitializer.RECURRENT_WEIGHTS,dRecurrentWeights);
+        return gradient;
+
+    }
+
+
+    @Override
+    public INDArray activate(INDArray input) {
         INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
         INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
         INDArray decoderBias = getParam(LSTMParamInitializer.DECODER_BIAS);
 
-        this.xs = xs;
-        this.xi = xi;
+
         if(conf.getDropOut() > 0) {
             double scale = 1 / (1 - conf.getDropOut());
             u = Nd4j.rand(x.shape()).lti(1 - conf.getDropOut()).muli(scale);
@@ -73,28 +163,31 @@ public class LSTM extends BaseLayer {
         INDArray prev;
 
         for(int t = 0; t < n ; t++) {
-            //prev = np.zeros(d) if t == 0 else Hout[t-1]
             prev = t == 0 ? Nd4j.zeros(d) : hOut.getRow(t - 1);
             hIn.put(t, 0, 1.0);
-            hIn.slice(t).put(new NDArrayIndex[]{interval(1,1 + d)},hOut.getRow(t - 1));
+            hIn.slice(t).put(new NDArrayIndex[]{interval(1,1 + d)},x.slice(t));
             hIn.slice(t).put(new NDArrayIndex[]{interval(1 + d,hIn.columns())},prev);
 
             //compute all gate activations. dots:
             iFog.putRow(t,hIn.slice(t).mmul(recurrentWeights));
 
-
+            //non linearity
             iFogF.slice(t).put(new NDArrayIndex[]{interval(0,3 * d)}, sigmoid(iFog.slice(t).get(interval(0, 3 * d))));
             iFogF.slice(t).put(new NDArrayIndex[]{interval(3 * d,iFogF.columns())}, tanh(iFog.slice(t).get(interval(3 * d, iFog.columns()))));
+
+            //cell activations
             c.slice(t).put(new NDArrayIndex[]{interval(3 * d, iFogF.columns())},iFogF.slice(t).get(interval(0, d)).mul(iFogF.slice(t).get(interval(3 * d,iFogF.columns()))));
+
+
             if(t > 0)
                 c.slice(t).addi(iFogF.slice(t).get(interval(d,2 * d)).mul(c.getRow(t - 1)));
 
 
             if(conf.getActivationFunction().type().equals("tanh"))
-                hOut.slice(t).assign(iFogF.slice(t).get(interval(2 * d,3 * d)).muli(tanh(c.getRow(t))));
+                hOut.slice(t).assign(iFogF.slice(t).get(interval(2 * d,3 * d)).mul(tanh(c.getRow(t))));
 
             else
-                hOut.slice(t).assign(iFogF.slice(t).get(interval(2 * d,3 * d)).muli(c.getRow(t)));
+                hOut.slice(t).assign(iFogF.slice(t).get(interval(2 * d,3 * d)).mul(c.getRow(t)));
 
 
 
@@ -108,96 +201,11 @@ public class LSTM extends BaseLayer {
         }
 
 
-        INDArray y = hOut.getRows(interval(1,hOut.rows()).indices()).mmul(decoderWeights).addiRowVector(decoderBias);
+        INDArray y = hOut.get(interval(1,hOut.rows())).mmul(decoderWeights).addiRowVector(decoderBias);
         return y;
 
 
     }
-
-
-    /**
-     * Back propagation in the given input
-     * @param y
-     * @return
-     */
-    public Gradient backward(INDArray y) {
-        INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
-        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
-
-        INDArray dY = Nd4j.vstack(Nd4j.zeros(y.columns()),y);
-        INDArray dWd = hOut.transpose().mmul(dY);
-        INDArray dBd = Nd4j.sum(dWd,0);
-        INDArray dHout = dY.mmul(decoderWeights);
-        if(conf.getDropOut() > 0) {
-            dHout.muli(u2);
-        }
-
-
-
-        INDArray dIFog = Nd4j.zeros(iFog.shape());
-        INDArray dIFogF = Nd4j.zeros(iFogF.shape());
-        INDArray dRecurrentWeights = Nd4j.zeros(recurrentWeights.shape());
-        INDArray dHin = Nd4j.zeros(hIn.shape());
-
-        INDArray dC = Nd4j.zeros(c.shape());
-        INDArray dx = Nd4j.zeros(x.shape());
-        int n = x.rows();
-        int d = decoderWeights.rows();
-
-
-        for(int t = n -1; t > 0; t--) {
-            if(conf.getActivationFunction().type().equals("tanh")) {
-                INDArray tanhCt = tanh(c.slice(t));
-                dIFogF.slice(t).get(interval(2 * d,3 * d)).assign(tanhCt.mul(dHout.slice(t)));
-                dC.slice(t).addi(pow(tanhCt,2).rsubi(1).muli(iFogF.slice(t).get(interval(2 * d, 3 * d)).mul(dHout.slice(t))));
-            }
-            else {
-                dIFogF.slice(t).get(interval(2 * d,3 * d)).assign(c.slice(t).mul(dHout.slice(t)));
-                dC.slice(t).addi(iFogF.slice(t).get(interval(2 * d,3 * d)).mul(dHout.slice(t)));
-            }
-
-            if(t > 0) {
-                dIFogF.slice(t).get(interval(d, 2 * d)).assign(c.slice(t - 1).mul(dC.slice(t)));
-                dC.slice(t - 1).addi(iFogF.slice(t).get(interval(d,2 * d)).mul(dC.slice(t)));
-            }
-
-            dIFogF.slice(t).get(interval(0,d)).assign(iFogF.slice(t).get(interval(3 * d,iFogF.columns())).mul(dC.slice(t)));
-            dIFogF.slice(t).get(interval(3 * d,dIFogF.columns())).assign(iFogF.slice(t).get(interval(0,d)).mul(dC.slice(t)));
-
-            dIFog.slice(t).get(interval(3 * d,dIFog.columns())).assign(pow(iFogF.slice(t).get(interval(3 * d,iFogF.columns())),2).rsubi(1).mul(dIFogF.slice(t).get(interval(3 * d,dIFogF.columns()))));
-            y = iFogF.slice(t).get(interval(0,3 * d));
-            dIFogF.slice(t).get(interval(0, 3 * d)).assign(y.mul(y.rsub(1)).mul(dIFogF.slice(t).get(interval(0, 3 * d))));
-
-            dRecurrentWeights.addi(hIn.slice(t).mmul(dIFogF.slice(t)));
-            dHin.slice(t).assign(dIFog.slice(t).mmul(recurrentWeights.transpose()));
-
-            dx.slice(t).assign(dHin.slice(t).get(interval(1, 1 + d)));
-
-            if(t > 0) {
-                dHout.slice(t - 1).addi(dHin.slice(t).get(interval(1 + d, dHin.columns())));
-
-            }
-
-            if(conf.getDropOut() > 0) {
-                dx.muli(u);
-            }
-        }
-
-
-        clear();
-
-        Gradient gradient = new DefaultGradient();
-        gradient.gradientLookupTable().put(LSTMParamInitializer.DECODER_BIAS,dBd);
-        gradient.gradientLookupTable().put(LSTMParamInitializer.DECODER_WEIGHTS,dWd);
-        gradient.gradientLookupTable().put(LSTMParamInitializer.RECURRENT_WEIGHTS,dRecurrentWeights);
-        return gradient;
-
-    }
-
-
-
-
-
 
     /**
      * Prediction with beam search
@@ -417,6 +425,8 @@ public class LSTM extends BaseLayer {
         solver.optimize();
     }
 
+
+
     @Override
     public void update(Gradient gradient) {
         setParams(params().addi(gradient.gradient()));
@@ -425,7 +435,8 @@ public class LSTM extends BaseLayer {
     @Override
     public double score() {
         INDArray forward = Activations.softMaxRows().apply(forward(xi, xs));
-        return -log(forward.sum(Integer.MAX_VALUE)).getDouble(0);
+        return LossFunctions.score(xs,conf.getLossFunction(),forward,conf.getL2(),conf.isUseRegularization());
+        //return -log(forward.sum(Integer.MAX_VALUE)).getDouble(0);
     }
 
     @Override
@@ -470,6 +481,11 @@ public class LSTM extends BaseLayer {
 
     @Override
     public void fit(INDArray data) {
+        xi = data.slice(0);
+        NDArrayIndex[] everythingElse = {
+            NDArrayIndex.interval(1,data.rows()),NDArrayIndex.interval(0,data.columns())
+        };
+        xs = data.get(everythingElse);
         Solver solver = new Solver.Builder()
                 .configure(conf).model(this)
                 .listeners(conf.getListeners()).build();
@@ -484,7 +500,7 @@ public class LSTM extends BaseLayer {
     @Override
     public Gradient getGradient() {
         INDArray forward = forward(xi,xs);
-        INDArray probas = Activations.softmax().applyDerivative(forward);
+        INDArray probas = Activations.softMaxRows().applyDerivative(forward);
         return backward(probas);
     }
 

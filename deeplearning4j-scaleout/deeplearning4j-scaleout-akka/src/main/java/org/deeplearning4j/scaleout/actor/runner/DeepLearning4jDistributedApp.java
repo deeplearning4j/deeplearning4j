@@ -2,8 +2,8 @@ package org.deeplearning4j.scaleout.actor.runner;
 
 
 
-import org.deeplearning4j.scaleout.conf.Configuration;
-import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
+import org.deeplearning4j.nn.conf.Configuration;
+import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.job.JobIterator;
 import org.deeplearning4j.scaleout.job.JobIteratorFactory;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;

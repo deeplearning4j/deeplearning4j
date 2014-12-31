@@ -2,8 +2,6 @@ package org.deeplearning4j.scaleout.actor.core.actor;
 
 import akka.actor.*;
 import akka.actor.SupervisorStrategy.Directive;
-import akka.cluster.Cluster;
-import akka.contrib.pattern.ClusterReceptionistExtension;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
@@ -13,31 +11,27 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.Function;
 import akka.routing.RoundRobinPool;
+import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.actor.core.ClusterListener;
 import org.deeplearning4j.scaleout.actor.core.protocol.Ack;
 import org.deeplearning4j.scaleout.actor.util.ActorRefUtils;
 import org.deeplearning4j.scaleout.api.workrouter.WorkRouter;
-import org.deeplearning4j.scaleout.conf.Configuration;
-import org.deeplearning4j.scaleout.api.ComputableMaster;
+import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.messages.DoneMessage;
 import org.deeplearning4j.scaleout.messages.MoreWorkMessage;
 import org.deeplearning4j.scaleout.perform.WorkerPerformer;
 import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;
 import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
-import org.deeplearning4j.scaleout.statetracker.hazelcast.IterateAndUpdateImpl;
-import org.deeplearning4j.scaleout.workrouter.IterativeReduceWorkRouter;
 import scala.Option;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
-import java.io.DataOutputStream;
 import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -46,7 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Adam Gibson
  *
  */
-public class MasterActor extends  UntypedActor implements ComputableMaster {
+public class MasterActor extends  UntypedActor implements DeepLearningConfigurable {
 
 
     protected Configuration conf;

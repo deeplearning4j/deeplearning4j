@@ -2,13 +2,11 @@ package org.deeplearning4j.scaleout.perform.models.word2vec;
 
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
-import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.Huffman;
-import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.scaleout.conf.Configuration;
+import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.scaleout.job.JobIterator;
 import org.deeplearning4j.scaleout.perform.models.word2vec.iterator.Word2VecJobIterator;
 import org.deeplearning4j.scaleout.testsupport.BaseTestDistributed;
@@ -21,11 +19,9 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactor
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
-import java.util.ArrayList;
 
 /**
  * Created by agibsonccc on 11/29/14.

@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.scaleout.aggregator.JobAggregator;
-import org.deeplearning4j.scaleout.conf.Configuration;
+import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.scaleout.job.JobIterator;
 import org.deeplearning4j.scaleout.testsupport.BaseTestDistributed;
 import org.deeplearning4j.text.sentenceiterator.FileSentenceIterator;

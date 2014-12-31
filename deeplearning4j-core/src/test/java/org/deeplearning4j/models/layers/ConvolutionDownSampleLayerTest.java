@@ -1,8 +1,10 @@
 package org.deeplearning4j.models.layers;
 
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
+import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.ConvolutionDownSampleLayer;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.junit.Test;
 import org.junit.Ignore;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -15,7 +17,6 @@ public class ConvolutionDownSampleLayerTest {
 
 
     @Test
-    @Ignore
     public void testConvolution() throws Exception {
         MnistDataFetcher data = new MnistDataFetcher(true);
         data.fetch(2);
@@ -27,7 +28,8 @@ public class ConvolutionDownSampleLayerTest {
                 .filterSize(new int[]{2,2}).numFeatureMaps(2)
                 .weightShape(new int[]{2, 3, 9, 9}).build();
 
-        ConvolutionDownSampleLayer c = new ConvolutionDownSampleLayer(n,d.getFeatureMatrix());
+        LayerFactory l = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
+        ConvolutionDownSampleLayer c = l.create(n);
 
         INDArray convolved = c.activate(d.getFeatureMatrix());
 
