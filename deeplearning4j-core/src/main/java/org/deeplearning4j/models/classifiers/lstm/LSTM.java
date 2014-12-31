@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -170,9 +171,11 @@ public class LSTM extends BaseLayer {
             //compute all gate activations. dots:
             iFog.putRow(t,hIn.slice(t).mmul(recurrentWeights));
 
-
+            //non linearity
             iFogF.slice(t).put(new NDArrayIndex[]{interval(0,3 * d)}, sigmoid(iFog.slice(t).get(interval(0, 3 * d))));
             iFogF.slice(t).put(new NDArrayIndex[]{interval(3 * d,iFogF.columns())}, tanh(iFog.slice(t).get(interval(3 * d, iFog.columns()))));
+
+            //cell activations
             c.slice(t).put(new NDArrayIndex[]{interval(3 * d, iFogF.columns())},iFogF.slice(t).get(interval(0, d)).mul(iFogF.slice(t).get(interval(3 * d,iFogF.columns()))));
 
 
@@ -181,10 +184,10 @@ public class LSTM extends BaseLayer {
 
 
             if(conf.getActivationFunction().type().equals("tanh"))
-                hOut.slice(t).assign(iFogF.slice(t).get(interval(2 * d,3 * d)).muli(tanh(c.getRow(t))));
+                hOut.slice(t).assign(iFogF.slice(t).get(interval(2 * d,3 * d)).mul(tanh(c.getRow(t))));
 
             else
-                hOut.slice(t).assign(iFogF.slice(t).get(interval(2 * d,3 * d)).muli(c.getRow(t)));
+                hOut.slice(t).assign(iFogF.slice(t).get(interval(2 * d,3 * d)).mul(c.getRow(t)));
 
 
 
@@ -198,7 +201,7 @@ public class LSTM extends BaseLayer {
         }
 
 
-        INDArray y = hOut.get(interval(1,hOut.rows())).mmul(decoderWeights).addiRowVector(decoderBias);
+        INDArray y = conf.getActivationFunction().apply(hOut.get(interval(1,hOut.rows())).mmul(decoderWeights).addiRowVector(decoderBias));
         return y;
 
 
@@ -422,6 +425,8 @@ public class LSTM extends BaseLayer {
         solver.optimize();
     }
 
+
+
     @Override
     public void update(Gradient gradient) {
         setParams(params().addi(gradient.gradient()));
@@ -430,7 +435,8 @@ public class LSTM extends BaseLayer {
     @Override
     public double score() {
         INDArray forward = Activations.softMaxRows().apply(forward(xi, xs));
-        return -log(forward.sum(Integer.MAX_VALUE)).getDouble(0);
+        return LossFunctions.score(xs,conf.getLossFunction(),forward,conf.getL2(),conf.isUseRegularization());
+        //return -log(forward.sum(Integer.MAX_VALUE)).getDouble(0);
     }
 
     @Override

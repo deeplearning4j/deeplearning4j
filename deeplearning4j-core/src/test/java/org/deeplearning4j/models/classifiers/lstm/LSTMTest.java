@@ -4,7 +4,9 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +28,8 @@ public class LSTMTest {
         List<String> vocab = Arrays.asList("Skymind", "does", "deep", "learning");
         LayerFactory factory = LayerFactories.getFactory(LSTM.class);
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layerFactory(factory).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().activationFunction(Activations.softMaxRows())
+                .layerFactory(factory).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT).lossFunction(LossFunctions.LossFunction.MCXENT)
                 .nIn(4).nOut(4).build();
         LSTM l = factory.create(conf);
         INDArray predict = FeatureUtil.toOutcomeMatrix(new int[]{0,1,2,3},4);
