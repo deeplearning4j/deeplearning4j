@@ -31,7 +31,8 @@ public class IterativeReduceWorkRouter extends BaseWorkRouter {
         try {
             List<Job> currentJobs = stateTracker.currentJobs();
             Collection<String> updates = stateTracker.workerUpdates();
-            return updates.size() >= stateTracker.workers().size() ||
+            Collection<String> workers = stateTracker.workers();
+            return updates.size() >= workers.size() ||
                     currentJobs.isEmpty() || !isWaitForWorkers();
         }catch(Exception e) {
 
