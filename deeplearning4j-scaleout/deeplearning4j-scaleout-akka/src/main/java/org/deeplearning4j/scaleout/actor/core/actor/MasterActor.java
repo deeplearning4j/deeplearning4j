@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Handles a number of workers and acts as a
  * parameter server for iterative reduce
  * @author Adam Gibson
- *
+ *kkl
  */
 public class MasterActor extends  UntypedActor implements DeepLearningConfigurable {
 
@@ -285,7 +285,10 @@ public class MasterActor extends  UntypedActor implements DeepLearningConfigurab
         }
 
         else if(currentJobs.isEmpty()) {
-
+            stateTracker.finish();
+            stateTracker.shutdown();
+            context().system().shutdown();
+           log.info("Current jobs is empty and no more updates; terminating");
         }
 
 
