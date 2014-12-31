@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-Qu'est-ce le Deeplearning4j?
+# Qu'est-ce le Deeplearning4j?
 
 Le Deeplearning4j est le premier logiciel open-source de niveau commercial écrit en Java pour [l'apprentissage automatique](https://fr.wikipedia.org/wiki/Apprentissage_automatique) de réseaux de neurones profonds et l'apprentissage non supervisé. 
 
@@ -23,3 +23,5 @@ En suivant les liens au bas de chaque page Web, vous apprendrez à mettre en pla
 Pour une introduction rapide aux réseaux neuronaux, notre aperçu est a lire. En un mot, le Deeplearning4j vous permet de composer des réseaux profond de diverses couches simples. Cette flexibilité vous permet de combiner restricted Boltzmann machines, autoencoders, réseaux de convolution et réseaux récurrents comme vous préférez - le tout dans un cadre distribué.
 
 Il ya beaucoup de parametres à raffiner lorsque vous entrainez un réseau d'apprentissage automatique profond. Nous avons fait de notre mieux pour les expliquer, de sorte que le Deeplearning4j peut servir d'outil pour Java, Scala et Clojure programmeurs. Si vous avez des questions, veuillez vous joindre a notre groupe Google; pour le soutien professionel, [contactez-nous au Skymind](http://www.skymind.io/). [ND4J est un moteur de calcul scientifique Java](http://nd4j.org/) qui alimente les manipulations matricielles.
+
+![Alt text](../img/logos_8.png)
