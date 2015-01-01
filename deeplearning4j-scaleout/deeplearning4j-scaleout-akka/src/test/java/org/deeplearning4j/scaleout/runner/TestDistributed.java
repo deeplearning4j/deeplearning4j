@@ -66,9 +66,11 @@ public class TestDistributed {
 
     @Test
     public void testNextOne() {
-        Serializable s = SerializationUtils.readObject(finalFile);
-        assumeNotNull(s);
-        finalFile.delete();
+        if(finalFile.exists()) {
+            Serializable s = SerializationUtils.readObject(finalFile);
+            assumeNotNull(s);
+            finalFile.delete();
+        }
 
     }
 
