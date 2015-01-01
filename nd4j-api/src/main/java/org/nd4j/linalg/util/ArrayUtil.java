@@ -1,6 +1,7 @@
 package org.nd4j.linalg.util;
 
 import com.google.common.primitives.Ints;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -45,15 +46,30 @@ public class ArrayUtil {
     }
 
     public static INDArray toNDArray(int[][] nums) {
-        double[] doubles = toDoubles(nums);
-        INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
-        return create;
+        if(Nd4j.dataType() == DataBuffer.DOUBLE) {
+            double[] doubles = toDoubles(nums);
+            INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
+            return create;
+        }
+        else {
+            float[] doubles = toFloats(nums);
+            INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
+            return create;
+        }
+
     }
 
     public static INDArray toNDArray(int[] nums) {
-        double[] doubles = toDoubles(nums);
-        INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
-        return create;
+        if(Nd4j.dataType() == DataBuffer.DOUBLE) {
+            double[] doubles = toDoubles(nums);
+            INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
+            return create;
+        }
+        else {
+            float[] doubles = toFloats(nums);
+            INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
+            return create;
+        }
     }
 
 
@@ -289,6 +305,10 @@ public class ArrayUtil {
         for(int i = 0; i < ints.length; i++)
             ret[i] = (double) ints[i];
         return ret;
+    }
+
+    public static float[] toFloats(int[][] ints) {
+        return toFloats(Ints.concat(ints));
     }
 
     public static double[] toDoubles(int[][] ints) {
