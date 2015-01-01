@@ -491,7 +491,11 @@ public class RNTN implements Serializable {
         double cost = 0.0f; // the regularization cost
         for (MultiDimensionalMap.Entry<String, String, INDArray> entry : currentMatrices.entrySet()) {
             INDArray D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
-            D = Nd4j.getBlasWrapper().scal(scale,D).add(Nd4j.getBlasWrapper().scal(regCost,entry.getValue()));
+            if(D.data().dataType() == DataBuffer.DOUBLE)
+                D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost, entry.getValue()));
+            else
+                D = Nd4j.getBlasWrapper().scal((float) scale,D).addi(Nd4j.getBlasWrapper().scal((float) regCost, entry.getValue()));
+
             derivatives.put(entry.getFirstKey(), entry.getSecondKey(), D);
             cost +=  entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).getDouble(0) * regCost / 2.0;
         }
@@ -507,7 +511,11 @@ public class RNTN implements Serializable {
         for (String s  : currentMatrices.keySet()) {
             INDArray D = derivatives.get(s);
             INDArray vector = currentMatrices.get(s);
-            D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost,vector));
+            if(D.data().dataType() == DataBuffer.DOUBLE)
+                D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost,vector));
+            else
+                D = Nd4j.getBlasWrapper().scal((float) scale,D).addi(Nd4j.getBlasWrapper().scal((float) regCost,vector));
+
             derivatives.put(s, D);
             cost += vector.mul(vector).sum(Integer.MAX_VALUE).getDouble(0) * regCost / 2.0f;
         }
@@ -524,9 +532,13 @@ public class RNTN implements Serializable {
         for (String s  : vocabCache.words()) {
             INDArray D = derivatives.get(s);
             INDArray vector = currentMatrices.vector(s);
-            D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost,vector));
+            if(D.data().dataType() == DataBuffer.DOUBLE)
+                D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost,vector));
+            else
+                D = Nd4j.getBlasWrapper().scal((float) scale,D).addi(Nd4j.getBlasWrapper().scal((float) regCost,vector));
+
             derivatives.put(s, D);
-            cost += vector.mul(vector).sum(Integer.MAX_VALUE).getDouble(0)* regCost / 2.0f;
+            cost += vector.mul(vector).sum(Integer.MAX_VALUE).getDouble(0) * regCost / 2.0f;
         }
         return cost;
     }
@@ -665,8 +677,15 @@ public class RNTN implements Serializable {
         INDArray deltaINDArray = Nd4j.create(size * 2, 1);
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
-            INDArray scaledFullVector = Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getDouble(0),fullVector);
-            deltaINDArray = deltaINDArray.add(Wt.slice(slice).add(Wt.slice(slice).transpose()).mmul(scaledFullVector));
+            if(deltaFull.data().dataType() == DataBuffer.DOUBLE) {
+                INDArray scaledFullVector = Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getDouble(0),fullVector);
+                deltaINDArray = deltaINDArray.add(Wt.slice(slice).add(Wt.slice(slice).transpose()).mmul(scaledFullVector));
+            }
+            else {
+                INDArray scaledFullVector = Nd4j.getBlasWrapper().scal((float) deltaFull.getScalar(slice).getDouble(0),fullVector);
+                deltaINDArray.addi(Wt.slice(slice).add(Wt.slice(slice).transpose()).mmul(scaledFullVector));
+            }
+
         }
         return deltaINDArray.add(WTDeltaNoBias);
     }
@@ -749,7 +768,11 @@ public class RNTN implements Serializable {
         INDArray Wt_df = Nd4j.create(new int[]{size * 2, size * 2, size});
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
-            Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.getDouble(slice),fullVector).mmul(fullVector.transpose()));
+            if(Wt_df.data().dataType() == DataBuffer.DOUBLE)
+                Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.getDouble(slice),fullVector).mmul(fullVector.transpose()));
+            else
+                Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal((float) deltaFull.getDouble(slice),fullVector).mmul(fullVector.transpose()));
+
         }
         return Wt_df;
     }
