@@ -36,9 +36,12 @@ public abstract class BaseTestDistributed {
 
 
     public void tearDown() throws Exception {
-        stateTracker.finish();
-        stateTracker.shutdown();
-        distributed.shutdown();
+      if(stateTracker != null) {
+          stateTracker.finish();
+          stateTracker.shutdown();
+          distributed.shutdown();
+      }
+
         if(new File("model-saver").exists())
             new File("model-saver").delete();
         Thread.sleep(10000);
