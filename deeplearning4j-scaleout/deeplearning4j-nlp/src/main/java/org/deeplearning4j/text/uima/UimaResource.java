@@ -21,7 +21,7 @@ public class UimaResource {
 
     public UimaResource(AnalysisEngine analysisEngine) throws ResourceInitializationException {
 		this.analysisEngine = analysisEngine;
-		this.casPool = new CasPool(Runtime.getRuntime().availableProcessors() * 10,analysisEngine);
+		this.casPool = new CasPool(Runtime.getRuntime().availableProcessors(),analysisEngine);
 
 	}
 
