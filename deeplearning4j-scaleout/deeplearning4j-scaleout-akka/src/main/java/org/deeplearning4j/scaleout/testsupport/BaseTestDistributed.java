@@ -39,7 +39,8 @@ public abstract class BaseTestDistributed {
         stateTracker.finish();
         stateTracker.shutdown();
         distributed.shutdown();
-        new File("model-saver").delete();
+        if(new File("model-saver").exists())
+            new File("model-saver").delete();
         Thread.sleep(10000);
     }
 
