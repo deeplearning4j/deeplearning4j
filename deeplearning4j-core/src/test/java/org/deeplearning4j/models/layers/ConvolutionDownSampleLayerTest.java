@@ -7,8 +7,10 @@ import org.deeplearning4j.nn.layers.ConvolutionDownSampleLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.junit.Test;
 import org.junit.Ignore;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Created by agibsonccc on 9/7/14.
@@ -18,6 +20,11 @@ public class ConvolutionDownSampleLayerTest {
 
     @Test
     public void testConvolution() throws Exception {
+        boolean switched = false;
+        if(Nd4j.dtype == DataBuffer.FLOAT) {
+            Nd4j.dtype = DataBuffer.DOUBLE;
+            switched = true;
+        }
         MnistDataFetcher data = new MnistDataFetcher(true);
         data.fetch(2);
         DataSet d = data.next();
@@ -32,7 +39,9 @@ public class ConvolutionDownSampleLayerTest {
         ConvolutionDownSampleLayer c = l.create(n);
 
         INDArray convolved = c.activate(d.getFeatureMatrix());
-
+        if(switched) {
+            Nd4j.dtype = DataBuffer.FLOAT;
+        }
 
     }
 
