@@ -1,5 +1,5 @@
 before_install:
- - sudo yum -y install blas
+ - sudo apt-get install liblapack-dev
 
 language: java
 cache:
