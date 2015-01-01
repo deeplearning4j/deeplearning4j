@@ -1,3 +1,6 @@
+before_install:
+ - sudo yum -y install blas
+
 language: java
 cache:
   directories:
