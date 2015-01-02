@@ -398,17 +398,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
 
     public INDArray activationFromPrevLayer(int curr,INDArray input) {
-        //output layer
-        if(curr == layers.length) {
-            return getOutputLayer().labelProbabilities(input);
-        }
-
-        switch(layers[curr].conf().getActivationType()) {
-            case HIDDEN_LAYER_ACTIVATION: return layers[curr].activate(input);
-            case NET_ACTIVATION: return layers[curr].activate(input);
-            //case SAMPLE: return layers[curr].sampleHiddenGivenVisible(input).getSecond();
-            default: throw new IllegalStateException("Invalid activation type");
-        }
+        return layers[curr].activate(input);
     }
 
 

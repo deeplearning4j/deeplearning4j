@@ -18,7 +18,6 @@ public class MultiLayerConfiguration implements Serializable {
     private boolean useGaussNewtonVectorProductBackProp = false;
     protected boolean pretrain = true;
     /* Sample if true, otherwise use the straight activation function */
-    protected boolean sampleFromHiddenActivations = true;
     private boolean useRBMPropUpAsActivations = true;
     private double dampingFactor = 100;
 
@@ -47,13 +46,6 @@ public class MultiLayerConfiguration implements Serializable {
         this.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
     }
 
-    public boolean isSampleFromHiddenActivations() {
-        return sampleFromHiddenActivations;
-    }
-
-    public void setSampleFromHiddenActivations(boolean sampleFromHiddenActivations) {
-        this.sampleFromHiddenActivations = sampleFromHiddenActivations;
-    }
 
 
     public boolean isUseDropConnect() {
@@ -148,9 +140,7 @@ public class MultiLayerConfiguration implements Serializable {
         private List<NeuralNetConfiguration> confs = new ArrayList<>();
         private int[] hiddenLayerSizes;
         private boolean useDropConnect = false;
-        private boolean useGaussNewtonVectorProductBackProp = false;
         protected boolean pretrain = true;
-        protected boolean sampleFromHiddenActivations = true;
         protected boolean useRBMPropUpAsActivations = false;
         protected double dampingFactor = 100;
 
@@ -165,15 +155,8 @@ public class MultiLayerConfiguration implements Serializable {
             return this;
         }
 
-        public Builder sampleFromHiddenActivations(boolean sampleFromHiddenActivations) {
-            this.sampleFromHiddenActivations = sampleFromHiddenActivations;
-            return this;
-        }
 
-        public Builder useGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
-            this.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
-            return this;
-        }
+
 
         public Builder pretrain(boolean pretrain) {
             this.pretrain = pretrain;
@@ -205,8 +188,6 @@ public class MultiLayerConfiguration implements Serializable {
             conf.hiddenLayerSizes = this.hiddenLayerSizes;
             conf.useDropConnect = useDropConnect;
             conf.pretrain = pretrain;
-            conf.sampleFromHiddenActivations = sampleFromHiddenActivations;
-            conf.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
             conf.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
             conf.dampingFactor = dampingFactor;
             return conf;

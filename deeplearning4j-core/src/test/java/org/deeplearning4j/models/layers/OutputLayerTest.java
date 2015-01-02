@@ -37,6 +37,7 @@ public class OutputLayerTest {
                 .iterations(100).weightInit(WeightInit.ZERO)
                 .rng(gen).regularization(true).l2(2e-4).momentum(0.9)
                 .learningRate(1e-1).nIn(4).nOut(3).build();
+
         LayerFactory layerFactory = new DefaultLayerFactory(OutputLayer.class);
         OutputLayer l = layerFactory.create(conf);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
