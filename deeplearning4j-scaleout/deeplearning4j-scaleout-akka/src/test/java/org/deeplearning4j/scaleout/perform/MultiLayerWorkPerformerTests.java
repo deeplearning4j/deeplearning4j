@@ -24,7 +24,7 @@ public class MultiLayerWorkPerformerTests extends NeuralNetWorkPerformerTest {
     public void testDbn() {
         RandomGenerator gen = new MersenneTwister(123);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().withActivationType(NeuralNetConfiguration.ActivationType.NET_ACTIVATION)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(9e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen, 1e-1))
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).iterations(10)
                 .learningRate(1e-1f).nIn(4).nOut(3).list(2).hiddenLayerSizes(new int[]{3}) .override(new NeuralNetConfiguration.ConfOverride() {
