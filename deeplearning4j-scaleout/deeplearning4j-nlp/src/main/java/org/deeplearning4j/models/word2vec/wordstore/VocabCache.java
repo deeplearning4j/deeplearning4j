@@ -1,36 +1,20 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
-import org.deeplearning4j.plot.Tsne;
-import org.nd4j.linalg.api.ndarray.INDArray;
+
 import org.deeplearning4j.models.word2vec.VocabWord;
 
+import java.io.Serializable;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicLong;
+
 
 /**
  * A VocabCache handles the storage of information needed for the word2vec look up table.
  *
  * @author Adam Gibson
  */
-public interface VocabCache  {
+public interface VocabCache extends Serializable {
 
 
-
-
-
-    void iterateSentence();
-
-    /**
-     * Render the words via TSNE
-     * @param tsne the tsne to use
-     */
-    void plotVocab(Tsne tsne);
-
-    /**
-     * Render the words via tsne
-     */
-    void plotVocab();
 
 	/**
 	 * Load vocab
@@ -49,23 +33,7 @@ public interface VocabCache  {
      */
 	void saveVocab();
 	
-    /**
-     * Iterate on the given 2 vocab words
-     * @param w1 the first word to iterate on
-     * @param w2 the second word to iterate on
-     */
-    void iterate(VocabWord w1,VocabWord w2);
 
-
-
-    /**
-     * Iterate on the given 2 vocab words
-     * @param w1 the first word to iterate on
-     * @param w2 the second word to iterate on
-     * @param nextRandom nextRandom for sampling
-     * @param alpha the alpha to use for learning
-     */
-    void iterateSample(VocabWord w1,VocabWord w2,AtomicLong nextRandom,double alpha);
 
     /**
      * Returns all of the words in the vocab
@@ -73,10 +41,6 @@ public interface VocabCache  {
      */
     Collection<String> words();
 
-    /**
-     * Reset the weights of the cache
-     */
-    void resetWeights();
 
     /**
      * Increment the count for the given word
@@ -125,20 +89,6 @@ public interface VocabCache  {
 
 
     /**
-     *
-     * @param codeIndex
-     * @param code
-     */
-    void putCode(int codeIndex,INDArray code);
-
-    /**
-     * Loads the co-occurrences for the given codes
-     * @param codes the codes to load
-     * @return an ndarray of code.length by layerSize
-     */
-    INDArray loadCodes(int[] codes);
-
-    /**
      * Returns all of the vocab word nodes
      * @return
      */
@@ -151,19 +101,6 @@ public interface VocabCache  {
      */
     long totalWordOccurrences();
 
-    /**
-     * Inserts a word vector
-     * @param word the word to insert
-     * @param vector the vector to insert
-     */
-    void putVector(String word,INDArray vector);
-
-    /**
-     *
-     * @param word
-     * @return
-     */
-    INDArray vector(String word);
 
     /**
      *
@@ -269,16 +206,6 @@ public interface VocabCache  {
     boolean hasToken(String token);
 
 
-    /**
-     * Sets the learning rate
-     * @param lr
-     */
-    void setLearningRate(double lr);
 
-    /**
-     * Iterates through all of the vectors in the cache
-     * @return an iterator for all vectors in the cache
-     */
-    Iterator<INDArray> vectors();
 
 }

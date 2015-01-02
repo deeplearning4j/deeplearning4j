@@ -9,6 +9,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Activations;
@@ -32,7 +33,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Recursive Neural INDArray Network by Socher et. al
+ * Recursive Neural Tensor Network by Socher et. al
  *
  * This is a modified implementation of the sentiment analysis RNTN
  * from Stanford that is intended to work with more general purpose inputs (scene detection with images,
@@ -98,7 +99,8 @@ public class RNTN implements Serializable {
      */
     private Map<String, INDArray> unaryClassification;
 
-    private VocabCache featureVectors;
+    private WeightLookupTable featureVectors;
+    private VocabCache vocabCache;
 
     /**
      * CxN+1, where N = size of word vectors, C is the number of classes
@@ -153,7 +155,8 @@ public class RNTN implements Serializable {
                  ActivationFunction activationFunction,
                  int adagradResetFrequency,
                  double regTransformINDArray,
-                 VocabCache featureVectors,
+                 WeightLookupTable featureVectors,
+                 VocabCache vocabCache,
                  int numBinaryMatrices,
                  int binaryTransformSize,
                  int binaryINd4jize,
@@ -161,6 +164,7 @@ public class RNTN implements Serializable {
                  int numUnaryMatrices,
                  int unaryClassificationSize,
                  Map<Integer, Double> classWeights) {
+        this.vocabCache = vocabCache;
         this.numHidden = numHidden;
         this.rng = rng;
         this.useDoubleTensors = useDoubleTensors;
@@ -432,7 +436,7 @@ public class RNTN implements Serializable {
         if (lowerCasefeatureNames) {
             word = word.toLowerCase();
         }
-        if (featureVectors.containsWord(word)) {
+        if (vocabCache.containsWord(word)) {
             return word;
         }
         // TODO: go through unknown words here
@@ -487,7 +491,11 @@ public class RNTN implements Serializable {
         double cost = 0.0f; // the regularization cost
         for (MultiDimensionalMap.Entry<String, String, INDArray> entry : currentMatrices.entrySet()) {
             INDArray D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
-            D = Nd4j.getBlasWrapper().scal(scale,D).add(Nd4j.getBlasWrapper().scal(regCost,entry.getValue()));
+            if(D.data().dataType() == DataBuffer.DOUBLE)
+                D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost, entry.getValue()));
+            else
+                D = Nd4j.getBlasWrapper().scal((float) scale,D).addi(Nd4j.getBlasWrapper().scal((float) regCost, entry.getValue()));
+
             derivatives.put(entry.getFirstKey(), entry.getSecondKey(), D);
             cost +=  entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).getDouble(0) * regCost / 2.0;
         }
@@ -503,7 +511,11 @@ public class RNTN implements Serializable {
         for (String s  : currentMatrices.keySet()) {
             INDArray D = derivatives.get(s);
             INDArray vector = currentMatrices.get(s);
-            D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost,vector));
+            if(D.data().dataType() == DataBuffer.DOUBLE)
+                D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost,vector));
+            else
+                D = Nd4j.getBlasWrapper().scal((float) scale,D).addi(Nd4j.getBlasWrapper().scal((float) regCost,vector));
+
             derivatives.put(s, D);
             cost += vector.mul(vector).sum(Integer.MAX_VALUE).getDouble(0) * regCost / 2.0f;
         }
@@ -512,17 +524,21 @@ public class RNTN implements Serializable {
 
 
     double scaleAndRegularize(Map<String, INDArray> derivatives,
-                              VocabCache currentMatrices,
+                              WeightLookupTable currentMatrices,
                               double scale,
                               double regCost) {
 
         double cost = 0.0f; // the regularization cost
-        for (String s  : currentMatrices.words()) {
+        for (String s  : vocabCache.words()) {
             INDArray D = derivatives.get(s);
             INDArray vector = currentMatrices.vector(s);
-            D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost,vector));
+            if(D.data().dataType() == DataBuffer.DOUBLE)
+                D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost,vector));
+            else
+                D = Nd4j.getBlasWrapper().scal((float) scale,D).addi(Nd4j.getBlasWrapper().scal((float) regCost,vector));
+
             derivatives.put(s, D);
-            cost += vector.mul(vector).sum(Integer.MAX_VALUE).getDouble(0)* regCost / 2.0f;
+            cost += vector.mul(vector).sum(Integer.MAX_VALUE).getDouble(0) * regCost / 2.0f;
         }
         return cost;
     }
@@ -547,8 +563,7 @@ public class RNTN implements Serializable {
                                              MultiDimensionalMap<String, String, INDArray> binaryINDArrayTD,
                                              Map<String, INDArray> unaryCD,
                                              Map<String, INDArray> wordVectorD) {
-        if(wordVectorD == null)
-            throw new IllegalStateException("eh?");
+
         INDArray delta = Nd4j.create(numHidden, 1);
         backpropDerivativesAndError(tree, binaryTD, binaryCD, binaryINDArrayTD, unaryCD, wordVectorD, delta);
     }
@@ -662,8 +677,15 @@ public class RNTN implements Serializable {
         INDArray deltaINDArray = Nd4j.create(size * 2, 1);
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
-            INDArray scaledFullVector = Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getDouble(0),fullVector);
-            deltaINDArray = deltaINDArray.add(Wt.slice(slice).add(Wt.slice(slice).transpose()).mmul(scaledFullVector));
+            if(deltaFull.data().dataType() == DataBuffer.DOUBLE) {
+                INDArray scaledFullVector = Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getDouble(0),fullVector);
+                deltaINDArray = deltaINDArray.add(Wt.slice(slice).add(Wt.slice(slice).transpose()).mmul(scaledFullVector));
+            }
+            else {
+                INDArray scaledFullVector = Nd4j.getBlasWrapper().scal((float) deltaFull.getScalar(slice).getDouble(0),fullVector);
+                deltaINDArray.addi(Wt.slice(slice).add(Wt.slice(slice).transpose()).mmul(scaledFullVector));
+            }
+
         }
         return deltaINDArray.add(WTDeltaNoBias);
     }
@@ -746,7 +768,11 @@ public class RNTN implements Serializable {
         INDArray Wt_df = Nd4j.create(new int[]{size * 2, size * 2, size});
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
-            Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.getDouble(slice),fullVector).mmul(fullVector.transpose()));
+            if(Wt_df.data().dataType() == DataBuffer.DOUBLE)
+                Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.getDouble(slice),fullVector).mmul(fullVector.transpose()));
+            else
+                Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal((float) deltaFull.getDouble(slice),fullVector).mmul(fullVector.transpose()));
+
         }
         return Wt_df;
     }
@@ -877,7 +903,7 @@ public class RNTN implements Serializable {
         }
 
 
-        for (String s : featureVectors.words()) {
+        for (String s : vocabCache.words()) {
             INDArray vector = featureVectors.vector(s);
             int numRows = vector.rows();
             int numCols = vector.columns();
@@ -948,7 +974,7 @@ public class RNTN implements Serializable {
         if(paramAdaGrad == null)
             paramAdaGrad = new AdaGrad(1,derivative.columns());
 
-        derivative.muli(paramAdaGrad.getLearningRates(derivative));
+        derivative = paramAdaGrad.getGradient(derivative);
 
         return derivative;
     }
@@ -972,7 +998,7 @@ public class RNTN implements Serializable {
                 outputActivationFunction = Activations.softmax();
         private int adagradResetFrequency;
         private double regTransformINDArray;
-        private VocabCache featureVectors;
+        private WeightLookupTable featureVectors;
         private int numBinaryMatrices;
         private int binaryTransformSize;
         private int binaryINd4jize;
@@ -980,6 +1006,15 @@ public class RNTN implements Serializable {
         private int numUnaryMatrices;
         private int unaryClassificationSize;
         private Map<Integer, Double> classWeights;
+        private VocabCache vocabCache;
+
+
+
+        public Builder vocabCache(VocabCache vocabCache) {
+            this.vocabCache = vocabCache;
+            return this;
+        }
+
 
 
         public Builder withOutputActivation(ActivationFunction outputActivationFunction) {
@@ -988,7 +1023,8 @@ public class RNTN implements Serializable {
         }
 
         public Builder setFeatureVectors(Word2Vec vec) {
-            return setFeatureVectors(vec.getCache());
+            vocabCache = vec.vocab();
+            return setFeatureVectors(vec.lookupTable());
         }
 
         public Builder setNumHidden(int numHidden) {
@@ -1048,9 +1084,9 @@ public class RNTN implements Serializable {
             return this;
         }
 
-        public Builder setFeatureVectors(VocabCache featureVectors) {
+        public Builder setFeatureVectors(WeightLookupTable featureVectors) {
             this.featureVectors = featureVectors;
-            this.numHidden = featureVectors.vector(featureVectors.words().iterator().next()).columns();
+            this.numHidden = featureVectors.vectors().next().columns();
             return this;
         }
 
@@ -1090,7 +1126,20 @@ public class RNTN implements Serializable {
         }
 
         public RNTN build() {
-            RNTN rt =  new RNTN(numHidden, rng, useINd4j, combineClassification, simplifiedModel, randomFeatureVectors, scalingForInit, lowerCasefeatureNames, activationFunction, adagradResetFrequency, regTransformINDArray, featureVectors, numBinaryMatrices, binaryTransformSize, binaryINd4jize, binaryClassificationSize, numUnaryMatrices, unaryClassificationSize, classWeights);
+            RNTN rt =  new RNTN(   numHidden,
+                    rng,
+                    useINd4j,
+                    combineClassification,
+                    simplifiedModel,
+                    randomFeatureVectors,
+                    scalingForInit,
+                    lowerCasefeatureNames,
+                    activationFunction,
+                    adagradResetFrequency,
+                    regTransformINDArray,
+                    featureVectors,
+                    vocabCache,
+                    numBinaryMatrices, binaryTransformSize, binaryINd4jize, binaryClassificationSize, numUnaryMatrices, unaryClassificationSize, classWeights);
 
             return rt;
         }

@@ -5,10 +5,14 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.api.LayerFactory;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
@@ -20,29 +24,40 @@ import org.slf4j.LoggerFactory;
  * Created by agibsonccc on 9/1/14.
  */
 public class OutputLayerTest {
-    private static Logger LOG = LoggerFactory.getLogger(OutputLayerTest.class);
+    private static Logger log = LoggerFactory.getLogger(OutputLayerTest.class);
+
 
     @Test
     public void testIris() {
         RandomGenerator gen = new MersenneTwister(123);
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.ZERO)
-                    .lossFunction(LossFunctions.LossFunction.MCXENT)
-                .activationFunction(Activations.softMaxRows()).iterations(10)
-                .rng(gen).momentum(0.9f)
-                .learningRate(1e-3f).nIn(4).nOut(3).build();
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .activationFunction(Activations.softMaxRows())
+                .iterations(100).weightInit(WeightInit.ZERO)
+                .rng(gen).regularization(true).l2(2e-4).momentum(0.9)
+                .learningRate(1e-1).nIn(4).nOut(3).build();
 
-        OutputLayer outputLayer = new OutputLayer.Builder()
-                .configure(conf).build();
-        DataSetIterator irisIterator = new IrisDataSetIterator(150, 150);
+        LayerFactory layerFactory = new DefaultLayerFactory(OutputLayer.class);
+        OutputLayer l = layerFactory.create(conf);
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
-        DataSet next = irisIterator.next(150);
-        next.normalizeZeroMeanZeroUnitVariance();
-        outputLayer.fit(next);
 
+        DataSet next = iter.next();
+        SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
+        trainTest.getTrain().normalizeZeroMeanZeroUnitVariance();
+        l.fit(trainTest.getTrain());
+
+
+        DataSet test = trainTest.getTest();
+        test.normalizeZeroMeanZeroUnitVariance();
         Evaluation eval = new Evaluation();
-        INDArray output = outputLayer.output(next.getFeatureMatrix());
-        eval.eval(next.getLabels(),output);
-        LOG.info("Score " + eval.stats());
+        INDArray output = l.output(test.getFeatureMatrix());
+        eval.eval(test.getLabels(),output);
+        log.info("Score " +eval.stats());
+
+
     }
+
+
 }

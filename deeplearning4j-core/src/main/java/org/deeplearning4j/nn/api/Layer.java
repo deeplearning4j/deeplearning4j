@@ -5,6 +5,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * Interface for a layer of a neural network.
@@ -13,23 +14,50 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-public interface Layer extends Serializable,Cloneable {
+public interface Layer extends Serializable,Cloneable,Model {
 
+
+    /**
+     * Parameter averaging
+     * @param layer the layer to merge
+     * @param batchSize the batch size to merge on
+     */
+    void merge(Layer layer,int batchSize);
+
+    /**
+     * Get the parameter
+     * @param param the key of the parameter
+     * @return the parameter vector/matrix with that particular key
+     */
+    INDArray getParam(String param);
+
+    /**
+     * Initialize the parameters
+     */
+    void initParams();
+
+    /**
+     * The param table
+     * @return
+     */
+    Map<String,INDArray>  paramTable();
+
+    void setParamTable(Map<String,INDArray> paramTable);
+
+
+    /**
+     * Set the parameter with a new ndarray
+     * @param key the key to se t
+     * @param val the new ndarray
+     */
+    void setParam(String key,INDArray val);
 
     INDArray activationMean();
 
     NeuralNetConfiguration conf();
     void setConfiguration(NeuralNetConfiguration conf);
 
-    INDArray getW();
-
-    void setW(INDArray w);
-
-    INDArray getB();
-
-    void setB(INDArray b);
-
-     INDArray getInput();
+    INDArray getInput();
 
     void setInput(INDArray input);
 
@@ -60,4 +88,6 @@ public interface Layer extends Serializable,Cloneable {
     Layer transpose();
 
     Layer clone();
+
+
 }

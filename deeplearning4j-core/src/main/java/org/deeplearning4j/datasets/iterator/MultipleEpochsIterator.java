@@ -135,7 +135,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public boolean hasNext() {
-        return iter.hasNext() && passes < numPasses;
+        return iter.hasNext() || passes < numPasses;
     }
 
     /**

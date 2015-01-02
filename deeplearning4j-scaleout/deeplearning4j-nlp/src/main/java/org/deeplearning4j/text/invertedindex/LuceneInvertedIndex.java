@@ -1,6 +1,7 @@
 package org.deeplearning4j.text.invertedindex;
 
 import com.google.common.base.Function;
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -8,13 +9,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
-import org.deeplearning4j.berkeley.StringUtils;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.stopwords.StopWords;
@@ -41,13 +39,13 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private transient  Directory dir;
     private transient IndexReader reader;
     private   transient Analyzer analyzer;
-    private transient IndexSearcher searcher;
     private VocabCache vocabCache;
     public final static String WORD_FIELD = "word";
+    public final static String LABEL = "label";
+
     private int numDocs = 0;
     private List<List<VocabWord>> words = new ArrayList<>();
-    private boolean cache = true;
-    private transient ExecutorService indexManager;
+    private boolean cache = false;
     private AtomicBoolean indexBeingCreated = new AtomicBoolean(false);
     private static Logger log = LoggerFactory.getLogger(LuceneInvertedIndex.class);
     public final static String INDEX_PATH = "word2vec-index";
@@ -62,9 +60,11 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     private Queue<List<VocabWord>> miniBatchDocs = new ConcurrentLinkedDeque<>();
     private AtomicBoolean miniBatchGoing = new AtomicBoolean(true);
     private boolean miniBatch = false;
-    private static Map<String,IndexWriter> writer = new ConcurrentHashMap<>();
     public final static String DEFAULT_INDEX_DIR = "word2vec-index";
-
+    private transient SearcherManager searcherManager;
+    private transient ReaderManager  readerManager;
+    private transient TrackingIndexWriter indexWriter;
+    private transient NativeFSLockFactory lockFactory;
 
     public LuceneInvertedIndex(VocabCache vocabCache,boolean cache) {
         this(vocabCache,cache,DEFAULT_INDEX_DIR);
@@ -76,11 +76,52 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         this.vocabCache = vocabCache;
         this.cache = cache;
         this.indexPath = indexPath;
+        if(new File(indexPath).exists()) {
+            String id = UUID.randomUUID().toString();
+            log.warn("Changing index path to" + id);
+            indexPath = id;
+        }
+        initReader();
     }
 
 
     private LuceneInvertedIndex(){
         this(null,false,DEFAULT_INDEX_DIR);
+    }
+
+    public LuceneInvertedIndex(VocabCache vocabCache) {
+        this(vocabCache,false,DEFAULT_INDEX_DIR);
+    }
+
+    @Override
+    public Iterator<List<List<VocabWord>>> batchIter(int batchSize) {
+        return new BatchDocIter(batchSize);
+    }
+
+    @Override
+    public Iterator<List<VocabWord>> docs() {
+        return new DocIter();
+    }
+
+    @Override
+    public void unlock() {
+        try {
+            if(lockFactory == null)
+                lockFactory = new NativeFSLockFactory(new File(indexPath));
+            IndexWriter.unlock(dir);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void cleanup() {
+        try {
+            indexWriter.deleteAll();
+            indexWriter.getIndexWriter().commit();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -94,54 +135,38 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
     @Override
-    public List<VocabWord> document(int index) {
-        if(cache) {
-            List<VocabWord> ret = words.get(index);
-            List<VocabWord> ret2 = new ArrayList<>();
-            //remove all non vocab words
-            for(VocabWord word : ret) {
-                if(vocabCache.containsWord(word.getWord()))
-                    ret2.add(word);
-            }
-
-
-            return ret2;
-        }
-
-
+    public synchronized List<VocabWord> document(int index) {
         List<VocabWord> ret = new CopyOnWriteArrayList<>();
         try {
-            IndexWriter writer = getWriter();
-            initReader(writer);
-
+            DirectoryReader reader = readerManager.acquire();
             Document doc = reader.document(index);
-
+            reader.close();
             String[] values = doc.getValues(WORD_FIELD);
             for(String s : values) {
-                ret.add(vocabCache.wordFor(s));
+                VocabWord word = vocabCache.wordFor(s);
+                if(word != null)
+                    ret.add(vocabCache.wordFor(s));
             }
 
-            
+
 
         }
 
-        catch(AlreadyClosedException e1) {
-            reader = null;
-            readerClosed.set(false);
-            return document(index);
-        }
+
         catch (Exception e) {
             e.printStackTrace();
         }
         return ret;
     }
 
+
+
     @Override
     public int[] documents(VocabWord vocabWord) {
         try {
-            TermQuery query = new TermQuery(new Term(WORD_FIELD,vocabWord.getWord()));
-
-
+            TermQuery query = new TermQuery(new Term(WORD_FIELD,vocabWord.getWord().toLowerCase()));
+            searcherManager.maybeRefresh();
+            IndexSearcher searcher = searcherManager.acquire();
             TopDocs topdocs = searcher.search(query,Integer.MAX_VALUE);
             int[] ret = new int[topdocs.totalHits];
             for(int i = 0; i < topdocs.totalHits; i++) {
@@ -149,6 +174,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
             }
 
 
+            searcherManager.release(searcher);
 
             return ret;
         }
@@ -163,34 +189,32 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     @Override
     public int numDocuments() {
-        if(numDocs > 0)
-            return numDocs;
-
-        int ret;
         try {
-            IndexWriter writer = getWriter();
-            initReader(writer);
-            ret = reader.numDocs();
-            
-
-        }catch(Exception e) {
-            return 0;
+            readerManager.maybeRefresh();
+            DirectoryReader reader = readerManager.acquire();
+            int ret = reader.numDocs();
+            readerManager.release(reader);
+            return ret;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return ret;
+
     }
 
     @Override
     public int[] allDocs() {
-        if(cache){
-            int[] ret = new int[words.size()];
-            for(int i = 0; i < words.size(); i++)
-                ret[i] = i;
-            return ret;
+
+
+        DirectoryReader reader = null;
+        try {
+            readerManager.maybeRefreshBlocking();
+            reader = readerManager.acquire();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
-
-
-        int[] docIds = new int[reader.maxDoc() + 1];
+        int[] docIds = new int[reader.maxDoc()];
+        if(docIds.length < 1)
+            throw new IllegalStateException("No documents found");
         int count = 0;
         Bits liveDocs = MultiFields.getLiveDocs(reader);
 
@@ -208,16 +232,19 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
             docIds[count++] = i;
         }
 
+        try {
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return docIds;
     }
 
     @Override
     public void addWordToDoc(int doc, VocabWord word) {
         Field f = new TextField(WORD_FIELD,word.getWord(),Field.Store.YES);
-        IndexWriter writer = getWriter();
         try {
-            initReader(writer);
-
+            IndexSearcher searcher = searcherManager.acquire();
             Document doc2 = searcher.doc(doc);
             if(doc2 != null)
                 doc2.add(f);
@@ -226,41 +253,42 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
                 d.add(f);
             }
 
+            searcherManager.release(searcher);
 
 
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        initReader(writer);
 
     }
 
 
-    private synchronized void initReader(IndexWriter writer) {
+    private  void initReader() {
         if(reader == null) {
             try {
+                ensureDirExists();
+                if(getWriter() == null) {
+                    this.indexWriter = null;
+                    while(getWriter() == null) {
+                        log.warn("Writer was null...reinitializing");
+                        Thread.sleep(1000);
+                    }
+                }
+                IndexWriter writer = getWriter().getIndexWriter();
+                if(writer == null)
+                    throw new IllegalStateException("index writer was null");
+                searcherManager = new SearcherManager(writer,true,new SearcherFactory());
                 writer.commit();
-                reader = DirectoryReader.open(dir);
-                searcher = new IndexSearcher(reader);
+                readerManager = new ReaderManager(dir);
+                DirectoryReader reader = readerManager.acquire();
+                numDocs = readerManager.acquire().numDocs();
+                readerManager.release(reader);
             }catch(Exception e) {
                 throw new RuntimeException(e);
             }
 
         }
-
-        else if(readerClosed.get()) {
-            try {
-                reader = DirectoryReader.open(dir);
-                searcher = new IndexSearcher(reader);
-                readerClosed.set(false);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-
-
     }
 
     @Override
@@ -269,22 +297,205 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
         Document d = new Document();
 
-        for (VocabWord word : words) {
+        for (VocabWord word : words)
             d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
+
+
+
+        totalWords.set(totalWords.get() + words.size());
+        addWords(words);
+        try {
+            getWriter().addDocument(d);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        IndexWriter writer = getWriter();
-        initReader(writer);
+    }
+
+
+    @Override
+    public Pair<List<VocabWord>, String> documentWithLabel(int index) {
+        List<VocabWord> ret = new CopyOnWriteArrayList<>();
+        String label = "NONE";
+        try {
+            DirectoryReader reader = readerManager.acquire();
+            Document doc = reader.document(index);
+            reader.close();
+            String[] values = doc.getValues(WORD_FIELD);
+            label = doc.get(LABEL);
+            if(label == null)
+                label = "NONE";
+            for(String s : values) {
+                ret.add(vocabCache.wordFor(s));
+            }
+
+
+
+        }
+
+
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new Pair<>(ret,label);
+
+
+    }
+
+    @Override
+    public Pair<List<VocabWord>, Collection<String>> documentWithLabels(int index) {
+        List<VocabWord> ret = new CopyOnWriteArrayList<>();
+        Collection<String> labels = new ArrayList<>();
+
+        try {
+            DirectoryReader reader = readerManager.acquire();
+            Document doc = reader.document(index);
+            readerManager.release(reader);
+            String[] values = doc.getValues(WORD_FIELD);
+            String[] labels2 = doc.getValues(LABEL);
+
+            for(String s : values) {
+                ret.add(vocabCache.wordFor(s));
+            }
+
+            for(String s : labels2) {
+                labels.add(s);
+            }
+
+        }
+
+
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new Pair<>(ret,labels);
+
+
+    }
+
+    @Override
+    public void addLabelForDoc(int doc, VocabWord word) {
+        addLabelForDoc(doc,word.getWord());
+    }
+
+    @Override
+    public void addLabelForDoc(int doc, String label) {
+        try {
+            DirectoryReader reader = readerManager.acquire();
+            Document doc2 = reader.document(doc);
+            doc2.add(new TextField(LABEL,label,Field.Store.YES));
+            readerManager.release(reader);
+            TrackingIndexWriter writer = getWriter();
+            Term term = new Term(LABEL,label);
+            writer.updateDocument(term,doc2);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void addWordsToDoc(int doc, List<VocabWord> words, String label) {
+        Document d = new Document();
+
+        for (VocabWord word : words)
+            d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
+
+        d.add(new TextField(LABEL,label,Field.Store.YES));
 
         totalWords.set(totalWords.get() + words.size());
         addWords(words);
 
+        try {
+            getWriter().addDocument(d);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
+    @Override
+    public void addWordsToDoc(int doc, List<VocabWord> words, VocabWord label) {
+        addWordsToDoc(doc,words,label.getWord());
+    }
 
+    @Override
+    public void addLabelsForDoc(int doc, List<VocabWord> label) {
+        try {
+            DirectoryReader reader = readerManager.acquire();
 
+            Document doc2 = reader.document(doc);
+            for(VocabWord s : label)
+                doc2.add(new TextField(LABEL,s.getWord(),Field.Store.YES));
+            readerManager.release(reader);
+            TrackingIndexWriter writer = getWriter();
+            List<Term> terms = new ArrayList<>();
+            for(VocabWord s : label) {
+                Term term = new Term(LABEL,s.getWord());
+                terms.add(term);
+            }
+            writer.addDocument(doc2);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
+    @Override
+    public void addLabelsForDoc(int doc, Collection<String> label) {
+        try {
+            DirectoryReader reader = readerManager.acquire();
 
+            Document doc2 = reader.document(doc);
+            for(String s : label)
+                doc2.add(new TextField(LABEL,s,Field.Store.YES));
+            readerManager.release(reader);
+            TrackingIndexWriter writer = getWriter();
+            List<Term> terms = new ArrayList<>();
+            for(String s : label) {
+                Term term = new Term(LABEL,s);
+                terms.add(term);
+            }
+            writer.addDocument(doc2);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
+    @Override
+    public void addWordsToDoc(int doc, List<VocabWord> words, Collection<String> label) {
+        Document d = new Document();
+
+        for (VocabWord word : words)
+            d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
+
+        for(String s : label)
+            d.add(new TextField(LABEL,s,Field.Store.YES));
+
+        totalWords.set(totalWords.get() + words.size());
+        addWords(words);
+        try {
+            getWriter().addDocument(d);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void addWordsToDocVocabWord(int doc, List<VocabWord> words, Collection<VocabWord> label) {
+        Document d = new Document();
+
+        for (VocabWord word : words)
+            d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
+
+        for(VocabWord s : label)
+            d.add(new TextField(LABEL,s.getWord(),Field.Store.YES));
+
+        totalWords.set(totalWords.get() + words.size());
+        addWords(words);
+        try {
+            getWriter().addDocument(d);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 
     private void addWords(List<VocabWord> words) {
@@ -317,6 +528,8 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     private void ensureDirExists() throws Exception {
         if(dir == null) {
+            log.info("Creating directory " + indexPath);
+            FileUtils.deleteDirectory(new File(indexPath));
             dir = FSDirectory.open(new File(indexPath));
             File dir2 = new File(indexPath);
             if (!dir2.exists())
@@ -327,82 +540,112 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     }
 
 
-    private synchronized  IndexWriter getWriter() {
-        if(writer.containsKey(indexPath))
-            return writer.get(indexPath);
-        else {
-            IndexWriterConfig iwc;
-            IndexWriter writer = null;
-            try {
-                if(analyzer == null)
-                    analyzer  = new StandardAnalyzer(new InputStreamReader(new ByteArrayInputStream("".getBytes())));
+
+    private synchronized TrackingIndexWriter getWriterWithRetry() {
+        if(this.indexWriter != null)
+            return this.indexWriter;
+
+        IndexWriterConfig iwc;
+        IndexWriter writer = null;
+
+        try {
+            if(analyzer == null)
+                analyzer  = new StandardAnalyzer(new InputStreamReader(new ByteArrayInputStream("".getBytes())));
+
+
+            ensureDirExists();
+
+
+            if(this.indexWriter == null) {
+                indexBeingCreated.set(true);
+
+
 
                 iwc = new IndexWriterConfig(Version.LATEST, analyzer);
+                iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+                iwc.setWriteLockTimeout(1000);
 
-
-                ensureDirExists();
-
-                if(!indexBeingCreated.get()) {
-                    indexBeingCreated.set(true);
-
-                    if(IndexWriter.isLocked(dir)) {
-                        try {
-                            IndexWriter.unlock(dir);
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
-
-                    }
-
-
-                    writer = new IndexWriter(dir, iwc);
-                    LuceneInvertedIndex.writer.put(indexPath,writer);
-
-                }
-                else if(!indexBeingCreated.get() || writer == null) {
-                    indexBeingCreated.set(true);
-                    if(IndexWriter.isLocked(dir)) {
-                        try {
-                            IndexWriter.unlock(dir);
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
-
-                    }
+                log.info("Creating new index writer");
+                while((writer = tryCreateWriter(iwc)) == null) {
+                    log.warn("Failed to create writer...trying again");
                     iwc = new IndexWriterConfig(Version.LATEST, analyzer);
+                    iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+                    iwc.setWriteLockTimeout(1000);
 
-                    writer = new IndexWriter(dir,iwc);
-                    LuceneInvertedIndex.writer.put(indexPath,writer);
-
+                    Thread.sleep(10000);
                 }
+                this.indexWriter = new TrackingIndexWriter(writer);
 
             }
-            catch(LockObtainFailedException e) {
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e1) {
-                    e1.printStackTrace();
-                }
-                return getWriter();
-            }
-            catch(Exception e) {
-                throw new IllegalStateException("Failed to created writer",e);
-            }
 
-            return writer;
         }
 
+        catch(Exception e) {
+            throw new IllegalStateException(e);
+        }
+
+
+
+
+        return this.indexWriter;
+    }
+
+
+    private IndexWriter tryCreateWriter(IndexWriterConfig iwc) {
+
+        try {
+            dir.close();
+            dir = null;
+            FileUtils.deleteDirectory(new File(indexPath));
+
+            ensureDirExists();
+            if(lockFactory == null)
+                lockFactory = new NativeFSLockFactory(new File(indexPath));
+            lockFactory.clearLock(IndexWriter.WRITE_LOCK_NAME);
+            return new IndexWriter(dir,iwc);
+        }
+        catch (Exception e) {
+            String id = UUID.randomUUID().toString();
+            indexPath = id;
+            log.warn("Setting index path to " + id);
+            log.warn("Couldn't create index ",e);
+            return null;
+        }
+
+    }
+
+    private synchronized  TrackingIndexWriter getWriter() {
+        int attempts = 0;
+        while(getWriterWithRetry() == null && attempts < 3) {
+
+            try {
+                Thread.sleep(1000 * attempts);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            if(attempts >= 3)
+                throw new IllegalStateException("Can't obtain write lock");
+            attempts++;
+
+        }
+
+        return this.indexWriter;
     }
 
 
 
     @Override
     public void finish() {
+        try {
+            initReader();
+            DirectoryReader reader = readerManager.acquire();
+            numDocs = reader.numDocs();
+            readerManager.release(reader);
 
-        reader = null;
-        IndexWriter writer = getWriter();
-        initReader(writer);
-        numDocs = reader.numDocs();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 
@@ -414,6 +657,34 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     @Override
     public int batchSize() {
         return batchSize;
+    }
+
+    @Override
+    public void eachDocWithLabels(final Function<Pair<List<VocabWord>, Collection<String>>, Void> func, ExecutorService exec) {
+        int[] docIds = allDocs();
+        for(int i : docIds) {
+            final int j = i;
+            exec.execute(new Runnable() {
+                @Override
+                public void run() {
+                    func.apply(documentWithLabels(j));
+                }
+            });
+        }
+    }
+
+    @Override
+    public void eachDocWithLabel(final Function<Pair<List<VocabWord>, String>, Void> func, ExecutorService exec) {
+        int[] docIds = allDocs();
+        for(int i : docIds) {
+            final int j = i;
+            exec.execute(new Runnable() {
+                @Override
+                public void run() {
+                    func.apply(documentWithLabel(j));
+                }
+            });
+        }
     }
 
     @Override
@@ -429,6 +700,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
             });
         }
     }
+
 
 
 
@@ -479,6 +751,63 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         throw new UnsupportedOperationException();
     }
 
+
+
+    public class BatchDocIter implements Iterator<List<List<VocabWord>>> {
+
+        private int batchSize = 1000;
+        private int curr = 0;
+        private Iterator<List<VocabWord>> docIter = new DocIter();
+
+        public BatchDocIter(int batchSize) {
+            this.batchSize = batchSize;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return docIter.hasNext();
+        }
+
+        @Override
+        public List<List<VocabWord>> next() {
+            List<List<VocabWord>> ret = new ArrayList<>();
+            for(int i = 0; i < batchSize; i++) {
+                if(!docIter.hasNext())
+                    break;
+                ret.add(docIter.next());
+            }
+            return ret;
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+
+    public class DocIter implements Iterator<List<VocabWord>> {
+        private int currIndex = 0;
+        private int[] docs = allDocs();
+
+
+        @Override
+        public boolean hasNext() {
+            return currIndex < docs.length;
+        }
+
+        @Override
+        public List<VocabWord> next() {
+            return document(docs[currIndex++]);
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+
     public static class Builder {
         private File indexDir;
         private  Directory dir;
@@ -486,10 +815,10 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         private   Analyzer analyzer;
         private IndexSearcher searcher;
         private IndexWriter writer;
-        private  IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_4_10_0, analyzer);
+        private  IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_CURRENT, analyzer);
         private VocabCache vocabCache;
         private List<String> stopWords = StopWords.getStopWords();
-        private boolean cache = true;
+        private boolean cache = false;
         private int batchSize = 1000;
         private double sample = 0;
         private boolean miniBatch = false;
@@ -553,38 +882,22 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
         }
 
         public InvertedIndex build() {
-            LuceneInvertedIndex ret = new LuceneInvertedIndex();
+            LuceneInvertedIndex ret;
+            if(indexDir != null) {
+                ret = new LuceneInvertedIndex(vocabCache,cache,indexDir.getAbsolutePath());
+            }
+            else
+                ret = new LuceneInvertedIndex(vocabCache);
             try {
-                if(analyzer == null)
-                    analyzer  = new StandardAnalyzer(new InputStreamReader(new ByteArrayInputStream(StringUtils.join(stopWords,"\n").getBytes())));
-                if(indexDir != null && dir != null)
-                    throw new IllegalStateException("Please define only a directory or a file directory");
-                if(iwc == null)
-                    iwc = new IndexWriterConfig(Version.LATEST, analyzer);
-
-                if(indexDir != null && !cache) {
-                    if(!indexDir.exists())
-                        indexDir.mkdirs();
-                    dir = FSDirectory.open(indexDir);
-                    if(writer == null)
-                        writer = new IndexWriter(dir, iwc);
-
-                }
-
-                if(vocabCache == null)
-                    throw new IllegalStateException("Vocab cache must not be null");
-
-
                 ret.batchSize = batchSize;
-                ret.vocabCache = vocabCache;
-                ret.dir = dir;
-                ret.cache = cache;
-                ret.miniBatch = miniBatch;
-                ret.reader = reader;
-                ret.searcher = searcher;
-                ret.analyzer = analyzer;
-                ret.vocabCache = vocabCache;
 
+                if(dir != null)
+                    ret.dir = dir;
+                ret.miniBatch = miniBatch;
+                if(reader != null)
+                    ret.reader = reader;
+                if(analyzer != null)
+                    ret.analyzer = analyzer;
             }catch(Exception e) {
                 throw new RuntimeException(e);
             }

@@ -2,9 +2,9 @@ package org.deeplearning4j.plot;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
+import org.deeplearning4j.nn.api.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.deeplearning4j.nn.api.NeuralNetwork;
 
 /**
  *
@@ -14,9 +14,9 @@ import org.deeplearning4j.nn.api.NeuralNetwork;
 public class NeuralNetworkReconstructionRender {
 
     private DataSetIterator iter;
-    private NeuralNetwork network;
+    private Layer network;
 
-    public NeuralNetworkReconstructionRender(DataSetIterator iter, NeuralNetwork network) {
+    public NeuralNetworkReconstructionRender(DataSetIterator iter, Layer network) {
         this.iter = iter;
         this.network = network;
     }

@@ -35,7 +35,6 @@ public class TfidfVectorizer extends BaseTextVectorizer implements Serializable 
     protected TfidfVectorizer(VocabCache cache,
                               TokenizerFactory tokenizerFactory,
                               List<String> stopWords,
-                              int layerSize,
                               int minWordFrequency,
                               DocumentIterator docIter,
                               SentenceIterator sentenceIterator,
@@ -43,8 +42,9 @@ public class TfidfVectorizer extends BaseTextVectorizer implements Serializable 
                               InvertedIndex index,
                               int batchSize,
                               double sample,
-                              boolean stem) {
-        super(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator, labels,index,batchSize,sample,stem);
+                              boolean stem,
+                              boolean cleanup) {
+        super(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator, labels,index,batchSize,sample,stem,cleanup);
     }
 
     private double tfidfWord(String word) {
@@ -131,7 +131,7 @@ public class TfidfVectorizer extends BaseTextVectorizer implements Serializable 
 
         public TextVectorizer build() {
 
-            return new TfidfVectorizer(cache, tokenizerFactory, stopWords, layerSize, minWordFrequency, docIter, sentenceIterator,labels,index,batchSize,sample,stem);
+            return new TfidfVectorizer(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator,labels,index,batchSize,sample,stem,cleanup);
 
         }
 

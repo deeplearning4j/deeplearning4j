@@ -4,7 +4,8 @@ import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * Created by agibsonccc on 11/1/14.
+ * Default step function
+ * @author Adam Gibson
  */
 public class DefaultStepFunction implements StepFunction {
     @Override
