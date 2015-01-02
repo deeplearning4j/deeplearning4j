@@ -50,7 +50,6 @@ public class Word2Vec extends WordVectorsImpl  {
     protected int batchSize = 1000;
     protected double sample = 0;
     protected long totalWords = 1;
-    protected AtomicInteger rateOfChange = new AtomicInteger(0);
     //learning rate
     protected AtomicDouble alpha = new AtomicDouble(0.025);
 

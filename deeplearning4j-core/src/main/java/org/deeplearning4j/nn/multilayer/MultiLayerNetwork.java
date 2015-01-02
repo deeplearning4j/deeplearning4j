@@ -70,27 +70,11 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     protected INDArray mask;
 
 
-
-
-
-    /* Reflection/factory constructor */
-    protected MultiLayerNetwork() {}
-
-
-
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
         this.layerWiseConfigurations = conf;
         this.defaultConfiguration = conf.getConf(0);
     }
 
-    protected MultiLayerNetwork(INDArray input, INDArray labels) {
-        this.input = input.dup();
-        this.labels = labels.dup();
-        intializeConfigurations();
-
-        if (input != null)
-            initializeLayers(input);
-    }
 
 
 
@@ -138,7 +122,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
                     DataSet next = iter.next();
                     this.input = next.getFeatureMatrix();
                       /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
-                    if(this.getInput() == null || this.getLayers() == null || this.getLayers()[0] == null || this.getLayers() == null || this.getLayers()[0] == null) {
+                    if(this.getInput() == null || this.getLayers() == null) {
                         setInput(input);
                         initializeLayers(input);
                     }
@@ -289,9 +273,9 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     }
 
     public void init() {
-        if(layerWiseConfigurations == null || layers == null) {
+        if(layerWiseConfigurations == null || layers == null)
             intializeConfigurations();
-        }
+
 
         INDArray layerInput = input;
         int inputSize;
@@ -725,12 +709,11 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
         MultiLayerNetwork ret = null;
         try {
             ret = getClass().newInstance();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            ret.update(this);
+
+        } catch (Exception e) {
+           throw new IllegalStateException("Unable to cloe network");
         }
-        ret.update(this);
         return ret;
     }
 
