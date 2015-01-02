@@ -65,7 +65,7 @@ public class Word2Vec extends WordVectorsImpl  {
     protected long seed = 123;
     protected boolean saveVocab = false;
     protected double minLearningRate = 0.01;
-    protected TextVectorizer vectorizer;
+    protected transient TextVectorizer vectorizer;
     protected int learningRateDecayWords = 10000;
     protected InvertedIndex invertedIndex;
     protected boolean useAdaGrad = false;
