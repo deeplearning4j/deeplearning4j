@@ -21,7 +21,7 @@ The variable k is the number of times you run [contrastive divergence](../glossa
 
 Here's how you set up a single-thread deep-belief network: 
 
-To create it, you instantiate your NeuralNetConfiguration as well as an object of the class [DBN](../doc/org/deeplearning4j/dbn/DBN.html).
+To create it, you instantiate your NeuralNetConfiguration as well as an object of the class DBN.
 
 <script src="http://gist-it.appspot.com/https://github.com/SkymindIO/dl4j-examples/edit/master/src/main/java/org/deeplearning4j/mnist/MnistExample.java?slice=26:37"></script>
 
