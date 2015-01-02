@@ -111,7 +111,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 		return Double.compare(wordFrequency.get(), o.wordFrequency.get());
 	}
 
-	public double getLearningRate(int index,double g) {
+	public double getGradient(int index, double g) {
 		if(historicalGradient == null) {
 			historicalGradient = Nd4j.zeros(getCodes().size());
 		}

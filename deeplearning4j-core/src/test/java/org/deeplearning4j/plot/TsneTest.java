@@ -29,4 +29,6 @@ public class TsneTest {
 
         calculation.plot(data,2, labelsList);
     }
+
+
 }

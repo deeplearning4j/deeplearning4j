@@ -31,18 +31,32 @@ public class TfIdfVectorizerTest {
 
     private static Logger log = LoggerFactory.getLogger(TfIdfVectorizerTest.class);
 
+    private InvertedIndex index;
+    private  VocabCache cache;
+
     @Before
     public void before() throws Exception {
-        FileUtils.deleteDirectory(new File("word2vec-index"));
+        FileUtils.deleteDirectory(new File("tfidf"));
+
+        cache = new InMemoryLookupCache();
+        index = new LuceneInvertedIndex.Builder().cache(cache)
+                .indexDir(new File("tfidf"))
+                .batchSize(5)
+                .cacheInRam(false).build();
 
     }
 
     @After
     public void after() throws Exception {
-        FileUtils.deleteDirectory(new File("word2vec-index"));
+        if(index != null)
+            index.cleanup();
+
+        FileUtils.deleteDirectory(new File("tfidf"));
 
 
     }
+
+
     @Test
     public void testTfIdfVectorizer() throws Exception {
         File rootDir = new ClassPathResource("rootdir").getFile();
@@ -56,18 +70,17 @@ public class TfIdfVectorizerTest {
 
         List<String> labels = Arrays.asList("label1","label2");
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-        VocabCache cache = new InMemoryLookupCache.Builder()
-                .vectorLength(100).build();
-        InvertedIndex index = new LuceneInvertedIndex.Builder().cache(cache).batchSize(5)
-                .cacheInRam(false).build();
+
         TextVectorizer vectorizer = new TfidfVectorizer.Builder()
                 .minWords(1).index(index).cache(cache)
                 .stopWords(new ArrayList<String>())
-                .tokenize(tokenizerFactory).labels(labels).iterate(iter).build();
+                .tokenize(tokenizerFactory).labels(labels)
+                .iterate(iter).build();
+
         vectorizer.fit();
+
         VocabWord word = vectorizer.vocab().wordFor("file");
         assumeNotNull(word);
-
         assertEquals(word,vectorizer.vocab().tokenFor("file"));
 
 
@@ -83,16 +96,6 @@ public class TfIdfVectorizerTest {
         assertEquals(docStrings.size(),docs.length);
         assertEquals(docStrings.size(), vectorizer.index().documents(word).length);
 
-        Iterator<List<VocabWord>> miniBatches = vectorizer.index().miniBatches();
-        int count = 0;
-        while(miniBatches.hasNext()) {
-            miniBatches.next();
-            count++;
-        }
-
-        assertEquals(2,count);
-
-        log.info("Count " + count);
 
 
     }

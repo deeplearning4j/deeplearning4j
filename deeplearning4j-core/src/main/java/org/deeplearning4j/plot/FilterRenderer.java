@@ -63,7 +63,6 @@ public class FilterRenderer {
 
         for (int i = 0; i < equiv.length; i++) {
 
-            //equiv[i] = (int) Math.round( MatrixUtils.getElement(render_data, i) );
             equiv[i] = (int) Math.round(render_data.getDouble(i) * 256 );
             log.debug( "> " + equiv[i] );
 
@@ -95,42 +94,7 @@ public class FilterRenderer {
 
     }
 
-    /**
-     *
-     * This is faster but produces rounding errors
-     *
-     * @param min
-     * @param stepSize
-     * @param value
-     * @param numberBins
-     * @return
-     */
-    public int computeHistogramBucketIndexAlt(double min, double stepSize, double value, int numberBins) {
 
-
-        //	log.debug("pre round: val: " + value + ", delta on min: " + (value - min) + ", bin-calc: " + ((value - min) / stepSize));
-        //	log.debug("pre round: val: " + value + ", bin-calc: " + ((value - min) / stepSize));
-
-
-
-        // int bin = (int) ((value - min) / stepSize);
-
-        int bin = (int) (((value - min)) / (stepSize));
-
-		/*
-		for ( int x = 0; x < numberBins; x++ ) {
-
-			double tmp = (x * stepSize) + min;
-
-			if ( value <= tmp ) {
-				return x;
-			}
-
-		}
-		 */
-        return bin;
-
-    }
 
     public static double round(double unrounded, int precision, int roundingMode)
     {
@@ -141,14 +105,9 @@ public class FilterRenderer {
 
     private String buildBucketLabel(int bucketIndex, double stepSize, double min) {
 
-        //log.debug( "label> min " + min + ", stepSize: " + stepSize );
-
-        //log.debug("bucketIndex > " + bucketIndex);
-
         double val = min + (bucketIndex * stepSize);
         String ret = "" + round(val, 2, BigDecimal.ROUND_HALF_UP);
 
-        //log.debug("label-ret: " + val);
 
         return ret;
 
@@ -171,8 +130,8 @@ public class FilterRenderer {
 
         Map<Integer, Integer> mapHistory = new TreeMap<>();
 
-        double min = (double) data.min(Integer.MAX_VALUE).getDouble(0);
-        double max = (double) data.max(Integer.MAX_VALUE).getDouble(0);
+        double min =  data.min(Integer.MAX_VALUE).getDouble(0);
+        double max =  data.max(Integer.MAX_VALUE).getDouble(0);
 
         double range = max - min;
         double stepSize = range / numberBins;
@@ -247,8 +206,8 @@ public class FilterRenderer {
 
         Map<Integer, Integer> mapHistory = this.generateHistogramBuckets( data, numberBins );
 
-        double min = (double) data.min(Integer.MAX_VALUE).getDouble(0); //data.getFromOrigin(0, 0);
-        double max = (double) data.max(Integer.MAX_VALUE).getDouble(0); //data.getFromOrigin(0, 0);
+        double min =  data.min(Integer.MAX_VALUE).getDouble(0); //data.getFromOrigin(0, 0);
+        double max =  data.max(Integer.MAX_VALUE).getDouble(0); //data.getFromOrigin(0, 0);
 
         double range = max - min;
         double stepSize = range / numberBins;
@@ -302,10 +261,9 @@ public class FilterRenderer {
 
             double curLabel = yStep * yLabelStepSize ;
 
-            long curY = (int) (graphHeight + yOffset) - Math.round(( (int) (curLabel)
+            long curY =  (graphHeight + yOffset) - Math.round(( (int) (curLabel)
                     / (double) maxValue) * (graphHeight + yOffset - 20));
 
-            //log.debug( "curY: " + curY );
 
             g2d.setColor(Color.BLACK);
             g2d.drawString("" + curLabel, 10, curY );
@@ -332,13 +290,9 @@ public class FilterRenderer {
 
             long yPos = graphHeight + yOffset - barHeight;
 
-            //            Rectangle2D bar = new Rectangle2D.Float(
-            //                  xPos, yPos, barWidth, barHeight);
-
-            //g2d.fill(bar);
-            g2d.fillRect((int) xPos, (int) yPos, (int) barWidth, (int) barHeight);
+            g2d.fillRect( xPos, (int) yPos, barWidth, (int) barHeight);
             g2d.setColor(Color.DARK_GRAY);
-            g2d.drawRect((int) xPos, (int) yPos, (int) barWidth, (int) barHeight);
+            g2d.drawRect(xPos, (int) yPos,barWidth, (int) barHeight);
 
             g2d.setColor(Color.BLACK);
             g2d.drawString(bucket_label, xPos + ((barWidth / 2) - 10), barHeight + 20 + yPos);
@@ -391,11 +345,6 @@ public class FilterRenderer {
         int filterImgWidth = ( patchWidth + patchBorder ) * patchesPerRow;
         int filterImgHeight = numPatchRows * (patchHeight + patchBorder);
 
-        log.debug("Filter Width: " + filterImgWidth);
-        log.debug("Filter Height: " + filterImgHeight);
-
-        log.debug("Patch array size: " + equiv.length );
-
 
         img = new BufferedImage( filterImgWidth, filterImgHeight, BufferedImage.TYPE_BYTE_GRAY);
         WritableRaster r = img.getRaster();
@@ -407,11 +356,6 @@ public class FilterRenderer {
 
 
         outer:  for ( int col = 0; col < data.columns(); col++ ) {
-
-
-
-
-
             int curX = (col % patchesPerRow ) * (patchWidth + patchBorder );
             int curY = col / patchesPerRow * ( patchHeight + patchBorder );
 
@@ -535,7 +479,6 @@ public class FilterRenderer {
         if(!outputfile.exists())
             outputfile.createNewFile();
 
-        //FileWriter writer = new FileWriter(file);
 
 
         ImageIO.write(img, "png", outputfile);
@@ -580,7 +523,7 @@ public class FilterRenderer {
         boolean running = true;
         while(running){
             BufferStrategy bs = frame.getBufferStrategy();
-            if(bs==null){
+            if(bs == null){
                 frame.createBufferStrategy(4);
                 return;
             }

@@ -14,16 +14,21 @@ import org.slf4j.LoggerFactory;
 
 public class AdaGradTest {
 
-	private static Logger LOG = LoggerFactory.getLogger(AdaGradTest.class);
+	private static Logger log = LoggerFactory.getLogger(AdaGradTest.class);
 	
 	
 	@Test
 	public void testAdaGrad1() {
 		int rows = 1;
 		int cols = 1;
+		
+		
 		AdaGrad grad = new AdaGrad(rows,cols,1e-3);
 		INDArray W = Nd4j.ones(rows,cols);
-		assertEquals(1e-1,grad.getLearningRates(W).getDouble(0),1e-1);
+	    assertEquals(1e-1,grad.getGradient(W).getDouble(0),1e-1);
+
+		
+
 	}
 	
 	@Test
@@ -43,8 +48,8 @@ public class AdaGradTest {
 			W.putRow(i,Nd4j.create(dist.sample(W.columns())));
 		
 		for(int i = 0; i < 5; i++) {
-			String learningRates = String.valueOf("\nAdagrad\n " + grad.getLearningRates(W)).replaceAll(";","\n");
-			LOG.info(learningRates);
+			String learningRates = String.valueOf("\nAdagrad\n " + grad.getGradient(W)).replaceAll(";","\n");
+			log.info(learningRates);
 			W.addi(Nd4j.randn(rows, cols));
 		}
 

@@ -1,36 +1,42 @@
 package org.deeplearning4j.models.featuredetectors.autoencoder;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.models.featuredetectors.da.DenoisingAutoEncoder;
+import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class DenoisingAutoEncoderTest {
-	
-	@Test
-	public void testDenoisingAutoEncoder() throws Exception {
-		
-	    MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f).render(10)
-                .iterations(100)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(new MersenneTwister(123))
-                .learningRate(1e-1f).nIn(784).nOut(600).build();
 
-        fetcher.fetch(10);
-        DataSet dataSet = fetcher.next();
+        @Test
+        public void testDenoisingAutoEncoder() throws Exception {
 
-        INDArray input = dataSet.getFeatureMatrix();
+                MnistDataFetcher fetcher = new MnistDataFetcher(true);
+                NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
+                        .iterations(100)
+                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(new MersenneTwister(123))
+                        .learningRate(1e-1f).nIn(784).nOut(600).build();
 
-        DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder()
-                .configure(conf).withInput(input).build();
+                fetcher.fetch(10);
+                DataSet d2 = fetcher.next();
 
-        assertEquals(471784,da.params().length());
-        da.fit(input);
-	}
+                INDArray input = d2.getFeatureMatrix();
+                LayerFactory layerFactory = LayerFactories.getFactory(DenoisingAutoEncoder.class);
+                DenoisingAutoEncoder da = layerFactory.create(conf);
+                assertEquals(da.params(),da.params());
+                assertEquals(471784,da.params().length());
+
+                da.fit(input);
+    }
+
+
+
 }
