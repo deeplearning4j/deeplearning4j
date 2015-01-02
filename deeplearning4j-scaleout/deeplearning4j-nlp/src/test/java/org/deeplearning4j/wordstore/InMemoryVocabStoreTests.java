@@ -16,7 +16,7 @@ public class InMemoryVocabStoreTests {
 
     @Test
     public void testStorePut() {
-        VocabCache cache = new InMemoryLookupCache.Builder().vectorLength(50).build();
+        VocabCache cache = new InMemoryLookupCache();
         assertFalse(cache.containsWord("hello"));
         cache.addWordToIndex(0,"hello");
         assertTrue(cache.containsWord("hello"));

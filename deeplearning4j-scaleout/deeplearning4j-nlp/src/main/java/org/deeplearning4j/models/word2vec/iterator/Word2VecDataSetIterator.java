@@ -192,7 +192,7 @@ public class Word2VecDataSetIterator implements DataSetIterator {
 
     @Override
     public int inputColumns() {
-        return vec.getLayerSize() * vec.getWindow();
+        return vec.lookupTable().layerSize() * vec.getWindow();
     }
 
     @Override

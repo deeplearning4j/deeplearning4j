@@ -2,9 +2,16 @@ package org.deeplearning4j.models.rntn;
 
 import static org.junit.Assert.*;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.random.MersenneTwister;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.invertedindex.InvertedIndex;
+import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.util.SerializationUtils;
+import org.junit.After;
 import org.nd4j.linalg.api.activation.Activations;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.text.corpora.treeparser.TreeVectorizer;
@@ -30,28 +37,52 @@ public class BasicRNTNTest {
     private SentenceIterator sentenceIter;
     private TokenizerFactory tokenizerFactory;
     private String sentence = "<LABEL> This is one sentence. </LABEL>";
-
+    private InvertedIndex index;
+    private VocabCache cache;
+    private WeightLookupTable lookupTable;
 
     @Before
     public void init() throws Exception {
         new File("cache.ser").delete();
-        vectorizer = new TreeVectorizer();
-        tokenizerFactory = new UimaTokenizerFactory(false);
-        sentenceIter = new CollectionSentenceIterator(Arrays.asList(sentence));
+        FileUtils.deleteDirectory(new File("rntn-index"));
+
+        if(vectorizer == null)
+            vectorizer = new TreeVectorizer();
+        if(tokenizerFactory == null)
+            tokenizerFactory = new UimaTokenizerFactory(false);
+        if(sentenceIter == null)
+            sentenceIter = new CollectionSentenceIterator(Arrays.asList(sentence));
         File vectors = new File("wordvectors.ser");
         vectors.delete();
-        vec = new Word2Vec.Builder()
-                .vocabCache(new InMemoryLookupCache.Builder().vectorLength(100).build())
-                .iterate(sentenceIter).build();
-        vec.fit();
+       if(cache == null)
+            cache = new InMemoryLookupCache();
+        if(lookupTable == null)
+            lookupTable = new InMemoryLookupTable.Builder().cache(cache)
+                    .vectorLength(100).build();
 
+        if(index == null)
+            index = new LuceneInvertedIndex.Builder()
+                    .indexDir(new File("rntn-index")).cache(cache).build();
+        if(vec == null) {
+            vec = new Word2Vec.Builder()
+                    .vocabCache(cache).index(index)
+                    .iterate(sentenceIter).build();
+            vec.fit();
+        }
 
 
 
     }
 
+    @After
+    public void after() throws Exception {
+        FileUtils.deleteDirectory(new File("rntn-index"));
+    }
+
+
     @Test
-    public void testGetValuesAndDerivativeLengths() {
+    public void testGetValuesAndDerivativeLengths() throws Exception {
+
         RNTN rntn = new RNTN.Builder().setActivationFunction(Activations.tanh())
                 .setAdagradResetFrequency(1)
                 .setCombineClassification(true).setFeatureVectors(vec)
@@ -62,24 +93,13 @@ public class BasicRNTNTest {
         INDArray gradient = rntn.getValueGradient();
         rntn.setParameters(params);
         assertEquals(params.length(),gradient.length());
-    }
 
-    @Test
-    public void testRntn() throws Exception {
-
-
-        RNTN rntn = new RNTN.Builder().setActivationFunction(Activations.tanh())
-                .setAdagradResetFrequency(1)
-                .setCombineClassification(true).setFeatureVectors(vec)
-                .setRandomFeatureVectors(false)
-                .setRng(new MersenneTwister(123))
-                .setUseTensors(true).build();
         List<Tree> trees = vectorizer.getTreesWithLabels(sentence,Arrays.asList("LABEL"));
         rntn.fit(trees);
 
 
-
     }
+
 
 
 }

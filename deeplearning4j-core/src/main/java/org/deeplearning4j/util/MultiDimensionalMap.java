@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 /**
  * Multiple key map
  */
-public class MultiDimensionalMap<K,T,V>  {
+public class MultiDimensionalMap<K,T,V>  implements Serializable  {
 
     private Map<Pair<K,T>,V> backedMap;
 
