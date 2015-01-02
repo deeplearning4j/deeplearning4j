@@ -10,11 +10,11 @@
     <artifactId>cdh4</artifactId>
     <packaging>jar</packaging>
 
-    <name>cdh5</name>
+    <name>cdh4</name>
     <url>http://deeplearning4j.org</url>
     <properties>
         <hadoop.version>2.0.0-cdh4.6.0</hadoop.version>
-         <nd4j.version>0.0.3.5.5-SNAPSHOT</nd4j.version>
+         <nd4j.version>0.0.3.5.5</nd4j.version>
     </properties>
     <repositories>
         <repository>
