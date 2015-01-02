@@ -1,4 +1,4 @@
-package org.deeplearning4j.clustering;
+package org.deeplearning4j.clustering.kdtree;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -11,7 +11,8 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * KDTree
+ * KDTree based on: https://github.com/nicky-zs/kdtree-python/blob/master/kdtree.py
+ *
  * @author Adam Gibson
  */
 public class KDTree implements Serializable {
@@ -27,6 +28,10 @@ public class KDTree implements Serializable {
         this.dims = dims;
     }
 
+    /**
+     * Insert a point in to the tree
+     * @param point the point to insert
+     */
     public void insert(INDArray point) {
         if(!point.isVector() || point.length() != dims)
             throw new IllegalArgumentException("Point must be a vector of length " + dims);
@@ -137,7 +142,11 @@ public class KDTree implements Serializable {
         knn(node.getRight(),point,upper,dist,best,_discNext);
     }
 
-
+    /**
+     * Query for nearest neighbor. Returns the distance and point
+     * @param point the point to query for
+     * @return
+     */
     public Pair<Double,INDArray> nn(INDArray point) {
         return nn(root,point,rect,Double.POSITIVE_INFINITY,null,0);
     }
@@ -280,6 +289,10 @@ public class KDTree implements Serializable {
         return new Pair<>(internalNode,_disc);
     }
 
+    /**
+     * The number of elements in the tree
+     * @return the the number of elements in the tree
+     */
     public int size() {
         return size;
     }

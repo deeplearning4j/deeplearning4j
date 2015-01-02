@@ -71,6 +71,10 @@ public class Tsne implements Serializable {
         loadIntoTmp();
     }
 
+    public Tsne() {
+
+    }
+
     private static void loadIntoTmp() {
 
         File script = new File("/tmp/tsne.py");

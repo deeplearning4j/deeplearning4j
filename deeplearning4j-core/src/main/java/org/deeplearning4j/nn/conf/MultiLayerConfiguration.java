@@ -185,6 +185,8 @@ public class MultiLayerConfiguration implements Serializable {
         public MultiLayerConfiguration build() {
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
+            if(hiddenLayerSizes == null)
+                throw new IllegalStateException("Please specify hidden layer sizes");
             conf.hiddenLayerSizes = this.hiddenLayerSizes;
             conf.useDropConnect = useDropConnect;
             conf.pretrain = pretrain;
