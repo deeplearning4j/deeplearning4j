@@ -1,4 +1,4 @@
-package org.deeplearning4j.clustering;
+package org.deeplearning4j.clustering.kdtree;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
