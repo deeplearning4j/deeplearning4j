@@ -101,10 +101,10 @@ public class TestSVMLightDataFetcher {
 		MNIST_DatasetUtils util = new MNIST_DatasetUtils();
 		util.convertFromBinaryFormatToMetronome( 5, vectors_filename );
 		*/
-		
+		/*
 		assertEquals( hdfs_input.numCols(), stock_input.numCols() );
 		assertEquals( hdfs_input.numRows(), stock_input.numRows() );		
-		
+		*/
 		
 		
 		
