@@ -4,6 +4,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.routing.RoundRobinPool;
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.word2vec.StreamWork;
 import org.deeplearning4j.models.word2vec.VocabWork;
 import org.deeplearning4j.models.word2vec.actor.VocabActor;
@@ -12,11 +13,13 @@ import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,28 +31,28 @@ import java.util.concurrent.atomic.AtomicLong;
 public abstract class BaseTextVectorizer implements TextVectorizer {
 
     protected transient VocabCache cache;
-    protected  ActorSystem trainingSystem;
+    protected transient ActorSystem trainingSystem;
     protected transient TokenizerFactory tokenizerFactory;
     protected List<String> stopWords;
-    private int layerSize = 0;
     protected int minWordFrequency = 5;
     protected transient DocumentIterator docIter;
     protected List<String> labels;
     protected transient SentenceIterator sentenceIterator;
+    protected transient LabelAwareSentenceIterator labelSentenceIter;
     protected AtomicLong numWordsEncountered =  new AtomicLong(0);
     private static Logger log = LoggerFactory.getLogger(BaseTextVectorizer.class);
     protected InvertedIndex index;
     protected int batchSize = 1000;
     protected double sample = 0.0;
     protected boolean stem = false;
+    protected boolean cleanup = false;
 
     public BaseTextVectorizer(){}
 
-    protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int layerSize, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index,int batchSize,double sample,boolean stem) {
+    protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index,int batchSize,double sample,boolean stem,boolean cleanup) {
         this.cache = cache;
         this.tokenizerFactory = tokenizerFactory;
         this.stopWords = stopWords;
-        this.layerSize = layerSize;
         this.minWordFrequency = minWordFrequency;
         this.docIter = docIter;
         this.sentenceIterator = sentenceIterator;
@@ -59,10 +62,18 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         this.sample = sample;
         this.stem = stem;
 
-        if(index == null)
+        if(index == null) {
+            if(new File("word2vec-index").exists() && cleanup)
+                try {
+                    FileUtils.deleteDirectory(new File("word2vec-index"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             this.index = new LuceneInvertedIndex.Builder().batchSize(batchSize)
                     .indexDir(new File("word2vec-index")).sample(sample)
-                   .cache(cache).build();
+                    .cache(cache).build();
+
+        }
     }
 
     @Override
@@ -77,7 +88,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
 
     @Override
     public void fit() {
-        if(trainingSystem == null)
+        if(trainingSystem == null || trainingSystem.isTerminated())
             trainingSystem = ActorSystem.create();
 
 
@@ -120,26 +131,56 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         }
 
 
-        while(getSentenceIterator() != null && getSentenceIterator().hasNext()) {
-            String sentence = getSentenceIterator().nextSentence();
-            if(sentence == null)
-                break;
-            vocabActor.tell(new VocabWork(latch,sentence,stem), vocabActor);
-            queued.incrementAndGet();
-            if(queued.get() % 10000 == 0) {
-                log.info("Sent " + queued);
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();;
-                }
-            }
+       if(getSentenceIterator() instanceof LabelAwareSentenceIterator) {
+           this.labelSentenceIter = (LabelAwareSentenceIterator) getSentenceIterator();
+           while(getSentenceIterator() != null && getSentenceIterator().hasNext()) {
+               String sentence = getSentenceIterator().nextSentence();
+               List<String> label = labelSentenceIter.currentLabels();
+
+               if(sentence == null)
+                   break;
+               vocabActor.tell(new VocabWork(latch,sentence,stem,label), vocabActor);
+               queued.incrementAndGet();
+               if(queued.get() % 10000 == 0) {
+                   log.info("Sent " + queued);
+                   try {
+                       Thread.sleep(1);
+                   } catch (InterruptedException e) {
+                       Thread.currentThread().interrupt();;
+                   }
+               }
 
 
-        }
+           }
+       }
+
+        else {
+
+           while(getSentenceIterator() != null && getSentenceIterator().hasNext()) {
+               String sentence = getSentenceIterator().nextSentence();
+               if(sentence == null)
+                   break;
+               vocabActor.tell(new VocabWork(latch,sentence,stem), vocabActor);
+               queued.incrementAndGet();
+               if(queued.get() % 10000 == 0) {
+                   log.info("Sent " + queued);
+                   try {
+                       Thread.sleep(1);
+                   } catch (InterruptedException e) {
+                       Thread.currentThread().interrupt();;
+                   }
+               }
 
 
-        while(latch.get() < queued.get()) {
+           }
+       }
+
+
+
+        long diff = Long.MAX_VALUE;
+
+        while(latch.get() < queued.get() && diff > 5) {
+            diff = Math.abs(latch.get() - queued.get());
             try {
                 Thread.sleep(10000);
                 log.info("latch count " + latch.get() + " with queued " + queued.get());
@@ -186,13 +227,6 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         this.minWordFrequency = minWordFrequency;
     }
 
-    public int getLayerSize() {
-        return layerSize;
-    }
-
-    public void setLayerSize(int layerSize) {
-        this.layerSize = layerSize;
-    }
 
     public List<String> getStopWords() {
         return stopWords;
@@ -221,7 +255,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
 
     @Override
     public long numWordsEncountered() {
-        return numWordsEncountered.get();
+        return index.totalWords();
     }
 
     @Override

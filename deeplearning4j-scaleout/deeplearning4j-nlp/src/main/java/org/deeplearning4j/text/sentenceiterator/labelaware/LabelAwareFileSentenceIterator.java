@@ -4,6 +4,8 @@ import org.deeplearning4j.text.sentenceiterator.FileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentencePreProcessor;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  *
@@ -29,5 +31,10 @@ public class LabelAwareFileSentenceIterator extends FileSentenceIterator impleme
     @Override
     public String currentLabel() {
         return currentFile.getParentFile().getName();
+    }
+
+    @Override
+    public List<String> currentLabels() {
+        return Arrays.asList(currentFile.getParentFile().getName());
     }
 }

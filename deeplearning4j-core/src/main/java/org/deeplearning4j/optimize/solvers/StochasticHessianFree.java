@@ -2,18 +2,21 @@ package org.deeplearning4j.optimize.solvers;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
+import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.api.OptimizableByGradientValueMatrix;
 import org.deeplearning4j.optimize.api.TrainingEvaluator;
-import org.deeplearning4j.util.OptimizerMatrix;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -21,22 +24,20 @@ import java.util.List;
  * by Ryan Kiros http://www.cs.toronto.edu/~rkiros/papers/shf13.pdf
  * @author Adam Gibson
  */
-public class StochasticHessianFree implements OptimizerMatrix {
+public class StochasticHessianFree extends BaseOptimizer {
     private static Logger logger = LoggerFactory.getLogger(StochasticHessianFree.class);
 
     boolean converged = false;
-    OptimizableByGradientValueMatrix optimizable;
     TrainingEvaluator eval;
     double initialStepSize = 1f;
     double tolerance = 1e-5f;
     double gradientTolerance = 0f;
-    private BaseMultiLayerNetwork network;
+    private MultiLayerNetwork network;
     int maxIterations = 10000;
     private String myName = "";
     private static Logger log = LoggerFactory.getLogger(StochasticHessianFree.class);
     /* decay, current gradient/direction/current point in vector space,preCondition on conjugate gradient,current parameters */
     private INDArray ch,gradient,xi;
-    private IterationListener listener;
     private double pi = 0.5f;
     private double decrease = 0.99f;
     private double boost = 1.0f / decrease;
@@ -44,37 +45,23 @@ public class StochasticHessianFree implements OptimizerMatrix {
     /* current score, step size */
     private double score,step;
 
-
-
-    public StochasticHessianFree(OptimizableByGradientValueMatrix function, double initialStepSize,BaseMultiLayerNetwork network) {
-        this.initialStepSize = initialStepSize;
-        this.optimizable = function;
-        this.network = network;
-
+    public StochasticHessianFree(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
+        super(conf, stepFunction, iterationListeners, model);
+        setup();
     }
 
-    public StochasticHessianFree(OptimizableByGradientValueMatrix function, IterationListener listener,BaseMultiLayerNetwork network) {
-        this(function, 0.01f,network);
-        this.listener = listener;
-
-    }
-
-    public StochasticHessianFree(OptimizableByGradientValueMatrix function, double initialStepSize, IterationListener listener,BaseMultiLayerNetwork network) {
-        this(function,initialStepSize,network);
-        this.listener = listener;
-
-
-    }
-
-    public StochasticHessianFree(OptimizableByGradientValueMatrix function,BaseMultiLayerNetwork network) {
-        this(function, 0.01f,network);
-        this.network = network;
+    public StochasticHessianFree(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
+        super(conf, stepFunction, iterationListeners, terminationConditions, model);
+        setup();
     }
 
 
     void setup() {
-        ch = Nd4j.zeros(1,optimizable.getNumParameters());
+        if(!(model instanceof MultiLayerNetwork))
+            return;
+        network = (MultiLayerNetwork) model;
         xi = network.pack();
+        ch = Nd4j.zeros(1, xi.length());
     }
 
 
@@ -83,16 +70,12 @@ public class StochasticHessianFree implements OptimizerMatrix {
     }
 
 
-    public boolean optimize() {
-        return optimize(maxIterations);
-    }
 
 
     /* run conjugate gradient for numIterations */
     public Pair<List<Integer>,List<INDArray>> conjGradient(INDArray b,INDArray x0,INDArray preCon,int numIterations) {
         List<Integer> is = new ArrayList<>();
         List<INDArray> xs = new ArrayList<>();
-        //log.info("B sum " + b.sum());
         //in the pseudo code the gradient is b
         //x0 is ch
         INDArray r = network.getBackPropRGradient(x0).subi(b);
@@ -104,8 +87,6 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
 
         for (int iterationCount = 0; iterationCount < numIterations; iterationCount++) {
-            //log.info("P sum at iteration " + iterationCount + " is " + p.sum());
-            //log.info("R sum at iteration " + iterationCount + " is " + r.sum());
 
             INDArray Ap = network.getBackPropRGradient(p);
             //log.info("Ap sum at iteration " + iterationCount + " is " + Ap.sum());
@@ -116,26 +97,20 @@ public class StochasticHessianFree implements OptimizerMatrix {
             }
 
 
-            double val = 0.5 * Nd4j.getBlasWrapper().dot(b.neg().add(r).transpose(), x);
-
-            log.info("Iteration on conjugate gradient " + iterationCount + " with value " + val);
-
-
-
-
+            //double val = 0.5 * Nd4j.getBlasWrapper().dot(b.neg().addi(r).transpose(), x);
 
             //step size
             double alpha = deltaNew / pAp;
             //step
             x.addi(p.mul(alpha));
 
-           //conjugate gradient
-            INDArray rNew = r.add(Ap.mul(alpha));
+            //conjugate gradient
+            INDArray rNew = r.addi(Ap.mul(alpha));
             INDArray yNew = rNew.div(preCon);
             double deltaOld = deltaNew;
             deltaNew =  rNew.mul(yNew).sum(Integer.MAX_VALUE).getDouble(0);
             double beta = deltaNew / deltaOld;
-            p = yNew.neg().add(p.mul(beta));
+            p = yNew.neg().addi(p.mul(beta));
 
             r = rNew;
             //append to the steps taken
@@ -173,7 +148,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
                 log.info("Iteration " + j + " on line search with current rate of " + rate);
             }
             //converged
-            if(newScore <=   gradient.mul(p).mul(score + c * rate).sum(Integer.MAX_VALUE).getDouble(0)) {
+            if(newScore <=   gradient.mul(p).muli(score + c * rate).sum(Integer.MAX_VALUE).getDouble(0)) {
                 break;
             }
             else {
@@ -198,7 +173,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
 
     /**
-     * Iterate through the current applyTransformToDestination of gradients
+     * Iterate through the current list of gradients
      * and backtrack upon an optimal step
      * that improves the current score
      * @param chs the proposed changes
@@ -215,11 +190,9 @@ public class StochasticHessianFree implements OptimizerMatrix {
             if(score2 < score || score2 < currMin) {
                 i++;
                 score = score2;
-                log.info("Breaking on new score " + score2 + " with iteration " + i + " with current minimum of " + currMin);
                 break;
             }
 
-            log.info("Trial " + i + " with trial score of " + score2);
 
         }
 
@@ -230,8 +203,11 @@ public class StochasticHessianFree implements OptimizerMatrix {
     }
 
 
+    @Override
+    public boolean optimize() {
+        if(!(model instanceof MultiLayerNetwork))
+            return true;
 
-    public boolean optimize(int numIterations) {
         myName = Thread.currentThread().getName();
         if (converged)
             return true;
@@ -242,69 +218,44 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
 
 
+       for(int i = 0; i < conf.getNumIterations(); i++) {
+           //initial gradient, precon/conjugate gradient conditioner
+           Pair<INDArray,INDArray> backPropGradient = network.getBackPropGradient2();
 
-        //initial gradient, precon/conjugate gradient conditioner
-        Pair<INDArray,INDArray> backPropGradient = network.getBackPropGradient2();
+           gradient = backPropGradient.getFirst().neg();
+           //log.info("Gradient sum " + gradient.sum());
 
-        gradient = backPropGradient.getFirst().neg();
-        //log.info("Gradient sum " + gradient.sum());
+           INDArray preCon = backPropGradient.getSecond();
 
-        INDArray preCon = backPropGradient.getSecond();
+           if(ch == null)
+               setup();
 
-        if(ch == null)
-            setup();
+           ch.muli(pi);
 
-        ch.muli(pi);
+           Triple<INDArray,List<INDArray>,INDArray>  cg = runConjugateGradient(preCon,conf.getNumIterations());
 
-        Triple<INDArray,List<INDArray>,INDArray>  cg = runConjugateGradient(preCon,numIterations);
+           INDArray p = cg.getFirst();
 
-        INDArray p = cg.getFirst();
+           Pair<INDArray,Double> cgBackTrack = cgBackTrack(cg.getSecond(),p);
 
-        Pair<INDArray,Double> cgBackTrack = cgBackTrack(cg.getSecond(),p);
+           p = cgBackTrack.getFirst();
 
-        p = cgBackTrack.getFirst();
+           double rho = network.reductionRatio(cgBackTrack.getFirst(), network.score(), cgBackTrack.getSecond(), gradient);
+           double newScore = network.score(cgBackTrack.getFirst());
 
-        double rho = network.reductionRatio(cgBackTrack.getFirst(), network.score(), cgBackTrack.getSecond(), gradient);
-        double newScore = network.score(cgBackTrack.getFirst());
+           step = lineSearch(newScore,gradient,p);
+           network.dampingUpdate(rho,boost,decrease);
 
-        step = lineSearch(newScore,gradient,p);
-        network.dampingUpdate(rho,boost,decrease);
-
-        INDArray proposedUpdate = xi.add(p.mul(f * step));
-        network.setParameters(proposedUpdate);
+           INDArray proposedUpdate = xi.add(p.mul(f * step));
+           network.setParameters(proposedUpdate);
+           log.info("Score at iteration " + i + " was " + newScore);
+       }
 
         return true;
     }
 
-    /**
-     * Sets the training evaluator
-     *
-     * @param eval the evaluator to use
-     */
-    @Override
-    public void setTrainingEvaluator(TrainingEvaluator eval) {
-        this.eval = eval;
-    }
 
-    public void reset() {
-        xi = null;
-    }
 
-    public int getMaxIterations() {
-        return maxIterations;
-    }
 
-    public void setMaxIterations(int maxIterations) {
-        this.maxIterations = maxIterations;
-    }
 
-    /**
-     * The tolerance for change when running
-     *
-     * @param tolerance
-     */
-    @Override
-    public void setTolerance(double tolerance) {
-
-    }
 }

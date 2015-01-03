@@ -2,6 +2,8 @@ package org.deeplearning4j.text.sentenceiterator.labelaware;
 
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 
+import java.util.List;
+
 /**
  * SentenceIterator that is aware of its label. This is useful
  * for creating datasets all at once or on the fly.
@@ -14,5 +16,12 @@ public interface LabelAwareSentenceIterator extends SentenceIterator {
      * @return the label for nextSentence()
      */
     String currentLabel();
+
+
+    /**
+     * For multi label problems
+     * @return
+     */
+    List<String> currentLabels();
 
 }

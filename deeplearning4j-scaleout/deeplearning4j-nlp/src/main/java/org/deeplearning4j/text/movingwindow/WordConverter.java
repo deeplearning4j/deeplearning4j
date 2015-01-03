@@ -11,7 +11,7 @@ import org.deeplearning4j.models.word2vec.Word2Vec;
 
 public class WordConverter {
 
-	private List<String> sentences = new ArrayList<String>();
+	private List<String> sentences = new ArrayList<>();
 	private Word2Vec vec;
 	private List<Window> windows;
 
@@ -21,7 +21,7 @@ public class WordConverter {
 	}
 
 	public static INDArray toInputMatrix(List<Window> windows,Word2Vec vec) {
-		int columns = vec.getLayerSize() * vec.getWindow();
+		int columns = vec.lookupTable().layerSize() * vec.getWindow();
 		int rows = windows.size();
 		INDArray ret = Nd4j.create(rows,columns);
 		for(int i = 0; i < rows; i++) {
@@ -55,7 +55,7 @@ public class WordConverter {
 	private List<Window> allWindowsForAllSentences() {
 		if(windows != null)
 			return windows;
-		windows = new ArrayList<Window>();
+		windows = new ArrayList<>();
 		for(String s : sentences)
 			if(!s.isEmpty())
 				windows.addAll(Windows.windows(s));

@@ -25,7 +25,9 @@ import org.slf4j.LoggerFactory;
 
 import akka.actor.UntypedActor;
 import org.tartarus.snowball.ext.PorterStemmer;
+import scala.concurrent.Await;
 import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 
 /**
  * Individual actor for updating the vocab cache
@@ -67,7 +69,7 @@ public class VocabActor extends UntypedActor {
 
     @Override
     public void onReceive(Object message) throws Exception {
-        Set<String> encountered = new HashSet<>();
+        final Set<String> encountered = new HashSet<>();
 
         if(message  instanceof VocabWork) {
             final List<VocabWord> document = new ArrayList<>();
@@ -75,26 +77,30 @@ public class VocabActor extends UntypedActor {
             if(work.getWork() == null || work.getWork().isEmpty())
                 return;
 
-            String sentence = work.getWork();
+            final String sentence = work.getWork();
             if(sentence.isEmpty() || sentence.length() <= 2) {
                 work.increment();
                 return;
             }
 
-            Tokenizer t = tokenizer.create(sentence);
-            while(t.hasMoreTokens())  {
-                String token = t.nextToken();
-                if(token.isEmpty())
-                    break;
-                processToken(token,encountered,document,work.isStem());
-            }
 
 
             Future<Object> f = Futures.future(new Callable<Object>() {
                 @Override
                 public Object call() throws Exception {
-                    index.addWordsToDoc(index.numDocuments(),document);
                     numWordsEncountered.set(numWordsEncountered.get() + document.size());
+                    Tokenizer t = tokenizer.create(sentence);
+                    while(t.hasMoreTokens())  {
+                        String token = t.nextToken();
+                        if(token.isEmpty())
+                            break;
+                        processToken(token,encountered,document,work.isStem());
+                    }
+
+                    if(work.getLabel() != null)
+                        index.addWordsToDoc(index.numDocuments(),document,work.getLabel());
+                    else
+                        index.addWordsToDoc(index.numDocuments(),document);
                     return null;
                 }
             },context().dispatcher());
@@ -111,7 +117,6 @@ public class VocabActor extends UntypedActor {
                     lastUpdate.getAndSet(System.currentTimeMillis());
                 }
             },context().dispatcher());
-
 
 
         }
