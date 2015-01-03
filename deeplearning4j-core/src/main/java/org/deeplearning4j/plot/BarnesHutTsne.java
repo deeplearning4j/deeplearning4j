@@ -1,5 +1,6 @@
 package org.deeplearning4j.plot;
 
+import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.clustering.vptree.VpTreeNode;
 import org.deeplearning4j.clustering.vptree.VpTreePointINDArray;
@@ -71,7 +72,7 @@ public class BarnesHutTsne extends Tsne implements Model {
      */
     public INDArray computeGaussianPerplexity(final INDArray d,  double u) {
         int n = d.rows();
-        int k = (int) (3 * u);
+        final int k = (int) (3 * u);
         final INDArray p = zeros(n, n);
         final INDArray beta =  ones(n, 1);
         final double logU =  Math.log(u);
@@ -88,7 +89,7 @@ public class BarnesHutTsne extends Tsne implements Model {
                 public void run() {
                     double betaMin = Float.NEGATIVE_INFINITY;
                     double betaMax = Float.POSITIVE_INFINITY;
-                    tree.findNearbyPoints(list.get(j),0.99);
+                    Counter<VpTreePointINDArray> c = tree.findNearByPointsWithDistancesK(list.get(j),k);
                     NDArrayIndex[] range = new NDArrayIndex[]{
                             NDArrayIndex.concat(NDArrayIndex.interval(0, j),NDArrayIndex.interval(j + 1, d.columns()))};
 
