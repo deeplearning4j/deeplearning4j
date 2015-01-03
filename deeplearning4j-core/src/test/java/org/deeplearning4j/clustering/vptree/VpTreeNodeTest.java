@@ -27,7 +27,7 @@ public class VpTreeNodeTest {
     @Test
     public void testTopKDistances() {
         List<VpTreePointINDArray> points = new ArrayList<>();
-        for (int i = 0; i < 1000; ++i) {
+        for (int i = 0; i < 100; ++i) {
             points.add(new VpTreePointINDArray(create(i,i)));
         }
 
@@ -44,7 +44,7 @@ public class VpTreeNodeTest {
     @Test
     public void testTopK() {
         List<VpTreePointINDArray> points = new ArrayList<>();
-        for (int i = 0; i < 1000; ++i) {
+        for (int i = 0; i < 100; ++i) {
             points.add(new VpTreePointINDArray(create(i,i)));
         }
 
@@ -65,7 +65,7 @@ public class VpTreeNodeTest {
     @Test
     public void testSimpleINDArray() {
         List<VpTreePointINDArray> points = new ArrayList<>();
-        for (int i = 0; i < 1000; ++i) {
+        for (int i = 0; i < 100; ++i) {
             points.add(new VpTreePointINDArray(create(i,i)));
         }
 
@@ -86,11 +86,11 @@ public class VpTreeNodeTest {
     public void testINDArray() {
         List<VpTreePointINDArray> points = new ArrayList<>();
 
-        for (int i = 0; i < 5000000; ++i) {
+        for (int i = 0; i < 5000; ++i) {
             points.add(new VpTreePointINDArray(create(Math.random() * 10, Math.random())));
         }
 
-        for (int i = 0; i < 5000000; ++i) {
+        for (int i = 0; i < 5000; ++i) {
             points.add(new VpTreePointINDArray(create(5 + Math.random() * 5, Math.random())));
         }
 
@@ -132,11 +132,11 @@ public class VpTreeNodeTest {
     public void test() {
         List<VpTreePoint2D> points = new ArrayList<>();
 
-        for (int i = 0; i < 5000000; ++i) {
+        for (int i = 0; i < 5000; ++i) {
             points.add(new VpTreePoint2D(Math.random() * 10, Math.random()));
         }
 
-        for (int i = 0; i < 5000000; ++i) {
+        for (int i = 0; i < 5000; ++i) {
             points.add(new VpTreePoint2D(5 + Math.random() * 5, Math.random()));
         }
 
