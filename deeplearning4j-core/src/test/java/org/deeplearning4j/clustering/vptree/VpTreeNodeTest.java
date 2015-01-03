@@ -3,17 +3,64 @@ package org.deeplearning4j.clustering.vptree;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.deeplearning4j.berkeley.Counter;
 import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Anatoly Borisov
  */
 public class VpTreeNodeTest {
 
+    private static Logger log = LoggerFactory.getLogger(VpTreeNodeTest.class);
 
+
+
+
+
+
+
+    @Test
+    public void testTopKDistances() {
+        List<VpTreePointINDArray> points = new ArrayList<>();
+        for (int i = 0; i < 1000; ++i) {
+            points.add(new VpTreePointINDArray(create(i,i)));
+        }
+
+        VpTreeNode<VpTreePointINDArray> node = VpTreeNode.buildVpTree(points);
+        VpTreePointINDArray search = new VpTreePointINDArray(create(55.1, 55.2));
+
+        Counter<VpTreePointINDArray> nearbyPoints = node.findNearByPointsWithDistancesK(search, 2);
+        Assert.assertEquals(2,nearbyPoints.size());
+
+
+    }
+
+
+    @Test
+    public void testTopK() {
+        List<VpTreePointINDArray> points = new ArrayList<>();
+        for (int i = 0; i < 1000; ++i) {
+            points.add(new VpTreePointINDArray(create(i,i)));
+        }
+
+        VpTreeNode<VpTreePointINDArray> node = VpTreeNode.buildVpTree(points);
+        VpTreePointINDArray search = new VpTreePointINDArray(create(55.1, 55.2));
+
+        List<VpTreePointINDArray> nearbyPoints = node.findNearByPointsK(search, 2);
+        Assert.assertEquals(2,nearbyPoints.size());
+
+        //Assert.assertTrue(nearbyPoints.contains(new VpTreePointINDArray(create(55, 55))));
+        //Assert.assertTrue(nearbyPoints.contains(new VpTreePointINDArray(create(56, 56))));
+
+        //nearbyPoints = node.findNearbyPoints(new VpTreePointINDArray(create(10.1, 10.5)), 0.6);
+        //Assert.assertTrue(nearbyPoints.contains(new VpTreePointINDArray(create(10, 10))));
+        //Assert.assertEquals(1, nearbyPoints.size());
+    }
 
     @Test
     public void testSimpleINDArray() {
