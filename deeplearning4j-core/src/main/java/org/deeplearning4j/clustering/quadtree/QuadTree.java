@@ -289,13 +289,13 @@ public class QuadTree implements Serializable {
 
 
     /**
-     *
+     * Compute non edge forces using barnes hut
      * @param pointIndex
      * @param theta
      * @param negativeForce
      * @param sumQ
      */
-    public void computeNonEdgeForces(final int pointIndex, double theta, INDArray negativeForce, INDArray sumQ) {
+    public void computeNonEdgeForces(int pointIndex, double theta, INDArray negativeForce, INDArray sumQ) {
         // Make sure that we spend no time on empty nodes or self-interactions
         if(cumSize == 0 || (isLeaf() && size == 1 && index[0] == pointIndex))
             return;

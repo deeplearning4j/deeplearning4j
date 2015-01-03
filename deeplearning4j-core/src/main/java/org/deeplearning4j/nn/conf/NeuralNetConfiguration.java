@@ -893,7 +893,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
         private int numIterations = 1000;
         private int[] weightShape;
-        private int[] filterSize;
+        private int[] filterSize = {2,2};
         private int numFeatureMaps = 2;
         private int[] featureMapSize = {2,2};
         private int numInFeatureMaps = 2;
