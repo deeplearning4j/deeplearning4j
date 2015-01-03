@@ -5,7 +5,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.io.Serializable;
 
 /**
- * A cell representing a bounding box for the quad tree
+ * A cell representing a bounding box forthe quad tree
  * @author Adam Gibson
  */
 public class Cell implements Serializable {
