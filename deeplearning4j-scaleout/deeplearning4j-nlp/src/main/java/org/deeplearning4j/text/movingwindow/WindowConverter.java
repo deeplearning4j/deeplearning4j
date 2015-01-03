@@ -37,7 +37,7 @@ public class WindowConverter {
      * containing all of the numbers for each word in the window
      */
     public static INDArray asExampleArray(Window window,Word2Vec vec,boolean normalize) {
-        int length = vec.getLayerSize();
+        int length = vec.lookupTable().layerSize();
         List<String> words = window.getWords();
         int windowSize = vec.getWindow();
         assert words.size() == vec.getWindow();
@@ -48,7 +48,7 @@ public class WindowConverter {
         for(int i = 0; i < words.size(); i++) {
             String word = words.get(i);
             INDArray n = normalize ? vec.getWordVectorMatrixNormalized(word) :  vec.getWordVectorMatrix(word);
-            ret.put(new NDArrayIndex[]{NDArrayIndex.interval(i * vec.getLayerSize(),i * vec.getLayerSize() + vec.getLayerSize())},n);
+            ret.put(new NDArrayIndex[]{NDArrayIndex.interval(i * vec.lookupTable().layerSize(),i * vec.lookupTable().layerSize() + vec.lookupTable().layerSize())},n);
         }
 
         return ret;
@@ -71,7 +71,7 @@ public class WindowConverter {
 	 * containing all of the numbers for each word in the window
 	 */
 	public static double[] asExample(Window window,Word2Vec vec) {
-		int length = vec.getLayerSize();
+		int length = vec.lookupTable().layerSize();
 		List<String> words = window.getWords();
 		int windowSize = window.getWindowSize();
 		

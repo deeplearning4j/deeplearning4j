@@ -4,7 +4,7 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 /**
  * Reconstruction renders for a multi layer network
@@ -12,15 +12,15 @@ import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 public class MultiLayerNetworkReconstructionRender {
 
     private DataSetIterator iter;
-    private BaseMultiLayerNetwork network;
+    private MultiLayerNetwork network;
     private int reconLayer = -1;
 
-    public MultiLayerNetworkReconstructionRender(DataSetIterator iter, BaseMultiLayerNetwork network,int reconLayer) {
+    public MultiLayerNetworkReconstructionRender(DataSetIterator iter, MultiLayerNetwork network,int reconLayer) {
         this.iter = iter;
         this.network = network;
         this.reconLayer = reconLayer;
     }
-    public MultiLayerNetworkReconstructionRender(DataSetIterator iter, BaseMultiLayerNetwork network) {
+    public MultiLayerNetworkReconstructionRender(DataSetIterator iter, MultiLayerNetwork network) {
         this(iter,network,-1);
     }
     public void draw() throws InterruptedException {

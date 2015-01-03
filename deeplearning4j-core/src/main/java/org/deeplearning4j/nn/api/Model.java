@@ -1,5 +1,8 @@
 package org.deeplearning4j.nn.api;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -10,8 +13,21 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface Model {
 
+    /**
+     * All models have a fit method
+     */
+    void fit();
 
+    /**
+     * Perform one update  applying the gradient
+     * @param gradient the gradient to apply
+     */
+    void update(Gradient gradient);
 
+    /**
+     * The score for the model
+     * @return the score for the model
+     */
     public double score();
 
     /**
@@ -29,9 +45,9 @@ public interface Model {
     INDArray params();
 
     /**
-     * The number of parameters for the model
+     * the number of parameters for the model
      * @return the number of parameters for the model
-     * 
+     *
      */
     int numParams();
 
@@ -44,12 +60,6 @@ public interface Model {
     void setParams(INDArray params);
 
 
-    /**
-     * Fit the model to the given data
-     * @param data the data to fit the model to
-     * @param params the params (mixed values)
-     */
-    void fit(INDArray data,Object[] params);
 
     /**
      * Fit the model to the given data
@@ -61,9 +71,39 @@ public interface Model {
     /**
      * Run one iteration
      * @param input the input to iterate on
-     * @param params the extra params for the neural network(k, corruption level, max epochs,...)
      */
-    public void iterate(INDArray input,Object[] params);
+    public void iterate(INDArray input);
 
+
+    /**
+     * Calculate a gradient
+     * @return the gradient for this model
+     */
+    Gradient getGradient();
+
+    /**
+     * Get the gradient and score
+     * @return the gradient and score
+     */
+    Pair<Gradient,Double> gradientAndScore();
+
+    /**
+     * The current inputs batch size
+     * @return the current inputs batch size
+     */
+    public int batchSize();
+
+
+    /**
+     * The configuration for the neural network
+     * @return the configuration for the neural network
+     */
+    NeuralNetConfiguration conf();
+
+    /**
+     * Setter for the configuration
+     * @param conf
+     */
+    void setConf(NeuralNetConfiguration conf);
 
 }

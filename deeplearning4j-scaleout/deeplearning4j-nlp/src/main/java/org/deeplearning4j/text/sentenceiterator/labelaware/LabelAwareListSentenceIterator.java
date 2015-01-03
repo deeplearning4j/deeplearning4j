@@ -5,6 +5,7 @@ import org.deeplearning4j.text.sentenceiterator.SentencePreProcessor;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -69,6 +70,11 @@ public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterato
     @Override
     public synchronized String currentLabel() {
         return currentLabel;
+    }
+
+    @Override
+    public List<String> currentLabels() {
+        return Arrays.asList(currentLabel);
     }
 
     /**

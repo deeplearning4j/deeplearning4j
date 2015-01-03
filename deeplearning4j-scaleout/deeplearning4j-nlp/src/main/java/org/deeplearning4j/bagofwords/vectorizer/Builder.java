@@ -11,10 +11,9 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import java.util.List;
 
 public abstract class Builder {
-    protected VocabCache cache = new InMemoryLookupCache.Builder().vectorLength(100).build();
+    protected VocabCache cache = new InMemoryLookupCache();
     protected TokenizerFactory tokenizerFactory;
     protected List<String> stopWords = StopWords.getStopWords();
-    protected int layerSize = 1;
     protected int minWordFrequency = 5;
     protected DocumentIterator docIter;
     protected SentenceIterator sentenceIterator;
@@ -23,8 +22,14 @@ public abstract class Builder {
     protected int batchSize = 1000;
     protected double sample = 0.0;
     protected boolean stem = false;
+    protected boolean cleanup = false;
 
 
+
+    public Builder cleanup(boolean cleanup) {
+        this.cleanup = cleanup;
+        return this;
+    }
 
     public Builder stem(boolean stem) {
         this.stem = stem;
@@ -69,10 +74,7 @@ public abstract class Builder {
         return this;
     }
 
-    public Builder layerSize(int layerSize) {
-        this.layerSize = layerSize;
-        return this;
-    }
+
 
     public Builder minWords(int minWordFrequency) {
         this.minWordFrequency = minWordFrequency;

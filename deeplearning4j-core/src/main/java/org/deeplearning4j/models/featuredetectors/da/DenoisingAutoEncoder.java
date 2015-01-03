@@ -2,18 +2,15 @@ package org.deeplearning4j.models.featuredetectors.da;
 
 import static org.deeplearning4j.util.MathUtils.binomial;
 
-import java.io.Serializable;
-
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.deeplearning4j.nn.BaseNeuralNetwork;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
-import org.deeplearning4j.plot.NeuralNetPlotter;
-import org.deeplearning4j.optimize.optimizers.da.DenoisingAutoEncoderOptimizer;
+import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 
 
 /**
@@ -24,17 +21,20 @@ import org.deeplearning4j.optimize.optimizers.da.DenoisingAutoEncoderOptimizer;
  * @author Adam Gibson
  *
  */
-public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializable  {
+public class DenoisingAutoEncoder extends BasePretrainNetwork  {
 
 
     private static final long serialVersionUID = -6445530486350763837L;
 
-    private DenoisingAutoEncoder() {}
-
-
-    public DenoisingAutoEncoder(INDArray input, INDArray W, INDArray hbias, INDArray vbias,NeuralNetConfiguration conf) {
-        super(input, W, hbias, vbias,conf);
+    public DenoisingAutoEncoder(NeuralNetConfiguration conf) {
+        super(conf);
     }
+
+    public DenoisingAutoEncoder(NeuralNetConfiguration conf, INDArray input) {
+        super(conf, input);
+    }
+
+
     /**
      * Corrupts the given input by doing a binomial sampling
      * given the corruption level
@@ -42,7 +42,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
      * @param corruptionLevel the corruption value
      * @return the binomial sampled corrupted input
      */
-    public INDArray getCorruptedInput(INDArray x, float corruptionLevel) {
+    public INDArray getCorruptedInput(INDArray x, double corruptionLevel) {
         INDArray tilde_x = Nd4j.zeros(x.rows(), x.columns());
         for(int i = 0; i < x.rows(); i++)
             for(int j = 0; j < x.columns(); j++)
@@ -70,13 +70,12 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     }
 
 
-    @Override
-    public INDArray hiddenActivation(INDArray input) {
-        return getHiddenValues(input);
-    }
 
     // Encode
     public INDArray getHiddenValues(INDArray x) {
+        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
+        INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
+
         INDArray preAct;
         if(conf.isConcatBiases()) {
             INDArray concat = Nd4j.hstack(W,hBias.transpose());
@@ -92,6 +91,9 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
     // Decode
     public INDArray getReconstructedInput(INDArray y) {
+        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
+        INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
+
         if(conf.isConcatBiases()) {
             //row already accounted for earlier
             INDArray preAct = y.mmul(W.transpose());
@@ -109,23 +111,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
 
-    /**
-     * Perform one iteration of training
-     * @param x the input
-     * @param lr the learning rate
-     * @param corruptionLevel the corruption level to iterate with
-     * @param iteration the current iteration
-     */
-    public void train(INDArray x,float lr,float corruptionLevel,int iteration) {
-        if(x != null)
-            this.input = x;
-        this.lastMiniBatchSize = x.rows();
-        NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel,lr,iteration});
-        vBias.addi(gradient.getvBiasGradient());
-        W.addi(gradient.getwGradient());
-        hBias.addi(gradient.gethBiasGradient());
 
-    }
 
     @Override
     public INDArray transform(INDArray x) {
@@ -135,131 +121,29 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
 
-    public static class Builder extends BaseNeuralNetwork.Builder<DenoisingAutoEncoder> {
-        public Builder()  {
-            this.clazz = DenoisingAutoEncoder.class;
-        }
-
-
-
-        @Override
-        public Builder withClazz(Class<? extends BaseNeuralNetwork> clazz) {
-            super.withClazz(clazz);
-            return this;
-        }
-
-
-        @Override
-        public Builder withInput(INDArray input) {
-            super.withInput(input);
-            return this;
-        }
-
-
-
-        @Override
-        public Builder withWeights(INDArray W) {
-            super.withWeights(W);
-            return this;
-        }
-
-        @Override
-        public Builder withVisibleBias(INDArray vBias) {
-            super.withVisibleBias(vBias);
-            return this;
-        }
-
-        @Override
-        public Builder withHBias(INDArray hBias) {
-            super.withHBias(hBias);
-            return this;
-        }
-
-
-
-    }
-
 
 
     @Override
-    public void fit(INDArray input, Object[] params) {
-        if(input != null)
-            this.input = input;
-        this.lastMiniBatchSize = input.rows();
-        optimizer = new DenoisingAutoEncoderOptimizer(this,conf.getLr(), params, conf.getOptimizationAlgo(), conf.getLossFunction());
-        optimizer.train(input);
-    }
+    public  Gradient getGradient() {
+        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
 
-    /**
-     * Fit the model to the given data
-     *
-     * @param data the data to fit the model to
-     */
-    @Override
-    public void fit(INDArray data) {
-        fit(data,null);
-    }
-
-
-
-
-    @Override
-    public void iterate(INDArray input , Object[] params) {
-        float corruptionLevel = conf.getCorruptionLevel();
-        if(input != null )
-            this.input = preProcessInput(input);
-        this.lastMiniBatchSize = input.rows();
-        NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel,conf.getLr(),0});
-
-        vBias.addi(gradient.getvBiasGradient());
-        W.addi(gradient.getwGradient());
-        hBias.addi(gradient.gethBiasGradient());
-    }
-
-
-
-    @Override
-    public void iterationDone(int iteration) {
-        int plotEpochs = conf.getRenderWeightIterations();
-        if(plotEpochs <= 0)
-            return;
-        if(iteration % plotEpochs == 0 || iteration == 0) {
-            NeuralNetPlotter plotter = new NeuralNetPlotter();
-            plotter.plotNetworkGradient(this,this.getGradient(new Object[]{0.3,0.001,1000}),getInput().rows());
-        }
-    }
-
-    @Override
-    public  NeuralNetworkGradient getGradient(Object[] params) {
-
-        float corruptionLevel = conf.getCorruptionLevel();
-        float lr = conf.getLr();
-        int iteration = conf.getNumIterations();
-
-        if(wAdaGrad != null)
-            this.wAdaGrad.setMasterStepSize(lr);
-        if(hBiasAdaGrad != null )
-            this.hBiasAdaGrad.setMasterStepSize(lr);
-        if(vBiasAdaGrad != null)
-            vBiasAdaGrad.setMasterStepSize(lr);
-
+        double corruptionLevel = conf.getCorruptionLevel();
 
         INDArray corruptedX = getCorruptedInput(input, corruptionLevel);
         INDArray y = getHiddenValues(corruptedX);
 
         INDArray z = getReconstructedInput(y);
         INDArray visibleLoss =  input.sub(z);
-        INDArray hiddenLoss = conf.getSparsity() == 0 ? visibleLoss.mmul(W).mul(y).mul(y.rsub(1)) :
-        	visibleLoss.mmul(W).mul(y).mul(y.add(- conf.getSparsity()));
+        INDArray hiddenLoss = conf.getSparsity() == 0 ? visibleLoss.mmul(W).muli(y).muli(y.rsub(1)) :
+        	visibleLoss.mmul(W).muli(y).mul(y.addi(- conf.getSparsity()));
 
 
-        INDArray wGradient = corruptedX.transpose().mmul(hiddenLoss).add(visibleLoss.transpose().mmul(y));
+        INDArray wGradient = corruptedX.transpose().mmul(hiddenLoss).addi(visibleLoss.transpose().mmul(y));
 
-        INDArray hBiasGradient = hiddenLoss.mean(0);
-        INDArray vBiasGradient = visibleLoss.mean(0);
+        INDArray hBiasGradient = hiddenLoss.sum(0);
+        INDArray vBiasGradient = visibleLoss.sum(0);
 
-        NeuralNetworkGradient gradient = new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
-        updateGradientAccordingToParams(gradient,iteration, lr);
+        Gradient gradient = createGradient(wGradient, vBiasGradient, hBiasGradient);
 
         return gradient;
     }
