@@ -1,5 +1,7 @@
 package org.deeplearning4j.clustering.vptree;
 
+import org.deeplearning4j.berkeley.Counter;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +27,136 @@ public final class VpTreeNode<T extends VpTreePoint<T>> {
         this.points = points;
     }
 
+
+
+    /**
+     * Find top k nearest neighbors near point.
+     * @param point the point to get the nearest neighbors
+     * @param k the k to choose (if k < 0, an IllegalArgumentException is thrown)
+     * @return the k nearest neighbors with their associated distances
+     * from the given point
+     */
+    public Counter<T> findNearByPointsWithDistancesK(T point,int k) {
+        if(k <= 0)
+            throw new IllegalArgumentException("Illegal k, must be >= 0");
+        return findNearbyPoints(new Counter<T>(),point,k);
+    }
+
+
+    private Counter<T> findNearbyPoints(Counter<T> solution,T point, int k) {
+        if(solution.size() >= k)
+            return solution;
+        if (left == null || vantagePoint == null) {
+            for (T p : points)
+                solution.incrementCount(p,p.distance(point));
+            return solution;
+        }
+
+        double distanceToLeftCenter = vantagePoint.distance(point);
+        if (distanceToLeftCenter  < leftRadius) {
+            left.findNearbyPoints(solution,point, k);
+        }
+        else if (distanceToLeftCenter  >= leftRadius) {
+            right.findNearbyPoints(solution,point, k);
+        }
+        else {
+            right.findNearbyPoints(solution,point,k);
+            left.findNearbyPoints(solution,point, k);
+
+        }
+
+        solution.keepBottomNKeys(k - 1);
+        return solution;
+
+    }
+
+
+
+    /**
+     * Find top k nearest neighbors near point.
+     * @param point the point to get the nearest neighbors
+     * @param k the k to choose (if k < 0, an IllegalArgumentException is thrown)
+     * @return the k nearest neighbors
+     */
+    public List<T> findNearByPointsK(T point,int k) {
+        if(k <= 0)
+            throw new IllegalArgumentException("Illegal k, must be >= 0");
+        return findNearbyPoints(new ArrayList<T>(),point,k);
+    }
+
+    private List<T> findNearbyPoints(List<T> solution,T point, int k) {
+        if(solution.size() >= k)
+            return solution;
+        Counter<T> counter = new Counter<>();
+        if (left == null) {
+            List<T> result = new ArrayList<>();
+            for (T p : points) {
+                result.add(p);
+                counter.incrementCount(p,p.distance(point));
+
+            }
+
+            counter.keepBottomNKeys(k);
+            result.addAll(counter.getSortedKeys());
+            solution.addAll(result);
+        }
+
+        double distanceToLeftCenter = vantagePoint.distance(point);
+        if (distanceToLeftCenter  < leftRadius) {
+            solution.addAll(left.findNearbyPoints(point, k));
+        } else if (distanceToLeftCenter  >= leftRadius) {
+            solution.addAll(right.findNearbyPoints(point, k));
+        } else {
+            List<T> result = right.findNearbyPoints(point, k);
+            result.addAll(left.findNearbyPoints(point, k));
+            solution.addAll(result);
+        }
+
+        Counter<T> c = new Counter<>();
+        for(T t : solution) {
+            c.incrementCount(t,point.distance(t));
+        }
+
+        c.keepBottomNKeys(k);
+        solution.clear();
+        solution.addAll(c.getSortedKeys());
+        solution = solution.subList(0,k);
+        return solution;
+
+    }
+
+
+
+
+    public List<T> findNearbyPoints(T point, int k) {
+        Counter<T> counter = new Counter<>();
+        if (left == null) {
+            List<T> result = new ArrayList<>();
+            for (T p : points) {
+                result.add(p);
+                counter.incrementCount(p,p.distance(point));
+
+            }
+
+            counter.keepBottomNKeys(k);
+            result.addAll(counter.getSortedKeys());
+            return result;
+        }
+
+        double distanceToLeftCenter = vantagePoint.distance(point);
+        if (distanceToLeftCenter  < leftRadius) {
+            return left.findNearbyPoints(point, k);
+        } else if (distanceToLeftCenter  >= leftRadius) {
+            return right.findNearbyPoints(point, k);
+        } else {
+            List<T> result = right.findNearbyPoints(point, k);
+            result.addAll(left.findNearbyPoints(point, k));
+            return result;
+        }
+    }
+
+
+
     public List<T> findNearbyPoints(T point, double maxDistance) {
         if (left == null) {
             List<T> result = new ArrayList<>();
@@ -49,16 +181,16 @@ public final class VpTreeNode<T extends VpTreePoint<T>> {
     }
 
     public static <T extends VpTreePoint<T>> VpTreeNode<T> buildVpTree(List<T> points) {
-        return buildTreeNode(new ArrayList<T>(points));
+        return buildTreeNode(new ArrayList<>(points));
     }
 
     /** List must not be modified after node creation! */
     private static <T extends VpTreePoint<T>> VpTreeNode<T> buildTreeNode(List<T> points) {
-        VpTreeNode<T> node = new VpTreeNode<T>(points);
+        VpTreeNode<T> node = new VpTreeNode<>(points);
 
-        if (points.size() < MAX_LEAF_SIZE) {
+        if (points.size() < MAX_LEAF_SIZE)
             return node;
-        }
+
 
         T basePoint = chooseNewVantagePoint(points);
         double distances[] = new double[points.size()];
@@ -71,8 +203,8 @@ public final class VpTreeNode<T extends VpTreePoint<T>> {
 
         Arrays.sort(sortedDistances);
         final double medianDistance = sortedDistances[sortedDistances.length / 2];
-        ArrayList<T> leftPoints = new ArrayList<T>(sortedDistances.length);
-        ArrayList<T> rightPoints = new ArrayList<T>(sortedDistances.length);
+        List<T> leftPoints = new ArrayList<>(sortedDistances.length);
+        List<T> rightPoints = new ArrayList<>(sortedDistances.length);
 
         for (int i = 0; i < distances.length; ++i) {
             if (distances[i] < medianDistance) {
@@ -101,8 +233,8 @@ public final class VpTreeNode<T extends VpTreePoint<T>> {
 
     /** Trying to choose a new vantage point with highest distance deviation to other nodes. */
     private static <T extends VpTreePoint<T>> T chooseNewVantagePoint(List<T> points) {
-        ArrayList<T> candidates = new ArrayList<T>(VANTAGE_POINT_CANDIDATES);
-        ArrayList<T> testPoints = new ArrayList<T>(TEST_POINT_COUNT);
+        List<T> candidates = new ArrayList<T>(VANTAGE_POINT_CANDIDATES);
+        List<T> testPoints = new ArrayList<T>(TEST_POINT_COUNT);
 
         for (int i = 0; i < VANTAGE_POINT_CANDIDATES; ++i) {
             int basePointIndex = i + (int) (Math.random() * (points.size() - i));
