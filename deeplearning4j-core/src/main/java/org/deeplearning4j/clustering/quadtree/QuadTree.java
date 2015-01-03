@@ -66,6 +66,46 @@ public class QuadTree implements Serializable {
             insert(i);
     }
 
+
+
+    /**
+     * Returns the cell of this element
+     *
+     * @param coordinates
+     * @return
+     */
+    protected QuadTree findIndex(INDArray coordinates) {
+
+        // Compute the sector for the coordinates
+        boolean left = (coordinates.getDouble(0) > (boundary.getX() + boundary.getHw() / 2)) ? false
+                : true;
+        boolean top = (coordinates.getDouble(1) > (boundary.getY() + boundary.getHh() / 2)) ? false
+                : true;
+
+        // top left
+        QuadTree index = getNorthWest();
+        if (left) {
+            // left side
+            if (!top) {
+                // bottom left
+                index = getSouthWest();
+            }
+        } else {
+            // right side
+            if (top) {
+                // top right
+                index = getNorthEast();
+            } else {
+                // bottom right
+                index = getSouthEast();
+
+            }
+        }
+
+        return index;
+    }
+
+
     /**
      * Insert an index of the data in to the tree
      * @param newIndex the index to insert in to the tree
@@ -76,7 +116,7 @@ public class QuadTree implements Serializable {
         INDArray  point = data.slice(newIndex);
         if(!boundary.containsPoint(point))
             return false;
-        //duplicate point
+            //duplicate point
         else if(size > 0) {
             for(int i = 0; i < size; i++) {
                 INDArray compPoint = data.slice(index[i]);
@@ -84,6 +124,22 @@ public class QuadTree implements Serializable {
                     return false;
             }
         }
+
+
+
+        // If this Node has already been subdivided just add the elements to the
+        // appropriate cell
+        if (!isLeaf()) {
+            QuadTree index = findIndex(point);
+            index.insert(newIndex);
+            return true;
+        }
+
+
+        else if(index[0] > 0) {
+            return false;
+        }
+
         cumSize++;
         double mult1 = (double) (cumSize - 1) / (double) cumSize;
         double mult2 = 1.0 / (double) cumSize;
@@ -101,18 +157,29 @@ public class QuadTree implements Serializable {
         // Otherwise, we need to subdivide the current cell
         subDivide();
 
-        // Find out where the point can be inserted
-        if (northWest.insert(newIndex))
-            return true;
-        if (northEast.insert(newIndex))
-            return true;
-        if (southWest.insert(newIndex))
-            return true;
-        if (southEast.insert(newIndex))
-            return true;
 
+        insertIntoOneOf(index[0]);
+        index[0] = -1;
+        insertIntoOneOf(newIndex);
+
+        // Empty parent node
+        size = 0;
+        isLeaf = false;
         // Otherwise, the point cannot be inserted (this should never happen)
         return false;
+    }
+
+    private boolean insertIntoOneOf(int index) {
+        boolean success = false;
+        if(!success)
+            success = northWest.insert(index);
+        if(!success)
+            success = northEast.insert(index);
+        if(!success)
+            success = southWest.insert(index);
+        if(!success)
+            success = southEast.insert(index);
+        return success;
     }
 
 
@@ -216,23 +283,7 @@ public class QuadTree implements Serializable {
         northEast = new QuadTree(this,data,new Cell(boundary.getX() + .5 * boundary.getHw(), boundary.getY() - .5 * boundary.getHh(), .5 * boundary.getHw(), .5 * boundary.getHh()));
         southWest = new QuadTree(this,data,new Cell(boundary.getX() - .5 * boundary.getHw(), boundary.getY() + .5 * boundary.getHh(), .5 * boundary.getHw(), .5 * boundary.getHh()));
         southEast = new QuadTree(this,data,new Cell(boundary.getX() + .5 * boundary.getHw(), boundary.getY() + .5 * boundary.getHh(), .5 * boundary.getHw(), .5 * boundary.getHh()));
-        // Move existing points to correct children
-        for(int i = 0; i < size; i++) {
-            boolean success = false;
-            if(!success)
-                success = northWest.insert(index[i]);
-            if(!success)
-                success = northEast.insert(index[i]);
-            if(!success)
-                success = southWest.insert(index[i]);
-            if(!success)
-                success = southEast.insert(index[i]);
-            index[i] = -1;
-        }
 
-        // Empty parent node
-        size = 0;
-        isLeaf = false;
 
     }
 
