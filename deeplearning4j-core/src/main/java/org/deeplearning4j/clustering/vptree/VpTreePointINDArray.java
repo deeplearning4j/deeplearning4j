@@ -1,8 +1,13 @@
 package org.deeplearning4j.clustering.vptree;
 
+import org.nd4j.linalg.api.ndarray.DimensionSlice;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.distancefunction.DistanceFunction;
 import org.nd4j.linalg.distancefunction.EuclideanDistance;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * VPTree point for ndarrays
@@ -39,10 +44,38 @@ public class VpTreePointINDArray implements VpTreePoint<VpTreePointINDArray> {
         return true;
     }
 
+
+    /**
+     * Builds a list of data points from a matrix
+     * @param matrix the matrix to build from
+     * @return the data points from this matrix
+     */
+    public static List<VpTreePointINDArray> dataPoints(INDArray matrix) {
+        final List<VpTreePointINDArray> ret = new ArrayList<>();
+        matrix.iterateOverAllRows(new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
+
+            }
+
+            @Override
+            public void operate(INDArray nd) {
+                 ret.add(new VpTreePointINDArray(nd));
+            }
+        });
+
+        return ret;
+    }
+
     @Override
     public int hashCode() {
         int result = data != null ? data.hashCode() : 0;
         result = 31 * result + (distanceFunction != null ? distanceFunction.hashCode() : 0);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return data != null ? data.toString() : "[]";
     }
 }
