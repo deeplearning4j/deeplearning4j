@@ -171,7 +171,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
 
         /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
-        if(this.getInput() == null || this.getLayers() == null || this.getLayers()[0] == null || this.getLayers() == null || this.getLayers()[0] == null) {
+        if(this.getInput() == null || this.getLayers() == null) {
             setInput(input);
             initializeLayers(input);
         }
@@ -522,9 +522,6 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
         else if (rho > 0.75)
             layerWiseConfigurations.setDampingFactor(getLayerWiseConfigurations().getDampingFactor() * decrease);
-
-
-
     }
 
     /* p and gradient are same length */
@@ -730,10 +727,9 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     @Override
     public INDArray params() {
         List<INDArray> params = new ArrayList<>();
-        for(int i = 0; i < layers.length; i++) {
-            params.add(getLayers()[i].getParam(DefaultParamInitializer.WEIGHT_KEY));
-            params.add(getLayers()[i].getParam(DefaultParamInitializer.BIAS_KEY));
-        }
+        for(int i = 0; i < layers.length; i++)
+           layers[i].params();
+
         return Nd4j.toFlattened(params);
     }
     /**

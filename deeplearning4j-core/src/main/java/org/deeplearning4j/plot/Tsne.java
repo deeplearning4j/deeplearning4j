@@ -26,7 +26,6 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -59,7 +58,6 @@ public class Tsne implements Serializable {
     private INDArray y;
     private transient IterationListener iterationListener;
 
-    private String commandTemplate = "python /tmp/tsne.py --path %s --ndims %d --perplexity %.3f --initialdims %s --labels %s";
 
 
 
@@ -136,7 +134,7 @@ public class Tsne implements Serializable {
      * Computes a gaussian kernel
      * given a vector of squared euclidean distances
      *
-     * @param d
+     * @param d the data
      * @param beta
      * @return
      */
@@ -156,12 +154,12 @@ public class Tsne implements Serializable {
 
     /**
      * Convert data to probability
-     * co-occurrences
+     * co-occurrences (aka calculating the kernel)
      * @param d the data to convert
      * @param u the perplexity of the model
      * @return the probabilities of co-occurrence
      */
-    public INDArray d2p(final INDArray d,final double u) {
+    public INDArray computeGaussianKernel(final INDArray d, final double u) {
         int n = d.rows();
         final INDArray p = zeros(n, n);
         final INDArray beta =  ones(n, 1);
@@ -261,7 +259,7 @@ public class Tsne implements Serializable {
             X = PCA.pca(X, Math.min(50,X.columns()),normalize);
             //normalization (don't normalize again after pca)
         else if(normalize) {
-            X = X.sub(X.min(Integer.MAX_VALUE));
+            X.subi(X.min(Integer.MAX_VALUE));
             X = X.divi(X.max(Integer.MAX_VALUE));
             X = X.subiRowVector(X.mean(0));
         }
@@ -276,7 +274,7 @@ public class Tsne implements Serializable {
 
 
         INDArray D = X.mmul(
-                X.transpose()).mul(-2)
+                X.transpose()).muli(-2)
                 .addiRowVector(sumX)
                 .transpose()
                 .addiRowVector(sumX);
@@ -290,7 +288,7 @@ public class Tsne implements Serializable {
 
 
 
-        INDArray p = d2p(D,perplexity);
+        INDArray p = computeGaussianKernel(D, perplexity);
         D.data().flush();
 
         //lie for better local minima
@@ -381,7 +379,7 @@ public class Tsne implements Serializable {
         INDArray gradChange = gains.mul(yGrads);
 
         if(useAdaGrad)
-           gradChange = adaGrad.getGradient(gradChange);
+            gradChange = adaGrad.getGradient(gradChange);
         else
             gradChange.muli(learningRate);
 
@@ -418,7 +416,7 @@ public class Tsne implements Serializable {
      * @throws IOException
      */
     public void plot(INDArray matrix,int nDims,List<String> labels) throws IOException {
-         plot(matrix,nDims,labels,"coords.csv");
+        plot(matrix,nDims,labels,"coords.csv");
     }
 
     /**
