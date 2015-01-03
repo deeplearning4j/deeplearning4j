@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.api;
 
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 
@@ -12,13 +13,7 @@ import org.nd4j.linalg.dataset.api.DataSet;
 public interface Classifier extends Model {
 
 
-    /**
-     * Assuming an input and labels are already set
-     * will score based on what's already set
-     * @return the f1 score for the already
-     * set input/output
-     */
-    double score();
+
 
     /**
      * Sets the input and labels and returns a score for the prediction
@@ -44,6 +39,8 @@ public interface Classifier extends Model {
      * @return the number of possible labels for this classifier
      */
     int numLabels();
+
+    void fit(DataSetIterator iter);
 
     /**
      * Takes in a list of examples
@@ -77,20 +74,6 @@ public interface Classifier extends Model {
     void fit(DataSet data);
 
 
-    /**
-     * Fit the model
-     * @param examples the examples to classify (one example in each row)
-     * @param labels the example labels(a binary outcome matrix)
-     * @param params extra parameters
-     */
-    void fit(INDArray examples,INDArray labels,Object[] params);
-
-    /**
-     * Fit the model
-     * @param data the data to train on
-     * @param params extra parameters
-     */
-    void fit(DataSet data,Object[] params);
 
 
     /**
@@ -101,24 +84,6 @@ public interface Classifier extends Model {
      */
     void fit(INDArray examples,int[] labels);
 
-
-    /**
-     * Fit the model
-     * @param examples the examples to classify (one example in each row)
-     * @param labels the labels for each example (the number of labels must match
-     *               the number of rows in the example
-     * @param params extra parameters
-     */
-    void fit(INDArray examples,int[] labels,Object[] params);
-
-    /**
-     * Iterate once on the model
-     * @param examples the examples to classify (one example in each row)
-     * @param labels the labels for each example (the number of labels must match
-     *               the number of rows in the example
-     * @param params extra parameters
-     */
-    void iterate(INDArray examples,int[] labels,Object[] params);
 
 
 

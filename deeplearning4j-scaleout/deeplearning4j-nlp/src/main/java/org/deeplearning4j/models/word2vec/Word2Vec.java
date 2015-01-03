@@ -7,23 +7,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 
+import akka.actor.ActorSystem;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
-import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.util.SetUtils;
-import org.eclipse.jetty.util.ConcurrentHashSet;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
-import org.deeplearning4j.nn.api.Persistable;
+import org.deeplearning4j.parallel.Parallelization;
+import org.deeplearning4j.text.invertedindex.InvertedIndex;
+import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
-import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -40,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * @author Adam Gibson
  *
  */
-public class Word2Vec implements Persistable {
+public class Word2Vec extends WordVectorsImpl  {
 
 
     protected static final long serialVersionUID = -2367495638286018038L;
@@ -48,23 +47,16 @@ public class Word2Vec implements Persistable {
     protected transient TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
     protected transient SentenceIterator sentenceIter;
     protected transient DocumentIterator docIter;
-    protected transient VocabCache cache;
     protected int batchSize = 1000;
-    protected int topNSize = 40;
     protected double sample = 0;
     protected long totalWords = 1;
-    protected AtomicInteger rateOfChange = new AtomicInteger(0);
     //learning rate
     protected AtomicDouble alpha = new AtomicDouble(0.025);
-    //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
-    protected int minWordFrequency = 5;
+
     //context to use for gathering word frequencies
     protected int window = 5;
-    //number of neurons per layer
-    protected int layerSize = 50;
     protected transient  RandomGenerator g;
     protected static Logger log = LoggerFactory.getLogger(Word2Vec.class);
-    protected List<String> stopWords;
     protected boolean shouldReset = true;
     //number of iterations to run
     protected int numIterations = 1;
@@ -74,9 +66,9 @@ public class Word2Vec implements Persistable {
     protected double minLearningRate = 0.01;
     protected transient TextVectorizer vectorizer;
     protected int learningRateDecayWords = 10000;
+    protected InvertedIndex invertedIndex;
     protected boolean useAdaGrad = false;
     protected int workers = Runtime.getRuntime().availableProcessors();
-    protected Queue<List<List<VocabWord>>> jobQueue = new LinkedBlockingDeque<>(10000);
 
     public Word2Vec() {}
 
@@ -85,358 +77,16 @@ public class Word2Vec implements Persistable {
 
 
 
-    /**
-     * Accuracy based on questions which are a space separated list of strings
-     * where the first word is the query word, the next 2 words are negative,
-     * and the last word is the predicted word to be nearest
-     * @param questions the questions to ask
-     * @return the accuracy based on these questions
-     */
-    public  Map<String,Double> accuracy(List<String> questions) {
-        Map<String,Double> accuracy = new HashMap<>();
-        Counter<String> right = new Counter<>();
-        for(String s : questions) {
-            if(s.startsWith(":")) {
-                double correct = right.getCount("correct");
-                double wrong = right.getCount("wrong");
-                double accuracyRet = 100.0 * correct / (correct / wrong);
-                accuracy.put(s,accuracyRet);
-                right.clear();
-            }
-            else {
-                String[] split = s.split(" ");
-                String word = split[0];
-                List<String> positive = Arrays.asList(word);
-                List<String> negative = Arrays.asList(split[1],split[2]);
-                String predicted = split[3];
-                String w = wordsNearest(positive,negative,1).iterator().next();
-                if(predicted.equals(w))
-                    right.incrementCount("right",1.0);
-                else
-                    right.incrementCount("wrong",1.0);
 
-            }
-        }
+    public TextVectorizer getVectorizer() {
+        return vectorizer;
+    }
 
-        return accuracy;
+    public void setVectorizer(TextVectorizer vectorizer) {
+        this.vectorizer = vectorizer;
     }
 
 
-
-    /**
-     * Find all words with a similar characters
-     * in the vocab
-     * @param word the word to compare
-     * @param accuracy the accuracy: 0 to 1
-     * @return the list of words that are similar in the vocab
-     */
-    public List<String> similarWordsInVocabTo(String word,double accuracy) {
-        List<String> ret = new ArrayList<>();
-        for(String s : cache.words()) {
-            if(MathUtils.stringSimilarity(word,s) >= accuracy)
-                ret.add(s);
-        }
-        return ret;
-    }
-
-
-
-
-    public int indexOf(String word) {
-        return cache.indexOf(word);
-    }
-
-
-    /**
-     * Get the word vector for a given matrix
-     * @param word the word to get the matrix for
-     * @return the ndarray for this word
-     */
-    public double[] getWordVector(String word) {
-        int i = this.cache.indexOf(word);
-        if(i < 0)
-            return cache.vector(UNK).ravel().data().asDouble();
-        return cache.vector(word).ravel().data().asDouble();
-    }
-
-    /**
-     * Get the word vector for a given matrix
-     * @param word the word to get the matrix for
-     * @return the ndarray for this word
-     */
-    public INDArray getWordVectorMatrix(String word) {
-        int i = this.cache.indexOf(word);
-        if(i < 0)
-            return cache.vector(UNK);
-        return cache.vector(word);
-    }
-
-    /**
-     * Returns the word vector divided by the norm2 of the array
-     * @param word the word to get the matrix for
-     * @return the looked up matrix
-     */
-    public INDArray getWordVectorMatrixNormalized(String word) {
-        int i = this.cache.indexOf(word);
-
-        if(i < 0)
-            return cache.vector(UNK);
-        INDArray r =  cache.vector(word);
-        return r.div(Nd4j.getBlasWrapper().nrm2(r));
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Words nearest based on positive and negative words
-     * @param positive the positive words
-     * @param negative the negative words
-     * @param top the top n words
-     * @return the words nearest the mean of the words
-     */
-    public Collection<String> wordsNearestSum(List<String> positive,List<String> negative,int top) {
-        INDArray words = Nd4j.create(layerSize);
-        Set<String> union = SetUtils.union(new HashSet<>(positive),new HashSet<>(negative));
-        for(String s : positive)
-            words.addi(cache.vector(s));
-
-
-        for(String s : negative)
-            words.addi(cache.vector(s).mul(-1));
-
-
-        if(cache instanceof  InMemoryLookupCache) {
-            InMemoryLookupCache l = (InMemoryLookupCache) cache;
-            INDArray syn0 = l.getSyn0();
-            INDArray weights = syn0.norm2(0).rdivi(1).muli(words);
-            INDArray distances = syn0.mulRowVector(weights).sum(1);
-            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
-            INDArray sort = sorted[0];
-            List<String> ret = new ArrayList<>();
-            if(top > sort.length())
-                top = sort.length();
-            //there will be a redundant word
-            int end = top + 1;
-            for(int i = 0; i < end; i++) {
-                String word = cache.wordAtIndex(sort.getInt(i));
-                if(union.contains(word)) {
-                    end++;
-                    if(end >= sort.length())
-                        break;
-                    continue;
-                }
-                ret.add(cache.wordAtIndex(sort.getInt(i)));
-            }
-
-
-            return ret;
-        }
-
-        Counter<String> distances = new Counter<>();
-
-        for(String s : cache.words()) {
-            INDArray otherVec = getWordVectorMatrix(s);
-            double sim = Transforms.cosineSim(words,otherVec);
-            distances.incrementCount(s, sim);
-        }
-
-
-        distances.keepTopNKeys(top);
-        return distances.keySet();
-
-
-    }
-
-
-    /**
-     * Get the top n words most similar to the given word
-     * @param word the word to compare
-     * @param n the n to get
-     * @return the top n words
-     */
-    public Collection<String> wordsNearestSum(String word,int n) {
-        INDArray vec = Transforms.unitVec(this.getWordVectorMatrix(word));
-
-
-        if(cache instanceof  InMemoryLookupCache) {
-            InMemoryLookupCache l = (InMemoryLookupCache) cache;
-            INDArray syn0 = l.getSyn0();
-            INDArray weights = syn0.norm2(0).rdivi(1).muli(vec);
-            INDArray distances = syn0.mulRowVector(weights).sum(1);
-            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
-            INDArray sort = sorted[0];
-            List<String> ret = new ArrayList<>();
-            VocabWord word2 = cache.wordFor(word);
-            if(n > sort.length())
-                n = sort.length();
-            //there will be a redundant word
-            for(int i = 0; i < n + 1; i++) {
-                if(sort.getInt(i) == word2.getIndex())
-                    continue;
-                ret.add(cache.wordAtIndex(sort.getInt(i)));
-            }
-
-
-            return ret;
-        }
-
-        if(vec == null)
-            return new ArrayList<>();
-        Counter<String> distances = new Counter<>();
-
-        for(String s : cache.words()) {
-            if(s.equals(word))
-                continue;
-            INDArray otherVec = getWordVectorMatrix(s);
-            double sim = Transforms.cosineSim(vec,otherVec);
-            distances.incrementCount(s, sim);
-        }
-
-
-        distances.keepTopNKeys(n);
-        return distances.keySet();
-
-    }
-
-
-
-
-
-    /**
-     * Words nearest based on positive and negative words
-     * @param positive the positive words
-     * @param negative the negative words
-     * @param top the top n words
-     * @return the words nearest the mean of the words
-     */
-    public Collection<String> wordsNearest(List<String> positive,List<String> negative,int top) {
-        INDArray words = Nd4j.create(positive.size() + negative.size(),layerSize);
-        int row = 0;
-        Set<String> union = SetUtils.union(new HashSet<>(positive),new HashSet<>(negative));
-        for(String s : positive) {
-            words.putRow(row++,cache.vector(s));
-        }
-
-        for(String s : negative) {
-            words.putRow(row++,cache.vector(s).mul(-1));
-        }
-
-        INDArray mean = words.mean(0);
-        if(cache instanceof  InMemoryLookupCache) {
-            InMemoryLookupCache l = (InMemoryLookupCache) cache;
-            INDArray syn0 = l.getSyn0();
-            INDArray weights = syn0.norm2(0).rdivi(1).muli(mean);
-            INDArray distances = syn0.mulRowVector(weights).sum(1);
-            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
-            INDArray sort = sorted[0];
-            List<String> ret = new ArrayList<>();
-            if(top > sort.length())
-                top = sort.length();
-            //there will be a redundant word
-            int end = top + 1;
-            for(int i = 0; i < end; i++) {
-                String word = cache.wordAtIndex(sort.getInt(i));
-                if(union.contains(word)) {
-                    end++;
-                    if(end >= sort.length())
-                        break;
-                    continue;
-                }
-                ret.add(cache.wordAtIndex(sort.getInt(i)));
-            }
-
-
-            return ret;
-        }
-
-        Counter<String> distances = new Counter<>();
-
-        for(String s : cache.words()) {
-            INDArray otherVec = getWordVectorMatrix(s);
-            double sim = Transforms.cosineSim(mean,otherVec);
-            distances.incrementCount(s, sim);
-        }
-
-
-        distances.keepTopNKeys(top);
-        return distances.keySet();
-
-
-    }
-
-
-    /**
-     * Get the top n words most similar to the given word
-     * @param word the word to compare
-     * @param n the n to get
-     * @return the top n words
-     */
-    public Collection<String> wordsNearest(String word,int n) {
-        INDArray vec = Transforms.unitVec(this.getWordVectorMatrix(word));
-
-
-        if(cache instanceof  InMemoryLookupCache) {
-            InMemoryLookupCache l = (InMemoryLookupCache) cache;
-            INDArray syn0 = l.getSyn0();
-            INDArray weights = syn0.norm2(0).rdivi(1).muli(vec);
-            INDArray distances = syn0.mulRowVector(weights).sum(1);
-            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
-            INDArray sort = sorted[0];
-            List<String> ret = new ArrayList<>();
-            VocabWord word2 = cache.wordFor(word);
-            if(n > sort.length())
-                n = sort.length();
-            //there will be a redundant word
-            for(int i = 0; i < n + 1; i++) {
-                if(sort.getInt(i) == word2.getIndex())
-                    continue;
-                ret.add(cache.wordAtIndex(sort.getInt(i)));
-            }
-
-
-            return ret;
-        }
-
-        if(vec == null)
-            return new ArrayList<>();
-        Counter<String> distances = new Counter<>();
-
-        for(String s : cache.words()) {
-            if(s.equals(word))
-                continue;
-            INDArray otherVec = getWordVectorMatrix(s);
-            double sim = Transforms.cosineSim(vec,otherVec);
-            distances.incrementCount(s, sim);
-        }
-
-
-        distances.keepTopNKeys(n);
-        return distances.keySet();
-
-    }
-
-
-
-
-
-    /**
-     * Returns true if the model has this word in the vocab
-     * @param word the word to test for
-     * @return true if the model has the word in the vocab
-     */
-    public boolean hasWord(String word) {
-        return cache.indexOf(word) >= 0;
-    }
 
     /**
      * Train the model
@@ -445,7 +95,7 @@ public class Word2Vec implements Persistable {
         boolean loaded = buildVocab();
         //save vocab after building
         if (!loaded && saveVocab)
-            cache.saveVocab();
+            vocab().saveVocab();
         if (stopWords == null)
             readStopWords();
 
@@ -458,9 +108,22 @@ public class Word2Vec implements Persistable {
             docIter.reset();
 
 
-        final int[] docs = vectorizer.index().allDocs();
+        int[] docs = vectorizer.index().allDocs();
+
+        if(docs.length < 1) {
+            vectorizer.fit();
+        }
+
+        docs = vectorizer.index().allDocs();
+        if(docs.length < 1) {
+            throw new IllegalStateException("No documents found");
+        }
+
 
         totalWords = vectorizer.numWordsEncountered();
+        if(totalWords < 1)
+            throw new IllegalStateException("Unable to train, total words less than 1");
+
         totalWords *= numIterations;
 
 
@@ -468,60 +131,8 @@ public class Word2Vec implements Persistable {
         log.info("Processing sentences...");
 
 
-        List<Thread> work = new ArrayList<>();
-        final AtomicInteger processed = new AtomicInteger(0);
-        final int allDocs = docs.length * numIterations;
-        final AtomicLong numWordsSoFar = new AtomicLong(0);
-        final AtomicLong lastReport = new AtomicLong(0);
-        for(int i = 0; i < workers; i++) {
-            final Set<List<VocabWord>> set = new ConcurrentHashSet<>();
-
-            Thread t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    final AtomicLong nextRandom = new AtomicLong(5);
-                    long checked = 0;
-                    while(true) {
-                        if(checked > 0 && checked % 1000 == 0 && processed.get() >= allDocs)
-                            return;
-                        checked++;
-                        List<List<VocabWord>> job = jobQueue.poll();
-                        if(job == null || job.isEmpty() || set.contains(job))
-                            continue;
-
-                        log.info("Job of " + job.size());
-                        double alpha = Math.max(minLearningRate, Word2Vec.this.alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) totalWords)));
-                        long diff = Math.abs(lastReport.get() - numWordsSoFar.get());
-                        if(numWordsSoFar.get() > 0 && diff >=  10000) {
-                            log.info("Words so far " + numWordsSoFar.get() + " with alpha at " + alpha);
-                            lastReport.set(numWordsSoFar.get());
-                        }
-                        long increment = 0;
-                        double diff2 = 0.0;
-                        for(List<VocabWord> sentence : job) {
-                            trainSentence(sentence, nextRandom, alpha);
-                            increment += sentence.size();
-                        }
-
-                        log.info("Train sentence avg took " + diff2 / (double) job.size());
-                        numWordsSoFar.set(numWordsSoFar.get() + increment);
-                        processed.incrementAndGet();
-
-
-
-                    }
-                }
-            });
-
-            t.setName("worker" + i);
-            t.start();
-            work.add(t);
-        }
-
-
+        AtomicLong numWordsSoFar = new AtomicLong(0);
         final AtomicLong nextRandom = new AtomicLong(5);
-        final AtomicInteger doc = new AtomicInteger(0);
-        final int numDocs = vectorizer.index().numDocuments() * numIterations;
         ExecutorService exec = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(),
                 Runtime.getRuntime().availableProcessors(),
                 0L, TimeUnit.MILLISECONDS,
@@ -546,55 +157,48 @@ public class Word2Vec implements Persistable {
                 if(batch.isEmpty())
                     return null;
 
-                if(batch2.size() >= 100) {
-                    boolean added = false;
-                    while(!added) {
-                        try {
-                            jobQueue.add(new LinkedList<>(batch2));
-                            batch2.clear();
-                            added = true;
-                        }catch(Exception e) {
-                            continue;
-                        }
-                    }
-
-                }
-
-                for(int i = 0; i < numIterations; i++) {
-                    batch2.add(batch);
-                }
-
-
-                doc.incrementAndGet();
-                if(doc.get() > 0 && doc.get() % 10000 == 0)
-                    log.info("Doc " + doc.get() + " done so far");
-
+                batch2.add(batch);
                 return null;
             }
         },exec);
 
-        if(!batch2.isEmpty()) {
-            jobQueue.add(new LinkedList<>(batch2));
-
-        }
-
-
         exec.shutdown();
+
         try {
             exec.awaitTermination(1,TimeUnit.DAYS);
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            e.printStackTrace();
         }
 
+        for(int i = 0; i < numIterations; i++)
+            doIteration(batch2,numWordsSoFar,nextRandom);
 
-        for(Thread t : work)
-            try {
-                t.join();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+
+    }
+
+
+
+    private void doIteration(Collection<List<VocabWord>> batch2,final AtomicLong numWordsSoFar,final AtomicLong nextRandom) {
+        ActorSystem actorSystem = ActorSystem.create();
+        final AtomicLong lastReported = new AtomicLong(System.currentTimeMillis());
+        Parallelization.iterateInParallel(batch2,new Parallelization.RunnableWithParams<List<VocabWord>>() {
+            @Override
+            public void run(List<VocabWord> sentence, Object[] args) {
+                double alpha = Math.max(minLearningRate, Word2Vec.this.alpha.get() * (1 - (1.0 * numWordsSoFar.get() / (double) totalWords)));
+                long now = System.currentTimeMillis();
+                long diff = Math.abs(now - lastReported.get());
+                if(numWordsSoFar.get() > 0 && diff > 10000) {
+                    lastReported.set(now);
+                    log.info("Words so far " + numWordsSoFar.get() + " with alpha at " + alpha);
+                }
+
+
+                trainSentence(sentence, nextRandom, alpha);
+                numWordsSoFar.set(numWordsSoFar.get() + sentence.size());
+
+
             }
-
-
+        },actorSystem);
     }
 
 
@@ -648,20 +252,35 @@ public class Word2Vec implements Persistable {
     public boolean buildVocab() {
         readStopWords();
 
-        if(cache.vocabExists()) {
+        if(vocab().vocabExists()) {
             log.info("Loading vocab...");
-            cache.loadVocab();
-            cache.resetWeights();
+            vocab().loadVocab();
+            lookupTable.resetWeights();
             return true;
         }
 
+
+        if(invertedIndex == null)
+            invertedIndex = new LuceneInvertedIndex.Builder()
+                    .cache(vocab()).stopWords(stopWords)
+                    .build();
         //vectorizer will handle setting up vocab meta data
-        if(vectorizer == null)
-            vectorizer = new TfidfVectorizer.Builder()
-                    .cache(cache).iterate(docIter).iterate(sentenceIter).batchSize(batchSize)
+        if(vectorizer == null) {
+            vectorizer = new TfidfVectorizer.Builder().index(invertedIndex)
+                    .cache(vocab()).iterate(docIter).iterate(sentenceIter).batchSize(batchSize)
                     .minWords(minWordFrequency).stopWords(stopWords)
                     .tokenize(tokenizerFactory).build();
-        vectorizer.fit();
+
+            vectorizer.fit();
+
+        }
+
+        //includes unk
+        else if(vocab().numWords() < 2)
+            vectorizer.fit();
+
+
+
 
         setup();
 
@@ -681,10 +300,6 @@ public class Word2Vec implements Persistable {
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             skipGram(i, sentence, (int) nextRandom.get() % window,nextRandom,alpha);
         }
-
-
-
-
 
     }
 
@@ -707,7 +322,7 @@ public class Word2Vec implements Persistable {
                 if(c >= 0 && c < sentence.size()) {
                     VocabWord lastWord = sentence.get(c);
                     iterate(word,lastWord,nextRandom,alpha);
-                                   }
+                }
             }
         }
 
@@ -722,7 +337,7 @@ public class Word2Vec implements Persistable {
      * @param w1 the first word to fit
      */
     public void  iterate(VocabWord w1, VocabWord w2,AtomicLong nextRandom,double alpha) {
-        cache.iterateSample(w1,w2,nextRandom,alpha);
+        lookupTable.iterateSample(w1,w2,nextRandom,alpha);
 
     }
 
@@ -732,7 +347,7 @@ public class Word2Vec implements Persistable {
     /* Builds the binary tree for the word relationships */
     protected void buildBinaryTree() {
         log.info("Constructing priority queue");
-        Huffman huffman = new Huffman(cache.vocabWords());
+        Huffman huffman = new Huffman(vocab().vocabWords());
         huffman.build();
 
         log.info("Built tree");
@@ -744,26 +359,11 @@ public class Word2Vec implements Persistable {
 
     /* reinit weights */
     protected void resetWeights() {
-        cache.resetWeights();
+        lookupTable.resetWeights();
     }
 
 
-    /**
-     * Returns the similarity of 2 words
-     * @param word the first word
-     * @param word2 the second word
-     * @return a normalized similarity (cosine similarity)
-     */
-    public double similarity(String word,String word2) {
-        if(word.equals(word2))
-            return 1.0;
 
-        INDArray vector = Transforms.unitVec(getWordVectorMatrix(word));
-        INDArray vector2 = Transforms.unitVec(getWordVectorMatrix(word2));
-        if(vector == null || vector2 == null)
-            return -1;
-        return  Nd4j.getBlasWrapper().dot(vector,vector2);
-    }
 
 
 
@@ -778,40 +378,6 @@ public class Word2Vec implements Persistable {
     }
 
 
-
-
-    @Override
-    public void write(OutputStream os) {
-        try {
-            ObjectOutputStream dos = new ObjectOutputStream(os);
-
-            dos.writeObject(this);
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-    @Override
-    public void load(InputStream is) {
-        try {
-            ObjectInputStream ois = new ObjectInputStream(is);
-            Word2Vec vec = (Word2Vec) ois.readObject();
-            this.alpha = vec.alpha;
-            this.minWordFrequency = vec.minWordFrequency;
-            this.sample = vec.sample;
-            this.stopWords = vec.stopWords;
-            this.topNSize = vec.topNSize;
-            this.window = vec.window;
-
-        }catch(Exception e) {
-            throw new RuntimeException(e);
-        }
-
-
-
-    }
 
 
 
@@ -837,12 +403,6 @@ public class Word2Vec implements Persistable {
 
 
 
-    public int getLayerSize() {
-        return layerSize;
-    }
-    public void setLayerSize(int layerSize) {
-        this.layerSize = layerSize;
-    }
     public int getWindow() {
         return window;
     }
@@ -858,17 +418,9 @@ public class Word2Vec implements Persistable {
     public  void setTokenizerFactory(TokenizerFactory tokenizerFactory) {
         this.tokenizerFactory = tokenizerFactory;
     }
-    public VocabCache getCache() {
-        return cache;
-    }
-    public void setCache(VocabCache cache) {
-        this.cache = cache;
-        if(cache instanceof InMemoryLookupCache) {
-            InMemoryLookupCache l = (InMemoryLookupCache) cache;
-            if(l.getSyn0() != null && l.getSyn0().columns() != layerSize)
-                layerSize = l.getSyn0().columns();
-        }
-    }
+
+
+
 
 
     public static class Builder {
@@ -892,7 +444,18 @@ public class Word2Vec implements Persistable {
         protected double negative = 0;
         protected double sampling = 1e-5;
         protected int workers = Runtime.getRuntime().availableProcessors();
+        protected InvertedIndex index;
+        protected WeightLookupTable lookupTable;
 
+        public Builder lookupTable(WeightLookupTable lookupTable) {
+            this.lookupTable = lookupTable;
+            return this;
+        }
+
+        public Builder index(InvertedIndex index) {
+            this.index = index;
+            return this;
+        }
 
         public Builder workers(int workers) {
             this.workers = workers;
@@ -1007,12 +570,11 @@ public class Word2Vec implements Persistable {
 
             if(iter == null) {
                 Word2Vec ret = new Word2Vec();
-                ret.layerSize = layerSize;
                 ret.window = window;
                 ret.alpha.set(lr);
                 ret.vectorizer = textVectorizer;
                 ret.stopWords = stopWords;
-                ret.setCache(vocabCache);
+                ret.setVocab(vocabCache);
                 ret.numIterations = iterations;
                 ret.minWordFrequency = minWordFrequency;
                 ret.seed = seed;
@@ -1022,7 +584,8 @@ public class Word2Vec implements Persistable {
                 ret.minLearningRate = minLearningRate;
                 ret.sample = sampling;
                 ret.workers = workers;
-
+                ret.invertedIndex = index;
+                ret.lookupTable = lookupTable;
                 try {
                     if (tokenizerFactory == null)
                         tokenizerFactory = new UimaTokenizerFactory();
@@ -1031,13 +594,20 @@ public class Word2Vec implements Persistable {
                 }
 
                 if(vocabCache == null) {
-                    vocabCache = new InMemoryLookupCache.Builder().negative(negative)
-                            .useAdaGrad(useAdaGrad).lr(lr)
-                            .vectorLength(layerSize).build();
+                    vocabCache = new InMemoryLookupCache();
 
-                    ret.cache = vocabCache;
+                    ret.setVocab(vocabCache);
                 }
+
+                if(lookupTable == null) {
+                    lookupTable = new InMemoryLookupTable.Builder().negative(negative)
+                            .useAdaGrad(useAdaGrad).lr(lr).cache(vocabCache)
+                            .vectorLength(layerSize).build();
+                }
+
+
                 ret.docIter = docIter;
+                ret.lookupTable = lookupTable;
                 ret.tokenizerFactory = tokenizerFactory;
 
                 return ret;
@@ -1046,7 +616,6 @@ public class Word2Vec implements Persistable {
             else {
                 Word2Vec ret = new Word2Vec();
                 ret.alpha.set(lr);
-                ret.layerSize = layerSize;
                 ret.sentenceIter = iter;
                 ret.window = window;
                 ret.useAdaGrad = useAdaGrad;
@@ -1054,7 +623,7 @@ public class Word2Vec implements Persistable {
                 ret.vectorizer = textVectorizer;
                 ret.stopWords = stopWords;
                 ret.minWordFrequency = minWordFrequency;
-                ret.setCache(vocabCache);
+                ret.setVocab(vocabCache);
                 ret.docIter = docIter;
                 ret.minWordFrequency = minWordFrequency;
                 ret.numIterations = iterations;
@@ -1064,6 +633,8 @@ public class Word2Vec implements Persistable {
                 ret.batchSize = batchSize;
                 ret.sample = sampling;
                 ret.workers = workers;
+                ret.invertedIndex = index;
+                ret.lookupTable = lookupTable;
 
                 try {
                     if (tokenizerFactory == null)
@@ -1073,11 +644,17 @@ public class Word2Vec implements Persistable {
                 }
 
                 if(vocabCache == null) {
-                    vocabCache = new InMemoryLookupCache.Builder().negative(negative)
-                            .useAdaGrad(useAdaGrad).lr(lr)
-                            .vectorLength(layerSize).build();
-                    ret.cache = vocabCache;
+                    vocabCache = new InMemoryLookupCache();
+
+                    ret.setVocab(vocabCache);
                 }
+
+                if(lookupTable == null) {
+                    lookupTable = new InMemoryLookupTable.Builder().negative(negative)
+                            .useAdaGrad(useAdaGrad).lr(lr).cache(vocabCache)
+                            .vectorLength(layerSize).build();
+                }
+                ret.lookupTable = lookupTable;
                 ret.tokenizerFactory = tokenizerFactory;
                 return ret;
             }

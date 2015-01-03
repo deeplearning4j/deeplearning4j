@@ -1,6 +1,5 @@
 package org.deeplearning4j.util;
 
-import org.deeplearning4j.nn.api.Persistable;
 
 import java.io.*;
 import java.util.Map;
@@ -14,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  */
 @SuppressWarnings({"rawtypes","unchecked"})
-public class Index implements Serializable,Persistable {
+public class Index implements Serializable {
 
     /**
      *
@@ -25,6 +24,11 @@ public class Index implements Serializable,Persistable {
     Map<Object,Integer> indexes = new ConcurrentHashMap<>();
 
     public synchronized boolean add(Object o,int idx) {
+        if(o instanceof String) {
+            if(o.toString().isEmpty())
+                throw new IllegalArgumentException("Unable to add the empty string");
+        }
+
         Integer index = indexes.get(o);
         if (index == null) {
             index = idx;
@@ -36,6 +40,10 @@ public class Index implements Serializable,Persistable {
     }
 
     public synchronized boolean add(Object o) {
+        if(o instanceof String) {
+            if(o.toString().isEmpty())
+                throw new IllegalArgumentException("Unable to add the empty string");
+        }
         Integer index = indexes.get(o);
         if (index == null) {
             index = objects.size();
@@ -60,6 +68,7 @@ public class Index implements Serializable,Persistable {
         return objects.size();
     }
 
+    @Override
     public String toString() {
         StringBuilder buff = new StringBuilder("[");
         int sz = objects.size();
@@ -67,34 +76,11 @@ public class Index implements Serializable,Persistable {
         for (i = 0; i < sz; i++) {
             Object e = objects.get(i);
             buff.append(e);
-            if (i < (sz-1)) buff.append(",");
+            if (i < (sz-1)) buff.append(" , ");
         }
         buff.append("]");
         return buff.toString();
 
     }
 
-    @Override
-    public void write(OutputStream os) {
-        try {
-            ObjectOutputStream os2 = new ObjectOutputStream(os);
-            os2.writeObject(this);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-
-
-    @Override
-    public void load(InputStream is) {
-        try {
-            Index i = (Index) new ObjectInputStream(is).readObject();
-            this.indexes = i.indexes;
-            this.objects = i.objects;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

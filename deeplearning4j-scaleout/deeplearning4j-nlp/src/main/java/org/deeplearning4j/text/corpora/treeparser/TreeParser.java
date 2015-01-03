@@ -62,7 +62,7 @@ public class TreeParser {
         if(tokenizer == null)
             tokenizer = getTokenizer();
         if(pool == null)
-            pool = new CasPool(Runtime.getRuntime().availableProcessors() * 10,parser);
+            pool = new CasPool(Runtime.getRuntime().availableProcessors() ,parser);
         tf = new UimaTokenizerFactory(tokenizer,true);
 
     }

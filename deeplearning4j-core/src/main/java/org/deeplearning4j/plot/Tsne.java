@@ -71,6 +71,10 @@ public class Tsne implements Serializable {
         loadIntoTmp();
     }
 
+    public Tsne() {
+
+    }
+
     private static void loadIntoTmp() {
 
         File script = new File("/tmp/tsne.py");
@@ -377,7 +381,7 @@ public class Tsne implements Serializable {
         INDArray gradChange = gains.mul(yGrads);
 
         if(useAdaGrad)
-            gradChange.muli(adaGrad.getLearningRates(gradChange));
+           gradChange = adaGrad.getGradient(gradChange);
         else
             gradChange.muli(learningRate);
 
@@ -407,19 +411,33 @@ public class Tsne implements Serializable {
 
 
     /**
-     * Plot tsne
+     * Plot tsne (write the coordinates file)
      * @param matrix the matrix to plot
      * @param nDims the number
      * @param labels
      * @throws IOException
      */
     public void plot(INDArray matrix,int nDims,List<String> labels) throws IOException {
+         plot(matrix,nDims,labels,"coords.csv");
+    }
+
+    /**
+     * Plot tsne
+     * @param matrix the matrix to plot
+     * @param nDims the number
+     * @param labels
+     * @param path the path to write
+     * @throws IOException
+     */
+    public void plot(INDArray matrix,int nDims,List<String> labels,String path) throws IOException {
 
         calculate(matrix,nDims,perplexity);
 
-        BufferedWriter write = new BufferedWriter(new FileWriter(new File("coords.csv"),true));
+        BufferedWriter write = new BufferedWriter(new FileWriter(new File(path),true));
 
         for(int i = 0; i < y.rows(); i++) {
+            if(i >= labels.size())
+                break;
             String word = labels.get(i);
             if(word == null)
                 continue;

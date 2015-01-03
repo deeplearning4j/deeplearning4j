@@ -10,7 +10,8 @@ import java.util.UUID;
 
 import org.deeplearning4j.aws.s3.BaseS3;
 import org.deeplearning4j.aws.s3.uploader.S3Uploader;
-import org.deeplearning4j.iterativereduce.actor.core.ModelSaver;
+import org.deeplearning4j.scaleout.actor.core.ModelSaver;
+
 /**
  * Saves models to a specified bucket name
  * @author Adam Gibson

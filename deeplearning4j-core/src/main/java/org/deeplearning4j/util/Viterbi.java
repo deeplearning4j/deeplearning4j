@@ -4,18 +4,15 @@ import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.deeplearning4j.nn.api.Persistable;
 
-
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.Serializable;
 
 /**
  * Based on the impl from:
  * https://gist.github.com/rmcgibbo/3915977
  *
  */
-public class Viterbi implements Persistable {
+public class Viterbi implements Serializable {
 
     private double metaStability = 0.9;
     private double pCorrect = 0.99;
@@ -107,23 +104,6 @@ public class Viterbi implements Persistable {
     }
 
 
-    @Override
-    public void write(OutputStream os) {
-        SerializationUtils.writeObject(this,os);
-    }
-
-    @Override
-    public void load(InputStream is) {
-        Viterbi ret = SerializationUtils.readObject(is);
-        this.states = ret.states;
-        this.logStates = ret.logStates;
-        this.metaStability = ret.metaStability;
-        this.logMetaInstability = ret.logMetaInstability;
-        this.logOfDiangnalTProb = ret.logOfDiangnalTProb;
-        this.logPCorrect = ret.logPCorrect;
-        this.pCorrect = ret.pCorrect;
-
-    }
 
 
     public double getMetaStability() {
