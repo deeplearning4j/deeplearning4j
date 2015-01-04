@@ -8,6 +8,9 @@ Contents
 
 * <a href="#quickstart">Quickstart</a>
 * <a href="#all">Deeplearning4j install (All OS)</a>
+    * <a href="#github">Github</a>
+    * <a href="#ide-for-java">IDE for Java</a>
+    * <a href="#maven">Maven</a>
     * <a href="#linux">Linux</a>
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
@@ -16,35 +19,94 @@ Contents
 * <a href="#trouble">Troubleshooting</a>
 * <a href="#next">Next Steps</a>
 
-### <a name="quickstart">Quickstart</a>
+## <a name="quickstart">Quickstart</a>
 
 Our [Quickstart](../quickstart.html) shows you how to run your first examples. 
 
-### <a name="all">Full Install: All OS</a>
+## <a name="all">Full Install: All OS</a>
 
 DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
 
-### ND4J: Numpy for the JVM
+## ND4J: Numpy for the JVM
 
 [ND4J is the Java scientific computing engine](http://nd4j.org/) powering our matrix manipulations.The ND4J getting started page is [here](http://nd4j.org/getstarted.html), and you need to install it to run DL4J. (It's also fun in and of itself...)
 
-### Github
+## <a id="github">Github</a>
 
+* Github is **only necessary** to run DL4J examples from the Quickstart, or to help develop the framework by working on the source code. It is not necessary to install Deeplearning4j and use its neural nets, so if you do not plan to help us develop DL4J, you may not need it. In that case, proceed to the IDE. 
 * Download Github for [Mac](https://mac.github.com/), [Windows](https://windows.github.com/), etc. Then enter this command into your terminal (Mac) or Git Shell (Windows):
 
       git clone https://github.com/SkymindIO/deeplearning4j
-      cd deeplearning4j
-      git checkout 0.0.3.3
-      //^^switches to snapshot^^
 
-### Maven
+## <a id="ide-for-java">IDE for Java</a>
 
-You can install both ND4J and Deeplearning4j separately via [Maven](https://maven.apache.org/download.cgi), a build automation tool used for Java projects. Using Maven to install other software requires you to: 
+### What it is
+An Integrated Development Environment ([IDE](http://encyclopedia.thefreedictionary.com/integrated+development+environment)) will allow you to edit the source code, debug it and build it with a few clicks. The ones suggested here will use your installed version of Java, will talk with GitHub and Maven, which will take care of the dependencies for you. Visit our [dependencies](dependencies.html) page to know how to 'easily' change the dependencies later on.
 
-* Go to your root directory; e.g. deeplearning4j or nd4j. 
-* Make sure the pom.xml files within that directory and each major subdirectory are properly configured. The git clone will do most of the work arranging the pom's.
-* Add optional dependencies and other information to that POM file. See the [Readme](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md) for dependencies dealing with NLP, scaling out with Akka, and snapshots. 
-* Choose an IDE to download -- [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html), [IntelliJ](https://www.jetbrains.com/idea/help/importing-project-from-maven-model.html) or [Netbeans](http://wiki.netbeans.org/MavenBestPractices) -- and import the project **deeplearning4j** via Maven.
+### Why you need it
+You want to set up a hassle-free development environment so that you only worry about your code. IDEs typically come with Maven support, but we prefer you to install [Maven](#3-maven) so you can run commands directly as instructed previously.
+
+### Is it already installed?
+Just check your installed programs.
+
+### Installation
+We recommend installing [IntelliJ](https://www.jetbrains.com/idea/download/). You will be perfectly fine with the free community edition.
+
+These are some equivalent IDEs: [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html) or [Netbeans](http://wiki.netbeans.org/MavenBestPractices).
+
+## <a id="maven">3. Maven</a>
+
+### What it is
+Maven is an automated build tool for Java projects (among other [things](http://maven.apache.org/what-is-maven.html)), that basically locates the latest version of the libraries (Deeplearning4j .jar files), and downloads them automatically to your computer.
+
+### Why you need it
+Maven will allow you to install both ND4J and Deeplearning4j projects easily. It works well with Integrated Development Environments ([IDE](#4-ide-for-java)) such as IntelliJ.
+
+(If you really know what you are doing, and do not want to install Maven, you can find the .jar files in our [downloads](downloads.html) page. For an expert user it might be faster, but also more complicated due to dependencies.)
+
+### Is it already installed?
+To see if Maven is installed in your machine, enter the following into the command line:
+
+		mvn --version
+
+### Installation
+Instructions to install Maven are [here](https://maven.apache.org/download.cgi). Download the compressed file containing Maven's latest stable version.
+
+![Alt text](../img/maven_downloads.png) 
+
+Lower on the same Web page, follow the instructions that pertain to your operating system; e.g. *"Unix-based Operating Systems (Linux, Solaris and Mac OS X)."* They look like this:
+
+![Alt text](../img/maven_OS_instructions.png) 
+
+* Now, using your IDE, create a new project:
+
+![Alt text](../img/new_maven_project.png) 
+
+The images below will step you through the windows of the IntelliJ New Project Wizard using Maven. First you name your group and artifact
+
+![Alt text](../img/maven2.png) 
+
+Simply click "Next" on the following screen, and on the next one name your project. (May we suggest naming it Deeplearning4j? ;)
+
+![Alt text](../img/maven4.png) 
+
+Now you should go into your pom.xml file, within the new Deeplearning4j project in IntelliJ. It will look like this:
+
+![Alt text](../img/pom_before.png) 
+
+Now you need to add two dependencies: "deeplearning4j-core" and a linear-algebra backend like "nd4j-jblas". You will find both by searching for them on [search.maven.org](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j-core). When you find them, you'll want to click on the latest version. 
+
+![Alt text](../img/search_maven_latest_version.png) 
+
+From that screen, you want to copy the dependency information:
+
+![Alt text](../img/latest_version_dependency.png) 
+
+And paste it into your pom.xml:
+
+![Alt text](../img/pom_after.png) 
+
+That's it. Once you've pasted the right dependencies into the pom (you may choose others, such as deeplearning4j-scaleout for distributed deep learning, or nd4j-jcublas for GPUs), you're done. You can create a Java file within IntelliJ and start using Deeplearning4j's API to start building neural nets. 
 
 Alternatively, you can install DL4J using our [downloads](http://deeplearning4j.org/download.html). If you prefer the downloads over Maven, then you have to manually import the jar files into [Eclipse](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse), [Intellij](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project) or [Netbeans](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/).
 
