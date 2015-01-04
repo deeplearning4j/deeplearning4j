@@ -108,8 +108,6 @@ And paste it into the "dependencies" section of your pom.xml, which should end u
 
 That's it. Once you've pasted the right dependencies into the pom (you may choose others, such as deeplearning4j-scaleout for distributed deep learning, or nd4j-jcublas for GPUs), you're done. You can create a new Java file within IntelliJ and start using Deeplearning4j's API to start building neural nets. (See our [examples](http://deeplearning4j.org/quickstart.html) if you need inspiration.) 
 
-Alternatively, you can install DL4J using our [downloads](http://deeplearning4j.org/download.html). If you prefer the downloads over Maven, then you have to manually import the jar files into [Eclipse](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse), [Intellij](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project) or [Netbeans](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/).
-
 ### <a name="linux">Linux</a>
 
 * Due to our reliance on Jblas for CPUs, native bindings for Blas are required.
