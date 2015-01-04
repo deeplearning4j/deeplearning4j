@@ -82,31 +82,31 @@ Lower on the same Web page, follow the instructions that pertain to your operati
 
 ![Alt text](../img/new_maven_project.png) 
 
-The images below will step you through the windows of the IntelliJ New Project Wizard using Maven. First you name your group and artifact
+The images below will walk you through the windows of the IntelliJ New Project Wizard using Maven. First, you name your group and artifact.
 
 ![Alt text](../img/maven2.png) 
 
-Simply click "Next" on the following screen, and on the next one name your project. (May we suggest naming it Deeplearning4j? ;)
+Simply click "Next" on the following screen, and on the screen after that (below), just name your project. ("Deeplearning4j" perhaps?)
 
 ![Alt text](../img/maven4.png) 
 
-Now you should go into your pom.xml file, within the new Deeplearning4j project in IntelliJ. It will look like this:
+Now you should go into your pom.xml file within the new Deeplearning4j project in IntelliJ. It will look like this:
 
 ![Alt text](../img/pom_before.png) 
 
-Now you need to add two dependencies: "deeplearning4j-core" and a linear-algebra backend like "nd4j-jblas". You will find both by searching for them on [search.maven.org](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j-core). When you find them, you'll want to click on the latest version. 
+You will need to add two dependencies: "deeplearning4j-core" and a linear-algebra backend like "nd4j-jblas". You will find both by searching for them on [search.maven.org](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j-core). Click on the "latest version" on this screen. 
 
 ![Alt text](../img/search_maven_latest_version.png) 
 
-From that screen, you want to copy the dependency information:
+From there, you want to copy the dependency information:
 
 ![Alt text](../img/latest_version_dependency.png) 
 
-And paste it into your pom.xml, which should end up looking like this:
+And paste it into the "dependencies" section of your pom.xml, which should end up looking like this:
 
 ![Alt text](../img/pom_after.png) 
 
-That's it. Once you've pasted the right dependencies into the pom (you may choose others, such as deeplearning4j-scaleout for distributed deep learning, or nd4j-jcublas for GPUs), you're done. You can create a Java file within IntelliJ and start using Deeplearning4j's API to start building neural nets. 
+That's it. Once you've pasted the right dependencies into the pom (you may choose others, such as deeplearning4j-scaleout for distributed deep learning, or nd4j-jcublas for GPUs), you're done. You can create a new Java file within IntelliJ and start using Deeplearning4j's API to start building neural nets. (See our [examples](http://deeplearning4j.org/quickstart.html) if you need inspiration.) 
 
 Alternatively, you can install DL4J using our [downloads](http://deeplearning4j.org/download.html). If you prefer the downloads over Maven, then you have to manually import the jar files into [Eclipse](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse), [Intellij](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project) or [Netbeans](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/).
 
