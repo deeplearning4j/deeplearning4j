@@ -102,7 +102,7 @@ From that screen, you want to copy the dependency information:
 
 ![Alt text](../img/latest_version_dependency.png) 
 
-And paste it into your pom.xml:
+And paste it into your pom.xml, which should end up looking like this:
 
 ![Alt text](../img/pom_after.png) 
 
