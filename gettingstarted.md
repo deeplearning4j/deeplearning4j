@@ -8,9 +8,9 @@ Contents
 
 * <a href="#quickstart">Quickstart</a>
 * <a href="#all">Deeplearning4j install (All OS)</a>
-    * <a href="#github">Github</a>
     * <a href="#ide-for-java">IDE for Java</a>
     * <a href="#maven">Maven</a>
+    * <a href="#github">Github</a>
     * <a href="#linux">Linux</a>
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
