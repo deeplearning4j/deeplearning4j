@@ -19,6 +19,8 @@ Licensing is another distinction: Both Theano and Torch employ a BSD License, wh
 
 While both Torch7 and DL4J employ parallelism, DL4J's **parallelism is automatic**. That is, we automate the setting up of worker nodes and connections, allowing users to bypass libs while creating a massively parallel network. Deeplearning4j is best suited for solving specific problems, and doing so quickly. 
 
+This brings us to the issue of speed. The bottleneck for speed that most deeplearning frameworks encounter is in [BLAS](http://www.netlib.org/blas/), or Basic Linear Algebra Subprograms, so if you use BLAS and the framework correctly, then you will [approach the same speed limit](https://www.quora.com/Deep-Learning/How-fast-is-Theano-compared-to-other-DBN-implementations). The question, however, is how easy a project's documentation makes it to handle large amounts of data.  
+
 For a full list of Deeplearning4j's features, please see our [features page](../features.html).
 
 ### Why Java?
