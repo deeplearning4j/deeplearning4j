@@ -83,7 +83,7 @@ Simply click "Next" on the following screen, and on the screen after that (below
 
 ![Alt text](../img/maven4.png) 
 
-Now you should go into your pom.xml file within the new Deeplearning4j project in IntelliJ. It will look like this:
+Now you should go into your pom.xml file within the new Deeplearning4j project in IntelliJ. The POM will take a few seconds to build, but when it's done, it will look something like this:
 
 ![Alt text](../img/pom_before.png) 
 
