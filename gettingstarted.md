@@ -43,9 +43,7 @@ You want a hassle-free development environment so that you only need to think ab
 Just check your installed programs.
 
 ### Installation
-We recommend installing [IntelliJ](https://www.jetbrains.com/idea/download/). The free community edition does the job just fine.
-
-[Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html) and [Netbeans](http://wiki.netbeans.org/MavenBestPractices) are two other popular IDEs.
+We recommend installing [IntelliJ](https://www.jetbrains.com/idea/download/). The free community edition does the job just fine. [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html) and  [Netbeans](http://wiki.netbeans.org/MavenBestPractices) are two other popular IDEs.
 
 ## <a id="maven">Maven</a>
 
