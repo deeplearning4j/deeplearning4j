@@ -102,7 +102,7 @@ And paste it into the "dependencies" section of your pom.xml, which should end u
 
 ![Alt text](../img/pom_after.png) 
 
-That's it. Once you've pasted the right dependencies into the pom (you may choose others, such as deeplearning4j-scaleout for distributed deep learning, or nd4j-jcublas for GPUs), you're done. You can create a new Java file within IntelliJ and start using Deeplearning4j's API to start building neural nets. (See our [examples](http://deeplearning4j.org/quickstart.html) if you need inspiration.) 
+That's it. Once you've pasted the right dependencies into the pom (you may choose others, such as deeplearning4j-scaleout for distributed deep learning, or nd4j-jcublas for GPUs), you're done. You can create a new Java file within IntelliJ under the folders [src/main/java/](https://maven.apache.org/guides/introduction/introduction-to-the-standard-directory-layout.html), and start using Deeplearning4j's API to start building neural nets. (See our [examples](http://deeplearning4j.org/quickstart.html) if you need inspiration.) 
 
 ## <a id="github">Github</a>
 
