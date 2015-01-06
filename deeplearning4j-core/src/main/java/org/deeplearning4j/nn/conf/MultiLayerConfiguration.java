@@ -20,14 +20,20 @@ public class MultiLayerConfiguration implements Serializable {
     /* Sample if true, otherwise use the straight activation function */
     private boolean useRBMPropUpAsActivations = true;
     private double dampingFactor = 100;
+    private Map<Integer,OutputPreProcessor> processors = new HashMap<>();
 
     private MultiLayerConfiguration() {}
 
 
 
 
+
     public NeuralNetConfiguration getConf(int i) {
         return confs.get(i);
+    }
+
+    public OutputPreProcessor getPreProcessor(int layer) {
+        return processors.get(layer);
     }
 
     public double getDampingFactor() {
@@ -143,6 +149,20 @@ public class MultiLayerConfiguration implements Serializable {
         protected boolean pretrain = true;
         protected boolean useRBMPropUpAsActivations = false;
         protected double dampingFactor = 100;
+        protected Map<Integer,OutputPreProcessor> preProcessors = new HashMap<>();
+
+
+
+        public Builder preProcessor(Integer layer,OutputPreProcessor preProcessor) {
+            preProcessors.put(layer,preProcessor);
+            return this;
+        }
+
+        public Builder preProcessors(Map<Integer,OutputPreProcessor> preProcessors) {
+            this.preProcessors = preProcessors;
+            return this;
+        }
+
 
 
         public Builder dampingFactor(double dampingFactor) {
@@ -192,6 +212,7 @@ public class MultiLayerConfiguration implements Serializable {
             conf.pretrain = pretrain;
             conf.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
             conf.dampingFactor = dampingFactor;
+            conf.processors = preProcessors;
             return conf;
 
         }

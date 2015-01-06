@@ -119,7 +119,7 @@ public class SVMLightDataFetcher extends BaseDataFetcher implements DataSetFetch
 		}
 */		
 		
-		return new Pair<INDArray, INDArray>(vec_in, vec_out);
+		return new Pair<>(vec_in, vec_out);
 		
 	}
 
@@ -199,7 +199,7 @@ public class SVMLightDataFetcher extends BaseDataFetcher implements DataSetFetch
 				
 				//tmpDS.getLabels().linearIndex( 1 );
 				
-				vectorBatch.add( new DataSet( tmpPair.getFirst(), tmpPair.getSecond() ) );
+				vectorBatch.add( new DataSet( tmpPair.getFirst(), FeatureUtil.toOutcomeVector(tmpPair.getSecond().getInt(0),numOutcomes)));
 				
 			}
 		}

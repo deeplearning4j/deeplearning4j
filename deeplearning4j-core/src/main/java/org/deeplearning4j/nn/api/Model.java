@@ -106,4 +106,15 @@ public interface Model {
      */
     void setConf(NeuralNetConfiguration conf);
 
+    /**
+     * The input/feature matrix for the model
+     * @return the input/feature matrix for the model
+     */
+    INDArray input();
+
+    /**
+     * Validate the input
+     */
+    void validateInput();
+
 }
