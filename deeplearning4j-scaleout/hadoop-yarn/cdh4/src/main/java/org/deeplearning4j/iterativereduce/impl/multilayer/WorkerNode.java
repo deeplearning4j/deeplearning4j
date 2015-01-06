@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ToolRunner;
+import org.deeplearning4j.datasets.iterator.DataSetFetcher;
 import org.deeplearning4j.iterativereduce.impl.ParameterVectorUpdateable;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.iterativereduce.runtime.io.RecordParser;
@@ -13,10 +14,11 @@ import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWorker;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
+import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 
 /**
@@ -30,7 +32,10 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     private static final Logger LOG = LoggerFactory.getLogger(WorkerNode.class);
     private MultiLayerNetwork multiLayerNetwork;
     private RecordParser recordParser;
-
+//MnistHDFSDataSetIterator hdfs_fetcher = null;
+    
+    private DataSetFetcher hdfsDataSetFetcher = null;
+    
 
     /**
      * Run a training pass of a single batch of input records on the DBN
@@ -107,6 +112,8 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
     /**
      * Setup the local DBN instance based on conf params
+     * 
+     * TODO: how do we pull the right DataSetIterator?
      *
      */
     @Override
@@ -114,6 +121,8 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(conf.get(MULTI_LAYER_CONF));
         multiLayerNetwork = new MultiLayerNetwork(conf2);
 
+        // TODO: setup ---> this.hdfsDataSetFetcher 
+        
 
     }
 
@@ -142,9 +151,17 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
     }
 
-
+/*
     @Override
     public void setup(org.deeplearning4j.nn.conf.Configuration conf) {
 
     }
+*/
+
+
+	@Override
+	public void setup(org.deeplearning4j.scaleout.conf.Configuration conf) {
+		// TODO Auto-generated method stub
+		
+	}
 }

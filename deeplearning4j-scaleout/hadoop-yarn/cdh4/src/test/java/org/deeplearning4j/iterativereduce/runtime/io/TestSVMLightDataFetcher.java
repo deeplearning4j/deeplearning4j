@@ -11,11 +11,12 @@ import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.junit.Test;
+import org.nd4j.linalg.util.FeatureUtil;
 
 public class TestSVMLightDataFetcher {
 
 
-	private static String svmLight_test_filename = "src/test/resources/data/MNIST/twolabels/eval_dataset/mnist_filtered_conversion_test.metronome";
+	private static String svmLight_test_filename = "src/test/resources/svmLightSample.txt";
 	
 
 	  private static JobConf defaultConf = new JobConf();
@@ -61,7 +62,13 @@ public class TestSVMLightDataFetcher {
 	}	
 		
 	
-	
+	/**
+	 * Currently we only support non-negative labels
+	 * - this is due to the issue where we have not yet accounted for the scenario
+	 *   where each split needs the same label conversion heuristic 
+	 *   we're just using the class labels directly as indexes
+	 * 
+	 */
 	@Test
 	public void testSVMLightHDFSFetcher() {
 		
@@ -84,6 +91,20 @@ public class TestSVMLightDataFetcher {
 
 	    txt_reader.setFile(splits[0].toString().split(":")[1], 0, len);		
 		
+	    SVMLightDataFetcher fetcher = null;
+	    
+	    try {
+			fetcher = new SVMLightDataFetcher( txt_reader, 9300, 2 );
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    
+	    //FeatureUtil.toOutcomeVector( 1, 10 );
+	    
+	    fetcher.fetch( 20 );
+	    
+	    
 				
 
 /*	    

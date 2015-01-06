@@ -15,6 +15,12 @@ import org.nd4j.linalg.util.FeatureUtil;
 
 /**
  * 
+ * Currently we only support non-negative labels
+ *  - this is due to the issue where we have not yet accounted for the scenario
+ *    where each split needs the same label conversion heuristic 
+ *    we're just using the class labels directly as indexes
+ *   
+ *   
  * @author josh
  *
  */
@@ -48,13 +54,14 @@ public class SVMLightDataFetcher extends BaseDataFetcher implements DataSetFetch
 	 * @param hdfsLineParser
 	 * @throws IOException
 	 */
-	public SVMLightDataFetcher( TextRecordParser hdfsLineParser, int featureCount ) throws IOException {
+	public SVMLightDataFetcher( TextRecordParser hdfsLineParser, int featureCount, int numOutcomes ) throws IOException {
 
 		this.record_reader = hdfsLineParser;
 		//this.maxFeatureCount = featureCount;
 		
 		//numOutcomes = 10;
 		this.cursor = 1;
+		this.numOutcomes = numOutcomes;
 		this.inputColumns = featureCount; //ArrayUtils.flatten(image).length;
 
 		this.vector_factory = new SVMLightRecordFactory( this.inputColumns );
@@ -71,10 +78,12 @@ public class SVMLightDataFetcher extends BaseDataFetcher implements DataSetFetch
 	 * @param line
 	 * @return
 	 */
-	public Pair<INDArray,INDArray> convertMetronomeTextLineToInputPair( String line ) {
+	public Pair<INDArray,INDArray> convertTextLineToInputPair( String line ) {
 		
 		//Vector v_in = new RandomAccessSparseVector( this.vector_factory.getFeatureVectorSize());
 		//Vector v_out = new RandomAccessSparseVector( this.vector_factory.getOutputVectorSize());
+		
+		System.out.println("line: " + line );
 		
 		INDArray vec_in = Nd4j.create( this.inputColumns );
 		INDArray vec_out = Nd4j.create( 1 );
@@ -181,12 +190,21 @@ public class SVMLightDataFetcher extends BaseDataFetcher implements DataSetFetch
 			} else {
 			
 				//toConvert.add( this.convertMetronomeTextLineToMatrixInputPair( value.toString() ));
-				Pair<INDArray, INDArray> tmpPair = this.convertMetronomeTextLineToInputPair(valString);
+				Pair<INDArray, INDArray> tmpPair = this.convertTextLineToInputPair(valString);
+				
+				DataSet tmpDS = new DataSet( tmpPair.getFirst(), tmpPair.getSecond() );
+				
+				System.out.println( "feature columns: " + tmpDS.getFeatures().columns() );
+				System.out.println( "labels columns: " + tmpDS.getLabels().columns() );
+				
+				//tmpDS.getLabels().linearIndex( 1 );
+				
 				vectorBatch.add( new DataSet( tmpPair.getFirst(), tmpPair.getSecond() ) );
 				
 			}
 		}
 
+		System.out.println( "number vectors: " + vectorBatch.size() );
 
 		initializeCurrFromList( vectorBatch );
 
