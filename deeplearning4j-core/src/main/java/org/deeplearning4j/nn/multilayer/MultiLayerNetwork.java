@@ -9,6 +9,7 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.OutputPreProcessor;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.OutputLayer;
@@ -206,11 +207,21 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
     @Override
     public NeuralNetConfiguration conf() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void setConf(NeuralNetConfiguration conf) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray input() {
+        return input;
+    }
+
+    @Override
+    public void validateInput() {
 
     }
 
@@ -253,19 +264,19 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
         if (input == null)
             throw new IllegalArgumentException("Unable to initialize neuralNets with empty input");
         int[] hiddenLayerSizes = getLayerWiseConfigurations().getHiddenLayerSizes();
-        if (input.columns() != defaultConfiguration.getnIn())
+        if (input.shape().length == 2 && input.columns() != defaultConfiguration.getnIn())
             throw new IllegalArgumentException(String.format("Unable to iterate on number of inputs; columns should be equal to number of inputs. Number of inputs was %d while number of columns was %d", defaultConfiguration.getnIn(), input.columns()));
 
+        if(input.shape().length == 2)
+            for (int i = 0; i < hiddenLayerSizes.length; i++)
+                if (hiddenLayerSizes[i] < 1)
+                    throw new IllegalArgumentException("All hidden layer sizes must be >= 1");
 
-        for (int i = 0; i < hiddenLayerSizes.length; i++)
-            if (hiddenLayerSizes[i] < 1)
-                throw new IllegalArgumentException("All hidden layer sizes must be >= 1");
 
-
-        this.input = input.dup();
+        this.input = input;
         if (!initCalled) {
             init();
-            log.info("Initializing neuralNets with input of dims " + input.rows() + " x " + input.columns());
+            //log.info("Initializing neuralNets with input of dims " + input.rows() + " x " + input.columns());
 
         }
 
@@ -395,7 +406,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
      */
     public List<INDArray> feedForward() {
         INDArray currInput = this.input;
-        if (this.input.columns() != defaultConfiguration.getnIn())
+        if (this.input.isMatrix() && this.input.columns() != defaultConfiguration.getnIn())
             throw new IllegalStateException("Illegal input length");
 
         List<INDArray> activations = new ArrayList<>();
@@ -403,6 +414,10 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
         for (int i = 0; i < layers.length; i++) {
             currInput = activationFromPrevLayer(i,currInput);
+            //pre process the activation before passing to the next layer
+            OutputPreProcessor preProcessor = getLayerWiseConfigurations().getPreProcessor(i);
+            if(preProcessor != null)
+                currInput = preProcessor.preProcess(currInput);
             //applies drop connect to the activation
             applyDropConnectIfNecessary(currInput);
             activations.add(currInput);
@@ -709,7 +724,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
             ret.update(this);
 
         } catch (Exception e) {
-           throw new IllegalStateException("Unable to cloe network");
+            throw new IllegalStateException("Unable to cloe network");
         }
         return ret;
     }
@@ -728,7 +743,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     public INDArray params() {
         List<INDArray> params = new ArrayList<>();
         for(int i = 0; i < layers.length; i++)
-           layers[i].params();
+            layers[i].params();
 
         return Nd4j.toFlattened(params);
     }
@@ -772,11 +787,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
      */
 
     public INDArray pack() {
-        List<Pair<INDArray, INDArray>> vWvB = new ArrayList<>();
-        for (int i = 0; i < layers.length; i++)
-            vWvB.add(new Pair<>(layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY), layers[i].getParam(DefaultParamInitializer.BIAS_KEY)));
-
-        return pack(vWvB);
+        return params();
 
     }
 
@@ -1012,7 +1023,6 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
      * @param labels     the labels to use
      */
     public void finetune(INDArray labels) {
-        this.labels = labels;
         if (labels != null)
             this.labels = labels;
         if(getOutputLayer().conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
@@ -1310,11 +1320,6 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
     private void initMask() {
         setMask(Nd4j.ones(1, pack().length()));
-        List<Pair<INDArray, INDArray>> mask = unPack(getMask());
-        for (int i = 0; i < mask.size(); i++)
-            mask.get(i).setSecond(Nd4j.zeros(mask.get(i).getSecond().rows(), mask.get(i).getSecond().columns()));
-        setMask(pack(mask));
-
     }
 
 

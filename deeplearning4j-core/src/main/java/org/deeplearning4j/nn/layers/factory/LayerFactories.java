@@ -4,7 +4,7 @@ import org.deeplearning4j.models.classifiers.lstm.LSTM;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
-import org.deeplearning4j.nn.layers.ConvolutionDownSampleLayer;
+import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
 
 /**
  * Static method for finding which layer factory to use
