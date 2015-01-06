@@ -143,8 +143,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public  INDArray activate(INDArray input) {
-        if(input != null)
-            this.input = Transforms.stabilize(input, 1);
+        this.input = input;
         return activate();
     }
 
@@ -261,6 +260,18 @@ public abstract class BaseLayer implements Layer {
         return new Pair<>(getGradient(),score());
     }
 
+    @Override
+    public INDArray input() {
+        return input;
+    }
+
+    @Override
+    public void validateInput() {
+        if(conf.getBatchSize() > 0) {
+            if(input.rows() != conf.getBatchSize())
+                throw new IllegalStateException("Illegal batch size " + input.rows() + " should have been " + conf.getBatchSize());
+        }
+    }
 
     @Override
     public Layer transpose() {

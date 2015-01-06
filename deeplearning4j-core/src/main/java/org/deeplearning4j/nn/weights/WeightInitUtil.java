@@ -47,6 +47,50 @@ public class WeightInitUtil {
 
     /**
      * Initializes a matrix with the given weight initialization scheme
+     * @param shape the shape of the matrix
+     * @param initScheme the scheme to use
+     * @return a matrix of the specified dimensions with the specified
+     * distribution based on the initialization scheme
+     */
+    public static INDArray initWeights(int[] shape,WeightInit initScheme,ActivationFunction act,RealDistribution dist) {
+        INDArray ret = null;
+        switch(initScheme) {
+            case NORMALIZED:
+                ret = Nd4j.rand(shape);
+                return ret.subi(0.5).divi(shape[0]);
+            case UNIFORM:
+                double a = 1 / shape[0];
+                return Nd4j.rand(shape,-a,a,new MersenneTwister(123));
+
+            case  VI:
+                ret = Nd4j.rand(shape);
+                int len = 0;
+                for(int i = 0; i < shape.length; i++)
+                    len += shape[i];
+                double r = Math.sqrt(6) / Math.sqrt(len + 1);
+                ret.muli(2).muli(r).subi(r);
+                return ret;
+
+            case DISTRIBUTION:
+                ret = Nd4j.rand(shape);
+                for(int i = 0; i < ret.slices(); i++) {
+                    ret.putSlice(i,Nd4j.create(dist.sample(ret.columns())));
+                }
+                return ret;
+            case SIZE:
+                return uniformBasedOnInAndOut(shape,shape[0],shape[1]);
+            case ZERO:
+                return Nd4j.create(shape);
+
+
+
+        }
+
+        throw new IllegalStateException("Illegal weight init value");
+    }
+
+    /**
+     * Initializes a matrix with the given weight initialization scheme
      * @param nIn the number of rows in the matrix
      * @param nOut the number of columns in the matrix
      * @param initScheme the scheme to use
@@ -54,37 +98,7 @@ public class WeightInitUtil {
      * distribution based on the initialization scheme
      */
     public static INDArray initWeights(int nIn,int nOut,WeightInit initScheme,ActivationFunction act,RealDistribution dist) {
-        INDArray ret = null;
-        switch(initScheme) {
-            case NORMALIZED:
-                ret = Nd4j.rand(nIn,nOut);
-                return ret.subi(0.5).divi(nIn);
-            case UNIFORM:
-                double a = 1 / nIn;
-                return Nd4j.rand(new int[]{nIn,nOut},-a,a,new MersenneTwister(123));
-
-            case  VI:
-                ret = Nd4j.rand(nIn,nOut);
-                double r = Math.sqrt(6) / Math.sqrt(nIn + nOut + 1);
-                ret.muli(2).muli(r).subi(r);
-                return ret;
-
-            case DISTRIBUTION:
-                ret = Nd4j.rand(nIn,nOut);
-                for(int i = 0; i < ret.rows(); i++) {
-                    ret.putRow(i,Nd4j.create(dist.sample(ret.columns())));
-                }
-                return ret;
-            case SIZE:
-                return uniformBasedOnInAndOut(new int[]{nIn,nOut},nIn,nOut);
-            case ZERO:
-                return Nd4j.create(new int[]{nIn,nOut});
-
-
-
-        }
-
-        throw new IllegalStateException("Illegal weight init value");
+        return initWeights(new int[]{nIn,nOut},initScheme,act,dist);
     }
 
 

@@ -180,7 +180,15 @@ public class BarnesHutTsne extends Tsne implements Model {
 
     }
 
+    @Override
+    public INDArray input() {
+        return x;
+    }
 
+    @Override
+    public void validateInput() {
+
+    }
 
     /* compute the gradient given the current solution, the probabilities and the constant */
     protected Pair<Double,INDArray> gradient(INDArray p) {

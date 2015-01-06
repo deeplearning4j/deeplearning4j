@@ -124,6 +124,9 @@ public abstract class BaseOptimizer   {
     }
 
     public  boolean optimize() {
+        //validate the input before training
+        model.validateInput();
+
         Pair<Gradient,Double> pair = gradientAndScore();
         setupSearchState(pair);
         //get initial score

@@ -37,7 +37,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private double sparsity = 0f;
     private boolean useAdaGrad = true;
     private double lr = 1e-1f;
-    protected int k = 1;
     protected double corruptionLevel = 0.3f;
     protected int numIterations = 1000;
     /* momentum for learning */
@@ -45,6 +44,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     /* L2 Regularization constant */
     protected double l2 = 0f;
     protected boolean useRegularization = false;
+
     //momentum after n iterations
     protected Map<Integer,Double> momentumAfter = new HashMap<>();
     //reset adagrad historical gradient after n iterations
@@ -64,6 +64,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     /* RNG for sampling. */
     protected long seed = 123;
     protected transient RandomGenerator rng;
+    //weight initialization
     protected transient RealDistribution dist;
     protected transient Collection<IterationListener> listeners;
     protected transient StepFunction stepFunction = new GradientStepFunction();
@@ -71,30 +72,33 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     //gradient keys used for ensuring order when getting and setting the gradient
     protected List<String> gradientList = new ArrayList<>();
-    private void readObject(java.io.ObjectInputStream in)
-            throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        rng = new MersenneTwister(seed);
-        dist = new UniformRealDistribution();
-    }
+    //feed forward nets
     protected int nIn,nOut;
+
     protected ActivationFunction activationFunction;
+
+    //RBMs
     private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
     private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
+    protected int k = 1;
+
     private int[] weightShape;
+
     //convolutional nets
     private int[] filterSize = {2,2};
-
     private int numFeatureMaps = 2;
     private int[] featureMapSize = {2,2};
+    //aka pool size
     private int[] stride = {2,2};
+    //kernel size for a convolutional net
+    protected int kernel = 5;
+    //batch size: primarily used for conv nets. Will be reinforced if set.
+    protected int batchSize = 0;
 
-    private int numInFeatureMaps = 2;
+
     private transient ObjectMapper mapper = mapper();
 
-    public NeuralNetConfiguration() {
-
-    }
+    public NeuralNetConfiguration() {}
 
 
 
@@ -129,17 +133,20 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   RBM.HiddenUnit hiddenUnit,
                                   int[] weightShape,
                                   int[] filterSize,
-                                  int numFeatureMaps,
                                   int[] stride,
                                   int[] featureMapSize,
-                                  int numInFeatureMaps,
+                                  int kernel,
+                                  int batchSize,
                                   Collection<IterationListener> listeners,
                                   LayerFactory layerFactory) {
+
+        this.batchSize = batchSize;
         this.layerFactory = layerFactory;
         this.listeners = listeners;
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
+        this.kernel = kernel;
         this.k = k;
         this.corruptionLevel = corruptionLevel;
         this.numIterations = numIterations;
@@ -169,15 +176,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         else
             this.weightShape = new int[]{nIn,nOut};
         this.filterSize = filterSize;
-        this.numFeatureMaps = numFeatureMaps;
         this.stride = stride;
         this.featureMapSize = featureMapSize;
-        this.numInFeatureMaps = numInFeatureMaps;
 
     }
 
     public NeuralNetConfiguration(NeuralNetConfiguration neuralNetConfiguration) {
         this.layerFactory = neuralNetConfiguration.layerFactory;
+        this.batchSize = neuralNetConfiguration.batchSize;
         this.sparsity = neuralNetConfiguration.sparsity;
         this.useAdaGrad = neuralNetConfiguration.useAdaGrad;
         this.lr = neuralNetConfiguration.lr;
@@ -217,6 +223,22 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.hiddenUnit = neuralNetConfiguration.hiddenUnit;
     }
 
+    public int getBatchSize() {
+        return batchSize;
+    }
+
+    public void setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
+    }
+
+    public int getKernel() {
+        return kernel;
+    }
+
+    public void setKernel(int kernel) {
+        this.kernel = kernel;
+    }
+
     public LayerFactory getLayerFactory() {
         return layerFactory;
     }
@@ -242,13 +264,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
 
-    public int getNumInFeatureMaps() {
-        return numInFeatureMaps;
-    }
-
-    public void setNumInFeatureMaps(int numInFeatureMaps) {
-        this.numInFeatureMaps = numInFeatureMaps;
-    }
 
     public int[] getFeatureMapSize() {
         return featureMapSize;
@@ -531,7 +546,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 ", numFeatureMaps=" + numFeatureMaps +
                 ", featureMapSize=" + Arrays.toString(featureMapSize) +
                 ", stride=" + Arrays.toString(stride) +
-                ", numInFeatureMaps=" + numInFeatureMaps +
                 '}';
     }
 
@@ -639,8 +653,22 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int[] hiddenLayerSizes;
         private boolean useDropConnect = false;
         private boolean pretrain = true;
+
+        private Map<Integer,OutputPreProcessor> preProcessors = new HashMap<>();
+
         public ListBuilder(List<Builder> list) {
             this.layerwise = list;
+        }
+
+
+        public ListBuilder preProcessor(Integer layer,OutputPreProcessor preProcessor) {
+            preProcessors.put(layer,preProcessor);
+            return this;
+        }
+
+        public ListBuilder preProcessors(Map<Integer,OutputPreProcessor> preProcessors) {
+            this.preProcessors = preProcessors;
+            return this;
         }
 
 
@@ -676,7 +704,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             for(int i = 0; i < layerwise.size(); i++)
                 list.add(layerwise.get(i).build());
             MultiLayerConfiguration ret = new MultiLayerConfiguration.Builder()
-                    .useDropConnect(useDropConnect).pretrain(pretrain)
+                    .useDropConnect(useDropConnect).pretrain(pretrain).preProcessors(preProcessors)
                     .hiddenLayerSizes(hiddenLayerSizes)
                     .confs(list).build();
             return ret;
@@ -785,16 +813,15 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         if (constrainGradientToUnitNorm != that.constrainGradientToUnitNorm) return false;
         if (Double.compare(that.corruptionLevel, corruptionLevel) != 0) return false;
         if (Double.compare(that.dropOut, dropOut) != 0) return false;
-           if (k != that.k) return false;
+        if (k != that.k) return false;
         if (Double.compare(that.l2, l2) != 0) return false;
         if (Double.compare(that.lr, lr) != 0) return false;
         if (Double.compare(that.momentum, momentum) != 0) return false;
         if (nIn != that.nIn) return false;
         if (nOut != that.nOut) return false;
         if (numFeatureMaps != that.numFeatureMaps) return false;
-        if (numInFeatureMaps != that.numInFeatureMaps) return false;
         if (numIterations != that.numIterations) return false;
-         if (renderWeightsEveryNumEpochs != that.renderWeightsEveryNumEpochs) return false;
+        if (renderWeightsEveryNumEpochs != that.renderWeightsEveryNumEpochs) return false;
         if (resetAdaGradIterations != that.resetAdaGradIterations) return false;
         if (seed != that.seed) return false;
         if (Double.compare(that.sparsity, sparsity) != 0) return false;
@@ -859,12 +886,19 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         result = 31 * result + numFeatureMaps;
         result = 31 * result + (featureMapSize != null ? Arrays.hashCode(featureMapSize) : 0);
         result = 31 * result + (stride != null ? Arrays.hashCode(stride) : 0);
-        result = 31 * result + numInFeatureMaps;
         return result;
+    }
+
+    private void readObject(java.io.ObjectInputStream in)
+            throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        rng = new MersenneTwister(seed);
+        dist = new UniformRealDistribution();
     }
 
     public static class Builder {
         private int k = 1;
+        private int kernel = 5;
         private double corruptionLevel = 3e-1f;
         private double sparsity = 0f;
         private boolean useAdaGrad = true;
@@ -893,16 +927,27 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
         private int numIterations = 1000;
         private int[] weightShape;
-        private int[] filterSize = {2,2};
-        private int numFeatureMaps = 2;
+        private int[] filterSize = {2,2,2,2};
         private int[] featureMapSize = {2,2};
         private int numInFeatureMaps = 2;
         //subsampling layers
-        private int[] stride;
+        private int[] stride = {2,2};
         private Collection<IterationListener> listeners;
         private StepFunction stepFunction = new GradientStepFunction();
         private LayerFactory layerFactory;
+        private int batchSize = 0;
 
+
+
+        public Builder batchSize(int batchSize) {
+            this.batchSize = batchSize;
+            return this;
+        }
+
+        public Builder kernel(int kernel) {
+            this.kernel = kernel;
+            return this;
+        }
 
         public Builder layerFactory(LayerFactory layerFactory) {
             this.layerFactory = layerFactory;
@@ -933,7 +978,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize)
                     .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr).useAdaGrad(adagrad).stepFunction(stepFunction)
                     .lossFunction(lossFunction).momentumAfter(momentumAfter).momentum(momentum).listeners(listeners)
-                    .nIn(nIn).nOut(nOut).numFeatureMaps(numFeatureMaps).optimizationAlgo(optimizationAlgo)
+                    .nIn(nIn).nOut(nOut).optimizationAlgo(optimizationAlgo).batchSize(batchSize)
                     .regularization(useRegularization).render(renderWeightsEveryNumEpochs).resetAdaGradIterations(resetAdaGradIterations)
                     .rng(rng).seed(seed).sparsity(sparsity).stride(stride).useAdaGrad(useAdaGrad).visibleUnit(visibleUnit)
                     .weightInit(weightInit).weightShape(weightShape);
@@ -959,10 +1004,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
 
-        public Builder numInFeatureMaps(int numInFeatureMaps) {
-            this.numInFeatureMaps = numInFeatureMaps;
-            return this;
-        }
         public Builder featureMapSize(int[] featureMapSize) {
             this.featureMapSize = featureMapSize;
             return this;
@@ -976,15 +1017,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
 
-        public Builder numFeatureMaps(int numFeatureMaps) {
-            this.numFeatureMaps = numFeatureMaps;
-            return this;
-        }
 
-        public Builder filterSize(int[] filterSize) {
+
+        public Builder filterSize(int...filterSize) {
             if(filterSize == null)
                 return this;
-            if(filterSize == null || filterSize.length != 2)
+            if(filterSize == null || filterSize.length != 4)
                 throw new IllegalArgumentException("Invalid filter size must be length 2");
             this.filterSize = filterSize;
             return this;
@@ -1097,7 +1135,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,  renderWeightsEveryNumEpochs,
                     concatBiases,  constrainGradientToUnitNorm,  rng,
-                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,numFeatureMaps,stride,featureMapSize,numInFeatureMaps,listeners,layerFactory);
+                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel,batchSize,listeners,layerFactory);
             ret.useAdaGrad = this.adagrad;
             ret.stepFunction = stepFunction;
             return ret;
