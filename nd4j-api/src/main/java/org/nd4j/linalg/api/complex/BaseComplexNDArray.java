@@ -1298,14 +1298,13 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public double getImag(int i) {
-        int linear = linearIndex(i);
-        return data.getDouble(linear + 1);
+        return getComplex(i).imaginaryComponent().doubleValue();
     }
 
     @Override
     public double getReal(int i) {
-        int linear = linearIndex(i);
-        return data.getDouble(linear);
+        return getComplex(i).realComponent().doubleValue();
+
     }
 
     @Override
@@ -4125,22 +4124,61 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray broadcast(int[] shape) {
+        if(Shape.shapeEquals(shape,shape()))
+            return this;
+        boolean compatible = true;
+        int count = shape.length - 1;
+        int thisCount = this.shape.length - 1;
+        for(int i = shape.length - 1; i > 0; i--) {
+            if(count < 0 || thisCount < 0)
+                break;
+            if(shape[count] != shape()[thisCount] && shape[count] != 1 && shape()[thisCount] != 1) {
+                compatible = false;
+                break;
+            }
 
-        int dims = this.shape.length;
-        int targetDimensions = shape.length;
-        if (targetDimensions < dims) {
-            throw new IllegalArgumentException("Invalid shape to broad cast " + Arrays.toString(shape));
+            count--;
+            thisCount--;
         }
-        else if (dims == targetDimensions) {
-            if (Shape.shapeEquals(shape, this.shape()))
-                return this;
-            throw new IllegalArgumentException("Invalid shape to broad cast " + Arrays.toString(shape));
+
+        if(!compatible)
+            throw new IllegalArgumentException("Incompatible broadcast from " + Arrays.toString(shape()) + " to " + Arrays.toString(shape));
+        //broadcast to shape
+        if(isScalar()) {
+            IComplexNDArray ret = Nd4j.createComplex(Nd4j.valueArrayOf(shape, getDouble(0)));
+            return ret;
         }
-        else {
-            int n= shape[0];
-            IComplexNDArray s = broadcast(Arrays.copyOfRange(shape, 1, targetDimensions));
-            return Nd4j.repeat(s,n);
+        else if(isColumnVector() && Shape.isMatrix(shape)) {
+            IComplexNDArray ret = Nd4j.createComplex(shape);
+            for(int i = 0; i < ret.columns(); i++)
+                ret.putColumn(i,this.dup());
+
+
+            return ret;
         }
+
+
+        int[] retShape = new int[shape.length];
+
+        for(int i = 0; i < retShape.length; i++) {
+            if(i < shape().length)
+                retShape[i] = Math.max(shape[i],shape()[i]);
+            else
+                retShape[i] = shape[i];
+        }
+
+        IComplexNDArray ret = Nd4j.createComplex(retShape);
+        IComplexNDArray linear = ret.linearView();
+        IComplexNDArray thisLinear = linearView();
+        int bufferIdx = 0;
+        for(int i = 0; i < ret.length(); i++) {
+            linear.putScalar(i,thisLinear.getComplex(bufferIdx));
+            bufferIdx++;
+            if(bufferIdx >= length())
+                bufferIdx = 0;
+        }
+
+        return ret;
     }
 
 

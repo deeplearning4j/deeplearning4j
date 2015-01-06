@@ -13,6 +13,8 @@ import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+
 
 /**
  * Convolution is the code for applying the convolution operator.
@@ -72,6 +74,15 @@ public class Convolution {
 
         IComplexNDArray fftedInput = FFT.rawfftn(Nd4j.createComplex(input),intShape,axes);
         IComplexNDArray fftedKernel = FFT.rawfftn(Nd4j.createComplex(kernel), intShape, axes);
+        //broadcast to be same shape
+        if(!Arrays.equals(fftedInput.shape(),fftedKernel.shape())) {
+            if(fftedInput.length() < fftedKernel.length()) {
+                fftedInput = fftedInput.broadcast(fftedKernel.shape());
+            }
+            else {
+                fftedKernel = fftedKernel.broadcast(fftedInput.shape());
+            }
+        }
         IComplexNDArray inputTimesKernel = fftedInput.muli(fftedKernel);
 
         IComplexNDArray convolution = FFT.ifftn(inputTimesKernel);
@@ -130,14 +141,6 @@ public class Convolution {
     }
 
 
-
-
-
-
-
-
-
-
     /**
      * ND Convolution
      * @param input the input to applyTransformToOrigin
@@ -149,9 +152,6 @@ public class Convolution {
         return convn(input,kernel,type,ArrayUtil.range(0,input.shape().length));
     }
 
-
-
-
     /**
      * ND Convolution
      * @param input the input to applyTransformToOrigin
@@ -162,26 +162,5 @@ public class Convolution {
     public static IComplexNDArray convn(IComplexNDArray input,IComplexNDArray kernel,Type type) {
         return convn(input,kernel,type,ArrayUtil.range(0,input.shape().length));
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }
