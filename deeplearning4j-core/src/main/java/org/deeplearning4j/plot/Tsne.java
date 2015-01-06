@@ -4,6 +4,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.clustering.vptree.VpTreeNode;
+import org.deeplearning4j.clustering.vptree.VpTreePointINDArray;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
@@ -26,7 +28,6 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -40,31 +41,30 @@ import static org.nd4j.linalg.ops.transforms.Transforms.max;
  */
 public class Tsne implements Serializable {
 
-    private int maxIter = 1000;
-    private double realMin = 1e-12;
-    private double initialMomentum = 0.5;
-    private double finalMomentum = 0.8;
-    private  double minGain = 1e-2;
-    private double momentum = initialMomentum;
-    private int switchMomentumIteration = 100;
-    private boolean normalize = true;
-    private boolean usePca = false;
-    private int stopLyingIteration = 250;
-    private double tolerance = 1e-5;
-    private double learningRate = 500;
-    private AdaGrad adaGrad;
-    private boolean useAdaGrad = true;
-    private double perplexity = 30;
-    private INDArray gains,yIncs;
-    private INDArray y;
-    private transient IterationListener iterationListener;
-
-    private String commandTemplate = "python /tmp/tsne.py --path %s --ndims %d --perplexity %.3f --initialdims %s --labels %s";
+    protected int maxIter = 1000;
+    protected double realMin = 1e-12;
+    protected double initialMomentum = 0.5;
+    protected double finalMomentum = 0.8;
+    protected  double minGain = 1e-2;
+    protected double momentum = initialMomentum;
+    protected int switchMomentumIteration = 100;
+    protected boolean normalize = true;
+    protected boolean usePca = false;
+    protected int stopLyingIteration = 250;
+    protected double tolerance = 1e-5;
+    protected double learningRate = 500;
+    protected AdaGrad adaGrad;
+    protected boolean useAdaGrad = true;
+    protected double perplexity = 30;
+    protected INDArray gains,yIncs;
+    protected INDArray y;
+    protected transient IterationListener iterationListener;
 
 
 
-    private static ClassPathResource r = new ClassPathResource("/scripts/tsne.py");
-    private static ClassPathResource r2 = new ClassPathResource("/scripts/render.py");
+
+    protected static ClassPathResource r = new ClassPathResource("/scripts/tsne.py");
+    protected static ClassPathResource r2 = new ClassPathResource("/scripts/render.py");
 
 
     static {
@@ -75,7 +75,7 @@ public class Tsne implements Serializable {
 
     }
 
-    private static void loadIntoTmp() {
+    protected static void loadIntoTmp() {
 
         File script = new File("/tmp/tsne.py");
 
@@ -103,7 +103,7 @@ public class Tsne implements Serializable {
         }
 
     }
-    private static Logger log = LoggerFactory.getLogger(Tsne.class);
+    protected static Logger log = LoggerFactory.getLogger(Tsne.class);
 
     public Tsne(
             int maxIter,
@@ -136,7 +136,7 @@ public class Tsne implements Serializable {
      * Computes a gaussian kernel
      * given a vector of squared euclidean distances
      *
-     * @param d
+     * @param d the data
      * @param beta
      * @return
      */
@@ -156,16 +156,18 @@ public class Tsne implements Serializable {
 
     /**
      * Convert data to probability
-     * co-occurrences
+     * co-occurrences (aka calculating the kernel)
      * @param d the data to convert
      * @param u the perplexity of the model
      * @return the probabilities of co-occurrence
      */
-    public INDArray d2p(final INDArray d,final double u) {
+    public INDArray computeGaussianPerplexity(final INDArray d,  double u) {
         int n = d.rows();
         final INDArray p = zeros(n, n);
         final INDArray beta =  ones(n, 1);
         final double logU =  Math.log(u);
+        final VpTreeNode<VpTreePointINDArray> tree;
+
         log.info("Calculating probabilities of data similarities..");
         ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         for(int i = 0; i < n; i++) {
@@ -261,7 +263,7 @@ public class Tsne implements Serializable {
             X = PCA.pca(X, Math.min(50,X.columns()),normalize);
             //normalization (don't normalize again after pca)
         else if(normalize) {
-            X = X.sub(X.min(Integer.MAX_VALUE));
+            X.subi(X.min(Integer.MAX_VALUE));
             X = X.divi(X.max(Integer.MAX_VALUE));
             X = X.subiRowVector(X.mean(0));
         }
@@ -276,7 +278,7 @@ public class Tsne implements Serializable {
 
 
         INDArray D = X.mmul(
-                X.transpose()).mul(-2)
+                X.transpose()).muli(-2)
                 .addiRowVector(sumX)
                 .transpose()
                 .addiRowVector(sumX);
@@ -290,7 +292,7 @@ public class Tsne implements Serializable {
 
 
 
-        INDArray p = d2p(D,perplexity);
+        INDArray p = computeGaussianPerplexity(D, perplexity);
         D.data().flush();
 
         //lie for better local minima
@@ -325,7 +327,7 @@ public class Tsne implements Serializable {
 
 
     /* compute the gradient given the current solution, the probabilities and the constant */
-    private Pair<Double,INDArray> gradient(INDArray p) {
+    protected Pair<Double,INDArray> gradient(INDArray p) {
         INDArray sumY =  pow(y, 2).sum(1);
         if(yIncs == null)
             yIncs =  zeros(y.shape());
@@ -361,12 +363,7 @@ public class Tsne implements Serializable {
 
         INDArray PQ = p.sub(q);
 
-        INDArray yGrads = Nd4j.create(y.shape());
-        for(int i = 0; i < n; i++) {
-            INDArray sum1 = Nd4j.tile(PQ.getRow(i).mul(qu.getRow(i)), new int[]{y.columns(), 1})
-                    .transpose().mul(y.getRow(i).broadcast(y.shape()).sub(y)).sum(0);
-            yGrads.putRow(i, sum1);
-        }
+        INDArray yGrads = getYGradient(n,PQ,qu);
 
         gains = gains.add(.2)
                 .muli(yGrads.cond(Conditions.greaterThan(0)).neqi(yIncs.cond(Conditions.greaterThan(0))))
@@ -381,7 +378,7 @@ public class Tsne implements Serializable {
         INDArray gradChange = gains.mul(yGrads);
 
         if(useAdaGrad)
-           gradChange = adaGrad.getGradient(gradChange);
+            gradChange = adaGrad.getGradient(gradChange);
         else
             gradChange.muli(learningRate);
 
@@ -391,6 +388,18 @@ public class Tsne implements Serializable {
 
         double cost = p.mul(log(p.div(q),false)).sum(Integer.MAX_VALUE).getDouble(0);
         return new Pair<>(cost,yIncs);
+    }
+
+
+    public INDArray getYGradient(int n,INDArray PQ,INDArray qu) {
+        INDArray yGrads = Nd4j.create(y.shape());
+        for(int i = 0; i < n; i++) {
+            INDArray sum1 = Nd4j.tile(PQ.getRow(i).mul(qu.getRow(i)), new int[]{y.columns(), 1})
+                    .transpose().mul(y.getRow(i).broadcast(y.shape()).sub(y)).sum(0);
+            yGrads.putRow(i, sum1);
+        }
+
+        return yGrads;
     }
 
     /**
@@ -418,7 +427,7 @@ public class Tsne implements Serializable {
      * @throws IOException
      */
     public void plot(INDArray matrix,int nDims,List<String> labels) throws IOException {
-         plot(matrix,nDims,labels,"coords.csv");
+        plot(matrix,nDims,labels,"coords.csv");
     }
 
     /**
@@ -482,20 +491,20 @@ public class Tsne implements Serializable {
 
 
     public static class Builder {
-        private int maxIter = 1000;
-        private double realMin = 1e-12f;
-        private double initialMomentum = 5e-1f;
-        private double finalMomentum = 8e-1f;
-        private double momentum = 5e-1f;
-        private int switchMomentumIteration = 100;
-        private boolean normalize = true;
-        private boolean usePca = false;
-        private int stopLyingIteration = 100;
-        private double tolerance = 1e-5f;
-        private double learningRate = 1e-1f;
-        private boolean useAdaGrad = true;
-        private double perplexity = 30;
-        private double minGain = 1e-1f;
+        protected int maxIter = 1000;
+        protected double realMin = 1e-12f;
+        protected double initialMomentum = 5e-1f;
+        protected double finalMomentum = 8e-1f;
+        protected double momentum = 5e-1f;
+        protected int switchMomentumIteration = 100;
+        protected boolean normalize = true;
+        protected boolean usePca = false;
+        protected int stopLyingIteration = 100;
+        protected double tolerance = 1e-5f;
+        protected double learningRate = 1e-1f;
+        protected boolean useAdaGrad = true;
+        protected double perplexity = 30;
+        protected double minGain = 1e-1f;
 
 
         public Builder minGain(double minGain) {
