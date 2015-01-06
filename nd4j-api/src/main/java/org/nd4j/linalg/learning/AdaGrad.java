@@ -31,14 +31,9 @@ public class AdaGrad implements Serializable {
     protected double masterStepSize = 1e-1; // default for masterStepSize (this is the numerator)
     //protected double squaredGradientSum = 0;
     public INDArray historicalGradient;
-    public double fudgeFactor = 1e-6;
     public int[] shape;
     protected int numIterations = 0;
-    protected double lrDecay = 0.95;
     protected boolean decayLr;
-    protected double minLearningRate = 1e-4;
-    protected double numericalGrad = 1.0;
-    protected double adjustedNumericalGrad = 1.0;
 
     public AdaGrad( int rows, int cols, double gamma) {
         this.shape = new int[]{rows,cols};

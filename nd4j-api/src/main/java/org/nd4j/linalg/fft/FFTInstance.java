@@ -2,16 +2,13 @@ package org.nd4j.linalg.fft;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.ComplexNDArrayUtil;
 
 
 /**
- * FFT and IFFT
+ * Base line fft methods
  * @author Adam Gibson
  */
-public class FFT {
+public interface FFTInstance {
 
     /**
      * FFT along a particular dimension
@@ -19,9 +16,7 @@ public class FFT {
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
-    public static IComplexNDArray fft(INDArray transform,int numElements) {
-        return Nd4j.getFFt().fft(transform, numElements);
-    }
+    public IComplexNDArray fft(INDArray transform,int numElements);
 
 
 
@@ -33,9 +28,7 @@ public class FFT {
      * @param inputC the input to transform
      * @return the the discrete fourier transform of the passed in input
      */
-    public static  IComplexNDArray fft(IComplexNDArray inputC) {
-        return Nd4j.getFFt().fft(inputC);
-    }
+    public  IComplexNDArray fft(IComplexNDArray inputC);
 
     /**
      * 1d discrete fourier transform, note that this will
@@ -45,9 +38,7 @@ public class FFT {
      * @param input the input to transform
      * @return the the discrete fourier transform of the passed in input
      */
-    public static  IComplexNDArray fft(INDArray input) {
-        return Nd4j.getFFt().fft(input);
-    }
+    public  IComplexNDArray fft(INDArray input);
 
 
 
@@ -57,9 +48,7 @@ public class FFT {
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
-    public static IComplexNDArray fft(INDArray transform,int numElements,int dimension) {
-        return Nd4j.getFFt().fft(transform,numElements,dimension);
-    }
+    public IComplexNDArray fft(INDArray transform,int numElements,int dimension);
 
 
     /**
@@ -70,9 +59,7 @@ public class FFT {
      * @param inputC the input to transform
      * @return the the discrete fourier transform of the passed in input
      */
-    public static  IComplexNDArray fft(IComplexNDArray inputC,int numElements) {
-        return Nd4j.getFFt().fft(inputC,numElements,inputC.shape().length - 1);
-    }
+    public  IComplexNDArray fft(IComplexNDArray inputC,int numElements);
 
 
     /**
@@ -83,9 +70,7 @@ public class FFT {
      * @param inputC the input to transform
      * @return the the discrete fourier transform of the passed in input
      */
-    public static  IComplexNDArray fft(IComplexNDArray inputC,int numElements,int dimension) {
-        return Nd4j.getFFt().fft(inputC,numElements,dimension);
-    }
+    public  IComplexNDArray fft(IComplexNDArray inputC,int numElements,int dimension);
 
 
 
@@ -96,9 +81,7 @@ public class FFT {
      * @param dimension the dimension to do fft along
      * @return the iffted output
      */
-    public static IComplexNDArray ifft(INDArray transform,int numElements,int dimension) {
-        return Nd4j.getFFt().ifft(transform, numElements, dimension);
-    }
+    public IComplexNDArray ifft(INDArray transform,int numElements,int dimension);
 
 
 
@@ -110,9 +93,7 @@ public class FFT {
      * @param inputC the input to transform
      * @return the the discrete fourier transform of the passed in input
      */
-    public static  IComplexNDArray ifft(IComplexNDArray inputC) {
-        return Nd4j.getFFt().ifft(inputC);
-    }
+    public  IComplexNDArray ifft(IComplexNDArray inputC);
 
 
 
@@ -122,9 +103,7 @@ public class FFT {
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
-    public static IComplexNDArray ifft(INDArray transform,int numElements) {
-        return Nd4j.getFFt().ifft(transform, numElements);
-    }
+    public IComplexNDArray ifft(INDArray transform,int numElements);
 
 
 
@@ -136,9 +115,11 @@ public class FFT {
      * @param inputC the input to transform
      * @return the the discrete fourier transform of the passed in input
      */
-    public static  IComplexNDArray ifft(IComplexNDArray inputC,int numElements,int dimension) {
-        return Nd4j.getFFt().ifft(inputC,numElements,dimension);
-    }
+    public  IComplexNDArray ifft(IComplexNDArray inputC,int numElements,int dimension);
+
+
+
+
 
     /**
      * ND IFFT, computes along the first on singleton dimension of
@@ -148,24 +129,14 @@ public class FFT {
      * @param numElements the desired number of elements in each fft
      * @return the reverse ifft of the passed in array
      */
-    public static IComplexNDArray ifftn(INDArray transform,int dimension,int numElements) {
-        return Nd4j.getFFt().ifftn(Nd4j.createComplex(transform), dimension, numElements);
-    }
+    public IComplexNDArray ifftn(INDArray transform,int dimension,int numElements);
+
+    public IComplexNDArray irfftn(IComplexNDArray arr);
 
 
-    public static IComplexNDArray irfftn(IComplexNDArray arr) {
-        return Nd4j.getFFt().irfftn(arr);
-    }
+    public IComplexNDArray irfft(IComplexNDArray arr,int dimension);
 
-
-
-    public static IComplexNDArray irfft(IComplexNDArray arr,int dimension) {
-        return Nd4j.getFFt().irfft(arr,dimension);
-    }
-
-    public static IComplexNDArray irfft(IComplexNDArray arr) {
-        return Nd4j.getFFt().irfft(arr);
-    }
+    public IComplexNDArray irfft(IComplexNDArray arr);
 
     /**
      * ND IFFT
@@ -174,10 +145,7 @@ public class FFT {
      * @param numElements the desired number of elements in each fft
      * @return the transformed array
      */
-    public static IComplexNDArray ifftn(IComplexNDArray transform,int dimension,int numElements) {
-        return Nd4j.getFFt().ifftn(transform, dimension, numElements);
-    }
-
+    public IComplexNDArray ifftn(IComplexNDArray transform,int dimension,int numElements);
 
     /**
      * Performs FFT along the first non singleton dimension of
@@ -188,9 +156,7 @@ public class FFT {
      *                    along each dimension from each slice (note: each slice)
      * @return the transformed array
      */
-    public static IComplexNDArray fftn(IComplexNDArray transform,int dimension,int numElements) {
-        return Nd4j.getFFt().fftn(transform, dimension, numElements);
-    }
+    public IComplexNDArray fftn(IComplexNDArray transform,int dimension,int numElements);
 
 
     /**
@@ -201,57 +167,32 @@ public class FFT {
      * @param numElements the desired number of elements in each fft
      * @return the fft of the specified ndarray
      */
-    public static IComplexNDArray fftn(INDArray transform,int dimension,int numElements) {
-        return Nd4j.getFFt().fftn(Nd4j.createComplex(transform), dimension, numElements);
-    }
+    public IComplexNDArray fftn(INDArray transform,int dimension,int numElements);
 
     /**
      * FFT on the whole array (n is equal the first dimension shape)
      * @param transform the matrix to transform
      * @return the ffted array
      */
-    public static IComplexNDArray fftn(INDArray transform) {
-        return Nd4j.getFFt().fftn(transform, transform.shape().length - 1, transform.shape()[transform.shape().length - 1]);
-    }
-
-
+    public IComplexNDArray fftn(INDArray transform);
     /**
      * FFT on the whole array (n is equal the first dimension shape)
      * @param transform the matrix to transform
      * @return the ffted array
      */
-    public static IComplexNDArray fftn(IComplexNDArray transform) {
-        return Nd4j.getFFt().fftn(transform, transform.shape().length - 1, transform.shape()[transform.shape().length - 1]);
-    }
+    public IComplexNDArray fftn(IComplexNDArray transform);
+
+    public IComplexNDArray ifftn(IComplexNDArray transform,int dimension);
+
+    public IComplexNDArray ifftn(IComplexNDArray transform);
 
 
+    public IComplexNDArray ifftn(INDArray transform);
 
-
-
-
-    public static IComplexNDArray ifftn(IComplexNDArray transform,int dimension) {
-        return Nd4j.getFFt().ifftn(transform, dimension, transform.shape()[dimension]);
-    }
-
-
-    public static IComplexNDArray ifftn(IComplexNDArray transform) {
-        return Nd4j.getFFt().ifftn(transform);
-    }
-
-
-    public static IComplexNDArray ifftn(INDArray transform) {
-        return Nd4j.getFFt().ifftn(transform);
-    }
-
-    //underlying ifftn
-    public static IComplexNDArray rawifftn(IComplexNDArray transform,int[] shape,int[] axes) {
-        return Nd4j.getFFt().rawifftn(transform,shape,axes);
-    }
-
+   //underlying ifftn
+    public IComplexNDArray rawifftn(IComplexNDArray transform,int[] shape,int[] axes);
     //underlying fftn
-    public static IComplexNDArray rawfftn(IComplexNDArray transform,int[] shape,int[] axes) {
-        return Nd4j.getFFt().rawfftn(transform,shape,axes);
-    }
+    public IComplexNDArray rawfftn(IComplexNDArray transform,int[] shape,int[] axes);
 
 
     /**
@@ -261,21 +202,23 @@ public class FFT {
      * @param dimension the dimension to do fft along
      * @return the transformed ndarray
      */
-    public static IComplexNDArray rawfft(IComplexNDArray transform,int n,int dimension) {
-        return Nd4j.getFFt().rawfft(transform,n,dimension);
-    }
+    public IComplexNDArray rawfft(IComplexNDArray transform,int n,int dimension);
 
-
-
-
-    //underlying fftn
-    public static IComplexNDArray rawifft(IComplexNDArray transform,int n,int dimension) {
-        return Nd4j.getFFt().rawifft(transform,n,dimension);
-    }
-
-    //underlying fftn
-    public static IComplexNDArray rawifft(IComplexNDArray transform,int dimension) {
-        return Nd4j.getFFt().rawifft(transform, transform.shape()[dimension], dimension);
-    }
-
+    /**
+     * Underlying ifft impl
+     * @param transform the ndarray to transform
+     * @param n the desired number of elements
+     * @param dimension the dimension to do fft along
+     * @return
+     */
+    public IComplexNDArray rawifft(IComplexNDArray transform,int n,int dimension);
+    /**
+     * Underlying ifft impl
+     * @param transform the ndarray to transform
+     * @param n the desired number of elements
+     * @param dimension the dimension to do fft along
+     * @return
+     */
+    public IComplexNDArray rawifft(IComplexNDArray transform,int dimension);
+    
 }

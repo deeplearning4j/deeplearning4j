@@ -47,14 +47,12 @@ public class Convolution {
      * @return
      */
     public static INDArray conv2d(INDArray input,INDArray kernel,Type type) {
-        int[] shape = input.shape().length < 2 ? ArrayUtil.range(0,1) : ArrayUtil.range(input.shape().length - 2,input.shape().length);
-        return convn(input,kernel,type,shape);
+        return Nd4j.getConvolution().conv2d(input,kernel,type);
     }
 
 
     public static INDArray conv2d(IComplexNDArray input,IComplexNDArray kernel,Type type) {
-        int[] shape = input.shape().length < 2 ? ArrayUtil.range(0,1) : ArrayUtil.range(input.shape().length - 2,input.shape().length);
-        return convn(input,kernel,type,shape);
+        return Nd4j.getConvolution().conv2d(input,kernel,type);
     }
 
     /**
@@ -66,43 +64,7 @@ public class Convolution {
      * @return the convolution of the given input and kernel
      */
     public static INDArray convn(INDArray input,INDArray kernel,Type type,int[] axes) {
-        if(kernel.isScalar() && input.isScalar())
-            return kernel.mul(input);
-        INDArray shape = ArrayUtil.toNDArray(Shape.sizeForAxes(axes,input.shape())).add(ArrayUtil.toNDArray(Shape.sizeForAxes(axes,kernel.shape()))).subi(1);
-
-        int[] intShape = ArrayUtil.toInts(shape);
-
-        IComplexNDArray fftedInput = FFT.rawfftn(Nd4j.createComplex(input),intShape,axes);
-        IComplexNDArray fftedKernel = FFT.rawfftn(Nd4j.createComplex(kernel), intShape, axes);
-        //broadcast to be same shape
-        if(!Arrays.equals(fftedInput.shape(),fftedKernel.shape())) {
-            if(fftedInput.length() < fftedKernel.length()) {
-                fftedInput = fftedInput.broadcast(fftedKernel.shape());
-            }
-            else {
-                fftedKernel = fftedKernel.broadcast(fftedInput.shape());
-            }
-        }
-        IComplexNDArray inputTimesKernel = fftedInput.muli(fftedKernel);
-
-        IComplexNDArray convolution = FFT.ifftn(inputTimesKernel);
-
-
-
-
-        switch(type) {
-            case FULL:
-                return convolution.getReal();
-            case SAME:
-                return ComplexNDArrayUtil.center(convolution, input.shape()).getReal();
-            case VALID:
-                int[] shape2 = ArrayUtil.toInts(Transforms.abs(ArrayUtil.toNDArray(input.shape()).sub(ArrayUtil.toNDArray(kernel.shape())).addi(1)));
-                return ComplexNDArrayUtil.center(convolution,shape2).getReal();
-
-        }
-
-
-        return convolution.getReal();
+        return Nd4j.getConvolution().convn(input,kernel,type,axes);
     }
 
 
@@ -117,27 +79,7 @@ public class Convolution {
      * @return the convolution of the given input and kernel
      */
     public static IComplexNDArray convn(IComplexNDArray input,IComplexNDArray kernel,Type type,int[] axes) {
-
-        if(kernel.isScalar() && input.isScalar())
-            return kernel.mul(input);
-
-        INDArray shape = ArrayUtil.toNDArray(Shape.sizeForAxes(axes,input.shape())).add(ArrayUtil.toNDArray(Shape.sizeForAxes(axes,kernel.shape()))).subi(1);
-        int[] intShape = ArrayUtil.toInts(shape);
-
-        IComplexNDArray ret = FFT.rawifftn(FFT.rawfftn(input, intShape, axes).muli(FFT.rawfftn(kernel, intShape, axes)), intShape, axes);
-
-
-        switch(type) {
-            case FULL:
-                return ret;
-            case SAME:
-                return ComplexNDArrayUtil.center(ret,input.shape());
-            case VALID:
-                return ComplexNDArrayUtil.center(ret,ArrayUtil.toInts(Transforms.abs(ArrayUtil.toNDArray(input.shape()).sub(ArrayUtil.toNDArray(kernel.shape())).addi(1))));
-
-        }
-
-        return ret;
+        return Nd4j.getConvolution().convn(input,kernel,type,axes);
     }
 
 
@@ -149,7 +91,7 @@ public class Convolution {
      * @return the convolution of the given input and kernel
      */
     public static INDArray convn(INDArray input,INDArray kernel,Type type) {
-        return convn(input,kernel,type,ArrayUtil.range(0,input.shape().length));
+        return Nd4j.getConvolution().convn(input,kernel,type);
     }
 
     /**
@@ -160,7 +102,7 @@ public class Convolution {
      * @return the convolution of the given input and kernel
      */
     public static IComplexNDArray convn(IComplexNDArray input,IComplexNDArray kernel,Type type) {
-        return convn(input,kernel,type,ArrayUtil.range(0,input.shape().length));
+        return Nd4j.getConvolution().convn(input,kernel,type);
     }
 
 }

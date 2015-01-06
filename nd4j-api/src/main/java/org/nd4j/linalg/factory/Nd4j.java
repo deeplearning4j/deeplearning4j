@@ -11,6 +11,10 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.convolution.ConvolutionInstance;
+import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
+import org.nd4j.linalg.fft.DefaultFFTInstance;
+import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
@@ -34,12 +38,17 @@ public class Nd4j {
 
     private static Class<? extends BlasWrapper> blasWrapperClazz;
     private static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
+    private static Class<? extends FFTInstance> fftInstanceClazz;
+    private static Class<? extends  ConvolutionInstance> convolutionInstanceClazz;
+
 
     private static BlasWrapper BLAS_WRAPPER_INSTANCE;
     public final static String LINALG_PROPS = "/nd4j.properties";
     public final static String REAL_CLASS_PROP = "real.class";
     public final static String COMPLEX_CLASS_PROP = "complex.class";
     public final static String NUMERICAL_STABILITY = "force.stability";
+    public final static String FFT_OPS = "fft";
+    public final static String CONVOLUTION_OPS = "convops";
     public final static String DTYPE = "dtype";
     public final static String BLAS_OPS = "blas.ops";
     public static int dtype = DataBuffer.FLOAT;
@@ -47,6 +56,8 @@ public class Nd4j {
     public final static String ORDER_KEY = "ndarray.order";
     public final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
     private static NDArrayFactory INSTANCE;
+    private static FFTInstance FFT_INSTANCE;
+    private static ConvolutionInstance CONVOLUTION_INSTANCE;
     private static Properties props = new Properties();
     public final static IComplexNumber UNIT;
     public final static IComplexNumber ZERO;
@@ -65,10 +76,13 @@ public class Nd4j {
             String otherDtype =  System.getProperty(DTYPE,props.get(DTYPE).toString());
             dtype = otherDtype.equals("float") ? DataBuffer.FLOAT : DataBuffer.DOUBLE;
             ORDER = System.getProperty(ORDER_KEY,props.getProperty(ORDER_KEY,"c").toString()).charAt(0);
-
+            fftInstanceClazz = (Class<? extends FFTInstance>) Class.forName(System.getProperty(FFT_OPS, DefaultFFTInstance.class.getName()));
             ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(NDARRAY_FACTORY_CLASS,props.get(NDARRAY_FACTORY_CLASS).toString()));
+            convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class.forName(System.getProperty(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
             Constructor c2 = ndArrayFactoryClazz.getConstructor(int.class,Character.class);
+            FFT_INSTANCE =  fftInstanceClazz.newInstance();
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype,ORDER);
+            CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
             blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS,props.get(BLAS_OPS).toString()));
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
             UNIT = Nd4j.createFloat(1, 0);
@@ -79,6 +93,33 @@ public class Nd4j {
             throw new RuntimeException(e);
         }
     }
+
+
+    public static void setConvolution(ConvolutionInstance convolutionInstance) {
+        if(convolutionInstance == null)
+            throw new IllegalArgumentException("No null instances allowed");
+        CONVOLUTION_INSTANCE = convolutionInstance;
+    }
+
+
+    public static ConvolutionInstance getConvolution() {
+        return CONVOLUTION_INSTANCE;
+    }
+
+    /**
+     * Returns the fft instance
+     * @return the fft instance
+     */
+    public static FFTInstance getFFt() {
+        return FFT_INSTANCE;
+    }
+
+    public static void setFft(FFTInstance fftInstance) {
+        if(fftInstance == null)
+            throw new IllegalArgumentException("No null instances allowed");
+        FFT_INSTANCE = fftInstance;
+    }
+
 
     /**
      * Given a sequence of Iterators over a applyTransformToDestination of matrices, fill in all of
