@@ -1010,7 +1010,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
                 feedForward();
                 if(getOutputLayer() instanceof OutputLayer) {
                     OutputLayer o = (OutputLayer) getOutputLayer();
-                    o.fit(iter);
+                    o.fit();
 
                 }
             }
