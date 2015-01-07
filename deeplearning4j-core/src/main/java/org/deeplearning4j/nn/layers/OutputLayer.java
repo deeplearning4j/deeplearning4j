@@ -309,7 +309,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray data) {
-        throw new UnsupportedOperationException();
+        //no-op
+
     }
 
     @Override
