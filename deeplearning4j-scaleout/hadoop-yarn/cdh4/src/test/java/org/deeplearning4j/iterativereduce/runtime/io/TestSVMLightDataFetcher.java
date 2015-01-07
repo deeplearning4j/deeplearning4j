@@ -11,6 +11,9 @@ import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
+
 import org.nd4j.linalg.util.FeatureUtil;
 
 public class TestSVMLightDataFetcher {
@@ -102,9 +105,19 @@ public class TestSVMLightDataFetcher {
 	    
 	    //FeatureUtil.toOutcomeVector( 1, 10 );
 	    
+	    System.out.println( "ds back? " + fetcher.hasMore() );
+	    
 	    fetcher.fetch( 20 );
+	    DataSet ds = fetcher.next();
+	    
+	    System.out.println( "ds back? " + fetcher.hasMore() );
+	    System.out.println( "ds null? " + ds );
+	    
+	    INDArray features = ds.getFeatures();
+	    INDArray labels = ds.getLabels();
 	    
 	    
+	    System.out.println( "feature columns: " + features.columns() );
 				
 
 /*	    
