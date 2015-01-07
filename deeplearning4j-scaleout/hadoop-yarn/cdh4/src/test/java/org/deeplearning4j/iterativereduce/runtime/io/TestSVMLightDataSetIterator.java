@@ -10,13 +10,11 @@ import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TextInputFormat;
+import org.deeplearning4j.datasets.iterator.BaseDatasetIterator;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 
-import org.nd4j.linalg.util.FeatureUtil;
-
-public class TestSVMLightDataFetcher {
+public class TestSVMLightDataSetIterator {
 
 
 	private static String svmLight_test_filename = "src/test/resources/svmLightSample.txt";
@@ -62,18 +60,10 @@ public class TestSVMLightDataFetcher {
 
 		return splits;
 
-	}	
-		
+	}		
 	
-	/**
-	 * Currently we only support non-negative labels
-	 * - this is due to the issue where we have not yet accounted for the scenario
-	 *   where each split needs the same label conversion heuristic 
-	 *   we're just using the class labels directly as indexes
-	 * 
-	 */
 	@Test
-	public void testSVMLightHDFSFetcher() {
+	public void testBasicMechanics() throws IOException {
 		
 		// setup splits ala HDFS style -------------------
 		
@@ -93,51 +83,21 @@ public class TestSVMLightDataFetcher {
 	        .split("\\+")[1]);
 
 	    txt_reader.setFile(splits[0].toString().split(":")[1], 0, len);		
-		
-	    SVMLightDataFetcher fetcher = null;
-	    
-	    try {
-			fetcher = new SVMLightDataFetcher( txt_reader, 9300, 2 );
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	    
-	    
-	    fetcher.fetch( 20 );
-	    DataSet ds = fetcher.next();
-	    
-	    
-	    INDArray features = ds.getFeatures();
-	    INDArray labels = ds.getLabels();
-	    
-	    
-	    //System.out.println( "feature columns: " + features.columns() );
-	    
-	    assertEquals( 9300, features.columns() );
-	    assertEquals( 2, labels.columns() );
 				
-
-/*	    
-		MnistHDFSDataSetIterator hdfs_fetcher = new MnistHDFSDataSetIterator( batchSize, totalNumExamples, txt_reader );
-		DataSet hdfs_recordBatch = hdfs_fetcher.next();
 		
-		Matrix hdfs_input = hdfs_recordBatch.getFirst();
-		Matrix hdfs_labels = hdfs_recordBatch.getSecond();		
+		BaseDatasetIterator iterator = new SVMLightHDFSDataSetIterator( 20, 1, txt_reader, 9300, 2 );
 		
-		// setup splits ala HDFS style -------------------
+		assertEquals( true, iterator.hasNext() );
+		DataSet ds = iterator.next();
+		//System.out.println( "rows" + ds.getLabels().rows() );
+		//System.out.println( "cols" + ds.getLabels().columns() );
+		assertEquals( 1.0, ds.getLabels().getRow(0).getDouble(0), 0.0 );
+		assertEquals( 0.0, ds.getLabels().getRow(0).getDouble(1), 0.0 );
 		
+		assertEquals( 0.0, ds.getLabels().getRow(1).getDouble(0), 0.0 );
+		assertEquals( 1.0, ds.getLabels().getRow(1).getDouble(1), 0.0 );
 		
-		// now download the binary data if needed 
-		
-		MNIST_DatasetUtils util = new MNIST_DatasetUtils();
-		util.convertFromBinaryFormatToMetronome( 5, vectors_filename );
-		*/
-		/*
-		assertEquals( hdfs_input.numCols(), stock_input.numCols() );
-		assertEquals( hdfs_input.numRows(), stock_input.numRows() );		
-		*/
-		
+		assertEquals( false, iterator.hasNext() );
 		
 		
 	}
