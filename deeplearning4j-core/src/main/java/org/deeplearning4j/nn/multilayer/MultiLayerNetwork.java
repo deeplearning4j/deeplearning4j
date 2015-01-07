@@ -24,6 +24,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.sampling.Sampling;
 import org.nd4j.linalg.transformation.MatrixTransform;
+import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -385,8 +386,11 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
         setInput(data.getFeatureMatrix());
         feedForward(data.getFeatureMatrix());
         this.labels = data.getLabels();
+        if(getOutputLayer() instanceof OutputLayer) {
+            OutputLayer o = (OutputLayer) getOutputLayer();
+            o.setLabels(labels);
 
-        getOutputLayer().setLabels(labels);
+        }
     }
 
 
@@ -1004,7 +1008,11 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
             setLabels(data.getLabels());
             if(getOutputLayer().conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
                 feedForward();
-                getOutputLayer().fit(iter);
+                if(getOutputLayer() instanceof OutputLayer) {
+                    OutputLayer o = (OutputLayer) getOutputLayer();
+                    o.fit(iter);
+
+                }
             }
             else {
                 StochasticHessianFree hessianFree = new StochasticHessianFree(getOutputLayer().conf(),getOutputLayer().conf().getStepFunction(),getOutputLayer().conf().getListeners(),this);
@@ -1025,13 +1033,14 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     public void finetune(INDArray labels) {
         if (labels != null)
             this.labels = labels;
+        OutputLayer o = (OutputLayer) getOutputLayer();
         if(getOutputLayer().conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
             feedForward();
-            getOutputLayer().fit(getOutputLayer().getInput(),labels);
+            o.fit(getOutputLayer().getInput(), labels);
         }
         else {
             feedForward();
-            getOutputLayer().setLabels(labels);
+            o.setLabels(labels);
             StochasticHessianFree hessianFree = new StochasticHessianFree(getOutputLayer().conf(),getOutputLayer().conf().getStepFunction(),getOutputLayer().conf().getListeners(),this);
             hessianFree.optimize();
         }
@@ -1063,7 +1072,8 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     @Override
     public INDArray labelProbabilities(INDArray examples) {
         List<INDArray> feed = feedForward(examples);
-        return getOutputLayer().labelProbabilities(feed.get(feed.size() - 1));
+        OutputLayer o = (OutputLayer) getOutputLayer();
+        return o.labelProbabilities(feed.get(feed.size() - 1));
     }
 
     /**
@@ -1113,7 +1123,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray examples, int[] labels) {
-        getOutputLayer().fit(examples, labels);
+        fit(examples, FeatureUtil.toOutcomeMatrix(labels,getOutputLayer().conf().getnOut()));
     }
 
     /**
@@ -1339,8 +1349,8 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
      * Get the output layer
      * @return
      */
-    public OutputLayer getOutputLayer() {
-        return (OutputLayer) getLayers()[getLayers().length - 1];
+    public Layer getOutputLayer() {
+        return  getLayers()[getLayers().length - 1];
     }
 
 
