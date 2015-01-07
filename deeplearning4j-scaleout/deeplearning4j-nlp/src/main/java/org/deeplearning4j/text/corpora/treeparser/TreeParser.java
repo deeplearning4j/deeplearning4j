@@ -165,10 +165,7 @@ public class TreeParser {
 
             //build the tree based on this
             TopTreebankNode node = JCasUtil.selectSingle(c2.getJCas(),TopTreebankNode.class);
-            log.info("Tree bank parse " + node.getTreebankParse());
-            for(TreebankNode node2 : JCasUtil.select(c2.getJCas(),TreebankNode.class)) {
-                log.info("Node val " + node2.getNodeValue() + " and label " + node2.getNodeType() + " and tags was " + node2.getNodeTags());
-            }
+
 
             ret.add(node);
 

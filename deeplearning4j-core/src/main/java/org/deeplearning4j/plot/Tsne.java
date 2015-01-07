@@ -422,7 +422,7 @@ public class Tsne implements Serializable {
     /**
      * Plot tsne (write the coordinates file)
      * @param matrix the matrix to plot
-     * @param nDims the number
+     * @param nDims the number of dimensions
      * @param labels
      * @throws IOException
      */

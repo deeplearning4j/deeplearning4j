@@ -1,6 +1,8 @@
 package org.deeplearning4j.models.embeddings.wordvectors;
 
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.clustering.vptree.VpTreeNode;
+import org.deeplearning4j.clustering.vptree.VpTreePointINDArray;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -265,7 +267,10 @@ public class WordVectorsImpl implements WordVectors {
         INDArray mean = words.isMatrix() ? words.mean(0) : words;
         if(lookupTable() instanceof  InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
+
             INDArray syn0 = l.getSyn0();
+            VpTreeNode<VpTreePointINDArray> tree = VpTreeNode.buildVpTree(VpTreePointINDArray.dataPoints(l.getSyn0()));
+
             INDArray weights = mean;
             INDArray distances = syn0.mmul(weights.transpose());
             distances.diviRowVector(distances.norm2(1));
