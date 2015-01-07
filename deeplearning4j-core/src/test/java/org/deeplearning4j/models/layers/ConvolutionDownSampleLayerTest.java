@@ -50,8 +50,8 @@ public class ConvolutionDownSampleLayerTest {
         d.setFeatures(d.getFeatureMatrix().reshape(2,1,28,28));
 
         NeuralNetConfiguration n = new NeuralNetConfiguration.Builder()
-                .filterSize(new int[]{2, 2, 2, 2})
-                .weightShape(new int[]{2, 3, 9, 9}).build();
+                .filterSize(new int[]{2, 1, 2, 2})
+              .build();
 
         LayerFactory l = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
         ConvolutionDownSampleLayer c = l.create(n);
