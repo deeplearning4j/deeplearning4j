@@ -103,21 +103,19 @@ public class TestSVMLightDataFetcher {
 			e.printStackTrace();
 		}
 	    
-	    //FeatureUtil.toOutcomeVector( 1, 10 );
-	    
-	    System.out.println( "ds back? " + fetcher.hasMore() );
 	    
 	    fetcher.fetch( 20 );
 	    DataSet ds = fetcher.next();
 	    
-	    System.out.println( "ds back? " + fetcher.hasMore() );
-	    System.out.println( "ds null? " + ds );
 	    
 	    INDArray features = ds.getFeatures();
 	    INDArray labels = ds.getLabels();
 	    
 	    
-	    System.out.println( "feature columns: " + features.columns() );
+	    //System.out.println( "feature columns: " + features.columns() );
+	    
+	    assertEquals( 9300, features.columns() );
+	    assertEquals( 2, labels.columns() );
 				
 
 /*	    
