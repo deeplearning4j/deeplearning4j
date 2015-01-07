@@ -192,19 +192,24 @@ public class SVMLightDataFetcher extends BaseDataFetcher implements DataSetFetch
 				//toConvert.add( this.convertMetronomeTextLineToMatrixInputPair( value.toString() ));
 				Pair<INDArray, INDArray> tmpPair = this.convertTextLineToInputPair(valString);
 				
-				DataSet tmpDS = new DataSet( tmpPair.getFirst(), tmpPair.getSecond() );
+				//DataSet tmpDS = new DataSet( tmpPair.getFirst(), tmpPair.getSecond() );
 				
-				System.out.println( "feature columns: " + tmpDS.getFeatures().columns() );
-				System.out.println( "labels columns: " + tmpDS.getLabels().columns() );
+				//System.out.println( "feature columns: " + tmpDS.getFeatures().columns() );
+				//System.out.println( "labels columns: " + tmpDS.getLabels().columns() );
 				
 				//tmpDS.getLabels().linearIndex( 1 );
+				
+				//INDArray arTmp = FeatureUtil.toOutcomeVector(tmpPair.getSecond().getInt(0),numOutcomes);
+				
+				//System.out.println( "outcomes vec: {" + arTmp.getDouble(0) + ", " + arTmp.getDouble(1) + "} " );
+				
 				
 				vectorBatch.add( new DataSet( tmpPair.getFirst(), FeatureUtil.toOutcomeVector(tmpPair.getSecond().getInt(0),numOutcomes)));
 				
 			}
 		}
 
-		System.out.println( "number vectors: " + vectorBatch.size() );
+		//System.out.println( "number vectors: " + vectorBatch.size() );
 
 		initializeCurrFromList( vectorBatch );
 
