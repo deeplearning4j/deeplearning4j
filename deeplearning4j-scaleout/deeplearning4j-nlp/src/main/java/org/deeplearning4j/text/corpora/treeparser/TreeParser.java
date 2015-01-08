@@ -14,7 +14,7 @@ import org.cleartk.token.type.Sentence;
 import org.cleartk.token.type.Token;
 import org.cleartk.util.ParamUtil;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.rntn.Tree;
+import org.deeplearning4j.models.featuredetectors.autoencoder.recursive.Tree;
 import org.deeplearning4j.text.annotator.PoStagger;
 import org.deeplearning4j.text.annotator.SentenceAnnotator;
 import org.deeplearning4j.text.annotator.StemmerAnnotator;

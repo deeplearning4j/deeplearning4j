@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.rntn;
 
 import org.deeplearning4j.eval.ConfusionMatrix;
+import org.deeplearning4j.models.featuredetectors.autoencoder.recursive.Tree;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

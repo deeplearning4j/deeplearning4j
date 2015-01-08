@@ -10,6 +10,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.featuredetectors.autoencoder.recursive.Tree;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
@@ -31,7 +32,6 @@ import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -63,7 +63,6 @@ public class RNTN implements Model,Layer {
     private boolean simplifiedModel = true;
     private boolean randomFeatureVectors = true;
     private double scalingForInit = 1.0f;
-    public final static String UNKNOWN_FEATURE = "UNK";
     private boolean lowerCasefeatureNames;
     protected ActivationFunction activationFunction = Activations.tanh();
     protected ActivationFunction outputActivation = Activations.softmax();
@@ -600,7 +599,7 @@ public class RNTN implements Model,Layer {
             nodeWeight = 1.0;
         INDArray predictions = tree.prediction();
 
-        // If this is an unlabeled class, applyTransformToDestination deltaClass to 0.  We could
+        // If this is an unlabeled class, transform deltaClass to 0.  We could
         // make this more efficient by eliminating various of the below
         // calculations, but this would be the easiest way to handle the
         // unlabeled class

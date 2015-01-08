@@ -1,4 +1,4 @@
-package org.deeplearning4j.models.rntn;
+package org.deeplearning4j.models.featuredetectors.autoencoder.recursive;
 
 
 import org.nd4j.linalg.api.ndarray.INDArray;
