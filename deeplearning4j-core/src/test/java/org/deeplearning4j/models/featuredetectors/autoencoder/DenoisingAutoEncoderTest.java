@@ -33,7 +33,7 @@ public class DenoisingAutoEncoderTest {
                 DenoisingAutoEncoder da = layerFactory.create(conf);
                 assertEquals(da.params(),da.params());
                 assertEquals(471784,da.params().length());
-
+                da.setParams(da.params());
                 da.fit(input);
     }
 
