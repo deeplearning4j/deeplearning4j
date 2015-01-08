@@ -1,6 +1,6 @@
 package org.deeplearning4j.text.corpora.treeparser.transformer;
 
-import org.deeplearning4j.models.rntn.Tree;
+import org.deeplearning4j.models.featuredetectors.autoencoder.recursive.Tree;
 
 /**
  * Tree transformer

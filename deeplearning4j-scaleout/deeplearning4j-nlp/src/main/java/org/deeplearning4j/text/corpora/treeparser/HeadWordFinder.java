@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Set;
 
 
-import org.deeplearning4j.models.rntn.Tree;
+import org.deeplearning4j.models.featuredetectors.autoencoder.recursive.Tree;
 
 /**
  * <br>
