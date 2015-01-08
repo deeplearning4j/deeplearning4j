@@ -1,6 +1,6 @@
 package org.deeplearning4j.text.corpora.treeparser;
 
-import org.deeplearning4j.models.rntn.Tree;
+import org.deeplearning4j.models.featuredetectors.autoencoder.recursive.Tree;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 
 import java.util.ArrayList;

@@ -1,7 +1,7 @@
 package org.deeplearning4j.text.corpora.treeparser;
 
 import org.cleartk.syntax.constituent.type.TreebankNode;
-import org.deeplearning4j.models.rntn.Tree;
+import org.deeplearning4j.models.featuredetectors.autoencoder.recursive.Tree;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
