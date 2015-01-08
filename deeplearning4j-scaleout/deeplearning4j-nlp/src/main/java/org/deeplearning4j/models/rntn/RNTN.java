@@ -11,6 +11,10 @@ import org.deeplearning4j.berkeley.Pair;
 
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -47,7 +51,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Adam Gibson
  *
  */
-public class RNTN implements Serializable {
+public class RNTN implements Model,Layer {
 
     protected double value = 0;
     private int numOuts = 3;
@@ -387,7 +391,7 @@ public class RNTN implements Serializable {
             String rightBasic = basicCategory(rightLabel);
             return binaryINd4j.get(leftBasic, rightBasic);
         } else if (node.children().size() == 1) {
-            throw new AssertionError("No unary applyTransformToOrigin matrices, only unary classification");
+            throw new AssertionError("No unary transform matrices, only unary classification");
         } else {
             throw new AssertionError("Unexpected tree children size of " + node.children().size());
         }
@@ -982,6 +986,161 @@ public class RNTN implements Serializable {
 
     public double getValue() {
         return value;
+    }
+
+    @Override
+    public void fit() {
+
+    }
+
+    @Override
+    public void update(Gradient gradient) {
+
+    }
+
+    @Override
+    public double score() {
+        return 0;
+    }
+
+    @Override
+    public INDArray transform(INDArray data) {
+        return null;
+    }
+
+    @Override
+    public INDArray params() {
+        return getParameters();
+    }
+
+    @Override
+    public int numParams() {
+        return 0;
+    }
+
+    @Override
+    public void setParams(INDArray params) {
+         setParameters(params);
+    }
+
+    @Override
+    public void fit(INDArray data) {
+
+    }
+
+    @Override
+    public void iterate(INDArray input) {
+
+    }
+
+    @Override
+    public Gradient getGradient() {
+        return null;
+    }
+
+    @Override
+    public Pair<Gradient, Double> gradientAndScore() {
+        return null;
+    }
+
+    @Override
+    public int batchSize() {
+        return 0;
+    }
+
+    @Override
+    public void merge(Layer layer, int batchSize) {
+
+    }
+
+    @Override
+    public INDArray getParam(String param) {
+        return null;
+    }
+
+    @Override
+    public void initParams() {
+
+    }
+
+    @Override
+    public Map<String, INDArray> paramTable() {
+        return null;
+    }
+
+    @Override
+    public void setParamTable(Map<String, INDArray> paramTable) {
+
+    }
+
+    @Override
+    public void setParam(String key, INDArray val) {
+
+    }
+
+    @Override
+    public INDArray activationMean() {
+        return null;
+    }
+
+    @Override
+    public NeuralNetConfiguration conf() {
+        return null;
+    }
+
+    @Override
+    public void setConfiguration(NeuralNetConfiguration conf) {
+
+    }
+
+    @Override
+    public INDArray getInput() {
+        return null;
+    }
+
+    @Override
+    public void setInput(INDArray input) {
+
+    }
+
+    @Override
+    public INDArray preOutput(INDArray x) {
+        return null;
+    }
+
+    @Override
+    public INDArray activate() {
+        return null;
+    }
+
+    @Override
+    public INDArray activate(INDArray input) {
+        return null;
+    }
+
+    @Override
+    public Layer transpose() {
+        return null;
+    }
+
+    @Override
+    public Layer clone() {
+        return null;
+    }
+
+    @Override
+    public void setConf(NeuralNetConfiguration conf) {
+
+    }
+
+    @Override
+    public INDArray input() {
+        return null;
+    }
+
+    @Override
+    public void validateInput() {
+
     }
 
     public static class Builder {

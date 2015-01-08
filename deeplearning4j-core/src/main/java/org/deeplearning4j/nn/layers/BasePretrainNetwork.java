@@ -43,24 +43,6 @@ public abstract class BasePretrainNetwork extends BaseLayer {
 
 
 
-    /**
-     * Set the parameters for this model.
-     * This expects a linear ndarray which then be unpacked internally
-     * relative to the expected ordering of the model
-     *
-     * @param params the parameters for the model
-     */
-    @Override
-    public void setParams(INDArray params) {
-        assert params.length() == numParams() : "Illegal number of parameters passed in, must be of length " + numParams();
-        int weightLength = conf.getnIn() * conf.getnOut();
-        INDArray weights = params.get(NDArrayIndex.interval(0,weightLength));
-        INDArray vBias = params.get(NDArrayIndex.interval(weightLength, weightLength + conf.getnIn()));
-        INDArray hBias = params.get(NDArrayIndex.interval(weightLength + conf.getnIn(), weightLength + conf.getnIn() + conf.getnOut()));
-        setParam(DefaultParamInitializer.WEIGHT_KEY,weights.reshape(conf.getnIn(),conf.getnOut()));
-        setParam(DefaultParamInitializer.BIAS_KEY,hBias.dup());
-        setParam(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBias.dup());
-    }
 
     /**
      * Applies sparsity to the passed in hbias gradient

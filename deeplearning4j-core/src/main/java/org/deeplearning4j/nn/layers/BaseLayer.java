@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 
@@ -72,6 +73,25 @@ public abstract class BaseLayer implements Layer {
         for(String s : conf.getGradientList())
             ret.add(params.get(s));
         return Nd4j.toFlattened(ret);
+    }
+
+    @Override
+    public void setParams(INDArray params) {
+        List<String> gradientList = conf.getGradientList();
+        int length = 0;
+        for(String s : gradientList)
+            length += getParam(s).length();
+        if(params.length() != length)
+            throw new IllegalArgumentException("Unable to set parameters: must be of length " + length);
+        int idx = 0;
+        for(int i = 0; i < gradientList.size(); i++) {
+            INDArray param = getParam(gradientList.get(i));
+            INDArray get = params.get(NDArrayIndex.interval(idx,idx + param.length()));
+            if(param.length() != get.length())
+                throw new IllegalStateException("Parameter " + gradientList.get(i) + " should have been of length " + param.length() + " but was " + get.length());
+            param.assign(get.reshape(param.shape()));
+            idx += param.length();
+        }
     }
 
     @Override
