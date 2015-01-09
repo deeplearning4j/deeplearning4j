@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ToolRunner;
+import org.deeplearning4j.datasets.iterator.BaseDatasetIterator;
 import org.deeplearning4j.datasets.iterator.DataSetFetcher;
 import org.deeplearning4j.iterativereduce.impl.ParameterVectorUpdateable;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
@@ -35,7 +36,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     private RecordParser recordParser;
 //MnistHDFSDataSetIterator hdfs_fetcher = null;
     
-    private DataSetFetcher hdfsDataSetFetcher = null;
+    private BaseDatasetIterator hdfsDataSetIterator = null;
     private org.deeplearning4j.scaleout.conf.Configuration configuration = null;
     
 
@@ -120,8 +121,12 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
      */
     @Override
     public void setup(Configuration conf) {
-        MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(conf.get(MULTI_LAYER_CONF));
-        multiLayerNetwork = new MultiLayerNetwork(conf2);
+
+    	System.out.println( "Worker-Conf: " + conf.get(MULTI_LAYER_CONF) );
+    	
+    	
+    //	MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(conf.get(MULTI_LAYER_CONF));
+     //   multiLayerNetwork = new MultiLayerNetwork(conf2);
 
         // TODO: setup ---> this.hdfsDataSetFetcher 
         
