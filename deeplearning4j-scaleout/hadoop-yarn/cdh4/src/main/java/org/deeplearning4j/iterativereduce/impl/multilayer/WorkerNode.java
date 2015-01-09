@@ -12,9 +12,10 @@ import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.iterativereduce.runtime.io.RecordParser;
 import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWorker;
-import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
+
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 //MnistHDFSDataSetIterator hdfs_fetcher = null;
     
     private DataSetFetcher hdfsDataSetFetcher = null;
+    private org.deeplearning4j.scaleout.conf.Configuration configuration = null;
     
 
     /**
@@ -141,6 +143,12 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
 
 
+    /**
+     * Dev note: this method seems complete 
+     * 
+     * @param args
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception {
 
         TextRecordParser parser = new TextRecordParser();
@@ -153,9 +161,19 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
 
 
+	@Override
+	public void setup(org.deeplearning4j.scaleout.conf.Configuration conf) {
+		
+		this.configuration = conf;
+/*		
+		 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+         .list(4).hiddenLayerSizes(new int[]{3,2,2}).build();
+ String json = conf.toJson();
+ MultiLayerConfiguration from = MultiLayerConfiguration.fromJson(json);		
+	*/	
+	}
 
-    @Override
-    public void setup(org.deeplearning4j.nn.conf.Configuration conf) {
 
-    }
+    
+    
 }

@@ -17,7 +17,7 @@ import org.nd4j.linalg.dataset.api.DataSet;
 public class TestSVMLightDataSetIterator {
 
 
-	private static String svmLight_test_filename = "src/test/resources/svmLightSample.txt";
+	private static String svmLight_test_filename = "src/test/resources/data/svmLightSample.txt";
 	
 
 	  private static JobConf defaultConf = new JobConf();
