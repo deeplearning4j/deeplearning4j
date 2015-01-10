@@ -1,5 +1,5 @@
 ---
-layout: default
+layout: ja-default
 ---
 
 # Deeplearning4j入門
