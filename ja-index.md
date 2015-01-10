@@ -1,6 +1,6 @@
 ---
 title: 
-layout: default
+layout: ja-default
 ---
 
 # Deeplearning4jとは何か?
