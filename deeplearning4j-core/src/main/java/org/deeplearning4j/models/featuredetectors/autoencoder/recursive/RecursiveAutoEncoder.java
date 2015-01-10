@@ -1,21 +1,30 @@
 package org.deeplearning4j.models.featuredetectors.autoencoder.recursive;
 
+
+
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.RecursiveParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 /**
  *
- *
+ * Recursive AutoEncoder. Uses back propagation through structure.
  *
  * @author Adam Gibson
  */
 public class RecursiveAutoEncoder extends BaseLayer {
-
+    private INDArray currInput = null,
+                     allInput = null,
+                     visibleLoss = null,
+                     hiddenLoss = null,
+                     cLoss = null,
+                     bLoss = null,
+                     y = null;
+    double currScore = 0.0;
     public RecursiveAutoEncoder(NeuralNetConfiguration conf) {
         super(conf);
     }
@@ -27,19 +36,22 @@ public class RecursiveAutoEncoder extends BaseLayer {
 
     @Override
     public double score() {
-        return 0;
+        return currScore;
     }
 
+    private double scoreSnapShot() {
+        return 0.5 * pow(y.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);
+    }
 
 
     @Override
     public INDArray transform(INDArray data) {
-        return conf.getActivationFunction().apply(data.mmul(params.get(RecursiveParamInitializer.W)).addiRowVector(params.get(RecursiveParamInitializer.BIAS)));
+        return conf.getActivationFunction().apply(data.mmul(params.get(RecursiveParamInitializer.W)).addRowVector(params.get(RecursiveParamInitializer.C)));
     }
 
 
     public INDArray decode(INDArray input) {
-        return input.mmul(params.get(RecursiveParamInitializer.U).addiRowVector(params.get(RecursiveParamInitializer.C)));
+        return conf.getActivationFunction().apply(input.mmul(params.get(RecursiveParamInitializer.U).addRowVector(params.get(RecursiveParamInitializer.BIAS))));
     }
 
 
@@ -50,39 +62,46 @@ public class RecursiveAutoEncoder extends BaseLayer {
 
     @Override
     public Gradient getGradient() {
-        Gradient gradient = new DefaultGradient();
-        INDArray currInput = null;
-        INDArray visibleLoss = null,hiddenLoss = null,cLoss = null,bLoss = null;
-        /**
+       /**
          * Going up the tree involves repeated calculations using the output of the previous autoencoder
          * for the next.
          * This starts with a base case at x[0] and x[1] and expands to subsequent layers.
          *
          * The error is the sum going up the tree.
          */
+        currScore = 0.0;
         for(int i = 0; i < input.rows(); i++) {
             INDArray combined = currInput == null ? Nd4j.concat(0,input.slice(i),input.slice(i + 1)) : Nd4j.concat(0,input.slice(i),currInput);
             //combine first 2: aka base case
-            if(i == 0)
+            if(i == 0) {
                 i++;
+            }
+
+            currInput = combined;
+            allInput = combined;
             INDArray encoded = transform(combined);
-            currInput = decode(encoded);
+            y = decode(encoded);
 
-            INDArray currVisibleLoss = currInput.sub(combined);
+            INDArray currVisibleLoss = currInput.sub(y);
+            INDArray currHiddenLoss = currVisibleLoss.mmul(getParam(RecursiveParamInitializer.W)).muli(encoded).muli(encoded.rsub(1));
+
+            INDArray hiddenGradient = y.transpose().mmul(currHiddenLoss);
+            INDArray visibleGradient = encoded.transpose().mmul(currVisibleLoss);
+
             if(visibleLoss == null)
-                visibleLoss = currVisibleLoss;
+                visibleLoss = visibleGradient;
             else
-                visibleLoss.addi(currVisibleLoss);
+                visibleLoss.addi(visibleGradient);
 
-            INDArray currHiddenLoss = visibleLoss.mmul(getParam(RecursiveParamInitializer.W)).muli(encoded).muli(encoded.rsub(1));
+
 
             if(hiddenLoss == null)
-                hiddenLoss = currHiddenLoss;
+                hiddenLoss = hiddenGradient;
             else
-                hiddenLoss.addi(currHiddenLoss);
+                hiddenLoss.addi(hiddenGradient);
 
-            INDArray currCLoss = currVisibleLoss.mean(0);
-            INDArray currBLoss = currHiddenLoss.mean(0);
+            INDArray currCLoss = currVisibleLoss.isMatrix() ? currVisibleLoss.mean(0) : currVisibleLoss;
+            INDArray currBLoss = currHiddenLoss.isMatrix() ? currHiddenLoss.mean(0) : currHiddenLoss;
 
 
             if(cLoss == null)
@@ -93,7 +112,11 @@ public class RecursiveAutoEncoder extends BaseLayer {
                 bLoss = currBLoss;
             else
                 bLoss.addi(currBLoss);
+            currInput = encoded;
+            currScore += scoreSnapShot();
         }
+
+        Gradient gradient = createGradient(hiddenLoss,visibleLoss,cLoss,bLoss);
         return gradient;
     }
 
