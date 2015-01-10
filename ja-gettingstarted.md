@@ -2,7 +2,7 @@
 layout: default
 ---
 
-# Getting Started
+# Deeplearning4j入門
 
 コンテンツ
 
