@@ -103,13 +103,9 @@ IntelliJのWindowを通じて、下に表示されている画面が表示され
  
  "latest version" を選択し、コピーを行ってください。
  
- ![Alt text](../img/nd4j_maven.png)
- 
- コピーした内容を<dependencies>セクションにペーストすると、以下の表示内容になります。
- 
  ![Alt text](../img/latest_version_dependency.png) 
  
- 。。。
+ コピーした内容を<dependencies>セクションにペーストすると、以下の表示内容になります。
  
  ![Alt text](../img/pom_after.png) 
  
