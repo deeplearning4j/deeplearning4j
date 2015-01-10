@@ -12,20 +12,25 @@ import java.util.Map;
  */
 public class RecursiveParamInitializer extends DefaultParamInitializer {
 
-
+    //encoder weights
     public final static String W = "w";
+    //decoder weights
     public final static String U = "u";
+    //hidden bias
     public final static String BIAS = "b";
+    //visible bias
     public final static String C = "c";
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
         int vis = conf.getnIn();
         int out = vis * 2;
+
         params.put(W, WeightInitUtil.initWeights(new int[]{out,vis},conf.getWeightInit(),conf.getActivationFunction(),conf.getDist()));
         params.put(U, WeightInitUtil.initWeights(new int[]{vis,out},conf.getWeightInit(),conf.getActivationFunction(),conf.getDist()));
-        params.put(BIAS, WeightInitUtil.initWeights(new int[]{vis},conf.getWeightInit(),conf.getActivationFunction(),conf.getDist()));
-        params.put(C, WeightInitUtil.initWeights(new int[]{out},conf.getWeightInit(),conf.getActivationFunction(),conf.getDist()));
+        params.put(BIAS, WeightInitUtil.initWeights(new int[]{out},conf.getWeightInit(),conf.getActivationFunction(),conf.getDist()));
+        params.put(C, WeightInitUtil.initWeights(new int[]{vis},conf.getWeightInit(),conf.getActivationFunction(),conf.getDist()));
+
         conf.getGradientList().add(W);
         conf.getGradientList().add(U);
         conf.getGradientList().add(BIAS);
