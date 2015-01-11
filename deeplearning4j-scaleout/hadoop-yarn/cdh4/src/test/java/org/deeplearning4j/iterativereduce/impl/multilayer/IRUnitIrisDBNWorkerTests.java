@@ -14,6 +14,7 @@ import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TextInputFormat;
+import org.deeplearning4j.iterativereduce.irunit.IRUnitDriver;
 import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -109,15 +110,30 @@ public class IRUnitIrisDBNWorkerTests {
 	@Test
 	public void testSingleWorker() {
 		
+		IRUnitDriver polr_ir = new IRUnitDriver("src/test/resources/yarn/configurations/svmLightWorkerIRUnitTest.properties");
+		polr_ir.Setup();
+		polr_ir.simulateRun();
+		
+		
 	}
 	
 	@Test
 	public void testTwoWorkers() {
+
+		IRUnitDriver polr_ir = new IRUnitDriver("src/test/resources/yarn/configurations/svmLightIris_TwoWorkers_IRUnitTest.properties");
+		polr_ir.Setup();
+		polr_ir.simulateRun();
+
 		
 	}
 
 	@Test
 	public void testThreeWorkers() {
+		
+		IRUnitDriver polr_ir = new IRUnitDriver("src/test/resources/yarn/configurations/svmLightIris_ThreeWorkers_IRUnitTest.properties");
+		polr_ir.Setup();
+		polr_ir.simulateRun();
+		
 		
 	}
 	
