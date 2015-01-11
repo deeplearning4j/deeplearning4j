@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.base.MnistFetcher;
 import org.deeplearning4j.datasets.mnist.MnistManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,7 +39,14 @@ public class MnistDataFetcher extends BaseDataFetcher {
     public MnistDataFetcher(boolean binarize) throws IOException {
         if(!new File(rootMnist).exists())
             new MnistFetcher().downloadAndUntar();
-        man = new MnistManager(rootMnist+ MnistFetcher.trainingFilesFilename_unzipped,rootMnist + MnistFetcher.trainingFileLabelsFilename_unzipped);
+        try {
+            man = new MnistManager(rootMnist + MnistFetcher.trainingFilesFilename_unzipped, rootMnist + MnistFetcher.trainingFileLabelsFilename_unzipped);
+        }catch(Exception e) {
+            FileUtils.deleteDirectory(new File(rootMnist));
+            new MnistFetcher().downloadAndUntar();
+            man = new MnistManager(rootMnist + MnistFetcher.trainingFilesFilename_unzipped, rootMnist + MnistFetcher.trainingFileLabelsFilename_unzipped);
+
+        }
         numOutcomes = 10;
         this.binarize = binarize;
         totalExamples = NUM_EXAMPLES;
