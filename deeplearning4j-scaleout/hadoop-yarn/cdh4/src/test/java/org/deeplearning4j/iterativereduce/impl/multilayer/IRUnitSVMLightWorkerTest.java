@@ -13,10 +13,12 @@ import org.junit.Test;
 public class IRUnitSVMLightWorkerTest {
 
 
+	@Test
 	public void createSynthJSONConf() {
 		
-		 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().layerFactory(LayerFactories.getFactory(RBM.class))
-         .list(4).hiddenLayerSizes(new int[]{3,2,2}).build();
+		 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().nIn(4).nOut(3)
+				 .layerFactory(LayerFactories.getFactory(RBM.class))
+         .list(3).hiddenLayerSizes(new int[]{2,2}).build();
 		 String json = conf.toJson();
 		 
 		 System.out.println( json );
@@ -37,7 +39,7 @@ public class IRUnitSVMLightWorkerTest {
 		
 		polr_ir.Setup();
 
-		polr_ir.SimulateRun();
+		polr_ir.simulateRun();
 
 
 		

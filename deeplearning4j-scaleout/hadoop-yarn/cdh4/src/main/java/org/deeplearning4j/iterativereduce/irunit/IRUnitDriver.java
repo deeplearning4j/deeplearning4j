@@ -1,11 +1,10 @@
 package org.deeplearning4j.iterativereduce.irunit;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.Map.Entry;
 
@@ -21,11 +20,14 @@ import org.deeplearning4j.iterativereduce.runtime.ComputableMaster;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.iterativereduce.runtime.Updateable;
 import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class IRUnitDriver<T> {
 
 	private static JobConf defaultConf = new JobConf();
 	private static FileSystem localFs = null;
+	private static Logger log = LoggerFactory.getLogger(IRUnitDriver.class);
 	static {
 		try {
 			defaultConf.set("fs.defaultFS", "file:///");
@@ -65,7 +67,7 @@ public class IRUnitDriver<T> {
 		};
 	*/	
 		 for(Entry<Object, Object> e : props.entrySet()) {
-	           // System.out.println(e.getKey());
+	           // log.info(e.getKey());
 			 c.set(e.getKey().toString(), e.getValue().toString());
 	        }		
 /*
@@ -73,7 +75,7 @@ public class IRUnitDriver<T> {
 			if (null != this.props.getProperty(props_to_copy[x])) {
 				c.set(props_to_copy[x], this.props.getProperty(props_to_copy[x]));
 			} else {
-			//	System.out.println("> Conf: Did not find in properties file - " + props_to_copy[x]);
+			//	log.info("> Conf: Did not find in properties file - " + props_to_copy[x]);
 			}
 		}
 */
@@ -93,7 +95,7 @@ public class IRUnitDriver<T> {
 
 		long block_size = localFs.getDefaultBlockSize();
 
-		System.out.println("default block size: " + (block_size / 1024 / 1024)
+		log.info("default block size: " + (block_size / 1024 / 1024)
 				+ "MB");
 
 		// ---- set where we'll read the input files from -------------
@@ -143,12 +145,9 @@ public class IRUnitDriver<T> {
 			FileInputStream fis = new FileInputStream(this.app_properties_file);
 			props.load(fis);
 			fis.close();
-		} catch (FileNotFoundException ex) {
+		} catch (Exception ex) {
 			// throw ex; // TODO: be nice
-			System.out.println(ex);
-		} catch (IOException ex) {
-			// throw ex; // TODO: be nice
-			System.out.println(ex);
+			log.error("Error loading properties ",ex);
 		}
 
 		// setup msg arrays
@@ -162,12 +161,12 @@ public class IRUnitDriver<T> {
 		
 		Path splitPath = new Path( props.getProperty("app.input.path") );
 
-		System.out.println( "app.input.path = " + splitPath );
+		log.info( "app.input.path = " + splitPath );
 		
 		// TODO: work on this, splits are generating for everything in dir
 		InputSplit[] splits = generateDebugSplits(splitPath, job);
 
-		System.out.println("split count: " + splits.length);
+		log.info("split count: " + splits.length);
 
 		try {
 			// this.master = (ComputableMaster)
@@ -182,7 +181,7 @@ public class IRUnitDriver<T> {
 																		// {
 																		// ctorArgument
 																		// });
-			System.out.println("Using master class: " + props
+			log.info("Using master class: " + props
 					.getProperty("yarn.master.main"));
 
 		} catch (Exception e) {
@@ -193,12 +192,12 @@ public class IRUnitDriver<T> {
 
 		this.workers = new ArrayList<>();
 
-		System.out.println("Using worker class: " + props
+		log.info("Using worker class: " + props
 				.getProperty("yarn.worker.main"));
 		
 		for (int x = 0; x < splits.length; x++) {
 			
-			System.out.println( "IRUnit > Split > " + splits[x].toString() );
+			log.info( "IRUnit > Split > " + splits[x].toString() );
 
 			ComputableWorker worker = null;
 			Class<?> worker_clazz;
@@ -234,38 +233,34 @@ public class IRUnitDriver<T> {
 
 			workers.add(worker);
 
-			System.out.println("> Setup Worker " + x);
+			log.info("> Setup Worker " + x);
 		} // for
 
 	}
 
-	public void SimulateRun() {
+	public void simulateRun() {
 
-		ArrayList<Updateable> master_results = new ArrayList<Updateable>();
-		ArrayList<Updateable> worker_results = new ArrayList<Updateable>();
+		List<Updateable> master_results = new ArrayList<>();
+		List<Updateable> worker_results = new ArrayList<>();
 
 		long ts_start = System.currentTimeMillis();
 
-		//System.out.println("start-ms:" + ts_start);
+		//log.info("start-ms:" + ts_start);
 
 		int iterations = Integer.parseInt(props
 				.getProperty("app.iteration.count"));
 
-		System.out.println("Starting Epochs (" + iterations + ")...");
+		log.info("Starting Epochs (" + iterations + ")...");
 		
 		for (int x = 0; x < iterations; x++) {
 
 			for (int worker_id = 0; worker_id < workers.size(); worker_id++) {
 
 				Updateable result = workers.get(worker_id).compute();
-				java.nio.ByteBuffer bb = result.toBytes();
-				result.fromBytes(bb);
-				
 				worker_results.add(result);
-				// ParameterVectorGradient msg0 =
-				// workers.get(worker_id).GenerateUpdate();
 
-			} // for
+
+			}
 
 			Updateable master_result = this.master.compute(worker_results,
 					master_results);
@@ -281,7 +276,7 @@ public class IRUnitDriver<T> {
 /*			
 		      if (master_result.get().IterationComplete == 1) {
 		          
-		          System.out.println( " -------- end of pass ------- " );
+		          log.info( " -------- end of pass ------- " );
 
 		        // simulates framework checking this and iterating
 		          for ( int worker_id = 0; worker_id < workers.size(); worker_id++ ) {
@@ -293,11 +288,11 @@ public class IRUnitDriver<T> {
 
 		} // for
 		
-		System.out.println("Complete " + iterations + " Iterations Per Worker.");
+		log.info("Complete " + iterations + " Iterations Per Worker.");
 
 		//String output_path = this.props.getProperty("app.output.path");
 		
-		//System.out.println("Writing the output to: " + output_path);
+		//log.info("Writing the output to: " + output_path);
 		
 		
 		// make sure we have somewhere to write the model
@@ -305,7 +300,7 @@ public class IRUnitDriver<T> {
 			
 			String output_path = this.props.getProperty("app.output.path");
 			
-			System.out.println("Writing the output to: " + output_path);
+			log.info("Writing the output to: " + output_path);
 			
 
 			try {
@@ -333,7 +328,7 @@ public class IRUnitDriver<T> {
 
 		} else {
 			
-			System.out.println("Not Firing Master::Complete() function due to no output path in conf");
+			log.info("Not Firing Master::Complete() function due to no output path in conf");
 			
 		}
 

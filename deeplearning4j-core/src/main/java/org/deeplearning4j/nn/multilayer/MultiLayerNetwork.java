@@ -265,9 +265,6 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
         if (input == null)
             throw new IllegalArgumentException("Unable to initialize neuralNets with empty input");
         int[] hiddenLayerSizes = getLayerWiseConfigurations().getHiddenLayerSizes();
-        if (input.shape().length == 2 && input.columns() != defaultConfiguration.getnIn())
-            throw new IllegalArgumentException(String.format("Unable to iterate on number of inputs; columns should be equal to number of inputs. Number of inputs was %d while number of columns was %d", defaultConfiguration.getnIn(), input.columns()));
-
         if(input.shape().length == 2)
             for (int i = 0; i < hiddenLayerSizes.length; i++)
                 if (hiddenLayerSizes[i] < 1)
@@ -302,7 +299,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
             for (int i = 0; i < this.getnLayers(); i++) {
 
                 if (i == 0)
-                    inputSize = defaultConfiguration.getnIn();
+                    inputSize = layerWiseConfigurations.getConf(0).getnIn();
                 else
                     inputSize = hiddenLayerSizes[i - 1];
 
@@ -747,7 +744,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     public INDArray params() {
         List<INDArray> params = new ArrayList<>();
         for(int i = 0; i < layers.length; i++)
-            layers[i].params();
+            params.add(layers[i].params());
 
         return Nd4j.toFlattened(params);
     }
@@ -1033,6 +1030,10 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     public void finetune(INDArray labels) {
         if (labels != null)
             this.labels = labels;
+        if(!(getOutputLayer() instanceof OutputLayer)) {
+            log.warn("Output layer not instance of output layer returning.");
+            return;
+        }
         OutputLayer o = (OutputLayer) getOutputLayer();
         if(getOutputLayer().conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
             feedForward();
@@ -1365,14 +1366,12 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
      * @param params a parameter vector equal 1,numParameters
      */
     public void setParameters(INDArray params) {
+        int idx = 0;
         for (int i = 0; i < getLayers().length; i++) {
-            ParamRange range = startIndexForLayer(i);
-            INDArray w = params.get(NDArrayIndex.interval(range.getwStart(), range.getwEnd()));
-            INDArray bias = params.get(NDArrayIndex.interval(range.getBiasStart(), range.getBiasEnd()));
-            int rows = getLayers()[i].getParam(DefaultParamInitializer.WEIGHT_KEY).rows(), columns = getLayers()[i].getParam(DefaultParamInitializer.WEIGHT_KEY).columns();
-
-            getLayers()[i].setParam(DefaultParamInitializer.WEIGHT_KEY,w.reshape(rows, columns));
-            getLayers()[i].setParam(DefaultParamInitializer.BIAS_KEY,bias.reshape(getLayers()[i].getParam(DefaultParamInitializer.BIAS_KEY).shape()));
+            Layer layer = getLayers()[i];
+            int range = layer.numParams();
+            layer.setParams(params.get(NDArrayIndex.interval(idx,range + idx)));
+            idx += range;
         }
 
     }
