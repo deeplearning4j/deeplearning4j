@@ -21,7 +21,7 @@ import java.util.*;
  * Base optimizer
  * @author Adam Gibson
  */
-public abstract class BaseOptimizer   {
+public abstract class BaseOptimizer {
 
 
 
