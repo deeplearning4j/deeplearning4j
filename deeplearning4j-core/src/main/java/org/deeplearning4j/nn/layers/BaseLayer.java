@@ -4,8 +4,10 @@ package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -18,6 +20,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -291,6 +294,26 @@ public abstract class BaseLayer implements Layer {
             if(input.rows() != conf.getBatchSize())
                 throw new IllegalStateException("Illegal batch size " + input.rows() + " should have been " + conf.getBatchSize());
         }
+    }
+
+    /**
+     * Create a gradient list based on the passed in parameters.
+     * Will throw an IllegalArgumentException if the number of gradient matrices
+     * isn't equal to the number of keys in the parameter list
+     * @param gradients the gradients to create from
+     * @return the create based on the passed in ndarrays
+     */
+    protected Gradient createGradient(INDArray...gradients) {
+        Gradient ret = new DefaultGradient();
+        if(gradients.length != conf.getGradientList().size())
+            throw new IllegalArgumentException("Unable to create gradients...not equal to number of parameters");
+        for(int i = 0; i < gradients.length; i++) {
+            INDArray paramI = getParam(conf.getGradientList().get(i));
+            if(!Arrays.equals(paramI.shape(),gradients[i].shape()))
+                throw new IllegalArgumentException("Gradient at index " + i + " had wrong gradient size of " + Arrays.toString(gradients[i].shape()) + " when should have been " + Arrays.toString(paramI.shape()));
+            ret.gradientLookupTable().put(conf.getGradientList().get(i),gradients[i]);
+        }
+        return ret;
     }
 
     @Override
