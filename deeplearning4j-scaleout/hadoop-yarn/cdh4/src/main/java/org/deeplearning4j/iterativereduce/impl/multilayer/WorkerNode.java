@@ -140,15 +140,12 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
         this.batchSize = conf.getInt("org.deeplearning4j.batchSize", 10);
         this.numberClasses = conf.getInt("org.deeplearning4j.numberClasses", 2);
         this.numberFeatures = conf.getInt("org.deeplearning4j.features", 5);
-        
-        System.out.println( "Classes: " + this.numberClasses + ", Features: " + this.numberFeatures);
-        
-        MultiLayerConfiguration confMLN = new NeuralNetConfiguration.Builder().nIn( this.numberFeatures ).batchSize( this.batchSize )
-        		.nOut( this.numberClasses )
-        .list(4).hiddenLayerSizes(new int[]{3,2,2}).build();
-        String json = confMLN.toJson();
 
-        MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson( json ); // conf.get(MULTI_LAYER_CONF));
+
+
+        System.out.println("Classes: " + this.numberClasses + ", Features: " + this.numberFeatures);
+
+        MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson( conf.get(MULTI_LAYER_CONF));
         multiLayerNetwork = new MultiLayerNetwork(conf2);
 
 
