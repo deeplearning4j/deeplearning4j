@@ -31,9 +31,11 @@ public class IRUnitSVMLightWorkerTest {
 		//this.createSynthJSONConf();
 		
 		IRUnitDriver polr_ir = new IRUnitDriver("src/test/resources/yarn/configurations/svmLightWorkerIRUnitTest.properties");
+		
+		
 		polr_ir.Setup();
 
-//		polr_ir.SimulateRun();
+		polr_ir.SimulateRun();
 
 
 		
