@@ -7,6 +7,8 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
  * @author Adam Gibson
  */
 public interface DataSetIteratorFactory {
+    public final static String NAME_SPACE = "org.deeplearning4j.datasets.creator";
+    public final static String FACTORY_KEY = NAME_SPACE + ".datasetiteratorkey";
     /**
      * Create a dataset iterator
      * @return
