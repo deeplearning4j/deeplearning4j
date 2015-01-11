@@ -1,14 +1,15 @@
 package org.deeplearning4j.iterativereduce.runtime.yarn.appworker;
 
 
+import org.apache.commons.logging.LogFactory;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.iterativereduce.runtime.Updateable;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.Tool;
 import org.deeplearning4j.iterativereduce.runtime.io.RecordParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 
@@ -18,7 +19,7 @@ import java.net.InetSocketAddress;
 public class ApplicationWorker<T extends Updateable> extends
     Configured implements Tool {
 
-  private static final Log LOG = LogFactory.getLog(ApplicationWorker.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ApplicationWorker.class);
   
   protected RecordParser<T> parser;
   protected ComputableWorker<T> computable;
