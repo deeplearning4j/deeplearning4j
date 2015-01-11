@@ -73,7 +73,9 @@ public class Master implements ComputableMaster<ParameterVectorUpdateable> {
     }
 
     @Override
-    public void setup(Configuration c) {}
+    public void setup(Configuration c) {
+
+    }
 
     public static void main(String[] args) throws Exception {
         Master pmn = new Master();

@@ -3,6 +3,8 @@ package org.deeplearning4j.nn.conf;
 import static org.junit.Assert.*;
 
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.junit.Test;
 
 import java.io.*;
@@ -15,7 +17,7 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     @Test
     public void testJson() throws Exception {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().layerFactory(LayerFactories.getFactory(RBM.class))
                 .list(4).hiddenLayerSizes(new int[]{3,2,2}).build();
         String json = conf.toJson();
         MultiLayerConfiguration from = MultiLayerConfiguration.fromJson(json);

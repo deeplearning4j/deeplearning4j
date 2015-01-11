@@ -42,7 +42,7 @@ public class IRUnitDriver<T> {
 	private ComputableMaster master;
 	private ArrayList<ComputableWorker> workers;
 	private String app_properties_file = "";
-	ArrayList<Updateable> worker_results = new ArrayList<Updateable>();
+	ArrayList<Updateable> worker_results = new ArrayList<>();
 	Updateable master_result = null;
 	boolean bContinuePass = true;
 
@@ -185,32 +185,13 @@ public class IRUnitDriver<T> {
 			System.out.println("Using master class: " + props
 					.getProperty("yarn.master.main"));
 
-		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SecurityException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchMethodException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvocationTargetException e) {
-			// TODO Auto-generated catch block
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		this.master.setup(this.generateDebugConfigurationObject());
 
-		this.workers = new ArrayList<ComputableWorker>();
+		this.workers = new ArrayList<>();
 
 		System.out.println("Using worker class: " + props
 				.getProperty("yarn.worker.main"));
@@ -232,25 +213,7 @@ public class IRUnitDriver<T> {
 																		// ctorArgument
 																		// });
 
-			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (SecurityException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (NoSuchMethodException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IllegalArgumentException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InstantiationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InvocationTargetException e) {
+			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
