@@ -64,6 +64,9 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
         if ( this.hdfsDataSetIterator.hasNext() ) {
             hdfs_recordBatch = this.hdfsDataSetIterator.next();
             if (hdfs_recordBatch.getFeatures().rows() > 0) {
+            	
+            	System.out.println( "Rows: " + hdfs_recordBatch.numExamples() + ", inputs: " + hdfs_recordBatch.numInputs() + ", " + hdfs_recordBatch );
+            	
                 // calc stats on number records processed
                 this.totalRecordsProcessed += hdfs_recordBatch.getFeatures().rows();
                 batchWatch.reset();
@@ -134,7 +137,14 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
         log.info("Worker-Conf: " + conf.get(MULTI_LAYER_CONF));
         
-        MultiLayerConfiguration confMLN = new NeuralNetConfiguration.Builder()
+        this.batchSize = conf.getInt("org.deeplearning4j.batchSize", 10);
+        this.numberClasses = conf.getInt("org.deeplearning4j.numberClasses", 2);
+        this.numberFeatures = conf.getInt("org.deeplearning4j.features", 5);
+        
+        System.out.println( "Classes: " + this.numberClasses + ", Features: " + this.numberFeatures);
+        
+        MultiLayerConfiguration confMLN = new NeuralNetConfiguration.Builder().nIn( this.numberFeatures ).batchSize( this.batchSize )
+        		.nOut( this.numberClasses )
         .list(4).hiddenLayerSizes(new int[]{3,2,2}).build();
         String json = confMLN.toJson();
 
