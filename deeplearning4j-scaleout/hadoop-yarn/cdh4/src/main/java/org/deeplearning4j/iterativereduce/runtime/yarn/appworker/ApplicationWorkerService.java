@@ -9,9 +9,9 @@ import org.deeplearning4j.iterativereduce.runtime.yarn.avro.generated.*;
 import org.apache.avro.AvroRemoteException;
 import org.apache.avro.ipc.NettyTransceiver;
 import org.apache.avro.ipc.specific.SpecificRequestor;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -23,8 +23,8 @@ import java.util.concurrent.Executors;
 
 public class ApplicationWorkerService<T extends Updateable> {
 
-  private static final Log LOG = LogFactory
-      .getLog(ApplicationWorkerService.class);
+  private static final Logger LOG = LoggerFactory
+      .getLogger(ApplicationWorkerService.class);
 
   private enum WorkerState {
     NONE, STARTED, RUNNING, WAITING, UPDATE

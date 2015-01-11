@@ -1,7 +1,6 @@
 package org.deeplearning4j.iterativereduce.runtime.io;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -10,6 +9,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.util.LineReader;
 import org.deeplearning4j.iterativereduce.runtime.Updateable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,7 +19,7 @@ import java.util.LinkedList;
 
 public class HDFSLineParser<T extends Updateable> implements RecordParser<T> {
 
-  private static final Log LOG = LogFactory.getLog(HDFSLineParser.class);
+  private static final Logger LOG = LoggerFactory.getLogger(HDFSLineParser.class);
 
   Class<T> clazz;
   LinkedList<T> records;

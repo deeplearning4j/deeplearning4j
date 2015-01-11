@@ -5,8 +5,6 @@ import org.deeplearning4j.iterativereduce.runtime.ConfigFields;
 import org.deeplearning4j.iterativereduce.runtime.Utils;
 import org.deeplearning4j.iterativereduce.runtime.yarn.ResourceManagerHandler;
 import org.apache.commons.lang.time.StopWatch;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
@@ -14,6 +12,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.api.records.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -24,7 +24,7 @@ import java.util.Properties;
 
 public class Client extends Configured implements Tool {
 
-  private static final Log LOG = LogFactory.getLog(Client.class);
+  private static final Logger LOG = LoggerFactory.getLogger(Client.class);
   
   /**
    * TODO: consider the scenarios where we dont get enough containers 

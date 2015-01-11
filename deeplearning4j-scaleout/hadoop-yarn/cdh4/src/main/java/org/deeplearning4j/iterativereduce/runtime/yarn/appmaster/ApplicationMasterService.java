@@ -82,7 +82,6 @@ public class ApplicationMasterService<T extends Updateable> implements
   private long mMasterTime;
   private long mMasterExecutions;
   private long mUpdates;
-  private boolean earlyTerminationDetected = false;
 
   public ApplicationMasterService(InetSocketAddress masterAddr,
       Map<WorkerId, StartupConfiguration> workers,
@@ -448,7 +447,7 @@ public class ApplicationMasterService<T extends Updateable> implements
   @Override
   public void metricsReport(WorkerId workerId, Map<CharSequence, Long> metrics) {
     if (workerMetrics == null)
-      workerMetrics = new HashMap<WorkerId, Map<CharSequence, Long>>();
+      workerMetrics = new HashMap<>();
     
     // Bludgeon it for now, TODO: be smarter about merging them
     workerMetrics.put(workerId, metrics);

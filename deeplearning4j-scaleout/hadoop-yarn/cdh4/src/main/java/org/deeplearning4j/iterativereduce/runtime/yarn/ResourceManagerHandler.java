@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-//import org.apache.hadoop.yarn.api.records.AMResponse;
-//import org.apache.hadoop.yarn.api.records.impl;
 
 public class ResourceManagerHandler {
 
@@ -200,50 +198,7 @@ public class ResourceManagerHandler {
     
     return response;
   }
-/*  
-  public AMResponse allocateRequest (
-      List<ResourceRequest> requestedContainers,
-      List<ContainerId> releasedContainers) throws YarnRemoteException {
-    
-    if (amResourceManager == null)
-      throw new IllegalStateException(
-          "Cannot send allocation request before connecting to the resource manager!");
 
-    LOG.info("Sending allocation request"
-        + ", requestedSize=" + requestedContainers.size()
-        + ", releasedSize=" + releasedContainers.size());
-    
-    for (ResourceRequest req : requestedContainers)
-      LOG.info("Requesting container, host=" + req.getHostName() 
-          + ", amount=" + req.getNumContainers()
-          + ", memory=" + req.getCapability().getMemory()
-          + ", priority=" + req.getPriority().getPriority());
-    
-    for (ContainerId rel : releasedContainers)
-      LOG.info("Releasing container: " + rel.getId());
-    
-    AllocateRequest request = Records.newRecord(AllocateRequest.class);
-    request.setResponseId(rmRequestId.incrementAndGet());
-    request.setApplicationAttemptId(appAttemptId);
-    request.addAllAsks(requestedContainers);
-    request.addAllReleases(releasedContainers);
-
-    AllocateResponse response = amResourceManager.allocate(request);
-    
-    response.getAllocatedContainers()
-    
-    LOG.debug("Got an allocation response, "
-        + ", responseId=" + response.getAMResponse().getResponseId()
-        + ", numClusterNodes=" + response.getNumClusterNodes()
-        + ", headroom=" + response.getAMResponse().getAvailableResources().getMemory()
-        + ", allocatedSize=" + response.getAMResponse().getAllocatedContainers().size()
-        + ", updatedNodes=" + response.getAMResponse().getUpdatedNodes().size()
-        + ", reboot=" + response.getAMResponse().getReboot()
-        + ", completedSize=" + response.getAMResponse().getCompletedContainersStatuses().size());
-    
-    return response.getAMResponse();
-  }
-*/
   /**
    * Changed the return type to AllocateResponse which use to hold a reference to 
    * AMResponse. 
