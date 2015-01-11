@@ -18,7 +18,6 @@ import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWork
 
 import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
@@ -65,7 +64,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
             hdfs_recordBatch = this.hdfsDataSetIterator.next();
             if (hdfs_recordBatch.getFeatures().rows() > 0) {
             	
-            	System.out.println( "Rows: " + hdfs_recordBatch.numExamples() + ", inputs: " + hdfs_recordBatch.numInputs() + ", " + hdfs_recordBatch );
+            	log.info( "Rows: " + hdfs_recordBatch.numExamples() + ", inputs: " + hdfs_recordBatch.numInputs() + ", " + hdfs_recordBatch );
             	
                 // calc stats on number records processed
                 this.totalRecordsProcessed += hdfs_recordBatch.getFeatures().rows();
@@ -143,7 +142,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
 
 
-        System.out.println("Classes: " + this.numberClasses + ", Features: " + this.numberFeatures);
+        log.info("Classes: " + this.numberClasses + ", Features: " + this.numberFeatures);
 
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson( conf.get(MULTI_LAYER_CONF));
         multiLayerNetwork = new MultiLayerNetwork(conf2);
