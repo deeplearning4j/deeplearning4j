@@ -8,17 +8,22 @@ import org.deeplearning4j.iterativereduce.runtime.ComputableMaster;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appmaster.ApplicationMaster;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Collection;
 
-
+/**
+ *
+ */
 public class Master implements ComputableMaster<ParameterVectorUpdateable> {
 
     ParameterVectorUpdateable lastMasterUpdate = null;
     protected Configuration conf = null;
     protected INDArray paramVector;
+    private static Logger log = LoggerFactory.getLogger(Master.class);
 
 
     /**
@@ -29,7 +34,7 @@ public class Master implements ComputableMaster<ParameterVectorUpdateable> {
     @Override
     public void complete(DataOutputStream osStream) throws IOException {
 
-        System.out.println( "IR DBN Master Node: Complete!" );
+        log.info("IR DBN Master Node: Complete!");
         Nd4j.write(paramVector,osStream);
 
 
@@ -47,7 +52,7 @@ public class Master implements ComputableMaster<ParameterVectorUpdateable> {
             Collection<ParameterVectorUpdateable> workerUpdates,
             Collection<ParameterVectorUpdateable> masterUpdates) {
 
-        System.out.println( "--------------- Master::Compute() -------------- " );
+        log.info("--------------- Master::Compute() -------------- ");
         ParameterVectorUpdateable first = null;
         for(ParameterVectorUpdateable update : workerUpdates) {
             if(first == null)
@@ -66,7 +71,6 @@ public class Master implements ComputableMaster<ParameterVectorUpdateable> {
     @Override
     public ParameterVectorUpdateable getResults() {
 
-        //	System.out.println("\n\nMaster > getResults() -----------------------------------\n\n");
         return this.lastMasterUpdate;
 
     }
