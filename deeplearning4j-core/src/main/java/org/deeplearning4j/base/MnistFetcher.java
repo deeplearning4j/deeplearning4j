@@ -20,7 +20,7 @@ public class MnistFetcher {
 	private static final String trainingFilesFilename = "images-idx1-ubyte.gz";
 	public static final String trainingFilesFilename_unzipped = "images-idx1-ubyte";
 
-	private static final String trainingFileLabelsURL = "http://yann.lecun.com/exdb/mnist/train-lab+els-idx1-ubyte.gz";
+	private static final String trainingFileLabelsURL = "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz";
 	private static final String trainingFileLabelsFilename = "labels-idx1-ubyte.gz";
 	public static final String trainingFileLabelsFilename_unzipped = "labels-idx1-ubyte";
 	private static final String LOCAL_DIR_NAME = "MNIST";
