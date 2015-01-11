@@ -1,7 +1,6 @@
 package org.deeplearning4j.iterativereduce.runtime.yarn.appmaster;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.*;
@@ -21,6 +20,8 @@ import org.deeplearning4j.iterativereduce.runtime.yarn.ResourceManagerHandler;
 import org.deeplearning4j.iterativereduce.runtime.yarn.avro.generated.FileSplit;
 import org.deeplearning4j.iterativereduce.runtime.yarn.avro.generated.StartupConfiguration;
 import org.deeplearning4j.iterativereduce.runtime.yarn.avro.generated.WorkerId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -40,7 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ApplicationMaster<T extends Updateable> extends Configured
     implements Tool {
 
-  private static final Log LOG = LogFactory.getLog(ApplicationMaster.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ApplicationMaster.class);
 
   private String masterHost;
   private int masterPort;
@@ -80,7 +81,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
   }
 
   public ApplicationMaster(int port, ComputableMaster<T> computableMaster,
-      Class<T> updatable) throws FileNotFoundException, IOException {
+      Class<T> updatable) throws  IOException {
 
     //masterHost = InetAddress.getLocalHost().getHostName();
 	masterHost = InetAddress.getLocalHost().getCanonicalHostName();
@@ -109,7 +110,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
     String inputFormatClassString = props.getProperty( ConfigFields.INPUT_FORMAT_CLASS, ConfigFields.INPUT_FORMAT_CLASS_DEFAULT );
     
     LOG.debug( "Using Input Format: " + inputFormatClassString );
-    System.out.println( "IR:AppMaster > Using Input Format: " + inputFormatClassString );
+    LOG.info( "IR:AppMaster > Using Input Format: " + inputFormatClassString );
     
 	Class<?> if_class = null;
 	try {
@@ -235,17 +236,17 @@ public class ApplicationMaster<T extends Updateable> extends Configured
 			  configTuples.add(tuple);
 			  workerId++;	
 			  
-			  System.out.println( "IR_AM_worker: " + wid + " added split: " + convertedToMetronomeSplit.toString() );
+			  LOG.info( "IR_AM_worker: " + wid + " added split: " + convertedToMetronomeSplit.toString() );
 			  
 		} else {
-			System.out.println( "IR_AM: Culled out 0 length Split: " + convertedToMetronomeSplit.toString() );
+			LOG.info( "IR_AM: Culled out 0 length Split: " + convertedToMetronomeSplit.toString() );
 		}
 		
 		
 		
 	}
 	
-	System.out.println( "Total Splits/Workers: " + configTuples.size() );
+	LOG.info( "Total Splits/Workers: " + configTuples.size() );
 		
     
 /*    
@@ -516,10 +517,10 @@ public class ApplicationMaster<T extends Updateable> extends Configured
     // Initial containers we want, based off of the file splits
     List<ResourceRequest> requestedContainers = getRequestedContainersList(
         configTuples, rmHandler);
-    List<ContainerId> releasedContainers = new ArrayList<ContainerId>();
+    List<ContainerId> releasedContainers = new ArrayList<>();
 
     // Send an initial allocation request
-    List<Container> allocatedContainers = new ArrayList<Container>();
+    List<Container> allocatedContainers = new ArrayList<>();
     try {
       int needed = configTuples.size();
       int got = 0;
@@ -565,7 +566,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
      */
     // Make sure we got all our containers, or else bail
     if (allocatedContainers.size() < numContainers) {
-      LOG.info("Unable to get requried number of containers, will not continue"
+      LOG.info("Unable to get required number of containers, will not continue"
           + ", needed=" + numContainers + ", allocated="
           + allocatedContainers.size());
 
@@ -695,21 +696,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
     if (masterExit == 0) {
     	
     	
-    	/*
-      // Write results to file
-      Path out = new Path(props.getProperty(ConfigFields.APP_OUTPUT_PATH));
-      FileSystem fs = out.getFileSystem(conf);
-      FSDataOutputStream fos = fs.create(out);
-  
-      LOG.info("Writing master results to " + out.toString());
-      masterComputable.complete(fos);
-  
-      fos.flush();
-      fos.close();
-      
-      */
-    	
-    	//Path out = new Path(props.getProperty(ConfigFields.APP_OUTPUT_PATH));
+
     	
     	String impersonatedUser = System.getenv("USER");
     	
@@ -748,16 +735,16 @@ public class ApplicationMaster<T extends Updateable> extends Configured
             	
  
     	/*
-    	System.out.println( "Here we would try to write to " + out.toString() );
-    	System.out.println( "As current user: " + UserGroupInformation.getCurrentUser().getShortUserName() );
-    	System.out.println( "As login user: " + UserGroupInformation.getLoginUser().getShortUserName() );
+    	LOG.info( "Here we would try to write to " + out.toString() );
+    	LOG.info( "As current user: " + UserGroupInformation.getCurrentUser().getShortUserName() );
+    	LOG.info( "As login user: " + UserGroupInformation.getLoginUser().getShortUserName() );
     	
-    	System.out.println( "Env Var User: " + System.getenv("USER") );
+    	LOG.info( "Env Var User: " + System.getenv("USER") );
     	*/
-    	//System.out.println( "Ideally we'd be user: " + this.props.getProperty(  ) );
+    	//LOG.info( "Ideally we'd be user: " + this.props.getProperty(  ) );
     	
 //    	for (Map.Entry<String, String> entry : this.conf) {
- //           System.out.println("ApplicationMaster->Conf: " + entry.getKey() + " = " + entry.getValue());
+ //           LOG.info("ApplicationMaster->Conf: " + entry.getKey() + " = " + entry.getValue());
    //     }    	
     	
     } else {
@@ -770,16 +757,16 @@ public class ApplicationMaster<T extends Updateable> extends Configured
 
     try {
       if (numFailedContainers.get() == 0) {
-        rmHandler.finishApplication("Completed succesfully",
+        rmHandler.finishApplication("Completed successfully",
             FinalApplicationStatus.SUCCEEDED);
       } else {
         String diag = "Completed with " + numFailedContainers.get()
-            + " failed cotainers";
+            + " failed containers";
         rmHandler.finishApplication(diag, FinalApplicationStatus.FAILED);
       }
     } catch (YarnRemoteException ex) {
       LOG.warn(
-          "Encounterd an error while trying to send final status to resource manager",
+          "Encountered an error while trying to send final status to resource manager",
           ex);
     }
 

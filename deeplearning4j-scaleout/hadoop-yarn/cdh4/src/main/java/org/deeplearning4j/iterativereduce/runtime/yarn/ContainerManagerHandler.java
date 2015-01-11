@@ -1,7 +1,5 @@
 package org.deeplearning4j.iterativereduce.runtime.yarn;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -17,6 +15,8 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnRemoteException;
 import org.apache.hadoop.yarn.ipc.YarnRPC;
 import org.apache.hadoop.yarn.util.Records;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -25,7 +25,7 @@ import java.util.Map;
 
 public class ContainerManagerHandler {
 
-  private static final Log LOG = LogFactory.getLog(ContainerManagerHandler.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ContainerManagerHandler.class);
   
   private Configuration conf;
   private Container container;
