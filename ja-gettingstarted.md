@@ -2,11 +2,11 @@
 layout: ja-default
 ---
 
-# Deeplearning4j入門
+# Deeplearning4jはじめよう
 
 コンテンツ
 
-* <a href="#quickstart">Quickstart</a>
+* <a href="#quickstart">クイックスタート</a>
 * <a href="#all">Deeplearning4jのインストール方法(All OS)</a>
     * <a href="#ide-for-java">IDE</a>
     * <a href="#maven">Maven</a>
@@ -19,9 +19,9 @@ layout: ja-default
 * <a href="#trouble">トラブルシューティング</a>
 * <a href="#next">Next Steps</a>
 
-## <a name="quickstart">Quickstart</a>
+## <a name="quickstart">クイックスタート</a>
 
-[Quickstart](../quickstart.html)の項目では、どのようにdeeplearning4jをスタートするか紹介しております。
+[クイックスタート](../quickstart.html)の項目では、どのようにdeeplearning4jをスタートするか紹介しております。
 
 ## <a name="all">インストール方法: All OS</a>
 
