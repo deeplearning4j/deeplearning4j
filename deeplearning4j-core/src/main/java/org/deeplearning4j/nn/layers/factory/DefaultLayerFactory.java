@@ -66,4 +66,21 @@ public class DefaultLayerFactory implements LayerFactory {
     public ParamInitializer initializer() {
         return new DefaultParamInitializer();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof DefaultLayerFactory)) return false;
+
+        DefaultLayerFactory that = (DefaultLayerFactory) o;
+
+        if (layerClazz != null ? !layerClazz.equals(that.layerClazz) : that.layerClazz != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return layerClazz != null ? layerClazz.hashCode() : 0;
+    }
 }

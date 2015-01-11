@@ -3,8 +3,10 @@ package org.deeplearning4j.iterativereduce.impl.multilayer;
 import static org.junit.Assert.*;
 
 import org.deeplearning4j.iterativereduce.irunit.IRUnitDriver;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.junit.Test;
 
 
@@ -13,7 +15,7 @@ public class IRUnitSVMLightWorkerTest {
 
 	public void createSynthJSONConf() {
 		
-		 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+		 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().layerFactory(LayerFactories.getFactory(RBM.class))
          .list(4).hiddenLayerSizes(new int[]{3,2,2}).build();
 		 String json = conf.toJson();
 		 

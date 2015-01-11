@@ -96,7 +96,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected int batchSize = 0;
 
 
-    private transient ObjectMapper mapper = mapper();
 
     public NeuralNetConfiguration() {}
 
@@ -510,6 +509,99 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.stride = stride;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof NeuralNetConfiguration)) return false;
+
+        NeuralNetConfiguration that = (NeuralNetConfiguration) o;
+
+        if (applySparsity != that.applySparsity) return false;
+        if (batchSize != that.batchSize) return false;
+        if (concatBiases != that.concatBiases) return false;
+        if (constrainGradientToUnitNorm != that.constrainGradientToUnitNorm) return false;
+        if (Double.compare(that.corruptionLevel, corruptionLevel) != 0) return false;
+        if (Double.compare(that.dropOut, dropOut) != 0) return false;
+        if (k != that.k) return false;
+        if (kernel != that.kernel) return false;
+        if (Double.compare(that.l2, l2) != 0) return false;
+        if (Double.compare(that.lr, lr) != 0) return false;
+        if (Double.compare(that.momentum, momentum) != 0) return false;
+        if (nIn != that.nIn) return false;
+        if (nOut != that.nOut) return false;
+        if (numFeatureMaps != that.numFeatureMaps) return false;
+        if (numIterations != that.numIterations) return false;
+        if (renderWeightsEveryNumEpochs != that.renderWeightsEveryNumEpochs) return false;
+        if (resetAdaGradIterations != that.resetAdaGradIterations) return false;
+        if (seed != that.seed) return false;
+        if (Double.compare(that.sparsity, sparsity) != 0) return false;
+        if (useAdaGrad != that.useAdaGrad) return false;
+        if (useRegularization != that.useRegularization) return false;
+        if (activationFunction != null ? !activationFunction.equals(that.activationFunction) : that.activationFunction != null)
+            return false;
+        if (!Arrays.equals(featureMapSize, that.featureMapSize)) return false;
+        if (!Arrays.equals(filterSize, that.filterSize)) return false;
+        if (gradientList != null ? !gradientList.equals(that.gradientList) : that.gradientList != null) return false;
+        if (hiddenUnit != that.hiddenUnit) return false;
+        if (layerFactory != null ? !layerFactory.equals(that.layerFactory) : that.layerFactory != null) return false;
+        if (lossFunction != that.lossFunction) return false;
+        if (momentumAfter != null ? !momentumAfter.equals(that.momentumAfter) : that.momentumAfter != null)
+            return false;
+        if (optimizationAlgo != that.optimizationAlgo) return false;
+        if (!Arrays.equals(stride, that.stride)) return false;
+        if (visibleUnit != that.visibleUnit) return false;
+        if (weightInit != that.weightInit) return false;
+        if (!Arrays.equals(weightShape, that.weightShape)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result;
+        long temp;
+        temp = Double.doubleToLongBits(sparsity);
+        result = (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (useAdaGrad ? 1 : 0);
+        temp = Double.doubleToLongBits(lr);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        temp = Double.doubleToLongBits(corruptionLevel);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + numIterations;
+        temp = Double.doubleToLongBits(momentum);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        temp = Double.doubleToLongBits(l2);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (useRegularization ? 1 : 0);
+        result = 31 * result + (momentumAfter != null ? momentumAfter.hashCode() : 0);
+        result = 31 * result + resetAdaGradIterations;
+        temp = Double.doubleToLongBits(dropOut);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (applySparsity ? 1 : 0);
+        result = 31 * result + (weightInit != null ? weightInit.hashCode() : 0);
+        result = 31 * result + (optimizationAlgo != null ? optimizationAlgo.hashCode() : 0);
+        result = 31 * result + (lossFunction != null ? lossFunction.hashCode() : 0);
+        result = 31 * result + renderWeightsEveryNumEpochs;
+        result = 31 * result + (concatBiases ? 1 : 0);
+        result = 31 * result + (constrainGradientToUnitNorm ? 1 : 0);
+        result = 31 * result + (int) (seed ^ (seed >>> 32));
+        result = 31 * result + (layerFactory != null ? layerFactory.hashCode() : 0);
+        result = 31 * result + (gradientList != null ? gradientList.hashCode() : 0);
+        result = 31 * result + nIn;
+        result = 31 * result + nOut;
+        result = 31 * result + (activationFunction != null ? activationFunction.hashCode() : 0);
+        result = 31 * result + (visibleUnit != null ? visibleUnit.hashCode() : 0);
+        result = 31 * result + (hiddenUnit != null ? hiddenUnit.hashCode() : 0);
+        result = 31 * result + k;
+        result = 31 * result + (weightShape != null ? Arrays.hashCode(weightShape) : 0);
+        result = 31 * result + (filterSize != null ? Arrays.hashCode(filterSize) : 0);
+        result = 31 * result + numFeatureMaps;
+        result = 31 * result + (featureMapSize != null ? Arrays.hashCode(featureMapSize) : 0);
+        result = 31 * result + (stride != null ? Arrays.hashCode(stride) : 0);
+        result = 31 * result + kernel;
+        result = 31 * result + batchSize;
+        return result;
+    }
 
     @Override
     public String toString() {
@@ -799,94 +891,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         module.addDeserializer(LayerFactory.class,new LayerFactoryDeSerializer());
         ret.registerModule(module);
         return ret;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof NeuralNetConfiguration)) return false;
-
-        NeuralNetConfiguration that = (NeuralNetConfiguration) o;
-
-        if (applySparsity != that.applySparsity) return false;
-        if (concatBiases != that.concatBiases) return false;
-        if (constrainGradientToUnitNorm != that.constrainGradientToUnitNorm) return false;
-        if (Double.compare(that.corruptionLevel, corruptionLevel) != 0) return false;
-        if (Double.compare(that.dropOut, dropOut) != 0) return false;
-        if (k != that.k) return false;
-        if (Double.compare(that.l2, l2) != 0) return false;
-        if (Double.compare(that.lr, lr) != 0) return false;
-        if (Double.compare(that.momentum, momentum) != 0) return false;
-        if (nIn != that.nIn) return false;
-        if (nOut != that.nOut) return false;
-        if (numFeatureMaps != that.numFeatureMaps) return false;
-        if (numIterations != that.numIterations) return false;
-        if (renderWeightsEveryNumEpochs != that.renderWeightsEveryNumEpochs) return false;
-        if (resetAdaGradIterations != that.resetAdaGradIterations) return false;
-        if (seed != that.seed) return false;
-        if (Double.compare(that.sparsity, sparsity) != 0) return false;
-        if (useAdaGrad != that.useAdaGrad) return false;
-        if (useRegularization != that.useRegularization) return false;
-        if (activationFunction != null ? !activationFunction.equals(that.activationFunction) : that.activationFunction != null)
-            return false;
-        if (!Arrays.equals(featureMapSize, that.featureMapSize)) return false;
-        if (!Arrays.equals(filterSize, that.filterSize)) return false;
-        if (hiddenUnit != that.hiddenUnit) return false;
-        if (lossFunction != that.lossFunction) return false;
-        if (momentumAfter != null ? !momentumAfter.equals(that.momentumAfter) : that.momentumAfter != null)
-            return false;
-        if (optimizationAlgo != that.optimizationAlgo) return false;
-        if (!Arrays.equals(stride, that.stride)) return false;
-        if (visibleUnit != that.visibleUnit) return false;
-        if (weightInit != that.weightInit) return false;
-        if (!Arrays.equals(weightShape, that.weightShape)) return false;
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result;
-        long temp;
-        temp = Double.doubleToLongBits(sparsity);
-        result = (int) (temp ^ (temp >>> 32));
-        result = 31 * result + (useAdaGrad ? 1 : 0);
-        temp = Double.doubleToLongBits(lr);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + k;
-        temp = Double.doubleToLongBits(corruptionLevel);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + numIterations;
-        temp = Double.doubleToLongBits(momentum);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        temp = Double.doubleToLongBits(l2);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + (useRegularization ? 1 : 0);
-        result = 31 * result + (momentumAfter != null ? momentumAfter.hashCode() : 0);
-        result = 31 * result + resetAdaGradIterations;
-        temp = Double.doubleToLongBits(dropOut);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + (applySparsity ? 1 : 0);
-        result = 31 * result + (weightInit != null ? weightInit.hashCode() : 0);
-        result = 31 * result + (optimizationAlgo != null ? optimizationAlgo.hashCode() : 0);
-        result = 31 * result + (lossFunction != null ? lossFunction.hashCode() : 0);
-        result = 31 * result + renderWeightsEveryNumEpochs;
-        result = 31 * result + (concatBiases ? 1 : 0);
-        result = 31 * result + (constrainGradientToUnitNorm ? 1 : 0);
-        result = 31 * result + (int) (seed ^ (seed >>> 32));
-        result = 31 * result + nIn;
-        result = 31 * result + nOut;
-        result = 31 * result + (activationFunction != null ? activationFunction.hashCode() : 0);
-        result = 31 * result + (visibleUnit != null ? visibleUnit.hashCode() : 0);
-        result = 31 * result + (hiddenUnit != null ? hiddenUnit.hashCode() : 0);
-        result = 31 * result + (weightShape != null ? Arrays.hashCode(weightShape) : 0);
-        result = 31 * result + (filterSize != null ? Arrays.hashCode(filterSize) : 0);
-        result = 31 * result + numFeatureMaps;
-        result = 31 * result + (featureMapSize != null ? Arrays.hashCode(featureMapSize) : 0);
-        result = 31 * result + (stride != null ? Arrays.hashCode(stride) : 0);
-        return result;
     }
 
     private void readObject(java.io.ObjectInputStream in)
