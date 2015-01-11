@@ -25,7 +25,6 @@ public class Master implements ComputableMaster<ParameterVectorUpdateable> {
 
     ParameterVectorUpdateable lastMasterUpdate = null;
     protected Configuration conf = null;
-    protected INDArray paramVector;
     protected static Logger log = LoggerFactory.getLogger(Master.class);
 
     /**
@@ -36,7 +35,7 @@ public class Master implements ComputableMaster<ParameterVectorUpdateable> {
     @Override
     public void complete(DataOutputStream osStream) throws IOException {
         log.info( "IR DBN Master Node: Complete!" );
-        Nd4j.write(paramVector,osStream);
+        Nd4j.write(lastMasterUpdate.get(),osStream);
     }
 
 
@@ -61,7 +60,7 @@ public class Master implements ComputableMaster<ParameterVectorUpdateable> {
         }
 
         first.get().divi(workerUpdates.size());
-
+        lastMasterUpdate = first;
         return first;
     }
 

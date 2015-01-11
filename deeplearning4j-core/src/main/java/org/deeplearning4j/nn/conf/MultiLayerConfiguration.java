@@ -121,6 +121,39 @@ public class MultiLayerConfiguration implements Serializable {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof MultiLayerConfiguration)) return false;
+
+        MultiLayerConfiguration that = (MultiLayerConfiguration) o;
+
+        if (Double.compare(that.dampingFactor, dampingFactor) != 0) return false;
+        if (pretrain != that.pretrain) return false;
+        if (useDropConnect != that.useDropConnect) return false;
+        if (useGaussNewtonVectorProductBackProp != that.useGaussNewtonVectorProductBackProp) return false;
+        if (useRBMPropUpAsActivations != that.useRBMPropUpAsActivations) return false;
+        if (confs != null ? !confs.equals(that.confs) : that.confs != null) return false;
+        if (!Arrays.equals(hiddenLayerSizes, that.hiddenLayerSizes)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result;
+        long temp;
+        result = hiddenLayerSizes != null ? Arrays.hashCode(hiddenLayerSizes) : 0;
+        result = 31 * result + (confs != null ? confs.hashCode() : 0);
+        result = 31 * result + (useDropConnect ? 1 : 0);
+        result = 31 * result + (useGaussNewtonVectorProductBackProp ? 1 : 0);
+        result = 31 * result + (pretrain ? 1 : 0);
+        result = 31 * result + (useRBMPropUpAsActivations ? 1 : 0);
+        temp = Double.doubleToLongBits(dampingFactor);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        return result;
+    }
+
     public static class Builder {
 
         private List<NeuralNetConfiguration> confs = new ArrayList<>();
