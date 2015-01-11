@@ -18,6 +18,7 @@ import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWork
 
 import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
@@ -132,7 +133,12 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     public void setup(Configuration conf) {
 
         log.info("Worker-Conf: " + conf.get(MULTI_LAYER_CONF));
-        MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(conf.get(MULTI_LAYER_CONF));
+        
+        MultiLayerConfiguration confMLN = new NeuralNetConfiguration.Builder()
+        .list(4).hiddenLayerSizes(new int[]{3,2,2}).build();
+        String json = confMLN.toJson();
+
+        MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson( json ); // conf.get(MULTI_LAYER_CONF));
         multiLayerNetwork = new MultiLayerNetwork(conf2);
 
 
