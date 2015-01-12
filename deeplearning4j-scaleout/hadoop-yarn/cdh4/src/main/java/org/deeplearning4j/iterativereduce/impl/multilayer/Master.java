@@ -11,7 +11,6 @@ import org.apache.hadoop.util.ToolRunner;
 import org.deeplearning4j.iterativereduce.impl.ParameterVectorUpdateable;
 import org.deeplearning4j.iterativereduce.runtime.ComputableMaster;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appmaster.ApplicationMaster;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
