@@ -13,6 +13,7 @@ public class TestSVMLightRecordFactory {
 	private String test_svm_light_positive_label = "1 1:0.43 3:0.12 9284:0.2";
 	private String test_svm_light_no_label = "1:0.43 3:0.12 9284:0.2";
 	
+	private String test_svm_light_zero_index = "1 0:0.43 6:0.12 9284:0.2";
 	
 
 	@Test
@@ -84,6 +85,27 @@ public class TestSVMLightRecordFactory {
 		
 		
 	}	
+	
+
+	@Test
+	public void testSVMLightRecordFactoryParseZeroIndex() {
+		
+		int feature_size = 9285;
+		
+		INDArray in_vector = Nd4j.create( feature_size );
+		INDArray out_vector = Nd4j.create( 1 );
+		
+		SVMLightRecordFactory recFactory = new SVMLightRecordFactory( feature_size );
+		try {
+			recFactory.parseFromLine( test_svm_light_zero_index, in_vector, out_vector );
+		} catch (NumberFormatException e ) {
+		}
+		
+		assertEquals( 0.43, in_vector.getDouble( 0 ), 0.0 );
+		
+		
+	}		
+	
 	
 	
 }
