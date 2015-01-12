@@ -101,7 +101,7 @@ public class TestSVMLightRecordFactory {
 		} catch (NumberFormatException e ) {
 		}
 		
-		assertEquals( 0.43, in_vector.getDouble( 0 ), 0.0 );
+		assertEquals( 0.43, in_vector.getDouble( 0 ), 1e-1 );
 		
 		
 	}		
