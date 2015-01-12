@@ -17,7 +17,7 @@ public class TestSVMLightRecordFactory {
 	
 
 	@Test
-	public void testSVMLightRecordFactoryParseWithComment() {
+	public void testSVMLightRecordFactoryParseWithComment() throws Exception {
 		
 		int feature_size = 9285;
 		
@@ -29,11 +29,13 @@ public class TestSVMLightRecordFactory {
 		
 		assertEquals( -1.0, out_vector.getDouble( 0 ), 0.0 );
 		
+		System.out.println( in_vector );
+		
 		
 	}
 
 	@Test
-	public void testSVMLightRecordFactoryParseWithNoComment() {
+	public void testSVMLightRecordFactoryParseWithNoComment() throws Exception {
 		
 		int feature_size = 9285;
 		
@@ -49,7 +51,7 @@ public class TestSVMLightRecordFactory {
 	}
 
 	@Test
-	public void testSVMLightRecordFactoryParseWithPositiveLabel() {
+	public void testSVMLightRecordFactoryParseWithPositiveLabel() throws Exception {
 		
 		int feature_size = 9285;
 		
@@ -65,7 +67,7 @@ public class TestSVMLightRecordFactory {
 	}
 	
 	@Test
-	public void testSVMLightRecordFactoryParseNoLabelException() {
+	public void testSVMLightRecordFactoryParseNoLabelException() throws Exception {
 		
 		int feature_size = 9285;
 		boolean caughtParseException = false;
@@ -90,6 +92,7 @@ public class TestSVMLightRecordFactory {
 	@Test
 	public void testSVMLightRecordFactoryParseZeroIndex() {
 		
+		boolean caughtException = false;
 		int feature_size = 9285;
 		
 		INDArray in_vector = Nd4j.create( feature_size );
@@ -98,10 +101,13 @@ public class TestSVMLightRecordFactory {
 		SVMLightRecordFactory recFactory = new SVMLightRecordFactory( feature_size );
 		try {
 			recFactory.parseFromLine( test_svm_light_zero_index, in_vector, out_vector );
-		} catch (NumberFormatException e ) {
+		} catch (Exception e ) {
+			caughtException = true;
 		}
 		
-		assertEquals( 0.43, in_vector.getDouble( 0 ), 1e-1 );
+
+		assertEquals( true, caughtException );
+		//assertEquals( 0.43, in_vector.getDouble( 0 ), 1e-1 );
 		
 		
 	}		

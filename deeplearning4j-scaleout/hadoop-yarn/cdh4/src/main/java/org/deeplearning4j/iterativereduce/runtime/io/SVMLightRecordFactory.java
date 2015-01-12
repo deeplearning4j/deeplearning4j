@@ -44,7 +44,7 @@ public class SVMLightRecordFactory {
 	 * @param output_vec
 	 * @throws Exception
 	 */
-	public void parseFromLine(String line, INDArray input_vec, INDArray output_vec) {
+	public void parseFromLine(String line, INDArray input_vec, INDArray output_vec) throws Exception {
 
 		//String[] inputs_outputs = line.split("\\|");
 		// remove comments
@@ -65,12 +65,12 @@ public class SVMLightRecordFactory {
 
 		int startFeatureIndex = 0;
 		// dont know what to do the the "namespace" "f"
-		if (this.useBiasTerm) {
+/*		if (this.useBiasTerm) {
 			// input_vec.set(0, 1.0);
 			input_vec.putScalar(0, 1.0);
 			startFeatureIndex = 1;
 		}
-
+*/
 		for (int x = 1; x < inputs_outputs.length; x++) {
 
 			//System.out.println("> DEbug > part: " + parts[x]);
@@ -83,11 +83,16 @@ public class SVMLightRecordFactory {
 
 			} else {
 				// get (offset) feature index and hash as neccesary
-				int index = (Integer.parseInt(feature[0]) + startFeatureIndex); // % this.featureVectorSize;
+				// we subtract 1 in svmLight because it starts at a 1-index in its text format
+				int index = (Integer.parseInt(feature[0]) + startFeatureIndex) - 1; // % this.featureVectorSize;
 
 				double val = Double.parseDouble(feature[1]);
 
-				if (index < this.featureVectorSize) {
+				if (index < 0) {
+					
+					throw new Exception("SVMLight does not support 0-based indexing in its text vector formats");
+				
+				} else if (index < this.featureVectorSize) {
 
 					input_vec.putScalar(index, val);
 
