@@ -283,7 +283,7 @@ public class ApplicationWorkerService<T extends Updateable> {
       masterService = SpecificRequestor.getClient(IterativeReduceService.class,
           nettyTransceiver);
 
-      LOG.info("Connected to master via NettyTranseiver at " + masterAddr);
+      LOG.info("Connected to master via NettyTransiever at " + masterAddr);
 
     } catch (IOException ex) {
       LOG.error("Unable to connect to master at " + masterAddr);

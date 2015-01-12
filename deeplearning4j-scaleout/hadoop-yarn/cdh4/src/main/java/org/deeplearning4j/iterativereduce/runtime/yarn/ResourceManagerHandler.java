@@ -1,7 +1,6 @@
 package org.deeplearning4j.iterativereduce.runtime.yarn;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -13,6 +12,8 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnRemoteException;
 import org.apache.hadoop.yarn.ipc.YarnRPC;
 import org.apache.hadoop.yarn.util.Records;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -24,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ResourceManagerHandler {
 
-  private static final Log LOG = LogFactory.getLog(ResourceManagerHandler.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ResourceManagerHandler.class);
   
   private Configuration conf;
   private ApplicationAttemptId appAttemptId;
@@ -106,18 +107,7 @@ public class ResourceManagerHandler {
     Priority prio = Records.newRecord(Priority.class);
     prio.setPriority(0);
     appCtx.setPriority(prio);
-/*
-    for (Map.Entry<String, LocalResource> entry : localResources.entrySet())
-    {
-        System.out.println("IR:RM: " + entry.getKey() + "/" + entry.getValue().getResource());
-    }    
- */   
-/*
-    for (Map.Entry<String, String> entry : env.entrySet())
-    {
-        System.out.println("IR:ResourceManager -> Env vars: " + entry.getKey() + "/" + entry.getValue() );
-    }    
-*/
+
     
     // Launch ctx
     ContainerLaunchContext containerCtx = Records.newRecord(ContainerLaunchContext.class);
