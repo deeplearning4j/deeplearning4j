@@ -4,7 +4,6 @@
         <artifactId>spark</artifactId>
         <groupId>org.deeplearning4j</groupId>
         <version>0.0.3.4-SNAPSHOT</version>
-        <relativePath>../../deeplearning4j-scaleout/spark/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -12,18 +11,12 @@
     <packaging>jar</packaging>
 
     <name>spark-cdh5</name>
-    <url>http://maven.apache.org</url>
+    <url>http://deeplearning4j.org</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>3.8.1</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 </project>
