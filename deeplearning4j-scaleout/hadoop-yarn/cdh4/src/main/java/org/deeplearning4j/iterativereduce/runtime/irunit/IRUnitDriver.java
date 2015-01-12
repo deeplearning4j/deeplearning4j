@@ -119,7 +119,7 @@ public class IRUnitDriver<T> {
     }
 
     /**
-     * Seperated this out from Setup() so the tester could set a property before using the properties in setup
+     * Seperated this out from setup() so the tester could set a property before using the properties in setup
      *
      */
     private void LoadPropertiesFile() {
@@ -146,7 +146,7 @@ public class IRUnitDriver<T> {
     }
 
     /**
-     * Setup components of the IR app run 1. load app.properties 2. msg arrays
+     * setup components of the IR app run 1. load app.properties 2. msg arrays
      * 3. calc local splits 4. setup master 5. setup workers based on number of
      * splits
      *
@@ -222,7 +222,7 @@ public class IRUnitDriver<T> {
 
             workers.add(worker);
 
-            log.info("> Setup Worker " + x);
+            log.info("> setup Worker " + x);
         } // for
 
     }
