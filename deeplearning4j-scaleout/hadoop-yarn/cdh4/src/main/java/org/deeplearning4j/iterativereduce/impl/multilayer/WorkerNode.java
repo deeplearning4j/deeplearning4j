@@ -57,14 +57,14 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     @Override
     public ParameterVectorUpdateable compute() {
         log.info("Worker > Compute() -------------------------- ");
-        int recordsProcessed = 0;
+        
         DataSet hdfs_recordBatch = null; //this.hdfs_fetcher.next();
 
         if ( this.hdfsDataSetIterator.hasNext() ) {
             hdfs_recordBatch = this.hdfsDataSetIterator.next();
             if (hdfs_recordBatch.getFeatures().rows() > 0) {
             	
-            	log.info( "Rows: " + hdfs_recordBatch.numExamples() + ", inputs: " + hdfs_recordBatch.numInputs() + ", " + hdfs_recordBatch );
+            	//log.info( "Rows: " + hdfs_recordBatch.numExamples() + ", inputs: " + hdfs_recordBatch.numInputs() + ", " + hdfs_recordBatch );
             	
                 // calc stats on number records processed
                 this.totalRecordsProcessed += hdfs_recordBatch.getFeatures().rows();
@@ -72,7 +72,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
                 batchWatch.start();
                 this.multiLayerNetwork.fit( hdfs_recordBatch );
                 batchWatch.stop();
-                log.info("Worker > Processed Total " + recordsProcessed + ", Batch Time " + batchWatch.toString() + " Total Time " + totalRunTimeWatch.toString());
+                log.info("Worker > Processed Total " + this.totalRecordsProcessed + ", Batch Time " + batchWatch.toString() + " Total Time " + totalRunTimeWatch.toString());
             }
             else {
                 // in case we get a blank line
