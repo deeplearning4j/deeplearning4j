@@ -28,21 +28,7 @@ public class TextRecordParser<T extends Updateable> implements RecordParser<T> {
   final Reporter voidReporter = Reporter.NULL;
   boolean hasMore = true;
   
-  /*
-   * a hack to get this setup
-   */
-/*  public void setup(JobConf jobConf, InputSplit split) throws IOException {
-    
-    this.jobConf = jobConf;
-    this.split = split;
-    this.input_format = new TextInputFormat();
 
-    this.reader = input_format.getRecordReader(this.split, this.jobConf, voidReporter);
-    this.key = reader.createKey();
-    
-    
-  }
-*/  
   /**
    * 
    * just a dead simple way to do this

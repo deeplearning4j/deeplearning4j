@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Future YARN entry point
  */
 public class ApplicationMaster<T extends Updateable> extends Configured
-    implements Tool {
+        implements Tool {
 
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationMaster.class);
 
@@ -56,9 +56,9 @@ public class ApplicationMaster<T extends Updateable> extends Configured
   private ApplicationAttemptId appAttemptId;
   private String appName;
   private Properties props;
-  
+
   private Class<?> inputFormatClass;
-  
+
   private enum ReturnCode {
     OK(0), MASTER_ERROR(-1), CONTAINER_ERROR(1);
 
@@ -74,17 +74,17 @@ public class ApplicationMaster<T extends Updateable> extends Configured
   }
 
   public ApplicationMaster(ComputableMaster<T> computableMaster,
-      Class<T> updatable) throws FileNotFoundException, IOException {
+                           Class<T> updatable) throws FileNotFoundException, IOException {
 
     // TODO: make port configurable
     this(9999, computableMaster, updatable);
   }
 
   public ApplicationMaster(int port, ComputableMaster<T> computableMaster,
-      Class<T> updatable) throws  IOException {
+                           Class<T> updatable) throws  IOException {
 
     //masterHost = InetAddress.getLocalHost().getHostName();
-	masterHost = InetAddress.getLocalHost().getCanonicalHostName();
+    masterHost = InetAddress.getLocalHost().getCanonicalHostName();
     masterPort = port;
     masterAddr = new InetSocketAddress(masterHost, masterPort);
     masterComputable = computableMaster;
@@ -92,69 +92,69 @@ public class ApplicationMaster<T extends Updateable> extends Configured
 
     props = new Properties();
     props.load(new FileInputStream(ConfigFields.APP_CONFIG_FILE)); // Should be
-                                                                   // in ./ - as
-                                                                   // the Client
-                                                                   // should've
-                                                                   // shipped it
+    // in ./ - as
+    // the Client
+    // should've
+    // shipped it
     ContainerId containerId = ConverterUtils.toContainerId(System
-        .getenv(ApplicationConstants.AM_CONTAINER_ID_ENV));
+            .getenv(ApplicationConstants.AM_CONTAINER_ID_ENV));
     appAttemptId = containerId.getApplicationAttemptId();
     appName = props.getProperty(ConfigFields.APP_NAME,
-        ConfigFields.DEFAULT_APP_NAME).replace(' ', '_');
+            ConfigFields.DEFAULT_APP_NAME).replace(' ', '_');
 
     batchSize = Integer.parseInt(props.getProperty(ConfigFields.APP_BATCH_SIZE,
-        "200"));
+            "200"));
     iterationCount = Integer.parseInt(props.getProperty(
-        ConfigFields.APP_ITERATION_COUNT, "1"));
-    
+            ConfigFields.APP_ITERATION_COUNT, "1"));
+
     String inputFormatClassString = props.getProperty( ConfigFields.INPUT_FORMAT_CLASS, ConfigFields.INPUT_FORMAT_CLASS_DEFAULT );
-    
+
     LOG.debug( "Using Input Format: " + inputFormatClassString );
     LOG.info( "IR:AppMaster > Using Input Format: " + inputFormatClassString );
-    
-	Class<?> if_class = null;
-	try {
-		if_class = Class.forName( inputFormatClassString );
-	} catch (ClassNotFoundException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	} 
-	
-	// need to check its a legit input format subclass
-	
-	if ( null == if_class ) {
-		
-		this.inputFormatClass = TextInputFormat.class;
-		
-	} else if (InputFormat.class.isAssignableFrom(if_class) ) {
-		
-		LOG.debug( "good input format: " + inputFormatClassString );
-		this.inputFormatClass = if_class;
-		
-	} else {
-		LOG.debug( "bad input format: " + inputFormatClassString + ", defaulting to TextInputFormat" );
-		this.inputFormatClass = TextInputFormat.class;
-		// TODO: do we die here? what do we do?
-	}
+
+    Class<?> if_class = null;
+    try {
+      if_class = Class.forName( inputFormatClassString );
+    } catch (ClassNotFoundException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+    // need to check its a legit input format subclass
+
+    if ( null == if_class ) {
+
+      this.inputFormatClass = TextInputFormat.class;
+
+    } else if (InputFormat.class.isAssignableFrom(if_class) ) {
+
+      LOG.debug( "good input format: " + inputFormatClassString );
+      this.inputFormatClass = if_class;
+
+    } else {
+      LOG.debug( "bad input format: " + inputFormatClassString + ", defaulting to TextInputFormat" );
+      this.inputFormatClass = TextInputFormat.class;
+      // TODO: do we die here? what do we do?
+    }
 
     // Copy all properties into appConfig to be passed down to workers, TODO:
     // fix collection merging
-    appConfig = new HashMap<CharSequence, CharSequence>();
+    appConfig = new HashMap<>();
     for (Map.Entry<Object, Object> prop : props.entrySet()) {
       appConfig.put((String) prop.getKey(), (String) prop.getValue());
     }
 
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Configurartion entries: ");
+      LOG.debug("Configuration entries: ");
       for (Map.Entry<CharSequence, CharSequence> entry : appConfig.entrySet()) {
         LOG.debug(entry.getKey() + "=" + entry.getValue());
       }
 
       LOG.debug("Initialized application master" + ", masterHost=" + masterHost
-          + ", masterPort=" + masterPort + ", masterAddress=" + masterAddr
-          + ", masterComputable=" + masterComputable.getClass().getName()
-          + ", masterUpdateable=" + masterUpdateable.getClass().getName()
-          + ", appAttemptId=" + appAttemptId);
+              + ", masterPort=" + masterPort + ", masterAddress=" + masterAddr
+              + ", masterComputable=" + masterComputable.getClass().getName()
+              + ", masterUpdateable=" + masterUpdateable.getClass().getName()
+              + ", appAttemptId=" + appAttemptId);
     }
   }
 
@@ -164,14 +164,14 @@ public class ApplicationMaster<T extends Updateable> extends Configured
     private StartupConfiguration config;
 
     public ConfigurationTuple(String host, String workerId,
-        StartupConfiguration config) {
+                              StartupConfiguration config) {
       this.host = host;
       this.workerId = workerId;
       this.config = config;
 
       LOG.debug("Created configuration typle" + ", host=" + this.host
-          + ", workerId=" + this.workerId + ", startupConfiguration="
-          + this.config);
+              + ", workerId=" + this.workerId + ", startupConfiguration="
+              + this.config);
     }
 
     public String getHost() {
@@ -196,110 +196,62 @@ public class ApplicationMaster<T extends Updateable> extends Configured
     Set<ConfigurationTuple> configTuples = new HashSet<ConfigurationTuple>();
     int workerId = 0;
 
-	JobConf job = new JobConf( new Configuration() );
+    JobConf job = new JobConf( new Configuration() );
 
-	job.setInputFormat( (Class<? extends InputFormat>) this.inputFormatClass ); //TextInputFormat.class);
-	
-//	Path workDir = new Path( "/tmp/inputs/" );
-	
-	FileInputFormat.setInputPaths(job, inputPath);
-    
-	InputSplit[] splits =
-		       job.getInputFormat().getSplits( job, job.getNumMapTasks() );		
+    job.setInputFormat( (Class<? extends InputFormat>) this.inputFormatClass ); //TextInputFormat.class);
 
-//	for ( int splitIndex = 0; splitIndex < splits.length; splitIndex++ ) {
 
-//	}
-	
+    FileInputFormat.setInputPaths(job, inputPath);
 
-	for ( InputSplit split : splits) {
-		
+    InputSplit[] splits =
+            job.getInputFormat().getSplits( job, job.getNumMapTasks() );
 
-		
-		FileSplit convertedToMetronomeSplit = new FileSplit();
-		
-		org.apache.hadoop.mapred.FileSplit hadoopFileSplit = (org.apache.hadoop.mapred.FileSplit)split;
 
-		if (hadoopFileSplit.getLength() - hadoopFileSplit.getStart() > 0) {
-			
-			convertedToMetronomeSplit.length = hadoopFileSplit.getLength();
-			convertedToMetronomeSplit.offset = hadoopFileSplit.getStart();
-			convertedToMetronomeSplit.path = hadoopFileSplit.getPath().toString();
-			
-			  StartupConfiguration config = StartupConfiguration.newBuilder()
-				      .setBatchSize(batchSize).setIterations(iterationCount)
-				      .setOther(appConfig).setSplit( convertedToMetronomeSplit ).build();
-						  
-			  String wid = "worker-" + workerId;
-			  ConfigurationTuple tuple = new ConfigurationTuple( split.getLocations()[ 0 ], wid, config );
-			
-			  configTuples.add(tuple);
-			  workerId++;	
-			  
-			  LOG.info( "IR_AM_worker: " + wid + " added split: " + convertedToMetronomeSplit.toString() );
-			  
-		} else {
-			LOG.info( "IR_AM: Culled out 0 length Split: " + convertedToMetronomeSplit.toString() );
-		}
-		
-		
-		
-	}
-	
-	LOG.info( "Total Splits/Workers: " + configTuples.size() );
-		
-    
-/*    
-    for (BlockLocation b : bl) {
-      FileSplit split = FileSplit.newBuilder().setPath(p.toString())
-          .setOffset(b.getOffset()).setLength(b.getLength()).build();
 
-      StartupConfiguration config = StartupConfiguration.newBuilder()
-          .setBatchSize(batchSize).setIterations(iterationCount)
-          .setOther(appConfig).setSplit(split).build();
+    for ( InputSplit split : splits) {
 
-      String wid = "worker-" + workerId;
-      ConfigurationTuple tuple = new ConfigurationTuple(b.getHosts()[0], wid,
-          config);
 
-      configTuples.add(tuple);
-      workerId++;
+
+      FileSplit convertedToMetronomeSplit = new FileSplit();
+
+      org.apache.hadoop.mapred.FileSplit hadoopFileSplit = (org.apache.hadoop.mapred.FileSplit)split;
+
+      if (hadoopFileSplit.getLength() - hadoopFileSplit.getStart() > 0) {
+        convertedToMetronomeSplit.setLength(hadoopFileSplit.getLength());
+        convertedToMetronomeSplit.setOffset(hadoopFileSplit.getStart());
+        convertedToMetronomeSplit.setPath(hadoopFileSplit.getPath().toString());
+
+        StartupConfiguration config = StartupConfiguration.newBuilder()
+                .setBatchSize(batchSize).setIterations(iterationCount)
+                .setOther(appConfig).setSplit( convertedToMetronomeSplit ).build();
+
+        String wid = "worker-" + workerId;
+        ConfigurationTuple tuple = new ConfigurationTuple( split.getLocations()[ 0 ], wid, config );
+
+        configTuples.add(tuple);
+        workerId++;
+
+        LOG.info( "IR_AM_worker: " + wid + " added split: " + convertedToMetronomeSplit.toString() );
+
+      } else {
+        LOG.info( "IR_AM: Culled out 0 length Split: " + convertedToMetronomeSplit.toString() );
+      }
+
+
+
     }
-    */
+
+    LOG.info( "Total Splits/Workers: " + configTuples.size() );
+
 
     return configTuples;
   }
-  
-  private Set<ConfigurationTuple> getConfigurationTuples_old() throws IOException {
-	    Path p = new Path(props.getProperty(ConfigFields.APP_INPUT_PATH));
-	    FileSystem fs = FileSystem.get(conf);
-	    FileStatus f = fs.getFileStatus(p);
-	    BlockLocation[] bl = fs.getFileBlockLocations(p, 0, f.getLen());
-	    Set<ConfigurationTuple> configTuples = new HashSet<ConfigurationTuple>();
-	    int workerId = 0;
 
-	    for (BlockLocation b : bl) {
-	      FileSplit split = FileSplit.newBuilder().setPath(p.toString())
-	          .setOffset(b.getOffset()).setLength(b.getLength()).build();
 
-	      StartupConfiguration config = StartupConfiguration.newBuilder()
-	          .setBatchSize(batchSize).setIterations(iterationCount)
-	          .setOther(appConfig).setSplit(split).build();
-
-	      String wid = "worker-" + workerId;
-	      ConfigurationTuple tuple = new ConfigurationTuple(b.getHosts()[0], wid,
-	          config);
-
-	      configTuples.add(tuple);
-	      workerId++;
-	    }
-
-	    return configTuples;
-	  }  
 
   private Map<WorkerId, StartupConfiguration> getMasterStartupConfiguration(
-      Set<ConfigurationTuple> configTuples) {
-    Map<WorkerId, StartupConfiguration> startupConfig = new HashMap<WorkerId, StartupConfiguration>();
+          Set<ConfigurationTuple> configTuples) {
+    Map<WorkerId, StartupConfiguration> startupConfig = new HashMap<>();
 
     for (ConfigurationTuple tuple : configTuples) {
       WorkerId wid = Utils.createWorkerId(tuple.getWorkerId());
@@ -310,7 +262,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
   }
 
   private Map<String, Integer> getNumberContainersHostMapping(
-      Set<ConfigurationTuple> configTuples) {
+          Set<ConfigurationTuple> configTuples) {
 
     Map<String, Integer> containerHostMapping = new HashMap<String, Integer>();
 
@@ -334,42 +286,27 @@ public class ApplicationMaster<T extends Updateable> extends Configured
   }
 
   private List<ResourceRequest> getRequestedContainersList(
-      Set<ConfigurationTuple> configTuples, ResourceManagerHandler rmHandler)
-      throws YarnRemoteException { // TODO: fix - find a way around this
+          Set<ConfigurationTuple> configTuples, ResourceManagerHandler rmHandler)
+          throws YarnRemoteException { // TODO: fix - find a way around this
 
     Map<String, Integer> numberContainerHostsMapping = getNumberContainersHostMapping(configTuples);
     List<ResourceRequest> requestedContainers = new ArrayList<ResourceRequest>();
     int memory = Integer.parseInt(props.getProperty(ConfigFields.YARN_MEMORY,
-        "512"));
+            "512"));
 
     // Get the cluster map so we can do some assignment stuff
     rmHandler.getClientResourceManager();
     List<NodeReport> nodes = rmHandler.getClusterNodes();
 
     for (Map.Entry<String, Integer> entry : numberContainerHostsMapping
-        .entrySet()) {
+            .entrySet()) {
       LOG.debug("Creating a resource request for host " + entry.getKey()
-          + ", with " + entry.getValue() + " containers");
+              + ", with " + entry.getValue() + " containers");
 
-      /*
-      String host = "127.0.0.1";
-      for (NodeReport node : nodes) {
-        LOG.debug("Looking to match block host=" + entry.getKey()
-            + ", with container host=" + node.getNodeId().getHost());
-
-        if (node.getNodeId().getHost().equals(entry.getKey())) {
-          host = node.getNodeId().getHost();
-          break;
-        }
-      }
-
-      ResourceRequest request = Utils.createResourceRequest(host,
-          entry.getValue(), memory);
-      */
 
       ResourceRequest request = Utils.createResourceRequest("*",
               entry.getValue(), memory);
-      
+
       requestedContainers.add(request);
     }
 
@@ -377,7 +314,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
   }
 
   private List<Thread> launchContainers(Set<ConfigurationTuple> configTuples,
-      List<Container> allocatedContainers) {
+                                        List<Container> allocatedContainers) {
 
     List<Thread> launchThreads = new ArrayList<Thread>();
     Iterator<Container> ic = allocatedContainers.iterator();
@@ -387,19 +324,19 @@ public class ApplicationMaster<T extends Updateable> extends Configured
       Iterator<ConfigurationTuple> ict = configTuples.iterator();
 
       LOG.debug("Looking to match up split for container on host "
-          + container.getNodeId().getHost());
+              + container.getNodeId().getHost());
 
       while (ict.hasNext()) {
         ConfigurationTuple tuple = ict.next();
 
         LOG.debug("Looking to match container host "
-            + container.getNodeId().getHost() + ", with split host "
-            + tuple.getHost());
+                + container.getNodeId().getHost() + ", with split host "
+                + tuple.getHost());
 
         if (tuple.getHost().equals(container.getNodeId().getHost())) {
           LOG.debug("Found matching container for split");
           LaunchContainerRunnabble runnable = new LaunchContainerRunnabble(
-              tuple.getWorkerId(), container);
+                  tuple.getWorkerId(), container);
           Thread launchThread = new Thread(runnable);
 
           launchThreads.add(launchThread);
@@ -423,10 +360,10 @@ public class ApplicationMaster<T extends Updateable> extends Configured
         ConfigurationTuple tuple = ict.next();
 
         LOG.debug("Launching split for host " + tuple.getHost()
-            + " on container host " + container.getNodeId().getHost());
+                + " on container host " + container.getNodeId().getHost());
 
         LaunchContainerRunnabble runnable = new LaunchContainerRunnabble(
-            tuple.getWorkerId(), container);
+                tuple.getWorkerId(), container);
         Thread launchThread = new Thread(runnable);
 
         launchThreads.add(launchThread);
@@ -453,7 +390,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
     @Override
     public void run() {
       LOG.debug("Launching container for worker=" + workerId + ", container="
-          + container);
+              + container);
       // TODO: fix to make more robust (e.g. cache)
       cmHandler = new ContainerManagerHandler(conf, container);
 
@@ -463,12 +400,12 @@ public class ApplicationMaster<T extends Updateable> extends Configured
       // Get the local resources
       try {
         Map<String, LocalResource> localResources = Utils
-            .getLocalResourcesForApplication(conf,
-                appAttemptId.getApplicationId(), appName, props,
-                LocalResourceVisibility.APPLICATION);
+                .getLocalResourcesForApplication(conf,
+                        appAttemptId.getApplicationId(), appName, props,
+                        LocalResourceVisibility.APPLICATION);
 
         List<String> commands = Utils.getWorkerCommand(conf, props, masterHost
-            + ":" + masterPort, workerId);
+                + ":" + masterPort, workerId);
 
         // Start
         cmHandler.startContainer(commands, localResources, Utils.getEnvironment(conf, props));
@@ -489,17 +426,17 @@ public class ApplicationMaster<T extends Updateable> extends Configured
 
     // Our own RM Handler
     ResourceManagerHandler rmHandler = new ResourceManagerHandler(conf,
-        appAttemptId);
+            appAttemptId);
 
     // Connect
     rmHandler.getAMResourceManager();
-    
+
     // Register
     try {
       rmHandler.registerApplicationMaster(masterHost, masterPort);
     } catch (YarnRemoteException ex) {
       LOG.error(
-          "Error encountered while trying to register application master", ex);
+              "Error encountered while trying to register application master", ex);
       return ReturnCode.MASTER_ERROR.getCode();
     }
 
@@ -516,7 +453,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
 
     // Initial containers we want, based off of the file splits
     List<ResourceRequest> requestedContainers = getRequestedContainersList(
-        configTuples, rmHandler);
+            configTuples, rmHandler);
     List<ContainerId> releasedContainers = new ArrayList<>();
 
     // Send an initial allocation request
@@ -528,23 +465,23 @@ public class ApplicationMaster<T extends Updateable> extends Configured
       int attempts = 0;
 
       List<Container> acquiredContainers = null;
-      
+
       while (got < needed && attempts < maxAttempts) {
         LOG.info("Requesting containers" + ", got=" + got + ", needed="
-            + needed + ", attempts=" + attempts + ", maxAttempts="
-            + maxAttempts);
+                + needed + ", attempts=" + attempts + ", maxAttempts="
+                + maxAttempts);
 
         acquiredContainers = rmHandler.allocateRequest(requestedContainers,
-            releasedContainers).getAllocatedContainers();
+                releasedContainers).getAllocatedContainers();
 
         got += acquiredContainers.size();
         attempts++;
 
         allocatedContainers.addAll(acquiredContainers);
         acquiredContainers.clear();
-        
+
         LOG.info("Got allocation response, allocatedContainers="
-            + acquiredContainers.size());
+                + acquiredContainers.size());
 
         Thread.sleep(2500);
       }
@@ -567,8 +504,8 @@ public class ApplicationMaster<T extends Updateable> extends Configured
     // Make sure we got all our containers, or else bail
     if (allocatedContainers.size() < numContainers) {
       LOG.info("Unable to get required number of containers, will not continue"
-          + ", needed=" + numContainers + ", allocated="
-          + allocatedContainers.size());
+              + ", needed=" + numContainers + ", allocated="
+              + allocatedContainers.size());
 
       requestedContainers.clear(); // We don't want new containers!
 
@@ -582,31 +519,26 @@ public class ApplicationMaster<T extends Updateable> extends Configured
         rmHandler.allocateRequest(requestedContainers, releasedContainers);
       } catch (YarnRemoteException ex) {
         LOG.warn(
-            "Encountered an error while trying to release unwanted containers",
-            ex);
+                "Encountered an error while trying to release unwanted containers",
+                ex);
       }
 
       // Notify our handlers that we got a problem
       rmHandler.finishApplication("Unable to allocate containers, needed "
-          + numContainers + ", but got " + allocatedContainers.size(),
-          FinalApplicationStatus.FAILED);
+                      + numContainers + ", but got " + allocatedContainers.size(),
+              FinalApplicationStatus.FAILED);
       // bail
       return ReturnCode.MASTER_ERROR.getCode();
     }
 
-    /*
-     * public ApplicationMasterService(InetSocketAddress masterAddr,
-     * HashMap<WorkerId, StartupConfiguration> workers, ComputableMaster<T>
-     * computable, Class<T> updatable, Map<String, String> appConf,
-     * Configuration conf) {
-     */
+
 
     // Launch our worker process, as we now expect workers to actally do
     // something
     LOG.info("Starting master service");
     ApplicationMasterService<T> masterService = new ApplicationMasterService<T>(
-        masterAddr, startupConf, masterComputable, masterUpdateable, appConfig,
-        conf);
+            masterAddr, startupConf, masterComputable, masterUpdateable, appConfig,
+            conf);
 
     ExecutorService executor = Executors.newSingleThreadExecutor();
     Future<Integer> masterThread = executor.submit(masterService);
@@ -614,7 +546,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
     // We got the number of containers we wanted, let's launch them
     LOG.info("Launching child containers");
     List<Thread> launchThreads = launchContainers(configTuples,
-        allocatedContainers);
+            allocatedContainers);
 
     // Use an empty list for heartbeat purposes
     requestedContainers.clear();
@@ -639,11 +571,11 @@ public class ApplicationMaster<T extends Updateable> extends Configured
 
       try {
         completedContainers = rmHandler.allocateRequest(requestedContainers,
-            releasedContainers).getCompletedContainersStatuses();
+                releasedContainers).getCompletedContainersStatuses();
       } catch (YarnRemoteException ex) {
         LOG.warn(
-            "Encountered an error while trying to heartbeat to resource manager",
-            ex);
+                "Encountered an error while trying to heartbeat to resource manager",
+                ex);
 
         continue; // Nothing to report, probably an error / endless loop
       }
@@ -656,15 +588,15 @@ public class ApplicationMaster<T extends Updateable> extends Configured
 
           masterService.fail();
           executor.shutdown();
-          
+
           // Force kill our application, fail fast?
           LOG.info("At least one container failed with a non-zero exit code ("
-              + exitCode + "); killing application");
+                  + exitCode + "); killing application");
           rmHandler
-              .finishApplication(
-                  "Failing, due to at least container coming back with an non-zero exit code.",
-                  FinalApplicationStatus.KILLED);
-          
+                  .finishApplication(
+                          "Failing, due to at least container coming back with an non-zero exit code.",
+                          FinalApplicationStatus.KILLED);
+
           return -10;
         } else {
           numCompletedContainers.incrementAndGet();
@@ -680,7 +612,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
         launchThread.join(1000);
       } catch (InterruptedException ex) {
         LOG.warn("Interrupted while waiting for Launcher threads to complete",
-            ex);
+                ex);
       }
     }
 
@@ -694,44 +626,44 @@ public class ApplicationMaster<T extends Updateable> extends Configured
     executor.shutdown();
 
     if (masterExit == 0) {
-    	
-    	
 
-    	
-    	String impersonatedUser = System.getenv("USER");
-    	
-    	UserGroupInformation ugi = UserGroupInformation.createRemoteUser(impersonatedUser);
-    			//UserGroupInformation.createProxyUser(impersonatedUser, UserGroupInformation.getLoginUser());
-        ugi.doAs(new PrivilegedExceptionAction<Void>() {
-          public Void run() {
 
-        	  Path out = new Path(props.getProperty(ConfigFields.APP_OUTPUT_PATH));
-              FileSystem fs;
-			try {
-				fs = out.getFileSystem(conf);
 
-	              FSDataOutputStream fos = fs.create(out);    
-	              LOG.info("Writing master results to " + out.toString());
-	        	  
-	              masterComputable.complete(fos);
-				
-	              fos.flush();
-	              fos.close();
-	              
-				
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-        	  
-        	  
-        	  
-			return null;
 
-            //FileSystem fs = FileSystem.get(conf);
-            //fs.mkdir( out ); 
+      String impersonatedUser = System.getenv("USER");
+
+      UserGroupInformation ugi = UserGroupInformation.createRemoteUser(impersonatedUser);
+      //UserGroupInformation.createProxyUser(impersonatedUser, UserGroupInformation.getLoginUser());
+      ugi.doAs(new PrivilegedExceptionAction<Void>() {
+        public Void run() {
+
+          Path out = new Path(props.getProperty(ConfigFields.APP_OUTPUT_PATH));
+          FileSystem fs;
+          try {
+            fs = out.getFileSystem(conf);
+
+            FSDataOutputStream fos = fs.create(out);
+            LOG.info("Writing master results to " + out.toString());
+
+            masterComputable.complete(fos);
+
+            fos.flush();
+            fos.close();
+
+
+          } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
           }
-        });
+
+
+
+          return null;
+
+          //FileSystem fs = FileSystem.get(conf);
+          //fs.mkdir( out );
+        }
+      });
             	
  
     	/*
@@ -741,33 +673,33 @@ public class ApplicationMaster<T extends Updateable> extends Configured
     	
     	LOG.info( "Env Var User: " + System.getenv("USER") );
     	*/
-    	//LOG.info( "Ideally we'd be user: " + this.props.getProperty(  ) );
-    	
+      //LOG.info( "Ideally we'd be user: " + this.props.getProperty(  ) );
+
 //    	for (Map.Entry<String, String> entry : this.conf) {
- //           LOG.info("ApplicationMaster->Conf: " + entry.getKey() + " = " + entry.getValue());
-   //     }    	
-    	
+      //           LOG.info("ApplicationMaster->Conf: " + entry.getKey() + " = " + entry.getValue());
+      //     }
+
     } else {
       LOG.warn("Not writing master results, as the master came back with errors!");
     }
 
     // Application finished
     ReturnCode rc = (numFailedContainers.get() == 0) ? ReturnCode.OK
-        : ReturnCode.CONTAINER_ERROR;
+            : ReturnCode.CONTAINER_ERROR;
 
     try {
       if (numFailedContainers.get() == 0) {
         rmHandler.finishApplication("Completed successfully",
-            FinalApplicationStatus.SUCCEEDED);
+                FinalApplicationStatus.SUCCEEDED);
       } else {
         String diag = "Completed with " + numFailedContainers.get()
-            + " failed containers";
+                + " failed containers";
         rmHandler.finishApplication(diag, FinalApplicationStatus.FAILED);
       }
     } catch (YarnRemoteException ex) {
       LOG.warn(
-          "Encountered an error while trying to send final status to resource manager",
-          ex);
+              "Encountered an error while trying to send final status to resource manager",
+              ex);
     }
 
     return rc.getCode();
