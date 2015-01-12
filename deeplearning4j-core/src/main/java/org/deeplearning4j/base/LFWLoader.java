@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Loads LFW faces data applyTransformToDestination. You can customize the size of the images as well
+ * Loads LFW faces data transform. You can customize the size of the images as well
  * @author Adam Gibson
  *
  */
