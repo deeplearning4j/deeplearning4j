@@ -61,7 +61,7 @@ public class IRUnitDriver<T> {
      *
      * @return
      */
-    public Configuration generateDebugConfigurationObject() {
+    public Configuration getConfigFromProperties() {
 
         Configuration c = new Configuration();
 
@@ -114,7 +114,7 @@ public class IRUnitDriver<T> {
         this.app_properties_file = app_prop;
         this.props_to_copy = props_to_copy;
 
-        this.LoadPropertiesFile();
+        this.loadPropertiesFile();
 
     }
 
@@ -122,7 +122,7 @@ public class IRUnitDriver<T> {
      * Seperated this out from setup() so the tester could set a property before using the properties in setup
      *
      */
-    private void LoadPropertiesFile() {
+    private void loadPropertiesFile() {
 
         this.props = new Properties();
 
@@ -139,7 +139,7 @@ public class IRUnitDriver<T> {
 
     }
 
-    public void SetProperty( String Name, String Value ) {
+    public void setProperty(String Name, String Value) {
 
         this.props.setProperty(Name, Value);
 
@@ -186,7 +186,7 @@ public class IRUnitDriver<T> {
            log.error("Error initializing master",e);
         }
 
-        this.master.setup(this.generateDebugConfigurationObject());
+        this.master.setup(this.getConfigFromProperties());
 
         this.workers = new ArrayList<>();
 
@@ -208,7 +208,7 @@ public class IRUnitDriver<T> {
                 log.error("Error initializing worker",e);
             }
             // simulates the conf stuff
-            worker.setup(this.generateDebugConfigurationObject());
+            worker.setup(this.getConfigFromProperties());
 
 
             TextRecordParser txt_reader = new TextRecordParser();
@@ -227,6 +227,9 @@ public class IRUnitDriver<T> {
 
     }
 
+    /**
+     * Simulate a run of the training
+     */
     public void simulateRun() {
 
         List<Updateable> master_results = new ArrayList<>();
