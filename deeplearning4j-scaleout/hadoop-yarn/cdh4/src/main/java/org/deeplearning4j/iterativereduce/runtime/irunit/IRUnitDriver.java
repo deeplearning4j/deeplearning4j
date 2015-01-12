@@ -262,7 +262,6 @@ public class IRUnitDriver<T> {
             for (int worker_id = 0; worker_id < workers.size(); worker_id++) {
 
                 workers.get(worker_id).update(master_result);
-                //workers.get(worker_id).i0();
 
             }
 
