@@ -1,7 +1,6 @@
 package org.deeplearning4j.iterativereduce.runtime.yarn.appworker;
 
 
-import org.apache.commons.logging.LogFactory;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.iterativereduce.runtime.Updateable;
 import org.apache.hadoop.conf.Configuration;
