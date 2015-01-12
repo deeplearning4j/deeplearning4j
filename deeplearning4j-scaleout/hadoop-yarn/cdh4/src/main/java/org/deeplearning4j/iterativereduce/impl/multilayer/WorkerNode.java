@@ -57,19 +57,15 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     @Override
     public ParameterVectorUpdateable compute() {
         log.info("Worker > Compute() -------------------------- ");
-        
+
         DataSet hdfs_recordBatch = null; //this.hdfs_fetcher.next();
 
         if ( this.hdfsDataSetIterator.hasNext() ) {
             hdfs_recordBatch = this.hdfsDataSetIterator.next();
             if (hdfs_recordBatch.getFeatures().rows() > 0) {
-            	
-<<<<<<< HEAD
-            	//log.info( "Rows: " + hdfs_recordBatch.numExamples() + ", inputs: " + hdfs_recordBatch.numInputs() + ", " + hdfs_recordBatch );
-=======
-            	log.info("Rows: " + hdfs_recordBatch.numExamples() + ", inputs: " + hdfs_recordBatch.numInputs() + ", " + hdfs_recordBatch);
->>>>>>> 0467478250169e58408eeb4045e90b6a22afb6da
-            	
+
+                log.info("Rows: " + hdfs_recordBatch.numExamples() + ", inputs: " + hdfs_recordBatch.numInputs() + ", " + hdfs_recordBatch);
+
                 // calc stats on number records processed
                 this.totalRecordsProcessed += hdfs_recordBatch.getFeatures().rows();
                 batchWatch.reset();
@@ -139,7 +135,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     public void setup(Configuration conf) {
 
         log.info("Worker-Conf: " + conf.get(MULTI_LAYER_CONF));
-        
+
         this.batchSize = conf.getInt("org.deeplearning4j.batchSize", 10);
         this.numberClasses = conf.getInt("org.deeplearning4j.numberClasses", 2);
         this.numberFeatures = conf.getInt("org.deeplearning4j.features", 5);
