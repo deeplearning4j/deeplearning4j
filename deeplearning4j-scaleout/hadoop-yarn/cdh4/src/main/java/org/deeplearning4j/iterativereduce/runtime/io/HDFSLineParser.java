@@ -64,7 +64,7 @@ public class HDFSLineParser<T extends Updateable> implements RecordParser<T> {
 
       // Go to our offset. DFS should take care of opening a block local file
       fis.seek(readOffset);
-      records = new LinkedList<T>();
+      records = new LinkedList<>();
 
       LineReader ln = new LineReader(fis);
       Text line = new Text();

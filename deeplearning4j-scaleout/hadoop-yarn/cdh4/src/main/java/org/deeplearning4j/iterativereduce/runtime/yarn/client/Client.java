@@ -28,7 +28,7 @@ public class Client extends Configured implements Tool {
   
   /**
    * TODO: consider the scenarios where we dont get enough containers 
-   * - we need to re-submit the job til we get the containers alloc'd
+   * - we need to re-submit the job till we get the containers alloc'd
    * 
    */
   @Override
@@ -129,16 +129,8 @@ public class Client extends Configured implements Tool {
       LOG.info("IterativeReduce report: "
           + " appId=" + appId.getId()
           + ", state: " + report.getYarnApplicationState().toString()
-      //    + ", amDiag=" + report.getDiagnostics()
-      //    + ", masterHost=" + report.getHost()
-      //    + ", masterRpcPort=" + report.getRpcPort()
-      //    + ", queue=" + report.getQueue()
-      //    + ", startTime=" + report.getStartTime()
           + ", Running Time: " + watch.toString() );
-      //    + ", clientToken=" + report.getClientToken() 
-      //    + ", finalState=" + report.getFinalApplicationStatus().toString()
-      //    + ", trackingUrl=" + report.getTrackingUrl()
-      //    + ", user=" + report.getUser());
+
       
       //report.getDiagnostics()
 

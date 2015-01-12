@@ -97,7 +97,7 @@ public class ContainerManagerHandler {
     GetContainerStatusRequest request = Records.newRecord(GetContainerStatusRequest.class);
     request.setContainerId(container.getId());
     
-    LOG.info("Getting container statusr, containerId=" + container.getId().toString());
+    LOG.info("Getting container status, containerId=" + container.getId().toString());
     return containerManager.getContainerStatus(request);
   }
 }
