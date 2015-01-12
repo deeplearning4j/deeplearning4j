@@ -104,7 +104,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     }
 
     /**
-     * Setup the local DBN instance based on conf params
+     * setup the local DBN instance based on conf params
      *
      */
     @Override

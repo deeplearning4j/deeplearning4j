@@ -64,7 +64,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
             hdfs_recordBatch = this.hdfsDataSetIterator.next();
             if (hdfs_recordBatch.getFeatures().rows() > 0) {
             	
-            	log.info( "Rows: " + hdfs_recordBatch.numExamples() + ", inputs: " + hdfs_recordBatch.numInputs() + ", " + hdfs_recordBatch );
+            	log.info("Rows: " + hdfs_recordBatch.numExamples() + ", inputs: " + hdfs_recordBatch.numInputs() + ", " + hdfs_recordBatch);
             	
                 // calc stats on number records processed
                 this.totalRecordsProcessed += hdfs_recordBatch.getFeatures().rows();
@@ -126,7 +126,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     }
 
     /**
-     * Setup the local DBN instance based on conf params
+     * setup the local DBN instance based on conf params
      *
      *
      *
