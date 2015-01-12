@@ -32,8 +32,7 @@ public class IRUnitSVMLightWorkerTest {
 	@Test
 	public void testLearnIrisFunctionViaIRNN_MLP() throws Exception {
 		
-		//this.createSynthJSONConf();
-		
+
 		IRUnitDriver polr_ir = new IRUnitDriver("src/test/resources/yarn/configurations/svmLightWorkerIRUnitTest.properties");
 		
 		
