@@ -52,54 +52,38 @@ public class IRUnitDriver<T> {
 
 	/**
 	 * need to load the app.properties file
-	 * 
+	 *
 	 * @return
 	 */
-	public Configuration generateDebugConfigurationObject() {
+	public Configuration getConfiguration() {
 
 		Configuration c = new Configuration();
 
-/*		String[] props_to_copy = {
-				"app.iteration.count",
-				"com.cloudera.knittingboar.setup.FeatureVectorSize",
-				"com.cloudera.knittingboar.setup.RecordFactoryClassname",
-				"com.cloudera.knittingboar.setup.LearningRate"
-		};
-	*/	
-		 for(Entry<Object, Object> e : props.entrySet()) {
-	           // log.info(e.getKey());
-			 c.set(e.getKey().toString(), e.getValue().toString());
-	        }		
-/*
-		for ( int x = 0; x < props_to_copy.length; x++ ) {
-			if (null != this.props.getProperty(props_to_copy[x])) {
-				c.set(props_to_copy[x], this.props.getProperty(props_to_copy[x]));
-			} else {
-			//	log.info("> Conf: Did not find in properties file - " + props_to_copy[x]);
-			}
+		for(Entry<Object, Object> e : props.entrySet()) {
+			c.set(e.getKey().toString(), e.getValue().toString());
 		}
-*/
-		
+
+
 		return c;
 
 	}
 
 	/**
 	 * generate splits for this run
-	 * 
-	 * @param input_path
+	 *
+	 * @param inputPath
 	 * @param job
 	 * @return
 	 */
-	private InputSplit[] generateDebugSplits(Path input_path, JobConf job) {
+	private InputSplit[] generateDebugSplits(Path inputPath, JobConf job) {
 
-		long block_size = localFs.getDefaultBlockSize();
+		long block_size = localFs.getDefaultBlockSize(inputPath);
 
 		log.info("default block size: " + (block_size / 1024 / 1024)
 				+ "MB");
 
 		// ---- set where we'll read the input files from -------------
-		FileInputFormat.setInputPaths(job, input_path);
+		FileInputFormat.setInputPaths(job, inputPath);
 
 		// try splitting the file in a variety of sizes
 		TextInputFormat format = new TextInputFormat();
@@ -123,23 +107,20 @@ public class IRUnitDriver<T> {
 	public IRUnitDriver(String app_prop) {
 
 		this.app_properties_file = app_prop;
-		
+
 	}
 
 	/**
 	 * setup components of the IR app run 1. load app.properties 2. msg arrays
 	 * 3. calc local splits 4. setup master 5. setup workers based on number of
 	 * splits
-	 * 
+	 *
 	 */
 	public void setup() {
 
 		// ----- load the app.properties file
 
-		// String configFile = (args.length < 1) ?
-		// ConfigFields.DEFAULT_CONFIG_FILE : args[0];
 		this.props = new Properties();
-		// Configuration conf = getConf();
 
 		try {
 			FileInputStream fis = new FileInputStream(this.app_properties_file);
@@ -156,13 +137,13 @@ public class IRUnitDriver<T> {
 
 		// ---- this all needs to be done in
 		JobConf job = new JobConf(defaultConf);
-		
+
 		// app.input.path
-		
+
 		Path splitPath = new Path( props.getProperty("app.input.path") );
 
 		log.info( "app.input.path = " + splitPath );
-		
+
 		// TODO: work on this, splits are generating for everything in dir
 		InputSplit[] splits = generateDebugSplits(splitPath, job);
 
@@ -177,10 +158,10 @@ public class IRUnitDriver<T> {
 			Constructor<?> master_ctor = master_clazz
 					.getConstructor();
 			this.master = (ComputableMaster) master_ctor.newInstance(); // new
-																		// Object[]
-																		// {
-																		// ctorArgument
-																		// });
+			// Object[]
+			// {
+			// ctorArgument
+			// });
 			log.info("Using master class: " + props
 					.getProperty("yarn.master.main"));
 
@@ -188,15 +169,15 @@ public class IRUnitDriver<T> {
 			e.printStackTrace();
 		}
 
-		this.master.setup(this.generateDebugConfigurationObject());
+		this.master.setup(this.getConfiguration());
 
 		this.workers = new ArrayList<>();
 
 		log.info("Using worker class: " + props
 				.getProperty("yarn.worker.main"));
-		
+
 		for (int x = 0; x < splits.length; x++) {
-			
+
 			log.info( "IRUnit > Split > " + splits[x].toString() );
 
 			ComputableWorker worker = null;
@@ -207,10 +188,10 @@ public class IRUnitDriver<T> {
 				Constructor<?> worker_ctor = worker_clazz
 						.getConstructor();
 				worker = (ComputableWorker) worker_ctor.newInstance(); // new
-																		// Object[]
-																		// {
-																		// ctorArgument
-																		// });
+				// Object[]
+				// {
+				// ctorArgument
+				// });
 
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -218,10 +199,8 @@ public class IRUnitDriver<T> {
 			}
 
 			// simulates the conf stuff
-			worker.setup(this.generateDebugConfigurationObject());
+			worker.setup(this.getConfiguration());
 
-			// InputRecordsSplit custom_reader_0 = new InputRecordsSplit(job,
-			// splits[x]);
 			TextRecordParser txt_reader = new TextRecordParser();
 
 			long len = Integer.parseInt(splits[x].toString().split(":")[2]
@@ -251,7 +230,7 @@ public class IRUnitDriver<T> {
 				.getProperty("app.iteration.count"));
 
 		log.info("Starting Epochs (" + iterations + ")...");
-		
+
 		for (int x = 0; x < iterations; x++) {
 
 			for (int worker_id = 0; worker_id < workers.size(); worker_id++) {
@@ -264,7 +243,7 @@ public class IRUnitDriver<T> {
 
 			Updateable master_result = this.master.compute(worker_results,
 					master_results);
-			
+
 
 			// process global updates
 			for (int worker_id = 0; worker_id < workers.size(); worker_id++) {
@@ -272,79 +251,66 @@ public class IRUnitDriver<T> {
 				workers.get(worker_id).update(master_result);
 				//workers.get(worker_id).IncrementIteration();
 
+
+			} // for
+
+			log.info("Complete " + iterations + " Iterations Per Worker.");
+
+			//String output_path = this.props.getProperty("app.output.path");
+
+			//log.info("Writing the output to: " + output_path);
+
+
+			// make sure we have somewhere to write the model
+			if (null != this.props.getProperty("app.output.path")) {
+
+				String output_path = this.props.getProperty("app.output.path");
+
+				log.info("Writing the output to: " + output_path);
+
+
+				try {
+
+					Path out = new Path(output_path);
+					FileSystem fs =
+							out.getFileSystem(defaultConf);
+
+					FSDataOutputStream fos;
+
+					fos = fs.create(out);
+					//LOG.info("Writing master results to " + out.toString());
+					master.complete(fos);
+
+					fos.flush();
+					fos.close();
+
+
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+
+			} else {
+
+				log.info("Not Firing Master::Complete() function due to no output path in conf");
+
 			}
-/*			
-		      if (master_result.get().IterationComplete == 1) {
-		          
-		          log.info( " -------- end of pass ------- " );
-
-		        // simulates framework checking this and iterating
-		          for ( int worker_id = 0; worker_id < workers.size(); worker_id++ ) {
-		            
-		            bContinuePass = workers.get(worker_id).IncrementIteration();
-
-		          } // for
-			*/
-
-		} // for
-		
-		log.info("Complete " + iterations + " Iterations Per Worker.");
-
-		//String output_path = this.props.getProperty("app.output.path");
-		
-		//log.info("Writing the output to: " + output_path);
-		
-		
-		// make sure we have somewhere to write the model
-		if (null != this.props.getProperty("app.output.path")) {
-			
-			String output_path = this.props.getProperty("app.output.path");
-			
-			log.info("Writing the output to: " + output_path);
-			
-
-			try {
-
-				Path out = new Path(output_path); 
-				FileSystem fs =
-						  out.getFileSystem(defaultConf); 
-				
-				FSDataOutputStream fos;
-
-				fos = fs.create(out);
-				  //LOG.info("Writing master results to " + out.toString());
-				  master.complete(fos);
-				  
-				  fos.flush(); 
-				  fos.close();
 
 
-				
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			  
-
-		} else {
-			
-			log.info("Not Firing Master::Complete() function due to no output path in conf");
-			
 		}
-
-
 	}
-	
+
 	public ComputableMaster getMaster() {
-		
+
 		return this.master;
-		
+
 	}
-	
+
 	public ArrayList<ComputableWorker> getWorker() {
-		
+
 		return this.workers;
-		
+
 	}
 
 }
