@@ -11,7 +11,7 @@
     <packaging>jar</packaging>
 
     <name>spark-databricks</name>
-    <url>http://maven.apache.org</url>
+    <url>http://deeplearning4j.org</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
