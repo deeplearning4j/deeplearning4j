@@ -38,6 +38,7 @@
         <logback.version>1.1.2</logback.version>
         <nd4j.version>0.0.3.5.5.1</nd4j.version>
         <jackson.version>2.3.2</jackson.version>
+        <canova.version>0.0.0.1-SNAPSHOT</canova.version>
     </properties>
 
 
@@ -298,6 +299,17 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.nd4j</groupId>
+                <artifactId>canova-api</artifactId>
+                <version>${canova.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.nd4j</groupId>
+                <artifactId>canova-nd4j</artifactId>
+                <version>${canova.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.nd4j</groupId>
                 <artifactId>nd4j-api</artifactId>
