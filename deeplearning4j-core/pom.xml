@@ -17,6 +17,15 @@
 
 
 	<dependencies>
+
+		<dependency>
+			<groupId>org.nd4j</groupId>
+			<artifactId>canova-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.nd4j</groupId>
+			<artifactId>canova-nd4j</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
