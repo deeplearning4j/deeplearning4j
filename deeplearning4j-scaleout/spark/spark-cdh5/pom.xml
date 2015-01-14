@@ -9,23 +9,34 @@
 
     <artifactId>spark-cdh5</artifactId>
     <packaging>jar</packaging>
-    <version>0.0.1-SNAPSHOT</version>
+    
 
     <name>spark-cdh5</name>
     <url>http://deeplearning4j.org</url>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <nd4j.version>0.0.3.5.5.1</nd4j.version>
+  	<properties>
+	    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    	<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <hadoop.version>2.0.0-cdh4.6.0</hadoop.version>
+         <nd4j.version>0.0.3.5.5.1</nd4j.version>
+
     </properties>
 
 <repositories>
+
+ <repository>
+            <id>snapshots-repo</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases><enabled>false</enabled></releases>
+            <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+
     <repository>
       <id>scala-tools.org</id>
       <name>Scala-tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-releases</url>
     </repository>
+    <!--
     <repository>
       <id>maven-hadoop</id>
       <name>Hadoop Releases</name>
@@ -36,6 +47,14 @@
       <name>Cloudera Repos</name>
       <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
     </repository>
+    -->
+    
+        <repository>
+            <id>org.apache.hadoop</id>
+            <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+        </repository>
+    
+    
   </repositories>  
   
   <pluginRepositories>
