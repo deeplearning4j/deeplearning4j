@@ -9,114 +9,77 @@
 
     <artifactId>spark-cdh5</artifactId>
     <packaging>jar</packaging>
-    
+
 
     <name>spark-cdh5</name>
     <url>http://deeplearning4j.org</url>
 
-  	<properties>
-	    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    	<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <hadoop.version>2.0.0-cdh4.6.0</hadoop.version>
-         <nd4j.version>0.0.3.5.5.1</nd4j.version>
-
+        <nd4j.version>0.0.3.5.5.1</nd4j.version>
+         <scala.version>2.10.4</scala.version>
     </properties>
+     <build>
+         <plugins>
+             <plugin>
+                 <groupId>org.scala-tools</groupId>
+                 <artifactId>maven-scala-plugin</artifactId>
+                 <executions>
+                     <execution>
+                         <goals>
+                             <goal>compile</goal>
+                             <goal>testCompile</goal>
+                         </goals>
+                     </execution>
+                 </executions>
+                 <configuration>
+                     <scalaVersion>${scala.version}</scalaVersion>
+                 </configuration>
+             </plugin>
 
-<repositories>
 
- <repository>
-            <id>snapshots-repo</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases><enabled>false</enabled></releases>
-            <snapshots><enabled>true</enabled></snapshots>
-        </repository>
+         </plugins>
+     </build>
 
-    <repository>
-      <id>scala-tools.org</id>
-      <name>Scala-tools Maven2 Repository</name>
-      <url>http://scala-tools.org/repo-releases</url>
-    </repository>
-    <!--
-    <repository>
-      <id>maven-hadoop</id>
-      <name>Hadoop Releases</name>
-      <url>https://repository.cloudera.com/content/repositories/releases/</url>
-    </repository>
-    <repository>
-      <id>cloudera-repos</id>
-      <name>Cloudera Repos</name>
-      <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-    </repository>
-    -->
-    
-        <repository>
-            <id>org.apache.hadoop</id>
-            <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-        </repository>
-    
-    
-  </repositories>  
-  
-  <pluginRepositories>
-    <pluginRepository>
-      <id>scala-tools.org</id>
-      <name>Scala-tools Maven2 Repository</name>
-      <url>http://scala-tools.org/repo-releases</url>
-    </pluginRepository>
-  </pluginRepositories>
-  
-<build>
-    <plugins>
-      <plugin>
-        <groupId>org.scala-tools</groupId>
-        <artifactId>maven-scala-plugin</artifactId>
-        <version>2.15.2</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.1</version>
-        <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
-        </configuration>
-      </plugin>
-    </plugins>  
-  </build>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
-      <version>2.10.4</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_2.10</artifactId>
-      <version>1.0.0-cdh5.1.0</version>
-    </dependency>
-    
+    <pluginRepositories>
+        <pluginRepository>
+            <id>scala-tools.org</id>
+            <name>Scala-tools Maven2 Repository</name>
+            <url>http://scala-tools.org/repo-releases</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>2.10.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_2.10</artifactId>
+            <version>1.0.0-cdh5.1.0</version>
+        </dependency>
+
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-scaleout-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-    
-		<dependency>
-			<groupId>org.nd4j</groupId>
-			<artifactId>nd4j-jblas</artifactId>
-			<version>${nd4j.version}</version>
-			<scope>test</scope>
-		</dependency>
-    
-    
-  </dependencies>
-  
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-jblas</artifactId>
+            <version>${nd4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+
+    </dependencies>
+
 
 </project>
