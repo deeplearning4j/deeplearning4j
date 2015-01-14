@@ -14,6 +14,14 @@
     <name>spark-cdh5</name>
     <url>http://deeplearning4j.org</url>
 
+    <repositories>
+        <repository>
+            <id>org.apache.hadoop</id>
+            <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+        </repository>
+    </repositories>
+    
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
