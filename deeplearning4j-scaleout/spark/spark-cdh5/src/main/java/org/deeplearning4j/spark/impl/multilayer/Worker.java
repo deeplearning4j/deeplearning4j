@@ -34,7 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class Worker {
 
-	private static ParameterVectorUpdateable masterParameterVector = null;
+	//private static ParameterVectorUpdateable masterParameterVector = null;
 	
 	  private static final int D = 10;   // Number of dimensions
 	  private static final Random rand = new Random(42);
@@ -43,18 +43,30 @@ public class Worker {
 	   * This is the code run at the "Master" in IterativeReduce parlance
 	   * 
 	   */
-	  static class MasterComputeParameterAverage implements Function2<ParameterVectorUpdateable[], ParameterVectorUpdateable> {
+	  static class MasterComputeParameterAverage implements Function2<INDArray, INDArray, INDArray> {
 	    @Override
-	    public double[] call(ParameterVectorUpdateable[] worker_update) {
+	    public INDArray call(INDArray worker_update_a, INDArray worker_update_b) {
 
   	
-	    	ParameterVectorUpdateable result = new ParameterVectorUpdateable();
+	    	String result = new String();
 
 //	    	for (int j = 0; j < D; j++) {
 //	        result[j] = a[j] + b[j];
 //	       }
 	    	
 	    	
+	      return null;
+	    }
+	  }	 
+	  
+
+	  static class VectorSum implements Function2<double[], double[], double[]> {
+	    @Override
+	    public double[] call(double[] a, double[] b) {
+	      double[] result = new double[D];
+	      for (int j = 0; j < D; j++) {
+	        result[j] = a[j] + b[j];
+	      }
 	      return result;
 	    }
 	  }	  
@@ -72,23 +84,16 @@ public class Worker {
 	   * @author josh
 	   *
 	   */
-	  static class ParseSVMLightLine implements Function<String, INDArray, INDArray> {
+	  static class ParseSVMLightLine implements Function<String, INDArray> {
 		    private static final Pattern SPACE = Pattern.compile(" ");
-		    private static final SVMLightRecordFactory recordParser = null;
+		    //private static final SVMLightRecordFactory recordParser = null;
 
-		    @Override
-		    public DataPoint call(String line, INDArray input_vec, INDArray output_vec) {
-		    	/*
-		      String[] tok = SPACE.split(line);
-		      double y = Double.parseDouble(tok[0]);
-		      double[] x = new double[D];
-		      for (int i = 0; i < D; i++) {
-		        x[i] = Double.parseDouble(tok[i + 1]);
-		      }
-		      
-		      return new DataPoint(x, y);
-		      */
-		    }
+
+			@Override
+			public INDArray call(String arg0) throws Exception {
+				// TODO Auto-generated method stub
+				return null;
+			}
 		    
 		    
 		    
@@ -101,11 +106,11 @@ public class Worker {
 	   * @author josh
 	   *
 	   */
-	  static class Worker implements Function<DataPoint, double[]> {
+	  static class DL4JWorker implements Function<DataPoint, double[]> {
 		  
 	    private final double[] weights;
 
-	    Worker(double[] weights) {
+	    DL4JWorker(double[] weights) {
 	      this.weights = weights;
 	    }
 
@@ -135,15 +140,19 @@ public class Worker {
 	  public static void main(String[] args) {
 
 	    if (args.length < 2) {
-	      System.err.println("Usage: JavaHdfsLR <file> <iters>");
+	      System.err.println("Usage: DL4J_Spark <file> <iters>");
 	      System.exit(1);
 	    }
 
 
-	    SparkConf sparkConf = new SparkConf().setAppName("DL4J");
+	    // set to test mode
+	    SparkConf sparkConf = new SparkConf().setAppName("DL4J").setMaster("local");
 	    JavaSparkContext sc = new JavaSparkContext(sparkConf);
 	    JavaRDD<String> lines = sc.textFile(args[0]);
+	    
+	    // gotta map this to a Matrix/INDArray
 	    JavaRDD<DataPoint> points = lines.map(new ParsePoint()).cache();
+	    
 	    int ITERATIONS = Integer.parseInt(args[1]);
 	    // Initialize w to a random value
 	    double[] w = new double[D];
@@ -160,8 +169,8 @@ public class Worker {
 	      System.out.println("On iteration " + i);
 
 	      double[] gradient = points.map(
-	        new Worker(w)
-	      ).reduce(new MasterComputeParameterAverage());
+	        new DL4JWorker(w)
+	      ).reduce( new MasterComputeParameterAverage() );
 
 	      for (int j = 0; j < D; j++) {
 	        w[j] -= gradient[j];
