@@ -1,20 +1,17 @@
 package org.deeplearning4j.iterativereduce.impl.multilayer;
 
-import java.io.IOException;
 import java.util.List;
 
 
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.util.ToolRunner;
+import org.apache.hadoop.mapreduce.RecordReader;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.iterativereduce.impl.ParameterVectorUpdateable;
+import org.deeplearning4j.scaleout.api.ir.ParameterVectorUpdateable;
+import org.deeplearning4j.iterativereduce.impl.reader.RecordReaderDataSetIterator;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
-import org.deeplearning4j.iterativereduce.runtime.io.RecordParser;
-import org.deeplearning4j.iterativereduce.runtime.io.SVMLightHDFSDataSetIterator;
-import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
-import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWorker;
+
 
 import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -36,7 +33,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
     private MultiLayerNetwork multiLayerNetwork;
     private static Logger log = LoggerFactory.getLogger(WorkerNode.class);
-    private TextRecordParser recordParser;
+    private RecordReader recordParser;
     private DataSetIterator hdfsDataSetIterator = null;
     private long totalRecordsProcessed = 0;
     StopWatch totalRunTimeWatch = new StopWatch();
@@ -108,20 +105,15 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     /**
      *
      *
+     * @param lineParser
      */
     @Override
-    public void setRecordParser(RecordParser lineParser) {
+    public void setRecordReader(RecordReader lineParser) {
 
-        this.recordParser = (TextRecordParser) lineParser;
+        this.recordParser = lineParser;
 
         // we're assuming SVMLight for current tests
-        try {
-            this.hdfsDataSetIterator = new SVMLightHDFSDataSetIterator( this.batchSize, 1, this.recordParser, this.numberFeatures, this.numberClasses );
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
+        this.hdfsDataSetIterator = new RecordReaderDataSetIterator(recordParser,null,batchSize,numberClasses,numberClasses);
 
 
     }
@@ -165,22 +157,6 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
 
 
-
-    /**
-     * Dev note: this method seems complete 
-     *
-     * @param args
-     * @throws Exception
-     */
-    public static void main(String[] args) throws Exception {
-
-        TextRecordParser parser = new TextRecordParser();
-        WorkerNode wn = new WorkerNode();
-        ApplicationWorker<ParameterVectorUpdateable> aw = new ApplicationWorker<>(parser, wn, ParameterVectorUpdateable.class);
-
-        ToolRunner.run(aw, args);
-
-    }
 
 
     @Override

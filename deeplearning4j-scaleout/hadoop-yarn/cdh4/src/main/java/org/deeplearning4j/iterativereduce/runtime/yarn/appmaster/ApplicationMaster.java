@@ -13,7 +13,7 @@ import org.apache.hadoop.yarn.exceptions.YarnRemoteException;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.deeplearning4j.iterativereduce.runtime.ComputableMaster;
 import org.deeplearning4j.iterativereduce.runtime.ConfigFields;
-import org.deeplearning4j.iterativereduce.runtime.Updateable;
+import org.deeplearning4j.scaleout.api.ir.Updateable;
 import org.deeplearning4j.iterativereduce.runtime.Utils;
 import org.deeplearning4j.iterativereduce.runtime.yarn.ContainerManagerHandler;
 import org.deeplearning4j.iterativereduce.runtime.yarn.ResourceManagerHandler;
@@ -56,6 +56,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
   private ApplicationAttemptId appAttemptId;
   private String appName;
   private Properties props;
+  private Set<ConfigurationTuple> confTuples;
 
   private Class<?> inputFormatClass;
 
@@ -189,6 +190,8 @@ public class ApplicationMaster<T extends Updateable> extends Configured
 
   // TODO: cache this!
   private Set<ConfigurationTuple> getConfigurationTuples() throws IOException {
+    if(confTuples != null)
+      return confTuples;
     Path inputPath = new Path(props.getProperty(ConfigFields.APP_INPUT_PATH));
     FileSystem fs = FileSystem.get(conf);
     FileStatus f = fs.getFileStatus( inputPath );
@@ -243,7 +246,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
 
     LOG.info( "Total Splits/Workers: " + configTuples.size() );
 
-
+    confTuples = configTuples;
     return configTuples;
   }
 
@@ -316,7 +319,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
   private List<Thread> launchContainers(Set<ConfigurationTuple> configTuples,
                                         List<Container> allocatedContainers) {
 
-    List<Thread> launchThreads = new ArrayList<Thread>();
+    List<Thread> launchThreads = new ArrayList<>();
     Iterator<Container> ic = allocatedContainers.iterator();
 
     while (ic.hasNext()) {

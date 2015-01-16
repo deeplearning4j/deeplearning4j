@@ -1,4 +1,4 @@
-package org.deeplearning4j.iterativereduce.runtime;
+package org.deeplearning4j.scaleout.api.ir;
 
 
 import java.nio.ByteBuffer;
