@@ -10,8 +10,7 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.deeplearning4j.iterativereduce.runtime.ComputableMaster;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
-import org.deeplearning4j.iterativereduce.runtime.Updateable;
-import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
+import org.deeplearning4j.scaleout.api.ir.Updateable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -211,14 +210,6 @@ public class IRUnitDriver<T> {
             worker.setup(this.getConfigFromProperties());
 
 
-            TextRecordParser txt_reader = new TextRecordParser();
-
-            long len = Integer.parseInt(splits[x].toString().split(":")[2]
-                    .split("\\+")[1]);
-
-            txt_reader.setFile(splits[x].toString().split(":")[1], 0, len);
-
-            worker.setRecordParser(txt_reader);
 
             workers.add(worker);
 
