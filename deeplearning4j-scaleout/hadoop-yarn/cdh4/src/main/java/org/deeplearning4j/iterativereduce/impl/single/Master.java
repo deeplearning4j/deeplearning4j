@@ -3,7 +3,7 @@ package org.deeplearning4j.iterativereduce.impl.single;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ToolRunner;
-import org.deeplearning4j.iterativereduce.impl.ParameterVectorUpdateable;
+import org.deeplearning4j.scaleout.api.ir.ParameterVectorUpdateable;
 import org.deeplearning4j.iterativereduce.runtime.ComputableMaster;
 import org.deeplearning4j.iterativereduce.runtime.yarn.appmaster.ApplicationMaster;
 import org.nd4j.linalg.api.ndarray.INDArray;

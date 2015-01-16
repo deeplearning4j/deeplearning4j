@@ -304,11 +304,7 @@
                 <artifactId>canova-api</artifactId>
                 <version>${canova.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.nd4j</groupId>
-                <artifactId>canova-nd4j</artifactId>
-                <version>${canova.version}</version>
-            </dependency>
+
 
             <dependency>
                 <groupId>org.nd4j</groupId>
