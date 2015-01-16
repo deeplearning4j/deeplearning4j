@@ -1,7 +1,8 @@
 package org.deeplearning4j.iterativereduce.runtime.yarn.appworker;
 
 
-import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapred.RecordReader;
+import org.deeplearning4j.iterativereduce.impl.reader.CanovaRecordReader;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.scaleout.api.ir.Updateable;
 import org.deeplearning4j.iterativereduce.runtime.Utils;
@@ -40,7 +41,7 @@ public class ApplicationWorkerService<T extends Updateable> {
   private IterativeReduceService masterService;
   private StartupConfiguration workerConf;
 
-  private RecordReader recordParser;
+  private CanovaRecordReader recordParser;
   private ComputableWorker<T> computable;
   private Class<T> updateable;
 
@@ -92,7 +93,7 @@ public class ApplicationWorkerService<T extends Updateable> {
   }
 
   public ApplicationWorkerService(String wid, InetSocketAddress masterAddr,
-                                  RecordReader parser, ComputableWorker<T> computable,
+                                  CanovaRecordReader parser, ComputableWorker<T> computable,
                                   Class<T> updateable, Configuration conf) {
 
     this.workerId = Utils.createWorkerId(wid);
@@ -107,7 +108,7 @@ public class ApplicationWorkerService<T extends Updateable> {
   }
 
   public ApplicationWorkerService(String wid, InetSocketAddress masterAddr,
-                                  RecordReader parser, ComputableWorker<T> computable,
+                                  CanovaRecordReader parser, ComputableWorker<T> computable,
                                   Class<T> updateable) {
 
     this(wid, masterAddr, parser, computable, updateable, new Configuration());
@@ -130,7 +131,7 @@ public class ApplicationWorkerService<T extends Updateable> {
 
     //issues with avro here, this isn't an input split
     try {
-      recordParser.initialize(Utils.getSplit(workerConf.getSplit()),null);
+      recordParser.initialize(Utils.getSplit(workerConf.getSplit()));
     } catch (IOException e) {
       e.printStackTrace();
     } catch (InterruptedException e) {

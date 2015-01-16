@@ -136,6 +136,10 @@ public class IRUnitDriver {
 			log.error("Error loading properties ",ex);
 		}
 
+		for(Object s : props.keySet())
+			defaultConf.set(s.toString(),props.getProperty(s.toString()));
+
+
 		// setup msg arrays
 
 		// calc splits
@@ -189,7 +193,14 @@ public class IRUnitDriver {
 
 			// simulates the conf stuff
 			worker.setup(getConfiguration());
-			org.apache.hadoop.mapreduce.RecordReader reader = new CanovaRecordReader(this.recordReader);
+			CanovaRecordReader reader = new CanovaRecordReader(this.recordReader);
+			try {
+				reader.initialize(splits[x]);
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 			worker.setRecordReader(reader);
 			workers.add(worker);
 

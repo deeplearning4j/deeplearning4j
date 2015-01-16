@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapred.RecordReader;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.scaleout.api.ir.ParameterVectorUpdateable;
 import org.deeplearning4j.iterativereduce.impl.reader.RecordReaderDataSetIterator;
@@ -41,8 +41,9 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
     // confs (for now, may get rid of later)
     private int batchSize = 20;
-    private int numberFeatures = 10;
     private int numberClasses = 2;
+    private int labelIndex = -1;
+    public final static String LABEL_INDEX = "org.deeplearning4j.labelindex";
 
 
     /**
@@ -111,9 +112,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     public void setRecordReader(RecordReader lineParser) {
 
         this.recordParser = lineParser;
-
-        // we're assuming SVMLight for current tests
-        this.hdfsDataSetIterator = new RecordReaderDataSetIterator(recordParser,null,batchSize,numberClasses,numberClasses);
+        this.hdfsDataSetIterator = new RecordReaderDataSetIterator(recordParser,null,batchSize,labelIndex,numberClasses);
 
 
     }
@@ -129,15 +128,12 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
         log.info("Worker-Conf: " + conf.get(MULTI_LAYER_CONF));
 
-        this.batchSize = conf.getInt("org.deeplearning4j.batchSize", 10);
-        this.numberClasses = conf.getInt("org.deeplearning4j.numberClasses", 2);
-        this.numberFeatures = conf.getInt("org.deeplearning4j.features", 5);
-
-
-
-        log.info("Classes: " + this.numberClasses + ", Features: " + this.numberFeatures);
-
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson( conf.get(MULTI_LAYER_CONF));
+        this.batchSize = conf2.getConf(0).getBatchSize();
+        this.numberClasses = conf2.getConf(conf2.getConfs().size() - 1).getnOut();
+        labelIndex = conf.getInt(LABEL_INDEX,-1);
+        if(labelIndex < 0)
+            throw new IllegalStateException("Illegal label index");
         multiLayerNetwork = new MultiLayerNetwork(conf2);
 
 

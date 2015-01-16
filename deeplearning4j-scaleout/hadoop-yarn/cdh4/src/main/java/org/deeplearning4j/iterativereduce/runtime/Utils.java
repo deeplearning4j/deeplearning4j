@@ -1,7 +1,7 @@
 package org.deeplearning4j.iterativereduce.runtime;
 
 import org.apache.hadoop.mapred.FileSplit;
-import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapred.InputSplit;
 import org.deeplearning4j.iterativereduce.runtime.yarn.avro.generated.StartupConfiguration;
 import org.deeplearning4j.iterativereduce.runtime.yarn.avro.generated.WorkerId;
 import org.apache.commons.logging.Log;
