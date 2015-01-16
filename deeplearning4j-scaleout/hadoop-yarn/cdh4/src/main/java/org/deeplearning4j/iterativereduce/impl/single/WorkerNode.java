@@ -1,7 +1,7 @@
 package org.deeplearning4j.iterativereduce.impl.single;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapred.RecordReader;
 import org.deeplearning4j.scaleout.api.ir.ParameterVectorUpdateable;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.nn.api.Layer;
@@ -70,19 +70,21 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     @Override
     public ParameterVectorUpdateable compute() {
         try {
-            while(recordParser.nextKeyValue()) {
-                DataSet params = (DataSet) recordParser.getCurrentValue();
+            while(recordParser.next(null,null)) {
+                DataSet params = (DataSet) recordParser.createValue();
                 neuralNetwork.fit(params.getFeatureMatrix());
             }
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
         return new ParameterVectorUpdateable(neuralNetwork.params());
     }
 
+    @Override
+    public void setRecordReader(org.apache.hadoop.mapred.RecordReader r) {
+        this.recordParser = r;
+    }
 
 
     @Override
@@ -97,15 +99,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
         return new ParameterVectorUpdateable(neuralNetwork.params());
     }
 
-    /**
-     * TODO: re-wire this to read blocks of records into a Matrix
-     *
-     */
-    @Override
-    public void setRecordReader(RecordReader lineParser) {
-        this.recordParser = lineParser;
 
-    }
 
     /**
      * setup the local DBN instance based on conf params
