@@ -1,7 +1,6 @@
-package org.deeplearning4j.iterativereduce.impl;
+package org.deeplearning4j.scaleout.api.ir;
 
 import org.apache.commons.compress.utils.IOUtils;
-import org.deeplearning4j.iterativereduce.runtime.Updateable;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

@@ -1,12 +1,12 @@
 package org.deeplearning4j.iterativereduce.runtime.yarn.appworker;
 
 
+import org.apache.hadoop.mapreduce.RecordReader;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
-import org.deeplearning4j.iterativereduce.runtime.Updateable;
+import org.deeplearning4j.scaleout.api.ir.Updateable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.Tool;
-import org.deeplearning4j.iterativereduce.runtime.io.RecordParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,11 +20,11 @@ public class ApplicationWorker<T extends Updateable> extends
 
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationWorker.class);
   
-  protected RecordParser<T> parser;
+  protected RecordReader parser;
   protected ComputableWorker<T> computable;
   protected Class<T> updateable;
 
-  public ApplicationWorker(RecordParser<T> parser,
+  public ApplicationWorker(RecordReader parser,
       ComputableWorker<T> computeable, Class<T> updateable) {
 
     this.parser = parser;
