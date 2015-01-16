@@ -2,6 +2,7 @@ package org.deeplearning4j.iterativereduce.runtime.yarn.appworker;
 
 
 import org.apache.hadoop.mapreduce.RecordReader;
+import org.deeplearning4j.iterativereduce.impl.reader.CanovaRecordReader;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.scaleout.api.ir.Updateable;
 import org.apache.hadoop.conf.Configuration;
@@ -20,11 +21,11 @@ public class ApplicationWorker<T extends Updateable> extends
 
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationWorker.class);
   
-  protected RecordReader parser;
+  protected CanovaRecordReader parser;
   protected ComputableWorker<T> computable;
   protected Class<T> updateable;
 
-  public ApplicationWorker(RecordReader parser,
+  public ApplicationWorker(CanovaRecordReader parser,
       ComputableWorker<T> computeable, Class<T> updateable) {
 
     this.parser = parser;
@@ -42,7 +43,7 @@ public class ApplicationWorker<T extends Updateable> extends
     InetSocketAddress masterAddr = new InetSocketAddress(masterHostPort[0],
         Integer.parseInt(masterHostPort[1]));
     Configuration conf = getConf();
-    ApplicationWorkerService<T> worker = new ApplicationWorkerService<T>(
+    ApplicationWorkerService<T> worker = new ApplicationWorkerService(
         args[3], masterAddr, parser, computable, updateable, conf);
 
     LOG.info("Starting worker"

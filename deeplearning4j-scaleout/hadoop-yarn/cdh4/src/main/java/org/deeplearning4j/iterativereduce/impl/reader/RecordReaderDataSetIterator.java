@@ -2,7 +2,7 @@ package org.deeplearning4j.iterativereduce.impl.reader;
 
 
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapred.RecordReader;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.DataSetPreProcessor;
 import org.deeplearning4j.iterativereduce.runtime.io.WritableConverter;
@@ -11,7 +11,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -48,14 +47,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     public DataSet next(int num) {
         List<DataSet> dataSets = new ArrayList<>();
         for(int i = 0; i < num; i++) {
-            Collection<Writable> record = null;
-            try {
-                record = (Collection<Writable>) recordReader.getCurrentValue();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            Collection<Writable> record;
+            record = (Collection<Writable>) recordReader.createValue();
             List<Writable> currList;
             if(record instanceof List)
                 currList = (List<Writable>) record;
@@ -72,7 +65,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     Writable current = currList.get(j);
                     if(converter != null)
                         current = converter.convert(current);
-                    label = FeatureUtil.toOutcomeVector(j, Integer.valueOf(current.toString()));
+                    label = FeatureUtil.toOutcomeVector(Double.valueOf(current.toString()).intValue(),numPossibleLabels);
                 }
                 else {
                     Writable current = currList.get(j);
@@ -92,7 +85,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             labels.add(data.getLabels());
         }
 
-        return new DataSet(Nd4j.hstack(inputs.toArray(new INDArray[0])),Nd4j.hstack(labels.toArray(new INDArray[0])));
+        return new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])),Nd4j.vstack(labels.toArray(new INDArray[0])));
     }
 
     @Override
@@ -142,7 +135,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public boolean hasNext() {
         try {
-            return recordReader.nextKeyValue();
+            return recordReader.next(null,null);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
