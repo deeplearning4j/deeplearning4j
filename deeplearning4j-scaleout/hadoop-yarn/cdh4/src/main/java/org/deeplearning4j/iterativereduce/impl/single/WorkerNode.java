@@ -1,12 +1,9 @@
 package org.deeplearning4j.iterativereduce.impl.single;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.util.ToolRunner;
-import org.deeplearning4j.iterativereduce.impl.ParameterVectorUpdateable;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.deeplearning4j.scaleout.api.ir.ParameterVectorUpdateable;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
-import org.deeplearning4j.iterativereduce.runtime.io.RecordParser;
-import org.deeplearning4j.iterativereduce.runtime.io.TextRecordParser;
-import org.deeplearning4j.iterativereduce.runtime.yarn.appworker.ApplicationWorker;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
@@ -14,6 +11,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.List;
 
 
@@ -27,7 +25,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
     private static final Logger LOG = LoggerFactory.getLogger(WorkerNode.class);
     private Layer neuralNetwork;
-    private RecordParser recordParser;
+    private RecordReader recordParser;
 
 
     /**
@@ -71,9 +69,15 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
      */
     @Override
     public ParameterVectorUpdateable compute() {
-        while(recordParser.hasMoreRecords()) {
-            DataSet params = (DataSet) recordParser.nextRecord();
-            neuralNetwork.fit(params.getFeatureMatrix());
+        try {
+            while(recordParser.nextKeyValue()) {
+                DataSet params = (DataSet) recordParser.getCurrentValue();
+                neuralNetwork.fit(params.getFeatureMatrix());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
         return new ParameterVectorUpdateable(neuralNetwork.params());
@@ -98,7 +102,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
      *
      */
     @Override
-    public void setRecordParser(RecordParser lineParser) {
+    public void setRecordReader(RecordReader lineParser) {
         this.recordParser = lineParser;
 
     }
@@ -130,16 +134,6 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
 
 
-
-    public static void main(String[] args) throws Exception {
-
-        TextRecordParser parser = new TextRecordParser();
-        WorkerNode wn = new WorkerNode();
-        ApplicationWorker<ParameterVectorUpdateable> aw = new ApplicationWorker<>(parser, wn, ParameterVectorUpdateable.class);
-
-        ToolRunner.run(aw, args);
-
-    }
 
 
     @Override

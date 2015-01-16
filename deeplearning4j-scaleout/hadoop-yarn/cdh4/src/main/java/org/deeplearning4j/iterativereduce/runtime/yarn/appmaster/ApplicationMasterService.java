@@ -5,13 +5,13 @@ import org.apache.avro.AvroRemoteException;
 import org.apache.avro.ipc.NettyServer;
 import org.apache.avro.ipc.Server;
 import org.apache.avro.ipc.specific.SpecificResponder;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.deeplearning4j.iterativereduce.runtime.ComputableMaster;
-import org.deeplearning4j.iterativereduce.runtime.Updateable;
+import org.deeplearning4j.scaleout.api.ir.Updateable;
 import org.deeplearning4j.iterativereduce.runtime.Utils;
 import org.deeplearning4j.iterativereduce.runtime.yarn.avro.generated.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -24,30 +24,29 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Michael
- * 
+ *
  *         TODO: change to ConcurrentHashMap (maybe)?
- * 
+ *
  *         TODO: Have an expiration period for all workers to check in,
  *         otherwise we need to bail?
- * 
+ *
  *         TODO: We need to fix the overall logic, that actually waits for
  *         workers to check in. For example, what happens if we have 2/3 workers
  *         check-in, and 1 didn't for some reason, does that mean that
  *         everything continues? Do we let our other workers start and waste
  *         their time?
- * 
+ *
  *         Additionally, what implications does that have on the RPC? Do workers
  *         poll for a command to tell them to start, or do we want to push that
  *         down to them?
- * 
+ *
  * @param <T>
  */
 
 public class ApplicationMasterService<T extends Updateable> implements
         IterativeReduceService, Callable<Integer> {
 
-  private static final Log LOG = LogFactory
-      .getLog(ApplicationMasterService.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ApplicationMasterService.class);
 
   private enum WorkerState {
     NONE, STARTED, RUNNING, UPDATE, WAITING, COMPLETE, ERROR
@@ -73,10 +72,10 @@ public class ApplicationMasterService<T extends Updateable> implements
   private Server masterServer;
   private CountDownLatch workersCompleted;
   private AtomicLong expectedUpdates;
-  
+
   private Configuration conf;
   private Map<CharSequence, CharSequence> appConf;
-  
+
   // Metrics
   private Map<WorkerId, Map<CharSequence, Long>> workerMetrics;
   private long mMasterTime;
@@ -84,60 +83,60 @@ public class ApplicationMasterService<T extends Updateable> implements
   private long mUpdates;
 
   public ApplicationMasterService(InetSocketAddress masterAddr,
-      Map<WorkerId, StartupConfiguration> workers,
-      ComputableMaster<T> computable, Class<T> updatable,
-      Map<CharSequence, CharSequence> appConf, Configuration conf) {
+                                  Map<WorkerId, StartupConfiguration> workers,
+                                  ComputableMaster<T> computable, Class<T> updatable,
+                                  Map<CharSequence, CharSequence> appConf, Configuration conf) {
 
     if (masterAddr == null || computable == null || updatable == null)
       throw new IllegalStateException(
-          "masterAddress or computeUpdate cannot be null");
+              "masterAddress or computeUpdate cannot be null");
 
     this.workers = workers;
     this.workersCompleted = new CountDownLatch(workers.size());
     this.expectedUpdates = new AtomicLong(workers.size());
-    this.workersState = new HashMap<WorkerId, WorkerState>();
-    this.workersProgress = new HashMap<WorkerId, LinkedHashMap<Long, ProgressReport>>();
+    this.workersState = new HashMap<>();
+    this.workersProgress = new HashMap<>();
 
     this.masterState = MasterState.WAITING;
-    this.masterUpdates = new HashMap<Integer, T>();
+    this.masterUpdates = new HashMap<>();
     this.masterAddr = masterAddr;
     this.computable = computable;
     this.updateable = updatable;
-    
+
     this.appConf = appConf;
     this.conf = conf;
     Utils.mergeConfigs(this.appConf, this.conf);
-    
+
     this.computable.setup(this.conf);
-    
+
     // Merger workers into worker state
     for (WorkerId workerId : workers.keySet()) {
       workersState.put(workerId, WorkerState.NONE);
     }
   }
-  
+
   public ApplicationMasterService(InetSocketAddress masterAddr,
-      Map<WorkerId, StartupConfiguration> workers,
-      ComputableMaster<T> computable, Class<T> updatable,
-      Map<CharSequence, CharSequence> appConf) {
+                                  Map<WorkerId, StartupConfiguration> workers,
+                                  ComputableMaster<T> computable, Class<T> updatable,
+                                  Map<CharSequence, CharSequence> appConf) {
 
     this(masterAddr, workers, computable, updatable, appConf,
-        new Configuration());
+            new Configuration());
   }
-  
+
   public ApplicationMasterService(InetSocketAddress masterAddr,
-      Map<WorkerId, StartupConfiguration> workers,
-      ComputableMaster<T> computable, Class<T> updatable) {
+                                  Map<WorkerId, StartupConfiguration> workers,
+                                  ComputableMaster<T> computable, Class<T> updatable) {
 
     this(masterAddr, workers, computable, updatable, null);
-  }  
+  }
 
   public Integer call() {
     Thread.currentThread().setName("ApplicationMasterService Thread");
     LOG.info("Starting MasterService [NettyServer] on " + masterAddr);
 
     masterServer = new NettyServer(new SpecificResponder(
-        IterativeReduceService.class, this), masterAddr);
+            IterativeReduceService.class, this), masterAddr);
 
     try {
       workersCompleted.await();
@@ -145,29 +144,29 @@ public class ApplicationMasterService<T extends Updateable> implements
       int complete = 0;
       int error = 0;
       int unknown = 0;
-      
+
       for (WorkerState state : workersState.values()) {
         switch (state) {
-        case COMPLETE:
-          complete++;
-          break;
+          case COMPLETE:
+            complete++;
+            break;
 
-        case ERROR:
-          error++;
-          break;
-          
-        default:
-          unknown++;
-          break;
+          case ERROR:
+            error++;
+            break;
+
+          default:
+            unknown++;
+            break;
         }
       }
-      
+
       // TODO: fix, and move here from ApplicationMaster
       // computable.complete(null);
 
       LOG.info("All workers have completed. Shutting down master service"
-          + ", workersComplete=" + complete + ", workersError=" + error
-          + ", workersUnknown=" + unknown);
+              + ", workersComplete=" + complete + ", workersError=" + error
+              + ", workersUnknown=" + unknown);
 
       return (error == 0 && unknown == 0) ? 0 : 1;
     } catch (InterruptedException ex) {
@@ -202,14 +201,14 @@ public class ApplicationMasterService<T extends Updateable> implements
     } else {
       for (WorkerId wid : workerMetrics.keySet()) {
         metrics.append("  Worker Metrics - ").append(Utils.getWorkerId(wid)).append(":").append("\n");
-        
+
         for (Map.Entry<CharSequence, Long> entry : workerMetrics.get(wid).entrySet()) {
           metrics.append("    ").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         }
         metrics.append("\n");
       }
     }
-    
+
     LOG.info(metrics.toString());
   }
 
@@ -220,22 +219,22 @@ public class ApplicationMasterService<T extends Updateable> implements
     synchronized (workersState) {
       if (!workersState.containsKey(workerId)) {
         throw ServiceError
-            .newBuilder()
-            .setDescription(
-                "Worker " + Utils.getWorkerId(workerId)
-                    + "unknown.").build();
+                .newBuilder()
+                .setDescription(
+                        "Worker " + Utils.getWorkerId(workerId)
+                                + "unknown.").build();
       }
-      
+
       // TODO: can a worker "start" more than once?
-      
+
       StartupConfiguration workerConf = workers.get(workerId);
       Utils.mergeConfigs(appConf, workerConf);
 
       LOG.debug("Got a startup call, workerId="
-          + Utils.getWorkerId(workerId) + ", responded with"
-          + ", batchSize=" + workerConf.getBatchSize() + ", iterations="
-          + workerConf.getIterations() + ", fileSplit=[" + workerConf.getSplit().getPath()
-          + ", " + workerConf.getSplit().getOffset() + "]");
+              + Utils.getWorkerId(workerId) + ", responded with"
+              + ", batchSize=" + workerConf.getBatchSize() + ", iterations="
+              + workerConf.getIterations() + ", fileSplit=[" + workerConf.getSplit().getPath()
+              + ", " + workerConf.getSplit().getOffset() + "]");
 
       workersState.put(workerId, WorkerState.STARTED);
 
@@ -244,37 +243,37 @@ public class ApplicationMasterService<T extends Updateable> implements
   }
 
   private boolean handleProgress(WorkerId workerId,
-      ProgressReport report) {
+                                 ProgressReport report) {
 
     synchronized (workersState) {
-      LinkedHashMap<Long, ProgressReport> progress = workersProgress
-          .get(workerId);
+      LinkedHashMap<Long, ProgressReport> progress = workersProgress.get(workerId);
+
       if (progress == null)
-        progress = new LinkedHashMap<Long, ProgressReport>();
-  
+        progress = new LinkedHashMap<>();
+
       progress.put(System.currentTimeMillis(), report);
       workersProgress.put(workerId, progress);
       workersState.put(workerId, WorkerState.RUNNING);
-  
+
       LOG.debug("Got a progress report" + ", workerId="
-          + Utils.getWorkerId(workerId) + ", workerState="
-          + workersState.get(workerId) + ", progressSize="
-          + report.getReport().size() + ", totalReports=" + progress.size());
+              + Utils.getWorkerId(workerId) + ", workerState="
+              + workersState.get(workerId) + ", progressSize="
+              + report.getReport().size() + ", totalReports=" + progress.size());
     }
-    
+
     return true;
   }
 
   @Override
   public boolean progress(WorkerId workerId, ProgressReport report)
-      throws AvroRemoteException {
+          throws AvroRemoteException {
 
     return handleProgress(workerId, report);
   }
 
   @Override
   public boolean update(WorkerId workerId, ByteBuffer data)
-      throws AvroRemoteException {
+          throws AvroRemoteException {
 
     // We only want updates from workers we know are either running, or have
     // started
@@ -284,12 +283,11 @@ public class ApplicationMasterService<T extends Updateable> implements
       workerState = workersState.get(workerId);
 
       if (workerState != null) {
-        if (workerState != WorkerState.RUNNING
-            && workerState != WorkerState.STARTED) {
+        if (workerState != WorkerState.RUNNING && workerState != WorkerState.STARTED) {
 
           LOG.debug("Received an erroneous update" + ", workerId="
-              + Utils.getWorkerId(workerId) + ", workerState="
-              + workerState + ", length=" + data.limit());
+                  + Utils.getWorkerId(workerId) + ", workerState="
+                  + workerState + ", length=" + data.limit());
 
           return false;
         }
@@ -297,7 +295,7 @@ public class ApplicationMasterService<T extends Updateable> implements
     }
 
     LOG.info("Received update, workerId=" + Utils.getWorkerId(workerId)
-        + ", workerState=" + workerState + ", length=" + data.limit());
+            + ", workerState=" + workerState + ", length=" + data.limit());
 
     synchronized (masterState) {
       // First update, create a new update map
@@ -305,7 +303,7 @@ public class ApplicationMasterService<T extends Updateable> implements
         LOG.debug("Initial update for this round, initializing update map");
 
         if (workersUpdate == null)
-          workersUpdate = new HashMap<WorkerId, T>();
+          workersUpdate = new HashMap<>();
 
         workersUpdate.clear();
         masterState = MasterState.UPDATING;
@@ -315,7 +313,7 @@ public class ApplicationMasterService<T extends Updateable> implements
     // Duplicate update?
     if (workersUpdate.containsKey(workerId)) {
       LOG.warn("Received a duplicate update for, workerId="
-          + Utils.getWorkerId(workerId) + ", ignoring this update");
+              + Utils.getWorkerId(workerId) + ", ignoring this update");
 
       return false;
     }
@@ -336,7 +334,7 @@ public class ApplicationMasterService<T extends Updateable> implements
 
       // Our latch should have the number of currently active workers
       if (workersUpdate.size() == expectedUpdates.get()) {
-        LOG.info("Received updates from all workers, spawing local compute thread");
+        LOG.info("Received updates from all workers, spawning local compute thread");
 
         // Fire off thread to compute update
         // TODO: need to fix this to something more reusable
@@ -345,33 +343,30 @@ public class ApplicationMasterService<T extends Updateable> implements
           @Override
           public void run() {
             long startTime, endTime;
-                        
+
             startTime = System.currentTimeMillis();
             T result = computable.compute(workersUpdate.values(),
-                masterUpdates.values());
+                    masterUpdates.values());
             endTime = System.currentTimeMillis();
 
             LOG.info("Computed local update in " + (endTime - startTime) + "ms");
             expectedUpdates.set(workersCompleted.getCount());
-            
+
             mMasterExecutions++;
             mMasterTime += (endTime - startTime);
 
             // check master computable to see if it wants to end early
             //earlyTerminationDetected = computable.checkEarlyTerminationCondition();
-            
+
             synchronized (masterUpdates) {
-              
-            	// we pre-do this so 
-            	currentUpdateId++;
-            	// changed around the id to inc after put
+
+              // we pre-do this so
+              currentUpdateId++;
+              // changed around the id to inc after put
               masterUpdates.put(currentUpdateId, result);
-              
+
               LOG.info("Adding master update for " + currentUpdateId + "");
-              
-              
-              
-              
+
               masterState = MasterState.WAITING;
             }
           }
@@ -388,16 +383,16 @@ public class ApplicationMasterService<T extends Updateable> implements
 
   @Override
   public int waiting(WorkerId workerId, int lastUpdate, long waiting)
-      throws AvroRemoteException {
+          throws AvroRemoteException {
 
     synchronized (workersState) {
       workersState.put(workerId, WorkerState.WAITING);
 
       LOG.info("Got waiting message" + ", workerId="
-          + Utils.getWorkerId(workerId) + ", workerState="
-          + workersState.get(workerId) + ", lastUpdate=" + lastUpdate
-          + ", currentUpdateId=" + currentUpdateId
-          + ", waitingFor=" + waiting);
+              + Utils.getWorkerId(workerId) + ", workerState="
+              + workersState.get(workerId) + ", lastUpdate=" + lastUpdate
+              + ", currentUpdateId=" + currentUpdateId
+              + ", waitingFor=" + waiting);
     }
 
     if (MasterState.UPDATING == masterState && lastUpdate == currentUpdateId)
@@ -408,19 +403,19 @@ public class ApplicationMasterService<T extends Updateable> implements
 
   @Override
   public ByteBuffer fetch(WorkerId workerId, int updateId)
-      throws AvroRemoteException {
-    
+          throws AvroRemoteException {
+
     LOG.info("Received a fetch request"
-        + ", workerId=" + Utils.getWorkerId(workerId)
-        + ", requestedUpdateId=" + updateId);
-    
+            + ", workerId=" + Utils.getWorkerId(workerId)
+            + ", requestedUpdateId=" + updateId);
+
     synchronized (workersState) {
       workersState.put(workerId, WorkerState.RUNNING);
     }
 
     ByteBuffer bytes = masterUpdates.get(updateId).toBytes();
     bytes.rewind();
-    
+
     return bytes;
   }
 
@@ -430,7 +425,7 @@ public class ApplicationMasterService<T extends Updateable> implements
     workersState.put(workerId, WorkerState.COMPLETE);
 
     LOG.info("Received complete message, workerId="
-        + Utils.getWorkerId(workerId));
+            + Utils.getWorkerId(workerId));
 
     workersCompleted.countDown();
   }
@@ -438,7 +433,7 @@ public class ApplicationMasterService<T extends Updateable> implements
   @Override
   public void error(WorkerId workerId, CharSequence message) {
     LOG.warn("A worker encountered an error" + ", worker="
-        + Utils.getWorkerId(workerId) + ", message=" + message);
+            + Utils.getWorkerId(workerId) + ", message=" + message);
 
     workersState.put(workerId, WorkerState.ERROR);
     workersCompleted.countDown();
@@ -448,7 +443,7 @@ public class ApplicationMasterService<T extends Updateable> implements
   public void metricsReport(WorkerId workerId, Map<CharSequence, Long> metrics) {
     if (workerMetrics == null)
       workerMetrics = new HashMap<>();
-    
+
     // Bludgeon it for now, TODO: be smarter about merging them
     workerMetrics.put(workerId, metrics);
   }

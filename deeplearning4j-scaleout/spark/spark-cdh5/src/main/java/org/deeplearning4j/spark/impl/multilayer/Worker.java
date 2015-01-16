@@ -169,11 +169,16 @@ public class Worker {
 	      System.out.println("On iteration " + i);
 /*
 	      double[] gradient = points.map(
+=======
+
+	      /*double[] gradient = points.map(
+>>>>>>> 6ffdca4f9b9039cc7b81a1d12aa400ae84339cb2
 	        new DL4JWorker(w)
 	      ).reduce( new MasterComputeParameterAverage() );
 
 	      for (int j = 0; j < D; j++) {
 	        w[j] -= gradient[j];
+<<<<<<< HEAD
 	      }
 */
 	    }
