@@ -5,7 +5,7 @@ layout: ja-default
 
 # ND4J
 
-DeepLearning4jは[ND4J](http://nd4j.org/)を数学的なオペレーションツールの核として活用しております。Deeplearning4jを始めるためには、[ND4Jのバックエンド](http://nd4j.org/downloads.html)が必要になります。このバックエンドは、GPUか初期設定されている状況次第で決定されます。
+DeepLearning4jは[ND4J](http://nd4j.org/ja-getstarted.html)を数学的なオペレーションツールの核として活用しております。Deeplearning4jを始めるためには、[ND4Jのバックエンド](http://nd4j.org/downloads.html)が必要になります。このバックエンドは、GPUか初期設定されている状況次第で決定されます。
 
 ##なぜ交換可能なバックエンドを使うのか?
 
