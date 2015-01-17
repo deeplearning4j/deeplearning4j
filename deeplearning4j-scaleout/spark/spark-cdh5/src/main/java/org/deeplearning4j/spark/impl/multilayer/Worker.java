@@ -83,58 +83,6 @@ public class Worker {
 		}
 
 
-		/**
-		 * This is the main driver that kicks off the program
-		 *
-		 * @param args
-		 */
-		public static void main(String[] args) {
-
-			if (args.length < 2) {
-				System.err.println("Usage: DL4J_Spark <file> <iters>");
-				System.exit(1);
-			}
-
-
-			// set to test mode
-			SparkConf sparkConf = new SparkConf().setAppName("DL4J").setMaster("local");
-			JavaSparkContext sc = new JavaSparkContext(sparkConf);
-			JavaRDD<String> lines = sc.textFile(args[0]);
-
-			// gotta map this to a Matrix/INDArray
-			JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(new SVMLightRecordReader(),Integer.parseInt(args[0]),Integer.parseInt(args[0]))).cache();
-
-			int ITERATIONS = Integer.parseInt(args[1]);
-			// Initialize w to a random value
-
-			for (int i = 1; i <= ITERATIONS; i++) {
-
-				System.out.println("On iteration " + i);
-/*
-	      double[] gradient = points.map(
-=======
-
-	      /*double[] gradient = points.map(
->>>>>>> 6ffdca4f9b9039cc7b81a1d12aa400ae84339cb2
-	        new DL4JWorker(w)
-	      ).reduce( new MasterComputeParameterAverage() );
-
-	      for (int j = 0; j < D; j++) {
-	        w[j] -= gradient[j];
-<<<<<<< HEAD
-	      }
-*/
-			}
-/*
-	    val logData = sc.textFile(logFile, 2).cache()
-	    	    val numAs = logData.filter(line => line.contains("a")).count()
-	    	    val numBs = logData.filter(line => line.contains("b")).count()
-	    	    println("Lines with a: %s, Lines with b: %s".format(numAs, numBs))
-*/
-			//System.out.print("Final w: ");
-			//printWeights(w);
-			sc.stop();
-		}
 
 		@Override
 		public INDArray call(DataSet v1) throws Exception {
@@ -142,4 +90,71 @@ public class Worker {
 			return network.params();
 		}
 	}
+	
+	
+	
+
+	/**
+	 * This is the main driver that kicks off the program
+	 *
+	 * @param args
+	 */
+	public static void main(String[] args) {
+
+		System.err.println( "running worker.." );
+		if (args.length < 2) {
+			System.err.println("Usage: DL4J_Spark <file> <iters>");
+			System.exit(1);
+		}
+
+		System.err.println( "Setting up Spark Conf" );
+
+		// set to test mode
+		//SparkConf sparkConf = new SparkConf().setAppName("DL4J").setMaster("local[4]");
+		SparkConf sparkConf = new SparkConf()
+		.setMaster("local[1]")
+	      .setAppName("SparkDebugExample");
+		
+		System.out.println( "Setting up Spark Context..." );
+		
+		JavaSparkContext sc = new JavaSparkContext(sparkConf);
+		JavaRDD<String> lines = sc.textFile(args[0]);
+
+		// gotta map this to a Matrix/INDArray
+		JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(new SVMLightRecordReader(),Integer.parseInt(args[2]),Integer.parseInt(args[3]))).cache();
+
+		int ITERATIONS = Integer.parseInt(args[1]);
+		// Initialize w to a random value
+
+		for (int i = 1; i <= ITERATIONS; i++) {
+
+			System.out.println("On iteration " + i);
+/*
+      double[] gradient = points.map(
+=======
+
+      /*double[] gradient = points.map(
+>>>>>>> 6ffdca4f9b9039cc7b81a1d12aa400ae84339cb2
+        new DL4JWorker(w)
+      ).reduce( new MasterComputeParameterAverage() );
+
+      for (int j = 0; j < D; j++) {
+        w[j] -= gradient[j];
+<<<<<<< HEAD
+      }
+*/
+		}
+/*
+    val logData = sc.textFile(logFile, 2).cache()
+    	    val numAs = logData.filter(line => line.contains("a")).count()
+    	    val numBs = logData.filter(line => line.contains("b")).count()
+    	    println("Lines with a: %s, Lines with b: %s".format(numAs, numBs))
+*/
+		//System.out.print("Final w: ");
+		//printWeights(w);
+		sc.stop();
+	}	
+	
+	
+	
 }
