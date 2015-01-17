@@ -41,10 +41,10 @@ public class SimpleJCublas {
         //write the file to somewhere on java.library.path where there is permissions
         String name = "/" + resourceName().substring(3).replace("X","x");
         ClassPathResource resource = new ClassPathResource(name);
-        if(!resource.exists() && name.startsWith("/lib/"))
+        if(!resource.exists() && name.startsWith(File.separator + "lib" + File.separator))
             resource = new ClassPathResource(name.replaceAll("/lib/",""));
         else if(!resource.exists()) {
-            resource = new ClassPathResource(resourceName().replace("X","x"));
+            resource = new ClassPathResource(name);
         }
 
         if(!resource.exists())
@@ -54,7 +54,8 @@ public class SimpleJCublas {
 
         String home = findWritableLibDir();
         File cuBlastmp = new File(home);
-        File shared = new File(cuBlastmp,resourceName().replace("X","x"));
+        LibUtils.OSType os = LibUtils.calculateOS();
+        File shared = new File(cuBlastmp,os == LibUtils.OSType.WINDOWS ? resourceName().replace("X","x").replaceAll("lib","") : resourceName().replace("X","x"));
         try {
             if(shared.exists())
                 shared.delete();
@@ -103,34 +104,47 @@ public class SimpleJCublas {
 
     private static String libDir() {
         int bits =  thirtyTwoOrSixtyFour();
-        String base = cudaBase() + File.separator  + libFolder();
-        String ret =  base + (bits == 64 ? "64" : "");
-        File test = new File(ret);
-        boolean exists = test.exists();
-        if(exists)
-            return ret;
-        if(!exists) {
-            File maybeThirtyTwoBit = new File(base);
-            if(bits == 64 && maybeThirtyTwoBit.exists()) {
-                log.warn("Loading 32 bit cuda...no 64 bit found");
-                return base;
+        LibUtils.OSType o = LibUtils.calculateOS();
+        if(o != LibUtils.OSType.WINDOWS) {
+            String base = cudaBase() + File.separator  + libFolder();
+            String ret =  base + (bits == 64 ? "64" : "");
+            File test = new File(ret);
+            boolean exists = test.exists();
+            if(exists)
+                return ret;
+            if(!exists) {
+                File maybeThirtyTwoBit = new File(base);
+                if(bits == 64 && maybeThirtyTwoBit.exists()) {
+                    log.warn("Loading 32 bit cuda...no 64 bit found");
+                    return base;
+                }
             }
-        }
-        else {
-            File testOther = new File(base);
-            if(!exists && !testOther.exists())
-                throw new IllegalStateException("No lib directory found");
-            else
-                return base;
+            else {
+                File testOther = new File(base);
+                if(!exists && !testOther.exists())
+                    throw new IllegalStateException("No lib directory found");
+                else
+                    return base;
+            }
+
+            return ret;
+
         }
 
-        return ret;
+        else {
+            String base = cudaBase() + File.separator  + libFolder() + File.separator;
+            if(bits == 32) {
+                base += "Win32";
+            }
+            else
+                base += "x64";
+            return base;
+        }
     }
 
 
     private static String libFolder() {
-        LibUtils.OSType osType = LibUtils.calculateOS();
-        return osType == LibUtils.OSType.WINDOWS ? "Lib" : "lib";
+        return  "lib";
     }
 
     private static int thirtyTwoOrSixtyFour() {

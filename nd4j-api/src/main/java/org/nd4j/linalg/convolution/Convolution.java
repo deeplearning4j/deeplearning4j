@@ -85,8 +85,8 @@ public class Convolution {
 
     /**
      * ND Convolution
-     * @param input the input to applyTransformToOrigin
-     * @param kernel the kernel to applyTransformToOrigin with
+     * @param input the input to transform
+     * @param kernel the kernel to transform with
      * @param type the type of convolution
      * @return the convolution of the given input and kernel
      */
@@ -96,8 +96,8 @@ public class Convolution {
 
     /**
      * ND Convolution
-     * @param input the input to applyTransformToOrigin
-     * @param kernel the kernel to applyTransformToOrigin with
+     * @param input the input to transform
+     * @param kernel the kernel to transform with
      * @param type the type of convolution
      * @return the convolution of the given input and kernel
      */
