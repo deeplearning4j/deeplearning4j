@@ -138,24 +138,26 @@ public class Worker {
 	   * @param args
 	   */
 	  public static void main(String[] args) {
-
+/*
 	    if (args.length < 2) {
 	      System.err.println("Usage: DL4J_Spark <file> <iters>");
 	      System.exit(1);
 	    }
-
+*/
+	    String testInputFile = "src/test/resources/data/svmLight/iris_svmLight_0.txt";
 
 	    // set to test mode
-	    SparkConf sparkConf = new SparkConf().setAppName("DL4J").setMaster("local");
+	    SparkConf sparkConf = new SparkConf().setAppName("DL4J").setMaster("local[1]");
 	    JavaSparkContext sc = new JavaSparkContext(sparkConf);
-	    JavaRDD<String> lines = sc.textFile(args[0]);
+	    JavaRDD<String> lines = sc.textFile( testInputFile ); //args[0]);
 	    
 	    // gotta map this to a Matrix/INDArray
 	    JavaRDD<DataPoint> points = lines.map(new ParsePoint()).cache();
-	    
+/*	    
 	    int ITERATIONS = Integer.parseInt(args[1]);
 	    // Initialize w to a random value
 	    double[] w = new double[D];
+	    */
 /*
 	    for (int i = 0; i < D; i++) {
 	      w[i] = 2 * rand.nextDouble() - 1;
@@ -164,9 +166,9 @@ public class Worker {
 	    System.out.print("Initial w: ");
 	    printWeights(w);
 */
-	    for (int i = 1; i <= ITERATIONS; i++) {
+//	    for (int i = 1; i <= ITERATIONS; i++) {
 	    	
-	      System.out.println("On iteration " + i);
+//	      System.out.println("On iteration " + i);
 /*
 	      double[] gradient = points.map(
 =======
@@ -190,7 +192,7 @@ public class Worker {
 */
 	    //System.out.print("Final w: ");
 	    //printWeights(w);
-	    sc.stop();
-	  }		
+//	    sc.stop();
+//	  }		
 	
 }
