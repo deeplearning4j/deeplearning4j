@@ -1,10 +1,6 @@
 ---
-layout: ja-default
----
-
----
 title: 
-layout: default
+layout: ja-default
 ---
 
 # Skymindについて
