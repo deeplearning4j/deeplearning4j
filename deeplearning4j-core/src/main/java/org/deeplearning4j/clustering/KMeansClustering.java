@@ -58,8 +58,7 @@ public class KMeansClustering implements Serializable {
         }
 
         // Find nearest centroid
-        Integer nearestCentroidIndex = this.nearestCentroid(features);
-        return nearestCentroidIndex;
+        return this.nearestCentroid(features);
     }
 
 

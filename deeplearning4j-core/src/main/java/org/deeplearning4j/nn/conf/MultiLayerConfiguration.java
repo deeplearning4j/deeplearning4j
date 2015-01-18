@@ -24,10 +24,6 @@ public class MultiLayerConfiguration implements Serializable {
 
     private MultiLayerConfiguration() {}
 
-
-
-
-
     public NeuralNetConfiguration getConf(int i) {
         return confs.get(i);
     }
@@ -51,8 +47,6 @@ public class MultiLayerConfiguration implements Serializable {
     public void setUseRBMPropUpAsActivations(boolean useRBMPropUpAsActivations) {
         this.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
     }
-
-
 
     public boolean isUseDropConnect() {
         return useDropConnect;
@@ -96,7 +90,7 @@ public class MultiLayerConfiguration implements Serializable {
 
     /**
      *
-     * @return
+     * @return  JSON representation of NN configuration
      */
     public String toJson() {
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
@@ -110,7 +104,7 @@ public class MultiLayerConfiguration implements Serializable {
     /**
      * Create a neural net configuration from json
      * @param json the neural net configuration from json
-     * @return
+     * @return {@link org.deeplearning4j.nn.conf.MultiLayerConfiguration}
      */
     public static MultiLayerConfiguration fromJson(String json) {
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
@@ -128,15 +122,13 @@ public class MultiLayerConfiguration implements Serializable {
 
         MultiLayerConfiguration that = (MultiLayerConfiguration) o;
 
-        if (Double.compare(that.dampingFactor, dampingFactor) != 0) return false;
-        if (pretrain != that.pretrain) return false;
-        if (useDropConnect != that.useDropConnect) return false;
-        if (useGaussNewtonVectorProductBackProp != that.useGaussNewtonVectorProductBackProp) return false;
-        if (useRBMPropUpAsActivations != that.useRBMPropUpAsActivations) return false;
-        if (confs != null ? !confs.equals(that.confs) : that.confs != null) return false;
-        if (!Arrays.equals(hiddenLayerSizes, that.hiddenLayerSizes)) return false;
+        return Double.compare(that.dampingFactor, dampingFactor) == 0
+            && pretrain == that.pretrain && useDropConnect == that.useDropConnect
+            && useGaussNewtonVectorProductBackProp == that.useGaussNewtonVectorProductBackProp
+            && useRBMPropUpAsActivations == that.useRBMPropUpAsActivations
+            && !(confs != null ? !confs.equals(that.confs) : that.confs != null)
+            && Arrays.equals(hiddenLayerSizes, that.hiddenLayerSizes);
 
-        return true;
     }
 
     @Override
@@ -175,8 +167,6 @@ public class MultiLayerConfiguration implements Serializable {
             this.preProcessors = preProcessors;
             return this;
         }
-
-
 
         public Builder dampingFactor(double dampingFactor) {
             this.dampingFactor = dampingFactor;
@@ -237,16 +227,13 @@ public class MultiLayerConfiguration implements Serializable {
 
             Builder builder = (Builder) o;
 
-            if (Double.compare(builder.dampingFactor, dampingFactor) != 0) return false;
-            if (pretrain != builder.pretrain) return false;
-            if (useDropConnect != builder.useDropConnect) return false;
-            if (useRBMPropUpAsActivations != builder.useRBMPropUpAsActivations) return false;
-            if (confs != null ? !confs.equals(builder.confs) : builder.confs != null) return false;
-            if (!Arrays.equals(hiddenLayerSizes, builder.hiddenLayerSizes)) return false;
-            if (preProcessors != null ? !preProcessors.equals(builder.preProcessors) : builder.preProcessors != null)
-                return false;
+            return Double.compare(builder.dampingFactor, dampingFactor) == 0
+                && pretrain == builder.pretrain && useDropConnect == builder.useDropConnect
+                && useRBMPropUpAsActivations == builder.useRBMPropUpAsActivations
+                && !(confs != null ? !confs.equals(builder.confs) : builder.confs != null)
+                && Arrays.equals(hiddenLayerSizes, builder.hiddenLayerSizes)
+                && !(preProcessors != null ? !preProcessors.equals(builder.preProcessors) : builder.preProcessors != null);
 
-            return true;
         }
 
         @Override
