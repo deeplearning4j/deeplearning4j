@@ -176,7 +176,7 @@ public class StringUtils {
         if (uris == null) {
             return null;
         }
-        StringBuffer ret = new StringBuffer(uris[0].toString());
+        StringBuilder ret = new StringBuilder(uris[0].toString());
         for(int i = 1; i < uris.length;i++){
             ret.append(",");
             ret.append(uris[i].toString());
@@ -197,7 +197,7 @@ public class StringUtils {
                 uris[i] = new URI(str[i]);
             }catch(URISyntaxException ur){
                 System.out.println("Exception in specified URI's " + StringUtils.stringifyException(ur));
-                //making sure its asssigned to null in case of an error
+                //making sure its assigned to null in case of an error
                 uris[i] = null;
             }
         }
@@ -227,7 +227,7 @@ public class StringUtils {
      * @param timeDiff The time difference to format
      */
     public static String formatTime(long timeDiff){
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         long hours = timeDiff / (60*60*1000);
         long rem = (timeDiff % (60*60*1000));
         long minutes =  rem / (60*1000);
@@ -259,7 +259,7 @@ public class StringUtils {
      */
     public static String getFormattedTimeWithDiff(DateFormat dateFormat,
                                                   long finishTime, long startTime){
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         if (0 != finishTime) {
             buf.append(dateFormat.format(new Date(finishTime)));
             if (0 != startTime){
@@ -522,7 +522,7 @@ public class StringUtils {
      * @return a message for logging
      */
     private static String toStartupShutdownString(String prefix, String [] msg) {
-        StringBuffer b = new StringBuffer(prefix);
+        StringBuilder b = new StringBuilder(prefix);
         b.append("\n/************************************************************");
         for(String s : msg)
             b.append("\n" + prefix + s);
@@ -604,7 +604,7 @@ public class StringUtils {
         if(string == null) {
             return null;
         }
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         boolean lastCharacterWasSpace = false;
         char[] chars = string.toCharArray();
         for(char c : chars) {
@@ -635,8 +635,8 @@ public class StringUtils {
      * Return an abbreviated English-language desc of the byte length
      */
     public static String byteDesc(long len) {
-        double val = 0.0;
-        String ending = "";
+        double val;
+        String ending;
         if (len < 1024 * 1024) {
             val = (1.0 * len) / 1024;
             ending = " KB";
@@ -667,7 +667,7 @@ public class StringUtils {
      * @param strings Strings to join.
      */
     public static String join(CharSequence separator, Iterable<String> strings) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         boolean first = true;
         for (String s : strings) {
             if (first) {
@@ -688,7 +688,7 @@ public class StringUtils {
      */
     public static String joinObjects(
             CharSequence separator, Iterable<? extends Object> objects) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         boolean first = true;
         for (Object o : objects) {
             if (first) {

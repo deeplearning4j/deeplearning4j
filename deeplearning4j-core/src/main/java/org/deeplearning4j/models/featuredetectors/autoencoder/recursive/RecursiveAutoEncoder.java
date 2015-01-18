@@ -116,8 +116,7 @@ public class RecursiveAutoEncoder extends BaseLayer {
             currScore += scoreSnapShot();
         }
 
-        Gradient gradient = createGradient(hiddenLoss,visibleLoss,cLoss,bLoss);
-        return gradient;
+        return createGradient(hiddenLoss,visibleLoss,cLoss,bLoss);
     }
 
 

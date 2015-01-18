@@ -1,15 +1,14 @@
 package org.deeplearning4j.models.featuredetectors.autoencoder;
 
-import static org.deeplearning4j.util.MathUtils.binomial;
-
-
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.deeplearning4j.nn.layers.BasePretrainNetwork;
+
+import static org.deeplearning4j.util.MathUtils.binomial;
 
 
 /**
@@ -21,7 +20,6 @@ import org.deeplearning4j.nn.layers.BasePretrainNetwork;
  *
  */
 public class AutoEncoder extends BasePretrainNetwork  {
-
 
     private static final long serialVersionUID = -6445530486350763837L;
 
@@ -106,20 +104,11 @@ public class AutoEncoder extends BasePretrainNetwork  {
 
     }
 
-
-
-
-
-
     @Override
     public INDArray transform(INDArray x) {
         INDArray y = encode(x);
         return decode(y);
     }
-
-
-
-
 
     @Override
     public  Gradient getGradient() {
@@ -141,8 +130,6 @@ public class AutoEncoder extends BasePretrainNetwork  {
         INDArray hBiasGradient = hiddenLoss.mean(0);
         INDArray vBiasGradient = visibleLoss.mean(0);
 
-        Gradient gradient = createGradient(wGradient, vBiasGradient, hBiasGradient);
-
-        return gradient;
+        return createGradient(wGradient, vBiasGradient, hBiasGradient);
     }
 }
