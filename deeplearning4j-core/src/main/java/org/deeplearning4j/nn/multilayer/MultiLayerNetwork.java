@@ -390,15 +390,9 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
         }
     }
 
-
-
-
     public INDArray activationFromPrevLayer(int curr,INDArray input) {
         return layers[curr].activate(input);
     }
-
-
-
 
     /**
      * Compute activations from input to output of the output layer
@@ -805,11 +799,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
             list.add(layers.get(i).getFirst());
             list.add(layers.get(i).getSecond());
         }
-
-
-
-        INDArray ret = Nd4j.toFlattened(list);
-        return ret;
+        return Nd4j.toFlattened(list);
     }
 
 
@@ -1163,8 +1153,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray reconstruct(INDArray x, int layerNum) {
-        INDArray currInput = x;
-        List<INDArray> forward = feedForward(currInput);
+        List<INDArray> forward = feedForward(x);
         return forward.get(layerNum - 1);
     }
 
@@ -1173,7 +1162,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
      * Prints the configuration
      */
     public void printConfiguration() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         int count = 0;
         for(NeuralNetConfiguration conf : getLayerWiseConfigurations().getConfs()) {
             sb.append(" Layer " + count++ + " conf " + conf);

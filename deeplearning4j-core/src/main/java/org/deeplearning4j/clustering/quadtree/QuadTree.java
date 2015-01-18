@@ -1,14 +1,13 @@
 package org.deeplearning4j.clustering.quadtree;
 
-import static java.lang.Math.max;
-
 import com.google.common.util.concurrent.AtomicDouble;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-
 import java.io.Serializable;
 import java.util.Set;
 import java.util.TreeSet;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+
+import static java.lang.Math.max;
 
 /**
  * QuadTree: http://en.wikipedia.org/wiki/Quadtree
@@ -41,7 +40,7 @@ public class QuadTree implements Serializable {
         INDArray minY = data.min(0);
         INDArray maxY = data.max(0);
         init(data,meanY.getDouble(0),
-                meanY.getDouble(1),max(maxY.getDouble(0) - meanY.getDouble(0),meanY.getDouble(0) - minY.getDouble(0)) + Nd4j.EPS_THRESHOLD,
+                meanY.getDouble(1),max(maxY.getDouble(0) - meanY.getDouble(0), meanY.getDouble(0) - minY.getDouble(0)) + Nd4j.EPS_THRESHOLD,
                 max(maxY.getDouble(1) - meanY.getDouble(1), meanY.getDouble(1) - minY.getDouble(1)) + Nd4j.EPS_THRESHOLD);
         fill();
     }
@@ -78,10 +77,8 @@ public class QuadTree implements Serializable {
     protected QuadTree findIndex(INDArray coordinates) {
 
         // Compute the sector for the coordinates
-        boolean left = (coordinates.getDouble(0) > (boundary.getX() + boundary.getHw() / 2)) ? false
-                : true;
-        boolean top = (coordinates.getDouble(1) > (boundary.getY() + boundary.getHh() / 2)) ? false
-                : true;
+        boolean left = (coordinates.getDouble(0) <= (boundary.getX() + boundary.getHw() / 2));
+        boolean top = (coordinates.getDouble(1) <= (boundary.getY() + boundary.getHh() / 2));
 
         // top left
         QuadTree index = getNorthWest();
@@ -190,20 +187,16 @@ public class QuadTree implements Serializable {
      */
     public boolean isCorrect() {
 
-        for(int n = 0; n < size; n++) {
+        for (int n = 0; n < size; n++) {
             INDArray point = data.slice(index[n]);
-            if(!boundary.containsPoint(point))
+            if (!boundary.containsPoint(point))
                 return false;
         }
 
-        if(!isLeaf())
-            return
-                    northWest.isCorrect() &&
-                            northEast.isCorrect() &&
-                            southWest.isCorrect() &&
-                            southEast.isCorrect();
+        return isLeaf() || northWest.isCorrect()
+            && northEast.isCorrect() && southWest.isCorrect()
+            && southEast.isCorrect();
 
-        return true;
     }
 
 
@@ -222,9 +215,9 @@ public class QuadTree implements Serializable {
      * @param indices
      */
     public void getIndices(Set<Integer> indices) {
-        for(int i = 0; i < this.index.length; i++)
-            if(this.index[i] >= 0)
-                indices.add(this.index[i]);
+        for (int anIndex : this.index)
+            if (anIndex >= 0)
+                indices.add(anIndex);
 
 
         if(!isLeaf()) {
@@ -303,8 +296,7 @@ public class QuadTree implements Serializable {
 
 
         // Compute distance between point and center-of-mass
-        int ind = pointIndex;
-        buf.assign(data.slice(ind)).subi(centerOfMass);
+        buf.assign(data.slice(pointIndex)).subi(centerOfMass);
 
         double D = Nd4j.getBlasWrapper().dot(buf,buf);
 

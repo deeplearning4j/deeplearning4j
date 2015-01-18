@@ -53,7 +53,7 @@ public class WeightInitUtil {
      * distribution based on the initialization scheme
      */
     public static INDArray initWeights(int[] shape,WeightInit initScheme,ActivationFunction act,RealDistribution dist) {
-        INDArray ret = null;
+        INDArray ret;
         switch(initScheme) {
             case NORMALIZED:
                 ret = Nd4j.rand(shape);
