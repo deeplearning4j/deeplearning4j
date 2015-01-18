@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
@@ -58,11 +59,9 @@ public class FingerPrintKeyer  {
         s = s.toLowerCase(); // then lowercase it
         s = punctctrl.matcher(s).replaceAll(""); // then remove all punctuation and control chars
         String[] frags = StringUtils.split(s); // split by whitespace
-        TreeSet<String> set = new TreeSet<String>();
-        for (String ss : frags) {
-            set.add(ss); // order fragments and dedupe
-        }
-        StringBuffer b = new StringBuffer();
+        TreeSet<String> set = new TreeSet<>();
+        Collections.addAll(set, frags);
+        StringBuilder b = new StringBuilder();
         Iterator<String> i = set.iterator();
         while (i.hasNext()) {  // join ordered fragments back together
             b.append(i.next());
@@ -75,7 +74,7 @@ public class FingerPrintKeyer  {
 
     protected String asciify(String s) {
         char[] c = s.toCharArray();
-        StringBuffer b = new StringBuffer();
+        StringBuilder b = new StringBuilder();
         for (char element : c) {
             b.append(translate(element));
         }

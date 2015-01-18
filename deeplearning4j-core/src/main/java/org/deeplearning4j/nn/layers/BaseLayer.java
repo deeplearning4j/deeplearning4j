@@ -1,22 +1,16 @@
 package org.deeplearning4j.nn.layers;
 
-
-
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.ops.transforms.Transforms;
-
-
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -158,10 +152,7 @@ public abstract class BaseLayer implements Layer {
     public  INDArray activate() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-
-
-        INDArray activation =  conf.getActivationFunction().apply(getInput().mmul(W).addiRowVector(b));
-        return activation;
+        return conf.getActivationFunction().apply(getInput().mmul(W).addiRowVector(b));
     }
 
     @Override
@@ -175,10 +166,7 @@ public abstract class BaseLayer implements Layer {
     public INDArray activationMean() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-
-
-        INDArray hbiasMean = getInput().mmul(W).addRowVector(b);
-        return hbiasMean;
+        return getInput().mmul(W).addRowVector(b);
     }
 
     @Override

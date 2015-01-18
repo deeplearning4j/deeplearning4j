@@ -2,16 +2,14 @@ package org.deeplearning4j.nn.layers;
 
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.Solver;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -39,8 +39,8 @@ public class LFWLoader {
     private int numNames;
     private int numPixelColumns;
     private ImageLoader loader = new ImageLoader(28,28);
-    private List<String> images = new ArrayList<String>();
-    private List<String> outcomes = new ArrayList<String>();
+    private List<String> images = new ArrayList<>();
+    private List<String> outcomes = new ArrayList<>();
 
 
 
@@ -101,8 +101,6 @@ public class LFWLoader {
 
     }
 
-
-
     public DataSet convertListPairs(List<DataSet> images) {
         INDArray inputs = Nd4j.create(images.size(), numPixelColumns);
         INDArray outputs = Nd4j.create(images.size(),numNames);
@@ -142,7 +140,6 @@ public class LFWLoader {
             if(ret.size() >= num)
                 break;
         }
-
         return ret;
     }
 
@@ -181,8 +178,6 @@ public class LFWLoader {
         return new DataSet(image2,outcome);
     }
 
-
-
     public  void untarFile(File baseDir, File tarFile) throws IOException {
 
 
@@ -192,19 +187,12 @@ public class LFWLoader {
 
     }
 
-
-
-
     public int getNumNames() {
         return numNames;
     }
 
-
-
     public int getNumPixelColumns() {
         return numPixelColumns;
     }
-
-
 
 }
