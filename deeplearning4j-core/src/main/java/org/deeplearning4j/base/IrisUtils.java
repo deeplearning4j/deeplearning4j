@@ -2,19 +2,13 @@ package org.deeplearning4j.base;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
-import org.deeplearning4j.berkeley.Pair;
-
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.core.io.ClassPathResource;
-
-
 
 public class IrisUtils {
 
@@ -44,16 +38,8 @@ public class IrisUtils {
         for(int i = 0; i < ret.rows(); i++)
             list.add(new DataSet(ret.getRow(i), Nd4j.create(outcomes[i])));
 
-
-
         return list;
     }
-
-
-
-
-
-
 
     private static void addRow(INDArray ret,int row,String[] line) {
         double[] vector = new double[4];

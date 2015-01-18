@@ -44,7 +44,7 @@ public class KDTree implements Serializable {
             int disc = 0;
             KDNode node = root;
             KDNode insert = new KDNode(point);
-            int successor = 0;
+            int successor;
             while(true) {
                 //exactly equal
                 if(node.getPoint().eq(point).sum(Integer.MAX_VALUE).getDouble(0) == 0) {
@@ -224,7 +224,6 @@ public class KDTree implements Serializable {
 
 
     private Pair<KDNode,Integer> max(KDNode node,int disc,int _disc) {
-        KDNode internalNode = node;
         int discNext = (_disc + 1) % dims;
         if(_disc == disc) {
             KDNode child = node.getLeft();
@@ -232,12 +231,12 @@ public class KDTree implements Serializable {
                 return max(child,disc,discNext);
             }
         }
-        else if(internalNode.getLeft() != null || internalNode.getRight() != null) {
+        else if(node.getLeft() != null || node.getRight() != null) {
             Pair<KDNode,Integer> left = null,right = null;
-            if(internalNode.getLeft() != null)
-                left = max(internalNode.getLeft(),disc,discNext);
-            if(internalNode.getRight() != null)
-                right = max(internalNode.getRight(),disc,discNext);
+            if(node.getLeft() != null)
+                left = max(node.getLeft(),disc,discNext);
+            if(node.getRight() != null)
+                right = max(node.getRight(),disc,discNext);
             if(left != null && right != null) {
                 double pointLeft = left.getFirst().getPoint().getDouble(disc);
                 double pointRight = right.getFirst().getPoint().getDouble(disc);
@@ -252,13 +251,12 @@ public class KDTree implements Serializable {
                 return right;
         }
 
-        return new Pair<>(internalNode,_disc);
+        return new Pair<>(node,_disc);
     }
 
 
 
     private Pair<KDNode,Integer> min(KDNode node,int disc,int _disc) {
-        KDNode internalNode = node;
         int discNext = (_disc + 1) % dims;
         if(_disc == disc) {
             KDNode child = node.getLeft();
@@ -266,12 +264,12 @@ public class KDTree implements Serializable {
                 return min(child,disc,discNext);
             }
         }
-        else if(internalNode.getLeft() != null || internalNode.getRight() != null) {
+        else if(node.getLeft() != null || node.getRight() != null) {
             Pair<KDNode,Integer> left = null,right = null;
-            if(internalNode.getLeft() != null)
-                left = min(internalNode.getLeft(),disc,discNext);
-            if(internalNode.getRight() != null)
-                right = min(internalNode.getRight(),disc,discNext);
+            if(node.getLeft() != null)
+                left = min(node.getLeft(),disc,discNext);
+            if(node.getRight() != null)
+                right = min(node.getRight(),disc,discNext);
             if(left != null && right != null) {
                 double pointLeft = left.getFirst().getPoint().getDouble(disc);
                 double pointRight = right.getFirst().getPoint().getDouble(disc);
@@ -286,7 +284,7 @@ public class KDTree implements Serializable {
                 return right;
         }
 
-        return new Pair<>(internalNode,_disc);
+        return new Pair<>(node,_disc);
     }
 
     /**
