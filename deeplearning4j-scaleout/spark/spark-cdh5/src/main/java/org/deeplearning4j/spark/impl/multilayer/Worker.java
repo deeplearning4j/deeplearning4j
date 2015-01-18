@@ -1,5 +1,8 @@
 package org.deeplearning4j.spark.impl.multilayer;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.spark.SparkConf;
@@ -9,11 +12,15 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 
 import org.canova.api.records.reader.impl.SVMLightRecordReader;
+import org.canova.api.split.StringSplit;
+import org.canova.api.writable.Writable;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.FeatureUtil;
 
 
 /**
@@ -71,6 +78,9 @@ public class Worker {
 	/**
 	 * This is considered the "Worker"
 	 * This is the code that will run the .fit() method on the network
+	 * 
+	 * the issue here is that this is getting called 1x per record
+	 * and before we could call it in a more controlled mini-batch setting
 	 *
 	 * @author josh
 	 */
@@ -78,16 +88,21 @@ public class Worker {
 
 		private final MultiLayerNetwork network;
 
-		DL4JWorker(MultiLayerNetwork network) {
-			this.network = network;
+		DL4JWorker() {
+			this.network = null;
 		}
+
+
 
 
 
 		@Override
 		public INDArray call(DataSet v1) throws Exception {
-			network.fit(v1);
-			return network.params();
+			//network.fit(v1);
+			//return network.params();
+			System.out.println("DL4JWorker > call " + v1.numExamples() );
+			return null;
+			
 		}
 	}
 	
@@ -96,6 +111,10 @@ public class Worker {
 
 	/**
 	 * This is the main driver that kicks off the program
+	 *
+	 * Current best idea: 
+	 * 
+	 * 		http://stackoverflow.com/questions/23402303/apache-spark-moving-average
 	 *
 	 * @param args
 	 */
@@ -125,10 +144,17 @@ public class Worker {
 
 		int ITERATIONS = Integer.parseInt(args[1]);
 		// Initialize w to a random value
+		
+		long c = lines.count();
+		System.out.println( "svmLight records: " + c);
 
 		for (int i = 1; i <= ITERATIONS; i++) {
 
 			System.out.println("On iteration " + i);
+			//INDArray out = points.map( new DL4JWorker() );
+			
+			System.out.println("end iteration " + i);
+			
 /*
       double[] gradient = points.map(
 =======
