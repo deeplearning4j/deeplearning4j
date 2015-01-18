@@ -5,12 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.commons.math3.linear.CholeskyDecomposition;
 import org.apache.commons.math3.linear.NonSquareMatrixException;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.deeplearning4j.berkeley.Counter;
 
 
@@ -458,7 +456,6 @@ public class MathUtils  {
      * Used for calculating top part of simple regression for
      * beta 1
      * @param vector the x coordinates
-     * @param vector2 the y coordinates
      * @return the sum of mean differences for the input vectors
      */
     public static double sumOfMeanDifferencesOnePoint(double[] vector) {
@@ -866,7 +863,9 @@ public class MathUtils  {
      */
     public static double factorial(double n) {
         if(n==1 || n==0) return 1;
-        for(double i=n;i>0;i--,n*=(i > 0 ? i : 1)) {}
+        for(double i=n;i>0;i--,n*=(i > 0 ? i : 1)) {
+            // do nothing
+        }
         return n;
     }//end factorial
 
@@ -902,11 +901,9 @@ public class MathUtils  {
      */
     public static /*@pure@*/ int round(double value) {
 
-        int roundedValue = value > 0
+        return value > 0
                 ? (int)(value + 0.5)
                 : -(int)(Math.abs(value) + 0.5);
-
-        return roundedValue;
     }//end round
     /**
      * This returns the permutation of n choose r.
@@ -1134,7 +1131,7 @@ public class MathUtils  {
      * double in the vector
      */
     public  static int distanceFinderZValue(double[] vector) {
-        StringBuffer binaryBuffer =new StringBuffer();
+        StringBuilder binaryBuffer =new StringBuilder();
         List<String> binaryReps = new ArrayList<String>(vector.length);
         for(int i=0;i<vector.length;i++) {
             double d=vector[i];

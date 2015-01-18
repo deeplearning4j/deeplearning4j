@@ -1,9 +1,10 @@
 package org.deeplearning4j.models.classifiers.lstm;
 
 
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
-import static org.nd4j.linalg.ops.transforms.Transforms.*;
-
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -18,10 +19,12 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
+import static org.nd4j.linalg.ops.transforms.Transforms.exp;
+import static org.nd4j.linalg.ops.transforms.Transforms.log;
+import static org.nd4j.linalg.ops.transforms.Transforms.pow;
+import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
+import static org.nd4j.linalg.ops.transforms.Transforms.tanh;
 
 /**
  * LSTM recurrent net.
@@ -58,7 +61,7 @@ public class LSTM extends BaseLayer {
     /**
      * Back propagation in the given input
      * @param y
-     * @return
+     * @return {@link org.deeplearning4j.nn.gradient.Gradient}
      */
     public Gradient backward(INDArray y) {
         INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
@@ -215,13 +218,10 @@ public class LSTM extends BaseLayer {
      */
     public Collection<Pair<List<Integer>,Double>> predict(INDArray xi,INDArray ws) {
         INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
-
         int d = decoderWeights.rows();
         Triple<INDArray,INDArray,INDArray> yhc = lstmTick(xi,Nd4j.zeros(d),Nd4j.zeros(d));
         BeamSearch search = new BeamSearch(20,ws,yhc.getSecond(),yhc.getThird());
-        Collection<Pair<List<Integer>,Double>> ret = search.search();
-        return ret;
-
+        return search.search();
     }
 
 
@@ -333,9 +333,6 @@ public class LSTM extends BaseLayer {
         int ix = sorted[0].getInt(0);
         return new Pair<>(ix,sorted[1].getDouble(ix));
     }
-
-
-
 
     private static class Beam {
         private double logProba = 0.0;
@@ -513,9 +510,5 @@ public class LSTM extends BaseLayer {
     public int batchSize() {
         return xi.rows();
     }
-
-
-
-
 
 }

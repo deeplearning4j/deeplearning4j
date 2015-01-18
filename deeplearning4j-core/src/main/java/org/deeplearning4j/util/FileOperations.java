@@ -14,8 +14,7 @@ public class FileOperations {
 	
 	public static OutputStream createAppendingOutputStream(File to) {
 		try {
-			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(to,true));
-			return bos;
+			return new BufferedOutputStream(new FileOutputStream(to,true));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

@@ -25,12 +25,11 @@ public class Cell implements Serializable {
      * @return true if the point is contained, false otherwise
      */
     public boolean containsPoint(INDArray point) {
-        double first = point.getDouble(0),second = point.getDouble(1);
-        if(x - hw > first) return false;
-        if(x + hw < first) return false;
-        if(y - hh > second) return false;
-        if(y + hh < second) return false;
-        return true;
+        double first = point.getDouble(0), second = point.getDouble(1);
+        return x - hw <= first
+            && x + hw >= first
+            && y - hh <= second
+            && y + hh >= second;
     }
 
     @Override
