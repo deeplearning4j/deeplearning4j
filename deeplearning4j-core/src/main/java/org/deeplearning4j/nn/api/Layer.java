@@ -18,6 +18,12 @@ public interface Layer extends Serializable,Cloneable,Model {
 
 
     /**
+     * Sets the parameters
+     * @param params the parameters to set
+     */
+    void setParameters(INDArray params);
+
+    /**
      * Parameter averaging
      * @param layer the layer to merge
      * @param batchSize the batch size to merge on
