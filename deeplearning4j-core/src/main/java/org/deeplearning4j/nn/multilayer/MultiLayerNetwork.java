@@ -323,18 +323,20 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
             }
 
+
+            NeuralNetConfiguration last = layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 1);
+            NeuralNetConfiguration secondToLast = layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 2);
+            last.setnIn(secondToLast.getnOut());
+
+
+            this.layers[layers.length - 1] = last.getLayerFactory().create(last);
+
+            initCalled = true;
+            initMask();
+
+
         }
 
-
-        NeuralNetConfiguration last = layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 1);
-        NeuralNetConfiguration secondToLast = layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 2);
-        last.setnIn(secondToLast.getnOut());
-
-
-        this.layers[layers.length - 1] = last.getLayerFactory().create(last);
-
-        initCalled = true;
-        initMask();
 
     }
 
@@ -737,7 +739,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     @Override
     public INDArray params() {
         List<INDArray> params = new ArrayList<>();
-        for(int i = 0; i < layers.length; i++)
+        for(int i = 0; i < getnLayers(); i++)
             params.add(layers[i].params());
 
         return Nd4j.toFlattened(params);
@@ -1362,32 +1364,6 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
             layer.setParams(params.get(NDArrayIndex.interval(idx,range + idx)));
             idx += range;
         }
-
-    }
-
-
-    /**
-     * Returns a start index for a given layer (neural net or outputlayer)
-     *
-     * @param layer the layer to getFromOrigin the index for
-     * @return the index for the layer
-     */
-    public ParamRange startIndexForLayer(int layer) {
-        int start = 0;
-        for (int i = 0; i < layer; i++) {
-            start += getLayers()[i].getParam(DefaultParamInitializer.WEIGHT_KEY).length();
-            start += getLayers()[i].getParam(DefaultParamInitializer.BIAS_KEY).length();
-        }
-        if (layer < getLayers().length) {
-            int wEnd = start + getLayers()[layer].getParam(DefaultParamInitializer.WEIGHT_KEY).length();
-            return new ParamRange(start, wEnd, wEnd, wEnd + getLayers()[layer].getParam(DefaultParamInitializer.BIAS_KEY).length());
-
-        } else {
-            int wEnd = start + getOutputLayer().getParam(DefaultParamInitializer.WEIGHT_KEY).length();
-            return new ParamRange(start, wEnd, wEnd, wEnd + getOutputLayer().getParam(DefaultParamInitializer.BIAS_KEY).length());
-
-        }
-
 
     }
 

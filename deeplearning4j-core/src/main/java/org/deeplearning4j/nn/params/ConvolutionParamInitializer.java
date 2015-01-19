@@ -25,9 +25,9 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
         params.put(CONVOLUTION_BIAS,createBias(conf));
         params.put(CONVOLUTION_WEIGHTS,createWeightMatrix(conf));
+        conf.addVariable(CONVOLUTION_WEIGHTS);
+        conf.addVariable(CONVOLUTION_BIAS);
 
-        conf.getGradientList().add(CONVOLUTION_WEIGHTS);
-        conf.getGradientList().add(CONVOLUTION_BIAS);
     }
 
     @Override

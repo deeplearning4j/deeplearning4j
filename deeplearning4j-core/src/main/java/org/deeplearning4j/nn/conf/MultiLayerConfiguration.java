@@ -24,6 +24,18 @@ public class MultiLayerConfiguration implements Serializable {
 
     private MultiLayerConfiguration() {}
 
+    public MultiLayerConfiguration(MultiLayerConfiguration multiLayerConfiguration) {
+        this.hiddenLayerSizes = multiLayerConfiguration.hiddenLayerSizes;
+        this.confs = new ArrayList<>(multiLayerConfiguration.confs);
+        this.useDropConnect = multiLayerConfiguration.useDropConnect;
+        this.useGaussNewtonVectorProductBackProp = multiLayerConfiguration.useGaussNewtonVectorProductBackProp;
+        this.pretrain = multiLayerConfiguration.pretrain;
+        this.useRBMPropUpAsActivations = multiLayerConfiguration.useRBMPropUpAsActivations;
+        this.dampingFactor = multiLayerConfiguration.dampingFactor;
+        this.processors = new HashMap<>(multiLayerConfiguration.processors);
+
+    }
+
     public NeuralNetConfiguration getConf(int i) {
         return confs.get(i);
     }
@@ -113,6 +125,11 @@ public class MultiLayerConfiguration implements Serializable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+
+    public MultiLayerConfiguration clone() {
+        return new MultiLayerConfiguration(this);
     }
 
     @Override

@@ -31,10 +31,11 @@ public class RecursiveParamInitializer extends DefaultParamInitializer {
         params.put(BIAS, WeightInitUtil.initWeights(new int[]{out},conf.getWeightInit(),conf.getActivationFunction(),conf.getDist()));
         params.put(C, WeightInitUtil.initWeights(new int[]{vis},conf.getWeightInit(),conf.getActivationFunction(),conf.getDist()));
 
-        conf.getGradientList().add(W);
-        conf.getGradientList().add(U);
-        conf.getGradientList().add(BIAS);
-        conf.getGradientList().add(C);
+        conf.addVariable(W);
+        conf.addVariable(U);
+        conf.addVariable(BIAS);
+        conf.addVariable(C);
+
 
 
     }
