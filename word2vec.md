@@ -91,7 +91,7 @@ Notably, you can also specify the window size like so:
       TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
       List<Window> windows = Windows.windows("text",tokenizerFactory,windowSize);
 
-Training word sequence models is done through optimization with the [Viterbi algorithm](../doc/org/deeplearning4j/word2vec/viterbi/Viterbi.html).
+Training word sequence models is done through optimization with the [Viterbi algorithm](https://en.wikipedia.org/wiki/Viterbi_algorithm).
 
 The general idea is to train moving windows with Word2vec and classify individual windows (with a focus word) with certain labels. This could be done for part-of-speech tagging, semantic-role labeling, named-entity recognition and other tasks.
 
@@ -162,7 +162,7 @@ Consider the following code:
     String reuters= System.getProperty("user.home") +             
     new String("/reuters/");
     File file = new File(reuters);
-
+        
     SentenceIterator iter = new FileSentenceIterator(new SentencePreProcessor() {
     @Override
     public String preProcess(String sentence) {
