@@ -2546,6 +2546,7 @@ public abstract class BaseNDArray  implements INDArray {
         if (other.isScalar()) {
             return divi(other.getDouble(0), result);
         }
+
         if (isScalar()) {
             return other.divi(getDouble(0), result);
         }
