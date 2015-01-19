@@ -157,15 +157,6 @@ Maven可以让您轻易的安装ND4J和Deeplearning4j。他也能与集成开发
         cd deeplearning4j
         git checkout 0.0.3.3
 
-如果想要使用Maven安装其他软件，只需要您以下几个步骤：
-
-* 首先，到你的你的根目录下 （例如deeplearning4j或nd4j）。
-* 确保每个在目录和子目录里的 pom.xml 的文件都正确配置。Git clone 会帮您完成大部分的Pom安排工作。
-* 在POM文件里添加可选依赖值和其他信息。请到这参阅[自述文件](https://github.com/SkymindIO/deeplearning4j/blob/master/README.md)学习如何使用依赖值处理NLP，扩展Akka和快照。
-* 选择并下载适合您的[IDE](http://nd4j.org/zh-getstarted.html#ide)： - Eclipse、IntelliJ或Netbeans，然后通过Maven导入deeplearning4j项目。
-
-除此之外，您也可以通过我们的[下载网页](http://deeplearning4j.org/download.html)安装DL4J 。如果您从我们的网页下载，那么你必须手动导入jar文件到Eclipse 、IntelliJ或Netbeans。
-
 ## <a name="linux">Linux</a>
 
 * 由于我们依赖Jblas（Java线性代数库）的处理器 ，原生绑定的BLA是必需的。
