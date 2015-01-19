@@ -133,7 +133,7 @@ Maven可以让您轻易的安装ND4J和Deeplearning4j。他也能与集成开发
 
 就是这样。一旦你粘贴正确的依赖关系到pom（您也可以选择其他，如分布式深度学习的[deeplearning4j-scaleout](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j-scaleout)，或用于GPU的[nd4j - jcublas](](http://search.maven.org/#search%7Cga%7C1%7Cnd4j-jcublas)），就大功告成了。您可以在IntelliJ下（在src/main/java/文件夹）创建新的Java文件，并使用Deeplearning4j的API开始建立神经网络。（[如果您想得到一些启发，请参考我们的例子](http://deeplearning4j.org/zh-quickstart.html)）
 
-## Github
+## [Github](https://zh.wikipedia.org/wiki/GitHub)
 
 ### 什么是Github
 
