@@ -27,7 +27,7 @@ layout: zh-default
 		Windows
 		See http://icl.cs.utk.edu/lapack-for-windows/lapack/
 
-* 由于DL4J的数据可视化和调试采用跨平台的工具来呼叫Python程式，您也必须要拥有[Anaconda](http://continuum.io/downloads)科学计算包（点击这里下载）。安装了Anaconda科学计算包后，您可以通过Python窗口中输入以下文本以测试您是拥有否有必要的科学计算包：
+* 由于DL4J的数据可视化和调试采用跨平台的工具来呼叫[Python](https://zh.wikipedia.org/wiki/Python)程式，您也必须要拥有[Anaconda](http://continuum.io/downloads)科学计算包（点击这里下载）。安装了Anaconda科学计算包后，您可以通过Python窗口中输入以下文本以测试您是拥有否有必要的科学计算包：
 
 		import numpy
 		import pylab as pl
