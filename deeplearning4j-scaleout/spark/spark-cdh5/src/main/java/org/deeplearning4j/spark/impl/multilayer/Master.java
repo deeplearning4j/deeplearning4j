@@ -4,6 +4,7 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function2;
+import org.canova.api.records.reader.RecordReader;
 import org.canova.api.records.reader.impl.SVMLightRecordReader;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -24,24 +25,28 @@ public class Master implements Serializable {
     private transient SparkContext sparkContext;
     private transient JavaSparkContext sc;
     private MultiLayerConfiguration conf;
+    private RecordReader recordReader;
 
 
 
-    public Master(SparkContext sparkContext,MultiLayerConfiguration conf) {
+    public Master(SparkContext sparkContext,MultiLayerConfiguration conf,RecordReader recordReader) {
         this.sparkContext = sparkContext;
         this.conf = conf.clone();
+        this.recordReader = recordReader;
         sc = new JavaSparkContext(this.sparkContext);
     }
 
-    public Master(JavaSparkContext sc,MultiLayerConfiguration conf) {
+    public Master(JavaSparkContext sc,MultiLayerConfiguration conf,RecordReader recordReader) {
         this.sc = sc;
+        this.recordReader = recordReader;
         this.conf = conf.clone();
     }
 
     public MultiLayerNetwork fit(String path,int labelIndex,int numLabels) {
         JavaRDD<String> lines = sc.textFile(path);
         // gotta map this to a Matrix/INDArray
-        JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(new SVMLightRecordReader(), labelIndex, numLabels));
+        JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(recordReader
+                , labelIndex, numLabels));
         return fit(points);
 
     }

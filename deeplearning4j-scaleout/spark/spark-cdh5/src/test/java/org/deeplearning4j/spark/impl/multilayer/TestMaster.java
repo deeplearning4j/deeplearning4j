@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.canova.api.records.reader.impl.SVMLightRecordReader;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -54,7 +55,7 @@ public class TestMaster {
         int numParams = network.numParams();
         INDArray params = network.params();
         assertEquals(numParams,params.length());
-        Master master = new Master(sc,conf);
+        Master master = new Master(sc,conf,new SVMLightRecordReader());
         master.fit(new ClassPathResource("data/svmLight/iris_svmLight_0.txt").getFile().toURI().toString(),4,3);
 
 
