@@ -80,11 +80,11 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
             }
 
         }
-        else {
 
+        else
             log.info("Worker > Idle pass, no records left to process");
 
-        }
+
 
 
         return new ParameterVectorUpdateable(multiLayerNetwork.params());
