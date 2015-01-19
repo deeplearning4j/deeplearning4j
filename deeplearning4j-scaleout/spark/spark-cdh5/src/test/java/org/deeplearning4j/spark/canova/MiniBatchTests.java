@@ -6,6 +6,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.canova.api.records.reader.impl.SVMLightRecordReader;
+import org.deeplearning4j.spark.impl.multilayer.DL4jWorker;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
