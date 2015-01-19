@@ -21,21 +21,21 @@ layout: ja-default
 
 ## <a name="quickstart">クイックスタート</a>
 
-[クイックスタート](../quickstart.html)の項目では、どのようにdeeplearning4jをスタートするか紹介しております。
+[クイックスタート](../ja-quickstart.html)の項目では、どのようにdeeplearning4jをスタートするか紹介しております。
 
 ## <a name="all">インストール方法: All OS</a>
 
-DeepLearning4Jを実行するためには[Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) もしくはaboveが必要となります。Java7のダウンロード方法に関してはND4JのGet startedの項目をご参照ください。
+DeepLearning4Jを実行するためには[Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) もしくはaboveが必要となります。Java7のダウンロード方法に関しては[ND4JのGet started](http://nd4j.org/ja-getstarted)の項目をご参照ください。
 
 ## ND4J: Numpy for the JVM
 
-[ND4J](http://nd4j.org/) は、Javaを基本にしたコンピューターエンジンです。また、DL4Jを実行するためには、[ND4J](http://nd4j.org/getstarted.html)をダウンロードする必要があります。
+[ND4J](http://nd4j.org/ja-getstarted) は、Javaを基本にしたコンピューターエンジンです。また、DL4Jを実行するためには、ND4Jをダウンロードする必要があります。
 
 ## <a id="ide-for-java">Integrated Development Environment</a>
 
 ### Integrated Development Environmentとは
 
-Integrated Development Environment[[IDE]](http://encyclopedia.thefreedictionary.com/integrated+development+environment)とは、ソフトウェアの開発において用いられるエディタ、コンパイラ、リンカ、デバッガ、その他の支援ツールなどを統合・統一化した開発環境のことを指します。IDEには、ソフトウェア開発に必要な最低限のツールがすべて含まれているため、これを導入することで、インストールしたMaveとGitHubの操作を統一して行うことができます。 
+Integrated Development Environment[IDE](https://ja.wikipedia.org/wiki/%E7%B5%B1%E5%90%88%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83)とは、ソフトウェアの開発において用いられるエディタ、コンパイラ、リンカ、デバッガ、その他の支援ツールなどを統合・統一化した開発環境のことを指します。IDEには、ソフトウェア開発に必要な最低限のツールがすべて含まれているため、これを導入することで、インストールしたMavenとGitHubの操作を統一して行うことができます。 
 
 ### なぜIDEが必要か
 
@@ -64,7 +64,7 @@ IDSを活用することで、コードを入力するだけで簡単にシス�
  MavenとはJava用プロジェクト管理ツールです。([Mavenホームページ](http://maven.apache.org/what-is-maven.html)) Mavenをインストールすることで、最新版のND4Jの[JAR](http://ja.wikipedia.org/wiki/JAR_%28%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%83%95%E3%82%A9%E3%83%BC%E3%83%9E%E3%83%83%E3%83%88%29)を自動的にアップロードし続けることができます。
 
 ### なぜ必要か
- Mavenを活用することで、より簡単にND4JとDeeplearning4j projectsをインストールすることができます。なお、最終的にダウンロードする[IDE](http://ja.wikipedia.org/wiki/%E7%B5%B1%E5%90%88%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83)を操作するうえでも、Mavenは役立ちます。([IDE](https://github.com/globalcaos/nd4j/blob/gh-pages/getstarted.md#4-ide-for-java))また、もしMavenの内容をご理解いただいている方は、[当社ホームページ](http://nd4j.org/downloads.html) ページにアクセスいただくことで、この過程をスキップすることができます。
+ Mavenを活用することで、より簡単にND4JとDeeplearning4j projectsをインストールすることができます。なお、最終的にダウンロードする[IDE](http://ja.wikipedia.org/wiki/%E7%B5%B1%E5%90%88%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83)を操作するうえでも、Mavenは役立ちます。IDEまた、もしMavenの内容をご理解いただいている方は、[当社ホームページ](http://deeplearning4j.org/downloads.html) ページにアクセスいただくことで、この過程をスキップすることができます。
 
 ### イントール状況の確認
 コマンドラインに、以下のコードをご入力ください。
@@ -97,7 +97,7 @@ IntelliJのWindowを通じて、下に表示されている画面が表示され
  
  ![Alt text](../img/pom_before.png) 
  
- 次に<dependencies>セクションに[dependency](https://github.com/SkymindIO/deeplearning4j/tree/0.0.3.3)を加えていく必要があります。これはCPUsやGPUsによって異なりますので、それぞれに適応する形で"nd4j-api"と a linear-algebra backend like "nd4j-jblas" か"nd4j-jcublas"を選択してください。これらはすべて <a href="http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j-core">こちら</a>から取得できます。 
+ 次に<dependencies>セクションに[dependency](https://github.com/SkymindIO/deeplearning4j/tree/0.0.3.3)を加えていく必要があります。これはCPUsやGPUsによって異なりますので、それぞれに適応する形で"nd4j-api"と a linear-algebra backend like "[nd4j-jblas](http://search.maven.org/#search%7Cga%7C1%7Cnd4j-jblas)" か"nd4j-jcublas"を選択してください。これらはすべて <a href="http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j-core">こちら</a>から取得できます。 
  
  ![Alt text](../img/search_maven_latest_version.png) 
  
@@ -116,7 +116,7 @@ IntelliJのWindowを通じて、下に表示されている画面が表示され
 
 ## GitHubとは
 
-[Github](http://en.wikipedia.org/wiki/GitHub) は [Revision Control System](http://ja.wikipedia.org/wiki/Revision_Control_System)に基づいた、ソフトウェア開発プロジェクトのための共有ウェブサービスであり, [open source](http://ja.wikipedia.org/wiki/オープンソース) projects向けの無料アカウントを提供しています。
+[Github](https://ja.wikipedia.org/wiki/GitHub) は [Revision Control System](http://ja.wikipedia.org/wiki/Revision_Control_System)に基づいた、ソフトウェア開発プロジェクトのための共有ウェブサービスであり, [open source](http://ja.wikipedia.org/wiki/オープンソース) projects向けの無料アカウントを提供しています。
 
 ### なぜ必要か
  GitHubはこのシステムを使う上で必ずしも必要なものではありません。しかし、ND4Jファイルのダウンロードやプロジェクトの状況、バグの報告をチームメンバー間で共有する際には、GitHubが役立ちます。
