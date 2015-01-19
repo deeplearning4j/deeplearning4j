@@ -34,7 +34,7 @@ DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/d
 ## <a id="ide-for-java">IDE for Java</a>
 
 ### What it is
-An Integrated Development Environment ([IDE](http://encyclopedia.thefreedictionary.com/integrated+development+environment)) will allow you to work with our API and build your nets with a few clicks. The IDEs suggested here will use your installed version of Java and can communicate with Maven, which will take care of the dependencies for you. Visit our [dependencies](dependencies.html) page to see how you can easily swap them out as needed.
+An Integrated Development Environment ([IDE](http://encyclopedia.thefreedictionary.com/integrated+development+environment)) will allow you to work with our API and build your nets with a few clicks. The IDEs suggested here will use your installed version of Java and can communicate with Maven, which will take care of the dependencies for you. Visit our [dependencies](https://github.com/SkymindIO/deeplearning4j/tree/0.0.3.3) page to see how you can easily swap them out as needed.
 
 ### Why you need it
 You want a hassle-free development environment so that you only need to think about your code. IDEs typically come with Maven support, but we prefer you to install [Maven](#maven) so you can run commands directly as instructed previously.
