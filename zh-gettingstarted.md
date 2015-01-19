@@ -161,15 +161,15 @@ Maven可以让您轻易的安装ND4J和Deeplearning4j。他也能与集成开发
 
 * 由于我们依赖Jblas（Java线性代数库）的处理器 ，原生绑定的BLA是必需的。
 
-    Fedora/RHEL
-    yum -y install blas
+     Fedora/RHEL
+     yum -y install blas
     
-    Ubuntu
-    apt-get install libblas* (credit to @sujitpal)
+     Ubuntu
+     apt-get install libblas* (credit to @sujitpal)
 
 * 如果GPU损坏了，你需要输入一个额外的指令。首先，找出Cuda本身安装的位置。它应该看起来会是类似这个样子的：
 
-    /usr/local/cuda/lib64
+     /usr/local/cuda/lib64
 
 然后，在终端中输入入ldconfig，然后跟随文件的路径来链接Cuda。您的命令看起来将类似这个样子：
 
