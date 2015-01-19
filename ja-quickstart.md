@@ -30,7 +30,7 @@ layout: ja-default
 		Windows
 		See http://icl.cs.utk.edu/lapack-for-windows/lapack/
 
-* DL4Jはデータの可視化とデバッグにクロスプラットフォームツールを活用しているため、 [Anaconda](http://continuum.io/downloads)が必要となります。一度Anacondaをインストールすると、Pythonに以下のコードを入力することで必要なライブラリがコンピュータに入っているか、確認することができます。:
+* DL4Jはデータの可視化とデバッグにクロスプラットフォームツールを活用しているため、 [Anaconda](http://continuum.io/downloads)が必要となります。一度Anacondaをインストールすると、[Python](https://ja.wikipedia.org/wiki/Python)に以下のコードを入力することで必要なライブラリがコンピュータに入っているか、確認することができます。:
 
 		import numpy
 		import pylab as pl
