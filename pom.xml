@@ -38,7 +38,7 @@
         <logback.version>1.1.2</logback.version>
         <nd4j.version>0.0.3.5.5.1</nd4j.version>
         <jackson.version>2.3.2</jackson.version>
-        <canova.version>0.0.0.1-SNAPSHOT</canova.version>
+        <canova.version>0.0.0.1</canova.version>
     </properties>
 
 
