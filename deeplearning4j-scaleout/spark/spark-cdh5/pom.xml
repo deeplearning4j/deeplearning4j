@@ -93,20 +93,7 @@
             <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
-<!--
-<dependency>
-  <groupId>org.apache.hadoop</groupId>
-  <artifactId>hadoop-common</artifactId>
-  <version>2.4.0</version>
-  <scope>provided</scope>
-  <exclusions>
-    <exclusion>
-      <groupId>javax.servlet</groupId>
-      <artifactId>*</artifactId>
-      </exclusion>
-   </exclusions>
- </dependency>
--->
+
     </dependencies>
 
 
