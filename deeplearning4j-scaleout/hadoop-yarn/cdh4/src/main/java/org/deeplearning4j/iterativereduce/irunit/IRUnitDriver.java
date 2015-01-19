@@ -201,6 +201,7 @@ public class IRUnitDriver {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+
 			worker.setRecordReader(reader);
 			workers.add(worker);
 
