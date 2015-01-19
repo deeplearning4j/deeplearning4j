@@ -93,7 +93,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //kernel size for a convolutional net
     protected int kernel = 5;
     //batch size: primarily used for conv nets. Will be reinforced if set.
-    protected int batchSize = 0;
+    protected int batchSize = 10;
 
 
 
@@ -244,6 +244,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     public void setLayerFactory(LayerFactory layerFactory) {
         this.layerFactory = layerFactory;
+    }
+
+    public void addVariable(String variable) {
+        if(!gradientList.contains(variable))
+            gradientList.add(variable);
     }
 
     public List<String> getGradientList() {

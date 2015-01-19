@@ -67,7 +67,7 @@ public abstract class BaseLayer implements Layer {
     @Override
     public INDArray params() {
         List<INDArray> ret = new ArrayList<>();
-        for(String s : conf.getGradientList())
+        for(String s : params.keySet())
             ret.add(params.get(s));
         return Nd4j.toFlattened(ret);
     }

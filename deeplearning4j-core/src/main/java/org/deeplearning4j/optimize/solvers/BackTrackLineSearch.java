@@ -54,7 +54,7 @@ public class BackTrackLineSearch implements LineOptimizer
     private static Logger logger = LoggerFactory.getLogger(BackTrackLineSearch.class.getName());
 
     Model function;
-    StepFunction stepFunction;
+    StepFunction stepFunction = new DefaultStepFunction();
     BaseOptimizer optimizer;
     final int maxIterations = 100;
     double stpmax = 100;
@@ -182,7 +182,8 @@ public class BackTrackLineSearch implements LineOptimizer
                     "\nalam: " + alam + "\noldAlam: " + oldAlam);
             assert(alam != oldAlam) : "alam == oldAlam";
 
-
+            if(stepFunction == null)
+                stepFunction =  new DefaultStepFunction();
             stepFunction.step(x,line,new Object[]{alam,oldAlam}); //step
 
             double norm1 = x.norm1(Integer.MAX_VALUE).getDouble(0);
