@@ -9,25 +9,15 @@ layout: zh-default
 
 * <a href="#intro">简介</a>
 * <a href="#anatomy">Word2Vec分析</a>
-* <a href="#code">Training</a>
-* <a href="#windows">Moving Windows</a>
-* <a href="#grams">N-grams & Skip-grams</a>
-* <a href="#load">Loading Your Data</a>
-* <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
-* <a href="#dbn">Fine-tuning DBNs (with code!)</a>
-* <a href="#next">Next Steps</a>
+* <a href="#code">训练</a>
+* <a href="#windows">滑动窗口</a>
+* <a href="#grams">N-grams 和 Skip-grams</a>
+* <a href="#load">加载你的数据</a>
+* <a href="#trouble">疑难解答和调节Word2Vec</a>
+* <a href="#dbn">细调DBNs (有代码示例)</a>
+* <a href="#next">接下来</a>
 
-* 
-* 
-* 训练
-* 滑动窗口
-* N-grams 和 Skip-grams
-* 加载你的数据
-* 疑难解答和调节Word2Vec
-* 细调DBNs (有代码示例)
-* 接下来
-
-## Word2Vec简介
+## <a name="intro">Word2Vec简介</a>
 
 Deeplearning4j 使用Java实现了一个分布式的Word2Vec，并且可以在GPU上运行。 Word2vec 最先是在Google由Tomas Mikolov带领的一个研究团队提出的。 
 
@@ -47,7 +37,7 @@ DL4J采用了Mikolov提出而流行的skip-gram表示方法，这种表示方法
 
 ![Alt text](../img/word2vec.png) 
 
-## Word2vec分析
+## <a name="anatomy">Word2vec分析</a>
 
 当我们说到Word2Vec时候我们知道是什么呢？我们指的是Deeplearning4j 的自然语言处理组件，它包括:
 * SentenceIterator/DocumentIterator: 用来迭代一个数据集. SentenceIterator返回一些字符串而DocumentIterator处理inputstreams. 如果可能尽量使用SentenceIterator.
@@ -57,7 +47,7 @@ DL4J采用了Mikolov提出而流行的skip-gram表示方法，这种表示方法
 
 [简单来说，使用梯度下降算法训练一个两层神经网络](http://deeplearning4j.org/glossary.html#downpoursgd)。神经网络连接权重的大小是特殊设计的。Word2vec术语中的syn0是wordvector查找表, syn1是激活，两层神经网络上的层级softmax训练用来计算不同词之间的相似度。Word2vec使用[skipgrams](http://deeplearning4j.org/glossary.html#skipgram)来实现。
 
-## 训练
+## <a name="code">训练</a>
 
 Word2Vec使用原始的文本进行训练。然后它会使用词向量来记录每个词的上下文，或者说是用法。训练结束后，它被当做一个查找表来使用，在很多自然语言处理任务中这个被查找表用来构成训练文本的窗口。
 
@@ -76,7 +66,7 @@ Word2Vec使用原始的文本进行训练。然后它会使用词向量来记录
 
 如果词表中没有这个词语，那么它会返回每项都是零的数组——没有别的信息。
 
-## 窗口
+## <a name="windows">窗口</a>
 
 Word2Vec使用神经网络，利用滑动窗口模型通过词的共现来训练。下面是得到文本的窗口的两种方法：
 
@@ -153,13 +143,13 @@ Word2vec 使用两种窗口：连续的 n-grams和skip-grams。
 skip-gram，就像你看到的，是一种不连续的n-gram。
 在这里，你会经常看到“上下文窗口”的说法。在上面的例子中，上下文窗口是3。许多人也使用5作为上下文窗口。
 
-## 数据集
+## <a name="load">数据集</a>
 
 在这个例子中，我们将使用路透新闻的一个很小的数据集。
 
 在DL4J，你可以使用[UimaSentenceIterator](https://uima.apache.org/)来只能的加载你的数据。简单起见，我们将使用FileSentenceIterator。
 
-## 加载你的数据
+### 加载你的数据
 
 DL4J可以帮你轻松的加载一个文档语料库。在这个例子里，我们在用户的家目录下有一个叫 reuters的目录，包括许多文章。
 
@@ -205,7 +195,7 @@ DL4J可以帮你轻松的加载一个文档语料库。在这个例子里，我�
 
 Uima指的是一个Apache项目——非结构化(Unstructured) 信息(Information) 管理(Management) 程序(Application)——它们帮我们处理非结构化的数据，就像tokenizer那样。事实上它就是一个智能的分词器。
 
-## 创建 Word2Vec 对象
+### 创建 Word2Vec 对象
 
 现在我们可以开始写代码来创建Word2Vec对象了。考虑下面的代码：
 
@@ -230,11 +220,12 @@ Uima指的是一个Apache项目——非结构化(Unstructured) 信息(Informati
 在上面的例子，你应该得到相似度的值为1。Word2Vec 使用余弦距离，相同向量的余弦距总是1。
 
 下面是你可以调用的一些函数：
+
 1. similarity(String, String) - 查询两个词的余弦相似度
 2. analogyWords(String A, String B, String x) - 查询一个词，使得A和B的关系就像x和这个词的关系
 3. wordsNearest(String A, int n) - 查询和 A 最相似的n个词。
 
-## 疑难解答和调节Word2Vec
+## <a name="trouble">疑难解答和调节Word2Vec</a>
 
 问：我的代码输出大量如下的stack trace：
 
@@ -262,7 +253,7 @@ Uima指的是一个Apache项目——非结构化(Unstructured) 信息(Informati
         Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
                 .layerSize(300).iterate(iter).tokenizerFactory(t).build();
 
-微调 DBNs
+微调 <a name="dbn">DBNs</a>
 
 现在你应该有了一些构建Word2Vec的基本概念了，下面是如何使用DL4J API的一个例子：
 
@@ -272,14 +263,8 @@ Uima指的是一个Apache项目——非结构化(Unstructured) 信息(Informati
 
 Word2Vec对于信息检索和QA系统的预处理数据尤其有用。这些系统使用DJ4J的 [deep autoencoders](http://deeplearning4j.org/deepautoencoder.html). 对于句子的parsing和其它一些NLP任务，我们也实现了[recursive neural tensor networks](http://deeplearning4j.org/recursiveneuraltensornetwork.html).
 
-## 下一步
+## <a name="next">下一步</a>
 
 [使用 Word2Vec来做情感分析的例子可以点击 这里](http://deeplearning4j.org/sentiment_analysis_word2vec.html).
 
 (我们最近仍然在测试Doc2Vec和GloVe的实现，请多关注这里！)
-
-
-
-
-
-
