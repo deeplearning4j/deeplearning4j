@@ -25,9 +25,9 @@ public class LSTMParamInitializer implements ParamInitializer {
         int inputSize = conf.getnIn();
         int hiddenSize = conf.getnIn();
         int outputSize = conf.getnOut();
-        conf.getGradientList().add(RECURRENT_WEIGHTS);
-        conf.getGradientList().add(DECODER_WEIGHTS);
-        conf.getGradientList().add(DECODER_BIAS);
+        conf.addVariable(RECURRENT_WEIGHTS);
+        conf.addVariable(DECODER_WEIGHTS);
+        conf.addVariable(DECODER_BIAS);
         params.put(RECURRENT_WEIGHTS,WeightInitUtil.initWeights(inputSize + hiddenSize + 1, 4 * hiddenSize, conf.getWeightInit(), conf.getActivationFunction(), conf.getDist()));
         params.put(DECODER_WEIGHTS,WeightInitUtil.initWeights(hiddenSize,outputSize,conf.getWeightInit(),conf.getActivationFunction(),conf.getDist()));
         params.put(DECODER_BIAS, Nd4j.zeros(outputSize));
