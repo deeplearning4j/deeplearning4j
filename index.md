@@ -7,6 +7,7 @@ layout: default
 Deeplearning4j is the first commercial-grade, __open-source__, distributed __deep-learning__ library written in __Java__. It is designed to be used in business environments, rather than as a research tool. DL4J aims to be cutting-edge plug and play, more convention than configuration, which allows fast prototyping for non-researchers.
 
 What you can do with Deep Learning:
+
 * [Face identification](../facial-reconstruction-tutorial.html)
 * Voices to text
 * Spam filtering
@@ -14,6 +15,7 @@ What you can do with Deep Learning:
 * And [much more](usecases.html)
 
 Main features:
+
 * Includes a versatile **[n-dimensional array](http://nd4j.org/)** class. 
 * **[Integrates with GPUs](http://nd4j.org/gpu_native_backends.html)**
 * Totally [scalable](../scaleout.html) suitable for **Hadoop** and other big-data structures
@@ -21,6 +23,7 @@ Main features:
 Deeplearning4j includes a distributed **multi-threaded deep-learning framework** and a normal ** single-threaded deep-learning framework**. Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via iterative reduce, and they are equally compatible with **Java**, **Scala** and **Clojure**, since they're written for the JVM.
 
 Check out some of the networks that you can build in no time:
+
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
 * [Deep-belief networks](../deepbeliefnetwork.html)
 * [Deep Autoencoders](http://deeplearning4j.org/deepautoencoder.html)
