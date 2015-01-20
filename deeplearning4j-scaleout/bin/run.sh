@@ -1,0 +1,2 @@
+#!/bin/sh
+ java -cp "lib/*"  -Dhazelcast.access-key="$AWSAccessKeyId" -Dhazelcast.access-secret="AWSSecretKey"  -Dhazelcast.region="us-east-1d" -Dhazelcast.aws=true -Dhazelcast.host="masterhost"  -Xmx5g -Xms5g -server -XX:+UseTLAB   -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:MaxTenuringThreshold=0 -XX:CMSInitiatingOccupancyFraction=60  -XX:+CMSParallelRemarkEnabled -XX:+CMSPermGenSweepingEnabled -XX:+CMSClassUnloadingEnabled org.deeplearning4j.org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunnerApp -h ec2-54-86-216-254.compute-1.amazonaws.com -t worker
