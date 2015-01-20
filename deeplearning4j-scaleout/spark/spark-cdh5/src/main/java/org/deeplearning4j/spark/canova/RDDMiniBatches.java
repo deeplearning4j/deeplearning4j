@@ -2,9 +2,6 @@ package org.deeplearning4j.spark.canova;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.rdd.RDD;
-import org.deeplearning4j.spark.ordering.DataSetOrdering;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.Serializable;
@@ -26,7 +23,8 @@ public class RDDMiniBatches  implements Serializable {
 
     public JavaRDD<DataSet> miniBatchesJava() {
         final int batchSize = miniBatches;
-        JavaRDD<DataSet> miniBatches = toSplitJava.mapPartitions(new FlatMapFunction<Iterator<DataSet>, DataSet>() {
+
+        return toSplitJava.mapPartitions(new FlatMapFunction<Iterator<DataSet>, DataSet>() {
             @Override
             public Iterable<DataSet> call(Iterator<DataSet> dataSetIterator) throws Exception {
                 List<DataSet> ret = new ArrayList<>();
@@ -45,8 +43,6 @@ public class RDDMiniBatches  implements Serializable {
                 return ret;
             }
         });
-
-        return miniBatches;
     }
 
 
