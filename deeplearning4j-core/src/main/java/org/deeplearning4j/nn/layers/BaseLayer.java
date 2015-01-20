@@ -45,6 +45,11 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
+    public void setParameters(INDArray params) {
+
+    }
+
+    @Override
     public void fit() {
 
     }

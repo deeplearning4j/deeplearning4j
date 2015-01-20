@@ -30,6 +30,8 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
     }
 
 
+
+
     @Override
     public INDArray activate() {
         ActivationFunction f = conf.getActivationFunction();
