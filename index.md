@@ -9,7 +9,7 @@ Deeplearning4j is the first commercial-grade, __open-source__, distributed __dee
 What you can do with Deep Learning:
 
 * [Face identification](../facial-reconstruction-tutorial.html)
-* Voices to text
+* Voice to text
 * Spam filtering
 * E-commerce fraud detection
 * And [much more](usecases.html)
