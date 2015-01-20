@@ -12,7 +12,7 @@ What you can do with Deep Learning:
 * Voice to text
 * Spam filtering
 * E-commerce fraud detection
-* And [much more](usecases.html)
+* And [much more](use_cases.html)
 
 Main features:
 
