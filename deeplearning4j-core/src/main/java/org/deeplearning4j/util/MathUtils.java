@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+
 import org.apache.commons.math3.linear.CholeskyDecomposition;
 import org.apache.commons.math3.linear.NonSquareMatrixException;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -34,7 +35,7 @@ public class MathUtils  {
      */
     public static double normalize(double val,double min,double max) {
         if(max < min)
-            throw new IllegalArgumentException("Max must be greather than min");
+            throw new IllegalArgumentException("Max must be greater than min");
 
         return (val - min) / (max - min);
     }
@@ -318,7 +319,7 @@ public class MathUtils  {
         if(x.size()!=y.size())
             throw new IllegalArgumentException("Sample sizes must be the same for each data applyTransformToDestination.");
 
-        List<Double> ret = new ArrayList<Double>();
+        List<Double> ret = new ArrayList<>();
 
         for(int i=0;i<x.size();i++) {
             ret.add(x.get(i));
@@ -564,7 +565,7 @@ public class MathUtils  {
      */
     public static List<List<Double>> partitionVariable(List<Double> arr,int chunk) {
         int count=0;
-        List<List<Double>> ret = new ArrayList<List<Double>>();
+        List<List<Double>> ret = new ArrayList<>();
 
 
         while(count < arr.size()) {
@@ -597,7 +598,7 @@ public class MathUtils  {
     public static List<double[]> coordSplit(List<Double> vector) {
 
         if(vector==null) return null;
-        List<double[]> ret = new ArrayList<double[]>();
+        List<double[]> ret = new ArrayList<>();
 		/* x coordinates */
         double[] xVals = new double[vector.size()/2];
 		/* y coordinates */
@@ -863,9 +864,7 @@ public class MathUtils  {
      */
     public static double factorial(double n) {
         if(n==1 || n==0) return 1;
-        for(double i=n;i>0;i--,n*=(i > 0 ? i : 1)) {
-            // do nothing
-        }
+        for(double i=n;i>0;i--,n*=(i > 0 ? i : 1)) {}
         return n;
     }//end factorial
 
@@ -1023,9 +1022,8 @@ public class MathUtils  {
     public static double bernoullis(double n,double k,double successProb) {
 
         double combo = MathUtils.combination(n, k);
-        double p = successProb;
         double q= 1 - successProb;
-        return combo * Math.pow(p,k) * Math.pow(q,n-k);
+        return combo * Math.pow(successProb,k) * Math.pow(q,n-k);
     }//end bernoullis
     /**
      * Tests if a is smaller than b.
@@ -1119,8 +1117,7 @@ public class MathUtils  {
                 return -1;
             }
         }
-        int i= Integer.parseInt(binary,2);
-        return i;
+        return Integer.parseInt(binary,2);
     }//end toDecimal
 
 
@@ -1132,7 +1129,7 @@ public class MathUtils  {
      */
     public  static int distanceFinderZValue(double[] vector) {
         StringBuilder binaryBuffer =new StringBuilder();
-        List<String> binaryReps = new ArrayList<String>(vector.length);
+        List<String> binaryReps = new ArrayList<>(vector.length);
         for(int i=0;i<vector.length;i++) {
             double d=vector[i];
             int j=(int) d;
