@@ -715,7 +715,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
     @Override
     public MultiLayerNetwork clone() {
-        MultiLayerNetwork ret = null;
+        MultiLayerNetwork ret;
         try {
             ret = getClass().newInstance();
             ret.update(this);
@@ -1134,8 +1134,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
 
         //last activation is input
-        INDArray predicted = activations.get(activations.size() - 1);
-        return predicted;
+        return activations.get(activations.size() - 1);
     }
 
 

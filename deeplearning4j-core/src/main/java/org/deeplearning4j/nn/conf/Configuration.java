@@ -24,7 +24,12 @@ import org.deeplearning4j.util.ReflectionUtils;
 import org.deeplearning4j.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.*;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Text;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -34,9 +39,29 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.io.Serializable;
+import java.io.Writer;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -141,7 +166,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
             new CopyOnWriteArrayList<>();
 
     private static final transient ConcurrentMap<ClassLoader, Map<String, Class<?>>>
-            CACHE_CLASSES = new ConcurrentHashMap<ClassLoader, Map<String, Class<?>>>();
+            CACHE_CLASSES = new ConcurrentHashMap<>();
 
     /**
      * Flag to indicate if the storage of resource which updates a key needs
@@ -237,7 +262,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
             }
         }
 
-        this.finalParameters = new HashSet<String>(other.finalParameters);
+        this.finalParameters = new HashSet<>(other.finalParameters);
         synchronized(Configuration.class) {
             REGISTRY.put(this, null);
         }
@@ -337,7 +362,6 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
     }
 
     private static Pattern varPat = Pattern.compile("\\$\\{[^\\}\\$\u0020]+\\}");
-    private static int MAX_SUBST = 20;
 
     private String substituteVars(String expr) {
         if (expr == null) {
@@ -345,7 +369,8 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
         }
         Matcher match = varPat.matcher("");
         String eval = expr;
-        for(int s=0; s<MAX_SUBST; s++) {
+        int MAX_SUBST = 20;
+        for(int s=0; s< MAX_SUBST; s++) {
             match.reset(eval);
             if (!match.find()) {
                 return eval;
@@ -505,7 +530,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
     private String getHexDigits(String value) {
         boolean negative = false;
         String str = value;
-        String hexString = null;
+        String hexString;
         if (value.startsWith("-")) {
             negative = true;
             str = value.substring(1);
@@ -572,11 +597,9 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
      */
     public boolean getBoolean(String name, boolean defaultValue) {
         String valueString = get(name);
-        if ("true".equals(valueString))
-            return true;
-        else if ("false".equals(valueString))
-            return false;
-        else return defaultValue;
+        return "true".equals(valueString)
+            || !"false".equals(valueString)
+            && defaultValue;
     }
 
     /**
@@ -599,7 +622,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
     }
 
     /**
-     * Get the value of the <code>name</code> property as a <ocde>Pattern</code>.
+     * Get the value of the <code>name</code> property as a <code>Pattern</code>.
      * If no such property is specified, or if the specified value is not a valid
      * <code>Pattern</code>, then <code>DefaultValue</code> is returned.
      *
@@ -650,7 +673,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
             int end;
         }
 
-        List<Range> ranges = new ArrayList<Range>();
+        List<Range> ranges = new ArrayList<>();
 
         public IntegerRanges() {
         }
@@ -709,7 +732,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
 
         @Override
         public String toString() {
-            StringBuffer result = new StringBuffer();
+            StringBuilder result = new StringBuilder();
             boolean first = true;
             for(Range r: ranges) {
                 if (first) {
@@ -794,8 +817,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
     public Collection<String> getTrimmedStringCollection(String name) {
         String valueString = get(name);
         if (null == valueString) {
-            Collection<String> empty = Collections.emptyList();
-            return empty;
+            return Collections.emptyList();
         }
         return StringUtils.getTrimmedStringCollection(valueString);
     }
@@ -966,7 +988,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
      */
     @SuppressWarnings("unchecked")
     public <U> List<U> getInstances(String name, Class<U> xface) {
-        List<U> ret = new ArrayList<U>();
+        List<U> ret = new ArrayList<>();
         Class<?>[] classes = getClasses(name);
         for (Class<?> cl: classes) {
             if (!xface.isAssignableFrom(cl)) {
@@ -1123,7 +1145,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
         // methods that allow non-strings to be put into configurations are removed,
         // we could replace properties with a Map<String,String> and get rid of this
         // code.
-        Map<String,String> result = new HashMap<String,String>();
+        Map<String,String> result = new HashMap<>();
         for(Map.Entry<Object,Object> item: getProps().entrySet()) {
             if (item.getKey() instanceof String &&
                     item.getValue() instanceof String) {
@@ -1140,7 +1162,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
             // To avoid addResource causing a ConcurrentModificationException
             ArrayList<String> toLoad;
             synchronized (Configuration.class) {
-                toLoad = new ArrayList<String>(defaultResources);
+                toLoad = new ArrayList<>(defaultResources);
             }
             for (String resource : toLoad) {
                 loadResource(properties, resource, quiet);
@@ -1260,16 +1282,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
                 }
             }
 
-        } catch (IOException e) {
-            LOG.error("error parsing conf file: " + e);
-            throw new RuntimeException(e);
-        } catch (DOMException e) {
-            LOG.error("error parsing conf file: " + e);
-            throw new RuntimeException(e);
-        } catch (SAXException e) {
-            LOG.error("error parsing conf file: " + e);
-            throw new RuntimeException(e);
-        } catch (ParserConfigurationException e) {
+        } catch (IOException | DOMException | SAXException | ParserConfigurationException e) {
             LOG.error("error parsing conf file: " + e);
             throw new RuntimeException(e);
         }
@@ -1292,7 +1305,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
             for (Enumeration e = properties.keys(); e.hasMoreElements();) {
                 String name = (String)e.nextElement();
                 Object object = properties.get(name);
-                String value = null;
+                String value;
                 if (object instanceof String) {
                     value = (String) object;
                 }else {
@@ -1338,7 +1351,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
         Configuration config = new Configuration(conf,true);
         config.reloadConfiguration();
         JsonFactory dumpFactory = new JsonFactory();
-        JsonGenerator dumpGenerator = dumpFactory.createJsonGenerator(out);
+        JsonGenerator dumpGenerator = dumpFactory.createGenerator(out);
         dumpGenerator.writeStartObject();
         dumpGenerator.writeFieldName("properties");
         dumpGenerator.writeStartArray();
