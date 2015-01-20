@@ -13,8 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by agibsonccc on 12/30/14.
@@ -25,7 +23,6 @@ public class LSTMTest {
 
     @Test
     public void testTraffic() {
-        List<String> vocab = Arrays.asList("Skymind", "does", "deep", "learning");
         LayerFactory factory = LayerFactories.getFactory(LSTM.class);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().activationFunction(Activations.tanh())

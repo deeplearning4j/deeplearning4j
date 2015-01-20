@@ -121,7 +121,7 @@ public class StringUtils {
 
     public static String arrayToString(String[] strs) {
         if (strs.length == 0) { return ""; }
-        StringBuffer sbuf = new StringBuffer();
+        StringBuilder sbuf = new StringBuilder();
         sbuf.append(strs[0]);
         for (int idx = 1; idx < strs.length; idx++) {
             sbuf.append(",");
@@ -271,8 +271,8 @@ public class StringUtils {
 
     /**
      * Returns an arraylist of strings.
-     * @param str the comma seperated string values
-     * @return the arraylist of the comma seperated string values
+     * @param str the comma separated string values
+     * @return the arraylist of the comma separated string values
      */
     public static String[] getStrings(String str){
         Collection<String> values = getStringCollection(str);
@@ -284,15 +284,14 @@ public class StringUtils {
 
     /**
      * Returns a collection of strings.
-     * @param str comma seperated string values
+     * @param str comma separated string values
      * @return an <code>ArrayList</code> of string values
      */
     public static Collection<String> getStringCollection(String str){
-        List<String> values = new ArrayList<String>();
+        List<String> values = new ArrayList<>();
         if (str == null)
             return values;
         StringTokenizer tokenizer = new StringTokenizer (str,",");
-        values = new ArrayList<String>();
         while (tokenizer.hasMoreTokens()) {
             values.add(tokenizer.nextToken());
         }
@@ -323,7 +322,6 @@ public class StringUtils {
 
     final public static String[] emptyStringArray = {};
     final public static char COMMA = ',';
-    final public static String COMMA_STR = ",";
     final public static char ESCAPE_CHAR = '\\';
 
     /**
@@ -347,7 +345,7 @@ public class StringUtils {
         if (str==null) {
             return null;
         }
-        ArrayList<String> strList = new ArrayList<String>();
+        ArrayList<String> strList = new ArrayList<>();
         StringBuilder split = new StringBuilder();
         int index = 0;
         while ((index = findNext(str, separator, escapeChar, index, split)) >= 0) {

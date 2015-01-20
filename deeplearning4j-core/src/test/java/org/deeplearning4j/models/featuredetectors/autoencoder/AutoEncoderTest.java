@@ -1,23 +1,19 @@
 package org.deeplearning4j.models.featuredetectors.autoencoder;
 
-import static org.junit.Assert.*;
-
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import static org.junit.Assert.assertEquals;
+
 public class AutoEncoderTest {
-        private Layer network;
         @Test
         public void testDenoisingAutoEncoder() throws Exception {
 
@@ -35,7 +31,6 @@ public class AutoEncoderTest {
                 INDArray input = d2.getFeatureMatrix();
                 LayerFactory layerFactory = LayerFactories.getFactory(AutoEncoder.class);
                 AutoEncoder da = layerFactory.create(conf);
-                network = da;
                 assertEquals(da.params(),da.params());
                 assertEquals(471784,da.params().length());
                 da.setParams(da.params());
