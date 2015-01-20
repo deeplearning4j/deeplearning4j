@@ -20,7 +20,7 @@ Main features:
 * **[Integrates with GPUs](http://nd4j.org/gpu_native_backends.html)**
 * Totally [scalable](../scaleout.html) suitable for **Hadoop** and other big-data structures
 
-Deeplearning4j includes a distributed **multi-threaded deep-learning framework** and a normal ** single-threaded deep-learning framework**. Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via iterative reduce, and they are equally compatible with **Java**, **Scala** and **Clojure**, since they're written for the JVM.
+Deeplearning4j includes a distributed **multi-threaded deep-learning framework** and a normal **single-threaded deep-learning framework**. Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via iterative reduce, and they are equally compatible with **Java**, **Scala** and **Clojure**, since they're written for the JVM.
 
 Check out some of the networks that you can build in no time:
 
