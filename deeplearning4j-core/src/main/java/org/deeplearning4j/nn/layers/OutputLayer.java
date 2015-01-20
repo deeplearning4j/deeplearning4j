@@ -1,12 +1,11 @@
 package org.deeplearning4j.nn.layers;
 
-import static org.nd4j.linalg.ops.transforms.Transforms.*;
-
 import java.io.Serializable;
-
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.api.Classifier;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -22,9 +21,9 @@ import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
-import org.deeplearning4j.nn.api.*;
 
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import static org.nd4j.linalg.ops.transforms.Transforms.log;
+import static org.nd4j.linalg.ops.transforms.Transforms.pow;
 
 
 /**
@@ -46,10 +45,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public OutputLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
-
-
-
-
 
     @Override
     public void update(Gradient gradient) {
@@ -75,16 +70,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     }
 
-
-
-
-
-
-
-
-
-
-
     /**
      * Gets the gradient from one training iteration
      * @return the gradient (bias and weight matrix)
@@ -108,7 +93,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         g.gradientLookupTable().put(DefaultParamInitializer.BIAS_KEY,bGradient);
 
         return g;
-
 
     }
 
@@ -152,10 +136,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         throw new IllegalStateException("Invalid loss function");
 
     }
-
-
-
-
 
     /**
      * Sets the input and labels and returns a score for the prediction
@@ -341,7 +321,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
 
     }
-
 
     public  INDArray getLabels() {
         return labels;

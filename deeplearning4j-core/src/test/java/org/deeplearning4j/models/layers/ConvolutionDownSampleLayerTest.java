@@ -9,8 +9,6 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.OutputPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.ReshapePreProcessor;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
@@ -56,7 +54,6 @@ public class ConvolutionDownSampleLayerTest {
         LayerFactory l = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
         ConvolutionDownSampleLayer c = l.create(n);
 
-        INDArray convolved = c.activate(d.getFeatureMatrix());
         if(switched) {
             Nd4j.dtype = DataBuffer.FLOAT;
         }
