@@ -1,4 +1,1 @@
-Deep Learning for Java
-=======================
-
-See http://deeplearning4j.org/
+# Check out [deeplearning4j.org](http://deeplearning4j.org/)
