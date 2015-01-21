@@ -15,14 +15,11 @@ import org.nd4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
 import java.util.List;
-
 
 /**
  * Turns a applyTransformToDestination of documents in to a tfidf bag of words
@@ -66,14 +63,12 @@ public class TfidfVectorizer extends BaseTextVectorizer implements Serializable 
         Tokenizer tokenizer = tokenizerFactory.create(text);
         List<String> tokens = tokenizer.getTokens();
 
-        for(int i = 0;i  < tokens.size(); i++) {
+        for(int i = 0;i < tokens.size(); i++) {
             int idx = cache.indexOf(tokens.get(i));
             if(idx >= 0)
                 ret.putScalar(idx, tfidfWord(tokens.get(i)));
         }
-
         return ret;
-
     }
 
     private INDArray tfidfForInput(InputStream is) {
@@ -83,10 +78,7 @@ public class TfidfVectorizer extends BaseTextVectorizer implements Serializable 
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
-
-
     }
-
 
     @Override
     public DataSet vectorize(InputStream is, String label) {
@@ -115,7 +107,7 @@ public class TfidfVectorizer extends BaseTextVectorizer implements Serializable 
      * Transforms the matrix
      *
      * @param text
-     * @return
+     * @return {@link INDArray}
      */
     @Override
     public INDArray transform(String text) {
