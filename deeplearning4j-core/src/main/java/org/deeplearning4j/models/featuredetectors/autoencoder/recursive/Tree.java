@@ -230,7 +230,7 @@ public class Tree implements Serializable {
      * Returns the ancestor of the given tree
      * @param height
      * @param root
-     * @return
+     * @return {@link Tree}
      */
     public Tree ancestor(int height, Tree root) {
         if (height < 0) {
@@ -311,11 +311,8 @@ public class Tree implements Serializable {
      * @return the prediction error for this node
      */
     public double error() {
-
         return error;
-
     }
-
 
     public void setError(double error) {
         this.error = error;

@@ -1,21 +1,14 @@
 package org.deeplearning4j.util;
 
-import org.nd4j.linalg.util.ArrayUtil;
-import org.junit.Test;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Arrays;
+import org.junit.Test;
+import org.nd4j.linalg.util.ArrayUtil;
 
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertEquals;
 /**
  *
  */
 public class ArrayUtilTest {
-
-    private static Logger log = LoggerFactory.getLogger(ArrayUtilTest.class);
 
     @Test
     public void testRange() {

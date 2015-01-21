@@ -18,7 +18,7 @@ public class SerializationUtilsTest {
     @Test
     public void testWriteRead() {
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
-        String irisData = new String("irisData.dat");
+        String irisData = "irisData.dat";
 
         DataSet freshDataSet = iter.next(150);
 
