@@ -73,8 +73,7 @@ public class Viterbi implements Serializable {
                 if(k == element)
                     V.put(t,k,logPCorrect + maxVal);
                 else
-                    V.put(t,k, logPIncorrect + maxVal);
-
+                    V.put(t,k,logPIncorrect + maxVal);
 
             }
         }
@@ -102,9 +101,6 @@ public class Viterbi implements Serializable {
             ret.put(i,0, Nd4j.getBlasWrapper().iamax(outcomes.getRow(i)));
         return ret;
     }
-
-
-
 
     public double getMetaStability() {
         return metaStability;
