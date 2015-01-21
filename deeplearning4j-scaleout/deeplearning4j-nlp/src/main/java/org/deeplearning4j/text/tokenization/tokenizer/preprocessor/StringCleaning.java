@@ -12,7 +12,7 @@ public class StringCleaning {
      * @return the cleaned string
      */
     public static String stripPunct(String base) {
-        return  base.replaceAll("[\\d\\.:,\"\'\\(\\)\\[\\]|/?!;]+","");
+        return base.replaceAll("[\\d\\.:,\"\'\\(\\)\\[\\]|/?!;]+","");
 
     }
 

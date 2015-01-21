@@ -4,20 +4,23 @@ package org.deeplearning4j.scaleout.statetracker.hazelcast;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import org.deeplearning4j.scaleout.actor.util.PortTaken;
 import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.util.SerializationUtils;
-import org.eclipse.jetty.server.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 /**
  * Hazelcast resource
@@ -27,7 +30,7 @@ import java.util.Collections;
 @Produces(MediaType.APPLICATION_JSON)
 public class StateTrackerDropWizardResource extends Application<HazelCastConf> implements Serializable {
 
-    private static Logger log = LoggerFactory.getLogger(StateTrackerDropWizardResource.class);
+    private static final Logger log = LoggerFactory.getLogger(StateTrackerDropWizardResource.class);
 
     private StateTracker stateTracker;
     private Environment env;
@@ -136,8 +139,6 @@ public class StateTrackerDropWizardResource extends Application<HazelCastConf> i
     public void shutdown() {
         if(env != null && env.getAdminContext() != null)
             env.getAdminContext().shutdown();
-        else
-            return;
 
     }
 
