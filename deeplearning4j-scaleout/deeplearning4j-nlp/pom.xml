@@ -10,11 +10,9 @@
 		<spring.version>3.2.5.RELEASE</spring.version>
 		<netty.version>3.8.0.Final</netty.version>
         <dropwizard.version>0.7.0</dropwizard.version>
-        <lucene.version>4.10.1</lucene.version>
+        <lucene.version>4.10.3</lucene.version>
 
 	</properties>
-
-
 
 	<artifactId>deeplearning4j-nlp</artifactId>
 	<dependencyManagement>
