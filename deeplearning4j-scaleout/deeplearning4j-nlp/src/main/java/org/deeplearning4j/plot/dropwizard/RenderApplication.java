@@ -19,7 +19,7 @@ import java.io.InputStream;
  * @author Adam Gibson
  */
 public class RenderApplication extends Application<ApiConfiguration> {
-    private static Logger log = org.slf4j.LoggerFactory.getLogger(RenderApplication.class);
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(RenderApplication.class);
 
     @Override
     public void initialize(Bootstrap<ApiConfiguration> apiConfigurationBootstrap) {
