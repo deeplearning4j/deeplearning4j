@@ -51,7 +51,7 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
     private static final long serialVersionUID = -4385335922485305364L;
     private transient ActorSystem system;
     private ActorRef mediator;
-    private static Logger log = LoggerFactory.getLogger(DeepLearning4jDistributed.class);
+    private static final Logger log = LoggerFactory.getLogger(DeepLearning4jDistributed.class);
     private static String systemName = "ClusterSystem";
     private String type = "master";
     private Address masterAddress;
@@ -60,7 +60,6 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
     protected ModelSaver modelSaver;
     private transient ScheduledExecutorService exec;
     private transient StateTracker stateTracker;
-    private Configuration conf;
     private int stateTrackerPort = -1;
     private String masterHost;
     private transient WorkRouter workRouter;
@@ -134,7 +133,8 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
         system.actorOf(Props.create(ClusterListener.class));
 
         try {
-            Class<? extends WorkRouter> routerClazz = (Class<? extends WorkRouter>) Class.forName(c.get(WorkRouter.WORK_ROUTER, IterativeReduceWorkRouter.class.getName()));
+            Class<? extends WorkRouter> routerClazz =
+                (Class<? extends WorkRouter>) Class.forName(c.get(WorkRouter.WORK_ROUTER, IterativeReduceWorkRouter.class.getName()));
             Constructor<?> constructor = routerClazz.getConstructor(StateTracker.class);
             workRouter = (WorkRouter) constructor.newInstance(stateTracker);
         } catch (Exception e) {
@@ -211,7 +211,8 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
 
 
                 if(stateTracker.jobAggregator() == null) {
-                    Class<? extends JobAggregator> clazz = (Class<? extends JobAggregator>) Class.forName(conf.get(JobAggregator.AGGREGATOR, INDArrayAggregator.class.getName()));
+                    Class<? extends JobAggregator> clazz =
+                        (Class<? extends JobAggregator>) Class.forName(conf.get(JobAggregator.AGGREGATOR, INDArrayAggregator.class.getName()));
                     JobAggregator agg = clazz.newInstance();
                     stateTracker.setJobAggregator(agg);
                 }
@@ -287,7 +288,10 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
                 //issue with setting the master url, fallback
                 if(connectionString.contains("0.0.0.0")) {
                     if(masterHost == null)
-                        throw new IllegalStateException("No master host specified and host discovery was lost due to improper setup on the master (related to hostname resolution) Please run the following command on your host: sudo hostname YOUR_HOST_NAME . This will make your hostname resolution work correctly on master.");
+                        throw new IllegalStateException("No master host specified and host discovery was lost due to" +
+                            " improper setup on the master (related to hostname resolution)" +
+                            " Please run the following command on your host: sudo hostname YOUR_HOST_NAME." +
+                            " This will make your hostname resolution work correctly on master.");
                     connectionString = connectionString.replace("0.0.0.0",masterHost);
                 }
 
@@ -314,8 +318,6 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
             log.info("Setup worker nodes");
         }
 
-        this.conf = conf;
-
         //only start dropwizard on the master
         if(type.equals("master")) {
             stateTracker.startRestApi();
@@ -341,7 +343,6 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
         ActorRef clusterClient = system.actorOf(ClusterClient.defaultProps(initialContacts),
                 "clusterClient");
 
-
         try {
             String host = contactAddress.host().get();
             log.info("Connecting  to host " + host);
@@ -351,7 +352,8 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
 
 
             log.info("Joining cluster of size " + workers);
-            Class<? extends WorkerPerformerFactory> factoryClazz = (Class<? extends WorkerPerformerFactory>) Class.forName(conf.get(WorkerPerformerFactory.WORKER_PERFORMER));
+            Class<? extends WorkerPerformerFactory> factoryClazz =
+                (Class<? extends WorkerPerformerFactory>) Class.forName(conf.get(WorkerPerformerFactory.WORKER_PERFORMER));
             WorkerPerformerFactory factory = factoryClazz.newInstance();
             WorkerPerformer performer = factory.create(conf);
 
@@ -367,14 +369,7 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-
-
-
     }
-
-
-
 
     /**
      * Kicks off the distributed training.
@@ -392,7 +387,6 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
      */
     public void train() {
         log.info("Publishing to results for training");
-
 
         log.info("Started pipeline");
         //start the pipeline
@@ -440,13 +434,13 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
             system.shutdown();
 
         }catch(Exception e ) {
-
+           // do nothing
         }
         try {
             if(stateTracker != null)
                 stateTracker.shutdown();
         }catch(Exception e ) {
-
+          // do nothing
         }
 
     }
