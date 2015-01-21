@@ -135,7 +135,7 @@ import java.util.regex.PatternSyntaxException;
  * of the System property with that name.
  */
 public class Configuration implements Iterable<Map.Entry<String,String>>,Serializable {
-    private static final Logger LOG =
+    private static final Logger log =
             LoggerFactory.getLogger(Configuration.class);
 
     private boolean quietmode = true;
@@ -187,11 +187,11 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
             cL = Configuration.class.getClassLoader();
         }
         if(cL.getResource("hadoop-site.xml")!=null) {
-            LOG.warn("DEPRECATED: hadoop-site.xml found in the classpath. " +
-                    "Usage of hadoop-site.xml is deprecated. Instead use core-site.xml, "
-                    + "mapred-site.xml and hdfs-site.xml to override properties of " +
-                    "core-default.xml, mapred-default.xml and hdfs-default.xml " +
-                    "respectively");
+            log.warn("DEPRECATED: hadoop-site.xml found in the classpath. " +
+                "Usage of hadoop-site.xml is deprecated. Instead use core-site.xml, "
+                + "mapred-site.xml and hdfs-site.xml to override properties of " +
+                "core-default.xml, mapred-default.xml and hdfs-default.xml " +
+                "respectively");
         }
         addDefaultResource("core-default.xml");
         addDefaultResource("core-site.xml");
@@ -381,7 +381,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
             try {
                 val = System.getProperty(var);
             } catch(SecurityException se) {
-                LOG.warn("Unexpected SecurityException in Configuration", se);
+                log.warn("Unexpected SecurityException in Configuration", se);
             }
             if (val == null) {
                 val = getRaw(var);
@@ -638,8 +638,8 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
         try {
             return Pattern.compile(valString);
         } catch (PatternSyntaxException pse) {
-            LOG.warn("Regular expression '" + valString + "' for property '" +
-                    name + "' not valid. Using default", pse);
+            log.warn("Regular expression '" + valString + "' for property '" +
+                name + "' not valid. Using default", pse);
             return defaultValue;
         }
     }
@@ -1065,10 +1065,10 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
             URL url= getResource(name);
 
             if (url == null) {
-                LOG.info(name + " not found");
+                log.info(name + " not found");
                 return null;
             } else {
-                LOG.info("found resource " + name + " at " + url);
+                log.info("found resource " + name + " at " + url);
             }
 
             return url.openStream();
@@ -1089,10 +1089,10 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
             URL url= getResource(name);
 
             if (url == null) {
-                LOG.info(name + " not found");
+                log.info(name + " not found");
                 return null;
             } else {
-                LOG.info("found resource " + name + " at " + url);
+                log.info("found resource " + name + " at " + url);
             }
 
             return new InputStreamReader(url.openStream());
@@ -1191,10 +1191,10 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
             try {
                 docBuilderFactory.setXIncludeAware(true);
             } catch (UnsupportedOperationException e) {
-                LOG.error("Failed to set setXIncludeAware(true) for parser "
-                                + docBuilderFactory
-                                + ":" + e,
-                        e);
+                log.error("Failed to set setXIncludeAware(true) for parser "
+                        + docBuilderFactory
+                        + ":" + e,
+                    e);
             }
             DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
             Document doc = null;
@@ -1204,7 +1204,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
                 URL url = (URL)name;
                 if (url != null) {
                     if (!quiet) {
-                        LOG.info("parsing " + url);
+                        log.info("parsing " + url);
                     }
                     doc = builder.parse(url.toString());
                 }
@@ -1212,7 +1212,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
                 URL url = getResource((String)name);
                 if (url != null) {
                     if (!quiet) {
-                        LOG.info("parsing " + url);
+                        log.info("parsing " + url);
                     }
                     doc = builder.parse(url.toString());
                 }
@@ -1236,7 +1236,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
                 root = doc.getDocumentElement();
             }
             if (!"configuration".equals(root.getTagName()))
-                LOG.error("bad conf file: top-level element not <configuration>");
+                log.error("bad conf file: top-level element not <configuration>");
             NodeList props = root.getChildNodes();
             for (int i = 0; i < props.getLength(); i++) {
                 Node propNode = props.item(i);
@@ -1248,7 +1248,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
                     continue;
                 }
                 if (!"property".equals(prop.getTagName()))
-                    LOG.warn("bad conf file: element not <property>");
+                    log.warn("bad conf file: element not <property>");
                 NodeList fields = prop.getChildNodes();
                 String attr = null;
                 String value = null;
@@ -1276,14 +1276,14 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,Seriali
                         if (finalParameter)
                             finalParameters.add(attr);
                     } else {
-                        LOG.warn(name+":a attempt to override final parameter: "+attr
-                                +";  Ignoring.");
+                        log.warn(name + ":a attempt to override final parameter: " + attr
+                            + ";  Ignoring.");
                     }
                 }
             }
 
         } catch (IOException | DOMException | SAXException | ParserConfigurationException e) {
-            LOG.error("error parsing conf file: " + e);
+            log.error("error parsing conf file: " + e);
             throw new RuntimeException(e);
         }
     }

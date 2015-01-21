@@ -1,9 +1,6 @@
 package org.deeplearning4j.models.featuredetectors.rbm;
 
 
-import static org.nd4j.linalg.ops.transforms.Transforms.*;
-
-
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
@@ -11,14 +8,19 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.deeplearning4j.util.RBMUtil;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.sampling.Sampling;
-import org.deeplearning4j.nn.layers.BasePretrainNetwork;
-import org.deeplearning4j.util.RBMUtil;
+
+import static org.nd4j.linalg.ops.transforms.Transforms.exp;
+import static org.nd4j.linalg.ops.transforms.Transforms.log;
+import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
+import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 
 
@@ -98,8 +100,6 @@ public  class RBM extends BasePretrainNetwork {
         getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).subi(gradient.gradientLookupTable().get(PretrainParamInitializer.VISIBLE_BIAS_KEY));
         getParam(PretrainParamInitializer.BIAS_KEY).subi(gradient.gradientLookupTable().get(PretrainParamInitializer.BIAS_KEY));
         getParam(PretrainParamInitializer.WEIGHT_KEY).subi(gradient.gradientLookupTable().get(PretrainParamInitializer.WEIGHT_KEY));
-
-
     }
 
 

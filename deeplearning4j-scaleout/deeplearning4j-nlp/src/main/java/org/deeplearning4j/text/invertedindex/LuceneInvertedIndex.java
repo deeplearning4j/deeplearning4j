@@ -44,10 +44,8 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
     public final static String LABEL = "label";
 
     private int numDocs = 0;
-    private List<List<VocabWord>> words = new ArrayList<>();
-    private boolean cache = false;
     private AtomicBoolean indexBeingCreated = new AtomicBoolean(false);
-    private static Logger log = LoggerFactory.getLogger(LuceneInvertedIndex.class);
+    private static final Logger log = LoggerFactory.getLogger(LuceneInvertedIndex.class);
     public final static String INDEX_PATH = "word2vec-index";
     private AtomicBoolean readerClosed = new AtomicBoolean(false);
     private AtomicInteger totalWords = new AtomicInteger(0);
@@ -74,7 +72,7 @@ public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClos
 
     public LuceneInvertedIndex(VocabCache vocabCache,boolean cache,String indexPath) {
         this.vocabCache = vocabCache;
-        this.cache = cache;
+        boolean cache1 = cache;
         this.indexPath = indexPath;
         if(new File(indexPath).exists()) {
             String id = UUID.randomUUID().toString();

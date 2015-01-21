@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 public class DistributionsTest {
 
     private RandomGenerator rng = new MersenneTwister(123);
-    private static Logger log = LoggerFactory.getLogger(DistributionsTest.class);
+    private static final Logger log = LoggerFactory.getLogger(DistributionsTest.class);
     @Test
     public void uniformTest() {
 

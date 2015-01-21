@@ -9,12 +9,12 @@ import org.deeplearning4j.util.MultiDimensionalMap;
 
 public class Distributions {
 
-
-
-    private static MultiDimensionalMap<RandomGenerator,Double,RealDistribution> normalDistributions = MultiDimensionalMap.newHashBackedMap();
-    private static MultiDimensionalMap<RandomGenerator,Double,RealDistribution> exponentialDist = MultiDimensionalMap.newHashBackedMap();
-    private static MultiDimensionalMap<RandomGenerator,Double,RealDistribution> uniformDist = MultiDimensionalMap.newHashBackedMap();
-
+    private static MultiDimensionalMap<RandomGenerator,Double,RealDistribution> normalDistributions =
+        MultiDimensionalMap.newHashBackedMap();
+    private static MultiDimensionalMap<RandomGenerator,Double,RealDistribution> exponentialDist =
+        MultiDimensionalMap.newHashBackedMap();
+    private static MultiDimensionalMap<RandomGenerator,Double,RealDistribution> uniformDist =
+        MultiDimensionalMap.newHashBackedMap();
 
     /**
      * Returns a exponential distribution
@@ -25,7 +25,8 @@ public class Distributions {
      */
     public static RealDistribution exponential(RandomGenerator rng,double mean) {
         if(exponentialDist.get(rng,mean) == null) {
-            RealDistribution ret =  new ExponentialDistribution(rng,1.0,ExponentialDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+            RealDistribution ret =  new ExponentialDistribution(rng,1.0,
+                ExponentialDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
             exponentialDist.put(rng,mean,ret);
         }
         return exponentialDist.get(rng,mean);
@@ -40,7 +41,8 @@ public class Distributions {
      */
     public static RealDistribution normal(RandomGenerator rng,double std) {
         if(normalDistributions.get(rng,std) == null) {
-            RealDistribution ret =  new NormalDistribution(rng,0,std,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+            RealDistribution ret =  new NormalDistribution(rng,0,std,
+                NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
             normalDistributions.put(rng,std,ret);
             return ret;
         }
