@@ -12,17 +12,12 @@ public class SummaryStatistics {
 
     private SummaryStatistics() {}
 
-
-
     private SummaryStatistics(INDArray mean,INDArray sum,INDArray min,INDArray max) {
         this.mean = (double) mean.element();
         this.sum = (double) sum.element();
         this.min = (double) min.element();
         this.max = (double) max.element();
     }
-
-
-
 
     private SummaryStatistics(double mean,double sum,double min,double max) {
         this.mean = mean;
@@ -33,11 +28,13 @@ public class SummaryStatistics {
 
 
     public static String summaryStatsString(INDArray d) {
-        return new SummaryStatistics(d.mean(Integer.MAX_VALUE),d.sum(Integer.MAX_VALUE),d.min(Integer.MAX_VALUE),d.max(Integer.MAX_VALUE)).toString();
+        return new SummaryStatistics(d.mean(Integer.MAX_VALUE),d.sum(Integer.MAX_VALUE),
+            d.min(Integer.MAX_VALUE),d.max(Integer.MAX_VALUE)).toString();
     }
 
     public static SummaryStatistics summaryStats(INDArray d) {
-         return new SummaryStatistics(d.mean(Integer.MAX_VALUE),d.sum(Integer.MAX_VALUE),d.min(Integer.MAX_VALUE),d.max(Integer.MAX_VALUE));
+        return new SummaryStatistics(d.mean(Integer.MAX_VALUE),d.sum(Integer.MAX_VALUE),
+            d.min(Integer.MAX_VALUE),d.max(Integer.MAX_VALUE));
     }
 
 
