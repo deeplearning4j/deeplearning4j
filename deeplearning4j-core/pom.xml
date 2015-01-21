@@ -14,8 +14,6 @@
 
 	</properties>
 
-
-
 	<dependencies>
 
 		<dependency>
@@ -36,11 +34,6 @@
 			<artifactId>logback-core</artifactId>
 		</dependency>
 
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-			<version>3.1</version>
-		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-math3</artifactId>
