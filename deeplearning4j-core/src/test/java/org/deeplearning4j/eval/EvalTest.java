@@ -11,7 +11,6 @@ import org.nd4j.linalg.util.FeatureUtil;
  */
 public class EvalTest {
 
-
     @Test
     public void testEval() {
         Evaluation eval = new Evaluation();

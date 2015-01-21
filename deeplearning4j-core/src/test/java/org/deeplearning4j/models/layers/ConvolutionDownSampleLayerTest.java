@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * Created by agibsonccc on 9/7/14.
  */
 public class ConvolutionDownSampleLayerTest {
-    private static Logger log = LoggerFactory.getLogger(ConvolutionDownSampleLayerTest.class);
+    private static final Logger log = LoggerFactory.getLogger(ConvolutionDownSampleLayerTest.class);
 
     @Test
     public void testConvolution() throws Exception {

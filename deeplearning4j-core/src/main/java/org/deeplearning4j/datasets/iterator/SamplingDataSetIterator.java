@@ -17,14 +17,14 @@ public class SamplingDataSetIterator implements DataSetIterator {
 	private int batchSize;
 	private int totalNumberSamples;
 	private int numTimesSampled;
-    private DataSetPreProcessor preProcessor;
+	private DataSetPreProcessor preProcessor;
 
-    /**
-     *
-     * @param sampleFrom the dataset to sample from
-     * @param batchSize the batch size to sample
-     * @param totalNumberSamples the sample size
-     */
+  /**
+   *
+   * @param sampleFrom the dataset to sample from
+   * @param batchSize the batch size to sample
+   * @param totalNumberSamples the sample size
+   */
  	public SamplingDataSetIterator(DataSet sampleFrom, int batchSize,
 			int totalNumberSamples) {
 		super();
@@ -85,15 +85,15 @@ public class SamplingDataSetIterator implements DataSetIterator {
 		return sampleFrom.numExamples();
 	}
 
-    /**
-     * Set a pre processor
-     *
-     * @param preProcessor a pre processor to set
-     */
-    @Override
-    public void setPreProcessor(DataSetPreProcessor preProcessor) {
-        this.preProcessor = preProcessor;
-    }
+	/**
+	 * Set a pre processor
+	 *
+	 * @param preProcessor a pre processor to set
+	 */
+	@Override
+	public void setPreProcessor(DataSetPreProcessor preProcessor) {
+			this.preProcessor = preProcessor;
+	}
 
     @Override
 	public DataSet next(int num) {

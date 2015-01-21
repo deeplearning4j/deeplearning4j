@@ -16,7 +16,7 @@ import com.google.common.collect.Ordering;
  * classes
  * 
  * <br>
- * For more info @see <a href="http://en.wikipedia.org/wiki/Confusion_matrix">The wikipedia page on
+ * For more info @see <a href="http://en.wikipedia.org/wiki/Confusion_matrix">The Wikipedia page on
  * Confusion Matrices</a>
  * 
  * <br>
@@ -38,8 +38,8 @@ public class ConfusionMatrix<T extends Comparable<? super T>> {
    * Creates an empty confusion Matrix
    */
   public ConfusionMatrix() {
-    this.matrix = new HashMap<T, Multiset<T>>();
-    this.classes = new TreeSet<T>(Ordering.natural().nullsFirst());
+    this.matrix = new HashMap<>();
+    this.classes = new TreeSet<>(Ordering.natural().nullsFirst());
   }
 
   /**
@@ -245,11 +245,10 @@ public class ConfusionMatrix<T extends Comparable<? super T>> {
   }
 
   public static void main(String[] args) {
-    ConfusionMatrix<String> confusionMatrix = new ConfusionMatrix<String>();
+    ConfusionMatrix<String> confusionMatrix = new ConfusionMatrix<>();
 
     confusionMatrix.add("a", "a", 88);
     confusionMatrix.add("a", "b", 10);
-    // confusionMatrix.add("a", "c", 2);
     confusionMatrix.add("b", "a", 14);
     confusionMatrix.add("b", "b", 40);
     confusionMatrix.add("b", "c", 6);
@@ -257,7 +256,7 @@ public class ConfusionMatrix<T extends Comparable<? super T>> {
     confusionMatrix.add("c", "b", 10);
     confusionMatrix.add("c", "c", 12);
 
-    ConfusionMatrix<String> confusionMatrix2 = new ConfusionMatrix<String>(confusionMatrix);
+    ConfusionMatrix<String> confusionMatrix2 = new ConfusionMatrix<>(confusionMatrix);
     confusionMatrix2.add(confusionMatrix);
     System.out.println(confusionMatrix2.toHTML());
     System.out.println(confusionMatrix2.toCSV());
