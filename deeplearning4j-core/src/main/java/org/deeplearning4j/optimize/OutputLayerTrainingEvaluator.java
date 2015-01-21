@@ -19,19 +19,19 @@ public class OutputLayerTrainingEvaluator implements TrainingEvaluator {
     private double bestLoss;
     private int validationEpochs;
     private int miniBatchSize;
-    private DataSet testSet;
     private double improvementThreshold;
-    private static Logger log = LoggerFactory.getLogger(OutputLayerTrainingEvaluator.class);
+    private static final Logger log = LoggerFactory.getLogger(OutputLayerTrainingEvaluator.class);
 
 
-    public OutputLayerTrainingEvaluator(MultiLayerNetwork network, double patience, double patienceIncrease, double bestLoss, int validationEpochs, int miniBatchSize, DataSet testSet, double improvementThreshold) {
+    public OutputLayerTrainingEvaluator(MultiLayerNetwork network, double patience, double patienceIncrease,
+                                        double bestLoss, int validationEpochs, int miniBatchSize, DataSet testSet,
+                                        double improvementThreshold) {
         this.network = network;
         this.patience = 4 * miniBatchSize;
         this.patienceIncrease = patienceIncrease;
         this.bestLoss = bestLoss;
         this.validationEpochs = validationEpochs;
         this.miniBatchSize = miniBatchSize;
-        this.testSet = testSet;
         this.improvementThreshold = improvementThreshold;
     }
 

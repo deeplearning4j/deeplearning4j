@@ -19,7 +19,7 @@ import org.junit.Test;
  */
 public class LSTMTest {
 
-    private static Logger log = LoggerFactory.getLogger(LSTMTest.class);
+    private static final Logger log = LoggerFactory.getLogger(LSTMTest.class);
 
     @Test
     public void testTraffic() {

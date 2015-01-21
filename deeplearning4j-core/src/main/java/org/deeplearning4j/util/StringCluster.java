@@ -21,11 +21,11 @@ public class StringCluster extends HashMap<String,Map<String,Integer>> {
      *
      */
     private static final long serialVersionUID = -4120559428585520276L;
-    private FingerPrintKeyer keyer = new FingerPrintKeyer();
 
     public StringCluster(List<String> list) {
         for(int i = 0; i< list.size(); i++) {
             String s = list.get(i);
+            FingerPrintKeyer keyer = new FingerPrintKeyer();
             String key = keyer.key(s);
             if (containsKey(key)) {
                 Map<String,Integer> m = get(key);
@@ -35,7 +35,7 @@ public class StringCluster extends HashMap<String,Map<String,Integer>> {
                     m.put(s,1);
                 }
             } else {
-                Map<String,Integer> m = new TreeMap<String,Integer>();
+                Map<String,Integer> m = new TreeMap<>();
                 m.put(s,1);
                 put(key, m);
             }
@@ -43,14 +43,14 @@ public class StringCluster extends HashMap<String,Map<String,Integer>> {
     }
 
     public List<Map<String,Integer>> getClusters() {
-        List<Map<String,Integer>>_clusters = new ArrayList<Map<String,Integer>>(values());
+        List<Map<String,Integer>>_clusters = new ArrayList<>(values());
         Collections.sort(_clusters,new StringCluster.SizeComparator());
         return _clusters;
     }
 
 
     public void sort() {
-        Collections.sort(new ArrayList<Map<String,Integer>>(values()),new SizeComparator());
+        Collections.sort(new ArrayList<>(values()),new SizeComparator());
     }
 
 

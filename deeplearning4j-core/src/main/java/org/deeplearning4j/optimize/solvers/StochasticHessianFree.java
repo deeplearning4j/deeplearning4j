@@ -34,23 +34,24 @@ public class StochasticHessianFree extends BaseOptimizer {
     double gradientTolerance = 0f;
     private MultiLayerNetwork network;
     int maxIterations = 10000;
-    private String myName = "";
     private static Logger log = LoggerFactory.getLogger(StochasticHessianFree.class);
     /* decay, current gradient/direction/current point in vector space,preCondition on conjugate gradient,current parameters */
     private INDArray ch,gradient,xi;
     private double pi = 0.5f;
     private double decrease = 0.99f;
     private double boost = 1.0f / decrease;
-    private double f = 1.0f;
     /* current score, step size */
-    private double score,step;
+    private double score;
 
-    public StochasticHessianFree(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
+    public StochasticHessianFree(NeuralNetConfiguration conf, StepFunction stepFunction,
+                                 Collection<IterationListener> iterationListeners, Model model) {
         super(conf, stepFunction, iterationListeners, model);
         setup();
     }
 
-    public StochasticHessianFree(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
+    public StochasticHessianFree(NeuralNetConfiguration conf, StepFunction stepFunction,
+                                 Collection<IterationListener> iterationListeners,
+                                 Collection<TerminationCondition> terminationConditions, Model model) {
         super(conf, stepFunction, iterationListeners, terminationConditions, model);
         setup();
     }
@@ -69,9 +70,6 @@ public class StochasticHessianFree extends BaseOptimizer {
         return converged;
     }
 
-
-
-
     /* run conjugate gradient for numIterations */
     public Pair<List<Integer>,List<INDArray>> conjGradient(INDArray b,INDArray x0,INDArray preCon,int numIterations) {
         List<Integer> is = new ArrayList<>();
@@ -82,9 +80,6 @@ public class StochasticHessianFree extends BaseOptimizer {
         INDArray y = r.div(preCon);
         double deltaNew =  r.mul(y).sum(Integer.MAX_VALUE).getDouble(0);
         INDArray p = y.neg();
-        //initial x
-        INDArray x = x0;
-
 
         for (int iterationCount = 0; iterationCount < numIterations; iterationCount++) {
 
@@ -96,13 +91,10 @@ public class StochasticHessianFree extends BaseOptimizer {
                 log.info("Negative slope: " + pAp + " breaking");
             }
 
-
-            //double val = 0.5 * Nd4j.getBlasWrapper().dot(b.neg().addi(r).transpose(), x);
-
             //step size
             double alpha = deltaNew / pAp;
             //step
-            x.addi(p.mul(alpha));
+            x0.addi(p.mul(alpha));
 
             //conjugate gradient
             INDArray rNew = r.addi(Ap.mul(alpha));
@@ -115,12 +107,9 @@ public class StochasticHessianFree extends BaseOptimizer {
             r = rNew;
             //append to the steps taken
             is.add(iterationCount);
-            xs.add(x.dup());
-
-
+            xs.add(x0.dup());
 
         }
-
         return new Pair<>(is,xs);
     }
 
@@ -208,15 +197,12 @@ public class StochasticHessianFree extends BaseOptimizer {
         if(!(model instanceof MultiLayerNetwork))
             return true;
 
-        myName = Thread.currentThread().getName();
         if (converged)
             return true;
 
         score = network.score();
 
         xi = network.params();
-
-
 
        for(int i = 0; i < conf.getNumIterations(); i++) {
            //initial gradient, precon/conjugate gradient conditioner
@@ -243,10 +229,10 @@ public class StochasticHessianFree extends BaseOptimizer {
            double rho = network.reductionRatio(cgBackTrack.getFirst(), network.score(), cgBackTrack.getSecond(), gradient);
            double newScore = network.score(cgBackTrack.getFirst());
 
-           step = lineSearch(newScore,gradient,p);
+           double step = lineSearch(newScore,gradient,p);
            network.dampingUpdate(rho,boost,decrease);
 
-           INDArray proposedUpdate = xi.add(p.mul(f * step));
+           INDArray proposedUpdate = xi.add(p.mul(1.0f * step));
            network.setParameters(proposedUpdate);
            log.info("Score at iteration " + i + " was " + newScore);
        }

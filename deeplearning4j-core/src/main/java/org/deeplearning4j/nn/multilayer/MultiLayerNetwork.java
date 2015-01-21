@@ -1004,7 +1004,9 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
                 }
             }
             else {
-                StochasticHessianFree hessianFree = new StochasticHessianFree(getOutputLayer().conf(),getOutputLayer().conf().getStepFunction(),getOutputLayer().conf().getListeners(),this);
+                StochasticHessianFree hessianFree =
+                    new StochasticHessianFree(getOutputLayer().conf(),getOutputLayer().conf().getStepFunction(),
+                        getOutputLayer().conf().getListeners(),this);
                 hessianFree.optimize();
             }
 
@@ -1034,7 +1036,8 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
         else {
             feedForward();
             o.setLabels(labels);
-            StochasticHessianFree hessianFree = new StochasticHessianFree(getOutputLayer().conf(),getOutputLayer().conf().getStepFunction(),getOutputLayer().conf().getListeners(),this);
+            StochasticHessianFree hessianFree = new StochasticHessianFree(getOutputLayer().conf(),
+                getOutputLayer().conf().getStepFunction(),getOutputLayer().conf().getListeners(),this);
             hessianFree.optimize();
         }
     }

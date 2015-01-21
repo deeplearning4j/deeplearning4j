@@ -13,9 +13,6 @@ public class RBMUtil {
 
     private RBMUtil() {}
 
-
-
-
     public static RBM.VisibleUnit inverse(HiddenUnit visible) {
         switch(visible) {
             case BINARY:
