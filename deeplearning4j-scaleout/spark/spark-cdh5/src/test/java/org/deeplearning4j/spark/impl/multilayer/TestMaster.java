@@ -56,7 +56,8 @@ public class TestMaster {
         INDArray params = network.params();
         assertEquals(numParams,params.length());
         Master master = new Master(sc,conf,new SVMLightRecordReader());
-        master.fit(new ClassPathResource("data/svmLight/iris_svmLight_0.txt").getFile().toURI().toString(),4,3);
+        String path = new ClassPathResource("data/svmLight/iris_svmLight_0.txt").getFile().toURI().toString();
+        master.fit(path,4);
 
 
     }
