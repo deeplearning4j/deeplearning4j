@@ -4,12 +4,13 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.RecordReader;
-import org.canova.api.records.reader.impl.SVMLightRecordReader;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.canova.RDDMiniBatches;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
+import org.deeplearning4j.spark.util.RDDUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 
@@ -42,16 +43,26 @@ public class Master implements Serializable {
         this.conf = conf.clone();
     }
 
-    public MultiLayerNetwork fit(String path,int labelIndex,int numLabels) {
+    public MultiLayerNetwork fit(String path,int labelIndex) {
         JavaRDD<String> lines = sc.textFile(path);
         // gotta map this to a Matrix/INDArray
         JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(recordReader
-                , labelIndex, numLabels));
-        return fit(points);
+                , labelIndex, conf.getConf(conf.getConfs().size() - 1).getnOut()));
+        return fitDataSet(points);
 
     }
 
-    public MultiLayerNetwork fit(JavaRDD<DataSet> rdd) {
+
+    public MultiLayerNetwork fit(JavaSparkContext sc,JavaRDD<LabeledPoint> rdd) {
+        return fitDataSet(RDDUtil.fromLabeledPoint(sc,rdd,conf.getConf(conf.getConfs().size() - 1).getnOut()));
+    }
+
+
+    public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd) {
+        //LabeledPoint
+        //add dep on mllib
+        //static runner
+
         int batchSize = conf.getConf(0).getBatchSize();
         JavaRDD<DataSet> miniBatches = new RDDMiniBatches(batchSize,rdd).miniBatchesJava();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);

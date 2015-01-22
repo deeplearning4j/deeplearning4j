@@ -12,7 +12,7 @@ import org.nd4j.linalg.dataset.DataSet;
 
 /**
  * This is considered the "Worker"
- * This is the code that will run the .fit() method on the network
+ * This is the code that will run the .fitDataSet() method on the network
  *
  * the issue here is that this is getting called 1x per record
  * and before we could call it in a more controlled mini-batch setting
