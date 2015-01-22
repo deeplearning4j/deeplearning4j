@@ -18,7 +18,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class RDDUtil {
+public class MLLibUtil {
     /**
      * From labeled point
      * @param sc the spark context used for creating the rdd
