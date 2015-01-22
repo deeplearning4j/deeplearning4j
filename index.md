@@ -18,7 +18,7 @@ Here are a few problems you can solve with deep learning:
 Main features:
 
 * A versatile [n-dimensional array](http://nd4j.org/) class. 
-* [**GPU](http://nd4j.org/gpu_native_backends.html)** integration
+* **[GPU](http://nd4j.org/gpu_native_backends.html)** integration
 * Totally [scalable](../scaleout.html) on **Hadoop**, Spark, AWS and other platforms
 
 Deeplearning4j includes a distributed multi-threaded deep-learning framework and a normal single-threaded deep-learning framework. Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via iterative reduce, and they are equally compatible with **Java**, **Scala** and **Clojure**.
