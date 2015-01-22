@@ -9,6 +9,7 @@ import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.RecordReader;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.canova.RDDMiniBatches;
@@ -21,7 +22,7 @@ import java.io.Serializable;
 
 /**
  * Master class for spark
- *
+ * layers
  * @author Adam Gibson
  */
 public class SparkDl4jLayer implements Serializable {
@@ -114,6 +115,20 @@ public class SparkDl4jLayer implements Serializable {
     public Vector predict(Vector point) {
         return MLLibUtil.toVector(layer.activate(MLLibUtil.toVector(point)));
     }
+
+
+    /**
+     * Train a multi layer network
+     * @param data the data to train on
+     * @param conf the configuration of the network
+     * @return the fit multi layer network
+     */
+    public static Layer train(JavaRDD<LabeledPoint> data,NeuralNetConfiguration conf) {
+        SparkDl4jLayer multiLayer = new SparkDl4jLayer(data.context(),conf);
+        return multiLayer.fit(new JavaSparkContext(data.context()),data);
+
+    }
+
 
 
 }
