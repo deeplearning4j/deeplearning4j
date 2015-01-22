@@ -72,9 +72,9 @@ public class SparkDl4jLayer implements Serializable {
     }
 
     /**
-     *
-     * @param rdd
-     * @return
+     * Fit a java rdd of dataset
+     * @param rdd the rdd to fit
+     * @return the fit layer
      */
     public Layer fitDataSet(JavaRDD<DataSet> rdd) {
         int batchSize = conf.getBatchSize();
