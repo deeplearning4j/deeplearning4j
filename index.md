@@ -4,7 +4,7 @@ layout: default
 
 # What is Deeplearning4j?
 
-Deeplearning4j is the first commercial-grade, __open-source__, distributed __deep-learning__ library written in __Java__. It is designed to be used in business environments, rather than as a research tool. DL4J aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers.
+Deeplearning4j is the first commercial-grade, __open-source__, distributed deep-learning library written in Java. It is designed to be used in business environments, rather than as a research tool. DL4J aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers.
 
 Here are a few problems you can solve with deep learning:
 
