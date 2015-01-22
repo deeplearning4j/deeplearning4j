@@ -4125,8 +4125,6 @@ public abstract class BaseNDArray  implements INDArray {
     public boolean isVector() {
         return shape.length == 1
                 ||
-                shape.length == 1  && shape[0] == 1
-                ||
                 shape.length == 2 && (shape[0] == 1 || shape[1] == 1) && !isScalar();
     }
 
@@ -4172,25 +4170,33 @@ public abstract class BaseNDArray  implements INDArray {
         }
 
 
-        else if(isVector()) {
+        if(isVector()) {
             StringBuilder sb = new StringBuilder();
             sb.append("[");
+            if (rows>1)
+                sb.append("[");
             int numElementsToPrint = Nd4j.MAX_ELEMENTS_PER_SLICE < 0 ? length : Nd4j.MAX_ELEMENTS_PER_SLICE;
             for(int i = 0; i < length; i++) {
                 sb.append(getDouble(i));
-                if(i < length - 1)
-                    sb.append(" ,");
+                if(i < length - 1) {
+                    if (rows>1)
+                        sb.append(",\n  ");
+                    else
+                        sb.append(", ");
+                }
                 if(i >= numElementsToPrint) {
                     int numElementsLeft = length - i;
                     //set towards the end of the buffer
                     if(numElementsLeft > numElementsToPrint) {
                         i += numElementsLeft - numElementsToPrint - 1;
-                        sb.append(" ,... ,");
+                        sb.append(", ..., ");
                     }
                 }
 
             }
-            sb.append("]\n");
+            if (rows>1)
+                sb.append("]");
+            sb.append("]\n ");
             return sb.toString();
         }
 
@@ -4213,6 +4219,7 @@ public abstract class BaseNDArray  implements INDArray {
 
 
         }
+        sb.setLength(sb.length()-2);
         sb.append("]\n");
         return sb.toString();
     }
