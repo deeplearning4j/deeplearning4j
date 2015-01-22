@@ -1,4 +1,4 @@
-package spark.impl.layer;
+package org.deeplearning4j.spark.impl.layer;
 
 import org.apache.spark.api.java.function.Function;
 import org.deeplearning4j.nn.api.Layer;

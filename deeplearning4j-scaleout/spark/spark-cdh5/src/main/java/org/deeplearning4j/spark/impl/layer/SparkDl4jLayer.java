@@ -21,7 +21,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.io.Serializable;
 
 /**
- * Master class for spark
+ * Master class for org.deeplearning4j.spark
  * layers
  * @author Adam Gibson
  */
@@ -45,7 +45,7 @@ public class SparkDl4jLayer implements Serializable {
     }
 
     /**
-     * Fit the layer based on the specified spark context text file
+     * Fit the layer based on the specified org.deeplearning4j.spark context text file
      * @param path the path to the text file
      * @param labelIndex the index of the label
      * @param recordReader the record reader
@@ -64,7 +64,7 @@ public class SparkDl4jLayer implements Serializable {
      * Fit the given rdd given the context.
      * This will convert the labeled points
      * to the internal dl4j format and train the model on that
-     * @param sc the spark context
+     * @param sc the org.deeplearning4j.spark context
      * @param rdd the rdd to fitDataSet
      * @return the multi layer network that was fitDataSet
      */

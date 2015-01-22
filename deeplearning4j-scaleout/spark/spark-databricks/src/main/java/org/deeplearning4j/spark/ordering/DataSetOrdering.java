@@ -1,4 +1,4 @@
-package spark.ordering;
+package org.deeplearning4j.spark.ordering;
 
 import org.nd4j.linalg.dataset.DataSet;
 import scala.Function1;

@@ -1,4 +1,4 @@
-package spark.util;
+package org.deeplearning4j.spark.util;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -74,7 +74,7 @@ public class MLLibUtil {
 
     /**
      * From labeled point
-     * @param sc the spark context used for creating the rdd
+     * @param sc the org.deeplearning4j.spark context used for creating the rdd
      * @param data the data to convert
      * @param numPossibleLabels the number of possible labels
      * @return

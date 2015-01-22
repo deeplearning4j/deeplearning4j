@@ -1,4 +1,4 @@
-package spark.canova;
+package org.deeplearning4j.spark.canova;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
