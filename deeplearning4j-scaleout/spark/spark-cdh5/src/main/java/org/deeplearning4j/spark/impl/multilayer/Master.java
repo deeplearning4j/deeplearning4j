@@ -4,13 +4,15 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.mllib.linalg.Matrix;
+import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.RecordReader;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.canova.RDDMiniBatches;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
-import org.deeplearning4j.spark.util.RDDUtil;
+import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 
@@ -27,8 +29,15 @@ public class Master implements Serializable {
     private transient JavaSparkContext sc;
     private MultiLayerConfiguration conf;
     private RecordReader recordReader;
+    private MultiLayerNetwork network;
 
-
+    public Master(SparkContext sparkContext,RecordReader recordReader,MultiLayerNetwork network) {
+        this.sparkContext = sparkContext;
+        this.conf = conf.clone();
+        this.recordReader = recordReader;
+        sc = new JavaSparkContext(this.sparkContext);
+        this.network = network;
+    }
 
     public Master(SparkContext sparkContext,MultiLayerConfiguration conf,RecordReader recordReader) {
         this.sparkContext = sparkContext;
@@ -52,9 +61,28 @@ public class Master implements Serializable {
 
     }
 
+    /**
+     * Predict the given feature matrix
+     * @param features the given feature matirx
+     * @return the predictions
+     */
+    public Matrix predict(Matrix features) {
+        return MLLibUtil.toMatrix(network.output(MLLibUtil.toMatrix(features)));
+    }
+
+
+    /**
+     * Predict the given vector
+     * @param point the vector to predict
+     * @return the predicted vector
+     */
+    public Vector predict(Vector point) {
+        return MLLibUtil.toVector(network.output(MLLibUtil.toVector(point)));
+    }
+
 
     public MultiLayerNetwork fit(JavaSparkContext sc,JavaRDD<LabeledPoint> rdd) {
-        return fitDataSet(RDDUtil.fromLabeledPoint(sc,rdd,conf.getConf(conf.getConfs().size() - 1).getnOut()));
+        return fitDataSet(MLLibUtil.fromLabeledPoint(sc, rdd, conf.getConf(conf.getConfs().size() - 1).getnOut()));
     }
 
 
@@ -78,6 +106,7 @@ public class Master implements Serializable {
             }
         }).divi(miniBatches.count());
         network.setParameters(newParams);
+        this.network = network;
         return network;
     }
 }
