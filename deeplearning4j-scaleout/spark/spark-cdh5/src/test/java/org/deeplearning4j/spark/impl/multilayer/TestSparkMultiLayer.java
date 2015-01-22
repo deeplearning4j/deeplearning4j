@@ -22,7 +22,7 @@ import org.springframework.core.io.ClassPathResource;
 /**
  * Created by agibsonccc on 1/18/15.
  */
-public class TestMaster {
+public class TestSparkMultiLayer {
 
     @Test
     public void testIris() throws Exception {
@@ -55,9 +55,10 @@ public class TestMaster {
         int numParams = network.numParams();
         INDArray params = network.params();
         assertEquals(numParams,params.length());
-        Master master = new Master(sc,conf,new SVMLightRecordReader());
+        SparkDl4jMultiLayer sparkDl4jMultiLayer = new SparkDl4jMultiLayer(sc,conf);
         String path = new ClassPathResource("data/svmLight/iris_svmLight_0.txt").getFile().toURI().toString();
-        master.fit(path,4);
+        sparkDl4jMultiLayer.fit(path,4,new SVMLightRecordReader());
+
 
 
     }
