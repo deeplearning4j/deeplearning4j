@@ -6,17 +6,17 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>spark</artifactId>
+    <artifactId>org.deeplearning4j.spark</artifactId>
     <packaging>pom</packaging>
 
-    <name>spark</name>
+    <name>org.deeplearning4j.spark</name>
     <url>http://deeplearning4j.org</url>
     <modules>
         <module>spark-cdh5</module>
         <module>spark-databricks</module>
     </modules>
 
-  
+
     <repositories>
         <repository>
             <id>org.apache.hadoop</id>
