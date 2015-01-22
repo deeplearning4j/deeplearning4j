@@ -122,4 +122,16 @@ public class SparkDl4jMultiLayer implements Serializable {
         this.network = network;
         return network;
     }
+
+    /**
+     * Train a multi layer network
+     * @param data the data to train on
+     * @param conf the configuration of the network
+     * @return the fit multi layer network
+     */
+    public static MultiLayerNetwork train(JavaRDD<LabeledPoint> data,MultiLayerConfiguration conf) {
+        SparkDl4jMultiLayer multiLayer = new SparkDl4jMultiLayer(data.context(),conf);
+        return multiLayer.fit(new JavaSparkContext(data.context()),data);
+
+    }
 }
