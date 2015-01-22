@@ -23,36 +23,39 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-public class Master implements Serializable {
+public class SparkDl4jMultiLayer implements Serializable {
 
     private transient SparkContext sparkContext;
     private transient JavaSparkContext sc;
     private MultiLayerConfiguration conf;
-    private RecordReader recordReader;
     private MultiLayerNetwork network;
 
-    public Master(SparkContext sparkContext,RecordReader recordReader,MultiLayerNetwork network) {
+    public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerNetwork network) {
         this.sparkContext = sparkContext;
         this.conf = conf.clone();
-        this.recordReader = recordReader;
         sc = new JavaSparkContext(this.sparkContext);
         this.network = network;
     }
 
-    public Master(SparkContext sparkContext,MultiLayerConfiguration conf,RecordReader recordReader) {
+    public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerConfiguration conf) {
         this.sparkContext = sparkContext;
         this.conf = conf.clone();
-        this.recordReader = recordReader;
         sc = new JavaSparkContext(this.sparkContext);
     }
 
-    public Master(JavaSparkContext sc,MultiLayerConfiguration conf,RecordReader recordReader) {
+    public SparkDl4jMultiLayer(JavaSparkContext sc, MultiLayerConfiguration conf) {
         this.sc = sc;
-        this.recordReader = recordReader;
         this.conf = conf.clone();
     }
 
-    public MultiLayerNetwork fit(String path,int labelIndex) {
+    /**
+     * Train a multi layer network based on the path
+     * @param path the path to the text file
+     * @param labelIndex the label index
+     * @param recordReader the record reader to parse results
+     * @return
+     */
+    public MultiLayerNetwork fit(String path,int labelIndex,RecordReader recordReader) {
         JavaRDD<String> lines = sc.textFile(path);
         // gotta map this to a Matrix/INDArray
         JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(recordReader
@@ -63,7 +66,7 @@ public class Master implements Serializable {
 
     /**
      * Predict the given feature matrix
-     * @param features the given feature matirx
+     * @param features the given feature matrix
      * @return the predictions
      */
     public Matrix predict(Matrix features) {
@@ -81,15 +84,25 @@ public class Master implements Serializable {
     }
 
 
+    /**
+     * Fit the given rdd given the context.
+     * This will convert the labeled points
+     * to the internal dl4j format and train the model on that
+     * @param sc the spark context
+     * @param rdd the rdd to fitDataSet
+     * @return the multi layer network that was fitDataSet
+     */
     public MultiLayerNetwork fit(JavaSparkContext sc,JavaRDD<LabeledPoint> rdd) {
         return fitDataSet(MLLibUtil.fromLabeledPoint(sc, rdd, conf.getConf(conf.getConfs().size() - 1).getnOut()));
     }
 
 
+    /**
+     * Fit the dataset rdd
+     * @param rdd the rdd to fitDataSet
+     * @return the multi layer network
+     */
     public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd) {
-        //LabeledPoint
-        //add dep on mllib
-        //static runner
 
         int batchSize = conf.getConf(0).getBatchSize();
         JavaRDD<DataSet> miniBatches = new RDDMiniBatches(batchSize,rdd).miniBatchesJava();

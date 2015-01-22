@@ -4,13 +4,16 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.mllib.linalg.Matrix;
+import org.apache.spark.mllib.linalg.Vector;
+import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.RecordReader;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.canova.RDDMiniBatches;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
+import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 
@@ -21,38 +24,59 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-public class Master implements Serializable {
+public class SparkDl4jLayer implements Serializable {
 
     private transient SparkContext sparkContext;
     private transient JavaSparkContext sc;
     private NeuralNetConfiguration conf;
-    private RecordReader recordReader;
+    private Layer layer;
 
 
-
-    public Master(SparkContext sparkContext,NeuralNetConfiguration conf,RecordReader recordReader) {
+    public SparkDl4jLayer(SparkContext sparkContext, NeuralNetConfiguration conf) {
         this.sparkContext = sparkContext;
         this.conf = conf.clone();
-        this.recordReader = recordReader;
         sc = new JavaSparkContext(this.sparkContext);
     }
 
-    public Master(JavaSparkContext sc,NeuralNetConfiguration conf,RecordReader recordReader) {
+    public SparkDl4jLayer(JavaSparkContext sc, NeuralNetConfiguration conf) {
         this.sc = sc;
-        this.recordReader = recordReader;
         this.conf = conf.clone();
     }
 
-    public Layer fit(String path,int labelIndex,int numLabels) {
+    /**
+     * Fit the layer based on the specified spark context text file
+     * @param path the path to the text file
+     * @param labelIndex the index of the label
+     * @param recordReader the record reader
+     * @return the fit layer
+     */
+    public Layer fit(String path,int labelIndex,RecordReader recordReader) {
         JavaRDD<String> lines = sc.textFile(path);
         // gotta map this to a Matrix/INDArray
         JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(recordReader
-                , labelIndex, numLabels));
-        return fit(points);
+                , labelIndex, conf.getnOut()));
+        return fitDataSet(points);
 
     }
 
-    public Layer fit(JavaRDD<DataSet> rdd) {
+    /**
+     * Fit the given rdd given the context.
+     * This will convert the labeled points
+     * to the internal dl4j format and train the model on that
+     * @param sc the spark context
+     * @param rdd the rdd to fitDataSet
+     * @return the multi layer network that was fitDataSet
+     */
+    public Layer fit(JavaSparkContext sc,JavaRDD<LabeledPoint> rdd) {
+        return fitDataSet(MLLibUtil.fromLabeledPoint(sc, rdd, conf.getnOut()));
+    }
+
+    /**
+     *
+     * @param rdd
+     * @return
+     */
+    public Layer fitDataSet(JavaRDD<DataSet> rdd) {
         int batchSize = conf.getBatchSize();
         JavaRDD<DataSet> miniBatches = new RDDMiniBatches(batchSize,rdd).miniBatchesJava();
         Layer layer = conf.getLayerFactory().create(conf);
@@ -67,6 +91,29 @@ public class Master implements Serializable {
             }
         }).divi(miniBatches.count());
         layer.setParameters(newParams);
+        this.layer = layer;
         return layer;
     }
+
+
+    /**
+     * Predict the given feature matrix
+     * @param features the given feature matrix
+     * @return the predictions
+     */
+    public Matrix predict(Matrix features) {
+        return MLLibUtil.toMatrix(layer.activate(MLLibUtil.toMatrix(features)));
+    }
+
+
+    /**
+     * Predict the given vector
+     * @param point the vector to predict
+     * @return the predicted vector
+     */
+    public Vector predict(Vector point) {
+        return MLLibUtil.toVector(layer.activate(MLLibUtil.toVector(point)));
+    }
+
+
 }
