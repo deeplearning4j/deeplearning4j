@@ -1,4 +1,4 @@
-package spark.impl.multilayer;
+package org.deeplearning4j.spark.impl.multilayer;
 
 
 import org.apache.spark.SparkConf;
@@ -16,7 +16,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.springframework.core.io.ClassPathResource;
 
-import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
 
