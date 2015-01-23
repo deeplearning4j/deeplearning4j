@@ -12,17 +12,10 @@
     <name>org.deeplearning4j.spark</name>
     <url>http://deeplearning4j.org</url>
     <modules>
-        <module>spark-cdh5</module>
-        <module>spark-databricks</module>
+        <module>dl4j-spark</module>
     </modules>
 
 
-    <repositories>
-        <repository>
-            <id>org.apache.hadoop</id>
-            <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-        </repository>
-    </repositories>
 
 
     <properties>

@@ -10,7 +10,8 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Created by agibsonccc on 1/18/15.
+ * RDD mini batch partitioning
+ * @author Adam Gibson
  */
 public class RDDMiniBatches  implements Serializable {
     private int miniBatches = 10;
