@@ -115,7 +115,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         INDArray newParams = miniBatches.map(new DL4jWorker(conf.toJson(),params)).reduce(new Function2<INDArray, INDArray, INDArray>() {
             @Override
             public INDArray call(INDArray v1, INDArray v2) throws Exception {
-                return v1.add(v2);
+                return v1.addi(v2);
             }
         }).divi(miniBatches.count());
         network.setParameters(newParams);
