@@ -6,7 +6,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>org.deeplearning4j.spark</artifactId>
+    <artifactId>spark</artifactId>
     <packaging>pom</packaging>
 
     <name>org.deeplearning4j.spark</name>
