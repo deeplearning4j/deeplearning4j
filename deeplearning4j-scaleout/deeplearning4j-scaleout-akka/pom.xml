@@ -10,33 +10,58 @@
 	<name>deeplearning4j-scaleout-akka</name>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<akka.version>2.3.4</akka.version>
+		<akka.version>2.3.4-spark</akka.version>
         <netty.version>3.8.0.Final</netty.version>
 		<hazelcast.version>3.4-EA</hazelcast.version>
 		<spring.version>3.2.5.RELEASE</spring.version>
 		<dropwizard.version>0.7.0</dropwizard.version>
 		<jackson.version>2.3.2</jackson.version>
 		<scala.binary.version>2.10</scala.binary.version>
-		<akka.group>com.typesafe.akka</akka.group>
+		<akka.group>org.spark-project.akka</akka.group>
 	</properties>
 	<dependencyManagement>
 
 		<dependencies>
 			<dependency>
 				<groupId>${akka.group}</groupId>
+				<artifactId>akka-remote_${scala.binary.version}</artifactId>
+				<version>${akka.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>${akka.group}</groupId>
 				<artifactId>akka-actor_${scala.binary.version}</artifactId>
 				<version>${akka.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>${akka.group}</groupId>
+				<groupId>com.typesafe.akka</groupId>
 				<artifactId>akka-cluster_${scala.binary.version}</artifactId>
-				<version>${akka.version}</version>
+				<version>2.3.4</version>
+				<exclusions>
+					<exclusion>
+						<groupId>com.typesafe.akka</groupId>
+						<artifactId>akka-remote_${scala.binary.version}</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>com.typesafe.akka</groupId>
+						<artifactId>akka-actor_${scala.binary.version}</artifactId>
+					</exclusion>
+				</exclusions>
 			</dependency>
 
 			<dependency>
-				<groupId>${akka.group}</groupId>
+				<groupId>com.typesafe.akka</groupId>
 				<artifactId>akka-contrib_${scala.binary.version}</artifactId>
-				<version>${akka.version}</version>
+				<version>2.3.4</version>
+				<exclusions>
+					<exclusion>
+						<groupId>com.typesafe.akka</groupId>
+						<artifactId>akka-remote_${scala.binary.version}</artifactId>
+					</exclusion>
+                   <exclusion>
+					   <groupId>com.typesafe.akka</groupId>
+					   <artifactId>akka-actor_${scala.binary.version}</artifactId>
+				   </exclusion>
+				</exclusions>
 			</dependency>
 			<dependency>
 				<groupId>${akka.group}</groupId>
@@ -178,6 +203,9 @@
 			<version>2.0.1</version>
 		</dependency>
 
+
+
+
 		<dependency>
 			<groupId>io.dropwizard</groupId>
 			<artifactId>dropwizard-core</artifactId>
@@ -196,26 +224,32 @@
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 		</dependency>
+
 		<dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+
+		<dependency>
+			<groupId>${akka.group}</groupId>
+			<artifactId>akka-remote_${scala.binary.version}</artifactId>
+			<version>${akka.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>${akka.group}</groupId>
 			<artifactId>akka-actor_${scala.binary.version}</artifactId>
 			<version>${akka.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>${akka.group}</groupId>
+			<groupId>com.typesafe.akka</groupId>
 			<artifactId>akka-cluster_${scala.binary.version}</artifactId>
-			<version>${akka.version}</version>
 		</dependency>
 
 		<dependency>
-			<groupId>${akka.group}</groupId>
+			<groupId>com.typesafe.akka</groupId>
 			<artifactId>akka-contrib_${scala.binary.version}</artifactId>
-			<version>${akka.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>${akka.group}</groupId>
@@ -261,10 +295,6 @@
 			</exclusions>
 		</dependency>
 
-		<dependency>
-			<groupId>com.google.protobuf</groupId>
-			<artifactId>protobuf-java</artifactId>
-		</dependency>
 
 		<dependency>
 			<groupId>com.hazelcast</groupId>
