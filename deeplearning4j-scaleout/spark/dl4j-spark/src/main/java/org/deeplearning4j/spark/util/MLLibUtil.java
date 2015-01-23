@@ -85,10 +85,10 @@ public class MLLibUtil {
     }
 
     /**
-     *
-     * @param sc
-     * @param data
-     * @return
+     * Convert an rdd of data set in to labeled point
+     * @param sc the spark context to use
+     * @param data the dataset to convert
+     * @return an rdd of labeled point
      */
     public static JavaRDD<LabeledPoint> fromDataSet(JavaSparkContext sc,JavaRDD<DataSet> data) {
         List<LabeledPoint> list  = toLabeledPoint(data.collect());
@@ -97,9 +97,9 @@ public class MLLibUtil {
 
 
     /**
-     *
-     * @param labeledPoints
-     * @return
+     * Convert a list of dataset in to a list of labeled points
+     * @param labeledPoints the labeled points to convert
+     * @return the labeled point list
      */
     private static List<LabeledPoint> toLabeledPoint(List<DataSet> labeledPoints) {
         List<LabeledPoint> ret = new ArrayList<>();
@@ -109,12 +109,16 @@ public class MLLibUtil {
     }
 
     /**
-     *
-     * @param point
-     * @return
+     * Convert a dataset (feature vector) to a labeled point
+     * @param point the point to convert
+     * @return the labeled point derived from this dataset
      */
     private static LabeledPoint toLabeledPoint(DataSet point) {
-        Vector features = toVector(point.getFeatureMatrix());
+        if(!point.getFeatureMatrix().isVector())
+            throw new IllegalArgumentException("Feature matrix must be a vector");
+
+        Vector features = toVector(point.getFeatureMatrix().dup());
+
         double label = Nd4j.getBlasWrapper().iamax(point.getLabels());
         return new LabeledPoint(label,features);
     }

@@ -1,10 +1,10 @@
 package org.deeplearning4j.spark.canova;
 
-import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.canova.api.records.reader.impl.SVMLightRecordReader;
+import org.deeplearning4j.spark.BaseSparkTest;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
@@ -16,19 +16,13 @@ import static org.junit.Assert.*;
 /**
  * Handle dividing things up by mini batch
  */
-public class MiniBatchTests {
+public class MiniBatchTests extends BaseSparkTest {
     private static Logger log = LoggerFactory.getLogger(MiniBatchTests.class);
 
     @Test
     public void testMiniBatches() throws Exception {
-        // set to test mode
-        SparkConf sparkConf = new SparkConf()
-                .setMaster("local")
-                .setAppName("SparkDebugExample");
-
         log.info("Setting up Spark Context...");
 
-        JavaSparkContext sc = new JavaSparkContext(sparkConf);
         JavaRDD<String> lines = sc.textFile(new ClassPathResource("data/svmLight/iris_svmLight_0.txt").getFile().toURI().toString()).cache();
         long count = lines.count();
         assertEquals(300,count);
@@ -41,14 +35,20 @@ public class MiniBatchTests {
         count = miniBatches.count();
         assertEquals(30,count);
 
-        miniBatches.map(new Function<DataSet, Object>() {
-            @Override
-            public Object call(DataSet v1) throws Exception {
-                assertTrue(v1.numExamples() == 30);
-                return null;
-            }
-        });
+        miniBatches.map(new DataSetAssertionFunction());
 
     }
+
+
+    public static class DataSetAssertionFunction implements Function<DataSet,Object> {
+
+        @Override
+        public Object call(DataSet dataSet) throws Exception {
+            assertTrue(dataSet.getFeatureMatrix().columns() == 150);
+            assertTrue(dataSet.numExamples() == 30);
+            return null;
+        }
+    }
+
 
 }
