@@ -10,16 +10,46 @@
 	<name>deeplearning4j-scaleout-akka</name>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<akka.version>2.3.3</akka.version>
+		<akka.version>2.3.4</akka.version>
         <netty.version>3.8.0.Final</netty.version>
 		<hazelcast.version>3.4-EA</hazelcast.version>
 		<spring.version>3.2.5.RELEASE</spring.version>
 		<dropwizard.version>0.7.0</dropwizard.version>
 		<jackson.version>2.3.2</jackson.version>
+		<scala.binary.version>2.10</scala.binary.version>
+		<akka.group>com.typesafe.akka</akka.group>
 	</properties>
 	<dependencyManagement>
 
 		<dependencies>
+			<dependency>
+				<groupId>${akka.group}</groupId>
+				<artifactId>akka-actor_${scala.binary.version}</artifactId>
+				<version>${akka.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>${akka.group}</groupId>
+				<artifactId>akka-cluster_${scala.binary.version}</artifactId>
+				<version>${akka.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>${akka.group}</groupId>
+				<artifactId>akka-contrib_${scala.binary.version}</artifactId>
+				<version>${akka.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>${akka.group}</groupId>
+				<artifactId>akka-testkit_${scala.binary.version}</artifactId>
+				<version>${akka.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>${akka.group}</groupId>
+				<artifactId>akka-slf4j_${scala.binary.version}</artifactId>
+				<version>${akka.version}</version>
+			</dependency>
+
 			<dependency>
 				<groupId>com.google.protobuf</groupId>
 				<artifactId>protobuf-java</artifactId>
@@ -172,14 +202,36 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-actor_2.10</artifactId>
+			<groupId>${akka.group}</groupId>
+			<artifactId>akka-actor_${scala.binary.version}</artifactId>
 			<version>${akka.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-cluster_2.10</artifactId>
+			<groupId>${akka.group}</groupId>
+			<artifactId>akka-cluster_${scala.binary.version}</artifactId>
 			<version>${akka.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>${akka.group}</groupId>
+			<artifactId>akka-contrib_${scala.binary.version}</artifactId>
+			<version>${akka.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>${akka.group}</groupId>
+			<artifactId>akka-testkit_${scala.binary.version}</artifactId>
+			<version>${akka.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>${akka.group}</groupId>
+			<artifactId>akka-slf4j_${scala.binary.version}</artifactId>
+			<version>${akka.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>args4j</groupId>
+			<artifactId>args4j</artifactId>
+			<version>2.0.26</version>
 		</dependency>
 		<dependency>
 			<groupId>org.fusesource</groupId>
@@ -192,16 +244,6 @@
 					<groupId>log4j</groupId>
 				</exclusion>
 			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-contrib_2.10</artifactId>
-			<version>${akka.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>args4j</groupId>
-			<artifactId>args4j</artifactId>
-			<version>2.0.26</version>
 		</dependency>
 		<dependency>
 			<groupId>org.deeplearning4j</groupId>
@@ -218,21 +260,12 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-testkit_2.10</artifactId>
-			<version>${akka.version}</version>
-			<scope>test</scope>
-		</dependency>
+
 		<dependency>
 			<groupId>com.google.protobuf</groupId>
 			<artifactId>protobuf-java</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-slf4j_2.10</artifactId>
-			<version>${akka.version}</version>
-		</dependency>
+
 		<dependency>
 			<groupId>com.hazelcast</groupId>
 			<artifactId>hazelcast-all</artifactId>
