@@ -24,10 +24,9 @@ DeepLearning4j的矩阵运算是使用ND4J为它的科学计算内核。如果�
 ### Jblas
 
 #### 最新
-
-*[tar存档](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.tar.gz)
-*[bz2存档](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.tar.bz2)
-*[zip存档](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.zip)
+* [tar存档](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.tar.gz)
+* [bz2存档](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.tar.bz2)
+* [zip存档](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.zip)
 
 #### 0.0.3.2.5
 
