@@ -169,12 +169,9 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
         if(!layerWiseConfigurations.isPretrain())
             return;
-
-
-
-        /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
+        /* During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
         if(this.getInput() == null || this.getLayers() == null) {
-            setInput(input);
+            setInput(input.dup());
             initializeLayers(input);
         }
         else
@@ -271,7 +268,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
                     throw new IllegalArgumentException("All hidden layer sizes must be >= 1");
 
 
-        this.input = input;
+        this.input = input.dup();
         if (!initCalled) {
             init();
             //log.info("Initializing neuralNets with input of dims " + input.rows() + " x " + input.columns());
@@ -1005,8 +1002,8 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
             }
             else {
                 StochasticHessianFree hessianFree =
-                    new StochasticHessianFree(getOutputLayer().conf(),getOutputLayer().conf().getStepFunction(),
-                        getOutputLayer().conf().getListeners(),this);
+                        new StochasticHessianFree(getOutputLayer().conf(),getOutputLayer().conf().getStepFunction(),
+                                getOutputLayer().conf().getListeners(),this);
                 hessianFree.optimize();
             }
 
@@ -1037,7 +1034,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
             feedForward();
             o.setLabels(labels);
             StochasticHessianFree hessianFree = new StochasticHessianFree(getOutputLayer().conf(),
-                getOutputLayer().conf().getStepFunction(),getOutputLayer().conf().getListeners(),this);
+                    getOutputLayer().conf().getStepFunction(),getOutputLayer().conf().getListeners(),this);
             hessianFree.optimize();
         }
     }

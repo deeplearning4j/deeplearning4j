@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.lang.reflect.Constructor;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -52,7 +53,7 @@ public class DefaultLayerFactory implements LayerFactory {
 
     protected Map<String,INDArray> getParams(NeuralNetConfiguration conf) {
         ParamInitializer init = initializer();
-        Map<String,INDArray> params = new LinkedHashMap<>();
+        Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String,INDArray>());
         init.init(params,conf);
         return params;
     }

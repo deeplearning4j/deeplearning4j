@@ -59,6 +59,7 @@
 
 
     <dependencies>
+
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-mllib_2.10</artifactId>

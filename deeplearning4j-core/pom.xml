@@ -17,7 +17,6 @@
 
 
 	<dependencies>
-
 		<dependency>
 			<groupId>org.nd4j</groupId>
 			<artifactId>canova-api</artifactId>
