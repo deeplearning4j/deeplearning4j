@@ -93,6 +93,10 @@ public interface Layer extends Serializable,Cloneable,Model {
      */
     Layer transpose();
 
+    /**
+     * Clone the layer
+     * @return
+     */
     Layer clone();
 
 
