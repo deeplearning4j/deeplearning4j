@@ -23,9 +23,7 @@ public class RDDMiniBatches  implements Serializable {
     }
 
     public JavaRDD<DataSet> miniBatchesJava() {
-        final int batchSize = miniBatches;
-
-        return toSplitJava.mapPartitions(new MiniBatchFunction(batchSize));
+        return toSplitJava.mapPartitions(new MiniBatchFunction(miniBatches));
     }
 
 
@@ -48,7 +46,9 @@ public class RDDMiniBatches  implements Serializable {
                 }
             }
 
-            if(!temp.isEmpty())
+            //edge cases with map partitions where one will be left over.
+            //this is due to race conditions.
+            if(temp.size() > 1)
                 ret.add(DataSet.merge(temp));
 
             return ret;

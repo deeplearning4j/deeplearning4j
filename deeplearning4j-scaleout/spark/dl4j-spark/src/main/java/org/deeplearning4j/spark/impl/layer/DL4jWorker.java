@@ -37,9 +37,14 @@ public class DL4jWorker implements Function<DataSet, INDArray> {
 
     @Override
     public INDArray call(DataSet v1) throws Exception {
-        Layer network = (Layer) this.network;
-        network.fit(v1.getFeatureMatrix());
-        return network.params();
+       try {
+           Layer network = (Layer) this.network;
+           network.fit(v1.getFeatureMatrix());
+           return network.params();
+       }catch(Exception e) {
+           System.err.println("Error with dataset " + v1.numExamples());
+           throw e;
+       }
 
     }
 }

@@ -9,6 +9,8 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+
 /**
  * This is considered the "Worker"
  * This is the code that will run the .fitDataSet() method on the network
@@ -21,23 +23,41 @@ import org.slf4j.LoggerFactory;
  */
 public class DL4jWorker implements Function<DataSet, INDArray> {
 
-    private final Model network;
     private static Logger log = LoggerFactory.getLogger(DL4jWorker.class);
+    private String json;
+    private INDArray params;
+
     public DL4jWorker(String json,INDArray params) {
-        this.network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
-        MultiLayerNetwork thisNetwork = (MultiLayerNetwork) this.network;
-        thisNetwork.init();
-        int numParams = this.network.numParams();
-        if(numParams != params.length())
-            throw new IllegalStateException("Number of params for configured network was " + numParams + " while the specified parameter vector length was " + params.length());
-        thisNetwork.setParameters(params);
+        this.json = json;
+        this.params = params;
     }
 
     @Override
     public INDArray call(DataSet v1) throws Exception {
-        MultiLayerNetwork thisNetwork = (MultiLayerNetwork) this.network;
-        thisNetwork.fit(v1);
-        return network.params();
+        MultiLayerNetwork network = init();
+        try {
+            network.initialize(v1);
+            network.fit(v1);
+            INDArray params = network.params();
+            return params;
 
+       }catch(Exception e) {
+            e.printStackTrace();
+            System.err.println("Error with input " + Arrays.toString(v1.getFeatureMatrix().shape()));
+            throw e;
+        }
     }
+
+
+    private MultiLayerNetwork init() {
+        MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
+        network.init();
+        network.validateInput();
+        int numParams = network.numParams();
+        if(numParams != params.length())
+            throw new IllegalStateException("Number of params for configured network was " + numParams + " while the specified parameter vector length was " + params.length());
+        network.setParameters(params);
+        return network;
+    }
+
 }

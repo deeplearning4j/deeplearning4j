@@ -130,12 +130,11 @@ public abstract class BaseLayer implements Layer {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
 
-        this.input = x;
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
 
 
-        INDArray ret = this.input.mmul(W);
+        INDArray ret = x.mmul(W);
         if(ret.columns() != b.columns())
             throw new IllegalStateException("This is weird");
         if(conf.isConcatBiases())

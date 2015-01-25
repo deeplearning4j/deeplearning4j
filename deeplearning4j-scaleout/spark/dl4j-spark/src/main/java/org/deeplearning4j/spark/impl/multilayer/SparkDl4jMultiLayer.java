@@ -112,12 +112,14 @@ public class SparkDl4jMultiLayer implements Serializable {
         int paramsLength = network.numParams();
         if(params.length() != paramsLength)
             throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
-        INDArray newParams = miniBatches.map(new DL4jWorker(conf.toJson(),params)).reduce(new Function2<INDArray, INDArray, INDArray>() {
-            @Override
-            public INDArray call(INDArray v1, INDArray v2) throws Exception {
-                return v1.addi(v2);
-            }
-        }).divi(miniBatches.count());
+        DL4jWorker worker = new DL4jWorker(conf.toJson(),params);
+        INDArray newParams = miniBatches.map(worker)
+                .reduce(new Function2<INDArray, INDArray, INDArray>() {
+                    @Override
+                    public INDArray call(INDArray v1, INDArray v2) throws Exception {
+                        return v1.addi(v2);
+                    }
+                }).divi(miniBatches.count());
         network.setParameters(newParams);
         this.network = network;
         return network;

@@ -22,7 +22,7 @@ public class DefaultParamInitializer implements ParamInitializer {
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
         params.put(WEIGHT_KEY,createWeightMatrix(conf));
         params.put(BIAS_KEY,createBias(conf));
-       conf.addVariable(WEIGHT_KEY);
+        conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
 
 
@@ -30,7 +30,7 @@ public class DefaultParamInitializer implements ParamInitializer {
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, Configuration extraConf) {
-         init(params,conf);
+        init(params,conf);
 
     }
 
