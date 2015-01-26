@@ -1,14 +1,14 @@
 package org.nd4j.linalg.lossfunctions;
 
+import static org.nd4j.linalg.ops.transforms.Transforms.*;
+
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 
+import java.util.Arrays;
 
-
-import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 /**
  * Central class for loss functions
@@ -41,23 +41,23 @@ public class LossFunctions {
      * Generic scoring function
      * @param labels the labels to score
      * @param lossFunction the loss function to use
-     * @param output the output function
+     * @param z the output function
      * @param l2 the l2 coefficient
      * @param useRegularization  whether to use regularization
      * @return the score for the given parameters
      */
-    public static double score(INDArray labels,LossFunction lossFunction,INDArray output,double l2,boolean useRegularization) {
-        assert !Nd4j.hasInvalidNumber(output) : "Invalid output on labels. Must not contain nan or infinite numbers.";
+    public static double score(INDArray labels,LossFunction lossFunction,INDArray z,double l2,boolean useRegularization) {
+        assert !Nd4j.hasInvalidNumber(z) : "Invalid output on labels. Must not contain nan or infinite numbers.";
 
         double ret = 0.0f;
         double reg = 0.5 * l2;
-        INDArray z = output;
-        assert labels.length() == output.length() : "Output and labels must be same length";
+        if(!Arrays.equals(labels.shape(), z.shape()))
+            throw new IllegalArgumentException("Output and labels must be same length");
         switch (lossFunction) {
             case RECONSTRUCTION_CROSSENTROPY:
-                INDArray xEntLogZ2 = Transforms.log(z.dup());
+                INDArray xEntLogZ2 = log(z);
                 INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
-                INDArray xEntOneMinusLogOneMinusZ2 = Transforms.log(z).rsubi(1);
+                INDArray xEntOneMinusLogOneMinusZ2 = log(z).rsubi(1);
                 ret =  labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case MCXENT:

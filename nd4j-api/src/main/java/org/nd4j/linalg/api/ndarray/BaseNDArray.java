@@ -3239,16 +3239,7 @@ public abstract class BaseNDArray  implements INDArray {
         else if(isColumnVector())
             return Nd4j.create(data, new int[]{shape[0]}, offset);
 
-        if(isMatrix()) {
-            INDArray reverse = Nd4j.create(new int[]{shape[1],shape[0]});
-            for (int i = 0; i < rows; i++) {
-                for (int j = 0; j < columns; j++) {
-                    reverse.putScalar(new int[]{j, i}, getDouble(i, j));
-                }
-            }
 
-            return reverse;
-        }
 
         INDArray ret = permute(ArrayUtil.range(shape.length -1,-1));
         return ret;

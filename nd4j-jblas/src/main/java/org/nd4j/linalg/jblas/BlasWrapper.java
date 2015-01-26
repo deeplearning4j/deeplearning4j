@@ -161,7 +161,8 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public INDArray axpy(double da, INDArray dx, INDArray dy) {
-        assert dx.length() == dy.length() : "Dx length must be the same as dy length";
+        if(dx.length() != dy.length())
+            throw new IllegalArgumentException("Dx and dy must be same length");
         DataTypeValidation.assertDouble(dx,dy);
         JavaBlas.raxpy(
                 dx.length(),

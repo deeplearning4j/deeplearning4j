@@ -119,6 +119,8 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
     public void exec() {
 
         INDArray linear = from.linearView();
+        if(linear.length() != from.length())
+            throw new IllegalStateException("We appear to have a race condition. Linear view length != from length");
         if(linear instanceof IComplexNDArray) {
             IComplexNDArray cLinear = (IComplexNDArray) linear;
             for(int i = 0; i < cLinear.length(); i++) {
@@ -133,7 +135,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
                 double apply = apply(linear,linear.getDouble(i),i);
                 if(Double.isInfinite(apply) || Double.isInfinite(apply))
                     apply = Nd4j.EPS_THRESHOLD;
-                from.putScalar(i,apply);
+                linear.putScalar(i,apply);
             }
         }
 

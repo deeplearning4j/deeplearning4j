@@ -617,28 +617,7 @@ public abstract class ComplexNDArrayTests {
     }
 
 
-    @Test
-    public void testLinearData() {
-        float[] d = {1,0,2,0};
-        DataBuffer d3 = Nd4j.createBuffer(d);
-        IComplexNDArray c = Nd4j.createComplex(d, new int[]{2});
-        assertEquals(d3,c.data());
 
-        IComplexNDArray needsToBeFlattened = Nd4j.createComplex(Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2}));
-        float[] d2 = {1,0,2,0,3,0,4,0};
-        DataBuffer create = Nd4j.createBuffer(d2);
-        assertEquals(create,needsToBeFlattened.data());
-
-        IComplexNDArray anotherOffsetTest = Nd4j.createComplex(
-                new double[]{
-                        3.0, 0.0, -1.0, -2.4492935982947064E-16, 7.0, 0.0, -1.0, -4.898587196589413E-16, 11.0, 0.0, -1.0, -7.347880794884119E-16, 15.0, 0.0, -1.0, -9.797174393178826E-16, 19.0, 0.0, -1.0, -1.2246467991473533E-15, 23.0, 0.0, -1.0, -1.4695761589768238E-15, 27.0, 0.0, -1.0, -1.7145055188062944E-15, 31.0, 0.0, -0.9999999999999982, -1.959434878635765E-15, 35.0, 0.0, -1.0, -2.204364238465236E-15, 39.0, 0.0, -1.0, -2.4492935982947065E-15, 43.0, 0.0, -1.0, -2.6942229581241772E-15, 47.0, 0.0, -1.0000000000000036, -2.9391523179536483E-15, 51.0, 0.0, -0.9999999999999964, -3.1840816777831178E-15, 55.0, 0.0, -1.0, -3.429011037612589E-15, 59.0, 0.0, -0.9999999999999964, -3.67394039744206E-15}, new int[]{3, 2, 5}, new int[]{20, 2, 4});
-
-
-        IComplexNDArray rowToTest = anotherOffsetTest.slice(0).slice(0);
-        IComplexNDArray noOffsetRow = Nd4j.createComplex(new double[]{3, 0, 7, 0, 11, 0, 15, 0, 19, 0}, new int[]{5});
-        assertEquals(rowToTest,noOffsetRow);
-
-    }
 
     @Test
     public void testGetRow() {
