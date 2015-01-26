@@ -52,7 +52,7 @@ You can then manually import the Maven project into an IDE such as  [Eclipse](ht
 		RandomGenerator gen = new MersenneTwister(123);
 		
           NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .momentum(5e-1f).constrainGradientToUnitNorm(false).iterations(1000).render(50) //<--ADD RENDER HERE
+            .momentum(5e-1f).constrainGradientToUnitNorm(false).iterations(1000).render(50) //<--ADD RENDER HERE
 
 * This is the moment of truth. You should now see evidence in your terminal/cmd that the neural net has begun to train, as the net's iterations begin to scroll down your terminal window. (In some cases, the program may take a minute to locate resources.) Look at the second-to-rightmost number in the rows below. It should be decreasing with each new iteration. That’s the measure of the net’s error reconstructing a numeral-image. Less error means your net is learning. 
 
