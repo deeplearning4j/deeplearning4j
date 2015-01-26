@@ -19,9 +19,30 @@ RBM对于维度(dimensionality),降维(reduction),分类(classification),协同(
 
 ## 参数和K
 
-请参考所有单层网络的共同参数。
+请参考[所有单层网络的共同参数](http://deeplearning4j.org/singlelayernetwork.html)。
 
-变量k是运行对比分歧的次数。每一次的对比分歧运行就如马尔可夫链构(Markov chain)构成限制波尔兹曼机。通常它的值是1 。
+变量k是运行[对比分歧](http://deeplearning4j.org/glossary.html#contrastivedivergence)的次数。每一次的对比分歧运行就如马尔可夫链构(Markov chain)构成限制波尔兹曼机。通常它的值是1 。
 
 ## 在Iris启动RBM
 
+ <script src="http://gist-it.appspot.com/https://github.com/SkymindIO/deeplearning4j/blob/4530b123f40645a2c34e650cbfcd6b5139638c9a/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/rbm/RBMTests.java?slice=58:74"></script>
+ 
+ ## 连续RBMs(CRBMs)
+ 
+ 连续RMBs(CRBMs)是RBM通过不同类型对比分歧抽样来接受连续输入(例如:数字低于整数)的一种形式。这允许CRBM处理被归一化到0与1之间的小数的图像像素或计数向量。
+ 
+应当注意的是,深度学习网的每一层包括四个要素:输入,系数,偏置和转化。
+
+其输入是从之前的层输入的数字数据和一个向量(或作为原数据)。系数是给予权重的特点,而这特点是通过各节点层的。偏置确保了那一层的一些节点再不管什么情况下都会被激活。转化是一个额外的算法,它会处理在通过每个层之后的数据。
+
+这些额外的算法,以及它们的组合在每个层次都不同。我们发现最有效的CRBMs是使用高斯转型(Gaussian transformation)在可见层(或输入)和隐藏层上的整流线性单位转换。[我们发现这在面部重建特别有用](http://deeplearning4j.org/facial-reconstruction-tutorial.html)。对于RBMs如何处理二进制数据,您只要把这两者的转换变成二进制的。
+
+综上所述:Geoff Hinton曾指出,而我们也可以证实,高斯转换(Gaussian transformation)不能与RBMs的隐藏层好好配合,这也是重建出现的时候;即这些都是重要的层。在此,我们采用线性整流单位转换在[深度信念网](http://deeplearning4j.org/deepbeliefnetwork.html)是因为它比二进制转换的功能多。
+
+## 结论及下一步
+
+你可以把RBM的'输出数字解为百分比。如果每次重组后的数字不是零,这是一个很好的迹象说明RBM正在学习输入。我们在后面的教程会有一个更好的例子。
+
+如果想要了解更多关于如何运行有限玻尔兹曼机打勾的机制,请点击[这里](http://deeplearning4j.org/understandingRBMs.html)。
+
+接下来,我们将向您展示如何实施深度信念网,这简单来说就是把很多个受限玻尔兹曼机串在一起。
