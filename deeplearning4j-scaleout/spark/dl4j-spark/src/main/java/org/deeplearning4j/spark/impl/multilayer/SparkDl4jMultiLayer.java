@@ -1,9 +1,10 @@
 package org.deeplearning4j.spark.impl.multilayer;
 
+import org.apache.spark.Accumulator;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
@@ -12,6 +13,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.canova.RDDMiniBatches;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
+import org.deeplearning4j.spark.impl.common.ParamAccumulator;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -29,6 +31,8 @@ public class SparkDl4jMultiLayer implements Serializable {
     private transient JavaSparkContext sc;
     private MultiLayerConfiguration conf;
     private MultiLayerNetwork network;
+    private Accumulator<INDArray> accum;
+    private Broadcast<INDArray> params;
 
     public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerNetwork network) {
         this.sparkContext = sparkContext;
@@ -106,20 +110,21 @@ public class SparkDl4jMultiLayer implements Serializable {
 
         int batchSize = conf.getConf(0).getBatchSize();
         JavaRDD<DataSet> miniBatches = new RDDMiniBatches(batchSize,rdd).miniBatchesJava();
+
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
-        INDArray params = network.params();
+        final INDArray params = network.params();
+        this.params = sc.broadcast(params);
+        accum = sc.accumulator(params,"params",new ParamAccumulator());
+
         int paramsLength = network.numParams();
         if(params.length() != paramsLength)
             throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
-        DL4jWorker worker = new DL4jWorker(conf.toJson(),params);
-        INDArray newParams = miniBatches.map(worker)
-                .reduce(new Function2<INDArray, INDArray, INDArray>() {
-                    @Override
-                    public INDArray call(INDArray v1, INDArray v2) throws Exception {
-                        return v1.addi(v2);
-                    }
-                }).divi(miniBatches.count());
+
+
+
+        miniBatches.foreach(new DataSetTrain(accum,this.params,conf.toJson()));
+        INDArray newParams = accum.value().divi(miniBatches.count());
         network.setParameters(newParams);
         this.network = network;
         return network;

@@ -171,7 +171,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
             return;
         /* During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
         if(this.getInput() == null || this.getLayers() == null) {
-            setInput(input.dup());
+            setInput(input);
             initializeLayers(input);
         }
         else
@@ -184,11 +184,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
                 layerInput = getInput();
             else
                 layerInput = activationFromPrevLayer(i -1,layerInput);
-
-
             log.info("Training on layer " + (i + 1));
-
-
             getLayers()[i].fit(layerInput);
 
 
@@ -389,7 +385,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
         }
     }
 
-    public INDArray activationFromPrevLayer(int curr,INDArray input) {
+    public synchronized  INDArray activationFromPrevLayer(int curr,INDArray input) {
         return layers[curr].activate(input);
     }
 
@@ -1077,9 +1073,9 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        pretrain(examples);
-        //just in case: examples need to be set
-        if(!layerWiseConfigurations.isPretrain())
+        if(layerWiseConfigurations.isPretrain())
+            pretrain(examples);
+        else
             this.input = examples;
         finetune(labels);
     }
@@ -1454,7 +1450,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
         return labels;
     }
 
-    public INDArray getInput() {
+    public synchronized  INDArray getInput() {
         return input;
     }
 
@@ -1489,7 +1485,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
 
 
-    public Layer[] getLayers() {
+    public synchronized  Layer[] getLayers() {
         return layers;
     }
 

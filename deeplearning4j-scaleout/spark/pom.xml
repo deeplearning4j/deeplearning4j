@@ -10,7 +10,6 @@
     <packaging>pom</packaging>
 
     <name>org.deeplearning4j.spark</name>
-    <url>http://deeplearning4j.org</url>
     <modules>
         <module>dl4j-spark</module>
     </modules>
@@ -21,8 +20,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <hadoop.version>2.0.0-cdh4.6.0</hadoop.version>
-        <nd4j.version>0.0.3.5.5.1</nd4j.version>
+        <hadoop.version>1.0.4</hadoop.version>
         <scala.version>2.10.4</scala.version>
         <spark.version>1.2.0</spark.version>
     </properties>
@@ -88,13 +86,6 @@
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-scaleout-api</artifactId>
             <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jblas</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
         </dependency>
 
     </dependencies>

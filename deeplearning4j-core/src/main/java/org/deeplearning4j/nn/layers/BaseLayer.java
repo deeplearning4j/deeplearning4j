@@ -29,6 +29,7 @@ public abstract class BaseLayer implements Layer {
     protected NeuralNetConfiguration conf;
     protected INDArray dropoutMask;
     protected ParamInitializer paramInitializer;
+    protected double score = 0.0;
 
 
     public BaseLayer(NeuralNetConfiguration conf) {
@@ -40,8 +41,6 @@ public abstract class BaseLayer implements Layer {
     public BaseLayer(NeuralNetConfiguration conf, INDArray input) {
         this.input = input;
         this.conf = conf;
-
-
     }
 
     @Override
@@ -51,6 +50,11 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void fit() {
+
+    }
+
+    @Override
+    public void setScore() {
 
     }
 
@@ -94,12 +98,14 @@ public abstract class BaseLayer implements Layer {
             param.assign(get.reshape(param.shape()));
             idx += param.length();
         }
+
+        setScore();
+
     }
 
     @Override
     public void initParams() {
         paramInitializer.init(paramTable(),conf());
-
     }
 
     @Override
@@ -130,11 +136,12 @@ public abstract class BaseLayer implements Layer {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
 
+        this.input = x;
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
 
 
-        INDArray ret = x.mmul(W);
+        INDArray ret = getInput().mmul(W);
         if(ret.columns() != b.columns())
             throw new IllegalStateException("This is weird");
         if(conf.isConcatBiases())
@@ -273,6 +280,11 @@ public abstract class BaseLayer implements Layer {
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         return new Pair<>(getGradient(),score());
+    }
+
+    @Override
+    public double score() {
+        return score;
     }
 
     @Override
