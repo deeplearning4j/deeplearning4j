@@ -3,7 +3,7 @@ title:
 layout: zh-default
 ---
 
-# 受限玻尔兹曼机(RMB)
+# 受限玻尔兹曼机(RBM)
 
 引用Geoff Hinton(一个谷歌研究员,也是一名大学教授),玻尔兹曼机是“一个对称连接,利用类似神经元作单位来随机决定开关的网络”。(随机的意思是“[随机确定的](http://deeplearning4j.org/glossary.html#stochasticgradientdescent)” )
 
