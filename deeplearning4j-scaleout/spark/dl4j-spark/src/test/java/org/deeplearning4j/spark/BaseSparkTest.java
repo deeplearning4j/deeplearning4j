@@ -30,7 +30,7 @@ public abstract class BaseSparkTest {
             return sc;
         // set to test mode
         SparkConf sparkConf = new SparkConf()
-                .setMaster("local[4]")
+                .setMaster("local[8]")
                 .setAppName("sparktest");
 
 

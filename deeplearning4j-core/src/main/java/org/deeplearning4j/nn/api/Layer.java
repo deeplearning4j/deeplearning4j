@@ -99,5 +99,10 @@ public interface Layer extends Serializable,Cloneable,Model {
      */
     Layer clone();
 
+    /**
+     * Update the score
+     */
+    void setScore();
+
 
 }

@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,9 +23,6 @@ import org.slf4j.LoggerFactory;
  *
  */
 public abstract class BasePretrainNetwork extends BaseLayer {
-
-
-
 
     private static final long serialVersionUID = -7074102204433996574L;
 
@@ -40,8 +38,6 @@ public abstract class BasePretrainNetwork extends BaseLayer {
     }
 
 
-
-
     /**
      * Applies sparsity to the passed in hbias gradient
      * @param hBiasGradient the hbias gradient to apply to
@@ -54,18 +50,25 @@ public abstract class BasePretrainNetwork extends BaseLayer {
     }
 
 
-
     @Override
-    public double score() {
-        if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-            return  -LossFunctions.score(
+    public void setScore() {
+       if(this.input == null)
+           return;
+
+        if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY) {
+            INDArray input = this.input;
+            INDArray output = transform(input);
+            while(!Shape.shapeEquals(input.shape(),output.shape()))
+                output = transform(input);
+            score = -LossFunctions.score(
                     input,
                     conf.getLossFunction(),
-                    transform(input),
+                    output,
                     conf.getL2(),
                     conf.isUseRegularization());
+        }
         else {
-            return -LossFunctions.reconEntropy(
+            score =  -LossFunctions.reconEntropy(
                     input,
                     getParam(PretrainParamInitializer.BIAS_KEY),
                     getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY),
@@ -73,7 +76,6 @@ public abstract class BasePretrainNetwork extends BaseLayer {
                     conf.getActivationFunction());
         }
     }
-
 
     @Override
     public void update(Gradient gradient) {
