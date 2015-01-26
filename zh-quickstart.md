@@ -44,6 +44,11 @@ layout: zh-default
 
 * 当您在IntelliJ平台打开DL4J的样本项目，去寻找MNIST的例子，然后按运行。如果MNIST演示时产生过多的渲染，使其速度减缓，这时您可以通过增加渲染呼叫的参数，保存其文件并重新启动演示。
 
+		public static void main(String[] args) throws Exception {
+		RandomGenerator gen = new MersenneTwister(123);
+    NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+      .momentum(5e-1f).constrainGradientToUnitNorm(false).iterations(1000).render(50) //<--**ADD RENDER HERE**
+
 * 终于到了探索真相的时刻。您现在应该会在您的您的终端/ CMD看到神经网络已经开始被训练。迭代开始时，您会看到终端/ CMD窗口画面会往下滑（在某些情况下，该程序可能需要一分钟的时间来查找资源。）。接下来，请看看右下角第二个的行数，这个行数在每个新的迭代都会减少。这是测量当神经网络重组数字图像时的错误。神经网络正在学习时，您会看到产生的错误会逐渐减少。
 
 ![Alt text](../img/learning.png)
