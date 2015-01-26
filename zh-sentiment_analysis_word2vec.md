@@ -301,3 +301,26 @@ Deeplearning4j有一个CSV库,使我们能够使用一下的方法处理好的CS
 
 由于眼看就会理解,我们就用D3形象化这16000字的词汇。我们使用一种称为t-SNE算法来衡量字与字之间的亲近度。这样做让我们确保词簇本身是一致的。
 
+字向量对连续运用文本非常有用。它们可以使用适当的整体方法来分类文档(投票),以及优化窗口和标签的似然估计。
+
+那么,Word2vec在代码是什么样的呢?关键代码段是在这里:
+
+     Word2vec vec = new Word2Vec.Builder().iterate(iter).tokenizerFactory(factory)
+        .learningRate(1e-3).vocabCache(new InMemoryLookupCache(300))
+        .layerSize(300).windowSize(5).build();
+     vec.fit();
+
+你会发现我们指定的文件迭代器,一个标记生成器工厂,学习率,层和窗口大小等等。在此演练的第二部分,我们讲讲解这些参数,因为它们会在深信念网络使用:
+* 迭代(iter):这DocumentIterator是我们的原始文本的管道
+* 工厂(factory):我们工厂标记生成器,处理标记化文本
+* 学习率(learning rate):步长
+* 缓存(cache):这就是我们所有关于词汇的元数据的储存,包括文字载体, TFIDF分数,文档频率,以及文件。
+* 层尺寸(layer size):这是每个字特征的数量
+* 窗口大小(window size):窗口大小用于遍历文本,这是训练上下文的长短。
+
+## 一些结果
+
+你如何评价这特征向量的执行能力?不像分类网,它没有f1得分给无监督,生成的学习。一个快速和旁门左道的技术是使用最接近的字。第一个字是搜索项,在阵列中的那些词语是已被Word2Vec确认为最接近的含义。
+* 有趣的(amusing) [有时候(sometimes),人物(characters),投(cast),经常(often),搞笑(funny),平出(flat-out),懒虫(slackers),多(many),聪明(clever),战争(wars),要么(either)]
+* 
+
