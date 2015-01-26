@@ -1129,7 +1129,7 @@ public class RNTN implements Model,Layer {
 
     @Override
     public void setScore() {
-        
+
     }
 
     @Override
