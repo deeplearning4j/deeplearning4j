@@ -1,8 +1,7 @@
 package org.deeplearning4j.models.featuredetectors.rbm;
 
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
+
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -115,7 +114,7 @@ public  class RBM extends BasePretrainNetwork {
 		 */
 
         //POSITIVE PHASE
-        Pair<INDArray,INDArray> probHidden = sampleHiddenGivenVisible(input);
+        Pair<INDArray,INDArray> probHidden = sampleHiddenGivenVisible(getInput());
 
 		/*
 		 * Start the gibbs sampling.
@@ -164,7 +163,7 @@ public  class RBM extends BasePretrainNetwork {
 		/*
 		 * Update gradient parameters
 		 */
-        INDArray wGradient = input.transpose().mmul(probHidden.getSecond()).subi(
+        INDArray wGradient = getInput().transpose().mmul(probHidden.getSecond()).subi(
                 nvSamples.transpose().mmul(nhMeans)
         );
 
@@ -236,17 +235,16 @@ public  class RBM extends BasePretrainNetwork {
      * @return a binomial distribution containing the expected values and the samples
      */
     @Override
-    public Pair<INDArray,INDArray> sampleHiddenGivenVisible(INDArray v) {
+   public   Pair<INDArray,INDArray> sampleHiddenGivenVisible(INDArray v) {
         if(conf.getHiddenUnit() == HiddenUnit.RECTIFIED) {
             INDArray h1Mean = propUp(v);
             INDArray sigH1Mean = sigmoid(h1Mean);
-            RandomGenerator gen = new MersenneTwister(123);
 		/*
 		 * Rectified linear part
 		 */
             INDArray sqrtSigH1Mean = sqrt(sigH1Mean);
             //NANs here with Word2Vec
-            INDArray sample = Sampling.normal(gen, h1Mean,1);
+            INDArray sample = Sampling.normal(conf.getRng(), h1Mean,1);
             sample.muli(sqrtSigH1Mean);
             INDArray h1Sample = h1Mean.add(sample);
             h1Sample = Transforms.max(h1Sample);
@@ -297,7 +295,7 @@ public  class RBM extends BasePretrainNetwork {
      * @return the expected values and samples of both the visible samples given the hidden
      * and the new hidden input and expected values
      */
-    public Pair<Pair<INDArray,INDArray>,Pair<INDArray,INDArray>> gibbhVh(INDArray h) {
+   public   Pair<Pair<INDArray,INDArray>,Pair<INDArray,INDArray>> gibbhVh(INDArray h) {
 
         Pair<INDArray,INDArray> v1MeanAndSample = sampleVisibleGivenHidden(h);
         INDArray vSample = v1MeanAndSample.getSecond();
@@ -314,7 +312,7 @@ public  class RBM extends BasePretrainNetwork {
      * passed in
      */
     @Override
-    public Pair<INDArray,INDArray> sampleVisibleGivenHidden(INDArray h) {
+   public  Pair<INDArray,INDArray> sampleVisibleGivenHidden(INDArray h) {
         INDArray v1Mean = propDown(h);
 
         if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN) {
@@ -356,7 +354,10 @@ public  class RBM extends BasePretrainNetwork {
         if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN)
             this.sigma = v.var(0).divi(input.rows());
 
+
+
         INDArray preSig = v.mmul(W);
+
         if(conf.isConcatBiases())
             preSig = Nd4j.hstack(preSig,hBias);
         else
@@ -390,15 +391,15 @@ public  class RBM extends BasePretrainNetwork {
 
     /**
      * Calculates the activation of the hidden:
-     * sigmoid(h * W + vbias)
+     * activation(h * W + vbias)
      * @param h the hidden layer
      * @return the approximated output of the hidden layer
      */
-    public INDArray propDown(INDArray h) {
-        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
+    public   INDArray propDown(INDArray h) {
+        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY).transpose();
         INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
 
-        INDArray vMean = h.mmul(W.transpose());
+        INDArray vMean = h.mmul(W);
         if(conf.isConcatBiases())
             vMean = Nd4j.hstack(vMean, vBias);
         else
@@ -438,7 +439,11 @@ public  class RBM extends BasePretrainNetwork {
     @Override
     public INDArray transform(INDArray v) {
         //reconstructed: propUp ----> hidden propDown to transform
-        return propDown(propUp(v));
+        INDArray propUp = propUp(v);
+        while(propUp.columns() != conf.getnOut())
+            propUp = propUp(v);
+        INDArray ret = propDown(propUp);
+        return ret;
     }
 
 

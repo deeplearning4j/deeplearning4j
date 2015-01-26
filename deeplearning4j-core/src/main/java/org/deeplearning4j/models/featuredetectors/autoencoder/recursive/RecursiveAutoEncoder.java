@@ -12,7 +12,8 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 /**
  *
- * Recursive AutoEncoder. Uses back propagation through structure.
+ * Recursive AutoEncoder.
+ * Uses back propagation through structure.
  *
  * @author Adam Gibson
  */

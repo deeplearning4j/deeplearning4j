@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Base optimizer
@@ -42,7 +43,7 @@ public abstract class BaseOptimizer {
     public final static String SCORE_KEY = "score";
     public final static String PARAMS_KEY = "params";
 
-    protected Map<String,Object> searchState = new HashMap<>();
+    protected Map<String,Object> searchState = new ConcurrentHashMap<>();
 
     public BaseOptimizer(NeuralNetConfiguration conf,StepFunction stepFunction,Collection<IterationListener> iterationListeners,Model model) {
         this(conf,stepFunction,iterationListeners, Arrays.asList(new ZeroDirection(),new EpsTermination()),model);
