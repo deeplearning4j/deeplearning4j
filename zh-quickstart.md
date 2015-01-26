@@ -46,8 +46,8 @@ layout: zh-default
 
 		public static void main(String[] args) throws Exception {
 		RandomGenerator gen = new MersenneTwister(123);
-    NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-      .momentum(5e-1f).constrainGradientToUnitNorm(false).iterations(1000).render(50) //<--**ADD RENDER HERE**
+		  NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+		  .momentum(5e-1f).constrainGradientToUnitNorm(false).iterations(1000).render(50) //<--**ADD RENDER HERE**
 
 * 终于到了探索真相的时刻。您现在应该会在您的您的终端/ CMD看到神经网络已经开始被训练。迭代开始时，您会看到终端/ CMD窗口画面会往下滑（在某些情况下，该程序可能需要一分钟的时间来查找资源。）。接下来，请看看右下角第二个的行数，这个行数在每个新的迭代都会减少。这是测量当神经网络重组数字图像时的错误。神经网络正在学习时，您会看到产生的错误会逐渐减少。
 
