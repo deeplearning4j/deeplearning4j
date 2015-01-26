@@ -322,5 +322,8 @@ Deeplearning4j有一个CSV库,使我们能够使用一下的方法处理好的CS
 
 你如何评价这特征向量的执行能力?不像分类网,它没有f1得分给无监督,生成的学习。一个快速和旁门左道的技术是使用最接近的字。第一个字是搜索项,在阵列中的那些词语是已被Word2Vec确认为最接近的含义。
 * 有趣的(amusing) [有时候(sometimes),人物(characters),投(cast),经常(often),搞笑(funny),平出(flat-out),懒虫(slackers),多(many),聪明(clever),战争(wars),要么(either)]
-* 
+* 寒心(chilling) [好运(luck),有效(effectively),渗出(oozing),严重(severely),成长(grew),内疚(guilty),有才华(talented),快乐(pleasure),伙计们(guys),冰(ice),张口结舌(tongue-tied)]
 
+另 外 , 在 上 述 的 例 子 中 , 有 趣 的 (amusing) 具 有 积 极 的 含 义 和 它 涉 及 到 性 能 , 而 寒 心(chilling)是有一部分是负的,一部分是物理。如果我们反映每个关键字域名的语义,如果人物(character)和搞笑(funny)是与有趣的(amusing)接近是有道理的。
+
+您应该自己练习使用这些词汇和搜索相似之处。它的结果可以使用t- SNE呈现。我们在另一篇文章给予更详细的解释。
