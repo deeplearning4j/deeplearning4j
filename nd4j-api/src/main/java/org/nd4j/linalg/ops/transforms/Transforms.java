@@ -662,26 +662,25 @@ public class Transforms {
 
 
     private static INDArray exec(INDArray indArray,ElementWiseOpFactory factory,Object[] extraArgs,boolean dup) {
-
+        INDArray in = dup ? indArray.dup() : indArray;
         ElementWiseOp ops = new ArrayOps().
-                from(dup ? indArray.dup() : indArray)
+                from(in)
                 .op(factory)
                 .extraArgs(extraArgs)
                 .build();
         ops.exec();
 
-        return ops.from();
+        return in;
     }
 
     private static IComplexNDArray exec(IComplexNDArray indArray,ElementWiseOpFactory factory,Object[] extraArgs,boolean dup) {
-
+        IComplexNDArray in = dup ? indArray.dup() : indArray;
         ElementWiseOp ops = new ArrayOps().
-                from(dup ? indArray.dup() : indArray)
+                from(in)
                 .op(factory)
                 .extraArgs(extraArgs)
                 .build();
         ops.exec();
-        IComplexNDArray n = (IComplexNDArray) ops.from();
-        return n;
+        return in;
     }
 }

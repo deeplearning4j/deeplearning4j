@@ -119,8 +119,12 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
     public void exec() {
 
         INDArray linear = from.linearView();
-        if(linear.length() != from.length())
-            throw new IllegalStateException("We appear to have a race condition. Linear view length != from length");
+        if(linear.length() != from.length()) {
+            from.resetLinearView();
+            linear = from.linearView();
+            if(linear.length() != from.length())
+                throw new IllegalStateException("We appear to have a race condition. Linear view is out of sync even after reset");
+        }
         if(linear instanceof IComplexNDArray) {
             IComplexNDArray cLinear = (IComplexNDArray) linear;
             for(int i = 0; i < cLinear.length(); i++) {

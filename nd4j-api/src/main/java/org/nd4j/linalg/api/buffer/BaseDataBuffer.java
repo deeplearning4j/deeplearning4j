@@ -24,7 +24,7 @@ public abstract  class BaseDataBuffer implements DataBuffer {
     }
 
     @Override
-    public int length() {
+    public synchronized  int length() {
         return length;
     }
 

@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.ArrayOps;
 import org.nd4j.linalg.ops.ElementWiseOp;
+import org.nd4j.linalg.util.Shape;
 
 /**
  * Base activation function: mainly to give the function a canonical representation
@@ -50,11 +51,18 @@ public abstract class BaseActivationFunction implements ActivationFunction {
      */
     @Override
     public INDArray apply(INDArray input) {
-        ElementWiseOp op =  new ArrayOps().from(input.dup())
+        INDArray passIn = input.dup();
+        while(!Shape.shapeEquals(passIn.shape(),input.shape()))
+            passIn = input.dup();
+
+        ElementWiseOp op =  new ArrayOps().from(passIn)
                 .op(transformFactory())
                 .build();
         op.exec();
-        return op.from();
+        if(!Shape.shapeEquals(passIn.shape(),input.shape()))
+            throw new IllegalStateException("Element wise operation of type " + op.toString() + " returned element not of same shape");
+
+        return passIn;
     }
 
 

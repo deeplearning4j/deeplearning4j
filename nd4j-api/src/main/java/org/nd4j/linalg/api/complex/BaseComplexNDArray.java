@@ -273,9 +273,15 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         if(isVector())
             return this;
         if(linearView == null)
-            linearView = Nd4j.createComplex(data, new int[]{1, length},stride(), offset());
+            resetLinearView();
         return (IComplexNDArray) linearView;
     }
+
+    @Override
+    public void resetLinearView() {
+        linearView = Nd4j.createComplex(data, new int[]{1, length}, stride(), offset());
+    }
+
 
     /**
      * Create an ndarray from the specified slices
@@ -3676,25 +3682,18 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * Return transposed copy of this matrix.
      */
     @Override
-    public IComplexNDArray transpose() {
-        if(isRowVector())
-            return Nd4j.createComplex(data, new int[]{shape[0], 1}, offset);
-        else if(isColumnVector())
-            return Nd4j.createComplex(data, new int[]{shape[0]}, offset);
-        if(isMatrix()) {
-            IComplexNDArray reverse = Nd4j.createComplex(new int[]{shape[1],shape[0]});
-            for (int i = 0; i < rows; i++) {
-                for (int j = 0; j < columns; j++) {
-                    reverse.putScalar(j, i, getComplex(i, j));
-                }
-            }
-
-            return reverse;
-        }
-
+    public IComplexNDArray transposei() {
         IComplexNDArray ret = permute(ArrayUtil.range(shape.length -1,-1));
         return ret;
 
+    }
+
+    /**
+     * Return transposed copy of this matrix.
+     */
+    @Override
+    public IComplexNDArray transpose() {
+        return dup().transposei();
     }
 
     @Override

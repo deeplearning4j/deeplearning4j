@@ -1201,6 +1201,9 @@ public interface IComplexNDArray extends INDArray {
     @Override
     IComplexNDArray transpose();
 
+    @Override
+    IComplexNDArray transposei();
+
     IComplexNDArray put(int[] indexes, float value);
 
     IComplexNDArray put(int[] indexes, double value);

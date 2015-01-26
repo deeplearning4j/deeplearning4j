@@ -5,6 +5,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.Shape;
 
 
 import java.util.Arrays;
@@ -91,7 +92,7 @@ public class LossFunctions {
                 ret =  -Nd4j.mean(Nd4j.sum(
                         labels.mul(log(z))
                                 .addi(labels.rsub(1).muli(log(z.rsub(1))))
-                                        ,1)).getDouble(0);
+                        ,1)).getDouble(0);
                 break;
 
 
@@ -122,17 +123,39 @@ public class LossFunctions {
         INDArray sigV = activationFunction.apply(preSigV);
         assert !Nd4j.hasInvalidNumber(sigH);
 
-        INDArray inner = input.mul(log(sigV)).addi(input.rsub(1).muli(log(sigV.rsub(1))));
+        INDArray logSigV = log(sigV);
+        INDArray sigVRsub1 = sigV.rsub(1);
+        if(!Shape.shapeEquals(sigVRsub1.shape(), input.shape()))
+            throw new IllegalStateException("hmm");
+
+        INDArray logSigVRSub1 =  log(sigVRsub1);
+        if(!Shape.shapeEquals(sigV.shape(), input.shape()))
+             throw new IllegalStateException("hmm");
+        if(!Shape.shapeEquals(logSigVRSub1.shape(), input.shape()))
+            throw new IllegalStateException("hmm");
+        INDArray inputRsub1 = input.rsub(1);
+        if(!Shape.shapeEquals(inputRsub1.shape(), input.shape()))
+            throw new IllegalStateException("hmm");
+
+        try {
+            INDArray inner = input.mul(logSigV).addi(inputRsub1.muli(logSigVRSub1));
 
 
-        INDArray rows = inner.sum(1);
-        INDArray mean = rows.mean(Integer.MAX_VALUE);
+            INDArray rows = inner.sum(1);
+            INDArray mean = rows.mean(Integer.MAX_VALUE);
 
-        double ret = mean.getDouble(0);
-        ret /= (double) input.rows();
+            double ret = mean.getDouble(0);
+            ret /= (double) input.rows();
 
 
-        return  ret;
+            return ret;
+        }catch(Exception e) {
+            INDArray inputTimesLogSigV = input.mul(logSigV);
+            INDArray innerPart = inputRsub1.muli(logSigVRSub1);
+            INDArray otherPart = inputTimesLogSigV.addi(innerPart);
+            e.printStackTrace();
+            return 0.0;
+        }
     }
 
 

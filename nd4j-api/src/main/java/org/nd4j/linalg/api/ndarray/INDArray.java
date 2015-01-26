@@ -17,6 +17,12 @@ import java.util.List;
  */
 public interface INDArray extends Serializable {
 
+
+    /**
+     * Resets the lienar view
+     */
+    void resetLinearView();
+
     /**
      * Return the second stride for an ndarray.
      * Think of this as the stride for the next element in a column.
@@ -1259,6 +1265,13 @@ public interface INDArray extends Serializable {
      * @return the flipped rows and columns of a matrix
      */
     public INDArray transpose();
+
+
+    /**
+     * Flip the rows and columns of a matrix
+     * @return the flipped rows and columns of a matrix
+     */
+    public INDArray transposei();
 
     /**
      * Mainly here for people coming from numpy.
