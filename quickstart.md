@@ -53,9 +53,6 @@ You can then manually import the Maven project into an IDE such as  [Eclipse](ht
 		
           NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(5e-1f).constrainGradientToUnitNorm(false).iterations(1000).render(50) //<--ADD RENDER HERE
-                .withActivationType(NeuralNetConfiguration.ActivationType.SAMPLE)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
-                .learningRate(1e-1f).nIn(784).nOut(10).build();
 
 * This is the moment of truth. You should now see evidence in your terminal/cmd that the neural net has begun to train, as the net's iterations begin to scroll down your terminal window. (In some cases, the program may take a minute to locate resources.) Look at the second-to-rightmost number in the rows below. It should be decreasing with each new iteration. That’s the measure of the net’s error reconstructing a numeral-image. Less error means your net is learning. 
 
