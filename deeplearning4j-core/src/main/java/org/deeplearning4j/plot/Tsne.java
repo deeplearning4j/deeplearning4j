@@ -284,8 +284,7 @@ public class Tsne implements Serializable {
                 .addiRowVector(sumX);
 
 
-        //flush inputs after done
-        X.data().flush();
+
         //output
         if(y == null)
             y = randn(X.rows(),nDims,new MersenneTwister(123)).muli(1e-3f);
@@ -293,7 +292,7 @@ public class Tsne implements Serializable {
 
 
         INDArray p = computeGaussianPerplexity(D, perplexity);
-        D.data().flush();
+
 
         //lie for better local minima
         p.muli(4);
