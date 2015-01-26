@@ -1,6 +1,7 @@
 package org.deeplearning4j.plot;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.clustering.quadtree.QuadTree;
@@ -13,16 +14,15 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static org.nd4j.linalg.factory.Nd4j.ones;
+import static org.nd4j.linalg.factory.Nd4j.randn;
 import static org.nd4j.linalg.factory.Nd4j.zeros;
 import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
@@ -88,10 +88,9 @@ public class BarnesHutTsne extends Tsne implements Model {
     public INDArray computeGaussianPerplexity(final INDArray d,  double u) {
         int N = d.rows();
         final int k = (int) (3 * u);
+
         rows = zeros(N + 1);
-
         cols = zeros(N,k);
-
         vals = zeros(N,k);
 
         for(int n = 1; n < N; n++)
@@ -106,76 +105,61 @@ public class BarnesHutTsne extends Tsne implements Model {
         final VpTreeNode<VpTreePointINDArray> tree = VpTreeNode.buildVpTree(list);
 
         log.info("Calculating probabilities of data similarities...");
-        ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         for(int i = 0; i < N; i++) {
             if(i % 500 == 0)
                 log.info("Handled " + i + " records");
             final int j = i;
-            service.submit(new Runnable() {
-                @Override
-                public void run() {
-                    double betaMin = Float.NEGATIVE_INFINITY;
-                    double betaMax = Float.POSITIVE_INFINITY;
-                    Counter<VpTreePointINDArray> c = tree.findNearByPointsWithDistancesK(list.get(j),k + 1);
 
-                    INDArray row = d.slice(j);
-                    Pair<INDArray,INDArray> pair =  hBeta(row,toNDArray(c),beta.getDouble(j));
-                    INDArray currP = pair.getSecond();
-                    INDArray hDiff = pair.getFirst().sub(logU);
-                    int tries = 0;
+            double betaMin = Double.NEGATIVE_INFINITY;
+            double betaMax = Double.POSITIVE_INFINITY;
+            Counter<VpTreePointINDArray> c = tree.findNearByPointsWithDistancesK(list.get(j),k + 1);
 
+            INDArray cArr = toNDArray(c);
+            Pair<INDArray,Double> pair =  computeGaussianKernel(cArr, beta.getDouble(j));
+            INDArray currP = pair.getFirst();
+            double hDiff =  pair.getSecond() - logU;
+            int tries = 0;
+            boolean found = false;
 
-                    //while hdiff > tolerance
-                    while(BooleanIndexing.and(abs(hDiff), Conditions.greaterThan(tolerance)) && tries < 50) {
-                        //if hdiff > 0
-                        if(BooleanIndexing.and(hDiff,Conditions.greaterThan(0))) {
-                            if(Double.isInfinite(betaMax))
-                                beta.putScalar(j,beta.getDouble(j) * 2.0);
-                            else
-                                beta.putScalar(j,(beta.getDouble(j) + betaMax) / 2.0);
-                            betaMin = beta.getDouble(j);
-                        }
-                        else {
-                            if(Double.isInfinite(betaMin))
-                                beta.putScalar(j,beta.getDouble(j) / 2.0);
-                            else
-                                beta.putScalar(j,(beta.getDouble(j) + betaMin) / 2.0);
-                            betaMax = beta.getDouble(j);
-                        }
-
-                        pair = hBeta(row,toNDArray(c),beta.getDouble(j));
-                        hDiff = pair.getFirst().subi(logU);
-                        tries++;
+            while(!found && tries < 50) {
+                if(hDiff < tolerance && -hDiff < tolerance)
+                    found = true;
+                else {
+                    if(hDiff > 0) {
+                        if(Double.isInfinite(betaMax))
+                            beta.putScalar(j,beta.getDouble(j) * 2.0);
+                        else
+                            beta.putScalar(j,(beta.getDouble(j) + betaMax) / 2.0);
+                        betaMin = beta.getDouble(j);
+                    }
+                    else {
+                        if(Double.isInfinite(betaMin))
+                            beta.putScalar(j,beta.getDouble(j) / 2.0);
+                        else
+                            beta.putScalar(j,(beta.getDouble(j) + betaMin) / 2.0);
+                        betaMax = beta.getDouble(j);
                     }
 
-                    INDArray currPAssign = currP.div(currP.sum(Integer.MAX_VALUE));
-                    INDArray indices = toIndex(c);
-
-
-                    for(int i = 0; i < k; i++) {
-                        cols.putScalar(new int[]{rows.getInt(n),i},indices.getDouble(i + 1));
-                        vals.putScalar(new int[]{rows.getInt(n),i},currPAssign.getDouble(i));
-                    }
-
-                    cols.slice(j).assign(toIndex(c));
-
-
+                    pair = computeGaussianKernel(toNDArray(c), beta.getDouble(j));
+                    hDiff = pair.getSecond() - logU;
+                    tries++;
                 }
-            });
+
+            }
+
+            INDArray currPAssign = currP.div(currP.sum(Integer.MAX_VALUE));
+            INDArray indices = toIndex(c);
+
+
+            for(int l = 0; l < indices.length(); l++) {
+                cols.putScalar(new int[]{rows.getInt(n),l},indices.getDouble(l));
+                vals.putScalar(new int[]{rows.getInt(n),l},currPAssign.getDouble(l));
+            }
+
+            cols.slice(j).put(new NDArrayIndex[]{NDArrayIndex.interval(0,indices.length())},indices);
+
 
         }
-
-
-        try {
-            service.shutdown();
-            service.awaitTermination(1, TimeUnit.DAYS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-
-
-
         return vals;
 
     }
@@ -191,9 +175,10 @@ public class BarnesHutTsne extends Tsne implements Model {
     }
 
     /* compute the gradient given the current solution, the probabilities and the constant */
+    @Override
     protected Pair<Double,INDArray> gradient(INDArray p) {
         this.p = p;
-        return new Pair<>(score(),getGradient().gradientLookupTable().get(Y_GRAD));
+        return new Pair<>(score(),y);
     }
 
 
@@ -231,19 +216,14 @@ public class BarnesHutTsne extends Tsne implements Model {
      * Computes a gaussian kernel
      * given a vector of squared euclidean distances
      *
-     * @param d the data
      * @param beta
      * @return
      */
-    public Pair<INDArray,INDArray> hBeta(INDArray d,INDArray distances,double beta) {
-        INDArray P =  exp(d.neg().muli(beta).muli(distances));
-        INDArray sum = P.sum(Integer.MAX_VALUE);
-        INDArray otherSum = d.mul(P).sum(0);
-        INDArray H = log(sum)
-                .addi(otherSum.muli(beta).muli(distances).divi(sum));
-
-        P.divi(sum);
-        return new Pair<>(H,P);
+    public Pair<INDArray,Double> computeGaussianKernel(INDArray distances, double beta) {
+        INDArray distancesTimesBeta = exp(distances.mul(-beta));
+        double sum = distancesTimesBeta.sum(Integer.MAX_VALUE).getDouble(0);
+        double h = distancesTimesBeta.mul(distances).muli(beta).sum(Integer.MAX_VALUE).getDouble(0) / sum + Math.log(sum);
+        return new Pair<>(distancesTimesBeta,h);
     }
 
 
@@ -256,6 +236,11 @@ public class BarnesHutTsne extends Tsne implements Model {
 
 
         else {
+            //output
+            if(y == null)
+                y = randn(x.rows(),numDimensions,new MersenneTwister(123)).muli(1e-3f);
+
+
             INDArray p = computeGaussianPerplexity(x,perplexity);
 
             for(int i = 0; i < maxIter; i++) {
@@ -302,11 +287,11 @@ public class BarnesHutTsne extends Tsne implements Model {
             int end = rows.getInt(n + 1);
             for(int i = begin; i < end; i++) {
                 buff.assign(y.slice(n));
-                buff.subi(cols.getRow(i));
+                buff.subi(y.slice(cols.getInt(i)));
                 Q = Nd4j.getBlasWrapper().dot(buff,buff);
                 Q = (1.0 / (1.0 + Q)) / sum_Q.doubleValue();
                 double val = vals.getDouble(i,0);
-                C += val * Math.log((val + Float.MIN_VALUE) / (Q + Float.MAX_VALUE));
+                C += val * Math.log((val + Double.MIN_VALUE) / (Q + Double.MAX_VALUE));
             }
         }
 
@@ -335,7 +320,8 @@ public class BarnesHutTsne extends Tsne implements Model {
 
     @Override
     public void fit(INDArray data) {
-
+        this.x  = data;
+        fit();
     }
 
     @Override
@@ -354,7 +340,7 @@ public class BarnesHutTsne extends Tsne implements Model {
         INDArray pos_f = Nd4j.create(p.rows(), p.columns());
         INDArray neg_f = Nd4j.create(p.rows() ,p.columns());
 
-        QuadTree quad = new QuadTree(p);
+        QuadTree quad = new QuadTree(y);
         quad.computeEdgeForces(rows,cols,p,p.rows(),pos_f);
 
         for(int n = 0; n < p.rows(); n++) {
@@ -393,7 +379,7 @@ public class BarnesHutTsne extends Tsne implements Model {
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return null;
+        return new Pair<>(getGradient(),score());
     }
 
     @Override
@@ -428,49 +414,49 @@ public class BarnesHutTsne extends Tsne implements Model {
 
         @Override
         public Builder perplexity(double perplexity) {
-             super.perplexity(perplexity);
+            super.perplexity(perplexity);
             return this;
         }
 
         @Override
         public Builder useAdaGrad(boolean useAdaGrad) {
-             super.useAdaGrad(useAdaGrad);
+            super.useAdaGrad(useAdaGrad);
             return this;
         }
 
         @Override
         public Builder learningRate(double learningRate) {
-             super.learningRate(learningRate);
+            super.learningRate(learningRate);
             return this;
         }
 
         @Override
         public Builder tolerance(double tolerance) {
-             super.tolerance(tolerance);
+            super.tolerance(tolerance);
             return this;
         }
 
         @Override
         public Builder stopLyingIteration(int stopLyingIteration) {
-             super.stopLyingIteration(stopLyingIteration);
+            super.stopLyingIteration(stopLyingIteration);
             return this;
         }
 
         @Override
         public Builder usePca(boolean usePca) {
-             super.usePca(usePca);
+            super.usePca(usePca);
             return this;
         }
 
         @Override
         public Builder normalize(boolean normalize) {
-             super.normalize(normalize);
+            super.normalize(normalize);
             return this;
         }
 
         @Override
         public Builder setMaxIter(int maxIter) {
-             super.setMaxIter(maxIter);
+            super.setMaxIter(maxIter);
             return this;
         }
 

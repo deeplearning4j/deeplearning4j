@@ -24,8 +24,7 @@ public class BarnesHutTsneTest {
         INDArray data = Nd4j.readTxt(f.getAbsolutePath(),"   ");
         ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
         List<String> labelsList = IOUtils.readLines(labels.getInputStream());
-
-        b.calculate(data,2,0.3);
+        b.fit(data);
     }
 
 
