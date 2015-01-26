@@ -269,6 +269,7 @@ public class BarnesHutTsne extends Tsne implements Model {
                 if(iterationListener != null)
                     iterationListener.iterationDone(i);
 
+
             }
 
         }
@@ -297,9 +298,8 @@ public class BarnesHutTsne extends Tsne implements Model {
         // Loop over all edges to compute t-SNE error
         double C = .0, Q;
         for(int n = 0; n < y.rows(); n++) {
-            INDArray row1 = rows.slice(n);
-            int begin = row1.getInt(0);
-            int end = row1.getInt(1);
+            int begin = rows.getInt(n);
+            int end = rows.getInt(n + 1);
             for(int i = begin; i < end; i++) {
                 buff.assign(y.slice(n));
                 buff.subi(cols.getRow(i));
@@ -409,5 +409,104 @@ public class BarnesHutTsne extends Tsne implements Model {
     @Override
     public void setConf(NeuralNetConfiguration conf) {
 
+    }
+
+
+    public static class Builder extends  Tsne.Builder {
+        private double theta = 0.0;
+
+        public Builder theta(double theta) {
+            this.theta = theta;
+            return this;
+        }
+
+        @Override
+        public Builder minGain(double minGain) {
+            super.minGain(minGain);
+            return this;
+        }
+
+        @Override
+        public Builder perplexity(double perplexity) {
+             super.perplexity(perplexity);
+            return this;
+        }
+
+        @Override
+        public Builder useAdaGrad(boolean useAdaGrad) {
+             super.useAdaGrad(useAdaGrad);
+            return this;
+        }
+
+        @Override
+        public Builder learningRate(double learningRate) {
+             super.learningRate(learningRate);
+            return this;
+        }
+
+        @Override
+        public Builder tolerance(double tolerance) {
+             super.tolerance(tolerance);
+            return this;
+        }
+
+        @Override
+        public Builder stopLyingIteration(int stopLyingIteration) {
+             super.stopLyingIteration(stopLyingIteration);
+            return this;
+        }
+
+        @Override
+        public Builder usePca(boolean usePca) {
+             super.usePca(usePca);
+            return this;
+        }
+
+        @Override
+        public Builder normalize(boolean normalize) {
+             super.normalize(normalize);
+            return this;
+        }
+
+        @Override
+        public Builder setMaxIter(int maxIter) {
+             super.setMaxIter(maxIter);
+            return this;
+        }
+
+        @Override
+        public Builder setRealMin(double realMin) {
+            super.setRealMin(realMin);
+            return this;
+        }
+
+        @Override
+        public Builder setInitialMomentum(double initialMomentum) {
+            super.setInitialMomentum(initialMomentum);
+            return this;
+        }
+
+        @Override
+        public Builder setFinalMomentum(double finalMomentum) {
+            super.setFinalMomentum(finalMomentum);
+            return this;
+        }
+
+        @Override
+        public Builder setMomentum(double momentum) {
+            super.setMomentum(momentum);
+            return this;
+        }
+
+        @Override
+        public Builder setSwitchMomentumIteration(int switchMomentumIteration) {
+            super.setSwitchMomentumIteration(switchMomentumIteration);
+            return this;
+        }
+
+        @Override
+        public BarnesHutTsne build() {
+            return new BarnesHutTsne(null,0,0,null,2,perplexity,theta,maxIter,this.stopLyingIteration,this.switchMomentumIteration,this.momentum,this.finalMomentum,this.learningRate);
+        }
     }
 }
