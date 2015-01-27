@@ -17,6 +17,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
+import org.nd4j.linalg.learning.AdaGrad;
 
 
 import java.util.List;
@@ -177,6 +178,8 @@ public class BarnesHutTsne extends Tsne implements Model {
     /* compute the gradient given the current solution, the probabilities and the constant */
     @Override
     protected Pair<Double,INDArray> gradient(INDArray p) {
+        QuadTree quadTree = new QuadTree(y);
+
         this.p = p;
         return new Pair<>(score(),y);
     }
@@ -264,6 +267,20 @@ public class BarnesHutTsne extends Tsne implements Model {
 
 
 
+    /**
+     * An individual iteration
+     * @param p the probabilities that certain points
+     *          are near each other
+     * @param i the iteration (primarily for debugging purposes)
+     */
+    @Override
+    public void step(INDArray p,int i) {
+        this.p = p;
+        Gradient g = getGradient();
+        y.subi(g.gradientLookupTable().get(Y_GRAD));
+
+    }
+
 
     @Override
     public void update(Gradient gradient) {
@@ -291,7 +308,10 @@ public class BarnesHutTsne extends Tsne implements Model {
                 Q = Nd4j.getBlasWrapper().dot(buff,buff);
                 Q = (1.0 / (1.0 + Q)) / sum_Q.doubleValue();
                 double val = vals.getDouble(i,0);
-                C += val * Math.log((val + Double.MIN_VALUE) / (Q + Double.MAX_VALUE));
+                double add = Math.log((val + Double.MIN_VALUE) / (Q + Double.MAX_VALUE));
+                if(Double.isNaN(add) || Double.isInfinite(add))
+                    add = Nd4j.EPS_THRESHOLD;
+                C += val * add;
             }
         }
 
@@ -337,14 +357,14 @@ public class BarnesHutTsne extends Tsne implements Model {
             gains = ones(y.shape());
 
         AtomicDouble sum_Q = new AtomicDouble(0);
-        INDArray pos_f = Nd4j.create(p.rows(), p.columns());
-        INDArray neg_f = Nd4j.create(p.rows() ,p.columns());
+        INDArray pos_f = Nd4j.create(y.shape());
+        INDArray neg_f = Nd4j.create(y.shape());
 
         QuadTree quad = new QuadTree(y);
         quad.computeEdgeForces(rows,cols,p,p.rows(),pos_f);
 
         for(int n = 0; n < p.rows(); n++) {
-            quad.computeNonEdgeForces(n,theta,neg_f,sum_Q);
+            quad.computeNonEdgeForces(n,theta,neg_f.slice(n),sum_Q);
         }
 
         INDArray dC = pos_f.subi(neg_f.divi(sum_Q));
@@ -363,8 +383,12 @@ public class BarnesHutTsne extends Tsne implements Model {
 
         INDArray gradChange = gains.mul(yGrads);
 
-        if(useAdaGrad)
+        if(useAdaGrad) {
+            if(adaGrad == null)
+                adaGrad = new AdaGrad(gradChange.shape());
             gradChange = adaGrad.getGradient(gradChange);
+
+        }
         else
             gradChange.muli(learningRate);
 
@@ -373,7 +397,7 @@ public class BarnesHutTsne extends Tsne implements Model {
 
 
         Gradient ret = new DefaultGradient();
-        ret.gradientLookupTable().put("yIncs",yIncs);
+        ret.gradientLookupTable().put(Y_GRAD,yIncs);
         return ret;
     }
 
