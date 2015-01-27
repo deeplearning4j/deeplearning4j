@@ -502,7 +502,7 @@ public class Tsne implements Serializable {
         protected int stopLyingIteration = 100;
         protected double tolerance = 1e-5f;
         protected double learningRate = 1e-1f;
-        protected boolean useAdaGrad = true;
+        protected boolean useAdaGrad = false;
         protected double perplexity = 30;
         protected double minGain = 1e-1f;
 
