@@ -1,5 +1,8 @@
 package org.deeplearning4j.plot;
 
+
+import static org.nd4j.linalg.ops.transforms.Transforms.*;
+
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.berkeley.Counter;
@@ -18,6 +21,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 
 import java.util.List;
@@ -35,7 +39,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
  * @author Adam Gibson
  */
 public class BarnesHutTsne extends Tsne implements Model {
-    private int n;
+    private int N;
     private double perplexity;
     private double theta;
     private INDArray rows;
@@ -47,7 +51,6 @@ public class BarnesHutTsne extends Tsne implements Model {
     public final static String Y_GRAD = "yIncs";
 
     public BarnesHutTsne(INDArray x,
-                         int n,
                          INDArray y,
                          int numDimensions,
                          double perplexity,
@@ -58,7 +61,7 @@ public class BarnesHutTsne extends Tsne implements Model {
                          double momentum,
                          double finalMomentum,
                          double learningRate) {
-        this.n = n;
+
         this.y = y;
         this. x = x;
         this.numDimensions = numDimensions;
@@ -83,15 +86,16 @@ public class BarnesHutTsne extends Tsne implements Model {
      */
     @Override
     public INDArray computeGaussianPerplexity(final INDArray d,  double u) {
-        int N = d.rows();
+        N = d.rows();
+
         final int k = (int) (3 * u);
 
         rows = zeros(N + 1);
-        cols = zeros(N,k);
-        vals = zeros(N,k);
+        cols = zeros(N * k);
+        vals = zeros(N * k);
 
-        for(int n = 1; n < N; n++)
-            rows.putScalar(n,rows.getDouble(n - 1) + k);
+        for(int n = 0; n < N; n++)
+            rows.putScalar(n + 1,rows.getDouble(n) + k);
 
 
         final INDArray beta =  ones(N, 1);
@@ -148,8 +152,8 @@ public class BarnesHutTsne extends Tsne implements Model {
 
 
             for(int l = 0; l < indices.length(); l++) {
-                cols.putScalar(new int[]{rows.getInt(n),l},indices.getDouble(l));
-                vals.putScalar(new int[]{rows.getInt(n),l},currPAssign.getDouble(l));
+                cols.putScalar(new int[]{rows.getInt(i),l},indices.getDouble(l));
+                vals.putScalar(new int[]{rows.getInt(i),l},currPAssign.getDouble(l));
             }
 
             cols.slice(i).put(new NDArrayIndex[]{NDArrayIndex.interval(0,indices.length())},indices);
@@ -198,46 +202,57 @@ public class BarnesHutTsne extends Tsne implements Model {
     }
 
 
-
+    /**
+     * Symmetrize the value matrix
+     * @param rowP
+     * @param colP
+     * @param valP
+     * @return
+     */
     public INDArray symmetrized(INDArray rowP,INDArray colP,INDArray valP) {
-        INDArray rowCounts = Nd4j.create(valP.rows());
-        for(int n = 0; n < valP.rows(); n++) {
+        INDArray rowCounts = Nd4j.create(N);
+        for(int n = 0; n < N; n++) {
             for(int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
                 boolean present = false;
-                for(int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i) + 1); m++) {
-                    if(colP.getInt(m) == n)
+                for(int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i) + 1); m++)
+                    if(colP.getInt(m) == n) {
                         present = true;
-                }
-                if(present)  {
+                        break;
+                    }
+
+
+                if(present)
                     rowCounts.putScalar(n,rowCounts.getDouble(n) + 1);
-                }
+
                 else {
                     rowCounts.putScalar(n,rowCounts.getDouble(n) + 1);
-                    rowCounts.putScalar(rowCounts.getInt(colP.getInt(i)),rowCounts.getDouble(rowCounts.getInt(colP.getInt(i))) + 1);
+                    double putIdx = rowCounts.getDouble(colP.getInt(i));
+                    rowCounts.putScalar(colP.getInt(i),putIdx + 1);
                 }
             }
         }
 
 
         int numElements = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
-        INDArray offset = Nd4j.create(valP.rows());
-        INDArray symRowP = Nd4j.create(valP.rows() + 1);
+        INDArray offset = Nd4j.create(N);
+        INDArray symRowP = Nd4j.create(N + 1);
         INDArray symColP = Nd4j.create(numElements);
         INDArray symValP = Nd4j.create(numElements);
 
-        for(int n = 0; n < valP.rows(); n++) {
+        for(int n = 0; n < N; n++)
             symRowP.putScalar(n + 1,symRowP.getDouble(n) + rowCounts.getDouble(n));
-        }
 
 
 
-        for(int n = 0; n < valP.rows(); n++) {
+
+        for(int n = 0; n < N; n++) {
             for(int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
                 boolean present = false;
                 for(int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i)) + 1; m++) {
                     if(colP.getInt(m) == n) {
                         present = true;
-                        if(n <= colP.getInt(i)) {                                                 // make sure we do not add elements twice
+                        if(n <= colP.getInt(i)) {
+                            // make sure we do not add elements twice
                             symColP.putScalar(symRowP.getInt(n) + offset.getInt(n),colP.getInt(i));
                             symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colP.getInt(i)), n);
                             symValP.putScalar(symRowP.getInt(n) + offset.getInt(n),valP.getDouble(i) + valP.getInt(m));
@@ -258,7 +273,7 @@ public class BarnesHutTsne extends Tsne implements Model {
                 if(!present || (present && n <= colP.getInt(i))) {
                     offset.putScalar(n,offset.getInt(n)+ 1);
                     if(colP.getInt(i) != n)
-                        offset.putScalar(colP.getInt(i),offset.getDouble(colP.getInt(i)));
+                        offset.putScalar(colP.getInt(i),offset.getDouble(colP.getInt(i)) + 1);
                 }
             }
         }
@@ -274,6 +289,7 @@ public class BarnesHutTsne extends Tsne implements Model {
      * Computes a gaussian kernel
      * given a vector of squared euclidean distances
      *
+     * @param distances
      * @param beta
      * @return
      */
@@ -292,25 +308,24 @@ public class BarnesHutTsne extends Tsne implements Model {
         if(exact)
             y = super.calculate(x,numDimensions,perplexity);
 
-
         else {
             //output
             if(y == null)
                 y = randn(x.rows(),numDimensions,new MersenneTwister(123)).muli(1e-3f);
 
 
-            INDArray p = computeGaussianPerplexity(x,perplexity);
-            p = symmetrized(rows,cols,p);
-            p.divi(p.sum(Integer.MAX_VALUE));
-            
-
+            computeGaussianPerplexity(x,perplexity);
+            vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
+            //lie about gradient
+            vals.muli(12);
             for(int i = 0; i < maxIter; i++) {
-                step(p,i);
+                step(vals,i);
 
                 if(i == switchMomentumIteration)
                     momentum = finalMomentum;
-                if(i == stopLyingIteration)
-                    p.divi(4);
+                if(i == stopLyingIteration) {
+                    vals.divi(12);
+                }
 
                 if(iterationListener != null)
                     iterationListener.iterationDone(i);
@@ -323,9 +338,6 @@ public class BarnesHutTsne extends Tsne implements Model {
     }
 
 
-
-
-
     /**
      * An individual iteration
      * @param p the probabilities that certain points
@@ -334,8 +346,8 @@ public class BarnesHutTsne extends Tsne implements Model {
      */
     @Override
     public void step(INDArray p,int i) {
-        this.p = p;
-        getGradient();
+        Gradient g = getGradient();
+        update(g);
         y.addi(yIncs);
 
     }
@@ -343,6 +355,30 @@ public class BarnesHutTsne extends Tsne implements Model {
 
     @Override
     public void update(Gradient gradient) {
+        INDArray yGrads = gradient.gradientLookupTable().get(Y_GRAD);
+
+        gains = gains.add(.2)
+                .muli(sign(yGrads)).neqi(sign(yIncs))
+                .addi(gains.mul(0.8).muli(sign(yGrads)).neqi(sign(yIncs)));
+
+        BooleanIndexing.applyWhere(
+                gains,
+                Conditions.lessThan(minGain),
+                new Value(minGain));
+
+
+        INDArray gradChange = gains.mul(yGrads);
+
+        if(useAdaGrad) {
+            if(adaGrad == null)
+                adaGrad = new AdaGrad(gradChange.shape());
+            gradChange = adaGrad.getGradient(gradChange);
+
+        }
+        else
+            gradChange.muli(learningRate);
+        yIncs.muli(momentum).subi(gradChange);
+        gradient.gradientLookupTable().put(Y_GRAD,yIncs);
 
     }
 
@@ -353,20 +389,22 @@ public class BarnesHutTsne extends Tsne implements Model {
         QuadTree tree = new QuadTree(y);
         INDArray buff = Nd4j.create(QT_NO_DIMS);
         AtomicDouble sum_Q = new AtomicDouble(0.0);
-        for(int n = 0; n < y.rows(); n++)
+        for(int n = 0; n < N; n++)
             tree.computeNonEdgeForces(n, theta, buff, sum_Q);
 
         // Loop over all edges to compute t-SNE error
-        double C = .0, Q;
-        for(int n = 0; n < y.rows(); n++) {
+        double C = .0;
+        for(int n = 0; n < N; n++) {
             int begin = rows.getInt(n);
             int end = rows.getInt(n + 1);
+            int ind1 = n ;
             for(int i = begin; i < end; i++) {
-                buff.assign(y.slice(n));
-                buff.subi(y.slice(cols.getInt(i)));
-                Q = Nd4j.getBlasWrapper().dot(buff,buff);
+                int ind2 = cols.getInt(i);
+                buff.assign(y.slice(ind1));
+                buff.subi(y.slice(ind2));
+                double Q = pow(buff,2).sum(Integer.MAX_VALUE).getDouble(0);
                 Q = (1.0 / (1.0 + Q)) / sum_Q.doubleValue();
-                double val = vals.getDouble(i,0);
+                double val = vals.getDouble(i);
                 double add = Math.log((val + Double.MIN_VALUE) / (Q + Double.MAX_VALUE));
                 if(Double.isNaN(add) || Double.isInfinite(add))
                     add = Nd4j.EPS_THRESHOLD;
@@ -415,48 +453,22 @@ public class BarnesHutTsne extends Tsne implements Model {
         if(gains == null)
             gains = ones(y.shape());
 
-        AtomicDouble sum_Q = new AtomicDouble(0);
-        INDArray pos_f = Nd4j.create(y.shape());
-        INDArray neg_f = Nd4j.create(y.shape());
+        AtomicDouble sumQ = new AtomicDouble(0);
+        /* Calculate gradient based on barnes hut approximation with positive and negative forces */
+        INDArray posF = Nd4j.create(y.shape());
+        INDArray negF = Nd4j.create(y.shape());
 
         QuadTree quad = new QuadTree(y);
-        quad.computeEdgeForces(rows,cols,p,p.rows(),pos_f);
+        quad.computeEdgeForces(rows,cols,vals,N,posF);
 
-        for(int n = 0; n < p.rows(); n++) {
-            quad.computeNonEdgeForces(n,theta,neg_f.slice(n),sum_Q);
-        }
-
-        INDArray dC = pos_f.subi(neg_f.divi(sum_Q));
-
-        INDArray yGrads = dC;
-
-        gains = gains.add(.2)
-                .muli(yGrads.cond(Conditions.greaterThan(0)).neqi(yIncs.cond(Conditions.greaterThan(0))))
-                .addi(gains.mul(0.8).muli(yGrads.cond(Conditions.greaterThan(0)).eqi(yIncs.cond(Conditions.greaterThan(0)))));
-
-        BooleanIndexing.applyWhere(
-                gains,
-                Conditions.lessThan(minGain),
-                new Value(minGain));
+        for(int n = 0; n < N; n++)
+            quad.computeNonEdgeForces(n,theta,negF.slice(n),sumQ);
 
 
-        INDArray gradChange = gains.mul(yGrads);
-
-        if(useAdaGrad) {
-            if(adaGrad == null)
-                adaGrad = new AdaGrad(gradChange.shape());
-            gradChange = adaGrad.getGradient(gradChange);
-
-        }
-        else
-            gradChange.muli(learningRate);
-
-
-        yIncs.muli(momentum).subi(gradChange);
-
+        INDArray dC = posF.subi(negF.divi(sumQ));
 
         Gradient ret = new DefaultGradient();
-        ret.gradientLookupTable().put(Y_GRAD,yIncs);
+        ret.gradientLookupTable().put(Y_GRAD,dC);
         return ret;
     }
 
@@ -575,7 +587,10 @@ public class BarnesHutTsne extends Tsne implements Model {
 
         @Override
         public BarnesHutTsne build() {
-            return new BarnesHutTsne(null,0,null,2,perplexity,theta,maxIter,this.stopLyingIteration,this.switchMomentumIteration,this.momentum,this.finalMomentum,this.learningRate);
+            BarnesHutTsne t = new BarnesHutTsne(null,null,2,perplexity,theta,maxIter,this.stopLyingIteration,this.switchMomentumIteration,this.momentum,this.finalMomentum,this.learningRate);
+            t.useAdaGrad = useAdaGrad;
+            t.usePca = usePca;
+            return t;
         }
     }
 }

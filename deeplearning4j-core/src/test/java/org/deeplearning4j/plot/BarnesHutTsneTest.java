@@ -17,7 +17,8 @@ public class BarnesHutTsneTest {
 
     @Test
     public void testTsne() throws Exception {
-        BarnesHutTsne b = new BarnesHutTsne.Builder().theta(0.3).learningRate(500)
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(100)
+                .theta(0.3).learningRate(500).useAdaGrad(false)
                 .build();
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
         File f = resource.getFile();
