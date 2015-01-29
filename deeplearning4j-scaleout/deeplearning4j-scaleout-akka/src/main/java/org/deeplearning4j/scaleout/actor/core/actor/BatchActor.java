@@ -4,10 +4,10 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.scaleout.actor.core.ClusterListener;
 import org.deeplearning4j.scaleout.actor.core.protocol.ResetMessage;
 import org.deeplearning4j.scaleout.api.workrouter.WorkRouter;
-import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.job.JobIterator;

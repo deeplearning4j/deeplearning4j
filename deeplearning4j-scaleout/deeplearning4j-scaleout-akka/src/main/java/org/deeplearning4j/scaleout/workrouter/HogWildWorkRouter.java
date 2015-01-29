@@ -1,8 +1,8 @@
 package org.deeplearning4j.scaleout.workrouter;
 
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.api.workrouter.BaseWorkRouter;
-import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.scaleout.statetracker.hazelcast.HazelCastStateTracker;
 
 /**

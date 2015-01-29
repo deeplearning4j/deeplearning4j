@@ -3,8 +3,6 @@ package org.deeplearning4j.models.word2vec.actor;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.deeplearning4j.berkeley.Counter;
-
 
 public class SentenceMessage implements Serializable {
 

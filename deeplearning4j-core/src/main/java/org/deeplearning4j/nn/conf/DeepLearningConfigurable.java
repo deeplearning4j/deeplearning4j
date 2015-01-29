@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf;
 
 
+import org.canova.api.conf.Configuration;
+
 public interface DeepLearningConfigurable {
 	/* Number of passes to do on the data applyTransformToDestination */
 	public final static String NUM_PASSES = "org.deeplearning4j.numpasses";

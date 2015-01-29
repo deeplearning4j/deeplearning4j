@@ -3,7 +3,6 @@ package org.deeplearning4j.spark.impl.multilayer;
 
 
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.impl.SVMLightRecordReader;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;

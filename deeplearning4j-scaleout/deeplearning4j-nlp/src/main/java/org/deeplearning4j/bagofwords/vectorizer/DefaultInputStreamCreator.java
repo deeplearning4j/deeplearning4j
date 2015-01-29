@@ -2,7 +2,6 @@ package org.deeplearning4j.bagofwords.vectorizer;
 
 import org.deeplearning4j.models.word2vec.InputStreamCreator;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
-import org.deeplearning4j.text.documentiterator.FileDocumentIterator;
 
 import java.io.InputStream;
 

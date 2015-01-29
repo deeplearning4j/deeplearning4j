@@ -13,7 +13,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
-import org.deeplearning4j.nn.conf.Configuration;
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.scaleout.zookeeper.ZooKeeperConfigurationRegister;
 import org.deeplearning4j.scaleout.zookeeper.ZookeeperBuilder;
 import org.deeplearning4j.scaleout.zookeeper.ZookeeperConfigurationRetriever;

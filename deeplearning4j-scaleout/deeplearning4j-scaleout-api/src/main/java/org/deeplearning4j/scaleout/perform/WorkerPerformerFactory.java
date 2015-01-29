@@ -1,6 +1,7 @@
 package org.deeplearning4j.scaleout.perform;
 
-import org.deeplearning4j.nn.conf.Configuration;
+
+import org.canova.api.conf.Configuration;
 
 /**
  * Create a worker performer

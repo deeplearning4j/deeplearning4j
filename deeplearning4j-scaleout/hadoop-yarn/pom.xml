@@ -3,6 +3,7 @@
     <artifactId>hadoop-yarn</artifactId>
     <modules>
         <module>cdh4</module>
+        <module>deeplearning4j-nlp-yarn</module>
     </modules>
     <parent>
         <groupId>org.deeplearning4j</groupId>

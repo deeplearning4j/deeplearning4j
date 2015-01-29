@@ -12,6 +12,7 @@
     <name>org.deeplearning4j.spark</name>
     <modules>
         <module>dl4j-spark</module>
+        <module>dl4j-spark-nlp</module>
     </modules>
 
 
