@@ -19,30 +19,32 @@ public class BucketIterator implements Iterator<InputStream> {
 	private List<S3ObjectSummary> currObjects;
 	private int currObject;
 
-	
-	
-	
+
+
+
 	public BucketIterator(String bucket) {
 		this(bucket,null);
-		
+
 	}
-	
-	
+
+
 	public BucketIterator(String bucket,S3Downloader s3) {
 		this.bucket = bucket;
-		
+
 		if(s3 == null)
-			s3 = new S3Downloader();
+			this.s3 = new S3Downloader();
+        else
+            this.s3 = s3;
 		currList = s3.listObjects(bucket);
 		currObjects = currList.getObjectSummaries();
-		
+
 	}
-	
-	
+
+
 
 	@Override
 	public boolean hasNext() {
-	    return !currList.isTruncated() && currObject < currObjects.size(); 
+	    return currObject < currObjects.size();
 	}
 
 	@Override
@@ -52,19 +54,19 @@ public class BucketIterator implements Iterator<InputStream> {
 			currObject++;
 			return ret;
 		}
-		else if(currList.isTruncated()){
+		else if(currList.isTruncated()) {
 			currList = s3.nextList(currList);
 			currObjects = currList.getObjectSummaries();
 			currObject = 0;
-			
+
 			InputStream ret = s3.objectForKey(bucket, currObjects.get(currObject).getKey());
-			
+
 			currObject++;
 			return ret;
 		}
-		
-		
-		return null;
+
+
+		throw new IllegalStateException("Indeterminate state");
 	}
 
 	@Override
