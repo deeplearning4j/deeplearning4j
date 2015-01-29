@@ -1,8 +1,8 @@
 package org.deeplearning4j.scaleout.perform;
 
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;

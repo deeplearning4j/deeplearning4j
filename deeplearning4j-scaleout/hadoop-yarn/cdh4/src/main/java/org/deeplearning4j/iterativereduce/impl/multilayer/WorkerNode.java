@@ -56,7 +56,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     public ParameterVectorUpdateable compute() {
         log.info("Worker > Compute() -------------------------- ");
 
-        DataSet hdfs_recordBatch = null; //this.hdfs_fetcher.next();
+        DataSet hdfs_recordBatch = null;
 
         if ( this.hdfsDataSetIterator.hasNext() ) {
             hdfs_recordBatch = this.hdfsDataSetIterator.next();
@@ -110,11 +110,8 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
      */
     @Override
     public void setRecordReader(RecordReader lineParser) {
-
         this.recordParser = lineParser;
         this.hdfsDataSetIterator = new RecordReaderDataSetIterator(recordParser,null,batchSize,labelIndex,numberClasses);
-
-
     }
 
     /**
@@ -156,7 +153,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
 
     @Override
-    public void setup(org.deeplearning4j.nn.conf.Configuration conf) {
+    public void setup(org.canova.api.conf.Configuration conf) {
 
     }
 }

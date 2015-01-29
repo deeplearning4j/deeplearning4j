@@ -9,10 +9,10 @@ import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
 import akka.japi.Function;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.scaleout.actor.core.protocol.Ack;
 import org.deeplearning4j.scaleout.actor.core.protocol.ClearWorker;
 import org.deeplearning4j.scaleout.actor.core.ClusterListener;
-import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 
 import org.deeplearning4j.scaleout.job.Job;

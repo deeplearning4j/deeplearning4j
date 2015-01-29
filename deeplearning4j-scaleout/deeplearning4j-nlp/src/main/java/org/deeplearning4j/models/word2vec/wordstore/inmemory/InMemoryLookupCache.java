@@ -32,7 +32,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     private int numDocs = 0;
 
     public InMemoryLookupCache() {
-        VocabWord word = new VocabWord(1.0,Word2Vec.UNK);
+        VocabWord word = new VocabWord(1.0, Word2Vec.UNK);
         word.setIndex(0);
         addToken(word);
         addWordToIndex(0, Word2Vec.UNK);

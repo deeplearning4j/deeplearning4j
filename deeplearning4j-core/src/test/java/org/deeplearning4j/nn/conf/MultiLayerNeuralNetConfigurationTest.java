@@ -2,7 +2,6 @@ package org.deeplearning4j.nn.conf;
 
 import static org.junit.Assert.*;
 
-import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.junit.Test;

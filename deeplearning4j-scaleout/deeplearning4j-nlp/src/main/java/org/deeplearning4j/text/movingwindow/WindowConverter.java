@@ -5,7 +5,6 @@ import java.util.List;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.models.word2vec.Word2Vec;
-import org.deeplearning4j.text.inputsanitation.InputHomogenization;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 

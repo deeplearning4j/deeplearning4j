@@ -7,6 +7,7 @@ import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.routing.RoundRobinPool;
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.scaleout.actor.core.ClusterListener;
 import org.deeplearning4j.scaleout.actor.core.ModelSaver;
 import org.deeplearning4j.scaleout.actor.core.actor.BatchActor;
@@ -17,7 +18,6 @@ import org.deeplearning4j.scaleout.actor.util.ActorRefUtils;
 import org.deeplearning4j.scaleout.aggregator.INDArrayAggregator;
 import org.deeplearning4j.scaleout.aggregator.JobAggregator;
 import org.deeplearning4j.scaleout.api.workrouter.WorkRouter;
-import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.job.JobIterator;
 import org.deeplearning4j.scaleout.messages.MoreWorkMessage;
@@ -271,7 +271,7 @@ public class DeepLearning4jDistributed implements DeepLearningConfigurable,Seria
             log.info("Starting worker node");
             Address a = AddressFromURIString.parse(conf.get(MASTER_URL));
 
-            Configuration c = conf.copy();
+            Configuration c = new Configuration(conf);
             Cluster cluster = Cluster.get(system);
             cluster.join(a);
 

@@ -1,6 +1,6 @@
 package org.deeplearning4j.scaleout.actor;
 
-import org.deeplearning4j.nn.conf.Configuration;
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.perform.WorkerPerformer;
 

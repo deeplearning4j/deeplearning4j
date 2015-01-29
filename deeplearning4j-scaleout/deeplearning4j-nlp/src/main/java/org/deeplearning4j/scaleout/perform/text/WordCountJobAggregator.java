@@ -1,11 +1,11 @@
 package org.deeplearning4j.scaleout.perform.text;
 
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.scaleout.aggregator.JobAggregator;
-import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
 
 import java.util.HashSet;
@@ -18,7 +18,7 @@ import java.util.Set;
  */
 public class WordCountJobAggregator implements JobAggregator {
     private VocabCache vocabCache;
-    public final static String MIN_WORD_FREQUENCY = "org.deepleaerning4j.scaleout.perform.text.minwordfrequency";
+    public final static String MIN_WORD_FREQUENCY = "org.deeplearning4j.scaleout.perform.text.minwordfrequency";
     private int minWordFrequency = 5;
 
     public WordCountJobAggregator() {

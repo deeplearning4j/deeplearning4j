@@ -2,11 +2,11 @@ package org.deeplearning4j.models.word2vec.iterator;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.DataSetPreProcessor;
+import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
-import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.inputsanitation.InputHomogenization;
 import org.deeplearning4j.text.sentenceiterator.SentencePreProcessor;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
