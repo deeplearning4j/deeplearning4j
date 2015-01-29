@@ -2,10 +2,10 @@ package org.deeplearning4j.scaleout.perform;
 
 import static org.junit.Assume.*;
 
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.scaleout.job.Job;

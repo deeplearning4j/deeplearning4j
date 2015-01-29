@@ -1,8 +1,8 @@
 package org.deeplearning4j.scaleout.perform.models.glove;
 
 
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.scaleout.aggregator.JobAggregator;
-import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.util.MultiDimensionalMap;
 import org.nd4j.linalg.api.ndarray.INDArray;

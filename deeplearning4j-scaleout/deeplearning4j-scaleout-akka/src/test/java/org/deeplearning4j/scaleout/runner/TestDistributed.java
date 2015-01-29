@@ -1,8 +1,8 @@
 package org.deeplearning4j.scaleout.runner;
 
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.scaleout.actor.TestPerformerFactory;
 import org.deeplearning4j.scaleout.actor.runner.DeepLearning4jDistributed;
-import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.job.JobIterator;
 import org.deeplearning4j.scaleout.job.collection.CollectionJobIterator;

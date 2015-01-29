@@ -4,7 +4,6 @@ package org.deeplearning4j.scaleout.perform.models.glove;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.glove.GloveWeightLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaGrad;
 

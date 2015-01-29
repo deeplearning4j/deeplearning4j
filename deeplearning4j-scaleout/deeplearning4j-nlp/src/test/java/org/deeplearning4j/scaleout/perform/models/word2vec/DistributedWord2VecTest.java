@@ -1,12 +1,12 @@
 package org.deeplearning4j.scaleout.perform.models.word2vec;
 
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.scaleout.job.JobIterator;
 import org.deeplearning4j.scaleout.perform.models.word2vec.iterator.Word2VecJobIterator;
 import org.deeplearning4j.scaleout.testsupport.BaseTestDistributed;

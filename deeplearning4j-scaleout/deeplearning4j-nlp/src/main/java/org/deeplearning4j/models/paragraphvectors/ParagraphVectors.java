@@ -16,7 +16,6 @@ import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 
 import javax.annotation.Nullable;
 import java.io.IOException;

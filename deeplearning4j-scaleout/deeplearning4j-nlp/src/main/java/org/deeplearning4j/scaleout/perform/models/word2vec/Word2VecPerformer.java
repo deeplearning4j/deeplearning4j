@@ -1,11 +1,11 @@
 package org.deeplearning4j.scaleout.perform.models.word2vec;
 
 import org.apache.commons.math3.util.FastMath;
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.scaleout.aggregator.JobAggregator;
 import org.deeplearning4j.scaleout.api.statetracker.StateTracker;
-import org.deeplearning4j.nn.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.perform.WorkerPerformer;
 import org.deeplearning4j.scaleout.perform.WorkerPerformerFactory;

@@ -1,6 +1,6 @@
 package org.deeplearning4j.scaleout.aggregator;
 
-import org.deeplearning4j.nn.conf.Configuration;
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
 
 import java.io.Serializable;

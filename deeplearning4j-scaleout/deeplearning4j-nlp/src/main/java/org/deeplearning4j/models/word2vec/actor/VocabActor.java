@@ -25,9 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import akka.actor.UntypedActor;
 import org.tartarus.snowball.ext.PorterStemmer;
-import scala.concurrent.Await;
 import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 /**
  * Individual actor for updating the vocab cache

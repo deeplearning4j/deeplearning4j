@@ -131,7 +131,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
 
     @Override
-    public void setup(org.deeplearning4j.nn.conf.Configuration conf) {
+    public void setup(org.canova.api.conf.Configuration conf) {
 
     }
 }

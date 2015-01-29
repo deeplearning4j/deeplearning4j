@@ -1,6 +1,6 @@
 package org.deeplearning4j.scaleout.aggregator;
 
-import org.deeplearning4j.nn.conf.Configuration;
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.scaleout.job.Job;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;

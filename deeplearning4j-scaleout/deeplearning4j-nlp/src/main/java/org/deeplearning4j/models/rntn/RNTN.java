@@ -12,6 +12,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.featuredetectors.autoencoder.recursive.Tree;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -27,7 +28,6 @@ import org.nd4j.linalg.learning.AdaGrad;
 import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.util.MultiDimensionalMap;
 import org.deeplearning4j.util.MultiDimensionalSet;
-import org.deeplearning4j.models.word2vec.Word2Vec;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
