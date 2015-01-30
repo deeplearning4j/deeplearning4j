@@ -51,14 +51,11 @@ public class Word2VecWork implements Serializable {
         indexes.put(word.getIndex(),word);
         vectors.put(word.getWord(),new Pair<>(word,table.getSyn0().getRow(word.getIndex()).dup()));
         originalVectors.put(word.getWord(),table.getSyn0().getRow(word.getIndex()).dup());
-        if(table instanceof InMemoryLookupTable) {
-            InMemoryLookupTable l = table;
-            syn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).dup());
-            originalSyn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).dup());
-            if(l.getSyn1Neg() != null) {
-                originalNegative.put(word.getWord(),l.getSyn1Neg().slice(word.getIndex()).dup());
-                negativeVectors.put(word.getWord(), new Pair<>(word, l.getSyn1Neg().slice(word.getIndex()).dup()));
-            }
+        syn1Vectors.put(word.getWord(), table.getSyn1().slice(word.getIndex()).dup());
+        originalSyn1Vectors.put(word.getWord(), table.getSyn1().slice(word.getIndex()).dup());
+        if(table.getSyn1Neg() != null) {
+            originalNegative.put(word.getWord(), table.getSyn1Neg().slice(word.getIndex()).dup());
+            negativeVectors.put(word.getWord(), new Pair<>(word, table.getSyn1Neg().slice(word.getIndex()).dup()));
         }
 
     }
