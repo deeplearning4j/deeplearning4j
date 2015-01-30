@@ -18,10 +18,7 @@
 
 package org.deeplearning4j.util;
 
-
-
-
-import org.deeplearning4j.nn.conf.Configuration;
+import org.canova.api.conf.Configuration;
 
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
