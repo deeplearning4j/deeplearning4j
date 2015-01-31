@@ -21,6 +21,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.indexing.conditions.Or;
 import org.nd4j.linalg.indexing.functions.Value;
 import static org.nd4j.linalg.ops.transforms.Transforms.*;
 import org.nd4j.linalg.util.LinAlgExceptions;
@@ -84,7 +85,7 @@ public class ConjugateGradient extends BaseOptimizer {
         h.assign(h.mul(gam).addi(xi));
 
 
-        BooleanIndexing.applyWhere(h, Conditions.isNan(), new Value(Nd4j.EPS_THRESHOLD));
+        BooleanIndexing.applyWhere(h, new Or(Conditions.isNan(),Conditions.isInfinite()), new Value(Nd4j.EPS_THRESHOLD));
         LinAlgExceptions.assertValidNum(h);
 
         // gdruck

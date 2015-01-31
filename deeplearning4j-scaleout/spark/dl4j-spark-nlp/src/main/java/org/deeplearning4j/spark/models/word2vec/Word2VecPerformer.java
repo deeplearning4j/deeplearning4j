@@ -3,11 +3,11 @@ package org.deeplearning4j.spark.models.word2vec;
 import org.apache.commons.math3.util.FastMath;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.deeplearning4j.scaleout.aggregator.JobAggregator;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public class Word2VecPerformer implements Function<Word2VecWork,Word2VecResult> {
+public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,AtomicLong>> {
 
     private int vectorLength = 50;
 
@@ -37,9 +37,8 @@ public class Word2VecPerformer implements Function<Word2VecWork,Word2VecResult> 
     public final static String WINDOW = NAME_SPACE + ".window";
     public final static String ALPHA = NAME_SPACE + ".alpha";
     public final static String MIN_ALPHA = NAME_SPACE + ".minalpha";
-  public final static String ITERATIONS = NAME_SPACE + ".iterations";
+    public final static String ITERATIONS = NAME_SPACE + ".iterations";
 
-    double[] expTable = new double[1000];
     static double MAX_EXP = 6;
     private boolean useAdaGrad = false;
     private double negative = 5;
@@ -51,15 +50,15 @@ public class Word2VecPerformer implements Function<Word2VecWork,Word2VecResult> 
     private double minAlpha = 1e-2;
     private int totalWords = 1;
     private int iterations = 5;
-    private JavaSparkContext sc;
     private static Logger log = LoggerFactory.getLogger(Word2VecPerformer.class);
     private int lastChecked = 0;
     private Broadcast<AtomicLong> wordCount;
+    private InMemoryLookupTable weights;
+    private double[] expTable = new double[1000];
 
 
-
-    public Word2VecPerformer(JavaSparkContext sc,Broadcast<AtomicLong> wordCount) {
-        this.sc = sc;
+    public Word2VecPerformer(JavaSparkContext sc,Broadcast<AtomicLong> wordCount,InMemoryLookupTable weights) {
+        this.weights = weights;
         this.wordCount = wordCount;
         setup(sc.getConf());
     }
@@ -110,7 +109,6 @@ public class Word2VecPerformer implements Function<Word2VecWork,Word2VecResult> 
         conf.set(NEGATIVE, String.valueOf(table.getNegative()));
         conf.set(ALPHA, String.valueOf(table.getLr().get()));
         conf.set(NUM_WORDS, String.valueOf(index.totalWords()));
-        conf.set(JobAggregator.AGGREGATOR, Word2VecJobAggregator.class.getName());
         table.resetWeights();
         if(table.getNegative() > 0) {
             ByteArrayOutputStream bis = new ByteArrayOutputStream();
@@ -129,14 +127,14 @@ public class Word2VecPerformer implements Function<Word2VecWork,Word2VecResult> 
      * Train on a list of vocab words
      * @param sentence the list of vocab words to train on
      */
-    public void trainSentence(final List<VocabWord> sentence,Word2VecWork work,double alpha) {
+    public void trainSentence(final List<VocabWord> sentence,double alpha) {
         if(sentence == null || sentence.isEmpty())
             return;
         for(int i = 0; i < sentence.size(); i++) {
             if(sentence.get(i).getWord().endsWith("STOP"))
                 continue;
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
-            skipGram(i, sentence, (int) nextRandom.get() % window,work,alpha);
+            skipGram(i, sentence, (int) nextRandom.get() % window,alpha);
         }
 
 
@@ -151,7 +149,7 @@ public class Word2VecPerformer implements Function<Word2VecWork,Word2VecResult> 
      * @param i
      * @param sentence
      */
-    public void skipGram(int i,List<VocabWord> sentence, int b,Word2VecWork work,double alpha) {
+    public void skipGram(int i,List<VocabWord> sentence, int b,double alpha) {
 
         final VocabWord word = sentence.get(i);
         if(word == null || sentence.isEmpty())
@@ -163,7 +161,7 @@ public class Word2VecPerformer implements Function<Word2VecWork,Word2VecResult> 
                 int c = i - window + a;
                 if(c >= 0 && c < sentence.size()) {
                     VocabWord lastWord = sentence.get(c);
-                    iterateSample(work, word, lastWord,alpha);
+                    iterateSample(word, lastWord,alpha);
                 }
             }
         }
@@ -181,20 +179,12 @@ public class Word2VecPerformer implements Function<Word2VecWork,Word2VecResult> 
      * @param w1 the first word to iterate on
      * @param w2 the second word to iterate on
      */
-    public  void iterateSample(Word2VecWork work,VocabWord w1, VocabWord w2,double alpha) {
+    public  void iterateSample(VocabWord w1, VocabWord w2,double alpha) {
         if(w2 == null || w2.getIndex() < 0)
             return;
-        if( work.getVectors().get(w2.getWord()) == null) {
-            log.warn("No vector found for word " + w2.getWord());
-            return;
-        }
 
-        if( work.getVectors().get(w1.getWord()) == null) {
-            log.warn("No vector found for word " + w1.getWord());
-            return;
-        }
         //current word vector
-        INDArray l1 = work.getVectors().get(w2.getWord()).getSecond();
+        INDArray l1 = weights.vector(w2.getWord());
 
 
         //error for current word and context
@@ -209,18 +199,9 @@ public class Word2VecPerformer implements Function<Word2VecWork,Word2VecResult> 
             int code = w1.getCodes().get(i);
             int point = w1.getPoints().get(i);
 
-            //other word vector
-            if(work.getIndexes().get(point) == null) {
-                //log.warn("Work index for point " + point + " was null");
-                continue;
-            }
 
-            if(work.getSyn1Vectors().get(work.getIndexes().get(point).getWord()) == null) {
-                log.warn("Syn1 vectors for " + work.getIndexes().get(point).getWord() + " was null");
-                continue;
-            }
 
-            INDArray syn1 = work.getSyn1Vectors().get(work.getIndexes().get(point).getWord());
+            INDArray syn1 = weights.getSyn1().slice(point);
 
 
             double dot = Nd4j.getBlasWrapper().dot(l1,syn1);
@@ -256,7 +237,7 @@ public class Word2VecPerformer implements Function<Word2VecWork,Word2VecResult> 
         if(negative > 0) {
             int target = w1.getIndex();
             int label;
-            INDArray syn1Neg = work.getNegativeVectors().get(work.getIndexes().get(target).getWord()).getSecond();
+            INDArray syn1Neg = weights.getSyn1Neg().slice(target);
 
             for (int d = 0; d < negative + 1; d++) {
                 if (d == 0) {
@@ -322,19 +303,16 @@ public class Word2VecPerformer implements Function<Word2VecWork,Word2VecResult> 
 
 
     @Override
-    public Word2VecResult call(Word2VecWork work) throws Exception {
+    public void call(Pair<List<VocabWord>,AtomicLong> pair) throws Exception {
         double numWordsSoFar = wordCount.getValue().doubleValue();
 
-
-
-        List<List<VocabWord>> sentences = work.getSentences();
+        List<VocabWord> sentence = pair.getFirst();
         double alpha2 = Math.max(minAlpha, alpha * (1 - (1.0 * numWordsSoFar / (double) totalWords)));
         int totalNewWords = 0;
-        for(List<VocabWord> sentence : sentences) {
-            for(int i = 0; i < iterations; i++)
-                trainSentence(sentence, work, alpha2);
-            totalNewWords += sentence.size();
-        }
+        for(int i = 0; i < iterations; i++)
+            trainSentence(sentence, alpha2);
+        totalNewWords += sentence.size();
+
 
 
         double newWords = totalNewWords + numWordsSoFar;
@@ -344,8 +322,8 @@ public class Word2VecPerformer implements Function<Word2VecWork,Word2VecResult> 
             log.info("Words so far " + newWords + " out of " + totalWords);
         }
 
-        wordCount.getValue().getAndAdd((long) totalNewWords);
-        return work.addDeltas();
-
+        pair.getSecond().getAndAdd((long) totalNewWords);
     }
+
+
 }
