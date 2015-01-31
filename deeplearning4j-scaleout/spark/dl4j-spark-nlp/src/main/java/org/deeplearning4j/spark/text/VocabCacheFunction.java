@@ -16,7 +16,7 @@ import java.util.Set;
  * Vocab vocab function: handles word counts
  * @author Adam Gibson
  */
-public class VocabCacheFunction implements Function<Pair<Collection<String>,Long>,Pair<VocabCache,Long>> {
+public class VocabCacheFunction implements Function<Pair<List<String>,Long>,Pair<VocabCache,Long>> {
 
     private int minWordFrequency = 5;
     private VocabCache vocab;
@@ -30,7 +30,7 @@ public class VocabCacheFunction implements Function<Pair<Collection<String>,Long
 
 
     @Override
-    public Pair<VocabCache, Long> call(Pair<Collection<String>, Long> v1) throws Exception {
+    public Pair<VocabCache, Long> call(Pair<List<String>, Long> v1) throws Exception {
         Set<String> encountered = new HashSet<>();
         long wordsEncountered = v1.getSecond() + v1.getFirst().size();
         for(String token : v1.getFirst()) {
