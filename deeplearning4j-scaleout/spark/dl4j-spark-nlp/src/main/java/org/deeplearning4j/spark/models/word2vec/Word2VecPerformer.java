@@ -188,7 +188,7 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
 
 
         //error for current word and context
-        INDArray neu1e = Nd4j.create(vectorLength);
+        INDArray neu1e = Nd4j.create(weights.getVectorLength());
 
 
 

@@ -16,7 +16,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Created by agibsonccc on 1/29/15.
+ * Spark versio of word2vec
  */
 public class SparkWord2Vec {
 
@@ -33,6 +33,8 @@ public class SparkWord2Vec {
                 .cache(vocabAndNumWords.getFirst()).lr(conf.getDouble(Word2VecPerformer.ALPHA,0.025))
                 .vectorLength(conf.getInt(Word2VecPerformer.VECTOR_LENGTH,100)).negative(conf.getDouble(Word2VecPerformer.NEGATIVE,5))
                 .useAdaGrad(conf.getBoolean(Word2VecPerformer.ADAGRAD,false)).build();
+        lookupTable.resetWeights();
+
 
         Word2VecPerformer performer = new Word2VecPerformer(
                 sc,sc.broadcast(new AtomicLong(vocabAndNumWords.getSecond())),lookupTable
