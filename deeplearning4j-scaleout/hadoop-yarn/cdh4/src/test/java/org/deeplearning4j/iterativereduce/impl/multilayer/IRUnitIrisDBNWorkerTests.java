@@ -1,10 +1,8 @@
 package org.deeplearning4j.iterativereduce.impl.multilayer;
 
-import static org.junit.Assert.*;
-
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Properties;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -18,15 +16,15 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.core.io.ClassPathResource;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
 
 public class IRUnitIrisDBNWorkerTests {
-
-
 
     private static JobConf defaultConf = new JobConf();
     private static FileSystem localFs = null;
@@ -38,10 +36,6 @@ public class IRUnitIrisDBNWorkerTests {
             throw new RuntimeException("init failure", e);
         }
     }
-
-
-
-
 
     private InputSplit[] generateDebugSplits(Path input_path, JobConf job) {
 
@@ -127,9 +121,8 @@ public class IRUnitIrisDBNWorkerTests {
 
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson( key );
         MultiLayerNetwork multiLayerNetwork = new MultiLayerNetwork(conf2);
-
-
-
+        assertEquals(3, multiLayerNetwork.getnLayers());
+        assertArrayEquals(new int[]{3,2}, multiLayerNetwork.getLayerWiseConfigurations().getHiddenLayerSizes());
     }
 
     @Test
@@ -143,9 +136,6 @@ public class IRUnitIrisDBNWorkerTests {
             FileInputStream fis = new FileInputStream( props_file );
             props.load(fis);
             fis.close();
-        } catch (FileNotFoundException ex) {
-            // throw ex; // TODO: be nice
-            System.out.println(ex);
         } catch (IOException ex) {
             // throw ex; // TODO: be nice
             System.out.println(ex);
@@ -155,8 +145,8 @@ public class IRUnitIrisDBNWorkerTests {
 
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson( json );
         MultiLayerNetwork multiLayerNetwork = new MultiLayerNetwork(conf2);
-
-
+        assertArrayEquals(new int[]{2,2}, multiLayerNetwork.getLayerWiseConfigurations().getHiddenLayerSizes());
+        assertEquals(2, multiLayerNetwork.getLayerWiseConfigurations().getConf(0).getNumFeatureMaps());
 
     }
 
