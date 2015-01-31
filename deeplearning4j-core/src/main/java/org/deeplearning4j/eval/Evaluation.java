@@ -15,10 +15,10 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class Evaluation {
 
-	private double truePositives;
+	private Counter<Integer> truePositives = new Counter<>();
 	private Counter<Integer> falsePositives = new Counter<>();
 	private Counter<Integer> trueNegative = new Counter<>();
-	private double falseNegatives;
+	private Counter<Integer> falseNegatives = new Counter<>();
 	private ConfusionMatrix<Integer> confusion = new ConfusionMatrix<>();
 
 	/**
@@ -38,19 +38,39 @@ public class Evaluation {
 			INDArray guessRow = guesses.getRow(i);
 
 			int currMax = Nd4j.getBlasWrapper().iamax(currRow);
-			int guessMax = Nd4j.getBlasWrapper().iamax(guessRow);
+            {
+                double max = currRow.getDouble(0);
+                currMax = 0;
+                for (int col = 1; col < currRow.columns(); col++) {
+                    if (currRow.getDouble(col) > max) {
+                        max = currRow.getDouble(col);
+                        currMax = col;
+                    }
+                }
+            }
+            int guessMax = Nd4j.getBlasWrapper().iamax(guessRow);
+            {
+                double max = guessRow.getDouble(0);
+                guessMax = 0;
+                for (int col = 1; col < guessRow.columns(); col++) {
+                    if (guessRow.getDouble(col) > max) {
+                        max = guessRow.getDouble(col);
+                        guessMax = col;
+                    }
+                }
+            }
 
 			addToConfusion(currMax,guessMax);
 
 			if(currMax == guessMax) {
-				incrementTruePositives();
+				incrementTruePositives(guessMax);
 				for(Integer clazz : confusion.getClasses()) {
 					if(clazz != guessMax)
 						trueNegative.incrementCount(clazz, 1.0);
 				}
 			}
 			else {
-				incrementFalseNegatives();
+				incrementFalseNegatives(currMax);
 				incrementFalsePositives(guessMax);
 			}
 			
@@ -154,7 +174,7 @@ public class Evaluation {
 	 * @return the overall negative count
 	 */
 	public double negative() {
-		return trueNegatives() + falseNegatives;
+		return trueNegatives() + falseNegatives.totalCount();
 		
 	}
 	
@@ -164,7 +184,7 @@ public class Evaluation {
 	 * @return
 	 */
 	public double positive() {
-		return truePositives + falseNegatives;
+		return truePositives.totalCount() + falseNegatives.totalCount();
 	}
 	
 	/**
@@ -173,7 +193,7 @@ public class Evaluation {
 	 * @return the accuracy of the guesses so far
 	 */
 	public double accuracy() {
-		return this.truePositives + trueNegatives() / (positive() + negative());
+		return (this.truePositives.totalCount() + trueNegatives()) / (positive() + negative());
 	}
 	
 	/**
@@ -209,10 +229,18 @@ public class Evaluation {
 	 * @return the recall for the outcomes
 	 */
 	public double recall() {
-		if(truePositives == 0)
-			return 0;
-		return truePositives / (truePositives + falseNegatives);
+        double r = 0.0;
+        for(Integer i : confusion.getClasses()) {
+            r += recall(i);
+        }
+        return r / (double) confusion.getClasses().size();
 	}
+
+    public double recall(int i) {
+        if(truePositives.getCount(i) == 0)
+            return 0;
+        return truePositives.getCount(i) / (truePositives.getCount(i) + falseNegatives.getCount(i));
+    }
 
 	/**
 	 * Returns the precision for a given label
@@ -220,18 +248,18 @@ public class Evaluation {
 	 * @return the precision for the label
 	 */
 	public double precision(int i) {
-		if(truePositives == 0)
+		if(truePositives.getCount(i) == 0)
 			return 0;
-		return truePositives / (truePositives + falsePositives.getCount(i));
+		return truePositives.getCount(i) / (truePositives.getCount(i) + falsePositives.getCount(i));
 	}
 
 
-	public void incrementTruePositives() {
-		truePositives++;
+	public void incrementTruePositives(int i) {
+		truePositives.incrementCount(i, 1.0);
 	}
 
-	public void incrementFalseNegatives() {
-		falseNegatives++;
+	public void incrementFalseNegatives(int i) {
+		falseNegatives.incrementCount(i, 1.0);
 	}
 
 	public void incrementFalsePositives(int i) {
