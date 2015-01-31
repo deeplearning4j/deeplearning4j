@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An output layer training evaluator uses a multi layer networks output and score functions to determine if
+ * An output layer training evaluator uses a multi layer networks output and score cooccurrences to determine if
  * training iterations should continue
  * @author Adam Gibson
  */

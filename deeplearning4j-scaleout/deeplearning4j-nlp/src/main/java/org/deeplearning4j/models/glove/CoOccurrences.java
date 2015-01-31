@@ -63,6 +63,9 @@ public class CoOccurrences implements Serializable {
         this.symmetric = symmetric;
     }
 
+    /**
+     *
+     */
     public void fit() {
         if(trainingSystem == null)
             trainingSystem = ActorSystem.create();

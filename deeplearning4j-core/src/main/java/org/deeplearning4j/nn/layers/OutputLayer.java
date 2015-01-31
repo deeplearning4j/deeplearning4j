@@ -27,7 +27,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.pow;
 
 
 /**
- * Output layer with different objective functions for different objectives.
+ * Output layer with different objective cooccurrences for different objectives.
  * This includes classification as well as prediction
  * @author Adam Gibson
  *
