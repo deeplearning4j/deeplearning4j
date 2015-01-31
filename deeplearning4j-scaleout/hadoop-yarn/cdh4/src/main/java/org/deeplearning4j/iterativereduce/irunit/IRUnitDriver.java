@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -49,9 +49,8 @@ public class IRUnitDriver {
 	private ComputableMaster master;
 	private ArrayList<ComputableWorker> workers;
 	private String appPropertiesFile = "";
-	private RecordReader recordReader;
 
-	static {
+  static {
 		try {
 			defaultConf.set("fs.defaultFS", "file:///");
 			localFs = FileSystem.getLocal(defaultConf);
@@ -67,7 +66,7 @@ public class IRUnitDriver {
 	/**
 	 * need to load the app.properties file
 	 *
-	 * @return
+	 * @return {@link Configuration}
 	 */
 	public Configuration getConfiguration() {
 		Configuration c = new Configuration();
@@ -82,7 +81,7 @@ public class IRUnitDriver {
 	 *
 	 * @param inputPath
 	 * @param job
-	 * @return
+	 * @return array of {@link InputSplit}
 	 */
 	private InputSplit[] generateDebugSplits(Path inputPath, JobConf job) {
 
@@ -146,7 +145,8 @@ public class IRUnitDriver {
 
 		// ---- this all needs to be done in
 		JobConf job = new JobConf(defaultConf);
-		try {
+    RecordReader recordReader;
+    try {
 			recordReader = (RecordReader) Class.forName(defaultConf.get(APP_RECORD_READER)).newInstance();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -193,16 +193,14 @@ public class IRUnitDriver {
 
 			// simulates the conf stuff
 			worker.setup(getConfiguration());
-			CanovaRecordReader reader = new CanovaRecordReader(this.recordReader);
+			CanovaRecordReader reader = new CanovaRecordReader(recordReader);
 			try {
 				reader.initialize(splits[x]);
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (InterruptedException e) {
+			} catch (IOException | InterruptedException e) {
 				e.printStackTrace();
 			}
 
-			worker.setRecordReader(reader);
+      worker.setRecordReader(reader);
 			workers.add(worker);
 
 			log.info("> setup Worker " + x);
@@ -224,18 +222,18 @@ public class IRUnitDriver {
 
 		for (int x = 0; x < iterations; x++) {
 
-			for (int workerId = 0; workerId < workers.size(); workerId++) {
-				Updateable result = workers.get(workerId).compute();
-				workerResults.add(result);
-			}
+      for (ComputableWorker worker : workers) {
+        Updateable result = worker.compute();
+        workerResults.add(result);
+      }
 
-			Updateable master_result = this.master.compute(workerResults,
-					master_results);
+			Updateable master_result = this.master.compute(workerResults, master_results);
 
 
 			// process global updates
-			for (int workerId = 0; workerId < workers.size(); workerId++)
-				workers.get(workerId).update(master_result);
+      for (ComputableWorker worker : workers) {
+        worker.update(master_result);
+      }
 
 
 			log.info("Complete " + iterations + " Iterations Per Worker.");
