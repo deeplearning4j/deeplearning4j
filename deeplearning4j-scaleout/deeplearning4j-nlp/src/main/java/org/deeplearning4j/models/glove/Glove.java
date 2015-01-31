@@ -135,12 +135,12 @@ public class Glove  extends WordVectorsImpl {
 
 
         final AtomicInteger countUp = new AtomicInteger(0);
-        final Counter<Integer> erroriPerIteration = Util.parallelCounter();
+        final Counter<Integer> errorPerIteration = Util.parallelCounter();
         log.info("Processing # of co occurrences " + coOccurrences.numCoOccurrences());
         for(int i = 0; i < iterations; i++) {
             final AtomicInteger processed = new AtomicInteger(coOccurrences.numCoOccurrences());
-            doIteration(i, pairList, erroriPerIteration, processed, countUp);
-            log.info("Processed " + countUp.doubleValue() + " out of " + (pairList.size() * iterations) + " error was " + erroriPerIteration.getCount(i));
+            doIteration(i, pairList, errorPerIteration, processed, countUp);
+            log.info("Processed " + countUp.doubleValue() + " out of " + (pairList.size() * iterations) + " error was " + errorPerIteration.getCount(i));
 
         }
 

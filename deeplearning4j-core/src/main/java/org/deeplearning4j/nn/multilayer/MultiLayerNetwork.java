@@ -123,7 +123,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
                 while(iter.hasNext()) {
                     DataSet next = iter.next();
                     this.input = next.getFeatureMatrix();
-                      /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
+                      /*During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
                     if(this.getInput() == null || this.getLayers() == null) {
                         setInput(input);
                         initializeLayers(input);
@@ -169,7 +169,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
         if(!layerWiseConfigurations.isPretrain())
             return;
-        /* During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
+        /* During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
         if(this.getInput() == null || this.getLayers() == null) {
             setInput(input);
             initializeLayers(input);

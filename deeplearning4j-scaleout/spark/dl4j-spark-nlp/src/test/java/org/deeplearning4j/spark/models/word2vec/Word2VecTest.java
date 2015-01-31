@@ -10,12 +10,12 @@ import org.springframework.core.io.ClassPathResource;
 /**
  * Created by agibsonccc on 1/31/15.
  */
-public class SparkWord2VecTest extends BaseSparkTest {
+public class Word2VecTest extends BaseSparkTest {
 
     @Test
     public void testSparkWord2Vec() throws Exception {
         JavaRDD<String> corpus = sc.textFile(new ClassPathResource("basic/word2vec.txt").getFile().getAbsolutePath());
-        SparkWord2Vec word2Vec = new SparkWord2Vec();
+        Word2Vec word2Vec = new Word2Vec();
         sc.getConf().set(Word2VecPerformer.NEGATIVE,String.valueOf(0));
         word2Vec.train(corpus);
 

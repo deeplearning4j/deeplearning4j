@@ -7,6 +7,7 @@ import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.text.TextPipeline;
 import org.deeplearning4j.spark.text.TokenizerFunction;
@@ -16,14 +17,23 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Spark versio of word2vec
+ * Spark version of word2vec
+ *
+ * @author Adam Gibson
  */
-public class SparkWord2Vec {
+public class Word2Vec {
 
     private Broadcast<VocabCache> vocabCacheBroadcast;
     private String tokenizerFactoryClazz = DefaultTokenizerFactory.class.getName();
 
-    public void train(JavaRDD<String> rdd) {
+
+    /**
+     * Train and return the result based on the given records.
+     * Each string is assumed to be a document
+     * @param rdd the rdd to train on
+     * @return the vocab and lookup table for the model
+     */
+    public Pair<VocabCache,WeightLookupTable> train(JavaRDD<String> rdd) {
         TextPipeline pipeline = new TextPipeline(rdd);
         Pair<VocabCache,Long> vocabAndNumWords = pipeline.process();
         SparkConf conf = rdd.context().getConf();
@@ -35,6 +45,8 @@ public class SparkWord2Vec {
                 .useAdaGrad(conf.getBoolean(Word2VecPerformer.ADAGRAD,false)).build();
         lookupTable.resetWeights();
 
+        Huffman huffman = new Huffman(vocabAndNumWords.getFirst().vocabWords());
+        huffman.build();
 
         Word2VecPerformer performer = new Word2VecPerformer(
                 sc,sc.broadcast(new AtomicLong(vocabAndNumWords.getSecond())),lookupTable
@@ -44,7 +56,7 @@ public class SparkWord2Vec {
                 .map(new TokentoVocabWord(vocabCacheBroadcast)).foreach(performer);
 
 
-
+       return new Pair<VocabCache, WeightLookupTable>(vocabCacheBroadcast.getValue(),lookupTable);
 
     }
 

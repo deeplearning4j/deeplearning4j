@@ -8,7 +8,6 @@ import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -26,7 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,AtomicLong>> {
 
-    private int vectorLength = 50;
 
     public final static String NAME_SPACE = "org.deeplearning4j.scaleout.perform.models.word2vec";
     public final static String VECTOR_LENGTH = NAME_SPACE + ".length";
@@ -39,7 +37,7 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
     public final static String MIN_ALPHA = NAME_SPACE + ".minalpha";
     public final static String ITERATIONS = NAME_SPACE + ".iterations";
 
-    static double MAX_EXP = 6;
+    private static double MAX_EXP = 6;
     private boolean useAdaGrad = false;
     private double negative = 5;
     private int numWords = 1;
@@ -68,7 +66,6 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
 
 
     public void setup(SparkConf conf) {
-        vectorLength = conf.getInt(VECTOR_LENGTH,50);
         useAdaGrad = conf.getBoolean(ADAGRAD, false);
         negative = conf.getDouble(NEGATIVE, 5);
         numWords = conf.getInt(NUM_WORDS, 1);
@@ -97,31 +94,6 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
     }
 
 
-    /**
-     * Configure the configuration based on the table and index
-     * @param table the table
-     * @param index the index
-     * @param conf the configuration
-     */
-    public static void configure(InMemoryLookupTable table,InvertedIndex index,SparkConf conf) {
-        conf.set(VECTOR_LENGTH, String.valueOf(table.getVectorLength()));
-        conf.set(ADAGRAD, String.valueOf(table.isUseAdaGrad()));
-        conf.set(NEGATIVE, String.valueOf(table.getNegative()));
-        conf.set(ALPHA, String.valueOf(table.getLr().get()));
-        conf.set(NUM_WORDS, String.valueOf(index.totalWords()));
-        table.resetWeights();
-        if(table.getNegative() > 0) {
-            ByteArrayOutputStream bis = new ByteArrayOutputStream();
-            try {
-                DataOutputStream ois = new DataOutputStream(bis);
-                Nd4j.write(table.getTable(),ois);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            conf.set(Word2VecPerformer.TABLE,new String(bis.toByteArray()));
-
-        }
-    }
 
     /**
      * Train on a list of vocab words
@@ -136,10 +108,6 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             skipGram(i, sentence, (int) nextRandom.get() % window,alpha);
         }
-
-
-
-
 
     }
 
