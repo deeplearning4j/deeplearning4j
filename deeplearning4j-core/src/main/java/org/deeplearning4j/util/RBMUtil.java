@@ -6,7 +6,7 @@ import static  org.deeplearning4j.models.featuredetectors.rbm.RBM.HiddenUnit;
 import static  org.deeplearning4j.models.featuredetectors.rbm.RBM.VisibleUnit;
 
 /**
- * Handles various functions for RBM specific functions
+ * Handles various cooccurrences for RBM specific cooccurrences
  * @author Adam Gibson
  */
 public class RBMUtil {

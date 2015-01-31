@@ -11,7 +11,7 @@ import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
 /**
- * Static utility class for textual based windowing functions
+ * Static utility class for textual based windowing cooccurrences
  * @author Adam Gibson
  */
 public class Windows {

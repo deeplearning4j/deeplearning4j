@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Various functions for manipulating a multi layer network
+ * Various cooccurrences for manipulating a multi layer network
  * @author Adam Gibson
  */
 public class MultiLayerUtil {

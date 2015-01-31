@@ -821,7 +821,7 @@ public final class SloppyMath {
   }
 
   /**
-	 * Tests the hypergeometric distribution code, or other functions provided
+	 * Tests the hypergeometric distribution code, or other cooccurrences provided
 	 * in this module.
 	 * 
 	 * @param args
