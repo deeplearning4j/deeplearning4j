@@ -11,7 +11,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Created by agibsonccc on 1/30/15.
+ * Handles converting tokens to vocab words based
+ * on a given vo
  */
 public class TokentoVocabWord implements Function<Pair<List<String>,Long>,Pair<List<VocabWord>,AtomicLong>> {
     private Broadcast<VocabCache> vocab;
