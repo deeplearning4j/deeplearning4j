@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.text;
 
 import org.apache.spark.api.java.function.Function;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
@@ -9,20 +10,19 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Tokenizer function
  * @author Adam Gibson
  */
-public class TokenizerFunction implements Function<String,Triple<Collection<String>,VocabCache,Long>> {
+public class TokenizerFunction implements Function<String,Pair<List<String>,Long>> {
     private Class<? extends TokenizerFactory> tokenizerFactoryClazz;
     private TokenizerFactory tokenizerFactory;
-    private VocabCache cache = new InMemoryLookupCache();
 
-    public TokenizerFunction(String clazz,VocabCache cache) {
+    public TokenizerFunction(String clazz) {
         try {
             tokenizerFactoryClazz = (Class<? extends TokenizerFactory>) Class.forName(clazz);
-            this.cache = cache;
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -30,19 +30,15 @@ public class TokenizerFunction implements Function<String,Triple<Collection<Stri
     }
 
     public TokenizerFunction() {
-        this(DefaultTokenizerFactory.class.getName(),new InMemoryLookupCache());
-    }
-    public TokenizerFunction(VocabCache cache) {
-        this(DefaultTokenizerFactory.class.getName(),cache);
+        this(DefaultTokenizerFactory.class.getName());
     }
 
     @Override
-    public Triple<Collection<String>,VocabCache,Long> call(String v1) throws Exception {
-        Tokenizer tokenizer = null;
+    public Pair<List<String>,Long> call(String v1) throws Exception {
         if(tokenizerFactory == null)
             tokenizerFactory = getTokenizerFactory();
-        Collection<String> tokens = tokenizerFactory.create(v1).getTokens();
-        return new Triple<>(tokens,cache,Long.valueOf(tokens.size()));
+        List<String> tokens = tokenizerFactory.create(v1).getTokens();
+        return new Pair<>(tokens,Long.valueOf(tokens.size()));
     }
     private TokenizerFactory getTokenizerFactory() {
         try {
