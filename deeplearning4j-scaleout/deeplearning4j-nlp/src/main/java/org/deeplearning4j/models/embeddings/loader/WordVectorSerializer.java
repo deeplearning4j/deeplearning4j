@@ -59,7 +59,7 @@ public class WordVectorSerializer {
                 words = Integer.parseInt(readString(dis));
                 size = Integer.parseInt(readString(dis));
 
-                cache = new InMemoryLookupCache();
+                cache = new InMemoryLookupCache(false);
                 lookupTable = new InMemoryLookupTable.Builder().cache(cache)
                         .vectorLength(size).build();
 
@@ -224,6 +224,10 @@ public class WordVectorSerializer {
                 i = -1;
                 bytes = new byte[MAX_SIZE];
             }
+
+            if (b == 10)
+                b = dis.readByte();
+
         }
         sb.append(new String(bytes, 0, i + 1));
         return sb.toString();
