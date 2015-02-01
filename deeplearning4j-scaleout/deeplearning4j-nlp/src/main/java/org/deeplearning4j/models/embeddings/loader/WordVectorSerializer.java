@@ -2,6 +2,7 @@ package org.deeplearning4j.models.embeddings.loader;
 
 import java.io.*;
 import java.util.*;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -54,7 +55,7 @@ public class WordVectorSerializer {
             int words,size = 0;
 
             try {
-                bis = new BufferedInputStream(new FileInputStream(path));
+                bis = new BufferedInputStream(path.endsWith(".gz") ? new GZIPInputStream(new FileInputStream(path)) : new FileInputStream(path));
                 dis = new DataInputStream(bis);
                 words = Integer.parseInt(readString(dis));
                 size = Integer.parseInt(readString(dis));
@@ -225,8 +226,7 @@ public class WordVectorSerializer {
                 bytes = new byte[MAX_SIZE];
             }
 
-            if (b == 10)
-                b = dis.readByte();
+
 
         }
         sb.append(new String(bytes, 0, i + 1));
