@@ -7,8 +7,9 @@ import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.springframework.core.io.ClassPathResource;
-
+import org.nd4j.linalg.factory.Nd4j;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -45,6 +46,7 @@ public class WordVectorSerializerTest {
 
     @Test
     public void testCurrentFile() throws Exception {
+        Nd4j.dtype = DataBuffer.FLOAT;
         String url = "https://docs.google.com/uc?export=download&confirm=LDs-&id=0B7XkCwpI5KDYNlNUTTlSS21pQmM";
         String path = "GoogleNews-vectors-negative300.bin.gz";
         File toDl = new File(path);
