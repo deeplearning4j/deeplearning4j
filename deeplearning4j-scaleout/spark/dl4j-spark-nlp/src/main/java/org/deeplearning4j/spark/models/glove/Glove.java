@@ -96,11 +96,6 @@ public class Glove {
         }
 
         return new Pair<>(vocabAndNumWords.getFirst(),gloveWeightLookupTable);
-
-
-
-
-
     }
 
 }

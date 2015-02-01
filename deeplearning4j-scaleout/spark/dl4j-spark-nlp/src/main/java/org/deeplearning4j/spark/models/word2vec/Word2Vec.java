@@ -35,7 +35,7 @@ public class Word2Vec {
      */
     public Pair<VocabCache,WeightLookupTable> train(JavaRDD<String> rdd) {
         TextPipeline pipeline = new TextPipeline(rdd);
-        Pair<VocabCache,Long> vocabAndNumWords = pipeline.process();
+        Pair<VocabCache,Long> vocabAndNumWords = pipeline.process(tokenizerFactoryClazz);
         SparkConf conf = rdd.context().getConf();
         JavaSparkContext sc = new JavaSparkContext(rdd.context());
         vocabCacheBroadcast = sc.broadcast(vocabAndNumWords.getFirst());
