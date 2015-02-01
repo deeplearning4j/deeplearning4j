@@ -3,6 +3,7 @@ package org.deeplearning4j.models.word2vec;
 import static org.junit.Assert.*;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.junit.Before;
 import org.junit.Test;
@@ -10,6 +11,7 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
 /**
  * Created by agibsonccc on 9/21/14.
@@ -40,5 +42,18 @@ public class WordVectorSerializerTest {
         assertEquals(5,vec.vocab().numWords());
 
     }
+
+    @Test
+    public void testCurrentFile() throws Exception {
+        String url = "https://docs.google.com/uc?export=download&confirm=LDs-&id=0B7XkCwpI5KDYNlNUTTlSS21pQmM";
+        String path = "GoogleNews-vectors-negative300.bin.gz";
+        File toDl = new File(path);
+        if(!toDl.exists())
+            FileUtils.copyURLToFile(new URL(url),toDl);
+        Word2Vec vec = WordVectorSerializer.loadGoogleModel(toDl.getAbsolutePath(), true);
+        assertEquals(3000000,vec.vocab().numWords());
+
+    }
+
 
 }
