@@ -28,7 +28,7 @@ public class WordVectorSerializerTest {
         if(binaryFile == null)
             binaryFile = new ClassPathResource("vec.bin").getFile();
         FileUtils.deleteDirectory(new File("word2vec-index"));
-n
+
     }
 
     @Test
