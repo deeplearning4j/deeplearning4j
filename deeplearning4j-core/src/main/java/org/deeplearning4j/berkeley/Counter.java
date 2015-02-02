@@ -210,11 +210,11 @@ public class Counter<E> implements Serializable {
 	 * sets to val if key is not yet present.
 	 * 
 	 * @param key
-	 * @param increment
+	 * @param val
 	 */
 	public void setMaxCount(E key, double val) {
 		Double value = entries.get(key);
-		if (value == null || val > value.doubleValue()) {
+		if (value == null || val > value) {
 			setCount(key, val);
 
 			dirty = true;
@@ -226,11 +226,11 @@ public class Counter<E> implements Serializable {
 	 * sets to val if key is not yet present.
 	 * 
 	 * @param key
-	 * @param increment
+	 * @param val
 	 */
 	public void setMinCount(E key, double val) {
 		Double value = entries.get(key);
-		if (value == null || val < value.doubleValue()) {
+		if (value == null || val < value) {
 			setCount(key, val);
 
 			dirty = true;
