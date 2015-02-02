@@ -10,6 +10,7 @@ import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.RecordReader;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.canova.RDDMiniBatches;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
@@ -21,7 +22,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.io.Serializable;
 
 /**
- * Master class for org.deeplearning4j.spark
+ * Master class for spark
  *
  * @author Adam Gibson
  */
@@ -33,9 +34,12 @@ public class SparkDl4jMultiLayer implements Serializable {
     private MultiLayerNetwork network;
     private Accumulator<INDArray> accum;
     private Broadcast<INDArray> params;
+    private boolean averageEachIteration = false;
+    public final static String AVERAGE_EACH_ITERATION = "org.deeplearning4j.spark.iteration.average";
 
     public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerNetwork network) {
         this.sparkContext = sparkContext;
+        this.averageEachIteration = sparkContext.conf().getBoolean(AVERAGE_EACH_ITERATION,false);
         this.conf = conf.clone();
         sc = new JavaSparkContext(this.sparkContext);
         this.network = network;
@@ -44,6 +48,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerConfiguration conf) {
         this.sparkContext = sparkContext;
         this.conf = conf.clone();
+        this.averageEachIteration = sparkContext.conf().getBoolean(AVERAGE_EACH_ITERATION,false);
         sc = new JavaSparkContext(this.sparkContext);
     }
 
@@ -107,26 +112,56 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @return the multi layer network
      */
     public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd) {
-
         int batchSize = conf.getConf(0).getBatchSize();
+        int iterations = conf.getConf(0).getNumIterations();
         JavaRDD<DataSet> miniBatches = new RDDMiniBatches(batchSize,rdd).miniBatchesJava();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(conf);
-        network.init();
-        final INDArray params = network.params();
-        this.params = sc.broadcast(params);
-        accum = sc.accumulator(params,"params",new ParamAccumulator());
+        if(averageEachIteration) {
+            MultiLayerNetwork network = new MultiLayerNetwork(conf);
+            network.init();
+            final INDArray params = network.params();
+            this.params = sc.broadcast(params);
+            accum = sc.accumulator(params,"params",new ParamAccumulator());
 
-        int paramsLength = network.numParams();
-        if(params.length() != paramsLength)
-            throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
+            int paramsLength = network.numParams();
+            if(params.length() != paramsLength)
+                throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
 
 
 
-        miniBatches.foreach(new DataSetTrain(accum,this.params,conf.toJson()));
-        INDArray newParams = accum.value().divi(miniBatches.count());
-        network.setParameters(newParams);
-        this.network = network;
+            miniBatches.foreach(new DataSetTrain(accum,this.params,conf.toJson()));
+            INDArray newParams = accum.value().divi(miniBatches.count());
+            network.setParameters(newParams);
+            this.network = network;
+        }
+        else {
+          for(NeuralNetConfiguration conf : this.conf.getConfs())
+              conf.setNumIterations(1);
+            MultiLayerNetwork network = new MultiLayerNetwork(conf);
+            network.init();
+            final INDArray params = network.params();
+            this.params = sc.broadcast(params);
+
+            for(int i = 0; i < iterations; i++) {
+
+                accum = sc.accumulator(params,"params",new ParamAccumulator());
+
+                int paramsLength = network.numParams();
+                if(params.length() != paramsLength)
+                    throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
+
+                miniBatches.foreach(new DataSetTrain(accum,this.params,conf.toJson()));
+                this.params =  sc.broadcast(accum.value().divi(miniBatches.count()));
+            }
+
+
+            network.setParameters(this.params.value());
+            this.network = network;
+
+
+        }
+
+
         return network;
     }
 
