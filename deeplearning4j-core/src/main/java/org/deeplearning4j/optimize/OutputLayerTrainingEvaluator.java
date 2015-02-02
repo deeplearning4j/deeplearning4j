@@ -164,7 +164,8 @@ public class OutputLayerTrainingEvaluator implements TrainingEvaluator {
         }
 
         public OutputLayerTrainingEvaluator build() {
-            return new  OutputLayerTrainingEvaluator(network,patience,patienceIncrease,bestLoss,validationEpochs, miniBatchSize, testSet,improvementThreshold);
+            return new OutputLayerTrainingEvaluator(network,patience,patienceIncrease,bestLoss,validationEpochs,
+                miniBatchSize, testSet,improvementThreshold);
         }
 
 
