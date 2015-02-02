@@ -44,45 +44,39 @@ public class WordVectorSerializer {
         VocabCache cache;
         float[] data;
         if(binary) {
-            DataInputStream dis = null;
-            BufferedInputStream bis = null;
-            float vector;
-            int words,size = 0;
+          float vector;
+            int words,size;
             int count = 0;
-            try {
-                bis = new BufferedInputStream(path.endsWith(".gz") ? new GZIPInputStream(new FileInputStream(path)) : new FileInputStream(path));
-                dis = new DataInputStream(bis);
-                words = Integer.parseInt(readString(dis));
-                size = Integer.parseInt(readString(dis));
-                data = new float[words * size];
-                cache = new InMemoryLookupCache(false);
-                lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder().cache(cache)
-                        .vectorLength(size).build();
+          try (BufferedInputStream bis =
+                   new BufferedInputStream(path.endsWith(".gz") ?
+                       new GZIPInputStream(new FileInputStream(path)) :
+                       new FileInputStream(path)); DataInputStream dis = new DataInputStream(bis)) {
+            words = Integer.parseInt(readString(dis));
+            size = Integer.parseInt(readString(dis));
+            data = new float[words * size];
+            cache = new InMemoryLookupCache(false);
+            lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder().cache(cache)
+                .vectorLength(size).build();
 
-                String word;
-                for (int i = 0; i < words; i++) {
+            String word;
+            for (int i = 0; i < words; i++) {
 
-                    word = readString(dis);
-                    log.info("Loading " + word + " with word " + i);
-                    if(word.isEmpty())
-                        continue;
+              word = readString(dis);
+              log.info("Loading " + word + " with word " + i);
+              if (word.isEmpty())
+                continue;
 
-                    for (int j = 0; j < size; j++) {
-                        vector = dis.readFloat();
-                        data[count++] = vector;
-                    }
+              for (int j = 0; j < size; j++) {
+                vector = dis.readFloat();
+                data[count++] = vector;
+              }
 
 
-
-                    cache.addWordToIndex(cache.numWords(),word);
-                    cache.addToken(new VocabWord(1,word));
-                    cache.putVocabWord(word);
-                }
+              cache.addWordToIndex(cache.numWords(), word);
+              cache.addToken(new VocabWord(1, word));
+              cache.putVocabWord(word);
             }
-            finally {
-                bis.close();
-                dis.close();
-            }
+          }
 
 
             Word2Vec ret = new Word2Vec();
@@ -147,8 +141,8 @@ public class WordVectorSerializer {
     private static void writeVector(float[] vec,File to) throws IOException {
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(to));
         DataOutputStream dos = new DataOutputStream(bos);
-        for(int i = 0; i < vec.length; i++) {
-            dos.writeFloat(vec[i]);
+        for(float v : vec) {
+          dos.writeFloat(v);
         }
 
         bos.flush();
@@ -199,12 +193,11 @@ public class WordVectorSerializer {
      */
     public static void writeWordVectors(InMemoryLookupTable l,InMemoryLookupCache cache,String path) throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path),false));
-        int words = 0;
         for(int i = 0; i < l.getSyn0().rows(); i++) {
             String word = cache.wordAtIndex(i);
             if(word == null)
                 continue;
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             sb.append(word);
             sb.append(" ");
             INDArray wordVector = l.vector(word);
@@ -237,7 +230,7 @@ public class WordVectorSerializer {
         for(String word : vec.vocab().words()) {
             if(word == null)
                 continue;
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             sb.append(word);
             sb.append(" ");
             INDArray wordVector = vec.getWordVectorMatrix(word);
@@ -281,7 +274,7 @@ public class WordVectorSerializer {
         BufferedReader write = new BufferedReader(new FileReader(path));
         VocabCache cache = new InMemoryLookupCache();
 
-        InMemoryLookupTable l = null;
+        InMemoryLookupTable l;
 
         LineIterator iter = IOUtils.lineIterator(write);
         List<INDArray> arrays = new ArrayList<>();
@@ -328,7 +321,7 @@ public class WordVectorSerializer {
         for(String word : vec.vocab().words()) {
             if(word == null)
                 continue;
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             INDArray wordVector = tsne.getRow(l.wordFor(word).getIndex());
             for(int j = 0; j < wordVector.length(); j++) {
                 sb.append(wordVector.getDouble(j));
@@ -364,7 +357,7 @@ public class WordVectorSerializer {
         for(String word : vec.vocab().words()) {
             if(word == null)
                 continue;
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             INDArray wordVector = tsne.getRow(l.wordFor(word).getIndex());
             for(int j = 0; j < wordVector.length(); j++) {
                 sb.append(wordVector.getDouble(j));

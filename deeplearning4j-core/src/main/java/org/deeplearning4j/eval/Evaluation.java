@@ -1,12 +1,9 @@
 package org.deeplearning4j.eval;
 
-
 import java.util.Set;
 
 import org.deeplearning4j.berkeley.Counter;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-
 
 /**
  * Evaluation metrics: precision, recall, f1
@@ -37,7 +34,7 @@ public class Evaluation {
 			INDArray currRow = realOutcomes.getRow(i);
 			INDArray guessRow = guesses.getRow(i);
 
-			int currMax = Nd4j.getBlasWrapper().iamax(currRow);
+			int currMax;
             {
                 double max = currRow.getDouble(0);
                 currMax = 0;
@@ -48,7 +45,7 @@ public class Evaluation {
                     }
                 }
             }
-            int guessMax = Nd4j.getBlasWrapper().iamax(guessRow);
+            int guessMax;
             {
                 double max = guessRow.getDouble(0);
                 guessMax = 0;
@@ -131,9 +128,9 @@ public class Evaluation {
 	 * Gets the number of times the 
 	 * given class was predicted for the 
 	 * given predicted label
-	 * @param actual 
-	 * @param predicted
-	 * @return
+	 * @param actual actual outcome
+	 * @param predicted predicted outcome
+	 * @return number of time predicted
 	 */
 	public int numTimesPredicted(int actual,int predicted) {
 		return confusion.getCount(actual, predicted);

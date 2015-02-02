@@ -71,12 +71,12 @@ public class InMemoryLookupTable implements WeightLookupTable {
     public void resetWeights(boolean reset) {
         if(this.rng == null)
             this.rng = new MersenneTwister(seed);
-        if(syn0 == null || syn0 != null && reset) {
+        if(syn0 == null || reset) {
             syn0 = Nd4j.rand(new int[]{vocab.numWords() + 1, vectorLength}, rng).subi(0.5).divi(vectorLength);
             INDArray randUnk = Nd4j.rand(1, vectorLength, rng).subi(0.5).divi(vectorLength);
             putVector(Word2Vec.UNK, randUnk);
         }
-        if(syn1 == null || syn1 != null && reset)
+        if(syn1 == null || reset)
             syn1 = Nd4j.create(syn0.shape());
         initNegative();
     }
@@ -251,7 +251,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
                 if (f > MAX_EXP)
                     g = useAdaGrad ? w1.getGradient(target, (label - 1)) : (label - 1) *  alpha;
                 else if (f < -MAX_EXP)
-                    g = (label - 0) * (useAdaGrad ?  w1.getGradient(target, alpha) : alpha);
+                    g = label * (useAdaGrad ?  w1.getGradient(target, alpha) : alpha);
                 else
                     g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
                 if(syn0.data().dataType() == DataBuffer.DOUBLE)
@@ -595,8 +595,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
             if(vocabCache == null)
                 throw new IllegalStateException("Vocab cache must be specified");
 
-            WeightLookupTable ret =  new InMemoryLookupTable(vocabCache,vectorLength,useAdaGrad,lr,gen,negative);
-            return ret;
+            return new InMemoryLookupTable(vocabCache,vectorLength,useAdaGrad,lr,gen,negative);
         }
     }
 

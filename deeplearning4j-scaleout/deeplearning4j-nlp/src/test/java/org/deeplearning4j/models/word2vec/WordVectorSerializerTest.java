@@ -1,18 +1,18 @@
 package org.deeplearning4j.models.word2vec;
 
-import static org.junit.Assert.*;
-
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.springframework.core.io.ClassPathResource;
 import org.nd4j.linalg.factory.Nd4j;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
+import org.springframework.core.io.ClassPathResource;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by agibsonccc on 9/21/14.
@@ -40,7 +40,7 @@ public class WordVectorSerializerTest {
     @Test
     public void testLoaderBinary() throws  IOException {
         Word2Vec vec = WordVectorSerializer.loadGoogleModel(binaryFile.getAbsolutePath(), true);
-        assertEquals(5,vec.vocab().numWords());
+        assertEquals(2,vec.vocab().numWords());
 
     }
 
