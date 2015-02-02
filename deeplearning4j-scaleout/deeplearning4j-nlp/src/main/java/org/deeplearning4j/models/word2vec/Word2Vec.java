@@ -221,11 +221,7 @@ public class Word2Vec extends WordVectorsImpl  {
             else
                 currMiniBatch.add(word);
 
-
-
         }
-
-
 
     }
 
@@ -277,9 +273,6 @@ public class Word2Vec extends WordVectorsImpl  {
         //includes unk
         else if(vocab().numWords() < 2)
             vectorizer.fit();
-
-
-
 
         setup();
 
@@ -353,19 +346,10 @@ public class Word2Vec extends WordVectorsImpl  {
 
     }
 
-
-
-
     /* reinit weights */
     protected void resetWeights() {
         lookupTable.resetWeights();
     }
-
-
-
-
-
-
 
     @SuppressWarnings("unchecked")
     protected void readStopWords() {
@@ -373,12 +357,7 @@ public class Word2Vec extends WordVectorsImpl  {
             return;
         this.stopWords = StopWords.getStopWords();
 
-
     }
-
-
-
-
 
     /**
      * Note that calling a setter on this
@@ -391,7 +370,6 @@ public class Word2Vec extends WordVectorsImpl  {
         this.shouldReset = false;
     }
 
-
     /**
      * restart training on next fit().
      * Use when sentence iterator is set for new training.
@@ -399,8 +377,6 @@ public class Word2Vec extends WordVectorsImpl  {
     public void resetWeightsOnSetup() {
         this.shouldReset = true;
     }
-
-
 
     public int getWindow() {
         return window;
@@ -417,10 +393,6 @@ public class Word2Vec extends WordVectorsImpl  {
     public  void setTokenizerFactory(TokenizerFactory tokenizerFactory) {
         this.tokenizerFactory = tokenizerFactory;
     }
-
-
-
-
 
     public static class Builder {
         protected int minWordFrequency = 1;
@@ -476,7 +448,6 @@ public class Word2Vec extends WordVectorsImpl  {
             this.minLearningRate = minLearningRate;
             return this;
         }
-
 
         public Builder useAdaGrad(boolean useAdaGrad) {
             this.useAdaGrad = useAdaGrad;
