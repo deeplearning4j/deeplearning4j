@@ -349,7 +349,7 @@ public class BarnesHutTsne extends Tsne implements Model {
 
 
                 if(iterationListener != null)
-                    iterationListener.iterationDone(i);
+                    iterationListener.iterationDone(this,i);
                 log.info("Error at iteration " + i + " is " + score());
 
 

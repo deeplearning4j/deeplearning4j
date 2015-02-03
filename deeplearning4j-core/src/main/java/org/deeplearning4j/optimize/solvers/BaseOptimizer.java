@@ -175,7 +175,7 @@ public abstract class BaseOptimizer {
 
             //invoke listeners for debugging
             for(IterationListener listener : iterationListeners)
-                listener.iterationDone(i);
+                listener.iterationDone(model,i);
 
 
             //record old score for deltas and other termination conditions
