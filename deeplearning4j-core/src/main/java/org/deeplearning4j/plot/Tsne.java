@@ -318,7 +318,7 @@ public class Tsne implements Serializable {
                 p.divi(4);
 
             if(iterationListener != null)
-                iterationListener.iterationDone(i);
+                iterationListener.iterationDone(null,i);
 
         }
 
