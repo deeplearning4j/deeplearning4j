@@ -36,7 +36,7 @@ public class IterationGradientDescent extends BaseOptimizer {
             updateGradientAccordingToParams(gradient,params,model.batchSize());
             model.setParams(params.addi(gradient));
             for(IterationListener listener : conf.getListeners())
-                listener.iterationDone(i);
+                listener.iterationDone(model,i);
             log.info("Error at iteration " + i + " was " + model.score());
         }
         return true;

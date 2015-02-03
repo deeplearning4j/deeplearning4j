@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimize.listeners;
 
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 
 import java.util.ArrayList;
@@ -17,8 +18,8 @@ public class ComposableIterationListener implements IterationListener {
     }
 
     @Override
-    public void iterationDone(int iteration) {
+    public void iterationDone(Model model,int iteration) {
         for(IterationListener listener : listeners)
-            listener.iterationDone(iteration);
+            listener.iterationDone(model,iteration);
     }
 }
