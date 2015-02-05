@@ -8,6 +8,27 @@ version 1.0, as published by http://www.opensource.org.  For further
 information, see the file `LICENSE' included with this distribution. */
 
 
+
+import org.apache.commons.math3.util.FastMath;
+import static org.nd4j.linalg.ops.transforms.Transforms.*;
+
+import org.deeplearning4j.exception.InvalidStepException;
+import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.indexing.conditions.Or;
+import org.nd4j.linalg.indexing.functions.Value;
+import org.deeplearning4j.optimize.api.LineOptimizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+//"Line Searches and Backtracking", p385, "Numeric Recipes in C"
 /**
  @author Aron Culotta <a href="mailto:culotta@cs.umass.edu">culotta@cs.umass.edu</a>
 
@@ -26,39 +47,14 @@ information, see the file `LICENSE' included with this distribution. */
 
  */
 
-import org.apache.commons.math3.util.FastMath;
-
-import org.deeplearning4j.exception.InvalidStepException;
-import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
-import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.conditions.Condition;
-import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.indexing.conditions.Or;
-import org.nd4j.linalg.indexing.functions.Value;
-import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.LinAlgExceptions;
-import org.deeplearning4j.optimize.api.LineOptimizer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-
-//"Line Searches and Backtracking", p385, "Numeric Recipes in C"
-
-public class BackTrackLineSearch implements LineOptimizer
-{
+public class BackTrackLineSearch implements LineOptimizer  {
     private static Logger logger = LoggerFactory.getLogger(BackTrackLineSearch.class.getName());
 
-    Model function;
-    StepFunction stepFunction = new DefaultStepFunction();
-    BaseOptimizer optimizer;
-    final int maxIterations = 100;
+    private Model function;
+    private StepFunction stepFunction = new DefaultStepFunction();
+    private ConvexOptimizer optimizer;
+    private int maxIterations = 100;
     double stpmax = 100;
-    final double EPS = 3.0e-12f;
 
     // termination conditions: either
     //   a) abs(delta x/x) < REL_TOLX for all coordinates
@@ -69,13 +65,13 @@ public class BackTrackLineSearch implements LineOptimizer
     final double ALF = 1e-4f;
 
 
-    public BackTrackLineSearch(Model function, StepFunction stepFunction, BaseOptimizer optimizer) {
+    public BackTrackLineSearch(Model function, StepFunction stepFunction, ConvexOptimizer optimizer) {
         this.function = function;
         this.stepFunction = stepFunction;
         this.optimizer = optimizer;
     }
 
-    public BackTrackLineSearch(Model optimizable, BaseOptimizer optimizer) {
+    public BackTrackLineSearch(Model optimizable, ConvexOptimizer optimizer) {
         this(optimizable, new DefaultStepFunction(),optimizer);
     }
 
@@ -103,30 +99,46 @@ public class BackTrackLineSearch implements LineOptimizer
      *  for all coordinates. */
     public void setAbsTolx (double tolx) { absTolx = tolx; }
 
+    public int getMaxIterations() {
+        return maxIterations;
+    }
+
+    public void setMaxIterations(int maxIterations) {
+        this.maxIterations = maxIterations;
+    }
+
     // initialStep is ignored.  This is b/c if the initial step is not 1.0,
     //   it sometimes confuses the backtracking for reasons I don't
     //   understand.  (That is, the jump gets LARGER on iteration 1.)
 
     // returns fraction of step size (alam) if found a good step
     // returns 0.0 if could not step in direction
-    public double optimize (INDArray line,int lineSearchIteration,double initialStep,INDArray x,INDArray g) throws InvalidStepException {
+
+    /**
+     *
+     * @param initialStep the initial step size
+     * @param x the parameters to optimize
+     * @param line the line/rate of change
+     * @return the next step size
+     * @throws InvalidStepException
+     */
+    public double optimize (double initialStep,INDArray x,INDArray line) throws InvalidStepException {
         INDArray oldParameters;
         double slope, test, alamin, alam, alam2, tmplam;
-        double rhs1, rhs2, a, b, disc, oldAlam;
-        double f, fold, f2;
+        double rhs1, rhs2, a, b, disc, oldAlam;double f, fold, f2;
         oldParameters = x.dup();
-
+        INDArray g = line.dup();
 
         alam2 = 0.0;
         f2 = fold = optimizer.score();
+
         if (logger.isDebugEnabled()) {
             logger.trace ("ENTERING BACKTRACK\n");
             logger.trace("Entering BackTrackLinnSearch, value = " + fold + ",\ndirection.oneNorm:"
-                    +	line.norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+ FastMath.max(Float.NEGATIVE_INFINITY,Transforms.abs(line).max(Integer.MAX_VALUE).getDouble(0)));
+                    +	g.norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+ FastMath.max(Float.NEGATIVE_INFINITY,abs(g).max(Integer.MAX_VALUE).getDouble(0)));
         }
 
         BooleanIndexing.applyWhere(g, new Or(Conditions.isNan(),Conditions.isInfinite()),new Value(Nd4j.EPS_THRESHOLD));
-        LinAlgExceptions.assertValidNum(g);
         double sum = line.norm2(Integer.MAX_VALUE).getDouble(0);
         if(sum > stpmax) {
             logger.warn("attempted step too big. scaling: sum= " + sum +
@@ -148,58 +160,53 @@ public class BackTrackLineSearch implements LineOptimizer
         // converge when (delta x) / x < REL_TOLX for all coordinates.
         //  the largest step size that triggers this threshold is
         //  precomputed and saved in alamin
-        INDArray maxOldParams = Transforms.abs(oldParameters);
-        BooleanIndexing.applyWhere(maxOldParams, new Condition() {
-            @Override
-            public Boolean apply(Number input) {
-                return input.doubleValue() <  1.0;
-            }
-
-            @Override
-            public Boolean apply(IComplexNumber input) {
-                return false;
-            }
-        },new Value(1.0));
+        INDArray maxOldParams = abs(oldParameters);
+        BooleanIndexing.applyWhere(maxOldParams, Conditions.lessThan(1.0),new Value(1.0));
 
 
 
-        INDArray testMatrix = Transforms.abs(line).divi(maxOldParams);
+        INDArray testMatrix = abs(line).divi(maxOldParams);
         test = testMatrix.max(Integer.MAX_VALUE).getDouble(0);
         //no longer needed
         testMatrix = null;
+
         alamin = relTolx / test;
 
-        alam  = 1.0f;
-        oldAlam = 0.0f;
+        alam  = 1.0;
+        oldAlam = 0.0;
         int iteration;
         // look for step size in direction given by "line"
         for(iteration = 0; iteration < maxIterations; iteration++) {
             // x = oldParameters + alam*line
             // initially, alam = 1.0, i.e. take full Newton step
-            logger.trace("BackTrack loop iteration " + iteration +" : alam="+
-                    alam+" oldAlam=" + oldAlam);
-            logger.trace ("before step, x.1norm: " + x.norm1(Integer.MAX_VALUE) +
-                    "\nalam: " + alam + "\noldAlam: " + oldAlam);
+            logger.trace("BackTrack loop iteration " + iteration +" : alam=" + alam +" oldAlam=" + oldAlam);
+            logger.trace ("before step, x.1norm: " + x.norm1(Integer.MAX_VALUE) +  "\nalam: " + alam + "\noldAlam: " + oldAlam);
             assert(alam != oldAlam) : "alam == oldAlam";
 
             if(stepFunction == null)
                 stepFunction =  new DefaultStepFunction();
+            //scale wrt updates
+            optimizer.updateGradientAccordingToParams(line,x,x.rows());
             stepFunction.step(x,line,new Object[]{alam,oldAlam}); //step
 
-            double norm1 = x.norm1(Integer.MAX_VALUE).getDouble(0);
-            logger.debug ("after step, x.1norm: " + norm1);
+            if(logger.isDebugEnabled())  {
+                double norm1 = x.norm1(Integer.MAX_VALUE).getDouble(0);
+                logger.debug ("after step, x.1norm: " + norm1);
+            }
 
             // check for convergence
             //convergence on delta x
             if ((alam < alamin) || smallAbsDiff (oldParameters, x)) {
                 function.setParams(oldParameters);
+                function.setScore();
                 f = function.score();
-                logger.trace("EXITING BACKTRACK: Jump too small (alamin = "+ alamin + "). Exiting and using xold. Value = "+f);
-                return 0.0f;
+                logger.trace("EXITING BACKTRACK: Jump too small (alamin = "+ alamin + "). Exiting and using xold. Value = " + f);
+                return 0.0;
             }
 
             function.setParams(x);
             oldAlam = alam;
+            function.setScore();
             f = function.score();
 
             logger.debug("value = " + f);
@@ -211,8 +218,7 @@ public class BackTrackLineSearch implements LineOptimizer
 
                 if (f < fold)
                     throw new IllegalStateException
-                            ("Function did not increase: f = " + f +
-                                    " < " + fold + " = fold");
+                            ("Function did not increase: f = " + f + " < " + fold + " = fold");
                 return alam;
             }
 
@@ -221,28 +227,29 @@ public class BackTrackLineSearch implements LineOptimizer
             // jumped to unstable territory, then scale down jump
             else if(Double.isInfinite(f) || Double.isInfinite(f2)) {
                 logger.warn ("Value is infinite after jump " + oldAlam + ". f="+ f +", f2=" + f2 + ". Scaling back step size...");
-                tmplam = .2f * alam;
+                tmplam = .2 * alam;
                 if(alam < alamin) { //convergence on delta x
                     function.setParams(oldParameters);
+                    function.setScore();
                     f = function.score();
                     logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using xold. Value="+ f );
-                    return 0.0f;
+                    return 0.0;
                 }
             }
             else { // backtrack
                 if(alam == 1.0) // first time through
-                    tmplam = -slope / (2.0f * ( f - fold - slope ));
+                    tmplam = -slope / (2.0 * ( f - fold - slope ));
                 else {
                     rhs1 = f - fold- alam * slope;
                     rhs2 = f2 - fold - alam2 * slope;
                     if((alam - alam2) == 0)
                         throw new IllegalStateException("FAILURE: dividing by alam-alam2. alam=" + alam);
-                    a = ( rhs1 / (FastMath.pow(alam, 2)) - rhs2 /  ( FastMath.pow(alam2, 2) )) / (alam-alam2);
-                    b = ( -alam2* rhs1/( alam* alam ) + alam * rhs2 / ( alam2 *  alam2 )) / ( alam - alam2);
+                    a = ( rhs1 / (FastMath.pow(alam, 2)) - rhs2 /  ( FastMath.pow(alam2, 2) )) / (alam - alam2);
+                    b = ( -alam2 * rhs1/( alam* alam ) + alam * rhs2 / ( alam2 *  alam2 )) / ( alam - alam2);
                     if(a == 0.0)
-                        tmplam = -slope / (2.0f * b);
+                        tmplam = -slope / (2.0 * b);
                     else {
-                        disc = b * b - 3.0f * a * slope;
+                        disc = b * b - 3.0 * a * slope;
                         if(disc < 0.0) {
                             tmplam = .5f * alam;
                         }
@@ -263,18 +270,19 @@ public class BackTrackLineSearch implements LineOptimizer
 
         }
 
-        return 0.0f;
+        return 0.0;
     }
 
+
+
     // returns true iff we've converged based on absolute x difference
-    private boolean smallAbsDiff (INDArray x, INDArray xold)
-    {
+    private boolean smallAbsDiff (INDArray x, INDArray xold) {
 
         for (int i = 0; i < x.length(); i++) {
             double comp = Math.abs ( x.getDouble(i) -  xold.getDouble(i));
-            if ( comp > absTolx) {
+            if ( comp > absTolx)
                 return false;
-            }
+
         }
         return true;
     }

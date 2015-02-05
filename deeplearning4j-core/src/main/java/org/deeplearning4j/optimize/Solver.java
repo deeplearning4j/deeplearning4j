@@ -3,6 +3,7 @@ package org.deeplearning4j.optimize;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.solvers.*;
 import java.util.Collection;
@@ -15,7 +16,7 @@ public class Solver {
     private NeuralNetConfiguration conf;
     private Collection<IterationListener> listeners;
     private Model model;
-    private BaseOptimizer optimizer;
+    private ConvexOptimizer optimizer;
 
 
     public void optimize() {
@@ -25,7 +26,7 @@ public class Solver {
 
     }
 
-    public BaseOptimizer getOptimizer() {
+    public ConvexOptimizer getOptimizer() {
         OptimizationAlgorithm algo = conf.getOptimizationAlgo();
         switch(algo) {
             case LBFGS:

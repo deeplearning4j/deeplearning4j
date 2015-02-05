@@ -10,7 +10,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.api.TrainingEvaluator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +27,6 @@ public class StochasticHessianFree extends BaseOptimizer {
     private static Logger logger = LoggerFactory.getLogger(StochasticHessianFree.class);
 
     boolean converged = false;
-    TrainingEvaluator eval;
     double initialStepSize = 1f;
     double tolerance = 1e-5f;
     double gradientTolerance = 0f;

@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -177,6 +178,11 @@ public class BarnesHutTsne extends Tsne implements Model {
     @Override
     public void validateInput() {
 
+    }
+
+    @Override
+    public ConvexOptimizer getOptimizer() {
+        return null;
     }
 
     /* compute the gradient given the current solution, the probabilities and the constant */
@@ -440,6 +446,16 @@ public class BarnesHutTsne extends Tsne implements Model {
         }
 
         return C;
+    }
+
+    @Override
+    public void setScore() {
+
+    }
+
+    @Override
+    public void accumulateScore(double accum) {
+
     }
 
     @Override

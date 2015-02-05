@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Activations;
@@ -49,6 +50,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected Map<Integer,Double> momentumAfter = new HashMap<>();
     //reset adagrad historical gradient after n iterations
     protected int resetAdaGradIterations = -1;
+    //number of line search iterations
+    protected int numLineSearchIterations = 100;
+
     protected double dropOut = 0;
     //use only when binary hidden neuralNets are active
     protected boolean applySparsity = false;
@@ -94,7 +98,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected int kernel = 5;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected int batchSize = 10;
-
+    //minimize or maximize objective
+    protected boolean minimize = false;
 
 
     public NeuralNetConfiguration() {}
@@ -136,9 +141,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   int[] featureMapSize,
                                   int kernel,
                                   int batchSize,
+                                  int numLineSearchIterations,
+                                  boolean minimize,
                                   Collection<IterationListener> listeners,
                                   LayerFactory layerFactory) {
-
+        this.minimize = minimize;
+        this.numLineSearchIterations = numLineSearchIterations;
         this.batchSize = batchSize;
         this.layerFactory = layerFactory;
         this.listeners = listeners;
@@ -181,7 +189,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
     public NeuralNetConfiguration(NeuralNetConfiguration neuralNetConfiguration) {
+        this.minimize = neuralNetConfiguration.minimize;
         this.layerFactory = neuralNetConfiguration.layerFactory;
+        this.numLineSearchIterations = neuralNetConfiguration.numLineSearchIterations;
         this.batchSize = neuralNetConfiguration.batchSize;
         this.sparsity = neuralNetConfiguration.sparsity;
         this.useAdaGrad = neuralNetConfiguration.useAdaGrad;
@@ -222,6 +232,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.hiddenUnit = neuralNetConfiguration.hiddenUnit;
     }
 
+    public int getNumLineSearchIterations() {
+        return numLineSearchIterations;
+    }
+
+    public void setNumLineSearchIterations(int numLineSearchIterations) {
+        this.numLineSearchIterations = numLineSearchIterations;
+    }
+
     public int getBatchSize() {
         return batchSize;
     }
@@ -249,6 +267,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public void addVariable(String variable) {
         if(!gradientList.contains(variable))
             gradientList.add(variable);
+    }
+
+    public boolean isMinimize() {
+        return minimize;
+    }
+
+    public void setMinimize(boolean minimize) {
+        this.minimize = minimize;
     }
 
     public List<String> getGradientList() {
@@ -941,9 +967,21 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         //subsampling layers
         private int[] stride = {2,2};
         private Collection<IterationListener> listeners;
-        private StepFunction stepFunction = new GradientStepFunction();
+        private StepFunction stepFunction = new DefaultStepFunction();
         private LayerFactory layerFactory;
         private int batchSize = 0;
+        private int numLineSearchIterations = 100;
+        private boolean minimize = false;
+
+        public Builder minimize(boolean minimize) {
+            this.minimize = minimize;
+            return this;
+        }
+
+        public Builder numLineSearchIterations(int numLineSearchIterations) {
+            this.numLineSearchIterations = numLineSearchIterations;
+            return this;
+        }
 
         public Builder batchSize(int batchSize) {
             this.batchSize = batchSize;
@@ -977,9 +1015,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public Builder clone() {
             return new Builder().activationFunction(activationFunction).layerFactory(layerFactory)
-                    .adagradResetIterations(resetAdaGradIterations).applySparsity(applySparsity)
+                    .adagradResetIterations(resetAdaGradIterations).applySparsity(applySparsity).minimize(minimize)
                     .concatBiases(concatBiases).constrainGradientToUnitNorm(constrainGradientToUnitNorm)
-                    .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize)
+                    .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize).numLineSearchIterations(numLineSearchIterations)
                     .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr).useAdaGrad(adagrad).stepFunction(stepFunction)
                     .lossFunction(lossFunction).momentumAfter(momentumAfter).momentum(momentum).listeners(listeners)
                     .nIn(nIn).nOut(nOut).optimizationAlgo(optimizationAlgo).batchSize(batchSize)
@@ -1120,7 +1158,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction, renderWeightsEveryNumEpochs,
                     concatBiases,  constrainGradientToUnitNorm,  rng,
-                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel,batchSize,listeners,layerFactory);
+                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel,batchSize,numLineSearchIterations,minimize,listeners,layerFactory);
             ret.useAdaGrad = this.adagrad;
             ret.stepFunction = stepFunction;
             return ret;
