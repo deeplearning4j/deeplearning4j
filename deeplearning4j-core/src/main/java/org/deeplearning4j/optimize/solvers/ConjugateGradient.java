@@ -86,7 +86,6 @@ public class ConjugateGradient extends BaseOptimizer {
 
 
         BooleanIndexing.applyWhere(h, new Or(Conditions.isNan(),Conditions.isInfinite()), new Value(Nd4j.EPS_THRESHOLD));
-        LinAlgExceptions.assertValidNum(h);
 
         // gdruck
         // Mallet line search algorithms stop search whenever

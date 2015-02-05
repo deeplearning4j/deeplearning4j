@@ -8,9 +8,11 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.AdaGrad;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -30,7 +32,7 @@ public abstract class BaseLayer implements Layer {
     protected INDArray dropoutMask;
     protected ParamInitializer paramInitializer;
     protected double score = 0.0;
-
+    protected ConvexOptimizer optimizer;
 
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -43,19 +45,41 @@ public abstract class BaseLayer implements Layer {
         this.conf = conf;
     }
 
-    @Override
-    public void setParameters(INDArray params) {
-
-    }
 
     @Override
     public void fit() {
-
+        fit(this.input);
     }
 
     @Override
     public void setScore() {
 
+    }
+
+
+    /**
+     * iterate one iteration of the network
+     *
+     * @param input  the input to iterate on
+     */
+    @Override
+    public void iterate(INDArray input) {
+        this.input = input;
+        Gradient gradient = getGradient();
+        update(gradient);
+    }
+
+
+
+    @Override
+    public void update(Gradient gradient) {
+        setParams(params().addi(gradient.gradient()));
+    }
+
+
+    @Override
+    public ConvexOptimizer getOptimizer() {
+        return optimizer;
     }
 
     @Override
@@ -272,7 +296,7 @@ public abstract class BaseLayer implements Layer {
         Solver solver = new Solver.Builder()
                 .model(this).configure(conf()).listeners(conf.getListeners())
                 .build();
-
+        this.optimizer = solver.getOptimizer();
         solver.optimize();
     }
 
@@ -340,5 +364,16 @@ public abstract class BaseLayer implements Layer {
 
         return layer;
     }
+
+    @Override
+    public void backWard(INDArray errors) {
+        //no-op
+    }
+
+    @Override
+    public void accumulateScore(double accum) {
+        score += accum;
+    }
+
 
 }

@@ -42,9 +42,10 @@ public class NeuralNetPlotter implements Serializable {
 
 
     public void renderFilter(INDArray w) {
-        INDArray render2 = w.transpose();
+        INDArray render2 = w.dup();
         try {
-            render.renderFilters(render2, "currimg.png", w.columns() , w.rows(),w.slices());
+            render.renderFilters(render2, "currimg.png", (int)Math.sqrt(render2.rows()) , (int) Math.sqrt( render2.columns()),10);
+
         } catch (Exception e) {
             e.printStackTrace();
         }

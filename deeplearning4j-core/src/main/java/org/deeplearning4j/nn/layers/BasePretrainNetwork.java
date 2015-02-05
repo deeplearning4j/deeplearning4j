@@ -15,6 +15,8 @@ import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.deeplearning4j.util.MathUtils.binomial;
+
 
 /**
  * Baseline class for any Neural Network used
@@ -26,8 +28,6 @@ public abstract class BasePretrainNetwork extends BaseLayer {
 
     private static final long serialVersionUID = -7074102204433996574L;
 
-    protected INDArray doMask;
-    private static Logger log = LoggerFactory.getLogger(BasePretrainNetwork.class);
 
     public BasePretrainNetwork(NeuralNetConfiguration conf) {
         super(conf);
@@ -45,8 +45,6 @@ public abstract class BasePretrainNetwork extends BaseLayer {
     protected void applySparsity(INDArray hBiasGradient) {
         INDArray change = hBiasGradient.mul(conf.getSparsity()).mul(-conf.getLr() * conf.getSparsity());
         hBiasGradient.addi(change);
-
-
     }
 
 
@@ -56,9 +54,8 @@ public abstract class BasePretrainNetwork extends BaseLayer {
            return;
 
         if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY) {
-            INDArray input = this.input;
             INDArray output = transform(input);
-            while(!Shape.shapeEquals(input.shape(),output.shape()))
+            while(!Shape.shapeEquals(input.shape(), output.shape()))
                 output = transform(input);
             score = -LossFunctions.score(
                     input,
@@ -66,6 +63,9 @@ public abstract class BasePretrainNetwork extends BaseLayer {
                     output,
                     conf.getL2(),
                     conf.isUseRegularization());
+            //minimization target
+            if(conf.isMinimize())
+                score = -score;
         }
         else {
             score =  -LossFunctions.reconEntropy(
@@ -74,25 +74,27 @@ public abstract class BasePretrainNetwork extends BaseLayer {
                     getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY),
                     getParam(PretrainParamInitializer.WEIGHT_KEY),
                     conf.getActivationFunction());
+            if(conf.isMinimize())
+                score = -score;
         }
     }
 
-    @Override
-    public void update(Gradient gradient) {
-        setParams(params().addi(gradient.gradient()));
+    /**
+     * Corrupts the given input by doing a binomial sampling
+     * given the corruption level
+     * @param x the input to corrupt
+     * @param corruptionLevel the corruption value
+     * @return the binomial sampled corrupted input
+     */
+    public INDArray getCorruptedInput(INDArray x, double corruptionLevel) {
+        INDArray corrupted = Nd4j.zeros(x.shape());
+        INDArray linear = corrupted.linearView();
+        for(int i = 0; i < x.length(); i++)
+            linear.putScalar(i,binomial(conf.getRng(),1,1 - corruptionLevel));
+        corrupted.muli(x);
+        return corrupted;
     }
 
-    /**
-     * iterate one iteration of the network
-     *
-     * @param input  the input to iterate on
-     */
-    @Override
-    public void iterate(INDArray input) {
-        this.input = input;
-        Gradient gradient = getGradient();
-        update(gradient);
-    }
 
 
     protected Gradient createGradient(INDArray wGradient,INDArray vBiasGradient,INDArray hBiasGradient) {
@@ -103,42 +105,18 @@ public abstract class BasePretrainNetwork extends BaseLayer {
         return ret;
     }
 
-
-    protected void applyDropOutIfNecessary(INDArray input) {
-        if(conf.getDropOut() > 0) {
-            this.doMask = Nd4j.rand(input.rows(), input.columns()).gt(conf.getDropOut());
-        }
-
-        else
-            this.doMask = Nd4j.ones(input.rows(),input.columns());
-
-        //actually apply drop out
-        input.muli(doMask);
-
-    }
-
-    @Override
-    public void fit() {
-        Solver solver = new Solver.Builder()
-                .model(this).configure(conf()).listeners(conf.getListeners())
-                .build();
-        solver.optimize();
-
-    }
-
-    //align input so it can be used in training
-    protected INDArray preProcessInput(INDArray input) {
-        if(conf.isConcatBiases())
-            return Nd4j.hstack(input,Nd4j.ones(input.rows(),1));
-        return input;
-    }
-
+    /**
+     * Sample the hidden distribution given the visible
+     * @param v the visible to sample from
+     * @return the hidden mean and sample
+     */
     public abstract Pair<INDArray,INDArray> sampleHiddenGivenVisible(INDArray v);
 
+    /**
+     * Sample the visible distribution given the hidden
+     * @param h the hidden to sample from
+     * @return the mean and sample
+     */
     public abstract Pair<INDArray,INDArray> sampleVisibleGivenHidden(INDArray h);
-
-
-
-
 
 }
