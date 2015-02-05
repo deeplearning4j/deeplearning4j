@@ -21,6 +21,7 @@ public class MultiLayerConfiguration implements Serializable {
     private boolean useRBMPropUpAsActivations = true;
     private double dampingFactor = 100;
     private Map<Integer,OutputPreProcessor> processors = new HashMap<>();
+    private boolean backward = false;
 
     private MultiLayerConfiguration() {}
 
@@ -33,6 +34,7 @@ public class MultiLayerConfiguration implements Serializable {
         this.useRBMPropUpAsActivations = multiLayerConfiguration.useRBMPropUpAsActivations;
         this.dampingFactor = multiLayerConfiguration.dampingFactor;
         this.processors = new HashMap<>(multiLayerConfiguration.processors);
+        this.backward = multiLayerConfiguration.backward;
 
     }
 
@@ -98,6 +100,22 @@ public class MultiLayerConfiguration implements Serializable {
 
     public void setConfs(List<NeuralNetConfiguration> confs) {
         this.confs = confs;
+    }
+
+    public Map<Integer, OutputPreProcessor> getProcessors() {
+        return processors;
+    }
+
+    public void setProcessors(Map<Integer, OutputPreProcessor> processors) {
+        this.processors = processors;
+    }
+
+    public boolean isBackward() {
+        return backward;
+    }
+
+    public void setBackward(boolean backward) {
+        this.backward = backward;
     }
 
     /**

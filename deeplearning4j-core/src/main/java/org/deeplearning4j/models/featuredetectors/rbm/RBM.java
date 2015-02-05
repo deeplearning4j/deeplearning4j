@@ -14,12 +14,12 @@ import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.sampling.Sampling;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.exp;
 import static org.nd4j.linalg.ops.transforms.Transforms.log;
 import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
+import static org.nd4j.linalg.sampling.Sampling.*;
 
 
 
@@ -64,22 +64,19 @@ public  class RBM extends BasePretrainNetwork {
 
     public  static enum VisibleUnit {
         BINARY,GAUSSIAN,SOFTMAX,LINEAR
-
-
     }
 
     public  static enum HiddenUnit {
         RECTIFIED,BINARY,GAUSSIAN,SOFTMAX
     }
+
+
     /**
      *
      */
     private static final long serialVersionUID = 6189188205731511957L;
+    //variance matrices for gaussian visible/hidden units
     protected INDArray sigma,hiddenSigma;
-
-
-
-
 
 
     /**
@@ -108,10 +105,7 @@ public  class RBM extends BasePretrainNetwork {
 
 
         int k = conf.getK();
-/*
-		 * Cost and updates dictionary.
-		 * This is the update rules for weights and biases
-		 */
+
 
         //POSITIVE PHASE
         Pair<INDArray,INDArray> probHidden = sampleHiddenGivenVisible(getInput());
@@ -153,7 +147,7 @@ public  class RBM extends BasePretrainNetwork {
             else
                 matrices = gibbhVh(nhSamples);
 
-            //getFromOrigin the cost updates for sampling in the chain after k iterations
+            //get the cost updates for sampling in the chain after k iterations
             nvMeans = matrices.getFirst().getFirst();
             nvSamples = matrices.getFirst().getSecond();
             nhMeans = matrices.getSecond().getFirst();
@@ -163,8 +157,8 @@ public  class RBM extends BasePretrainNetwork {
 		/*
 		 * Update gradient parameters
 		 */
-        INDArray wGradient = getInput().transpose().mmul(probHidden.getSecond()).subi(
-                nvSamples.transpose().mmul(nhMeans)
+        INDArray wGradient = getInput().transposei().mmul(probHidden.getSecond()).subi(
+                nvSamples.transposei().mmul(nhMeans)
         );
 
 
@@ -235,7 +229,7 @@ public  class RBM extends BasePretrainNetwork {
      * @return a binomial distribution containing the expected values and the samples
      */
     @Override
-   public   Pair<INDArray,INDArray> sampleHiddenGivenVisible(INDArray v) {
+   public  Pair<INDArray,INDArray> sampleHiddenGivenVisible(INDArray v) {
         if(conf.getHiddenUnit() == HiddenUnit.RECTIFIED) {
             INDArray h1Mean = propUp(v);
             INDArray sigH1Mean = sigmoid(h1Mean);
@@ -243,8 +237,7 @@ public  class RBM extends BasePretrainNetwork {
 		 * Rectified linear part
 		 */
             INDArray sqrtSigH1Mean = sqrt(sigH1Mean);
-            //NANs here with Word2Vec
-            INDArray sample = Sampling.normal(conf.getRng(), h1Mean,1);
+            INDArray sample = normal(conf.getRng(), h1Mean,1);
             sample.muli(sqrtSigH1Mean);
             INDArray h1Sample = h1Mean.add(sample);
             h1Sample = Transforms.max(h1Sample);
@@ -260,7 +253,7 @@ public  class RBM extends BasePretrainNetwork {
             INDArray h1Mean = propUp(v);
             this.hiddenSigma = h1Mean.var(1);
 
-            INDArray h1Sample =  h1Mean.addi(Sampling.normal(conf.getRng(),h1Mean,this.hiddenSigma));
+            INDArray h1Sample =  h1Mean.addi(normal(conf.getRng(),h1Mean,this.hiddenSigma));
 
             //apply dropout
             applyDropOutIfNecessary(h1Sample);
@@ -278,7 +271,7 @@ public  class RBM extends BasePretrainNetwork {
 
         else if(conf.getHiddenUnit() == HiddenUnit.BINARY) {
             INDArray h1Mean = propUp(v);
-            INDArray h1Sample = Sampling.binomial(h1Mean, 1, conf.getRng());
+            INDArray h1Sample = binomial(h1Mean, 1, conf.getRng());
             applyDropOutIfNecessary(h1Sample);
             return new Pair<>(h1Mean,h1Sample);
         }
@@ -322,7 +315,7 @@ public  class RBM extends BasePretrainNetwork {
         }
 
         else if(conf.getVisibleUnit() == VisibleUnit.LINEAR) {
-            INDArray v1Sample = Sampling.normal(conf.getRng(),v1Mean,1);
+            INDArray v1Sample = normal(conf.getRng(),v1Mean,1);
             return new Pair<>(v1Mean,v1Sample);
         }
 
@@ -332,7 +325,7 @@ public  class RBM extends BasePretrainNetwork {
         }
 
         else if(conf.getVisibleUnit() == VisibleUnit.BINARY) {
-            INDArray v1Sample = Sampling.binomial(v1Mean, 1, conf.getRng());
+            INDArray v1Sample = binomial(v1Mean, 1, conf.getRng());
             return new Pair<>(v1Mean,v1Sample);
         }
 
@@ -396,7 +389,7 @@ public  class RBM extends BasePretrainNetwork {
      * @return the approximated output of the hidden layer
      */
     public   INDArray propDown(INDArray h) {
-        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY).transpose();
+        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY).transposei();
         INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
 
         INDArray vMean = h.mmul(W);
@@ -406,12 +399,12 @@ public  class RBM extends BasePretrainNetwork {
             vMean.addiRowVector(vBias);
 
         if(conf.getVisibleUnit()  == VisibleUnit.GAUSSIAN) {
-            INDArray sample = Sampling.normal(conf.getRng(), vMean, 1.0);
+            INDArray sample = normal(conf.getRng(), vMean, 1.0);
             vMean.addi(sample);
             return vMean;
         }
         else if(conf.getVisibleUnit() == VisibleUnit.LINEAR) {
-            vMean = Sampling.normal(conf.getRng(),vMean,1);
+            vMean = normal(conf.getRng(),vMean,1);
             return vMean;
         }
 

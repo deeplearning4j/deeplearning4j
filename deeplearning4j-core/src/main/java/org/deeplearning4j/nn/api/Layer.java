@@ -17,13 +17,7 @@ import java.util.Map;
 public interface Layer extends Serializable,Cloneable,Model {
 
 
-    /**
-     * Sets the parameters
-     * @param params the parameters to set
-     */
-    void setParameters(INDArray params);
-
-    /**
+       /**
      * Parameter averaging
      * @param layer the layer to merge
      * @param batchSize the batch size to merge on
@@ -99,10 +93,13 @@ public interface Layer extends Serializable,Cloneable,Model {
      */
     Layer clone();
 
+
     /**
-     * Update the score
+     * Propagate errors backwards for a particular layer
+     * @param errors the errors to propagate
      */
-    void setScore();
+    void backWard(INDArray errors);
+
 
 
 }

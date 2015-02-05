@@ -32,23 +32,6 @@ public class AutoEncoder extends BasePretrainNetwork  {
     }
 
 
-    /**
-     * Corrupts the given input by doing a binomial sampling
-     * given the corruption level
-     * @param x the input to corrupt
-     * @param corruptionLevel the corruption value
-     * @return the binomial sampled corrupted input
-     */
-    public INDArray getCorruptedInput(INDArray x, double corruptionLevel) {
-        INDArray corrupted = Nd4j.zeros(x.rows(), x.columns());
-        for(int i = 0; i < x.rows(); i++)
-            for(int j = 0; j < x.columns(); j++)
-                corrupted.put(i,j,binomial(conf.getRng(),1,1 - corruptionLevel));
-        corrupted.muli(x);
-        return corrupted;
-    }
-
-
 
 
     @Override
@@ -75,7 +58,7 @@ public class AutoEncoder extends BasePretrainNetwork  {
 
         INDArray preAct;
         if(conf.isConcatBiases()) {
-            INDArray concat = Nd4j.hstack(W,hBias.transpose());
+            INDArray concat = Nd4j.hstack(W,hBias.transposei());
             preAct =  x.mmul(concat);
 
         }
@@ -92,12 +75,12 @@ public class AutoEncoder extends BasePretrainNetwork  {
 
         if(conf.isConcatBiases()) {
             //row already accounted for earlier
-            INDArray preAct = y.mmul(W.transpose());
+            INDArray preAct = y.mmul(W.transposei());
             preAct = Nd4j.hstack(preAct,Nd4j.ones(preAct.rows(),1));
             return conf.getActivationFunction().apply(preAct);
         }
         else {
-            INDArray preAct = y.mmul(W.transpose());
+            INDArray preAct = y.mmul(W.transposei());
             preAct.addiRowVector(vBias);
             return conf.getActivationFunction().apply(preAct);
         }
@@ -122,10 +105,10 @@ public class AutoEncoder extends BasePretrainNetwork  {
         INDArray z = decode(y);
         INDArray visibleLoss =  input.sub(z);
         INDArray hiddenLoss = conf.getSparsity() == 0 ? visibleLoss.mmul(W).muli(y).muli(y.rsub(1)) :
-                visibleLoss.mmul(W).muli(y).muli(y.addi(-conf.getSparsity()));
+                visibleLoss.mmul(W).muli(y).muli(y.add(-conf.getSparsity()));
 
 
-        INDArray wGradient = corruptedX.transpose().mmul(hiddenLoss).addi(visibleLoss.transpose().mmul(y));
+        INDArray wGradient = corruptedX.transposei().mmul(hiddenLoss).addi(visibleLoss.transposei().mmul(y));
 
         INDArray hBiasGradient = hiddenLoss.mean(0);
         INDArray vBiasGradient = visibleLoss.mean(0);

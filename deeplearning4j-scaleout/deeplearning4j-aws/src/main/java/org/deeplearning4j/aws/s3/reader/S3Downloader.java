@@ -10,14 +10,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import com.amazonaws.services.s3.model.*;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.aws.s3.BaseS3;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+
 /**
  * Downloads files from S3
  * @author Adam Gibson
@@ -26,14 +24,35 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 public class S3Downloader extends BaseS3 {
 
 
-	
-	
+    /**
+     * Return the keys for a bucket
+     * @param bucket the bucket to get the keys for
+     * @return the bucket's keys
+     */
+    public List<String> keysForBucket(String bucket) {
+        AmazonS3 s3 = getClient();
+        List<String> ret = new ArrayList<>();
+        ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                .withBucketName(bucket);
+        ObjectListing objectListing;
+
+        do {
+            objectListing = s3.listObjects(listObjectsRequest);
+            for (S3ObjectSummary objectSummary :  objectListing.getObjectSummaries()) {
+                ret.add(objectSummary.getKey());
+            }
+            listObjectsRequest.setMarker(objectListing.getNextMarker());
+        } while (objectListing.isTruncated());
+
+        return ret;
+    }
+
 	/**
 	 * Returns the list of buckets in s3
 	 * @return the list of buckets
 	 */
 	public List<String> buckets() {
-		List<String> ret = new ArrayList<String>();
+		List<String> ret = new ArrayList<>();
 		AmazonS3 s3 = getClient();
 		List<Bucket> buckets = s3.listBuckets();
 		for(Bucket b : buckets)

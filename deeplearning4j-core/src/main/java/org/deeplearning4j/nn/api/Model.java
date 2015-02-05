@@ -3,7 +3,9 @@ package org.deeplearning4j.nn.api;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.AdaGrad;
 
 /**
  * A Model is meant for predicting something from data.
@@ -29,6 +31,20 @@ public interface Model {
      * @return the score for the model
      */
     public double score();
+
+
+    /**
+     * Update the score
+     */
+    void setScore();
+
+    /**
+     * Sets a rolling tally for the score. This is useful for mini batch learning when
+     * you are accumulating error across a dataset.
+     * @param accum the amount to accum
+     */
+    void accumulateScore(double accum);
+
 
     /**
      * Transform the data based on the model's output.
@@ -116,5 +132,13 @@ public interface Model {
      * Validate the input
      */
     void validateInput();
+
+    /**
+     * Returns this models optimizer
+     * @return this models optimizer
+     */
+    ConvexOptimizer getOptimizer();
+
+
 
 }

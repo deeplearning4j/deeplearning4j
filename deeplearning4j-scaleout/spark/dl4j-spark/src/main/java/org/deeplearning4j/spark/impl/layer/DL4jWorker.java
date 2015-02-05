@@ -32,7 +32,7 @@ public class DL4jWorker implements Function<DataSet, INDArray> {
         if(numParams != params.length())
             throw new IllegalStateException("Number of params for configured network was " + numParams + " while the specified parameter vector length was " + params.length());
         Layer network = (Layer) this.network;
-        network.setParameters(params);
+        network.setParams(params);
     }
 
     @Override

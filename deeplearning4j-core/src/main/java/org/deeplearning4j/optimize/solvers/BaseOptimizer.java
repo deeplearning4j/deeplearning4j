@@ -5,6 +5,8 @@ import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.optimize.GradientAdjustment;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TerminationCondition;
@@ -22,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Base optimizer
  * @author Adam Gibson
  */
-public abstract class BaseOptimizer {
+public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
 
@@ -59,6 +61,7 @@ public abstract class BaseOptimizer {
         this.model = model;
         lineMaximizer = new BackTrackLineSearch(model,stepFunction,this);
         lineMaximizer.setStpmax(stpMax);
+        lineMaximizer.setMaxIterations(conf.getNumLineSearchIterations());
 
     }
 
@@ -66,68 +69,33 @@ public abstract class BaseOptimizer {
      * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
      * @param gradient the gradient to modify
      */
-    public void updateGradientAccordingToParams(INDArray gradient,INDArray params,int batchSize) {
-        if(adaGrad == null)
-            adaGrad = new AdaGrad(1,gradient.length());
+    @Override
+    public void updateGradientAccordingToParams(INDArray gradient, INDArray params, int batchSize) {
+        GradientAdjustment.updateGradientAccordingToParams(conf,0,adaGrad,gradient,params,batchSize);
+    }
 
-
-        //reset adagrad history
-        if(iteration != 0 && conf.getResetAdaGradIterations() > 0 &&  iteration % conf.getResetAdaGradIterations() == 0) {
-            adaGrad.historicalGradient = null;
-
-            log.info("Resetting adagrad");
-        }
-
-        //change up momentum after so many iterations if specified
-        double momentum = conf.getMomentum();
-        if(conf.getMomentumAfter() != null && !conf.getMomentumAfter().isEmpty()) {
-            int key = conf.getMomentumAfter().keySet().iterator().next();
-            if(iteration >= key) {
-                momentum = conf.getMomentumAfter().get(key);
-            }
-        }
-
-
-        gradient = adaGrad.getGradient(gradient);
-        if (conf.isUseAdaGrad())
-            gradient.assign(adaGrad.getGradient(gradient));
-
-        else
-            gradient.muli(conf.getLr());
-
-
-
-
-
-        if (momentum > 0)
-            gradient.addi(gradient.mul(momentum).addi(gradient.mul(1 - momentum)));
-
-        //simulate post gradient application  and apply the difference to the gradient to decrease the change the gradient has
-        if(conf.isUseRegularization() && conf.getL2() > 0)
-            if(conf.isUseAdaGrad())
-                gradient.subi(params.mul(conf.getL2()));
-
-
-
-        if(conf.isConstrainGradientToUnitNorm())
-            gradient.divi(gradient.norm2(Integer.MAX_VALUE));
-
-
-        gradient.divi(batchSize);
-
-
+    @Override
+    public double score() {
+        return model.score();
     }
 
 
+    @Override
     public Pair<Gradient,Double> gradientAndScore() {
+        model.setScore();
         Pair<Gradient,Double> pair = model.gradientAndScore();
         return pair;
     }
 
+
+    /**
+     * Optimize call. This runs the optimizer.
+     * @return whether it converged or not
+     */
+    @Override
     public  boolean optimize() {
         //validate the input before training
         model.validateInput();
-
         Pair<Gradient,Double> pair = gradientAndScore();
         setupSearchState(pair);
         //get initial score
@@ -136,10 +104,11 @@ public abstract class BaseOptimizer {
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
 
         //pre existing termination conditions
-        for(TerminationCondition condition : terminationConditions)
-            if(condition.terminate(0.0,0.0,new Object[]{gradient}))
+         for(TerminationCondition condition : terminationConditions)
+            if(condition.terminate(0.0,0.0,new Object[]{gradient})) {
+                log.info("Hit termination condition " + condition.getClass().getName());
                 return true;
-
+            }
         //some algorithms do pre processing of gradient and
         //need to test possible directions. (LBFGS)
         boolean testLineSearch = preFirstStepProcess(gradient);
@@ -147,7 +116,7 @@ public abstract class BaseOptimizer {
             //ensure we can take a step
             try {
                 INDArray params = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(gradient,conf.getNumIterations(),step,params,gradient);
+                step = lineMaximizer.optimize(step,params,gradient);
             } catch (InvalidStepException e) {
                 e.printStackTrace();
             }
@@ -167,7 +136,7 @@ public abstract class BaseOptimizer {
             //perform one step
             try {
                 INDArray params = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(gradient,conf.getNumIterations(),step,params,gradient);
+                step = lineMaximizer.optimize(step,params,gradient);
             } catch (InvalidStepException e) {
                 e.printStackTrace();
             }
@@ -181,15 +150,7 @@ public abstract class BaseOptimizer {
             //record old score for deltas and other termination conditions
             oldScore = score;
             pair = gradientAndScore();
-            //update the gradient after step
-            score = pair.getSecond();
-            //new gradient post step
-            gradient = pair.getFirst().gradient(conf.getGradientList());
-            //update gradient
-            searchState.put(GRADIENT_KEY,gradient);
-            //update score
-            searchState.put(SCORE_KEY,score);
-
+            setupSearchState(pair);
             //check for termination conditions based on absolute change in score
             for(TerminationCondition condition : terminationConditions)
                 if(condition.terminate(score,oldScore,new Object[]{gradient}))
@@ -213,9 +174,7 @@ public abstract class BaseOptimizer {
 
 
 
-    public double score() {
-        return (double) searchState.get(SCORE_KEY);
-    }
+
 
     protected  void postFirstStep(INDArray gradient) {
         //no-op
@@ -227,10 +186,12 @@ public abstract class BaseOptimizer {
     }
 
 
+    @Override
     public int batchSize() {
         return batchSize;
     }
 
+    @Override
     public void setBatchSize(int batchSize) {
         this.batchSize = batchSize;
     }
@@ -242,6 +203,7 @@ public abstract class BaseOptimizer {
      * Pre process the line (scaling and the like)
      * @param line the line to pre process
      */
+    @Override
     public  void preProcessLine(INDArray line) {
         //no-op
     }
@@ -249,14 +211,21 @@ public abstract class BaseOptimizer {
      * Post step (conjugate gradient among other methods needs this)
 
      */
+    @Override
     public  void postStep() {
         //no-op
+    }
+
+    @Override
+    public AdaGrad getAdaGrad() {
+        return adaGrad;
     }
 
     /**
      * Setup the initial search state
      * @param pair
      */
+    @Override
     public  void setupSearchState(Pair<Gradient, Double> pair) {
         INDArray gradient = pair.getFirst().gradient(conf.getGradientList());
         INDArray params = model.params();
@@ -264,6 +233,8 @@ public abstract class BaseOptimizer {
         searchState.put(GRADIENT_KEY,gradient);
         searchState.put(SCORE_KEY,pair.getSecond());
         searchState.put(PARAMS_KEY,params);
+        score = pair.getSecond();
+
     }
 
 

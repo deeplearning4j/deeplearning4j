@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
 import org.deeplearning4j.util.MultiLayerUtil;
 import org.nd4j.linalg.api.activation.ActivationFunction;
@@ -75,6 +76,29 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
         this.layerWiseConfigurations = conf;
         this.defaultConfiguration = conf.getConf(0);
+    }
+
+    /**
+     * Initialize the network based on the configuration
+     * @param conf the configuration json
+     * @param params the parameters
+     */
+    public MultiLayerNetwork(String conf,INDArray params) {
+        this(MultiLayerConfiguration.fromJson(conf));
+        init();
+        setParameters(params);
+    }
+
+
+    /**
+     * Initialize the network based on the configuraiton
+     * @param conf the configuration
+     * @param params the parameters
+     */
+    public MultiLayerNetwork(MultiLayerConfiguration conf,INDArray params) {
+        this(conf);
+        init();
+        setParameters(params);
     }
 
 
@@ -217,6 +241,11 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     @Override
     public void validateInput() {
 
+    }
+
+    @Override
+    public ConvexOptimizer getOptimizer() {
+        return null;
     }
 
     /**
@@ -968,9 +997,23 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
     @Override
     public void fit(DataSetIterator iter) {
-        pretrain(iter);
-        iter.reset();
-        finetune(iter);
+        if(!layerWiseConfigurations.isBackward()) {
+            pretrain(iter);
+            iter.reset();
+            finetune(iter);
+        }
+
+        else {
+            //start at the output layer
+            INDArray propagate = layers[layers.length - 1].activate();
+            for(int i = layers.length - 2; i > 0; i--) {
+                //back propagate the layer
+                layers[i].backWard(propagate);
+                //get the previous layers activation
+                propagate = layers[i].activate();
+            }
+        }
+
     }
 
     /**
@@ -1073,11 +1116,24 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        if(layerWiseConfigurations.isPretrain())
+        if(!layerWiseConfigurations.isBackward()) {
             pretrain(examples);
-        else
-            this.input = examples;
-        finetune(labels);
+            finetune(labels);
+        }
+
+        else {
+            setInput(examples);
+            feedForward();
+            //start at the output layer
+            INDArray output = labels;
+            INDArray propagate = layers[layers.length - 1].activate();
+            for(int i = layers.length - 2; i > 0; i--) {
+                //back propagate the layer
+                layers[i].backWard(propagate);
+                //get the previous layers activation
+                propagate = layers[i].activate();
+            }
+        }
     }
 
 
@@ -1251,6 +1307,16 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
         if(getOutputLayer().getInput() == null)
             feedForward();
         return getOutputLayer().score();
+    }
+
+    @Override
+    public void setScore() {
+
+    }
+
+    @Override
+    public void accumulateScore(double accum) {
+
     }
 
     /**

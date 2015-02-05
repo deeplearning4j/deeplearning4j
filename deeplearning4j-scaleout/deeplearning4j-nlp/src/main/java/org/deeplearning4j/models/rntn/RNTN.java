@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -51,7 +52,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Adam Gibson
  *
  */
-public class RNTN implements Model,Layer {
+public class RNTN implements Layer {
 
     protected double value = 0;
     private int numOuts = 3;
@@ -1133,6 +1134,16 @@ public class RNTN implements Model,Layer {
     }
 
     @Override
+    public void accumulateScore(double accum) {
+
+    }
+
+    @Override
+    public void backWard(INDArray errors) {
+
+    }
+
+    @Override
     public void setConf(NeuralNetConfiguration conf) {
 
     }
@@ -1145,6 +1156,11 @@ public class RNTN implements Model,Layer {
     @Override
     public void validateInput() {
 
+    }
+
+    @Override
+    public ConvexOptimizer getOptimizer() {
+        return null;
     }
 
     public static class Builder {

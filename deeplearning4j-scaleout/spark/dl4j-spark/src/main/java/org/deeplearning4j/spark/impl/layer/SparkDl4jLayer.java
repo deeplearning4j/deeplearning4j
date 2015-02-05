@@ -89,7 +89,7 @@ public class SparkDl4jLayer implements Serializable {
                 return v1.addi(v2);
             }
         }).divi(miniBatches.count());
-        layer.setParameters(newParams);
+        layer.setParams(newParams);
         this.layer = layer;
         return layer;
     }
