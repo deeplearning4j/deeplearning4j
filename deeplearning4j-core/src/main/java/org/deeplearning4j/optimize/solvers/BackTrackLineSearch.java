@@ -186,7 +186,6 @@ public class BackTrackLineSearch implements LineOptimizer  {
             if(stepFunction == null)
                 stepFunction =  new DefaultStepFunction();
             //scale wrt updates
-            optimizer.updateGradientAccordingToParams(line,x,x.rows());
             stepFunction.step(x,line,new Object[]{alam,oldAlam}); //step
 
             if(logger.isDebugEnabled())  {
