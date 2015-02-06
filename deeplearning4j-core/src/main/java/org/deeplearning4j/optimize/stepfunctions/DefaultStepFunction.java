@@ -15,11 +15,11 @@ public class DefaultStepFunction implements StepFunction {
         double alam = (double) params[0];
         double oldAlam = (double) params[1];
         if(x.data().dataType() == DataBuffer.DOUBLE) {
-            Nd4j.getBlasWrapper().axpy(alam - oldAlam, x, line);
+            Nd4j.getBlasWrapper().axpy(alam - oldAlam, line, x);
         }
         else {
             float diff = (float) (alam - oldAlam);
-            Nd4j.getBlasWrapper().axpy(diff,x,line);
+            Nd4j.getBlasWrapper().axpy(diff,line,x);
 
         }
     }

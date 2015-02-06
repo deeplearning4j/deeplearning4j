@@ -19,6 +19,8 @@ import static org.nd4j.linalg.ops.transforms.Transforms.exp;
 import static org.nd4j.linalg.ops.transforms.Transforms.log;
 import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
+import static org.nd4j.linalg.ops.transforms.Transforms.max;
+
 import static org.nd4j.linalg.sampling.Sampling.*;
 
 
@@ -358,7 +360,7 @@ public  class RBM extends BasePretrainNetwork {
 
 
         if(conf.getHiddenUnit() == HiddenUnit.RECTIFIED) {
-            preSig = Transforms.max(preSig);
+            preSig = max(preSig);
             return preSig;
         }
 
@@ -389,7 +391,7 @@ public  class RBM extends BasePretrainNetwork {
      * @return the approximated output of the hidden layer
      */
     public   INDArray propDown(INDArray h) {
-        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY).transposei();
+        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY).transpose();
         INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
 
         INDArray vMean = h.mmul(W);
