@@ -1,0 +1,70 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
+package org.deeplearning4j.plot.iterationlistener;
+
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.plot.NeuralNetPlotter;
+
+/**
+ * Renders network activations every n iterations
+ * @author Adam Gibson
+ */
+public class NeuralNetPlotterIterationListener implements IterationListener {
+    private int iterations = 10;
+    private NeuralNetPlotter plotter = new NeuralNetPlotter();
+    private int patchesPerRow = 100;
+
+    /**
+     *
+     * @param iterations the number of iterations to render every
+     * @param plotter the plotter to use
+     * @param patchesPerRow the number of patches per row for rendering filters
+     */
+    public NeuralNetPlotterIterationListener(int iterations, NeuralNetPlotter plotter, int patchesPerRow) {
+        this.iterations = iterations;
+        this.plotter = plotter;
+        this.patchesPerRow = patchesPerRow;
+    }
+
+    /**
+     *
+     * @param iterations the number of iterations to render every
+     * @param patchesPerRow the number of patches per row for rendering filters
+     */
+    public NeuralNetPlotterIterationListener(int iterations, int patchesPerRow) {
+        this.iterations = iterations;
+        this.patchesPerRow = patchesPerRow;
+    }
+
+    /**
+     *
+     * @param iterations the number of iterations to render every
+     */
+    public NeuralNetPlotterIterationListener(int iterations) {
+        this.iterations = iterations;
+    }
+
+    @Override
+    public void iterationDone(Model model, int iteration) {
+        if(iteration > 0 && iteration % this.iterations == 0) {
+            Layer layer = (Layer) model;
+            plotter.plotNetworkGradient(layer,layer.getGradient(),patchesPerRow);
+        }
+    }
+}

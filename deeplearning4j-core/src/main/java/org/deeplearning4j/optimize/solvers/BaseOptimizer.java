@@ -76,6 +76,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     @Override
     public double score() {
+        model.setScore();
         return model.score();
     }
 

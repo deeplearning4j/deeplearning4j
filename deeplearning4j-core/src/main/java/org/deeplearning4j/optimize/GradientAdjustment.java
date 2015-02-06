@@ -58,10 +58,8 @@ public class GradientAdjustment {
             }
         }
 
-
-        gradient = adaGrad.getGradient(gradient);
         if (conf.isUseAdaGrad())
-            gradient.assign(adaGrad.getGradient(gradient));
+            gradient = adaGrad.getGradient(gradient);
 
         else
             gradient.muli(conf.getLr());
@@ -75,8 +73,7 @@ public class GradientAdjustment {
 
         //simulate post gradient application  and apply the difference to the gradient to decrease the change the gradient has
         if(conf.isUseRegularization() && conf.getL2() > 0)
-            if(conf.isUseAdaGrad())
-                gradient.subi(params.mul(conf.getL2()));
+            gradient.subi(params.mul(conf.getL2() * conf.getLr()));
 
 
 
