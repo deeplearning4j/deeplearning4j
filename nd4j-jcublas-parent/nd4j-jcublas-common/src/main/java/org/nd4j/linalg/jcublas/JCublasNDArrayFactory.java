@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Created by mjk on 8/21/14.
  */
-public class JCublasNDArrayFactory extends BaseNDArrayFactory {
+public abstract class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     public JCublasNDArrayFactory(int dtype,Character order) {
         super(dtype,order);

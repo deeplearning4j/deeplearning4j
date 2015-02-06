@@ -19,6 +19,9 @@ public class LinAlgExceptions {
              throw new IllegalStateException("Mis matched rows");
     }
 
+    
+
+
     /**
      * Asserts matrix multiply rules (columns of left == rows of right)
      * @param nd1 the left ndarray

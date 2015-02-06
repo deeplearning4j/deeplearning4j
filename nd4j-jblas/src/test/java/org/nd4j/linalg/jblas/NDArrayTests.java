@@ -64,6 +64,48 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
     }
 
     @Test
+    public void testTransposeMmul() {
+        Nd4j.factory().setOrder('f');
+
+        //note that transpose() and transposei() are equivalent here
+        INDArray a = Nd4j.linspace(1, 6, 6).reshape(2, 3);
+        DoubleMatrix aj = DoubleMatrix.linspace(1,6,6).reshape(2,3);
+        INDArray aT = a.transposei();
+        DoubleMatrix aTj = aj.transpose();
+        double[][] result = new double[][]{
+                {1,2},{3,4},{5,6}
+        };
+        for(int i = 0; i < result.length; i++) {
+            for(int j = 0; j < result[i].length; j++)  {
+                assertEquals(result[i][j],aT.getDouble(i,j),1e-1);
+            }
+        }
+
+        INDArray testMMul =  a.mmul(aT);
+        double[][] result2 = new double[][]{
+                {35,44},{44,56}
+        };
+
+
+
+
+        DoubleMatrix testMmulJ = aj.mmul(aTj);
+
+        for(int i = 0; i < result2.length; i++) {
+            for(int j = 0; j < result2[i].length; j++)  {
+                assertEquals(result2[i][j],testMMul.getDouble(i,j),1e-1);
+            }
+        }
+
+        for(int i = 0; i < result2.length; i++) {
+            for(int j = 0; j < result2[i].length; j++)  {
+                assertEquals(result2[i][j],testMmulJ.get(i,j),1e-1);
+            }
+        }
+
+    }
+
+    @Test
     public void testAxpy() {
         Nd4j.factory().setOrder('f');
 

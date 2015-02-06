@@ -6,6 +6,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
+import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.dimensionfunctions.DimensionFunctions;
@@ -256,6 +257,11 @@ public  abstract class BaseNDArray  implements INDArray {
 
     }
 
+
+    public BaseNDArray(int[] data,int[] shape,int[] strides) {
+        this(Nd4j.createBuffer(data),shape,strides);
+    }
+
     public BaseNDArray(DataBuffer data, int[] shape) {
         this(data,shape,Nd4j.getStrides(shape),0,Nd4j.order());
     }
@@ -280,6 +286,9 @@ public  abstract class BaseNDArray  implements INDArray {
         this(floatBuffer,new int[]{floatBuffer.length()},Nd4j.getStrides(new int[]{floatBuffer.length()}),0,order);
     }
 
+    public BaseNDArray(DataBuffer buffer, int[] shape, int[] strides) {
+        this(buffer,shape,strides,0,Nd4j.order());
+    }
 
 
     @Override
@@ -601,10 +610,11 @@ public  abstract class BaseNDArray  implements INDArray {
     @Override
     public  INDArray assign(INDArray arr) {
         LinAlgExceptions.assertSameShape(this,arr);
-        INDArray other = arr.linearView();
-        INDArray thisArr = linearView();
-        for(int i = 0; i < other.length(); i++)
-            thisArr.putScalar(i, other.getDouble(i));
+        INDArray linear = linearView();
+        INDArray arrLinear = arr.linearView();
+        for(int i = 0; i < length(); i++)
+            linear.putScalar(i,arrLinear.getDouble(i));
+
         return this;
     }
 
@@ -2325,16 +2335,17 @@ public  abstract class BaseNDArray  implements INDArray {
         int[] shape = {rows(),other.columns()};
         char order = Nd4j.factory().order();
         boolean switchedOrder = false;
-        if(order != NDArrayFactory.FORTRAN) {
-            Nd4j.factory().setOrder(NDArrayFactory.FORTRAN);
-            switchedOrder = true;
+        synchronized (Nd4j.factory()) {
+            if (order != NDArrayFactory.FORTRAN) {
+                Nd4j.factory().setOrder(NDArrayFactory.FORTRAN);
+                switchedOrder = true;
+            }
         }
-
         INDArray result = Nd4j.create(shape,other.data().dataType());
-
-        if(switchedOrder && order != NDArrayFactory.FORTRAN)
-            Nd4j.factory().setOrder(NDArrayFactory.C);
-
+        synchronized (Nd4j.factory()) {
+            if (switchedOrder && order != NDArrayFactory.FORTRAN)
+                Nd4j.factory().setOrder(NDArrayFactory.C);
+        }
         return mmuli(other,result);
     }
 
@@ -3239,12 +3250,12 @@ public  abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public  INDArray transpose() {
-        return dup().transposei();
+        return transposei();
     }
 
 
     /**
-     * Return transposed copy of this matrix.
+     * Return transposed version of this matrix.
      */
     @Override
     public  INDArray transposei() {
@@ -3252,8 +3263,17 @@ public  abstract class BaseNDArray  implements INDArray {
             return Nd4j.create(data, new int[]{shape[0], 1}, offset);
         else if(isColumnVector())
             return Nd4j.create(data, new int[]{shape[0]}, offset);
+        if(ordering() == NDArrayFactory.FORTRAN && isMatrix()) {
+            INDArray reverse = Nd4j.create(ArrayUtil.reverseCopy(shape));
 
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < columns; j++) {
+                    reverse.putScalar(new int[]{j, i}, getDouble(i, j));
+                }
+            }
 
+            return reverse;
+        }
 
         INDArray ret = permute(ArrayUtil.range(shape.length -1,-1));
         return ret;
@@ -4071,15 +4091,15 @@ public  abstract class BaseNDArray  implements INDArray {
 
         int[] newShape = doPermuteSwap(shape,rearrange);
         int[] newStride = doPermuteSwap(stride,rearrange);
-        return  Nd4j.create(
+
+        INDArray value =  Nd4j.create(
                 data,
                 newShape,
                 newStride,
                 offset,
                 ordering == NDArrayFactory.C
                         ? NDArrayFactory.FORTRAN : NDArrayFactory.C);
-
-
+        return value;
 
     }
 

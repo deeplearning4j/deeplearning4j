@@ -5,6 +5,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.DimensionSlice;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
+import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.reduceops.Ops;
@@ -598,6 +599,50 @@ public abstract class NDArrayTests {
 
 
     @Test
+    public void testInplaceTranspose() {
+        INDArray test = Nd4j.linspace(1,4,4).reshape(2, 2).transposei();
+        double[][] result = new double[][]{
+                {1,3},{2,4}
+        };
+        for(int i = 0; i < result.length; i++) {
+            for(int j = 0; j < result[i].length; j++)  {
+                assertEquals(result[i][j],test.getDouble(i, j),1e-1);
+            }
+        }
+
+    }
+
+    @Test
+    public void testTransposeMmul() {
+        //note that transpose() and transposei() are equivalent here
+        INDArray a = Nd4j.linspace(1, 6, 6).reshape(2, 3);
+        INDArray aT = a.transposei();
+
+        double[][] result = new double[][]{
+                {1,4},{2,5},{3,6}
+        };
+        for(int i = 0; i < result.length; i++) {
+            for(int j = 0; j < result[i].length; j++)  {
+                assertEquals(result[i][j],aT.getDouble(i,j),1e-1);
+            }
+        }
+
+        INDArray testMMul =  a.mmul(aT);
+        double[][] result2 = new double[][]{
+                {14,32},{32,77}
+        };
+
+        for(int i = 0; i < result2.length; i++) {
+            for(int j = 0; j < result2[i].length; j++)  {
+                assertEquals(result2[i][j],testMMul.getDouble(i,j),1e-1);
+            }
+        }
+
+
+
+    }
+
+    @Test
     public void testMmulF() {
         Nd4j.factory().setOrder('f');
 
@@ -841,7 +886,6 @@ public abstract class NDArrayTests {
         INDArray expected = Nd4j.create(new float[]{1, 2, 3, 4, 5}, new int[]{5});
         assertEquals(expected,test);
     }
-
 
 
 

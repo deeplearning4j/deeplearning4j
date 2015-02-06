@@ -129,13 +129,7 @@ public class LossFunctions {
             throw new IllegalStateException("hmm");
 
         INDArray logSigVRSub1 =  log(sigVRsub1);
-        if(!Shape.shapeEquals(sigV.shape(), input.shape()))
-             throw new IllegalStateException("hmm");
-        if(!Shape.shapeEquals(logSigVRSub1.shape(), input.shape()))
-            throw new IllegalStateException("hmm");
         INDArray inputRsub1 = input.rsub(1);
-        if(!Shape.shapeEquals(inputRsub1.shape(), input.shape()))
-            throw new IllegalStateException("hmm");
 
         try {
             INDArray inner = input.mul(logSigV).addi(inputRsub1.muli(logSigVRSub1));
@@ -148,7 +142,7 @@ public class LossFunctions {
             ret /= (double) input.rows();
 
 
-            return ret;
+            return -ret;
         }catch(Exception e) {
             INDArray inputTimesLogSigV = input.mul(logSigV);
             INDArray innerPart = inputRsub1.muli(logSigVRSub1);

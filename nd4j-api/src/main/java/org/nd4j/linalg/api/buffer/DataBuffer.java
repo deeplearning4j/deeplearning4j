@@ -12,6 +12,7 @@ public interface DataBuffer extends Serializable {
 
     public final static int DOUBLE = 0;
     public final static int FLOAT = 1;
+    public final static int INT = 2;
 
     /**
      * Raw byte array storage

@@ -986,6 +986,7 @@ public interface NDArrayFactory  {
      INDArray scalar(double value,int offset);
 
 
+    INDArray scalar(int value, int offset);
 
     /**
      * Create a scalar ndarray with the specified offset
@@ -1133,6 +1134,10 @@ public interface NDArrayFactory  {
     INDArray create(double[] data, int[] shape, int[] stride, int offset, char ordering);
 
     INDArray rand(int[] shape, double min, double max, RandomGenerator rng);
+
+    IComplexNDArray createComplex(int[] ints, int[] ints1, int[] stride, int offset);
+
+    INDArray create(int[] ints, int[] ints1, int[] stride, int offset);
 
     INDArray create(int rows, int columns, char ordering);
 

@@ -306,6 +306,7 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
 
     }
 
+
     /**
      * Create a complex ndarray with the given data
      *

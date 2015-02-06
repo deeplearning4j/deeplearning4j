@@ -53,6 +53,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         super(buffer,shape,stride,offset,ordering);
     }
 
+
+
     /**
      * Create this ndarray with the given data and shape and 0 offset
      *
