@@ -2,6 +2,8 @@ package org.deeplearning4j.nn.conf;
 
 import static org.junit.Assert.*;
 
+import org.apache.commons.math3.random.MersenneTwister;
+import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.junit.Test;
@@ -16,8 +18,8 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     @Test
     public void testJson() throws Exception {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().layerFactory(LayerFactories.getFactory(RBM.class))
-                .list(4).hiddenLayerSizes(new int[]{3,2,2}).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().layerFactory(LayerFactories.getFactory(RBM.class)).dist(Distributions.normal(new MersenneTwister(123),1e-1))
+                .list(4).hiddenLayerSizes(3, 2,2).build();
         String json = conf.toJson();
         MultiLayerConfiguration from = MultiLayerConfiguration.fromJson(json);
         assertEquals(conf,from);
