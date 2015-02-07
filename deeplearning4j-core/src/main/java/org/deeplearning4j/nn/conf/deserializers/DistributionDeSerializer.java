@@ -4,27 +4,34 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.util.Dl4jReflection;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.StringReader;
+import java.util.Properties;
 
 /**
- * Created by agibsonccc on 11/27/14.
+ * De serializer.
+ * Reads value as :
+ * class name \t properties
+ *
+ * @author Adam Gibson
  */
 public class DistributionDeSerializer extends JsonDeserializer<RealDistribution> {
     @Override
     public RealDistribution deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-        ObjectMapper mapper = NeuralNetConfiguration.mapper();
         JsonNode node = jp.getCodec().readTree(jp);
         String val = node.textValue();
-        JSONObject obj = new JSONObject(val);
-        String clazz = obj.getString("distclass");
-        obj.remove("distclass");
+        String[] split = val.split("\t");
         try {
-            Class<? extends RealDistribution> clazz2 = (Class<? extends RealDistribution>) Class.forName(clazz);
-            RealDistribution ret = mapper.readValue(obj.toString(),clazz2);
+            Class<? extends RealDistribution> clazz2 = (Class<? extends RealDistribution>) Class.forName(split[0]);
+            RealDistribution ret =  clazz2.newInstance();
+            Properties props = new Properties();
+            props.load(new StringReader(split[1]));
+            Dl4jReflection.setProperties(ret,props);
             return ret;
-        } catch (ClassNotFoundException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
