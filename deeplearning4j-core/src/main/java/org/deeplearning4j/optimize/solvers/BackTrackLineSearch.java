@@ -64,13 +64,23 @@ public class BackTrackLineSearch implements LineOptimizer  {
     private double absTolx = 1e-4f; // tolerance on absolute value difference
     final double ALF = 1e-4f;
 
-
+    /**
+     *
+     * @param function
+     * @param stepFunction
+     * @param optimizer
+     */
     public BackTrackLineSearch(Model function, StepFunction stepFunction, ConvexOptimizer optimizer) {
         this.function = function;
         this.stepFunction = stepFunction;
         this.optimizer = optimizer;
     }
 
+    /**
+     *
+     * @param optimizable
+     * @param optimizer
+     */
     public BackTrackLineSearch(Model optimizable, ConvexOptimizer optimizer) {
         this(optimizable, new DefaultStepFunction(),optimizer);
     }
