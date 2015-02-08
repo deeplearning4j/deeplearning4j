@@ -15,7 +15,7 @@ Deeplearning4j is the first commercial-grade, __open-source__, distributed deep-
 * E-commerce fraud detection
 * And [other use cases](use_cases.html)
 
-**Main features**
+**DL4J's main features**
 
 * A versatile [n-dimensional array](http://nd4j.org/) class. 
 * [GPU](http://nd4j.org/gpu_native_backends.html) integration
