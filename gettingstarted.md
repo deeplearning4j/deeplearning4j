@@ -13,7 +13,7 @@ To make neural nets run with Deeplearning4j, you need to install a few things. T
 
 After that, please read the following:
 
-5. Depending on your OS:
+5. OS-specific instructions:
     * <a href="#linux">Linux</a>
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
@@ -79,9 +79,9 @@ which will import the source and set everything up.
 ### <a name="trouble">Troubleshooting</a>
 
 * If you have installed DL4J in the past and now see the examples throwing errors, run a git clone on [ND4J](http://nd4j.org/getstarted.html) in the same root directory as DL4J; run a clean Maven install within ND4J; install DL4J again; run a clean Maven install within DL4J, and see if that fixes things.
-
 * When you run an example, you may get a low [f1 score](../glossary.html#f1), which is the probability that the net's classification is accurate. In this case, a low f1 doesn't indicate poor performance, because the examples train on small data sets. We gave them small data sets so they would run quickly. Because small data sets are less representative than large ones, the results they produce will vary a great deal. For example, on the minuscule example data, our deep-belief net's f1 score currently varies between 0.32 and 1.0.
-
+* Deeplearning4j includes an autocomplete function. If you are unsure which commands are available, press any letter and a drop-down list will appear.
+![Alt text](../img/dl4j_autocomplete.png)
 * Go here for a Javadoc list of [Deeplearning4j's classes and methods](http://deeplearning4j.org/doc/).
 
 ### <a name="next">Next Steps: MNIST and Running Examples</a>
