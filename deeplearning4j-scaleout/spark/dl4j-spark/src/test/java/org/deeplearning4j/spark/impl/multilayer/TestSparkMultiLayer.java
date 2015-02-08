@@ -2,12 +2,11 @@ package org.deeplearning4j.spark.impl.multilayer;
 
 
 
-import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.impl.SVMLightRecordReader;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -15,6 +14,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.junit.Test;
@@ -80,10 +81,11 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .regularization(true).l2(2e-4).momentum(0.9)
-                .activationFunction(Activations.tanh())
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+               .momentum(0.9).constrainGradientToUnitNorm(true)
+                .activationFunction(Activations.tanh()).stepFunction(new GradientStepFunction())
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).dropOut(0.3)
                 .iterations(100).visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+                .l2(2e-4).regularization(true).weightInit(WeightInit.VI)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
                 .list(3).hiddenLayerSizes(3,2)
@@ -116,6 +118,11 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
 
         MultiLayerNetwork network2 = master.fitDataSet(data);
+        Evaluation evaluation = new Evaluation();
+        evaluation.eval(d.getLabels(),network2.output(d.getFeatureMatrix()));
+        System.out.println("Averaged once " + evaluation.stats());
+
+
     }
 
 

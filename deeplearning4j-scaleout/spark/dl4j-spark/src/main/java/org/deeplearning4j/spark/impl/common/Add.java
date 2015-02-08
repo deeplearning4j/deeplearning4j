@@ -14,15 +14,16 @@
  *    limitations under the License.
  */
 
-package org.deeplearning4j.spark.impl.layer;
+package org.deeplearning4j.spark.impl.common;
 
 import org.apache.spark.api.java.function.Function2;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * Created by agibsonccc on 2/8/15.
+ * Adds 2 ndarrays
+ * @author Adam Gibson
  */
-public class Reduce implements Function2<INDArray,INDArray,INDArray> {
+public class Add implements Function2<INDArray,INDArray,INDArray> {
     @Override
     public INDArray call(INDArray v1, INDArray v2) throws Exception {
         return v1.addi(v2);
