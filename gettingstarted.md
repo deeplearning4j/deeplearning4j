@@ -4,14 +4,14 @@ layout: default
 
 # Getting Started
 
-In order for you to be able to run a DL4J neural network through one of our examples, you will have to have a number of things installed in your machine. You can follow from 1 to 4 in our [ND4J.org 'getting-started' page](http://nd4j.org/getstarted.html):
+To make neural nets run with Deeplearning4j, you need to install a few things. The first four steps are documented on [ND4J.org 'getting-started' page](http://nd4j.org/getstarted.html):
 
 1. [Java](http://nd4j.org/getstarted.html#java) 
 2. [Integrated Development Environment](http://nd4j.org/getstarted.html#ide-for-java) 
 3. [Maven](http://nd4j.org/getstarted.html#maven)
 4. [Github](http://nd4j.org/getstarted.html#github)
 
-And then go through the following installs:
+After that, please read the following:
 
 5. Depending on your OS:
     * <a href="#linux">Linux</a>
@@ -21,7 +21,6 @@ And then go through the following installs:
 7. <a href="#eclipse">Eclipse</a>
 8. <a href="#trouble">Troubleshooting</a>
 9. <a href="#next">Next Steps</a>
-
 
 ### <a name="linux">Linux</a>
 
