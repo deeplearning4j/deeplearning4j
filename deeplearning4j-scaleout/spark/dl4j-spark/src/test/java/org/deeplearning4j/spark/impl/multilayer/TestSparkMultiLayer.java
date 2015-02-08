@@ -2,11 +2,14 @@ package org.deeplearning4j.spark.impl.multilayer;
 
 
 
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.impl.SVMLightRecordReader;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
@@ -18,11 +21,13 @@ import org.junit.Test;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -41,7 +46,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class)).batchSize(50).visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+                .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class)).visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .activationFunction(Activations.tanh()).list(2).hiddenLayerSizes(3)
                 .override(new NeuralNetConfiguration.ConfOverride() {
@@ -68,11 +73,58 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
     }
 
+    @Test
+    public void testIris2() {
+
+
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .regularization(true).l2(2e-4).momentum(0.9)
+                .activationFunction(Activations.tanh())
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .iterations(100).visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
+                .list(3).hiddenLayerSizes(3,2)
+                .override(new NeuralNetConfiguration.ConfOverride() {
+                    @Override
+                    public void override(int i, NeuralNetConfiguration.Builder builder) {
+
+                        if (i == 2) {
+                            builder.activationFunction(Activations.softMaxRows());
+                            builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
+                            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+                        }
+                    }
+                }).build();
+
+
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+        System.out.println("Initializing network");
+        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf);
+        DataSet d = new IrisDataSetIterator(150,150).next();
+        d.normalizeZeroMeanZeroUnitVariance();
+        d.shuffle();
+        List<DataSet> next = d.asList();
+
+
+        JavaRDD<DataSet> data = sc.parallelize(next);
+
+
+        MultiLayerNetwork network2 = master.fitDataSet(data);
+    }
+
+
 
     @Test
     public void testStaticInvocation() {
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class)).batchSize(10)
+                .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
                 .activationFunction(Activations.tanh()).list(2).hiddenLayerSizes(3)
                 .override(new NeuralNetConfiguration.ConfOverride() {
                     @Override
