@@ -13,14 +13,16 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.canova.RDDMiniBatches;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
-import org.deeplearning4j.spark.impl.layer.Reduce;
+import org.deeplearning4j.spark.impl.common.Add;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * Master class for spark
@@ -143,8 +145,9 @@ public class SparkDl4jMultiLayer implements Serializable {
             if(params.length() != paramsLength)
                 throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
 
-
-            INDArray newParams = miniBatches.map(new IterativeReduce(this.params, conf.toJson())).reduce(new Reduce()).divi(miniBatches.count());
+            JavaRDD<INDArray> results = miniBatches.map(new IterativeReduce(this.params, conf.toJson()));
+            INDArray newParams = results.fold(Nd4j.zeros(results.first().shape()),new Add());
+            newParams.divi(miniBatches.count());
             network.setParameters(newParams);
             this.network = network;
         }
@@ -163,8 +166,9 @@ public class SparkDl4jMultiLayer implements Serializable {
                 int paramsLength = network.numParams();
                 if(params.length() != paramsLength)
                     throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
+                JavaRDD<INDArray> miniBatchParams = miniBatches.map(new IterativeReduce(this.params,conf.toJson()));
 
-                INDArray add = miniBatches.map(new IterativeReduce(this.params,conf.toJson())).reduce(new Reduce());
+                INDArray add = miniBatchParams.reduce(new Add());
                 this.params =  sc.broadcast(add.divi(miniBatches.count()));
             }
 
