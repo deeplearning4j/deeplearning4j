@@ -139,7 +139,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                 INDArray params = (INDArray) searchState.get(PARAMS_KEY);
                 step = lineMaximizer.optimize(step,params,gradient);
             } catch (InvalidStepException e) {
-                e.printStackTrace();
+                log.warn("Invalid step...continuing another iteration");
             }
 
 
