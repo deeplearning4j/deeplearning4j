@@ -1,6 +1,5 @@
 package org.deeplearning4j.spark.impl.multilayer;
 
-import org.apache.spark.Accumulator;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -14,7 +13,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.canova.RDDMiniBatches;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
-import org.deeplearning4j.spark.impl.common.ParamAccumulator;
+import org.deeplearning4j.spark.impl.layer.Reduce;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -34,7 +33,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     private transient JavaSparkContext sc;
     private MultiLayerConfiguration conf;
     private MultiLayerNetwork network;
-    private Accumulator<INDArray> accum;
+    private INDArray accum;
     private Broadcast<INDArray> params;
     private boolean averageEachIteration = false;
     public final static String AVERAGE_EACH_ITERATION = "org.deeplearning4j.spark.iteration.average";
@@ -139,16 +138,13 @@ public class SparkDl4jMultiLayer implements Serializable {
             network.init();
             final INDArray params = network.params();
             this.params = sc.broadcast(params);
-            accum = sc.accumulator(params,"params",new ParamAccumulator());
 
             int paramsLength = network.numParams();
             if(params.length() != paramsLength)
                 throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
 
 
-
-            miniBatches.foreach(new DataSetTrain(accum,this.params,conf.toJson()));
-            INDArray newParams = accum.value().divi(miniBatches.count());
+            INDArray newParams = miniBatches.map(new IterativeReduce(this.params, conf.toJson())).reduce(new Reduce()).divi(miniBatches.count());
             network.setParameters(newParams);
             this.network = network;
         }
@@ -162,14 +158,14 @@ public class SparkDl4jMultiLayer implements Serializable {
 
             for(int i = 0; i < iterations; i++) {
 
-                accum = sc.accumulator(params,"params",new ParamAccumulator());
+                accum = params;
 
                 int paramsLength = network.numParams();
                 if(params.length() != paramsLength)
                     throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
 
-                miniBatches.foreach(new DataSetTrain(accum,this.params,conf.toJson()));
-                this.params =  sc.broadcast(accum.value().divi(miniBatches.count()));
+                INDArray add = miniBatches.map(new IterativeReduce(this.params,conf.toJson())).reduce(new Reduce());
+                this.params =  sc.broadcast(add.divi(miniBatches.count()));
             }
 
 

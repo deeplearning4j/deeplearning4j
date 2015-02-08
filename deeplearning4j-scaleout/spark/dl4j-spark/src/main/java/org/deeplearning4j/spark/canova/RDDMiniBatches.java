@@ -23,6 +23,7 @@ public class RDDMiniBatches  implements Serializable {
     }
 
     public JavaRDD<DataSet> miniBatchesJava() {
+        //need a new mapping function, doesn't handle mini batches properly
         return toSplitJava.mapPartitions(new MiniBatchFunction(miniBatches));
     }
 
@@ -39,7 +40,7 @@ public class RDDMiniBatches  implements Serializable {
             List<DataSet> ret = new ArrayList<>();
             List<DataSet> temp = new ArrayList<>();
             while (dataSetIterator.hasNext()) {
-                temp.add(dataSetIterator.next());
+                temp.add(dataSetIterator.next().copy());
                 if (temp.size() == batchSize) {
                     ret.add(DataSet.merge(temp));
                     temp.clear();
