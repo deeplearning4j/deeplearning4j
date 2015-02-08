@@ -23,7 +23,7 @@ Deeplearning4j is the first commercial-grade, __open-source__, distributed deep-
 
 Deeplearning4j includes a distributed multi-threaded deep-learning framework and a normal single-threaded deep-learning framework. Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via iterative reduce, and they are equally compatible with **Java**, **Scala** and **Clojure**.
 
-**Neural nets supported on DL4J's composable framework**
+**DL4J's neural nets**
 
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
 * [Convolutional Nets](http://deeplearning4j.org/convolutionalnets.html) (images)
