@@ -28,8 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-import java.util.ArrayList;
+import java.io.File;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
@@ -75,7 +76,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
     }
 
     @Test
-    public void testIris2() {
+    public void testIris2() throws Exception {
 
 
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
@@ -118,9 +119,15 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
 
         MultiLayerNetwork network2 = master.fitDataSet(data);
+
+        INDArray params = network2.params();
+        File writeTo = new File(UUID.randomUUID().toString());
+        Nd4j.writeTxt(params,writeTo.getAbsolutePath(),",");
+        INDArray load = Nd4j.readTxt(writeTo.getAbsolutePath(),",");
+        assertEquals(params,load);
+        writeTo.delete();
         Evaluation evaluation = new Evaluation();
-        evaluation.eval(d.getLabels(),network2.output(d.getFeatureMatrix()));
-        System.out.println("Averaged once " + evaluation.stats());
+        evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));
 
 
     }
@@ -128,7 +135,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
 
     @Test
-    public void testStaticInvocation() {
+    public void testStaticInvocation() throws Exception {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
@@ -150,6 +157,22 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         JavaRDD<LabeledPoint> mllLibData = MLLibUtil.fromDataSet(sc,data);
 
         MultiLayerNetwork network = SparkDl4jMultiLayer.train(mllLibData,conf);
+        INDArray params = network.params();
+        File writeTo = new File(UUID.randomUUID().toString());
+        Nd4j.writeTxt(params,writeTo.getAbsolutePath(),",");
+        INDArray load = Nd4j.readTxt(writeTo.getAbsolutePath(),",");
+        assertEquals(params,load);
+        writeTo.delete();
+
+        String json = network.getLayerWiseConfigurations().toJson();
+        MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(json);
+        assertEquals(conf,conf2);
+
+        MultiLayerNetwork network3 = new MultiLayerNetwork(conf2);
+        network3.init();
+        network3.setParameters(params);
+        INDArray params4 = network3.params();
+        assertEquals(params,params4);
 
 
     }

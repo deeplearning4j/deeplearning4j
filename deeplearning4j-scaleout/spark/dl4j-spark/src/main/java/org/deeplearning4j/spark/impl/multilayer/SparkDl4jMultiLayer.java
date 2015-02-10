@@ -22,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.util.List;
 
 /**
  * Master class for spark
@@ -35,7 +34,6 @@ public class SparkDl4jMultiLayer implements Serializable {
     private transient JavaSparkContext sc;
     private MultiLayerConfiguration conf;
     private MultiLayerNetwork network;
-    private INDArray accum;
     private Broadcast<INDArray> params;
     private boolean averageEachIteration = false;
     public final static String AVERAGE_EACH_ITERATION = "org.deeplearning4j.spark.iteration.average";
@@ -161,7 +159,6 @@ public class SparkDl4jMultiLayer implements Serializable {
 
             for(int i = 0; i < iterations; i++) {
 
-                accum = params;
 
                 int paramsLength = network.numParams();
                 if(params.length() != paramsLength)
