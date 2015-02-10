@@ -609,7 +609,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         if (Double.compare(that.sparsity, sparsity) != 0) return false;
         if (useAdaGrad != that.useAdaGrad) return false;
         if (useRegularization != that.useRegularization) return false;
-        if (activationFunction != null ? !activationFunction.equals(that.activationFunction) : that.activationFunction != null)
+        if (activationFunction != null ? !activationFunction.type().equals(that.activationFunction.type()) : that.activationFunction != null)
             return false;
         if (dist != null ? !dist.getClass().getName().equals(that.dist.getClass().getName()) : that.dist != null) return false;
         if (!Arrays.equals(featureMapSize, that.featureMapSize)) return false;
