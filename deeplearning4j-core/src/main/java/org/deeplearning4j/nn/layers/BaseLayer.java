@@ -166,8 +166,6 @@ public abstract class BaseLayer implements Layer {
 
 
         INDArray ret = getInput().mmul(W);
-        if(ret.columns() != b.columns())
-            throw new IllegalStateException("This is weird");
         if(conf.isConcatBiases())
             ret = Nd4j.hstack(ret,b);
         else
@@ -318,10 +316,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void validateInput() {
-        if(conf.getBatchSize() > 0) {
-            if(input.rows() != conf.getBatchSize())
-                throw new IllegalStateException("Illegal batch size " + input.rows() + " should have been " + conf.getBatchSize());
-        }
+
     }
 
     /**

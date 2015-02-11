@@ -18,7 +18,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import static org.nd4j.linalg.ops.transforms.Transforms.exp;
 import static org.nd4j.linalg.ops.transforms.Transforms.log;
 import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
-import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
+import static org.
+        nd4j.linalg.ops.transforms.Transforms.sqrt;
 import static org.nd4j.linalg.ops.transforms.Transforms.max;
 
 import static org.nd4j.linalg.sampling.Sampling.*;

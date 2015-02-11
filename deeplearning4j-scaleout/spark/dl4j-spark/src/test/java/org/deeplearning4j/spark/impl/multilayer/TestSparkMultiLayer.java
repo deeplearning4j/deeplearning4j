@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.util.MLLibUtil;
@@ -71,8 +72,6 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         String path = new ClassPathResource("data/svmLight/iris_svmLight_0.txt").getFile().toURI().toString();
         sparkDl4jMultiLayer.fit(path,4,new SVMLightRecordReader());
 
-
-
     }
 
     @Test
@@ -82,10 +81,10 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-               .momentum(0.9).constrainGradientToUnitNorm(true)
+               .momentum(0.9).constrainGradientToUnitNorm(true).iterationListener(new ScoreIterationListener(10))
                 .activationFunction(Activations.tanh()).stepFunction(new GradientStepFunction())
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).dropOut(0.3)
-                .iterations(100).visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+                .iterations(100).visibleUnit(RBM.VisibleUnit.GAUSSIAN).batchSize(10)
                 .l2(2e-4).regularization(true).weightInit(WeightInit.VI)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
@@ -116,6 +115,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
 
         JavaRDD<DataSet> data = sc.parallelize(next);
+
 
 
         MultiLayerNetwork network2 = master.fitDataSet(data);

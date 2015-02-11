@@ -28,11 +28,19 @@ public abstract class BasePretrainNetwork extends BaseLayer {
 
     private static final long serialVersionUID = -7074102204433996574L;
 
-
+    /**
+     *
+     * @param conf
+     */
     public BasePretrainNetwork(NeuralNetConfiguration conf) {
         super(conf);
     }
 
+    /**
+     *
+     * @param conf
+     * @param input
+     */
     public BasePretrainNetwork(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
