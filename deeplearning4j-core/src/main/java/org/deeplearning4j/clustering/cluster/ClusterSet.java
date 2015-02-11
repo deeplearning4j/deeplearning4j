@@ -5,11 +5,14 @@ import java.util.List;
 
 import org.nd4j.linalg.distancefunction.DistanceFunction;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+
 public class ClusterSet {
 
 	private Class<? extends DistanceFunction>	distanceFunction;
 	private List<Cluster>						clusters	= new ArrayList<Cluster>();
-
+	
 	public ClusterSet() {
 
 	}
@@ -107,5 +110,7 @@ public class ClusterSet {
 	public void setDistanceFunction(Class<? extends DistanceFunction> distanceFunction) {
 		this.distanceFunction = distanceFunction;
 	}
+	
+	
 
 }
