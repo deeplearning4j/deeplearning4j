@@ -1,20 +1,22 @@
 package org.deeplearning4j.clustering.cluster;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class Cluster {
 
-	private String			id = UUID.randomUUID().toString();
-	
+	private String		id		= UUID.randomUUID().toString();
+
 	private Point		center;
-	private List<Point>	points = new ArrayList<Point>();
+	private List<Point>	points	= new ArrayList<Point>();
 
 	public Cluster() {
 		super();
 	}
-	
+
 	public Cluster(String id) {
 		super();
 		this.id = id;
@@ -24,7 +26,7 @@ public class Cluster {
 		super();
 		this.center = center;
 	}
-	
+
 	public Cluster(String id, Point center) {
 		super();
 		this.id = id;
@@ -36,19 +38,20 @@ public class Cluster {
 		this.center = center;
 		this.points = points;
 	}
-	
+
 	public void addPoint(Point point) {
 		addPoint(point, true);
 	}
+
 	public void addPoint(Point point, boolean moveClusterCenter) {
-		if( moveClusterCenter ) {
-			center.muli(points.size()).addi(point).divi(points.size()+1);
+		if (moveClusterCenter) {
+			center.muli(points.size()).addi(point).divi(points.size() + 1);
 		}
 		getPoints().add(point);
 	}
-	
+
 	public void removePoints() {
-		if( getPoints()!=null )
+		if (getPoints() != null)
 			getPoints().clear();
 	}
 
@@ -67,6 +70,15 @@ public class Cluster {
 	public void setPoints(List<Point> points) {
 		this.points = points;
 	}
+
 	
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
 
 }
