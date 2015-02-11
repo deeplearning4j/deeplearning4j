@@ -44,15 +44,28 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public final static String GRADIENT_KEY = "g";
     public final static String SCORE_KEY = "score";
     public final static String PARAMS_KEY = "params";
-
     protected Map<String,Object> searchState = new ConcurrentHashMap<>();
 
+    /**
+     *
+     * @param conf
+     * @param stepFunction
+     * @param iterationListeners
+     * @param model
+     */
     public BaseOptimizer(NeuralNetConfiguration conf,StepFunction stepFunction,Collection<IterationListener> iterationListeners,Model model) {
         this(conf,stepFunction,iterationListeners, Arrays.asList(new ZeroDirection(),new EpsTermination()),model);
     }
 
 
-
+    /**
+     *
+     * @param conf
+     * @param stepFunction
+     * @param iterationListeners
+     * @param terminationConditions
+     * @param model
+     */
     public BaseOptimizer(NeuralNetConfiguration conf,StepFunction stepFunction,Collection<IterationListener> iterationListeners,Collection<TerminationCondition> terminationConditions,Model model) {
         this.conf = conf;
         this.stepFunction = stepFunction;
@@ -119,7 +132,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                 INDArray params = (INDArray) searchState.get(PARAMS_KEY);
                 step = lineMaximizer.optimize(step,params,gradient);
             } catch (InvalidStepException e) {
-                e.printStackTrace();
+                log.warn("Invalid step...continuing another iteration");
+
             }
             gradient = (INDArray) searchState.get(GRADIENT_KEY);
             postFirstStep(gradient);
@@ -160,8 +174,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             //post step updates to other search parameters
             postStep();
 
-
-            log.info("Score at iteration " + i + " is " + score);
             //check for termination conditions based on absolute change in score
             for(TerminationCondition condition : terminationConditions)
                 if(condition.terminate(score,oldScore,new Object[]{gradient}))
