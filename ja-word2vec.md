@@ -10,7 +10,7 @@ layout: ja-default
 * <a href="#intro">Word2Vec入門</a>
 * <a href="#anatomy">Word2vecの構造</a>
 * <a href="#code">学習処理</a>
-* <a href="#windows">Moving Windows</a>
+* <a href="#windows">移動ウィンドウ</a>
 * <a href="#grams">N-grams & Skip-grams</a>
 * <a href="#load">Loading Your Data</a>
 * <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
@@ -67,51 +67,47 @@ Word2Vec はRawテキストを学習します。 学習処理では、各単語�
 
 与えられた単語が語彙の中に含まれない場合、 Word2vec はゼロを返すだけです。
 
-###<a name="windows">Windows</a>
+###<a name="windows">移動ウィンドウ(Moving Windows)</a>
 
-Word2Vec works with neural networks by facilitating the moving-window model for training on word occurrences. There are two ways to get windows for text:
+Word2Vecは単語の出現を学習する為に移動ウィンドウモデルを使ったニューラルネットです。テキストから移動ウィンドウを得る方法は２つあります。
 
       List<Window> windows = Windows.windows("some text");
 
-This will select moving windows of five tokens from the text (each member of a window is a token).
+これは、各ウィンドウのサイズが5トークンの移動ウィンドウをテキストから抽出します(各ウィンドウの要素はトークンです)。
 
-You also may want to use your own custom tokenizer like this:
+Tokenizer はこのようにカスタマイズできます。
 
       TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
       List<Window> windows = Windows.windows("text",tokenizerFactory);
 
-This will create a tokenizer for the text, and moving windows based on the tokenizer.
+これは、与えられたテキストに対する Tokenizerを生成し、その Tokenizer に基づく移動ウィンドウを生成します。
 
-      List<Window> windows = Windows.windows("text",tokenizerFactory);
-
-This will create a tokenizer for the text and create moving windows based on that.
-
-Notably, you can also specify the window size like so:
+特に、ウィンドウのサイズはこのように指定することが出来ます。
 
       TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
       List<Window> windows = Windows.windows("text",tokenizerFactory,windowSize);
 
-Training word sequence models is done through optimization with the [Viterbi algorithm](https://en.wikipedia.org/wiki/Viterbi_algorithm).
+単語列モデルの学習は[ビタビアルゴリズム(Viterbi algorithm)](https://en.wikipedia.org/wiki/Viterbi_algorithm)による最適化を通して行われます。
 
-The general idea is to train moving windows with Word2vec and classify individual windows (with a focus word) with certain labels. This could be done for part-of-speech tagging, semantic-role labeling, named-entity recognition and other tasks.
+大まかなアイデアは、移動ウィンドウをWord2vecで学習し、各単語(注目している単語)をあるラベルで分類することです。これは、品詞タグ付け(part-of-speech tagging)、意味役割付与(semantic-role labeling)、固有表現抽出(named-entity recognition)や他のタスクに役立ちます。
 
-Viterbi calculates the most likely sequence of events (labels) given a transition matrix (the probability of going from one state to another). Here's an example snippet for setup:
+ビタビアルゴリズムは、与えられた遷移行列(ある状態からある状態へ遷移する確率を表す)において、最も起こりやすいイベント(ラベル)列を計算します。ここにセットアップ用のスニペット例を示します。
 
 <script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/word2vec/MovingWindowExample.java?slice=112:121"></script>
 
-From there, each line will be handled something like this:
+それ以降、各行はこのように処理されます。
 
         <ORGANIZATION> IBM </ORGANIZATION> invented a question-answering robot called <ROBOT>Watson</ROBOT>.
 
-Given a set of text, Windows.windows automatically infers labels from bracketed capitalized text.
+テキストの集合が与えられると、 Windows.windows は自動的に、大文字テキストのブラケットで示されているラベルを推測します。
 
-If you do this:
+もし、このウィンドウ含むものに対して、このようにすると
 
-        String label = window.getLabel();
+        String label = window.setLabel();
 
-on anything containing that window, it will automatically contain that label. This is used in bootstrapping a prior distribution over the set of labels in a training corpus.
+自動的にそのラベルで囲います。 これは、トレーニング用コーパスのラベル集合上の事前分布によってブートストラップする際に使われます。
 
-The following code saves your Viterbi implementation for later use:
+次のコードは、ビタビアルゴリズムの実装を後で利用するために保存します。
 
         SerializationUtils.saveObject(viterbi, new File("mypath"));
 
