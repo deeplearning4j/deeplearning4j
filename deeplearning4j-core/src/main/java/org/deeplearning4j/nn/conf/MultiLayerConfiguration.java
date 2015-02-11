@@ -175,7 +175,6 @@ public class MultiLayerConfiguration implements Serializable {
         if (useRBMPropUpAsActivations != that.useRBMPropUpAsActivations) return false;
         if (confs != null ? !confs.equals(that.confs) : that.confs != null) return false;
         if (!Arrays.equals(hiddenLayerSizes, that.hiddenLayerSizes)) return false;
-        if (processors != null ? !processors.equals(that.processors) : that.processors != null) return false;
 
         return true;
     }
@@ -299,8 +298,7 @@ public class MultiLayerConfiguration implements Serializable {
                 && pretrain == builder.pretrain && useDropConnect == builder.useDropConnect
                 && useRBMPropUpAsActivations == builder.useRBMPropUpAsActivations
                 && !(confs != null ? !confs.equals(builder.confs) : builder.confs != null)
-                && Arrays.equals(hiddenLayerSizes, builder.hiddenLayerSizes)
-                && !(preProcessors != null ? !preProcessors.equals(builder.preProcessors) : builder.preProcessors != null);
+                && Arrays.equals(hiddenLayerSizes, builder.hiddenLayerSizes);
 
         }
 

@@ -920,6 +920,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         module.addSerializer(StepFunction.class, new StepFunctionSerializer());
         module.addDeserializer(StepFunction.class, new StepFunctionDeSerializer());
 
+
+        module.addSerializer(OutputPreProcessor.class,new PreProcessorSerializer());
+        module.addDeserializer(OutputPreProcessor.class,new PreProcessorDeSerializer());
+
         ret.registerModule(module);
         return ret;
     }
