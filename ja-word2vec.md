@@ -9,7 +9,7 @@ layout: ja-default
 
 * <a href="#intro">Word2Vec入門</a>
 * <a href="#anatomy">Word2vecの構造</a>
-* <a href="#code">Training</a>
+* <a href="#code">学習処理</a>
 * <a href="#windows">Moving Windows</a>
 * <a href="#grams">N-grams & Skip-grams</a>
 * <a href="#load">Loading Your Data</a>
@@ -48,24 +48,24 @@ skip-gram 表現は Mikolov 氏によって普及され、DL4Jの実装でも利
 
 簡単に言えば、2層のニューラルネットを<a href="../glossary.html#downpoursgd">最急降下法(Gradient Descent)</a>で学習させます。ニューラルネットの接続の重みは特定のサイズになります。Word2vec の用語で、<em>syn0</em>は単語ベクトル用のルックアップテーブルのことで、<em>syn1</em>は活性値(activation)を指します。階層化された Softmax によってお互いに近い所にある様々単語の尤度を計算するために2層のニューラルネットを学習させます。この Word2vecの実装では<a href="../glossary.html#skipgram">skip-gram</a>を使っています。
 
-## <a name="code">Training</a>
+## <a name="code">学習処理</a>
 
-Word2Vec trains on raw text. It then records the context, or usage, of each word encoded as word vectors. After training, it's used as lookup table to compose windows of training text for various tasks in natural-language processing.
+Word2Vec はRawテキストを学習します。 学習処理では、各単語のコンテキスト、利用例を単語ベクトルとして記録します。学習した後は、Word2Vecは、自然言語処理の様々なタスクで、学習したテキストのウィンドウを合成する際のルックアップテーブルとして使われます。
 
-After lemmatization, Word2vec will conduct automatic multithreaded training based on your sentence data. Then you'll want to save the model. There are a few different components to Word2vec. One of these is the vocab cache. The normal way to save models in deeplearning4j is via the SerializationUtils (java serialization akin to python pickling)
+見出し語化(lemmatization)の後、Word2vecは与えられた文章データを基に、自動的にマルチスレッドで学習を行います。その後はモデルを保存するでしょう。そのために、 Word2vecには、モデルを保存する為の幾つかのコンポーネントがあります。その一つがVocabCachです。deeplearning4jにおける通常のモデル保存方法はSerializationUtils(Pythonのpicklingににたjavaのシリアライゼーション)を使う方法です。
 
         SerializationUtils.saveObject(vec, new File("mypath"));
 
-This will save Word2vec to mypath. You can reload it into memory like this:
+これは、 Word2vec を mypath に保存します。保存されたファイルは、このようにメモリにリロード出来ます。
 
         Word2Vec vec = SerializationUtils.readObject(new File("mypath"));
 
-You can then use Word2vec as a lookup table in the following way:
+すると、Word2vecは次のようにルックアップテーブルとして使うことが出来ます。
 
         INDArray wordVector = vec.getWordVectorMatrix("myword");
         double[] wordVector = vec.getWordVector("myword");
 
-If the word isn't in the vocabulary, Word2vec returns zeros -- nothing more.
+与えられた単語が語彙の中に含まれない場合、 Word2vec はゼロを返すだけです。
 
 ###<a name="windows">Windows</a>
 
