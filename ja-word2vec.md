@@ -8,7 +8,7 @@ layout: ja-default
 コンテンツ
 
 * <a href="#intro">Word2Vec入門</a>
-* <a href="#anatomy">Anatomy of Word2vec</a>
+* <a href="#anatomy">Word2vecの構造</a>
 * <a href="#code">Training</a>
 * <a href="#windows">Moving Windows</a>
 * <a href="#grams">N-grams & Skip-grams</a>
@@ -37,16 +37,16 @@ skip-gram 表現は Mikolov 氏によって普及され、DL4Jの実装でも利
 
 ![Alt text](../img/word2vec.png)
 
-###<a name="anatomy">Anatomy of Word2vec</a>
+###<a name="anatomy">Word2vecの構造</a>
 
-What do we talk about when we talk about Word2vec? Deeplearning4j's natural-language processing components:
+私達が Word2vec について話す時、一体何を話すでしょうか？Deeplearning4j の 自然言語処理コンポーネントは、次のとおりです。
 
-* **SentenceIterator/DocumentIterator**: Used to iterate over a dataset. A SentenceIterator returns strings and a DocumentIterator works with inputstreams. Use the SentenceIterator wherever possible.
-* **Tokenizer/TokenizerFactory**: Used in tokenizing the text. In NLP terms, a sentence is represented as a series of tokens. A TokenizerFactory creates an instance of a tokenizer for a "sentence."
-* **VocabCache**: Used for tracking metadata including word counts, document occurrences, the set of tokens (not vocab in this case, but rather tokens that have occurred), vocab (the features included in both bag of words as well as the word vector lookup table)
-* **Inverted Index**: Stores metadata about where words occurred. Can be used for understanding the dataset. A Lucene index with the Lucene implementation[1] is automatically created.
+* **SentenceIterator/DocumentIterator**: データセットをイテレートするのに使われます。SentenceIterator は文字列を返し、DocumentIterator は InputStream を返します。可能な限りSentenceIteratorを使ってください。
+* **Tokenizer/TokenizerFactory**: テキストをトークン化するのに使われます。自然言語処理の用語で、文はトークンの列として表現されます。TokenizerFactory は文をトークン化するための Tokenizer を生成します。
+* **VocabCache**: 単語数、出現数、トークンの集合(この場合は語彙ではなく、出現したトークンの集合)、語彙(単語のバッグ(多重集合)と単語ベクトル用のルックアップテーブルの両方に含まれる特徴)といったメタデータを追跡するのに使われます。
+* **Inverted Index**: 単語の位置についてのメタデータを保管します。これはデータセットを理解するために使うことが出来ます。Lucene実装によってLuceneインデックス[1]が自動的に作成されます。
 
-Briefly, a two-layer neural net is trained with <a href="../glossary.html#downpoursgd">Gradient Descent</a>. The connection weights for the neural net are of a specified size. <em>syn0</em> in Word2vec terms is the wordvector lookup table, <em>syn1</em> is the activation, and a hierarchical Softmax trains on the two-layer net to calculate the likelihoods of various words being near one another. The Word2vec implementation here uses <a href="../glossary.html#skipgram">skipgrams</a>.
+簡単に言えば、2層のニューラルネットを<a href="../glossary.html#downpoursgd">最急降下法(Gradient Descent)</a>で学習させます。ニューラルネットの接続の重みは特定のサイズになります。Word2vec の用語で、<em>syn0</em>は単語ベクトル用のルックアップテーブルのことで、<em>syn1</em>は活性値(activation)を指します。階層化された Softmax によってお互いに近い所にある様々単語の尤度を計算するために2層のニューラルネットを学習させます。この Word2vecの実装では<a href="../glossary.html#skipgram">skip-gram</a>を使っています。
 
 ## <a name="code">Training</a>
 
