@@ -1,11 +1,9 @@
-package org.deeplearning4j.clustering;
+package org.deeplearning4j.clustering.cluster;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.distancefunction.DistanceFunction;
-import org.nd4j.linalg.factory.Nd4j;
 
 public class ClusterSet {
 
@@ -16,60 +14,48 @@ public class ClusterSet {
 
 	}
 
-	public ClusterSet(INDArray centers) {
-		for (Integer idx = 0, count = centers.rows(); idx < count; idx++) {
-			clusters.add(new Cluster(centers.getRow(idx)));
-		}
-	}
-	
 	public ClusterSet(Class<? extends DistanceFunction> distanceFunction) {
 		this.distanceFunction = distanceFunction;
 	}
 
 	
-	public void addNewClusterWithCenter(INDArray center) {
+	public void addNewClusterWithCenter(Point center) {
 		getClusters().add(new Cluster(center));
 	}
 	
-	public INDArray getCenters() {
-		INDArray centers = Nd4j.create(clusters.size(), clusters.get(0).getCenter().columns());
-		for (Integer idx = 0, count = clusters.size(); idx < count; idx++) {
-			centers.putRow(idx, clusters.get(idx).getCenter());
-		}
-		return centers;
-	}
 	
-	public void addPoint(INDArray point) {
+	
+	public void addPoint(Point point) {
 		nearestCluster(point).addPoint(point, true);
 	}
-	public void addPoint(INDArray point, boolean moveClusterCenter) {
+	public void addPoint(Point point, boolean moveClusterCenter) {
 		nearestCluster(point).addPoint(point, moveClusterCenter);
 	}
 	
-	public void addPoints(List<INDArray> points) {
+	public void addPoints(List<Point> points) {
 		addPoints(points, true);
 	}
-	public void addPoints(List<INDArray> points, boolean moveClusterCenter) {
-		for( INDArray point : points )
+	public void addPoints(List<Point> points, boolean moveClusterCenter) {
+		for( Point point : points )
 			addPoint(point, moveClusterCenter);
 	}
 	
-	public Cluster classify(INDArray point) {
+	public Cluster classify(Point point) {
 		return classify(point, distanceFunction);
 	}
 
-	public Cluster classify(INDArray point, Class<? extends DistanceFunction> distanceFunction) {
+	public Cluster classify(Point point, Class<? extends DistanceFunction> distanceFunction) {
 		return nearestCluster(point);
 	}
 
-	protected Cluster nearestCluster(INDArray point) {
+	protected Cluster nearestCluster(Point point) {
 
 		Cluster nearestCluster = null;
 		double minDistance = Float.MAX_VALUE;
 
 		double currentDistance;
 		for (Cluster cluster : getClusters()) {
-			INDArray currentCenter = cluster.getCenter();
+			Point currentCenter = cluster.getCenter();
 			if (currentCenter != null) {
 				currentDistance = getDistance(currentCenter, point);
 				if (currentDistance < minDistance) {
@@ -82,17 +68,17 @@ public class ClusterSet {
 		return nearestCluster;
 	}
 
-	private double getDistance(INDArray m1, INDArray m2) {
+	private double getDistance(Point m1, Point m2) {
 		DistanceFunction function;
 		try {
-			function = distanceFunction.getConstructor(INDArray.class).newInstance(m1);
+			function = distanceFunction.getConstructor(Point.class).newInstance(m1);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 		return function.apply(m2);
 	}
 	
-	public double getDistanceFromNearestCluster(INDArray point) {
+	public double getDistanceFromNearestCluster(Point point) {
 		Cluster nearestCluster = nearestCluster(point);
 		return getDistance(nearestCluster.getCenter(), point);
 	}

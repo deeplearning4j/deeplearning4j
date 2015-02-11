@@ -1,4 +1,4 @@
-package org.deeplearning4j.clustering;
+package org.deeplearning4j.clustering.kmeans;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -8,6 +8,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.deeplearning4j.clustering.ClusteringAlgorithm;
+import org.deeplearning4j.clustering.cluster.ClusterSet;
+import org.deeplearning4j.clustering.cluster.Point;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.distancefunction.DistanceFunction;
 import org.nd4j.linalg.distancefunction.EuclideanDistance;
@@ -45,28 +48,30 @@ public class KMeansClustering implements ClusteringAlgorithm, Serializable {
 		this(nbCluster, defaultIterationCount, EuclideanDistance.class);
 	}
 
-	public ClusterSet applyTo(List<INDArray> points) {
+	public ClusterSet applyTo(List<INDArray> vectors) {
 		exec = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
+		
+		List<Point> points = Point.toPoints(vectors);
 		initClusters(points);
 		iterations(points);
 		return clusterSet;
 	}
 
-	private void iterations(List<INDArray> points) {
+	private void iterations(List<Point> points) {
 		for( int i=0;i<iterationCount;i++) {
-			clusterSet.addPoints(points, true);
 			clusterSet.removePoints();
+			clusterSet.addPoints(points, true);
 		}
 	}
 
 	
-	protected void initClusters(List<INDArray> initialPointsList) {
+	protected void initClusters(List<Point> initialPointsList) {
 		
-		List<INDArray> points = new ArrayList<INDArray>(initialPointsList);
+		List<Point> points = new ArrayList<Point>(initialPointsList);
 		
 		clusterSet = new ClusterSet(distanceFunction);
 		Random random = new Random();
-		final INDArray center = points.remove(random.nextInt(points.size())).linearView();
+		final Point center = points.remove(random.nextInt(points.size()));
 		clusterSet.addNewClusterWithCenter(center);
 		
 		while( clusterSet.getClusterCount()<nbCluster ) {
@@ -82,7 +87,7 @@ public class KMeansClustering implements ClusteringAlgorithm, Serializable {
 			
 	}
 
-	protected INDArray computeDxs(final List<INDArray> points) {
+	protected INDArray computeDxs(final List<Point> points) {
 		final INDArray dxs = Nd4j.create(points.size(), points.get(0).columns());
 
 		final CountDownLatch latch = new CountDownLatch(points.size());
@@ -91,7 +96,7 @@ public class KMeansClustering implements ClusteringAlgorithm, Serializable {
 			exec.execute(new Runnable() {
 				@Override
 				public void run() {
-					INDArray point = points.get(i2);
+					Point point = points.get(i2);
 					dxs.putScalar(i2, (int) Math.pow(clusterSet.getDistanceFromNearestCluster(point), 2));
 					latch.countDown();
 				}

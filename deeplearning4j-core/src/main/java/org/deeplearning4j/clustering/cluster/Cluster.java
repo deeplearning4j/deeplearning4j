@@ -1,17 +1,15 @@
-package org.deeplearning4j.clustering;
+package org.deeplearning4j.clustering.cluster;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
-
 public class Cluster {
 
 	private String			id = UUID.randomUUID().toString();
 	
-	private INDArray		center;
-	private List<INDArray>	points = new ArrayList<INDArray>();
+	private Point		center;
+	private List<Point>	points = new ArrayList<Point>();
 
 	public Cluster() {
 		super();
@@ -22,27 +20,27 @@ public class Cluster {
 		this.id = id;
 	}
 
-	public Cluster(INDArray center) {
+	public Cluster(Point center) {
 		super();
 		this.center = center;
 	}
 	
-	public Cluster(String id, INDArray center) {
+	public Cluster(String id, Point center) {
 		super();
 		this.id = id;
 		this.center = center;
 	}
 
-	public Cluster(INDArray center, List<INDArray> points) {
+	public Cluster(Point center, List<Point> points) {
 		super();
 		this.center = center;
 		this.points = points;
 	}
 	
-	public void addPoint(INDArray point) {
+	public void addPoint(Point point) {
 		addPoint(point, true);
 	}
-	public void addPoint(INDArray point, boolean moveClusterCenter) {
+	public void addPoint(Point point, boolean moveClusterCenter) {
 		if( moveClusterCenter ) {
 			center.muli(points.size()).addi(point).divi(points.size()+1);
 		}
@@ -54,22 +52,21 @@ public class Cluster {
 			getPoints().clear();
 	}
 
-	public INDArray getCenter() {
+	public Point getCenter() {
 		return center;
 	}
 
-	public void setCenter(INDArray center) {
+	public void setCenter(Point center) {
 		this.center = center;
 	}
 
-	public List<INDArray> getPoints() {
+	public List<Point> getPoints() {
 		return points;
 	}
 
-	public void setPoints(List<INDArray> points) {
+	public void setPoints(List<Point> points) {
 		this.points = points;
 	}
-
 	
 
 }
