@@ -140,6 +140,7 @@
         <module>nd4j-jcublas-parent</module>
         <module>nd4j-jcublas-osx-parent</module>
         <module>nd4j-jcublas-windows64-parent</module>
+        <module>nd4j-scala-api</module>
     </modules>
 
     <properties>

@@ -30,6 +30,10 @@ public class Sigmoid extends BaseElementWiseOp {
         } else {
             double inputf = (double) input;
             double val = 1 / (1 + FastMath.exp(-inputf));
+            if(Nd4j.ENFORCE_NUMERICAL_STABILITY) {
+                if(Double.isNaN(val) || Double.isInfinite(val))
+                    val = Nd4j.EPS_THRESHOLD;
+            }
             return val;
         }
     }

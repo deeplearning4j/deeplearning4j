@@ -310,4 +310,7 @@ public class NDArray extends BaseNDArray {
         this.data = buffer;
         initShape(shape);
     }
+
+
+
 }

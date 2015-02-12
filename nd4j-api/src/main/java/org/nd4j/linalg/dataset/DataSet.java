@@ -135,8 +135,8 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
             DataSet d1 = data.get(i);
             for(int j = 0; j < d1.numExamples(); j++) {
                 DataSet example = d1.get(j);
-                in.putRow(count,example.getFeatures());
-                out.putRow(count,example.getLabels());
+                in.putRow(count,example.getFeatures().dup());
+                out.putRow(count,example.getLabels().dup());
                 count++;
             }
 
@@ -149,7 +149,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
      * Reshapes the input in to the given rows and columns
      * @param rows the row size
      * @param cols the column size
-     * @return a copy of this data applyTransformToDestination with the input resized
+     * @return a copy of this data transform with the input resized
      */
     @Override
     public DataSet reshape(int rows, int cols) {
@@ -481,7 +481,7 @@ public class DataSet  implements org.nd4j.linalg.dataset.api.DataSet {
     public List<DataSet> asList() {
         List<DataSet> list = new ArrayList<>(numExamples());
         for(int i = 0; i < numExamples(); i++)  {
-            list.add(new DataSet(getFeatures().getRow(i),getLabels().getRow(i)));
+            list.add(new DataSet(getFeatures().getRow(i).dup(),getLabels().getRow(i).dup()));
         }
         return list;
     }

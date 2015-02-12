@@ -443,8 +443,7 @@ public  abstract class BaseNDArray  implements INDArray {
     @Override
     public  int majorStride() {
         //return ordering == NDArrayFactory.C ? stride[0] : stride[stride.length - 1];r
-        return stride[0];
-    }
+        return stride[0];}
 
     @Override
     public  int secondaryStride() {
