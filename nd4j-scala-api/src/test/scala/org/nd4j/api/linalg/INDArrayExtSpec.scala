@@ -5,7 +5,7 @@ import org.nd4j.linalg.factory.Nd4j
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{Matchers, FlatSpec}
 
-import Implicits._
+import DSL._
 
 @RunWith(classOf[JUnitRunner])
 class INDArrayExtSpec extends FlatSpec with Matchers {

@@ -1,17 +1,18 @@
 package org.nd4j.api.linalg
 
 import org.junit.runner.RunWith
+import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{Matchers, FlatSpec}
 
-import Implicits._
+import DSL._
 
 @RunWith(classOf[JUnitRunner])
-class ImplicitsSpec extends FlatSpec with Matchers {
+class DSLSpec extends FlatSpec with Matchers {
 
 
-  "Implicits" should "extend an INDArray" in {
+  "DSL" should "wrap and extend an INDArray" in {
 
     // This test just verifies that an INDArray gets wrapped with an implicit conversion
 
@@ -24,6 +25,11 @@ class ImplicitsSpec extends FlatSpec with Matchers {
     val nd2 = nd += 100
     nd2 should  equal(nd)
     nd2(0) should equal(101)
+
+    nd2 match {
+      case i: INDArray =>  // do nothing
+      case _ => fail("Expect our object to be an INDArray")
+    }
 
   }
 
