@@ -155,6 +155,8 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
                     else
                         setInput(input);
                     getLayers()[i].fit(next.getFeatureMatrix());
+                    log.info("Training on layer " + (i + 1) + " with " + input.rows() + " examples");
+
 
                 }
 
@@ -168,7 +170,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
                     for(int j = 1; j <= i; j++)
                         layerInput = activationFromPrevLayer(j - 1,layerInput);
 
-                    log.info("Training on layer " + (i + 1));
+                    log.info("Training on layer " + (i + 1) + " with " + layerInput.rows() + " examples");
                     getLayers()[i].fit(layerInput);
 
                 }
@@ -208,7 +210,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
                 layerInput = getInput();
             else
                 layerInput = activationFromPrevLayer(i -1,layerInput);
-            log.info("Training on layer " + (i + 1));
+            log.info("Training on layer " + (i + 1) + " with " + layerInput.rows() + " examples");
             getLayers()[i].fit(layerInput);
 
 
@@ -246,6 +248,31 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     @Override
     public ConvexOptimizer getOptimizer() {
         return null;
+    }
+
+    @Override
+    public INDArray getParam(String param) {
+        return null;
+    }
+
+    @Override
+    public void initParams() {
+
+    }
+
+    @Override
+    public Map<String, INDArray> paramTable() {
+        return null;
+    }
+
+    @Override
+    public void setParamTable(Map<String, INDArray> paramTable) {
+
+    }
+
+    @Override
+    public void setParam(String key, INDArray val) {
+
     }
 
     /**
@@ -414,8 +441,20 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
         }
     }
 
-    public synchronized  INDArray activationFromPrevLayer(int curr,INDArray input) {
-        return layers[curr].activate(input);
+    /**
+     * Calculate activation from previous layer including pre processing where necessary
+     * @param curr the current layer
+     * @param input the input
+     * @return the activation from the previous layer
+     *
+     */
+    public   INDArray activationFromPrevLayer(int curr,INDArray input) {
+        INDArray ret = layers[curr].activate(input);
+        if(getLayerWiseConfigurations().getProcessors() != null && getLayerWiseConfigurations().getPreProcessor(curr) != null) {
+            ret = getLayerWiseConfigurations().getPreProcessor(curr).preProcess(ret);
+            return ret;
+        }
+        return ret;
     }
 
     /**
@@ -461,10 +500,10 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
     }
 
     @Override
-    public Gradient getGradient() {
+    public Gradient gradient() {
         Gradient ret = new DefaultGradient();
         for(int i = 0; i < layers.length; i+= 2) {
-            ret.gradientLookupTable().put(String.valueOf(i),layers[i].getGradient().gradient());
+            ret.gradientForVariable().put(String.valueOf(i),layers[i].gradient().gradient());
         }
 
         return ret;
@@ -472,7 +511,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(getGradient(),getOutputLayer().score());
+        return new Pair<>(gradient(),getOutputLayer().score());
     }
 
     /**
@@ -1516,7 +1555,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
         return labels;
     }
 
-    public synchronized  INDArray getInput() {
+    public   INDArray getInput() {
         return input;
     }
 
@@ -1551,7 +1590,7 @@ public  class MultiLayerNetwork implements Serializable,Classifier {
 
 
 
-    public synchronized  Layer[] getLayers() {
+    public   Layer[] getLayers() {
         return layers;
     }
 

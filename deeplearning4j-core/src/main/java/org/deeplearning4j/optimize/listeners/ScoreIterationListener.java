@@ -39,7 +39,7 @@ public class ScoreIterationListener implements IterationListener {
 
     @Override
     public void iterationDone(Model model, int iteration) {
-        if(iteration % printIterations == 0 && iteration > 0)
+        if(iteration % printIterations == 0)
             log.info("Score at iteration " + iteration + " is " + model.score());
 
     }

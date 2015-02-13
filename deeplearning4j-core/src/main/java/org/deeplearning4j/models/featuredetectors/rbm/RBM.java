@@ -95,15 +95,15 @@ public  class RBM extends BasePretrainNetwork {
 
      */
     public void contrastiveDivergence() {
-        Gradient gradient = getGradient();
-        getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).subi(gradient.gradientLookupTable().get(PretrainParamInitializer.VISIBLE_BIAS_KEY));
-        getParam(PretrainParamInitializer.BIAS_KEY).subi(gradient.gradientLookupTable().get(PretrainParamInitializer.BIAS_KEY));
-        getParam(PretrainParamInitializer.WEIGHT_KEY).subi(gradient.gradientLookupTable().get(PretrainParamInitializer.WEIGHT_KEY));
+        Gradient gradient = gradient();
+        getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).subi(gradient.gradientForVariable().get(PretrainParamInitializer.VISIBLE_BIAS_KEY));
+        getParam(PretrainParamInitializer.BIAS_KEY).subi(gradient.gradientForVariable().get(PretrainParamInitializer.BIAS_KEY));
+        getParam(PretrainParamInitializer.WEIGHT_KEY).subi(gradient.gradientForVariable().get(PretrainParamInitializer.WEIGHT_KEY));
     }
 
 
     @Override
-    public Gradient getGradient() {
+    public Gradient gradient() {
 
 
 
@@ -181,9 +181,9 @@ public  class RBM extends BasePretrainNetwork {
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
         INDArray  vBiasGradient = input.sub(nvSamples).mean(0);
         Gradient ret = new DefaultGradient();
-        ret.gradientLookupTable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
-        ret.gradientLookupTable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
-        ret.gradientLookupTable().put(PretrainParamInitializer.WEIGHT_KEY,wGradient);
+        ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
+        ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
+        ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY,wGradient);
 
         return ret;
     }
@@ -232,7 +232,7 @@ public  class RBM extends BasePretrainNetwork {
      * @return a binomial distribution containing the expected values and the samples
      */
     @Override
-   public  Pair<INDArray,INDArray> sampleHiddenGivenVisible(INDArray v) {
+    public  Pair<INDArray,INDArray> sampleHiddenGivenVisible(INDArray v) {
         if(conf.getHiddenUnit() == HiddenUnit.RECTIFIED) {
             INDArray h1Mean = propUp(v);
             INDArray sigH1Mean = sigmoid(h1Mean);
@@ -291,7 +291,7 @@ public  class RBM extends BasePretrainNetwork {
      * @return the expected values and samples of both the visible samples given the hidden
      * and the new hidden input and expected values
      */
-   public   Pair<Pair<INDArray,INDArray>,Pair<INDArray,INDArray>> gibbhVh(INDArray h) {
+    public   Pair<Pair<INDArray,INDArray>,Pair<INDArray,INDArray>> gibbhVh(INDArray h) {
 
         Pair<INDArray,INDArray> v1MeanAndSample = sampleVisibleGivenHidden(h);
         INDArray vSample = v1MeanAndSample.getSecond();
@@ -308,7 +308,7 @@ public  class RBM extends BasePretrainNetwork {
      * passed in
      */
     @Override
-   public  Pair<INDArray,INDArray> sampleVisibleGivenHidden(INDArray h) {
+    public  Pair<INDArray,INDArray> sampleVisibleGivenHidden(INDArray h) {
         INDArray v1Mean = propDown(h);
 
         if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN) {
@@ -436,8 +436,6 @@ public  class RBM extends BasePretrainNetwork {
     public INDArray transform(INDArray v) {
         //reconstructed: propUp ----> hidden propDown to transform
         INDArray propUp = propUp(v);
-        while(propUp.columns() != conf.getnOut())
-            propUp = propUp(v);
         INDArray ret = propDown(propUp);
         return ret;
     }

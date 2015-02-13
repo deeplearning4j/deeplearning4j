@@ -1034,7 +1034,7 @@ public class RNTN implements Layer {
     }
 
     @Override
-    public Gradient getGradient() {
+    public Gradient gradient() {
         return null;
     }
 
