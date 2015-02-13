@@ -19,6 +19,9 @@ class INDArrayExt(a: INDArray) {
   /** matrix multiplication using Numpy syntax for arrays */
   def dot(that: INDArray) : INDArray = a.mmul(that)
   def /(that: INDArray): INDArray = a.div(that)
+  /** right division ... is this the correct symbol? */
+  def \(that: Number): INDArray = a.rdiv(that)
+  def \(that: INDArray): INDArray = a.rdiv(that)
   def +=(that: INDArray): INDArray = a.addi(that)
   def -=(that: INDArray): INDArray = a.subi(that)
   /** element-by-element multiplication */
@@ -26,6 +29,9 @@ class INDArrayExt(a: INDArray) {
   /** matrix multiplication */
   def **=(that: INDArray) : INDArray = a.mmuli(that)
   def /=(that: INDArray): INDArray = a.divi(that)
+  /** right division ... is this the correct symbol? */
+  def \=(that: Number): INDArray = a.rdivi(that)
+  def \=(that: INDArray): INDArray = a.rdivi(that)
   
   def +(that: Number): INDArray = a.add(that)
   def -(that: Number): INDArray = a.sub(that)
@@ -40,7 +46,8 @@ class INDArrayExt(a: INDArray) {
   def apply(i: Int): Double = a.getDouble(i)
   def apply(i: Int, j: Int): Double = a.getDouble(i, j)
   def apply(indices: Int*): Double = a.getDouble(indices:_*)
-  def apply(indices: Array[Int]): Double = apply(indices:_*)
+  def apply(indices: Array[Int]): Double = a.getDouble(indices:_*)
+  def apply(indexes: NDArrayIndex*): INDArray = a.get(indexes:_*)
 
   def update(i: Int, element: INDArray): INDArray = a.put(i, element)
   def update(indices: Array[NDArrayIndex], element: INDArray) = a.put(indices, element)
@@ -53,6 +60,16 @@ class INDArrayExt(a: INDArray) {
   def update(i: Array[Int], value: Float) = a.putScalar(i, value)
   def update(i: Array[Int], value: Int) = a.putScalar(i, value)
 
+  def -(): INDArray = a.neg()
+
+
   def t: INDArray = a.transpose()
+
+  def ===(other: Number): INDArray = a.eq(other)
+  def ===(other: INDArray): INDArray = a.eq(other)
+  def >(other: Number): INDArray = a.gt(other)
+  def >(other: INDArray): INDArray = a.gt(other)
+  def <(other: Number): INDArray = a.lt(other)
+  def <(other: INDArray): INDArray = a.lt(other)
 
 }
