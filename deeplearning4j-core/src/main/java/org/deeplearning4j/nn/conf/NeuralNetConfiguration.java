@@ -11,6 +11,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.conf.deserializers.*;
+import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.conf.serializers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.api.LayerFactory;
@@ -739,7 +740,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
      * @return a clone of this instance.
      * @throws CloneNotSupportedException if the object's class does not
      *                                    support the {@code Cloneable} interface. Subclasses
-     *                                    that override the {@code clone} method can also
+     *                                    that overrideLayer the {@code clone} method can also
      *                                    throw this exception to indicate that an instance cannot
      *                                    be cloned.
      * @see Cloneable
@@ -749,16 +750,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return new NeuralNetConfiguration(this);
     }
 
-
-    /**
-     * Interface for a function to override
-     * builder configurations at a particular layer
-     *
-     */
-    public static interface  ConfOverride  {
-        void override(int i,Builder builder);
-
-    }
 
     /**
      * Fluent interface for building a list of configurations
@@ -800,7 +791,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public ListBuilder override(ConfOverride override) {
             for(int i = 0; i < layerwise.size(); i++)
-                override.override(i,layerwise.get(i));
+                override.overrideLayer(i, layerwise.get(i));
             return this;
         }
 

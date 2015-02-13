@@ -11,6 +11,7 @@ import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -51,9 +52,9 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                 .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class)).visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .activationFunction(Activations.tanh()).list(2).hiddenLayerSizes(3)
-                .override(new NeuralNetConfiguration.ConfOverride() {
+                .override(new ConfOverride() {
                     @Override
-                    public void override(int i, NeuralNetConfiguration.Builder builder) {
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 1) {
                             builder.activationFunction(Activations.softMaxRows());
                             builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
@@ -88,9 +89,9 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
                 .list(3).hiddenLayerSizes(3,2)
-                .override(new NeuralNetConfiguration.ConfOverride() {
+                .override(new ConfOverride() {
                     @Override
-                    public void override(int i, NeuralNetConfiguration.Builder builder) {
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
 
                         if (i == 2) {
                             builder.activationFunction(Activations.softMaxRows());
@@ -136,9 +137,9 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
                 .activationFunction(Activations.tanh()).list(2).hiddenLayerSizes(3)
-                .override(new NeuralNetConfiguration.ConfOverride() {
+                .override(new ConfOverride() {
                     @Override
-                    public void override(int i, NeuralNetConfiguration.Builder builder) {
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 1) {
                             builder.activationFunction(Activations.softMaxRows());
                             builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
