@@ -24,7 +24,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class StochasticHessianFree extends BaseOptimizer {
-    private static Logger logger = LoggerFactory.getLogger(StochasticHessianFree.class);
+    private static final Logger logger = LoggerFactory.getLogger(StochasticHessianFree.class);
 
     boolean converged = false;
     double initialStepSize = 1f;
@@ -32,7 +32,6 @@ public class StochasticHessianFree extends BaseOptimizer {
     double gradientTolerance = 0f;
     private MultiLayerNetwork network;
     int maxIterations = 10000;
-    private static Logger log = LoggerFactory.getLogger(StochasticHessianFree.class);
     /* decay, current gradient/direction/current point in vector space,preCondition on conjugate gradient,current parameters */
     private INDArray ch,gradient,xi;
     private double pi = 0.5f;

@@ -25,7 +25,7 @@ import java.util.ArrayList;
  */
 public class Word2VecTests {
 
-    private static Logger log = LoggerFactory.getLogger(Word2VecTests.class);
+    private static final Logger log = LoggerFactory.getLogger(Word2VecTests.class);
 
 
     @Before

@@ -17,7 +17,7 @@ import static org.junit.Assert.*;
  * Handle dividing things up by mini batch
  */
 public class MiniBatchTests extends BaseSparkTest {
-    private static Logger log = LoggerFactory.getLogger(MiniBatchTests.class);
+    private static final Logger log = LoggerFactory.getLogger(MiniBatchTests.class);
 
     @Test
     public void testMiniBatches() throws Exception {

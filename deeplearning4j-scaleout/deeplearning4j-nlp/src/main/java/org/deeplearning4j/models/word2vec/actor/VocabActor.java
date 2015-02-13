@@ -41,7 +41,7 @@ public class VocabActor extends UntypedActor {
     private int minWordFrequency;
     private AtomicLong numWordsEncountered;
     private InvertedIndex index;
-    private static Logger log = LoggerFactory.getLogger(VocabActor.class);
+    private static final Logger log = LoggerFactory.getLogger(VocabActor.class);
     private PorterStemmer stemmer = new PorterStemmer();
 
     public VocabActor(

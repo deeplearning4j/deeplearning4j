@@ -18,7 +18,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class TreeTransformerTests {
 
-    private static Logger log = LoggerFactory.getLogger(TreeTransformerTests.class);
+    private static final Logger log = LoggerFactory.getLogger(TreeTransformerTests.class);
     private TreeParser parser;
     @Before
     public void init() throws Exception {

@@ -35,7 +35,7 @@ public class GradientAdjustment {
     private GradientAdjustment(){}
 
 
-    private static Logger log = LoggerFactory.getLogger(GradientAdjustment.class);
+    private static final Logger log = LoggerFactory.getLogger(GradientAdjustment.class);
 
 
     /**

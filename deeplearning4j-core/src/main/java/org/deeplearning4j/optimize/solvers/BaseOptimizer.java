@@ -47,7 +47,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     protected NeuralNetConfiguration conf;
     protected AdaGrad adaGrad;
     protected int iteration = 0;
-    protected static Logger log = LoggerFactory.getLogger(BaseOptimizer.class);
+    protected static final Logger log = LoggerFactory.getLogger(BaseOptimizer.class);
     protected StepFunction stepFunction;
     private Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected Collection<TerminationCondition> terminationConditions = new ArrayList<>();

@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 public class WordVectorSerializer {
 
     private static final int MAX_SIZE = 50;
-    private static Logger log = LoggerFactory.getLogger(WordVectorSerializer.class);
+    private static final Logger log = LoggerFactory.getLogger(WordVectorSerializer.class);
 
 
 
