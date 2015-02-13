@@ -18,7 +18,7 @@ import java.util.List;
  * Basic test case for the context label test
  */
 public class ContextLabelTest {
-    private static Logger log = LoggerFactory.getLogger(ContextLabelTest.class);
+    private static final Logger log = LoggerFactory.getLogger(ContextLabelTest.class);
     private TokenizerFactory tokenizerFactory;
 
     @Before

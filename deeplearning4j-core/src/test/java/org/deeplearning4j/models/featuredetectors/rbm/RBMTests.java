@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * Created by agibsonccc on 8/27/14.
  */
 public class RBMTests {
-    private static Logger log = LoggerFactory.getLogger(RBMTests.class);
+    private static final Logger log = LoggerFactory.getLogger(RBMTests.class);
 
     @Test
     public void testLfw() {

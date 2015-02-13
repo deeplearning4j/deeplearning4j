@@ -125,7 +125,9 @@ public class MultiLayerConfiguration implements Serializable {
     public String toJson() {
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
         try {
-            return mapper.writeValueAsString(this).replaceAll("\"activationFunction\",", "").replaceAll("\"rng\",","").replaceAll("\"dist\",", "").replaceAll("\"stepFunction\",","").replaceAll("\"layerFactory\",","");
+            return mapper.writeValueAsString(this).replaceAll("\"activationFunction\",", "")
+                .replaceAll("\"rng\",","").replaceAll("\"dist\",", "").replaceAll("\"stepFunction\",","")
+                .replaceAll("\"layerFactory\",","");
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
