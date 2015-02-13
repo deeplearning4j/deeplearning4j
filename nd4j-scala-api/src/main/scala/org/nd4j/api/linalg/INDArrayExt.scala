@@ -20,7 +20,6 @@ class INDArrayExt(a: INDArray) {
   def dot(that: INDArray) : INDArray = a.mmul(that)
   def /(that: INDArray): INDArray = a.div(that)
   /** right division ... is this the correct symbol? */
-  def \(that: Number): INDArray = a.rdiv(that)
   def \(that: INDArray): INDArray = a.rdiv(that)
   def +=(that: INDArray): INDArray = a.addi(that)
   def -=(that: INDArray): INDArray = a.subi(that)
@@ -29,18 +28,19 @@ class INDArrayExt(a: INDArray) {
   /** matrix multiplication */
   def **=(that: INDArray) : INDArray = a.mmuli(that)
   def /=(that: INDArray): INDArray = a.divi(that)
-  /** right division ... is this the correct symbol? */
-  def \=(that: Number): INDArray = a.rdivi(that)
   def \=(that: INDArray): INDArray = a.rdivi(that)
   
   def +(that: Number): INDArray = a.add(that)
   def -(that: Number): INDArray = a.sub(that)
   def *(that: Number) : INDArray = a.mul(that)
   def /(that: Number): INDArray = a.div(that)
+  def \(that: Number): INDArray = a.rdiv(that)
   def +=(that: Number): INDArray = a.addi(that)
   def -=(that: Number): INDArray = a.subi(that)
   def *=(that: Number) : INDArray = a.muli(that)
   def /=(that: Number): INDArray = a.divi(that)
+  /** right division ... is this the correct symbol? */
+  def \=(that: Number): INDArray = a.rdivi(that)
 
   def apply(i: Int): Double = a.getDouble(i)
   def apply(i: Int, j: Int): Double = a.getDouble(i, j)
@@ -61,14 +61,14 @@ class INDArrayExt(a: INDArray) {
 
   def unary_-(): INDArray = a.neg()
 
-
   def t: INDArray = a.transpose()
 
   def ===(other: Number): INDArray = a.eq(other)
-  def ===(other: INDArray): INDArray = a.eq(other)
   def >(other: Number): INDArray = a.gt(other)
-  def >(other: INDArray): INDArray = a.gt(other)
   def <(other: Number): INDArray = a.lt(other)
+
+  def ===(other: INDArray): INDArray = a.eq(other)
+  def >(other: INDArray): INDArray = a.gt(other)
   def <(other: INDArray): INDArray = a.lt(other)
 
 }
