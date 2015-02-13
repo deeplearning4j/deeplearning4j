@@ -21,7 +21,7 @@ public class FileDocumentIterator implements DocumentIterator {
     private Iterator<File> iter;
     private LineIterator lineIterator;
     private File rootDir;
-    private static Logger log  = LoggerFactory.getLogger(FileDocumentIterator.class);
+    private static final Logger log  = LoggerFactory.getLogger(FileDocumentIterator.class);
 
     public FileDocumentIterator(String path) {
         this(new File(path));

@@ -17,7 +17,7 @@ public class UimaResource {
 
 	private AnalysisEngine analysisEngine;
 	private CasPool casPool;
-    private static Logger log = LoggerFactory.getLogger(UimaResource.class);
+    private static final Logger log = LoggerFactory.getLogger(UimaResource.class);
 
     public UimaResource(AnalysisEngine analysisEngine) throws ResourceInitializationException {
 		this.analysisEngine = analysisEngine;

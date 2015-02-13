@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  */
 
 public class BackTrackLineSearch implements LineOptimizer  {
-    private static Logger logger = LoggerFactory.getLogger(BackTrackLineSearch.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(BackTrackLineSearch.class.getName());
 
     private Model function;
     private StepFunction stepFunction = new DefaultStepFunction();

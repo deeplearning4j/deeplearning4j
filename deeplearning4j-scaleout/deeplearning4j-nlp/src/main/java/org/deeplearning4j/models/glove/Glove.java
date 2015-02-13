@@ -55,7 +55,7 @@ public class Glove  extends WordVectorsImpl {
     private double maxCount = 100;
     public final static String UNK = Word2Vec.UNK;
     private int iterations = 5;
-    private static Logger log = LoggerFactory.getLogger(Glove.class);
+    private static final Logger log = LoggerFactory.getLogger(Glove.class);
     private boolean symmetric = true;
     private transient RandomGenerator gen;
     private boolean shuffle = true;

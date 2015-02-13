@@ -18,7 +18,7 @@ import java.util.Arrays;
  */
 public class SentenceIteratorTest {
 
-    private static Logger log = LoggerFactory.getLogger(SentenceIteratorTest.class);
+    private static final Logger log = LoggerFactory.getLogger(SentenceIteratorTest.class);
 
     @Before
     public void before() throws Exception {

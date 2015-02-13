@@ -44,7 +44,7 @@ public class ClusterSetup {
 
     private ActorSystem as;
 
-	private static Logger log = LoggerFactory.getLogger(ClusterSetup.class);
+	private static final Logger log = LoggerFactory.getLogger(ClusterSetup.class);
 
 
 	public ClusterSetup(String[] args) {
