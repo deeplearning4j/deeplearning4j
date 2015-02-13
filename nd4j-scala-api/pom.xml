@@ -11,6 +11,8 @@
     <artifactId>nd4j-scala-api</artifactId>
      <properties>
          <scala.version>2.10.4</scala.version>
+         <scala.version.short>2.10</scala.version.short>
+         <scalatest.version>2.2.0</scalatest.version>
      </properties>
     <build>
         <plugins>
@@ -29,7 +31,15 @@
                     <scalaVersion>${scala.version}</scalaVersion>
                 </configuration>
             </plugin>
-
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/*Spec.*</include>
+                    </includes>
+                </configuration>
+            </plugin>
 
         </plugins>
     </build>
@@ -47,6 +57,16 @@
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-api</artifactId>
         <version>${project.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-jblas</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest_${scala.version.short}</artifactId>
+        <version>${scalatest.version}</version>
     </dependency>
 </dependencies>
 
