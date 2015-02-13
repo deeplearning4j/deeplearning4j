@@ -16,6 +16,8 @@ class INDArrayExt(a: INDArray) {
   def *(that: INDArray) : INDArray = a.mul(that)
   /** matrix multiplication */
   def **(that: INDArray) : INDArray = a.mmul(that)
+  /** matrix multiplication using Numpy syntax for arrays */
+  def dot(that: INDArray) : INDArray = a.mmul(that)
   def /(that: INDArray): INDArray = a.div(that)
   def +=(that: INDArray): INDArray = a.addi(that)
   def -=(that: INDArray): INDArray = a.subi(that)
