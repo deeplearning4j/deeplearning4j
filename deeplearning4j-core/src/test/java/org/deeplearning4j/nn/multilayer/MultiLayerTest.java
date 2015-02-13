@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
@@ -52,9 +53,9 @@ public class MultiLayerTest {
                 .weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(new MersenneTwister(123), 1e-5))
                 .iterations(100).learningRate(1e-3).iterationListener(new ScoreIterationListener(10))
                 .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
-                .list(4).hiddenLayerSizes(600,250,100).override(new NeuralNetConfiguration.ConfOverride() {
+                .list(4).hiddenLayerSizes(600,250,100).override(new ConfOverride() {
                     @Override
-                    public void override(int i, NeuralNetConfiguration.Builder builder) {
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 3) {
                             builder.layerFactory(new DefaultLayerFactory(OutputLayer.class));
                             builder.activationFunction(Activations.softMaxRows());
@@ -77,9 +78,9 @@ public class MultiLayerTest {
                 .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
                 .activationFunction(Activations.tanh())
                 .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
-                .list(3).hiddenLayerSizes(new int[]{3, 2}).override(new NeuralNetConfiguration.ConfOverride() {
+                .list(3).hiddenLayerSizes(new int[]{3, 2}).override(new ConfOverride() {
                     @Override
-                    public void override(int i, NeuralNetConfiguration.Builder builder) {
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 2) {
                             builder.layerFactory(new DefaultLayerFactory(OutputLayer.class));
                             builder.activationFunction(Activations.softMaxRows());
