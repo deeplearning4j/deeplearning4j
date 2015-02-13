@@ -41,14 +41,13 @@ import static org.junit.Assert.assertEquals;
  */
 public class TestSparkMultiLayer extends BaseSparkTest {
 
-    private static Logger log = LoggerFactory.getLogger(TestSparkMultiLayer.class);
+    private static final Logger log = LoggerFactory.getLogger(TestSparkMultiLayer.class);
 
 
     @Test
     public void testIris() throws Exception {
-
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+            .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class)).visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .activationFunction(Activations.tanh()).list(2).hiddenLayerSizes(3)
@@ -129,10 +128,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         Evaluation evaluation = new Evaluation();
         evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));
 
-
     }
-
-
 
     @Test
     public void testStaticInvocation() throws Exception {
@@ -176,7 +172,5 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
 
     }
-
-
 
 }

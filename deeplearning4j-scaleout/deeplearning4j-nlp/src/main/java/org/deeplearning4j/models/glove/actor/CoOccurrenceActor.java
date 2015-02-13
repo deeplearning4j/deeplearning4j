@@ -27,7 +27,7 @@ public class CoOccurrenceActor extends UntypedActor {
     private Counter<Integer> occurrenceAllocations;
     private AtomicInteger processed;
     private boolean symmetric = true;
-    private static Logger log = LoggerFactory.getLogger(CoOccurrenceActor.class);
+    private static final Logger log = LoggerFactory.getLogger(CoOccurrenceActor.class);
 
     public CoOccurrenceActor(AtomicInteger processed,TokenizerFactory tokenizerFactory, int windowSize, VocabCache cache, CounterMap<String,String> coOCurreneCounts,boolean symmetric,Counter<Integer> occurrenceAllocations) {
         this.processed = processed;

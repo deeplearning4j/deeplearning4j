@@ -26,7 +26,7 @@ public class Ec2BoxCreator extends BaseS3 {
 	private String securityGroupId;
 	private String keyPair;
     private Regions regions = Regions.DEFAULT_REGION;
-	private static Logger log = LoggerFactory.getLogger(Ec2BoxCreator.class);
+	private static final Logger log = LoggerFactory.getLogger(Ec2BoxCreator.class);
 	
 	//centos
 	public final static String DEFAULT_AMI = "ami-8997afe0";

@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 public class IterativeReduce implements Function<DataSet,INDArray> {
     private String json;
     private Broadcast<INDArray> params;
-    private static Logger log = LoggerFactory.getLogger(IterativeReduce.class);
+    private static final Logger log = LoggerFactory.getLogger(IterativeReduce.class);
 
     /**
      * Train and average over mini batches from a dataset

@@ -18,7 +18,7 @@ import java.util.zip.ZipInputStream;
  */
 public class ArchiveUtils {
 
-    private static Logger log = LoggerFactory.getLogger(ArchiveUtils.class);
+    private static final Logger log = LoggerFactory.getLogger(ArchiveUtils.class);
 
     /**
      * Extracts files to the specified destination
