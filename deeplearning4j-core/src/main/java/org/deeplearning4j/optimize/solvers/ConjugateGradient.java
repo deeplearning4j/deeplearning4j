@@ -44,7 +44,7 @@ import java.util.Collection;
 // from "Numeric Recipes in C", Section 10.6.
 
 public class ConjugateGradient extends BaseOptimizer {
-    private static Logger logger = LoggerFactory.getLogger(ConjugateGradient.class);
+    private static final Logger logger = LoggerFactory.getLogger(ConjugateGradient.class);
 
 
 

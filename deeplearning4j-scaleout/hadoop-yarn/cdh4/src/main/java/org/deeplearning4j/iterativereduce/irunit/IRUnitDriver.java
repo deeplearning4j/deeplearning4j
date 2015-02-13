@@ -42,7 +42,7 @@ public class IRUnitDriver {
 
 	private static JobConf defaultConf = new JobConf();
 	private static FileSystem localFs = null;
-	private static Logger log = LoggerFactory.getLogger(IRUnitDriver.class);
+	private static final Logger log = LoggerFactory.getLogger(IRUnitDriver.class);
 
 
 	private Properties props;

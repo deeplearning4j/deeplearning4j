@@ -24,7 +24,7 @@ public class Master implements ComputableMaster<ParameterVectorUpdateable> {
 
     ParameterVectorUpdateable lastMasterUpdate = null;
     protected Configuration conf = null;
-    protected static Logger log = LoggerFactory.getLogger(Master.class);
+    protected static final Logger log = LoggerFactory.getLogger(Master.class);
 
     /**
      * Q: "is compute() called before complete() is called in last epoch?"

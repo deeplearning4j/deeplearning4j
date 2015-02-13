@@ -40,7 +40,7 @@ public class HdfsUtils {
 
 	private HdfsUtils(){}
 	
-	private static Logger log = LoggerFactory.getLogger(HdfsUtils.class);
+	private static final Logger log = LoggerFactory.getLogger(HdfsUtils.class);
 	private static Map<Configuration,FileSystem> systems = new HashMap<Configuration,FileSystem>();
 	public final static String HDFS_HOST = "hdfs.host";
 
