@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  */
 public class INDArrayAggregator extends WorkAccumulator {
     private INDArray averaged;
-    private static Logger log = LoggerFactory.getLogger(INDArrayAggregator.class);
+    private static final Logger log = LoggerFactory.getLogger(INDArrayAggregator.class);
 
     @Override
     public void accumulate(Job toAccumulate) {

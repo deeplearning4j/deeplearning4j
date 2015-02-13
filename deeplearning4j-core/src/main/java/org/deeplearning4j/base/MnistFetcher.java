@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 public class MnistFetcher {
 
 	private File fileDir;
-	private static Logger log = LoggerFactory.getLogger(MnistFetcher.class);
+	private static final Logger log = LoggerFactory.getLogger(MnistFetcher.class);
 	private static final String trainingFilesURL = "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz";
 
 	private static final String trainingFilesFilename = "images-idx1-ubyte.gz";

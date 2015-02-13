@@ -37,7 +37,7 @@ public class StringGrid extends ArrayList<List<String>> {
     private static final long serialVersionUID = 4702427632483221813L;
     private String sep;
     private int numColumns = -1;
-    private static Logger log = LoggerFactory.getLogger(StringGrid.class);
+    private static final Logger log = LoggerFactory.getLogger(StringGrid.class);
     public final static String NONE = "NONE";
 
 

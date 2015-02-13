@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ScoreIterationListener implements IterationListener {
     private int printIterations = 10;
-    private static Logger log = LoggerFactory.getLogger(ScoreIterationListener.class);
+    private static final Logger log = LoggerFactory.getLogger(ScoreIterationListener.class);
 
     public ScoreIterationListener(int printIterations) {
         this.printIterations = printIterations;

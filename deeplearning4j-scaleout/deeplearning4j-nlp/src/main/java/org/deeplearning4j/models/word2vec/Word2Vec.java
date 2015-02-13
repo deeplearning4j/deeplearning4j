@@ -55,7 +55,7 @@ public class Word2Vec extends WordVectorsImpl  {
     //context to use for gathering word frequencies
     protected int window = 5;
     protected transient  RandomGenerator g;
-    protected static Logger log = LoggerFactory.getLogger(Word2Vec.class);
+    protected static final Logger log = LoggerFactory.getLogger(Word2Vec.class);
     protected boolean shouldReset = true;
     //number of iterations to run
     protected int numIterations = 1;

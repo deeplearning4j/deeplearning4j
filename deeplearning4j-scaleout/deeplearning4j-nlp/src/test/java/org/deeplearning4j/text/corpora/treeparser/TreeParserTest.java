@@ -16,7 +16,7 @@ import java.util.List;
  * @author  Adam Gibson
  */
 public class TreeParserTest {
-    private static Logger log = LoggerFactory.getLogger(TreeParserTest.class);
+    private static final Logger log = LoggerFactory.getLogger(TreeParserTest.class);
     private TreeParser parser;
     @Before
     public void init() throws Exception {
