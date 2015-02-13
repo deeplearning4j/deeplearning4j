@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 public class KMeansClustering implements ClusteringAlgorithm, Serializable {
 
 	private static final long					serialVersionUID	= 338231277453149972L;
-	private static Logger						log					= LoggerFactory.getLogger(KMeansClustering.class);
+	private static final Logger						log					= LoggerFactory.getLogger(KMeansClustering.class);
 	private static int							defaultIterationCount = 100;
 
 	private Class<? extends DistanceFunction>	distanceFunction;

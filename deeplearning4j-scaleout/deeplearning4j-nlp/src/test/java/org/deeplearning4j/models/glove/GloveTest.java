@@ -16,7 +16,7 @@ import java.io.File;
  * Created by agibsonccc on 12/3/14.
  */
 public class GloveTest {
-    private static Logger log = LoggerFactory.getLogger(GloveTest.class);
+    private static final Logger log = LoggerFactory.getLogger(GloveTest.class);
     private Glove glove;
     private SentenceIterator iter;
 

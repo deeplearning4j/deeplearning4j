@@ -48,7 +48,7 @@ public class CoOccurrences implements Serializable {
     protected boolean symmetric = true;
     private Counter<Integer> sentenceOccurrences = Util.parallelCounter();
     private CounterMap<String,String> coOCurreneCounts = Util.parallelCounterMap();
-    private static Logger log = LoggerFactory.getLogger(CoOccurrences.class);
+    private static final Logger log = LoggerFactory.getLogger(CoOccurrences.class);
     private List<Pair<String,String>> coOccurrences;
 
 

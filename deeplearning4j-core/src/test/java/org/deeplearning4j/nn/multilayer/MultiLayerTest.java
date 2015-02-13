@@ -8,7 +8,6 @@ import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.api.LayerFactory;
-import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -16,10 +15,9 @@ import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
+
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
-import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -36,8 +34,7 @@ import org.slf4j.LoggerFactory;
  */
 public class MultiLayerTest {
 
-
-    private static Logger log = LoggerFactory.getLogger(MultiLayerTest.class);
+    private static final Logger log = LoggerFactory.getLogger(MultiLayerTest.class);
 
     @Test
     public void testDbnFaces() {
@@ -70,11 +67,8 @@ public class MultiLayerTest {
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.fit(next);
 
-
-
-
-
     }
+
     @Test
     public void testDbn() {
         LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
