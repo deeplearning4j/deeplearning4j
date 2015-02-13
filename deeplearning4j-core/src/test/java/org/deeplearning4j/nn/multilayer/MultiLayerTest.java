@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
 import org.junit.Test;
@@ -52,7 +53,7 @@ public class MultiLayerTest {
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .constrainGradientToUnitNorm(true)
                 .weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(new MersenneTwister(123), 1e-5))
-                .iterations(100).learningRate(1e-3).iterationListener(new NeuralNetPlotterIterationListener(10))
+                .iterations(100).learningRate(1e-3).iterationListener(new ScoreIterationListener(10))
                 .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
                 .list(4).hiddenLayerSizes(600,250,100).override(new NeuralNetConfiguration.ConfOverride() {
                     @Override
