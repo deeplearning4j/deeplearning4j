@@ -12,12 +12,17 @@ class INDArrayExt(a: INDArray) {
 
   def +(that: INDArray): INDArray = a.add(that)
   def -(that: INDArray): INDArray = a.sub(that)
-  def x(that: INDArray) : INDArray = a.mul(that)
+  /** element-by-element multiplication */
   def *(that: INDArray) : INDArray = a.mul(that)
+  /** matrix multiplication */
+  def **(that: INDArray) : INDArray = a.mmul(that)
   def /(that: INDArray): INDArray = a.div(that)
   def +=(that: INDArray): INDArray = a.addi(that)
   def -=(that: INDArray): INDArray = a.subi(that)
+  /** element-by-element multiplication */
   def *=(that: INDArray) : INDArray = a.muli(that)
+  /** matrix multiplication */
+  def **=(that: INDArray) : INDArray = a.mmuli(that)
   def /=(that: INDArray): INDArray = a.divi(that)
   
   def +(that: Number): INDArray = a.add(that)

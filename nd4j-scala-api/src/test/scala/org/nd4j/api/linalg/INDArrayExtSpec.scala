@@ -59,9 +59,9 @@ class INDArrayExtSpec extends FlatSpec with Matchers {
     a(1, 1, 1) should equal(1)
   }
 
-  it should "multiply correctly" in {
+  it should "element-by-element multiply correctly" in {
     val a = Nd4j.create(Array[Double](1, 2, 3, 4), Array(4, 1))
-    val b = a x a
+    val b = a * a
     a(3) should equal(4)  // [1.0, 2.0, 3.0, 4.0
     b(3) should equal(16) // [1.0 ,4.0 ,9.0 ,16.0]
     a *= 5 // [5.0 ,10.0 ,15.0 ,20.0]
