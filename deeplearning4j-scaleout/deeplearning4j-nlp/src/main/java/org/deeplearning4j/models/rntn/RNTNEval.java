@@ -17,7 +17,7 @@ import java.util.Set;
 public class RNTNEval {
 
     private ConfusionMatrix<Integer> cf = new ConfusionMatrix<>();
-    private static Logger log = LoggerFactory.getLogger(RNTNEval.class);
+    private static final Logger log = LoggerFactory.getLogger(RNTNEval.class);
 
 
 

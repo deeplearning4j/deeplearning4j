@@ -12,7 +12,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
     private int batch = 0;
     private DataSetIterator iter;
     private int passes = 0;
-    private static Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
+    private static final Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
     private DataSetPreProcessor preProcessor;
 
     public MultipleEpochsIterator(int numPasses,DataSetIterator iter) {

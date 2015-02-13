@@ -23,7 +23,7 @@ public class LocalFileUpdateSaver implements UpdateSaver {
     private IMap<String,Job> updateableIMap;
     private String baseDir;
     public final static String UPDATE_SAVER = "updatesaver";
-    private static Logger log = LoggerFactory.getLogger(LocalFileUpdateSaver.class);
+    private static final Logger log = LoggerFactory.getLogger(LocalFileUpdateSaver.class);
 
 
     public LocalFileUpdateSaver(String baseDir,HazelcastInstance instance) {

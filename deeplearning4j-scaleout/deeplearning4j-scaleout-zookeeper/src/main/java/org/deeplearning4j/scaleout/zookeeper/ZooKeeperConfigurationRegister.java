@@ -44,7 +44,7 @@ public class ZooKeeperConfigurationRegister implements Watcher {
 	private String id;
 	private String host;
 	private int port;
-	private static Logger log = LoggerFactory.getLogger(ZooKeeperConfigurationRegister.class);
+	private static final Logger log = LoggerFactory.getLogger(ZooKeeperConfigurationRegister.class);
 
 	/**
 	 * 
