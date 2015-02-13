@@ -104,7 +104,7 @@ class INDArrayExtSpec extends FlatSpec with Matchers {
     f(1) === 0
   }
 
-  it should "use > for less than comparisons" in {
+  it should "use > for greater than comparisons" in {
     val a = Nd4j.create(Array[Double](1, 3))
 
     val b = a > 1
@@ -117,7 +117,7 @@ class INDArrayExtSpec extends FlatSpec with Matchers {
     d(1) === 1
   }
 
-  it should "use < for greater than comparisons" in {
+  it should "use < for less than comparisons" in {
     val a = Nd4j.create(Array[Double](1, 3))
 
     val b = a < 2
