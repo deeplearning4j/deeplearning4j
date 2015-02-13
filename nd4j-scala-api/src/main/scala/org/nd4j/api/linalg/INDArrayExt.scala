@@ -6,21 +6,29 @@ import org.nd4j.linalg.indexing.NDArrayIndex
 
 /**
  * Scala DSL for arrays
- * Note that operations on arrays operate in-place (no new array is created),
- * but they also return the array so that chaining operations is possible
  */
 class INDArrayExt(a: INDArray) {
 
 
-  def +(that: INDArray): INDArray = a.addi(that)
-  def -(that: INDArray): INDArray = a.subi(that)
-  def x(that: INDArray) : INDArray = a.muli(that)
-  def /(that: INDArray): INDArray = a.divi(that)
+  def +(that: INDArray): INDArray = a.add(that)
+  def -(that: INDArray): INDArray = a.sub(that)
+  def x(that: INDArray) : INDArray = a.mul(that)
+  def *(that: INDArray) : INDArray = a.mul(that)
+  def /(that: INDArray): INDArray = a.div(that)
+  def +=(that: INDArray): INDArray = a.addi(that)
+  def -=(that: INDArray): INDArray = a.subi(that)
+  def *=(that: INDArray) : INDArray = a.muli(that)
+  def /=(that: INDArray): INDArray = a.divi(that)
   
-  def +(that: Number): INDArray = a.addi(that)
-  def -(that: Number): INDArray = a.subi(that)
-  def x(that: Number) : INDArray = a.muli(that)
-  def /(that: Number): INDArray = a.divi(that)
+  def +(that: Number): INDArray = a.add(that)
+  def -(that: Number): INDArray = a.sub(that)
+  def x(that: Number) : INDArray = a.mul(that)
+  def *(that: Number) : INDArray = a.mul(that)
+  def /(that: Number): INDArray = a.div(that)
+  def +=(that: Number): INDArray = a.addi(that)
+  def -=(that: Number): INDArray = a.subi(that)
+  def *=(that: Number) : INDArray = a.muli(that)
+  def /=(that: Number): INDArray = a.divi(that)
 
   def apply(i: Int): Double = a.getDouble(i)
   def apply(i: Int, j: Int): Double = a.getDouble(i, j)

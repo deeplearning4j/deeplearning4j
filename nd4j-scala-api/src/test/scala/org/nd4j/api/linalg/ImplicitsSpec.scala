@@ -16,10 +16,14 @@ class ImplicitsSpec extends FlatSpec with Matchers {
     // This test just verifies that an INDArray gets wrapped with an implicit conversion
 
     val nd = Nd4j.create(Array[Float](1, 2), Array(2, 1))
-    val nd1 = nd + 10L // nd1 and nd refer to same array
+    val nd1 = nd + 10L // + creates new array, += modifies in place
 
-    nd1 should equal(nd)
+    nd(0) should equal(1)
     nd1(0) should equal(11)
+
+    val nd2 = nd += 100
+    nd2 should  equal(nd)
+    nd2(0) should equal(101)
 
   }
 

@@ -33,29 +33,39 @@ class INDArrayExtSpec extends FlatSpec with Matchers {
   }
 
   it should "add correctly" in {
-    val nd3 = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2))
-    nd3 + 1
-    nd3(0, 0, 0) should equal(2)
+    val a = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2))
+    val b = a + 100
+    a(0, 0, 0) should equal(1)
+    b(0, 0, 0) should equal(101)
+    a += 1
+    a(0, 0, 0) should equal(2)
   }
 
   it should "subtract correctly" in {
-    val nd3 = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2))
-    nd3 - 1
-    nd3(0, 0, 0) should equal(0)
+    val a = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2))
+    val b = a - 100
+    a(0, 0, 0) should equal(1)
+    b(0, 0, 0) should equal(-99)
+    a -= 1
+    a(0, 0, 0) should equal(0)
   }
 
   it should "divide correctly" in {
-    val nd2 = Nd4j.create(Array[Double](1, 2, 3, 4), Array(4, 1))
-    nd2 / nd2
-    nd2(3) should equal(1)
+    val a = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2))
+    val b = a / a
+    a(1, 1, 1) should equal(8)
+    b(1, 1, 1) should equal(1)
+    a /= a
+    a(1, 1, 1) should equal(1)
   }
 
   it should "multiply correctly" in {
-    val nd2 = Nd4j.create(Array[Double](1, 2, 3, 4), Array(4, 1))
-    nd2 x nd2
-    nd2(3) should equal(16) // [1.0 ,4.0 ,9.0 ,16.0]
-    nd2 x 4 // [4.0 ,16.0 ,36.0 ,64.0]
-    nd2(0) should equal(4)
+    val a = Nd4j.create(Array[Double](1, 2, 3, 4), Array(4, 1))
+    val b = a x a
+    a(3) should equal(4)  // [1.0, 2.0, 3.0, 4.0
+    b(3) should equal(16) // [1.0 ,4.0 ,9.0 ,16.0]
+    a *= 5 // [5.0 ,10.0 ,15.0 ,20.0]
+    a(0) should equal(5)
   }
 
   it should "use the update method to mutate values" in {
