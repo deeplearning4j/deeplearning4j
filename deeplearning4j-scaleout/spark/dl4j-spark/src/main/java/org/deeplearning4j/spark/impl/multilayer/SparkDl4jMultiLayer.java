@@ -48,9 +48,9 @@ public class SparkDl4jMultiLayer implements Serializable {
     public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerNetwork network) {
         this.sparkContext = sparkContext;
         this.averageEachIteration = sparkContext.conf().getBoolean(AVERAGE_EACH_ITERATION,false);
+        this.network = network;
         this.conf = this.network.getLayerWiseConfigurations().clone();
         sc = new JavaSparkContext(this.sparkContext);
-        this.network = network;
     }
 
     /**
@@ -88,6 +88,14 @@ public class SparkDl4jMultiLayer implements Serializable {
                 , labelIndex, conf.getConf(conf.getConfs().size() - 1).getnOut()));
         return fitDataSet(points);
 
+    }
+
+    public MultiLayerNetwork getNetwork() {
+        return network;
+    }
+
+    public void setNetwork(MultiLayerNetwork network) {
+        this.network = network;
     }
 
     /**

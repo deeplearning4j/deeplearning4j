@@ -12,7 +12,6 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.learning.AdaGrad;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -65,7 +64,7 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void iterate(INDArray input) {
         this.input = input;
-        Gradient gradient = getGradient();
+        Gradient gradient = gradient();
         update(gradient);
     }
 
@@ -73,7 +72,9 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void update(Gradient gradient) {
-        setParams(params().addi(gradient.gradient()));
+        for(String s : conf.variables()) {
+            getParam(s).addi(gradient.gradientForVariable().get(s));
+        }
     }
 
 
@@ -107,7 +108,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void setParams(INDArray params) {
-        List<String> gradientList = conf.getGradientList();
+        List<String> gradientList = conf.variables();
         int length = 0;
         for(String s : gradientList)
             length += getParam(s).length();
@@ -292,7 +293,7 @@ public abstract class BaseLayer implements Layer {
         if(input != null)
             this.input = input;
         Solver solver = new Solver.Builder()
-                .model(this).configure(conf()).listeners(conf.getListeners())
+                .model(this).configure(conf())
                 .build();
         this.optimizer = solver.getOptimizer();
         solver.optimize();
@@ -301,7 +302,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(getGradient(),score());
+        return new Pair<>(gradient(),score());
     }
 
     @Override
@@ -328,13 +329,13 @@ public abstract class BaseLayer implements Layer {
      */
     protected Gradient createGradient(INDArray...gradients) {
         Gradient ret = new DefaultGradient();
-        if(gradients.length != conf.getGradientList().size())
+        if(gradients.length != conf.variables().size())
             throw new IllegalArgumentException("Unable to create gradients...not equal to number of parameters");
         for(int i = 0; i < gradients.length; i++) {
-            INDArray paramI = getParam(conf.getGradientList().get(i));
+            INDArray paramI = getParam(conf.variables().get(i));
             if(!Arrays.equals(paramI.shape(),gradients[i].shape()))
                 throw new IllegalArgumentException("Gradient at index " + i + " had wrong gradient size of " + Arrays.toString(gradients[i].shape()) + " when should have been " + Arrays.toString(paramI.shape()));
-            ret.gradientLookupTable().put(conf.getGradientList().get(i),gradients[i]);
+            ret.gradientForVariable().put(conf.variables().get(i),gradients[i]);
         }
         return ret;
     }

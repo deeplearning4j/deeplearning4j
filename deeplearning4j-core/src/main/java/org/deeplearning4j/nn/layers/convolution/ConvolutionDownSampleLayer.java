@@ -106,7 +106,7 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
     }
 
     @Override
-    public Gradient getGradient() {
+    public Gradient gradient() {
         return null;
     }
 

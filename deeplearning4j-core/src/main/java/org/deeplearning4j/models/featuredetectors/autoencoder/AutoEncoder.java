@@ -94,7 +94,7 @@ public class AutoEncoder extends BasePretrainNetwork  {
     }
 
     @Override
-    public  Gradient getGradient() {
+    public  Gradient gradient() {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
 
         double corruptionLevel = conf.getCorruptionLevel();

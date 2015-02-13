@@ -7,6 +7,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
+import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.Model;
@@ -15,9 +16,10 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
+import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.plot.NeuralNetPlotter;
-import org.deeplearning4j.plot.NeuralNetworkReconstructionRender;
+import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -47,24 +49,12 @@ public class RBMTests {
         LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED).weightInit(WeightInit.VI).constrainGradientToUnitNorm(true)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).layerFactory(layerFactory).optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
-                .lossFunction(LossFunctions.LossFunction.XENT).rng(rng)
-                .iterationListener(new IterationListener() {
-                    @Override
-                    public void iterationDone(Model model, int iteration) {
-                        if(iteration > 0 && iteration % 100 == 0) {
-                            NeuralNetPlotter plotter = new NeuralNetPlotter();
-                            Layer l = (Layer) model;
-                            plotter.plotNetworkGradient(l, l.getGradient(), 10);
-
-                        }
-
-
-
-                    }
-                })
-                .learningRate(1e-1f)
+                .hiddenUnit(RBM.HiddenUnit.RECTIFIED).weightInit(WeightInit.VI)
+                .iterationListener(new ScoreIterationListener(1))
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).layerFactory(layerFactory)
+                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT).rng(rng)
+                .learningRate(1e-3f)
                 .nIn(d.numInputs()).nOut(nOut).build();
 
         RBM rbm = layerFactory.create(conf);
@@ -128,23 +118,16 @@ public class RBMTests {
     @Test
     public void testMnist() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-
+        RandomGenerator gen = new MersenneTwister(123);
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(100)
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT).iterationListener(new IterationListener() {
-                    @Override
-                    public void iterationDone(Model model, int i) {
-                        if (i > 0 && i % 1000 == 0) {
-                            NeuralNetPlotter plotter = new NeuralNetPlotter();
-                            Layer l = (Layer) model;
-                            plotter.plotNetworkGradient(l, l.getGradient(), 10);
-                        }
-                    }
-                })
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(new MersenneTwister(123))
-                .learningRate(1e-1f).nIn(784).nOut(600).build();
+                .iterations(20).constrainGradientToUnitNorm(true)
+                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .iterationListener(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10),new ScoreIterationListener(5)))
+                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
+                        .learningRate(1e-1f).nIn(784).nOut(600).build();
 
-        fetcher.fetch(10);
+        fetcher.fetch(1000);
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
@@ -234,7 +217,7 @@ public class RBMTests {
         double value = rbm.score();
 
 
-        Gradient grad2 = rbm.getGradient();
+        Gradient grad2 = rbm.gradient();
         rbm.fit(input);
 
     }
