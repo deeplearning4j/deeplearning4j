@@ -76,7 +76,57 @@ class INDArrayExtSpec extends FlatSpec with Matchers {
     val idx = Array(1, 1, 1)
     nd3(idx) = 100
     nd3(idx) should equal(100)
+  }
 
+  it should "use === for equality comparisons" in {
+    val a = Nd4j.create(Array[Double](1, 2))
+
+    val b = Nd4j.create(Array[Double](1, 2))
+    val c = a === b
+    c(0) should equal(1)
+    c(1) should equal(1)
+
+    val d = Nd4j.create(Array[Double](10, 20))
+    val e = a === d
+    e(0) === 0
+    e(1) === 0
+
+    val f = a === 1
+    f(0) === 1
+    f(1) === 0
+  }
+
+  it should "use > for less than comparisons" in {
+    val a = Nd4j.create(Array[Double](1, 3))
+
+    val b = a > 1
+    b(0) === 0
+    b(1) === 1
+
+    val c = Nd4j.create(Array[Double](2, 2))
+    val d = c > a
+    d(0) === 0
+    d(1) === 1
+  }
+
+  it should "use < for greater than comparisons" in {
+    val a = Nd4j.create(Array[Double](1, 3))
+
+    val b = a < 2
+    b(0) === 1
+    b(1) === 0
+
+    val c = Nd4j.create(Array[Double](2, 2))
+    val d = c < a
+    d(0) === 0
+    d(1) === 1
+  }
+
+  it should "use - prefix for negation" in {
+    val a = Nd4j.create(Array[Double](1, 3))
+    val b = -a
+    b(0) === -1
+    b(1) === -3
   }
 
 }

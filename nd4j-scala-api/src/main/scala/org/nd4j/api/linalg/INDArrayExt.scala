@@ -35,7 +35,6 @@ class INDArrayExt(a: INDArray) {
   
   def +(that: Number): INDArray = a.add(that)
   def -(that: Number): INDArray = a.sub(that)
-  def x(that: Number) : INDArray = a.mul(that)
   def *(that: Number) : INDArray = a.mul(that)
   def /(that: Number): INDArray = a.div(that)
   def +=(that: Number): INDArray = a.addi(that)
@@ -60,7 +59,7 @@ class INDArrayExt(a: INDArray) {
   def update(i: Array[Int], value: Float) = a.putScalar(i, value)
   def update(i: Array[Int], value: Int) = a.putScalar(i, value)
 
-  def -(): INDArray = a.neg()
+  def unary_-(): INDArray = a.neg()
 
 
   def t: INDArray = a.transpose()

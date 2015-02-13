@@ -23,9 +23,10 @@ class DSLSpec extends FlatSpec with Matchers {
     nd1(0) should equal(11)
 
     val nd2 = nd += 100
-    nd2 should  equal(nd)
+    nd2 should equal(nd)
     nd2(0) should equal(101)
 
+    // Verify that we are working with regular old INDArray objects
     nd2 match {
       case i: INDArray =>  // do nothing
       case _ => fail("Expect our object to be an INDArray")
