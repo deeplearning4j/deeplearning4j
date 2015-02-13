@@ -121,13 +121,13 @@ public class RBMTests {
         RandomGenerator gen = new MersenneTwister(123);
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(20).constrainGradientToUnitNorm(true)
-                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .iterations(30).constrainGradientToUnitNorm(true).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen,1e-5))
+                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .iterationListener(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10),new ScoreIterationListener(5)))
                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
                         .learningRate(1e-1f).nIn(784).nOut(600).build();
 
-        fetcher.fetch(1000);
+        fetcher.fetch(10);
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
