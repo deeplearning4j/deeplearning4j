@@ -62,7 +62,7 @@ public class RecursiveAutoEncoder extends BaseLayer {
     }
 
     @Override
-    public Gradient getGradient() {
+    public Gradient gradient() {
        /**
          * Going up the tree involves repeated calculations using the output of the previous autoencoder
          * for the next.

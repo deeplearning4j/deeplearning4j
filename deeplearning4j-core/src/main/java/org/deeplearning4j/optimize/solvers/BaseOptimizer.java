@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.deeplearning4j.optimize.solvers;
 
 import org.deeplearning4j.berkeley.Pair;
@@ -44,6 +60,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public final static String GRADIENT_KEY = "g";
     public final static String SCORE_KEY = "score";
     public final static String PARAMS_KEY = "params";
+    protected Map<String,AdaGrad> adaGradForVariable = new ConcurrentHashMap<>();
     protected Map<String,Object> searchState = new ConcurrentHashMap<>();
 
     /**
@@ -98,6 +115,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public Pair<Gradient,Double> gradientAndScore() {
         model.setScore();
         Pair<Gradient,Double> pair = model.gradientAndScore();
+        updateGradientAccordingToParams(pair.getFirst(),model,model.batchSize());
         return pair;
     }
 
@@ -234,15 +252,29 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         return adaGrad;
     }
 
+    @Override
+    public Map<String, AdaGrad> adaGradForVariables() {
+        return adaGradForVariable;
+    }
+
+    @Override
+    public AdaGrad getAdaGradForVariable(String variable) {
+        return adaGradForVariable.get(variable);
+    }
+
+    @Override
+    public void updateGradientAccordingToParams(Gradient gradient, Model params, int batchSize) {
+         GradientAdjustment.updateGradientAccordingToParams(conf,iteration,gradient,batchSize,adaGradForVariable,params);
+    }
+
     /**
      * Setup the initial search state
      * @param pair
      */
     @Override
     public  void setupSearchState(Pair<Gradient, Double> pair) {
-        INDArray gradient = pair.getFirst().gradient(conf.getGradientList());
+        INDArray gradient = pair.getFirst().gradient(conf.variables());
         INDArray params = model.params();
-        updateGradientAccordingToParams(gradient,params,batchSize());
         searchState.put(GRADIENT_KEY,gradient);
         searchState.put(SCORE_KEY,pair.getSecond());
         searchState.put(PARAMS_KEY,params);

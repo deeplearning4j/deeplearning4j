@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.conf;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -76,7 +75,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected transient LayerFactory layerFactory;
 
     //gradient keys used for ensuring order when getting and setting the gradient
-    protected List<String> gradientList = new ArrayList<>();
+    protected List<String> variables = new ArrayList<>();
     //feed forward nets
     protected int nIn,nOut;
 
@@ -266,8 +265,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
     public void addVariable(String variable) {
-        if(!gradientList.contains(variable))
-            gradientList.add(variable);
+        if(!variables.contains(variable))
+            variables.add(variable);
     }
 
     public boolean isMinimize() {
@@ -278,12 +277,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.minimize = minimize;
     }
 
-    public List<String> getGradientList() {
-        return gradientList;
+    public List<String> variables() {
+        return variables;
     }
 
-    public void setGradientList(List<String> gradientList) {
-        this.gradientList = gradientList;
+    public void setVariables(List<String> variables) {
+        this.variables = variables;
     }
 
     public StepFunction getStepFunction() {
@@ -615,7 +614,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         if (dist != null ? !dist.getClass().getName().equals(that.dist.getClass().getName()) : that.dist != null) return false;
         if (!Arrays.equals(featureMapSize, that.featureMapSize)) return false;
         if (!Arrays.equals(filterSize, that.filterSize)) return false;
-        if (gradientList != null ? !gradientList.equals(that.gradientList) : that.gradientList != null) return false;
+        if (variables != null ? !variables.equals(that.variables) : that.variables != null) return false;
         if (hiddenUnit != that.hiddenUnit) return false;
         if (layerFactory != null ? !layerFactory.equals(that.layerFactory) : that.layerFactory != null) return false;
         if (lossFunction != that.lossFunction) return false;
@@ -667,7 +666,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         result = 31 * result + (listeners != null ? listeners.hashCode() : 0);
         result = 31 * result + (stepFunction != null ? stepFunction.hashCode() : 0);
         result = 31 * result + (layerFactory != null ? layerFactory.hashCode() : 0);
-        result = 31 * result + (gradientList != null ? gradientList.hashCode() : 0);
+        result = 31 * result + (variables != null ? variables.hashCode() : 0);
         result = 31 * result + nIn;
         result = 31 * result + nOut;
         result = 31 * result + (activationFunction != null ? activationFunction.hashCode() : 0);

@@ -46,7 +46,6 @@ public class Solver {
 
     public static class Builder {
         private NeuralNetConfiguration conf;
-        private Collection<IterationListener> listeners;
         private Model model;
 
 
@@ -57,10 +56,6 @@ public class Solver {
 
 
 
-        public Builder listeners(Collection<IterationListener> listeners) {
-            this.listeners = listeners;
-            return this;
-        }
 
         public Builder model(Model model) {
             this.model = model;
@@ -70,8 +65,8 @@ public class Solver {
         public Solver build() {
             Solver solver = new Solver();
             solver.conf = conf;
-            solver.listeners = listeners;
             solver.model = model;
+            solver.listeners = conf.getListeners();
             return solver;
         }
     }

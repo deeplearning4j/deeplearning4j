@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.deeplearning4j.nn.gradient;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -11,13 +27,14 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
+
 public class DefaultGradient implements Gradient {
     private Map<String,INDArray> gradients = new LinkedHashMap<>();
 
 
 
     @Override
-    public Map<String, INDArray> gradientLookupTable() {
+    public Map<String, INDArray> gradientForVariable() {
         return gradients;
     }
 
@@ -25,9 +42,9 @@ public class DefaultGradient implements Gradient {
     public INDArray gradient(List<String> order) {
         List<INDArray> ret = new ArrayList<>();
         for(String s : order) {
-            if(!gradientLookupTable().containsKey(s))
+            if(!gradientForVariable().containsKey(s))
                 throw new IllegalStateException("Illegal key " + s + " no gradient with key found");
-            ret.add(gradientLookupTable().get(s));
+            ret.add(gradientForVariable().get(s));
         }
         return Nd4j.toFlattened(ret);
     }
@@ -40,5 +57,17 @@ public class DefaultGradient implements Gradient {
     @Override
     public void clear() {
         gradients.clear();
+    }
+
+    @Override
+    public INDArray getGradientFor(String variable) {
+        return gradients.get(variable);
+    }
+
+    @Override
+    public String toString() {
+        return "DefaultGradient{" +
+                "gradients=" + gradients +
+                '}';
     }
 }

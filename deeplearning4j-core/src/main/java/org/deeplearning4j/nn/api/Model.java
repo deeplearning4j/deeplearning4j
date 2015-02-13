@@ -7,6 +7,8 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaGrad;
 
+import java.util.Map;
+
 /**
  * A Model is meant for predicting something from data.
  * Note that this is not like supervised learning where
@@ -95,7 +97,7 @@ public interface Model {
      * Calculate a gradient
      * @return the gradient for this model
      */
-    Gradient getGradient();
+    Gradient gradient();
 
     /**
      * Get the gradient and score
@@ -139,6 +141,37 @@ public interface Model {
      */
     ConvexOptimizer getOptimizer();
 
+    /**
+     * Get the parameter
+     * @param param the key of the parameter
+     * @return the parameter vector/matrix with that particular key
+     */
+    INDArray getParam(String param);
+
+    /**
+     * Initialize the parameters
+     */
+    void initParams();
+
+    /**
+     * The param table
+     * @return
+     */
+    Map<String,INDArray> paramTable();
+
+    /**
+     * Setter for the param table
+     * @param paramTable
+     */
+    void setParamTable(Map<String,INDArray> paramTable);
+
+
+    /**
+     * Set the parameter with a new ndarray
+     * @param key the key to se t
+     * @param val the new ndarray
+     */
+    void setParam(String key,INDArray val);
 
 
 }

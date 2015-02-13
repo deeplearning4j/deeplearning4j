@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.deeplearning4j.nn.layers;
 
 
@@ -6,14 +22,11 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
-import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import org.nd4j.linalg.util.Shape;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.deeplearning4j.util.MathUtils.binomial;
 
@@ -107,9 +120,9 @@ public abstract class BasePretrainNetwork extends BaseLayer {
 
     protected Gradient createGradient(INDArray wGradient,INDArray vBiasGradient,INDArray hBiasGradient) {
         Gradient ret = new DefaultGradient();
-        ret.gradientLookupTable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
-        ret.gradientLookupTable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
-        ret.gradientLookupTable().put(PretrainParamInitializer.WEIGHT_KEY,wGradient);
+        ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
+        ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
+        ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY,wGradient);
         return ret;
     }
 

@@ -16,11 +16,15 @@
 
 package org.deeplearning4j.optimize;
 
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaGrad;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * Gradient adjustment
@@ -33,13 +37,35 @@ public class GradientAdjustment {
 
     private static Logger log = LoggerFactory.getLogger(GradientAdjustment.class);
 
+
+    /**
+     * Updates each variable wrt its gradient
+     * @param conf the configuration
+     * @param iteration the iteration
+     * @param gradient the gradients for the variables
+     * @param batchSize the batch size of the input
+     * @param adaGrad the adagrad map (per variable adagrad entries(
+     * @param model the model to use
+     */
+    public static void updateGradientAccordingToParams(NeuralNetConfiguration conf,int iteration,Gradient gradient,int batchSize,Map<String,AdaGrad> adaGrad,Model model) {
+         for(String variable : conf.variables()) {
+             AdaGrad adaGradForVariable = adaGrad.get(variable);
+             if(adaGradForVariable == null) {
+                 adaGradForVariable = new AdaGrad(model.getParam(variable).shape());
+                 adaGrad.put(variable,adaGradForVariable);
+                 updateGradientAccordingToParams(conf,iteration,adaGradForVariable,gradient.getGradientFor(variable),model.getParam(variable),batchSize);
+             }
+
+         }
+    }
+
     /**
      * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
      * @param gradient the gradient to modify
      */
     public static void updateGradientAccordingToParams(NeuralNetConfiguration conf,int iteration,AdaGrad adaGrad,INDArray gradient,INDArray params,int batchSize) {
         if(adaGrad == null)
-            adaGrad = new AdaGrad(1,gradient.length());
+            adaGrad = new AdaGrad(gradient.shape());
 
 
         //reset adagrad history
