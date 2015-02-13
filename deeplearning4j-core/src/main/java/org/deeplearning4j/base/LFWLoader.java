@@ -35,7 +35,7 @@ public class LFWLoader {
     private File lfwDir = new File(baseDir,LFW);
     public final static String LFW_URL = "http://vis-www.cs.umass.edu/lfw/lfw.tgz";
     private File lfwTarFile = new File(lfwDir,"lfw.tgz");
-    private static Logger log = LoggerFactory.getLogger(LFWLoader.class);
+    private static final Logger log = LoggerFactory.getLogger(LFWLoader.class);
     private int numNames;
     private int numPixelColumns;
     private ImageLoader loader = new ImageLoader(28,28);

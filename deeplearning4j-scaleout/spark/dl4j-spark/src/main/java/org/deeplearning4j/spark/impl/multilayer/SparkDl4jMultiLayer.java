@@ -36,7 +36,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     private Broadcast<INDArray> params;
     private boolean averageEachIteration = false;
     public final static String AVERAGE_EACH_ITERATION = "org.deeplearning4j.spark.iteration.average";
-    private static Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
+    private static final Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
 
     /**
      * Instantiate a multi layer spark instance

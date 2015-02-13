@@ -28,7 +28,7 @@ import java.util.List;
  * Created by agibsonccc on 12/3/14.
  */
 public class CoOccurrencesTest {
-    private static Logger log = LoggerFactory.getLogger(CoOccurrencesTest.class);
+    private static final Logger log = LoggerFactory.getLogger(CoOccurrencesTest.class);
     private CoOccurrences coOccurrences;
     private VocabCache vocabCache;
     private SentenceIterator iter;

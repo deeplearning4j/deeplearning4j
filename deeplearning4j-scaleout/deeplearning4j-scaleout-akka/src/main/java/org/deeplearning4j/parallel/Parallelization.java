@@ -16,7 +16,7 @@ import java.util.concurrent.*;
  */
 public class Parallelization {
 
-    private static Logger log = LoggerFactory.getLogger(Parallelization.class);
+    private static final Logger log = LoggerFactory.getLogger(Parallelization.class);
 
     public static interface RunnableWithParams<E> {
         void run(E currentItem,Object[] args);
