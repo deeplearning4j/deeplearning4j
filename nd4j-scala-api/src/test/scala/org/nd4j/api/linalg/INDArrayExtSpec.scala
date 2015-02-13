@@ -48,6 +48,11 @@ class INDArrayExtSpec extends FlatSpec with Matchers {
     b(0, 0, 0) === -99
     a -= 1
     a(0, 0, 0) === 0
+
+    val c = Nd4j.create(Array[Double](1 , 2))
+    val d = c - c
+    d(0) === 0
+    d(1) === 0
   }
 
   it should "divide correctly" in {
