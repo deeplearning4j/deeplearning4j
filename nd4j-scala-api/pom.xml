@@ -62,11 +62,13 @@
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-jblas</artifactId>
         <version>${project.version}</version>
+        <scope>test</scope>
     </dependency>
     <dependency>
         <groupId>org.scalatest</groupId>
         <artifactId>scalatest_${scala.version.short}</artifactId>
         <version>${scalatest.version}</version>
+        <scope>test</scope>
     </dependency>
 </dependencies>
 
