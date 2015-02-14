@@ -71,12 +71,6 @@ public class Word2Vec extends WordVectorsImpl  {
 
     public Word2Vec() {}
 
-
-
-
-
-
-
     public TextVectorizer getVectorizer() {
         return vectorizer;
     }
@@ -84,8 +78,6 @@ public class Word2Vec extends WordVectorsImpl  {
     public void setVectorizer(TextVectorizer vectorizer) {
         this.vectorizer = vectorizer;
     }
-
-
 
     /**
      * Train the model
@@ -153,10 +145,10 @@ public class Word2Vec extends WordVectorsImpl  {
             public Void apply(List<VocabWord> input) {
                 List<VocabWord> batch = new ArrayList<>();
                 addWords(input, nextRandom, batch);
-                if(batch.isEmpty())
-                    return null;
+                if(!batch.isEmpty()) {
+                  batch2.add(batch);
+                }
 
-                batch2.add(batch);
                 return null;
             }
         },exec);
@@ -183,7 +175,8 @@ public class Word2Vec extends WordVectorsImpl  {
         Parallelization.iterateInParallel(batch2,new Parallelization.RunnableWithParams<List<VocabWord>>() {
             @Override
             public void run(List<VocabWord> sentence, Object[] args) {
-                double alpha = Math.max(minLearningRate, Word2Vec.this.alpha.get() * (1 - (1.0 * numWordsSoFar.get() / (double) totalWords)));
+                double alpha = Math.max(minLearningRate, Word2Vec.this.alpha.get() *
+                    (1 - (1.0 * numWordsSoFar.get() / (double) totalWords)));
                 long now = System.currentTimeMillis();
                 long diff = Math.abs(now - lastReported.get());
                 if(numWordsSoFar.get() > 0 && diff > 10000) {
@@ -317,10 +310,6 @@ public class Word2Vec extends WordVectorsImpl  {
                 }
             }
         }
-
-
-
-
     }
 
     /**
@@ -384,13 +373,13 @@ public class Word2Vec extends WordVectorsImpl  {
     public List<String> getStopWords() {
         return stopWords;
     }
-    public  synchronized SentenceIterator getSentenceIter() {
+    public synchronized SentenceIterator getSentenceIter() {
         return sentenceIter;
     }
-    public  TokenizerFactory getTokenizerFactory() {
+    public TokenizerFactory getTokenizerFactory() {
         return tokenizerFactory;
     }
-    public  void setTokenizerFactory(TokenizerFactory tokenizerFactory) {
+    public void setTokenizerFactory(TokenizerFactory tokenizerFactory) {
         this.tokenizerFactory = tokenizerFactory;
     }
 
@@ -629,12 +618,7 @@ public class Word2Vec extends WordVectorsImpl  {
                 return ret;
             }
 
-
-
         }
     }
-
-
-
 
 }
