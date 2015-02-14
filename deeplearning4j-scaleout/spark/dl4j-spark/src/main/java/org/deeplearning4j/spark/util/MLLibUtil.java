@@ -23,8 +23,6 @@ import java.util.List;
  */
 public class MLLibUtil {
 
-
-
     /**
      * Convert an ndarray to a matrix.
      * Note that the matrix will be con
@@ -32,8 +30,7 @@ public class MLLibUtil {
      * @return an mllib vector
      */
     public static INDArray toMatrix(Matrix arr) {
-        INDArray ret = Nd4j.create(arr.toArray(), new int[]{arr.numRows(), arr.numCols()});
-        return ret;
+      return Nd4j.create(arr.toArray(), new int[]{arr.numRows(), arr.numCols()});
     }
 
     /**
@@ -42,8 +39,7 @@ public class MLLibUtil {
      * @return an mllib vector
      */
     public static INDArray toVector(Vector arr) {
-        INDArray ret = Nd4j.create(Nd4j.createBuffer(arr.toArray()));
-        return ret;
+      return Nd4j.create(Nd4j.createBuffer(arr.toArray()));
     }
 
 
@@ -54,10 +50,10 @@ public class MLLibUtil {
      * @return an mllib vector
      */
     public static Matrix toMatrix(INDArray arr) {
-        if(!arr.isMatrix())
-            throw new IllegalArgumentException("passed in array must be a matrix");
-        Matrix features = Matrices.dense(arr.rows(),arr.columns(),arr.data().asDouble());
-        return features;
+      if(!arr.isMatrix()) {
+        throw new IllegalArgumentException("passed in array must be a matrix");
+      }
+      return Matrices.dense(arr.rows(),arr.columns(),arr.data().asDouble());
     }
 
     /**
@@ -66,10 +62,10 @@ public class MLLibUtil {
      * @return an mllib vector
      */
     public static Vector toVector(INDArray arr) {
-        if(!arr.isVector())
-            throw new IllegalArgumentException("passed in array must be a vector");
-        Vector features = Vectors.dense(arr.data().asDouble());
-        return features;
+      if(!arr.isVector()) {
+        throw new IllegalArgumentException("passed in array must be a vector");
+      }
+      return Vectors.dense(arr.data().asDouble());
     }
 
     /**
@@ -80,8 +76,8 @@ public class MLLibUtil {
      * @return
      */
     public static JavaRDD<DataSet> fromLabeledPoint(JavaSparkContext sc,JavaRDD<LabeledPoint> data,int numPossibleLabels) {
-        List<DataSet> list  = fromLabeledPoint(data.collect(), numPossibleLabels);
-        return sc.parallelize(list);
+      List<DataSet> list  = fromLabeledPoint(data.collect(), numPossibleLabels);
+      return sc.parallelize(list);
     }
 
     /**
@@ -102,10 +98,11 @@ public class MLLibUtil {
      * @return the labeled point list
      */
     private static List<LabeledPoint> toLabeledPoint(List<DataSet> labeledPoints) {
-        List<LabeledPoint> ret = new ArrayList<>();
-        for(DataSet point : labeledPoints)
-            ret.add(toLabeledPoint(point));
-        return ret;
+      List<LabeledPoint> ret = new ArrayList<>();
+      for(DataSet point : labeledPoints) {
+        ret.add(toLabeledPoint(point));
+      }
+      return ret;
     }
 
     /**
@@ -114,13 +111,14 @@ public class MLLibUtil {
      * @return the labeled point derived from this dataset
      */
     private static LabeledPoint toLabeledPoint(DataSet point) {
-        if(!point.getFeatureMatrix().isVector())
-            throw new IllegalArgumentException("Feature matrix must be a vector");
+      if(!point.getFeatureMatrix().isVector()) {
+        throw new IllegalArgumentException("Feature matrix must be a vector");
+      }
 
-        Vector features = toVector(point.getFeatureMatrix().dup());
+      Vector features = toVector(point.getFeatureMatrix().dup());
 
-        double label = Nd4j.getBlasWrapper().iamax(point.getLabels());
-        return new LabeledPoint(label,features);
+      double label = Nd4j.getBlasWrapper().iamax(point.getLabels());
+      return new LabeledPoint(label,features);
     }
 
 
@@ -128,25 +126,26 @@ public class MLLibUtil {
      *
      * @param labeledPoints
      * @param numPossibleLabels
-     * @return
+     * @return List of {@link DataSet}
      */
     private static List<DataSet> fromLabeledPoint(List<LabeledPoint> labeledPoints,int numPossibleLabels) {
-        List<DataSet> ret = new ArrayList<>();
-        for(LabeledPoint point : labeledPoints)
-            ret.add(fromLabeledPoint(point, numPossibleLabels));
-        return ret;
+      List<DataSet> ret = new ArrayList<>();
+      for(LabeledPoint point : labeledPoints) {
+        ret.add(fromLabeledPoint(point, numPossibleLabels));
+      }
+      return ret;
     }
 
     /**
      *
      * @param point
      * @param numPossibleLabels
-     * @return
+     * @return {@link DataSet}
      */
     private static DataSet fromLabeledPoint(LabeledPoint point,int numPossibleLabels) {
-        Vector features = point.features();
-        double label = point.label();
-        return new DataSet(Nd4j.create(features.toArray()), FeatureUtil.toOutcomeVector((int) label, numPossibleLabels));
+      Vector features = point.features();
+      double label = point.label();
+      return new DataSet(Nd4j.create(features.toArray()), FeatureUtil.toOutcomeVector((int) label, numPossibleLabels));
     }
 
 

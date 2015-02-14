@@ -34,7 +34,8 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public class LuceneInvertedIndex implements InvertedIndex,IndexReader.ReaderClosedListener,Iterator<List<VocabWord>> {
+public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClosedListener,
+    Iterator<List<VocabWord>> {
 
     private transient  Directory dir;
     private transient IndexReader reader;
