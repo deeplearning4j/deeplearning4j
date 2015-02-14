@@ -160,6 +160,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
                String sentence = getSentenceIterator().nextSentence();
                if(sentence == null)
                    break;
+               if(sentence.isEmpty()) continue;
                vocabActor.tell(new VocabWork(latch,sentence,stem), vocabActor);
                queued.incrementAndGet();
                if(queued.get() % 10000 == 0) {
