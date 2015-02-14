@@ -11,6 +11,14 @@ public abstract class BaseComplexFloat implements IComplexFloat {
 
     protected float real,imag;
 
+    public BaseComplexFloat() {
+    }
+
+    public BaseComplexFloat(Float real,Float imag) {
+        this.real = real;
+        this.imag = imag;
+    }
+
     public BaseComplexFloat(float real, float imag) {
         this.real = real;
         this.imag = imag;

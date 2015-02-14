@@ -10,7 +10,13 @@ import org.nd4j.linalg.factory.Nd4j;
 public abstract class BaseComplexDouble implements IComplexDouble {
     protected  double real,imag;
 
+    public BaseComplexDouble() {
+    }
 
+    public BaseComplexDouble(Double real,Double imag) {
+        this.real = real;
+        this.imag = imag;
+    }
 
     public BaseComplexDouble(double real, double imag) {
         this.real = real;

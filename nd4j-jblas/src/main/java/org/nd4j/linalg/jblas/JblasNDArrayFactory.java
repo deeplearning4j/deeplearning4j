@@ -22,8 +22,14 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class JblasNDArrayFactory extends BaseNDArrayFactory {
+    public JblasNDArrayFactory() {
+    }
 
-    public JblasNDArrayFactory(int dtype,Character order) {
+    public JblasNDArrayFactory(Integer dtype, Character order) {
+        super(dtype, order);
+    }
+
+    public JblasNDArrayFactory(int dtype,char order) {
         super(dtype,order);
     }
 

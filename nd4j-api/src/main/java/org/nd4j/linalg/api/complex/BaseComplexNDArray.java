@@ -164,9 +164,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             putScalar(count,list.get(i));
             count ++;
         }
-
-
-
     }
 
     /**

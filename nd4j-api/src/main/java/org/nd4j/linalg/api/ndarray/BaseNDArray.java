@@ -215,12 +215,6 @@ public  abstract class BaseNDArray  implements INDArray {
         for(int i = 0; i < slices(); i++) {
             putSlice(i,slices.get(i));
         }
-
-
-
-
-
-
     }
 
 

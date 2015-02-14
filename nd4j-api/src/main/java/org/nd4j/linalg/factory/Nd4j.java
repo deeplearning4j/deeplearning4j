@@ -36,16 +36,14 @@ import java.util.*;
  */
 public class Nd4j {
 
-    private static Class<? extends BlasWrapper> blasWrapperClazz;
-    private static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
-    private static Class<? extends FFTInstance> fftInstanceClazz;
-    private static Class<? extends  ConvolutionInstance> convolutionInstanceClazz;
+    protected static Class<? extends BlasWrapper> blasWrapperClazz;
+    protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
+    protected static Class<? extends FFTInstance> fftInstanceClazz;
+    protected static Class<? extends  ConvolutionInstance> convolutionInstanceClazz;
 
 
-    private static BlasWrapper BLAS_WRAPPER_INSTANCE;
+    protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
     public final static String LINALG_PROPS = "/nd4j.properties";
-    public final static String REAL_CLASS_PROP = "real.class";
-    public final static String COMPLEX_CLASS_PROP = "complex.class";
     public final static String NUMERICAL_STABILITY = "force.stability";
     public final static String FFT_OPS = "fft";
     public final static String CONVOLUTION_OPS = "convops";
@@ -55,13 +53,13 @@ public class Nd4j {
     public static char ORDER = 'c';
     public final static String ORDER_KEY = "ndarray.order";
     public final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
-    private static NDArrayFactory INSTANCE;
-    private static FFTInstance FFT_INSTANCE;
-    private static ConvolutionInstance CONVOLUTION_INSTANCE;
-    private static Properties props = new Properties();
-    public final static IComplexNumber UNIT;
-    public final static IComplexNumber ZERO;
-    public final static IComplexNumber NEG_UNIT;
+    protected static NDArrayFactory INSTANCE;
+    protected static FFTInstance FFT_INSTANCE;
+    protected static ConvolutionInstance CONVOLUTION_INSTANCE;
+    protected static Properties props = new Properties();
+    public  static IComplexNumber UNIT;
+    public static IComplexNumber ZERO;
+    public static IComplexNumber NEG_UNIT;
     public static double EPS_THRESHOLD = 1e-12f;
     //number of elements to print in begin and end
     public static int MAX_ELEMENTS_PER_SLICE = 3;
@@ -70,16 +68,27 @@ public class Nd4j {
 
 
     static {
+        Nd4j nd4j = new Nd4j();
+        nd4j.initContext();
+    }
+
+    /**
+     * Initializes nd4j
+     */
+    public  void initContext() {
         try {
             ClassPathResource c = new ClassPathResource(LINALG_PROPS);
             props.load(c.getInputStream());
             String otherDtype =  System.getProperty(DTYPE,props.get(DTYPE).toString());
             dtype = otherDtype.equals("float") ? DataBuffer.FLOAT : DataBuffer.DOUBLE;
             ORDER = System.getProperty(ORDER_KEY,props.getProperty(ORDER_KEY,"c").toString()).charAt(0);
-            fftInstanceClazz = (Class<? extends FFTInstance>) Class.forName(System.getProperty(FFT_OPS, DefaultFFTInstance.class.getName()));
-            ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(NDARRAY_FACTORY_CLASS,props.get(NDARRAY_FACTORY_CLASS).toString()));
-            convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class.forName(System.getProperty(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
-            Constructor c2 = ndArrayFactoryClazz.getConstructor(int.class,Character.class);
+            if(fftInstanceClazz == null)
+                fftInstanceClazz = (Class<? extends FFTInstance>) Class.forName(System.getProperty(FFT_OPS, DefaultFFTInstance.class.getName()));
+            if(ndArrayFactoryClazz == null)
+                ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(NDARRAY_FACTORY_CLASS,props.get(NDARRAY_FACTORY_CLASS).toString()));
+            if(convolutionInstanceClazz == null)
+                convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class.forName(System.getProperty(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
+            Constructor c2 = ndArrayFactoryClazz.getConstructor(Integer.class,Character.class);
             FFT_INSTANCE =  fftInstanceClazz.newInstance();
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype,ORDER);
             CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
@@ -92,13 +101,24 @@ public class Nd4j {
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
+
     }
 
 
+
+    /**
+     * Set a convolution instance
+     * @param convolutionInstance
+     */
     public static void setConvolution(ConvolutionInstance convolutionInstance) {
         if(convolutionInstance == null)
             throw new IllegalArgumentException("No null instances allowed");
         CONVOLUTION_INSTANCE = convolutionInstance;
+    }
+
+
+    public static void setNdArrayFactoryClazz(Class<? extends NDArrayFactory> clazz) {
+        ndArrayFactoryClazz = clazz;
     }
 
 
@@ -114,6 +134,10 @@ public class Nd4j {
         return FFT_INSTANCE;
     }
 
+    /**
+     *
+     * @param fftInstance
+     */
     public static void setFft(FFTInstance fftInstance) {
         if(fftInstance == null)
             throw new IllegalArgumentException("No null instances allowed");

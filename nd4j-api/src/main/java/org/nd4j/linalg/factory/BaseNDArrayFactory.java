@@ -34,9 +34,28 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     protected int dtype;
     protected Character order;
 
+    public BaseNDArrayFactory() {
+    }
 
+    /**
+     *
+     * @param dtype the data type
+     * @param order the ordering
+     */
+    protected BaseNDArrayFactory(Integer dtype,Character order) {
+        this.dtype = dtype;
+        if(Character.toLowerCase(order) != 'c' && Character.toLowerCase(order) != 'f')
+            throw new IllegalArgumentException("Order must either be c or f");
 
-    protected BaseNDArrayFactory(int dtype,Character order) {
+        this.order = order;
+    }
+
+    /**
+     *
+     * @param dtype the data type
+     * @param order the ordering
+     */
+    protected BaseNDArrayFactory(int dtype,char order) {
         this.dtype = dtype;
         if(Character.toLowerCase(order) != 'c' && Character.toLowerCase(order) != 'f')
             throw new IllegalArgumentException("Order must either be c or f");
