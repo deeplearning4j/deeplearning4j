@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -24,11 +25,11 @@ public class RecursiveAutoEncoderTest {
                 .momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .corruptionLevel(0.3).weightInit(WeightInit.VI)
-                .iterations(100)
+                .iterations(100).iterationListener(new ScoreIterationListener(10))
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(new MersenneTwister(123))
                 .learningRate(1e-1f).nIn(784).nOut(600).build();
 
-        fetcher.fetch(100);
+        fetcher.fetch(10);
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
