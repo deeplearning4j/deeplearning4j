@@ -79,7 +79,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param path the path to the text file
      * @param labelIndex the label index
      * @param recordReader the record reader to parse results
-     * @return
+     * @return {@link MultiLayerNetwork}
      */
     public MultiLayerNetwork fit(String path,int labelIndex,RecordReader recordReader) {
         JavaRDD<String> lines = sc.textFile(path);
