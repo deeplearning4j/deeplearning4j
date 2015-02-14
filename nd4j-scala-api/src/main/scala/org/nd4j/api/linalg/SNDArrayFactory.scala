@@ -102,8 +102,20 @@ class SNDArrayFactory extends  BaseNDArrayFactory {
   override def create(data: DataBuffer, shape: Array[Int], stride: Array[Int], offset: Int): INDArray =
     return new ISNDArray(data,shape,stride,offset)
 
-  override def create(floats: Array[Array[Float]]): INDArray =
-    return new ISNDArray(Nd4j.createBuffer(floats))
+  override def create(floats: Array[Array[Float]]): INDArray = {
+    val arr2  = ArrayUtil.flatten(floats)
+    val shape : Array[Int] = Array(floats.length,floats(0).length)
+    val ret =  new ISNDArray(Nd4j.createBuffer(arr2),shape)
+    for(i <- 0 until ret.slices()) {
+       val slice = ret.slice(i)
+      for(j <- 0 until slice.length()) {
+          slice.putScalar(j,floats(i)(j))
+      }
+    }
+
+    return ret
+  }
+
 
   override def create(data: Array[Float], shape: Array[Int], stride: Array[Int], offset: Int, ordering: Char): INDArray =
     return new ISNDArray(data,shape,stride,offset,ordering)
@@ -159,12 +171,12 @@ class SNDArrayFactory extends  BaseNDArrayFactory {
 
   override def create(list: util.List[INDArray], shape: Array[Int]): INDArray = return new ISNDArray(list,shape)
 
-  override def createComplex(arrs: util.List[IComplexNDArray], shape: Array[Int]): IComplexNDArray = return new ISComplexNDArray(arrs,shape,Nd4j.getStrides(shape),Nd4j.order())
+  override def createComplex(arrs: util.List[IComplexNDArray], shape: Array[Int]): IComplexNDArray = return new ISComplexNDArray(arrs,shape,Nd4j.getComplexStrides(shape),Nd4j.order())
   override def create(list: util.List[INDArray], shape: Array[Int], ordering: Char): INDArray = return new ISNDArray(list,shape,ordering)
 
   override def createComplex(dim: Array[Float]): IComplexNDArray = return createComplex(Nd4j.createBuffer(dim))
 
   override def createComplex(data: DataBuffer): IComplexNDArray = return new ISComplexNDArray(data)
 
-  override def createComplex(data: Array[IComplexNumber], shape: Array[Int], ordering: Char): IComplexNDArray = return new ISComplexNDArray(data,shape,Nd4j.getStrides(shape),0,ordering)
+  override def createComplex(data: Array[IComplexNumber], shape: Array[Int], ordering: Char): IComplexNDArray = return new ISComplexNDArray(data,shape,Nd4j.getComplexStrides(shape),0,ordering)
 }

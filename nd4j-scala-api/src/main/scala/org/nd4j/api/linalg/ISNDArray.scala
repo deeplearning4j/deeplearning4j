@@ -112,6 +112,11 @@ class ISNDArray extends BaseNDArray {
 
   def this(data: Array[Array[Double]]) {
     this(data.length, data(0).length)
+    for(i <- 0 until data.length) {
+      for(j <- 0 until data(0).length) {
+        putScalar(Array(i,j),data(i)(j))
+      }
+    }
 
   }
 

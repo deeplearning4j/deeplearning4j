@@ -604,7 +604,14 @@ public class ArrayUtil {
 
     }
 
-
+    public static float[] flatten(float[][] arr) {
+        float[] ret = new float[arr.length * arr[0].length];
+        int count = 0;
+        for(int i = 0; i < arr.length; i++)
+            for(int j = 0; j < arr[i].length; j++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
     public static int[] flatten(int[][] arr) {
         int[] ret = new int[arr.length * arr[0].length];
         int count = 0;

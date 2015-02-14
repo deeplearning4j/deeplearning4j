@@ -46,7 +46,8 @@ class ISComplexNDArray extends BaseComplexNDArray {
     this()
 
     val list = new util.ArrayList[IComplexNumber]
-    for(i <-  0 until slices.size()) {
+    val size = slices.size()
+    for(i <-  0 until size) {
       val flattened = slices.get(i).ravel()
       for(j  <- 0 until flattened.length()) {
         list.add(flattened.getComplex(j))
@@ -59,10 +60,10 @@ class ISComplexNDArray extends BaseComplexNDArray {
     this.stride = stride
     initShape(shape)
 
-    var count = 0
+
     for (i <- 0 until list.size()) {
-      putScalar(count,list.get(i))
-      count += 1
+      putScalar(i,list.get(i))
+
     }
   }
 
@@ -211,9 +212,9 @@ class ISComplexNDArray extends BaseComplexNDArray {
    */
   def this(newData : Array[IComplexNumber],shape : Array[Int]) {
     this()
-    this.data = Nd4j.createBuffer(Array[Float](ArrayUtil.prod(shape) * 2))
+    val arr : Array[Float]  = new Array(ArrayUtil.prod(shape) * 2)
+    this.data = Nd4j.createBuffer(arr)
     initShape(shape)
-    var i : Int = 0
     for( i <- 0  until length) {
       this.putScalar(i,newData(i))
     }

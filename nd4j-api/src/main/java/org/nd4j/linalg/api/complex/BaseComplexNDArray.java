@@ -3682,6 +3682,23 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray transposei() {
+        if(isRowVector())
+            return Nd4j.createComplex(data, new int[]{shape[0], 1}, offset);
+        else if(isColumnVector())
+            return Nd4j.createComplex(data, new int[]{shape[0]}, offset);
+        if(ordering() == NDArrayFactory.FORTRAN && isMatrix()) {
+            IComplexNDArray reverse = Nd4j.createComplex(ArrayUtil.reverseCopy(shape));
+
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < columns; j++) {
+                    reverse.putScalar(new int[]{j, i}, getComplex(i, j));
+                }
+            }
+
+            return reverse;
+        }
+
+
         IComplexNDArray ret = permute(ArrayUtil.range(shape.length -1,-1));
         return ret;
 
@@ -3692,7 +3709,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray transpose() {
-        return dup().transposei();
+        return transposei();
     }
 
     @Override
