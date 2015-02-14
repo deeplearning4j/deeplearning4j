@@ -78,6 +78,7 @@ public class VocabActor extends UntypedActor {
             final String sentence = work.getWork();
             if(sentence.isEmpty() || sentence.length() <= 2) {
                 work.increment();
+                lastUpdate.getAndSet(System.currentTimeMillis());
                 return;
             }
 
