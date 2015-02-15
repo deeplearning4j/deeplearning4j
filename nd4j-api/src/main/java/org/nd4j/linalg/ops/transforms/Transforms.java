@@ -649,18 +649,6 @@ public class Transforms {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     private static INDArray exec(INDArray indArray,ElementWiseOpFactory factory,Object[] extraArgs,boolean dup) {
         INDArray in = dup ? indArray.dup() : indArray;
         ElementWiseOp ops = new ArrayOps().

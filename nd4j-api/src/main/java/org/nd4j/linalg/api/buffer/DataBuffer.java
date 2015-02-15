@@ -1,5 +1,10 @@
 package org.nd4j.linalg.api.buffer;
 
+import org.nd4j.linalg.api.complex.IComplexDouble;
+import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.ops.ElementWiseOp;
+
 import java.io.Serializable;
 
 /**
@@ -127,6 +132,27 @@ public interface DataBuffer extends Serializable {
 
 
     /**
+     * Get the complex float
+     * @param i the i togete
+     * @return the complex float at the specified index
+     */
+    IComplexFloat getComplexFloat(int i);
+
+    /**
+     * Get the complex double at the specified index
+     * @param i the index
+     * @return the complex double
+     */
+    IComplexDouble getComplexDouble(int i);
+
+    /**
+     * Returns a complex number
+     * @param i the complex number cto get
+     * @return the complex number to get
+     */
+    IComplexNumber getComplex(int i);
+
+    /**
      * Returns the length of the buffer
      * @return the length of the buffer
      */
@@ -154,5 +180,18 @@ public interface DataBuffer extends Serializable {
      * Clears this buffer
      */
     void destroy();
+
+    /**
+     * Apply an element wise op to the data buffer
+     * @param op the operation to apply
+     */
+    void apply(ElementWiseOp op);
+
+    /**
+     * Apply an element wise op to the data buffer
+     * @param op the operation to apply
+     * @param offset the offset to start applying the function from
+     */
+    void apply(ElementWiseOp op,int offset);
 
 }

@@ -3,6 +3,8 @@ package org.nd4j.linalg.jcublas.buffer;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 /**
@@ -140,7 +142,9 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public DataBuffer dup() {
-       return new CudaDoubleDataBuffer(asDouble());
+        CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(length);
+        copyTo(buffer);
+        return buffer;
     }
 
     @Override

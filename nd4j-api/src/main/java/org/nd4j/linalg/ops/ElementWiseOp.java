@@ -56,6 +56,7 @@ public interface ElementWiseOp {
 
     <E> E apply(INDArray origin,Object value, int i);
 
+
     /**
      * Apply the transformation
      */

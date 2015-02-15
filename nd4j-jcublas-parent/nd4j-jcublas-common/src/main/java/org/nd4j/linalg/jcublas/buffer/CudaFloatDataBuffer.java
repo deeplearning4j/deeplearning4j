@@ -135,7 +135,9 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public DataBuffer dup() {
-        return new CudaFloatDataBuffer(asFloat());
+        CudaFloatDataBuffer buf = new CudaFloatDataBuffer(length());
+        copyTo(buf);
+        return buf;
     }
 
     @Override

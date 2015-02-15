@@ -24,14 +24,8 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
     protected INDArray from;
     //this is for operations like adding or multiplying a scalar over the from array
     protected Object scalarValue;
-    protected static ExecutorService dimensionThreads;
 
 
-
-
-    public static  synchronized ExecutorService getThreads() {
-        return dimensionThreads;
-    }
 
 
 
@@ -42,7 +36,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
      */
     @Override
     public void applyTransformToOrigin(INDArray origin,int i) {
-        if(origin instanceof IComplexNumber) {
+        if(origin instanceof IComplexNDArray) {
             IComplexNDArray c2 = (IComplexNDArray) origin;
             IComplexNumber transformed = apply(origin,getFromOrigin(origin,i),i);
             c2.putScalar(i,transformed);
@@ -102,6 +96,8 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
         return origin.getDouble(i);
     }
 
+
+
     /**
      * The input matrix
      *
@@ -117,31 +113,6 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
      */
     @Override
     public void exec() {
-
-        INDArray linear = from.linearView();
-        if(linear.length() != from.length()) {
-            from.resetLinearView();
-            linear = from.linearView();
-            if(linear.length() != from.length())
-                throw new IllegalStateException("We appear to have a race condition. Linear view is out of sync even after reset");
-        }
-        if(linear instanceof IComplexNDArray) {
-            IComplexNDArray cLinear = (IComplexNDArray) linear;
-            for(int i = 0; i < cLinear.length(); i++) {
-                IComplexNumber result =  apply(cLinear,cLinear.getComplex(i),i);
-                cLinear.putScalar(i,result);
-            }
-
-        }
-
-        else {
-            for(int i = 0; i < linear.length(); i++) {
-                double apply = apply(linear,linear.getDouble(i),i);
-                if(Double.isInfinite(apply) || Double.isInfinite(apply))
-                    apply = Nd4j.EPS_THRESHOLD;
-                linear.putScalar(i,apply);
-            }
-        }
-
+        from.data().apply(this,from.offset());
     }
 }

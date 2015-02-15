@@ -1,5 +1,6 @@
 package org.nd4j.linalg.ops.transforms;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.BaseElementWiseOp;
@@ -24,6 +25,6 @@ public class Sqrt extends BaseElementWiseOp {
             return ComplexUtil.sqrt((org.nd4j.linalg.api.complex.IComplexNumber) value);
         }
 
-        return Math.sqrt((double) value);
+        return FastMath.sqrt((double) value);
     }
 }

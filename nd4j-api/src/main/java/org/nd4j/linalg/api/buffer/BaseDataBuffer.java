@@ -1,5 +1,13 @@
 package org.nd4j.linalg.api.buffer;
 
+import org.nd4j.linalg.api.complex.IComplexDouble;
+import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.ElementWiseOp;
+
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -24,7 +32,7 @@ public abstract  class BaseDataBuffer implements DataBuffer {
     }
 
     @Override
-    public synchronized  int length() {
+    public   int length() {
         return length;
     }
 
@@ -65,6 +73,41 @@ public abstract  class BaseDataBuffer implements DataBuffer {
         throw new UnsupportedOperationException();
 
     }
+
+
+    @Override
+    public IComplexFloat getComplexFloat(int i) {
+        return Nd4j.createFloat(getFloat(i),getFloat(i) + 1);
+    }
+
+    @Override
+    public IComplexDouble getComplexDouble(int i) {
+        return Nd4j.createDouble(getDouble(i),getDouble(i + 1));
+    }
+
+    @Override
+    public IComplexNumber getComplex(int i) {
+        return dataType() == DataBuffer.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
+    }
+
+    @Override
+    public void apply(ElementWiseOp op, int offset) {
+        INDArray from = op.from();
+        if(from instanceof IComplexNDArray) {
+            for(int i = offset; i < length(); i++) {
+                put(i,op.apply(from,getComplex(i),i));
+            }
+        }
+        else {
+            for(int i = offset; i < length(); i++) {
+                put(i,op.apply(from,getDouble(i),i));
+            }
+        }
+
+    }
+
+
+
 
     @Override
     public <E> void put(int i, E element) {

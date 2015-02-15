@@ -2,7 +2,13 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import jcuda.Pointer;
 import jcuda.jcublas.JCublas;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.complex.IComplexDouble;
+import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 
 /**
@@ -54,6 +60,15 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 1);
     }
 
+
+    /**
+     * Copy the data of this buffer to another buffer on the gpu
+     * @param to the buffer to copy data to
+     */
+    protected void copyTo(JCudaBuffer to) {
+        JCuda.cudaMemcpy(to.pointer(), pointer(), length() * elementSize(), cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+    }
+
     /**
      * Get element with the specified index
      * @param index the index of the element to get
@@ -69,6 +84,22 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 init,
                 1);
 
+    }
+
+
+    @Override
+    public IComplexFloat getComplexFloat(int i) {
+        return Nd4j.createFloat(getFloat(i), getFloat(i) + 1);
+    }
+
+    @Override
+    public IComplexDouble getComplexDouble(int i) {
+        return Nd4j.createDouble(getDouble(i),getDouble(i + 1));
+    }
+
+    @Override
+    public IComplexNumber getComplex(int i) {
+        return dataType() == DataBuffer.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
     }
 
     /**

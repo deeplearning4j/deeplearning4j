@@ -4,7 +4,9 @@ import org.nd4j.linalg.ops.ElementWiseOp;
 import org.nd4j.linalg.ops.factory.ElementWiseOpFactory;
 
 /**
- * Created by agibsonccc on 12/11/14.
+ * Default element wise operations
+ *
+ * @author Adam Gibson
  */
 public abstract class BaseElementWiseOpFactory implements ElementWiseOpFactory {
 
