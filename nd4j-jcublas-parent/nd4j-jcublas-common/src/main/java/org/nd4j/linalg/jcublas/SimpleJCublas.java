@@ -281,7 +281,7 @@ public class SimpleJCublas {
 
         /* Copy from data to pointer at majorStride() (you want to stride through the data properly) incrementing by 1 for the pointer on the GPU.
         * This allows us to copy only what we need. */
-        Pointer toData =null;
+        Pointer toData = null;
         if(ndarray.data().dataType() == DataBuffer.FLOAT)
             toData = Pointer.to(ndarray.data().asFloat()).withByteOffset(ndarray.offset() * size(ndarray));
         else

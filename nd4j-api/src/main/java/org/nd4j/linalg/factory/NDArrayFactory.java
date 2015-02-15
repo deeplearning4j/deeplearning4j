@@ -108,30 +108,7 @@ public interface NDArrayFactory  {
      INDArray linspace(int lower,int upper,int num);
 
     /**
-     * Create a buffer with the given data
-     * @param concat the data to use
-     * @param copy whether to copy or not
-     * @return
-     */
-    DataBuffer createBuffer(double[] concat,boolean copy);
 
-    /**
-     * Create a buffer with the given data
-     * @param concat the data to use
-     * @param copy whether to copy or not
-     * @return the buffer
-     */
-    DataBuffer createBuffer(float[] concat,boolean copy);
-
-
-    /**
-     * Create a buffer using a copy of the data
-     * @param concat the data to use
-     * @return
-     */
-    DataBuffer createBuffer(double[] concat);
-
-    DataBuffer createBuffer(float[] concat);
 
     /**
      * Returns a flattened ndarray with all of the elements in each ndarray
@@ -153,7 +130,6 @@ public interface NDArrayFactory  {
      INDArray toFlattened(int length,Iterator<? extends INDArray>...matrices);
 
 
-    DataBuffer createBuffer(DataBuffer[] buffers);
 
     /**
      * Returns a column vector where each entry is the nth bilinear
@@ -161,6 +137,11 @@ public interface NDArrayFactory  {
      */
      INDArray bilinearProducts(INDArray curr,INDArray in);
 
+    /**
+     * Flatten all of the ndarrays in to one long vector
+     * @param matrices the matrices to flatten
+     * @return the flattened vector
+     */
      INDArray toFlattened(INDArray...matrices);
 
     /**
@@ -631,6 +612,15 @@ public interface NDArrayFactory  {
     IComplexNDArray createComplex(DataBuffer data,int[] shape,int[] stride,int offset);
 
 
+    /**
+     *
+     * @param data
+     * @param rows
+     * @param columns
+     * @param stride
+     * @param offset
+     * @return
+     */
     INDArray create(float[] data, int rows, int columns, int[] stride, int offset);
 
     /**

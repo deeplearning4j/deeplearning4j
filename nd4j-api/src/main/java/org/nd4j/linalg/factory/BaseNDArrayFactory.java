@@ -1,13 +1,10 @@
 package org.nd4j.linalg.factory;
 
-import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Floats;
+
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -35,6 +32,19 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     protected Character order;
 
     public BaseNDArrayFactory() {
+    }
+
+    /**
+     *
+     * @param dtype the data type
+     * @param order the ordering
+     */
+    protected BaseNDArrayFactory(int dtype,Character order) {
+        this.dtype = dtype;
+        if(Character.toLowerCase(order) != 'c' && Character.toLowerCase(order) != 'f')
+            throw new IllegalArgumentException("Order must either be c or f");
+
+        this.order = order;
     }
 
     /**
@@ -91,15 +101,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return rand(new int[]{rows,columns},min,max,rng);
     }
 
-    @Override
-    public DataBuffer createBuffer(double[] concat, boolean copy) {
-        return new DoubleBuffer(concat,copy);
-    }
-
-    @Override
-    public DataBuffer createBuffer(float[] concat, boolean copy) {
-        return new FloatBuffer(concat,copy);
-    }
 
     /**
      * Sets the data type
@@ -158,24 +159,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
 
-    @Override
-    public DataBuffer createBuffer(DataBuffer[] buffers) {
-        assertAllSameType(buffers);
-        if(buffers[0].dataType() == (DataBuffer.DOUBLE)) {
-            double[][] ret = new double[buffers.length][];
-            for(int i = 0; i < ret.length; i++)
-                ret[i] = buffers[i].asDouble();
-            return createBuffer(Doubles.concat(ret));
-        }
-        else {
-            float[][] ret = new float[buffers.length][];
-            for(int i = 0; i < ret.length; i++)
-                ret[i] = buffers[i].asFloat();
-            return createBuffer(Floats.concat(ret));
-        }
-
-    }
-
 
     @Override
     public IComplexNDArray createComplex(int[] ints, int[] ints1, int[] stride, int offset) {
@@ -194,15 +177,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
 
-    @Override
-    public  DataBuffer createBuffer(double[] concat) {
-        return new DoubleBuffer(concat);
-    }
-
-    @Override
-    public  DataBuffer createBuffer(float[] concat) {
-        return new FloatBuffer(concat);
-    }
 
     private int assertAllSameType(DataBuffer[] data) {
         int type = data[0].dataType();

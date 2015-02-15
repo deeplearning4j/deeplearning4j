@@ -16,10 +16,18 @@ public class IntBuffer extends BaseDataBuffer {
     private int[] buffer;
     public final static int DATA_TYPE = 2;
 
+    public IntBuffer(int[] buffer,boolean copy) {
+        super(buffer.length);
+        if(!copy)
+            this.buffer = buffer;
+        else {
+            buffer = new int[buffer.length];
+            System.arraycopy(buffer,0,this.buffer,0,this.buffer.length);
+        }
+    }
 
     public IntBuffer(int[] buffer) {
-        super(buffer.length);
-        this.buffer = buffer;
+        this(buffer,true);
     }
 
     public IntBuffer(int length) {
@@ -78,17 +86,17 @@ public class IntBuffer extends BaseDataBuffer {
 
     @Override
     public void put(int i, float element) {
-       buffer[i] = (int) element;
+        buffer[i] = (int) element;
     }
 
     @Override
     public void put(int i, double element) {
-       buffer[i] = (int) element;
+        buffer[i] = (int) element;
     }
 
     @Override
     public void put(int i, int element) {
-         buffer[i] = element;
+        buffer[i] = element;
     }
 
     @Override

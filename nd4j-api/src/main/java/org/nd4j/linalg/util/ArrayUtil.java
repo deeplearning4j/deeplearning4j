@@ -83,6 +83,19 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static int[] toInts(float[] data) {
+        int[] ret = new int[data.length];
+        for(int i = 0; i < ret.length; i++)
+            ret[i] = (int) data[i];
+        return ret;
+    }
+    public static int[] toInts(double[] data) {
+        int[] ret = new int[data.length];
+        for(int i = 0; i < ret.length; i++)
+            ret[i] = (int) data[i];
+        return ret;
+    }
+
 
     public static int prod(int[] mult) {
         if(mult.length < 1)
@@ -307,6 +320,13 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static double[] toDoubles(float[] ints) {
+        double[] ret = new double[ints.length];
+        for(int i = 0; i < ints.length; i++)
+            ret[i] = (double) ints[i];
+        return ret;
+    }
+
     public static float[] toFloats(int[][] ints) {
         return toFloats(Ints.concat(ints));
     }
@@ -322,6 +342,14 @@ public class ArrayUtil {
             ret[i] = (float) ints[i];
         return ret;
     }
+
+    public static float[] toFloats(double[] ints) {
+        float[] ret = new float[ints.length];
+        for(int i = 0; i < ints.length; i++)
+            ret[i] = (float) ints[i];
+        return ret;
+    }
+
 
     /**
      * Return a copy of this array with the

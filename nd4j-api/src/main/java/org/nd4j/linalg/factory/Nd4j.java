@@ -6,6 +6,8 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
+import org.nd4j.linalg.api.buffer.factory.DefaultDataBufferFactory;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -40,12 +42,13 @@ public class Nd4j {
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
     protected static Class<? extends FFTInstance> fftInstanceClazz;
     protected static Class<? extends  ConvolutionInstance> convolutionInstanceClazz;
-
-
+    protected static Class<? extends DataBufferFactory> dataBufferFactoryClazz;
+    protected static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
     public final static String LINALG_PROPS = "/nd4j.properties";
     public final static String NUMERICAL_STABILITY = "force.stability";
     public final static String FFT_OPS = "fft";
+    public final static String DATA_BUFFER_OPS = "databufferfactory";
     public final static String CONVOLUTION_OPS = "convops";
     public final static String DTYPE = "dtype";
     public final static String BLAS_OPS = "blas.ops";
@@ -88,12 +91,19 @@ public class Nd4j {
                 ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(NDARRAY_FACTORY_CLASS,props.get(NDARRAY_FACTORY_CLASS).toString()));
             if(convolutionInstanceClazz == null)
                 convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class.forName(System.getProperty(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
+            if(dataBufferFactoryClazz == null)
+                dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName()));
+            if(blasWrapperClazz == null)
+                blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS,props.get(BLAS_OPS).toString()));
+
+
             Constructor c2 = ndArrayFactoryClazz.getConstructor(Integer.class,Character.class);
             FFT_INSTANCE =  fftInstanceClazz.newInstance();
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype,ORDER);
             CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
-            blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS,props.get(BLAS_OPS).toString()));
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
+            DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
+
             UNIT = Nd4j.createFloat(1, 0);
             ZERO = Nd4j.createFloat(0, 0);
             NEG_UNIT = Nd4j.createFloat(-1, 0);
@@ -406,11 +416,11 @@ public class Nd4j {
     }
 
     public static DataBuffer createBuffer(float[] data) {
-        return INSTANCE.createBuffer(data);
+        return DATA_BUFFER_FACTORY_INSTANCE.createFloat(data);
     }
 
     public static DataBuffer createBuffer(double[] data) {
-        return INSTANCE.createBuffer(data);
+        return DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
     }
 
     public static <E> DataBuffer createBuffer(E[] data) {
@@ -420,6 +430,10 @@ public class Nd4j {
         INSTANCE = factory;
     }
 
+    /**
+     * Sets the global blas wrapper
+     * @param factory
+     */
     public static void setBlasWrapper(BlasWrapper factory) {
         BLAS_WRAPPER_INSTANCE = factory;
     }
