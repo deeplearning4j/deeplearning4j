@@ -15,7 +15,7 @@
 		<hazelcast.version>3.4-EA</hazelcast.version>
 		<spring.version>3.2.5.RELEASE</spring.version>
 		<dropwizard.version>0.7.0</dropwizard.version>
-		<jackson.version>2.3.2</jackson.version>
+		<jackson.version>2.5.1</jackson.version>
 		<scala.binary.version>2.10</scala.binary.version>
 		<akka.group>org.spark-project.akka</akka.group>
 	</properties>
@@ -194,7 +194,7 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-yaml</artifactId>
-			<version>2.4.0</version>
+			<version>${jackson.version}</version>
 		</dependency>
 
 		<dependency>
