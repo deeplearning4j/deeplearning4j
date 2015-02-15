@@ -13,6 +13,6 @@ import java.io.IOException;
 public class RandomGeneratorSerializer extends JsonSerializer<RandomGenerator> {
     @Override
     public void serialize(RandomGenerator value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-        jgen.writeStringField("rng",value.getClass().getName());
+        jgen.writeString(value.getClass().getName());
     }
 }

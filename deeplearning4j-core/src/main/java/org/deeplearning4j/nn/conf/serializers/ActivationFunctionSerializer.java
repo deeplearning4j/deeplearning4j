@@ -31,9 +31,9 @@ public class ActivationFunctionSerializer extends JsonSerializer<ActivationFunct
 
 
         }
-        else {
-            jgen.writeStringField("activationFunction",value.getClass().getName());
+        else
+            jgen.writeString(value.getClass().getName());
 
-        }
+
     }
 }
