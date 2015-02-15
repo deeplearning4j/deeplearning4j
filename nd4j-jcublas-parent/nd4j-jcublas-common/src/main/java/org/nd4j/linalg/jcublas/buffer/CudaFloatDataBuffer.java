@@ -4,6 +4,7 @@ import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Cuda float buffer
@@ -49,7 +50,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void setData(double[] data) {
-
+       setData(ArrayUtil.toFloats(data));
     }
 
     @Override
@@ -78,68 +79,63 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public double[] asDouble() {
-        return new double[0];
+       return ArrayUtil.toDoubles(asFloat());
     }
 
     @Override
     public int[] asInt() {
-        return new int[0];
+        return ArrayUtil.toInts(asFloat());
     }
 
-    @Override
-    public <E> E[] asType() {
-        return null;
-    }
 
     @Override
     public double getDouble(int i) {
-        return 0;
+        return getFloat(i);
     }
 
     @Override
     public float getFloat(int i) {
-        return 0;
+        float[] data = new float[1];
+        Pointer p = Pointer.to(data);
+        get(i,p);
+        return data[0];
     }
 
     @Override
     public Number getNumber(int i) {
-        return null;
+        return getFloat(i);
     }
 
-    @Override
-    public <E> E getElement(int i) {
-        return null;
-    }
+
 
     @Override
     public void put(int i, float element) {
-
+        float[] data = new float[]{element};
+        Pointer p = Pointer.to(data);
+        set(i,p);
     }
 
     @Override
     public void put(int i, double element) {
-
+        put(i,(float) element);
     }
 
     @Override
     public void put(int i, int element) {
-
+        put(i,(float) element);
     }
 
-    @Override
-    public <E> void put(int i, E element) {
 
-    }
 
 
     @Override
     public int getInt(int ix) {
-        return 0;
+        return (int) getFloat(ix);
     }
 
     @Override
     public DataBuffer dup() {
-        return null;
+        return new CudaFloatDataBuffer(asFloat());
     }
 
     @Override

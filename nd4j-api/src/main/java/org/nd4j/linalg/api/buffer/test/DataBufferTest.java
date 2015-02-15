@@ -22,5 +22,17 @@ public abstract class DataBufferTest {
 
     }
 
+    @Test
+    public void testPut() {
+        double[] d1 = new double[]{1,2,3,4};
+        DataBuffer d = Nd4j.createBuffer(d1);
+        d.put(0,0.0);
+        double[] result = new double[]{0,2,3,4};
+        d1 = d.asDouble();
+        assertArrayEquals(d1,result,1e-1);
+        d.destroy();
+    }
+
+
 
 }

@@ -54,6 +54,41 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 1);
     }
 
+    /**
+     * Get element with the specified index
+     * @param index the index of the element to get
+     * @param init the initialized pointer
+     */
+    protected void get(int index,Pointer init) {
+
+        JCublas.cublasGetVector(
+                1,
+                elementSize(),
+                pointer().withByteOffset(index *  elementSize()),
+                1,
+                init,
+                1);
+
+    }
+
+    /**
+     * Set an individual element
+     * @param index the index of the element
+     * @param from the element to get data from
+     */
+    protected void set(int index,Pointer from) {
+        JCublas.cublasInit();
+        JCublas.cublasSetVector(
+                1,
+                elementSize,
+                from,
+                1,
+                pointer().withByteOffset(index *  elementSize()),
+                1);
+    }
+
+
+
     @Override
     public void destroy() {
         JCublas.cublasFree(pointer);

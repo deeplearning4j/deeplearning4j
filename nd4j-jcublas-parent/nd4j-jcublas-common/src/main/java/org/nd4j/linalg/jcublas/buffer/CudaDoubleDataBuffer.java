@@ -94,34 +94,40 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public double getDouble(int i) {
-        return 0;
+        double[] d = new double[1];
+        Pointer p = Pointer.to(d);
+        get(i,p);
+        return d[0];
     }
 
     @Override
     public float getFloat(int i) {
-        return 0;
+        return (float) getDouble(i);
     }
 
     @Override
     public Number getNumber(int i) {
-        return null;
+        return getDouble(i);
     }
 
 
 
     @Override
     public void put(int i, float element) {
-
+      put(i,(double)element);
     }
 
     @Override
     public void put(int i, double element) {
+        double[] d = new double[]{element};
+        Pointer p = Pointer.to(d);
+        set(i,p);
 
     }
 
     @Override
     public void put(int i, int element) {
-
+        put(i,(double) element);
     }
 
 
@@ -129,7 +135,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public int getInt(int ix) {
-        return 0;
+        return (int) getDouble(ix);
     }
 
     @Override
