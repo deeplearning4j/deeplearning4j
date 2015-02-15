@@ -62,6 +62,8 @@ If you're using IntelliJ as your IDE, this should work already.
 
 * Lapack offers the alternative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). 
 
+* Alternatively, you can bypass MinGW and jcopy the Blas dll files to the right path. 
+
 ###<a name="source">Working With Source</a>
 
 For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deeplearning4j/). If you want to develop for Deeplearning4j, install Github for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). Then git clone the repository, and run this command for Maven:
