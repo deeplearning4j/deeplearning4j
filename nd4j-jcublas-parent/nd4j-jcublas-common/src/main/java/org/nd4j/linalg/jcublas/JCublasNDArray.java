@@ -19,8 +19,6 @@ import java.util.*;
 public class JCublasNDArray extends BaseNDArray {
 
 
-
-
     public JCublasNDArray(double[][] data) {
         super(data);
 

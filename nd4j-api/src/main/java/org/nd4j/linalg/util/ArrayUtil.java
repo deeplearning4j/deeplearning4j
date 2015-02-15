@@ -794,4 +794,10 @@ public class ArrayUtil {
         return nums;
     }
 
+    public static double[] toDouble(int[] data) {
+        double[] ret = new double[data.length];
+        for(int i = 0; i < ret.length; i++)
+            ret[i] = data[i];
+        return ret;
+    }
 }

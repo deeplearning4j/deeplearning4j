@@ -338,7 +338,6 @@ public abstract class NDArrayTests {
 
     @Test
     public void testScal() {
-        INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         float assertion = 2;
         INDArray answer = Nd4j.create(new float[]{2,4,6,8});
         assertEquals(answer,Nd4j.getBlasWrapper().scal(assertion,answer));
@@ -614,6 +613,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testTransposeMmul() {
+
         //note that transpose() and transposei() are equivalent here
         INDArray a = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray aT = a.transposei();
@@ -629,7 +629,7 @@ public abstract class NDArrayTests {
 
         INDArray testMMul =  a.mmul(aT);
         double[][] result2 = new double[][]{
-                {14,32},{32,77}
+                {23,44},{30,58}
         };
 
         for(int i = 0; i < result2.length; i++) {
@@ -652,7 +652,6 @@ public abstract class NDArrayTests {
         assertEquals(true,n.isRowVector());
         assertEquals(true,transposed.isColumnVector());
 
-        INDArray d = Nd4j.create(n.data().dup(), new int[]{n.rows(), n.columns()});
 
 
         INDArray innerProduct = n.mmul(transposed);

@@ -183,5 +183,29 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BaseCudaDataBuffer)) return false;
 
+        BaseCudaDataBuffer that = (BaseCudaDataBuffer) o;
+
+        if (elementSize != that.elementSize) return false;
+        if (length != that.length) return false;
+        for(int i = 0; i < length; i++) {
+            double element = getDouble(i);
+            double other = that.getDouble(i);
+            if(element != other)
+                return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = pointer != null ? pointer.hashCode() : 0;
+        result = 31 * result + length;
+        result = 31 * result + elementSize;
+        return result;
+    }
 }

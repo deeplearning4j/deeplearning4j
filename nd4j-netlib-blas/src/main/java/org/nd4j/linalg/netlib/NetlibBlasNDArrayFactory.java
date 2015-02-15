@@ -20,9 +20,19 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class NetlibBlasNDArrayFactory extends BaseNDArrayFactory {
+    public NetlibBlasNDArrayFactory() {
+    }
 
     public NetlibBlasNDArrayFactory(int dtype, Character order) {
         super(dtype,order);
+    }
+
+    public NetlibBlasNDArrayFactory(Integer dtype, Character order) {
+        super(dtype, order);
+    }
+
+    public NetlibBlasNDArrayFactory(int dtype, char order) {
+        super(dtype, order);
     }
 
     @Override

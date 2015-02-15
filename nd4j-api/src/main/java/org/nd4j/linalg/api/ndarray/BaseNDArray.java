@@ -3256,7 +3256,7 @@ public  abstract class BaseNDArray  implements INDArray {
             return Nd4j.create(data, new int[]{shape[0], 1}, offset);
         else if(isColumnVector())
             return Nd4j.create(data, new int[]{shape[0]}, offset);
-        if(ordering() == NDArrayFactory.FORTRAN && isMatrix()) {
+        if(isMatrix()) {
             INDArray reverse = Nd4j.create(ArrayUtil.reverseCopy(shape));
 
             for (int i = 0; i < rows; i++) {

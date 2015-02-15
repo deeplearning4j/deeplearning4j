@@ -17,6 +17,11 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(length, Sizeof.INT);
     }
 
+    public CudaIntDataBuffer(int[] data) {
+        this(data.length);
+        setData(data);
+    }
+
     @Override
     public void setData(int[] data) {
 

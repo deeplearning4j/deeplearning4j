@@ -65,6 +65,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
 
     @Test
     public void testTransposeMmul() {
+        super.testTransposeMmul();
         Nd4j.factory().setOrder('f');
 
         //note that transpose() and transposei() are equivalent here
