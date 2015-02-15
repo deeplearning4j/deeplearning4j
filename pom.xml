@@ -148,9 +148,18 @@
 
     <developers>
         <developer>
+            <id>smarthi</id>
+            <name>Suneel Marthi</name>
+
+        </developer>
+        <developer>
             <id>agibsonccc</id>
             <name>Adam Gibson</name>
             <email>0@blix.io</email>
+        </developer>
+        <developer>
+            <id>jpatanooga</id>
+            <name>Josh Patterson</name>
         </developer>
     </developers>
 
