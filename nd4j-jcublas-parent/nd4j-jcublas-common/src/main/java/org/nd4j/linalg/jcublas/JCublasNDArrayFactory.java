@@ -18,7 +18,19 @@ import java.util.List;
 /**
  * Created by mjk on 8/21/14.
  */
-public abstract class JCublasNDArrayFactory extends BaseNDArrayFactory {
+public  class JCublasNDArrayFactory extends BaseNDArrayFactory {
+
+
+    public JCublasNDArrayFactory() {
+    }
+
+    public JCublasNDArrayFactory(Integer dtype,Character order) {
+        super(dtype, order);
+    }
+
+    public JCublasNDArrayFactory(int dtype, char order) {
+        super(dtype, order);
+    }
 
     public JCublasNDArrayFactory(int dtype,Character order) {
         super(dtype,order);
@@ -110,17 +122,17 @@ public abstract class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer data) {
-        return null;
+        return new JCublasNDArray(data);
     }
 
     @Override
     public IComplexNDArray createComplex(DataBuffer data) {
-        return null;
+        return new JCublasComplexNDArray(data);
     }
 
     @Override
     public IComplexNDArray createComplex(DataBuffer data, int rows, int columns, int[] stride, int offset) {
-        return null;
+        return new JCublasComplexNDArray(data,new int[]{rows,columns},stride,offset);
     }
 
     @Override

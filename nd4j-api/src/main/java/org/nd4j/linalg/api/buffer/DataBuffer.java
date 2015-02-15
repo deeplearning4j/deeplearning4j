@@ -15,6 +15,22 @@ public interface DataBuffer extends Serializable {
     public final static int INT = 2;
 
     /**
+     * Set the data for this buffer
+     * @param data the data for this buffer
+     */
+    void setData(int[] data);
+    /**
+     * Set the data for this buffer
+     * @param data the data for this buffer
+     */
+    void setData(float[] data);
+    /**
+     * Set the data for this buffer
+     * @param data the data for this buffer
+     */
+    void setData(double[] data);
+
+    /**
      * Raw byte array storage
      * @return the data represented as a raw byte array
      */

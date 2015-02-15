@@ -91,14 +91,16 @@ public class Nd4j {
                 ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(NDARRAY_FACTORY_CLASS,props.get(NDARRAY_FACTORY_CLASS).toString()));
             if(convolutionInstanceClazz == null)
                 convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class.forName(System.getProperty(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
-            if(dataBufferFactoryClazz == null)
-                dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName()));
+            if(dataBufferFactoryClazz == null) {
+                String defaultName = props.getProperty(DATA_BUFFER_OPS,DefaultDataBufferFactory.class.getName());
+                dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
+            }
             if(blasWrapperClazz == null)
                 blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS,props.get(BLAS_OPS).toString()));
 
 
-            Constructor c2 = ndArrayFactoryClazz.getConstructor(Integer.class,Character.class);
             FFT_INSTANCE =  fftInstanceClazz.newInstance();
+            Constructor c2 = ndArrayFactoryClazz.getConstructor(int.class,char.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype,ORDER);
             CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();

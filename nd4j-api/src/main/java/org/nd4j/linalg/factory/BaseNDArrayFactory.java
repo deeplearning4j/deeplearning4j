@@ -29,7 +29,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
     protected int dtype;
-    protected Character order;
+    protected char order;
 
     public BaseNDArrayFactory() {
     }

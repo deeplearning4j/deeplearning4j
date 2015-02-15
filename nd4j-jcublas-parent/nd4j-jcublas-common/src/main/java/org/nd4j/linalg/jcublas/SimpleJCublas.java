@@ -36,8 +36,19 @@ import java.util.Iterator;
 public class SimpleJCublas {
     public final static String CUDA_HOME = "CUDA_HOME";
     public final static String JCUDA_HOME_PROP = "jcuda.home";
+    private static boolean init = false;
     private static Logger log = LoggerFactory.getLogger(SimpleJCublas.class);
     static {
+      init();
+    }
+
+
+    /**
+     * Initialize jcublas only called once
+     */
+    public static void init() {
+        if(init)
+            return;
         //write the file to somewhere on java.library.path where there is permissions
         String name = "/" + resourceName().substring(3).replace("X","x");
         ClassPathResource resource = new ClassPathResource(name);
@@ -96,9 +107,8 @@ public class SimpleJCublas {
                 JCublas.cublasShutdown();
             }
         });
+        init = true;
     }
-
-
 
 
 
@@ -350,7 +360,7 @@ public class SimpleJCublas {
         Pointer ret = new Pointer();
         //allocate memory for the pointer
 
-        Pointer toData =null;
+        Pointer toData;
         if(ndarray.data().dataType() == DataBuffer.FLOAT)
             toData = Pointer.to(ndarray.data().asFloat()).withByteOffset(ndarray.offset() * size(ndarray));
         else

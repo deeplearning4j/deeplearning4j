@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.buffer;
 
 
 import com.google.common.primitives.Bytes;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -33,7 +34,20 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
 
+    @Override
+    public void setData(int[] data) {
+        this.buffer = ArrayUtil.toDoubles(data);
+    }
 
+    @Override
+    public void setData(float[] data) {
+        this.buffer = ArrayUtil.toDoubles(data);
+    }
+
+    @Override
+    public void setData(double[] data) {
+       this.buffer = data;
+    }
 
     @Override
     public synchronized byte[] asBytes() {

@@ -35,6 +35,21 @@ public class IntBuffer extends BaseDataBuffer {
     }
 
     @Override
+    public void setData(int[] data) {
+        this.buffer = data;
+    }
+
+    @Override
+    public void setData(float[] data) {
+       this.buffer = ArrayUtil.toInts(data);
+    }
+
+    @Override
+    public void setData(double[] data) {
+        this.buffer = ArrayUtil.toInts(data);
+    }
+
+    @Override
     public byte[] asBytes() {
         return new byte[0];
     }
