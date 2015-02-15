@@ -150,7 +150,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
           } else
             setInput(input);
           getLayers()[i].fit(next.getFeatureMatrix());
-          log.info("Training on layer " + (i + 1) + " with " + input.rows() + " examples");
+          log.info("Training on layer " + (i + 1) + " with " + input.slices() + " examples");
 
 
         }
@@ -163,7 +163,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
           for (int j = 1; j <= i; j++)
             layerInput = activationFromPrevLayer(j - 1, layerInput);
 
-          log.info("Training on layer " + (i + 1) + " with " + layerInput.rows() + " examples");
+          log.info("Training on layer " + (i + 1) + " with " + layerInput.slices() + " examples");
           getLayers()[i].fit(layerInput);
 
         }
@@ -203,7 +203,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         layerInput = getInput();
       else
         layerInput = activationFromPrevLayer(i - 1, layerInput);
-      log.info("Training on layer " + (i + 1) + " with " + layerInput.rows() + " examples");
+      log.info("Training on layer " + (i + 1) + " with " + layerInput.slices() + " examples");
       getLayers()[i].fit(layerInput);
 
 
@@ -213,7 +213,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
   @Override
   public int batchSize() {
-    return input.rows();
+    return input.slices();
   }
 
   @Override
@@ -314,7 +314,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     this.input = input.dup();
     if (!initCalled) {
       init();
-      //log.info("Initializing neuralNets with input of dims " + input.rows() + " x " + input.columns());
+      //log.info("Initializing neuralNets with input of dims " + input.slices() + " x " + input.columns());
 
     }
 
@@ -507,7 +507,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
    */
   protected void applyDropConnectIfNecessary(INDArray input) {
     if (layerWiseConfigurations.isUseDropConnect()) {
-      INDArray mask = Sampling.binomial(Nd4j.valueArrayOf(input.rows(), input.columns(), 0.5), 1, defaultConfiguration.getRng());
+      INDArray mask = Sampling.binomial(Nd4j.valueArrayOf(input.slices(), input.columns(), 0.5), 1, defaultConfiguration.getRng());
       input.muli(mask);
       //apply l2 for drop connect
       if (defaultConfiguration.getL2() > 0)
@@ -538,7 +538,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     }
 
 
-    INDArray rix = rActivations.get(rActivations.size() - 1).divi((double) input.rows());
+    INDArray rix = rActivations.get(rActivations.size() - 1).divi((double) input.slices());
     LinAlgExceptions.assertValidNum(rix);
 
     //errors
@@ -603,7 +603,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
 
     //- y - h
-    INDArray ix = activations.get(activations.size() - 1).sub(labels).div(labels.rows());
+    INDArray ix = activations.get(activations.size() - 1).sub(labels).div(labels.slices());
 
        	/*
 		 * Precompute activations and z's (pre activation network outputs)
@@ -622,7 +622,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     //errors
     for (int i = weights.size() - 1; i >= 0; i--) {
       deltas[i] = activations.get(i).transpose().mmul(ix);
-      preCons[i] = Transforms.pow(activations.get(i).transpose(), 2).mmul(Transforms.pow(ix, 2)).muli(labels.rows());
+      preCons[i] = Transforms.pow(activations.get(i).transpose(), 2).mmul(Transforms.pow(ix, 2)).muli(labels.slices());
       applyDropConnectIfNecessary(deltas[i]);
 
       if (i > 0) {
@@ -912,7 +912,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
    */
   public List<Pair<INDArray, INDArray>> unPack(INDArray param) {
     //more sanity checks!
-    if (param.rows() != 1)
+    if (param.slices() != 1)
       param = param.reshape(1, param.length());
     List<Pair<INDArray, INDArray>> ret = new ArrayList<>();
     int curr = 0;
@@ -933,7 +933,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
       }
 
-      ret.add(new Pair<>(weightPortion.reshape(layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).rows(), layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).columns()), hBiasPortion.reshape(layers[i].getParam(DefaultParamInitializer.BIAS_KEY).rows(), layers[i].getParam(DefaultParamInitializer.BIAS_KEY).columns())));
+      ret.add(new Pair<>(weightPortion.reshape(layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).slices(), layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).columns()), hBiasPortion.reshape(layers[i].getParam(DefaultParamInitializer.BIAS_KEY).slices(), layers[i].getParam(DefaultParamInitializer.BIAS_KEY).columns())));
       curr += layerLength;
     }
 
@@ -993,7 +993,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
     g.addi(theta.mul(defaultConfiguration.getL2()).muli(mask));
 
-    INDArray conAdd = Transforms.pow(mask.mul(defaultConfiguration.getL2()).add(Nd4j.valueArrayOf(g.rows(), g.columns(), layerWiseConfigurations.getDampingFactor())), 3.0 / 4.0);
+    INDArray conAdd = Transforms.pow(mask.mul(defaultConfiguration.getL2()).add(Nd4j.valueArrayOf(g.slices(), g.columns(), layerWiseConfigurations.getDampingFactor())), 3.0 / 4.0);
 
     con.addi(conAdd);
 
@@ -1099,7 +1099,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
   @Override
   public int[] predict(INDArray d) {
     INDArray output = output(d);
-    int[] ret = new int[d.rows()];
+    int[] ret = new int[d.slices()];
     for (int i = 0; i < ret.length; i++)
       ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
     return ret;
@@ -1434,7 +1434,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
    */
   public List<INDArray> feedForwardR(List<INDArray> acts, INDArray v) {
     List<INDArray> R = new ArrayList<>();
-    R.add(Nd4j.zeros(input.rows(), input.columns()));
+    R.add(Nd4j.zeros(input.slices(), input.columns()));
     List<Pair<INDArray, INDArray>> vWvB = unPack(v);
     List<INDArray> W = MultiLayerUtil.weightMatrices(this);
 
