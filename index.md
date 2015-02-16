@@ -4,9 +4,9 @@ layout: default
 
 # What is Deeplearning4j?
 
-Deeplearning4j is the first commercial-grade, __open-source__, distributed deep-learning library written in Java. It is designed to be used in business environments, rather than as a research tool. DL4J aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers.
+Deeplearning4j is the first commercial-grade, open-source, distributed deep-learning library written for Java and Scala. Integrated with Hadoop and Spark, DL4J is designed to be used in business environments, rather than as a research tool. It aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers.
 
-**Problems deep learning can solve**
+### Problems for deep learning
 
 * Face/image recognition
 * Voice search
@@ -15,7 +15,7 @@ Deeplearning4j is the first commercial-grade, __open-source__, distributed deep-
 * E-commerce fraud detection
 * And [other use cases](use_cases.html)
 
-**DL4J's main features**
+### DL4J's main features
 
 * A versatile [n-dimensional array](http://nd4j.org/) class. 
 * [GPU](http://nd4j.org/gpu_native_backends.html) integration
@@ -23,7 +23,7 @@ Deeplearning4j is the first commercial-grade, __open-source__, distributed deep-
 
 Deeplearning4j includes a distributed multi-threaded deep-learning framework and a normal single-threaded deep-learning framework. Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via iterative reduce, and they are equally compatible with **Java**, **Scala** and **Clojure**.
 
-**DL4J's neural nets**
+### DL4J's neural nets
 
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
 * [Convolutional Nets](http://deeplearning4j.org/convolutionalnets.html) (images)
