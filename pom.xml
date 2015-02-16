@@ -36,7 +36,7 @@
         <slf4j.version>1.7.10</slf4j.version>
         <junit.version>4.12</junit.version>
         <logback.version>1.1.2</logback.version>
-        <jackson.version>2.3.2</jackson.version>
+        <jackson.version>2.5.1</jackson.version>
         <canova.version>0.0.0.2-SNAPSHOT</canova.version>
         <nd4j.version>0.0.3.5.5.3-SNAPSHOT</nd4j.version>
     </properties>
@@ -102,6 +102,7 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-source-plugin</artifactId>
+                        <version>2.4</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
@@ -149,9 +150,18 @@
 
     <developers>
         <developer>
+            <id>smarthi</id>
+            <name>Suneel Marthi</name>
+
+        </developer>
+        <developer>
             <id>agibsonccc</id>
             <name>Adam Gibson</name>
             <email>0@blix.io</email>
+        </developer>
+        <developer>
+            <id>jpatanooga</id>
+            <name>Josh Patterson</name>
         </developer>
     </developers>
 
@@ -163,6 +173,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
+                <version>2.4</version>
             </plugin>
         </plugins>
 
@@ -254,6 +265,12 @@
                 <artifactId>commons-math3</artifactId>
                 <version>3.4.1</version>
             </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.nd4j</groupId>
                 <artifactId>canova-api</artifactId>

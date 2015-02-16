@@ -45,7 +45,7 @@ public class WorkerActor extends  UntypedActor implements DeepLearningConfigurab
     protected Configuration conf;
     protected ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
     protected Cancellable heartbeat;
-    protected static Logger log = LoggerFactory.getLogger(WorkerActor.class);
+    protected static final Logger log = LoggerFactory.getLogger(WorkerActor.class);
     protected WorkerPerformer workerPerformer;
 
 

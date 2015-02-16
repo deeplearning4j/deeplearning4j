@@ -4,6 +4,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -12,6 +13,10 @@ import java.util.Collection;
  */
 public class ComposableIterationListener implements IterationListener {
     private Collection<IterationListener> listeners = new ArrayList<>();
+
+    public ComposableIterationListener(IterationListener...iterationListener) {
+        listeners.addAll(Arrays.asList(iterationListener));
+    }
 
     public ComposableIterationListener(Collection<IterationListener> listeners) {
         this.listeners = listeners;

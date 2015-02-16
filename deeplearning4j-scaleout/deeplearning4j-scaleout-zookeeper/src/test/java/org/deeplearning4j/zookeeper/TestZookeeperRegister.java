@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 @Ignore
 public class TestZookeeperRegister {
-	private static Logger log = LoggerFactory.getLogger(TestZookeeperRegister.class);
+	private static final Logger log = LoggerFactory.getLogger(TestZookeeperRegister.class);
 	private ZooKeeper keeper;
 	private Configuration conf;
 	private ZooKeeperConfigurationRegister register;

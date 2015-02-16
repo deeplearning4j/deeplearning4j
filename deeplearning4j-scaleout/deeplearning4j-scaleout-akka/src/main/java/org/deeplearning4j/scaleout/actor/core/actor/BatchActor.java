@@ -32,7 +32,7 @@ public class BatchActor extends UntypedActor implements DeepLearningConfigurable
 
     protected JobIterator iter;
     private final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
-    private static Logger log = LoggerFactory.getLogger(BatchActor.class);
+    private static final Logger log = LoggerFactory.getLogger(BatchActor.class);
     public final static String BATCH = "batch";
     private transient StateTracker stateTracker;
     private transient Configuration conf;

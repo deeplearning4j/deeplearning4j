@@ -11,6 +11,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.conf.deserializers.*;
+import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.conf.serializers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.api.LayerFactory;
@@ -35,15 +36,15 @@ import java.util.*;
  */
 public class NeuralNetConfiguration implements Serializable,Cloneable {
 
-    private double sparsity = 0f;
+    private double sparsity = 0;
     private boolean useAdaGrad = true;
-    private double lr = 1e-1f;
-    protected double corruptionLevel = 0.3f;
+    private double lr = 1e-1;
+    protected double corruptionLevel = 0.3;
     protected int numIterations = 1000;
     /* momentum for learning */
-    protected double momentum = 0.5f;
+    protected double momentum = 0.5;
     /* L2 Regularization constant */
-    protected double l2 = 0f;
+    protected double l2 = 0;
     protected boolean useRegularization = false;
 
     //momentum after n iterations
@@ -70,12 +71,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected transient RandomGenerator rng;
     //weight initialization
     protected transient RealDistribution dist;
-    protected transient Collection<IterationListener> listeners;
+    protected transient List<IterationListener> listeners;
     protected transient StepFunction stepFunction = new GradientStepFunction();
     protected transient LayerFactory layerFactory;
 
     //gradient keys used for ensuring order when getting and setting the gradient
-    protected List<String> gradientList = new ArrayList<>();
+    protected List<String> variables = new ArrayList<>();
     //feed forward nets
     protected int nIn,nOut;
 
@@ -143,7 +144,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   int batchSize,
                                   int numLineSearchIterations,
                                   boolean minimize,
-                                  Collection<IterationListener> listeners,
+                                  List<IterationListener> listeners,
                                   LayerFactory layerFactory) {
         this.minimize = minimize;
         this.numLineSearchIterations = numLineSearchIterations;
@@ -265,8 +266,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
     public void addVariable(String variable) {
-        if(!gradientList.contains(variable))
-            gradientList.add(variable);
+        if(!variables.contains(variable))
+            variables.add(variable);
     }
 
     public boolean isMinimize() {
@@ -277,12 +278,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.minimize = minimize;
     }
 
-    public List<String> getGradientList() {
-        return gradientList;
+    public List<String> variables() {
+        return variables;
     }
 
-    public void setGradientList(List<String> gradientList) {
-        this.gradientList = gradientList;
+    public void setVariables(List<String> variables) {
+        this.variables = variables;
     }
 
     public StepFunction getStepFunction() {
@@ -609,15 +610,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         if (Double.compare(that.sparsity, sparsity) != 0) return false;
         if (useAdaGrad != that.useAdaGrad) return false;
         if (useRegularization != that.useRegularization) return false;
-        if (activationFunction != null ? !activationFunction.equals(that.activationFunction) : that.activationFunction != null)
+        if (activationFunction != null ? !activationFunction.type().equals(that.activationFunction.type()) : that.activationFunction != null)
             return false;
         if (dist != null ? !dist.getClass().getName().equals(that.dist.getClass().getName()) : that.dist != null) return false;
         if (!Arrays.equals(featureMapSize, that.featureMapSize)) return false;
         if (!Arrays.equals(filterSize, that.filterSize)) return false;
-        if (gradientList != null ? !gradientList.equals(that.gradientList) : that.gradientList != null) return false;
+        if (variables != null ? !variables.equals(that.variables) : that.variables != null) return false;
         if (hiddenUnit != that.hiddenUnit) return false;
         if (layerFactory != null ? !layerFactory.equals(that.layerFactory) : that.layerFactory != null) return false;
-        if (listeners != null ? !listeners.equals(that.listeners) : that.listeners != null) return false;
         if (lossFunction != that.lossFunction) return false;
         if (momentumAfter != null ? !momentumAfter.equals(that.momentumAfter) : that.momentumAfter != null)
             return false;
@@ -667,7 +667,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         result = 31 * result + (listeners != null ? listeners.hashCode() : 0);
         result = 31 * result + (stepFunction != null ? stepFunction.hashCode() : 0);
         result = 31 * result + (layerFactory != null ? layerFactory.hashCode() : 0);
-        result = 31 * result + (gradientList != null ? gradientList.hashCode() : 0);
+        result = 31 * result + (variables != null ? variables.hashCode() : 0);
         result = 31 * result + nIn;
         result = 31 * result + nOut;
         result = 31 * result + (activationFunction != null ? activationFunction.hashCode() : 0);
@@ -740,7 +740,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
      * @return a clone of this instance.
      * @throws CloneNotSupportedException if the object's class does not
      *                                    support the {@code Cloneable} interface. Subclasses
-     *                                    that override the {@code clone} method can also
+     *                                    that overrideLayer the {@code clone} method can also
      *                                    throw this exception to indicate that an instance cannot
      *                                    be cloned.
      * @see Cloneable
@@ -750,16 +750,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return new NeuralNetConfiguration(this);
     }
 
-
-    /**
-     * Interface for a function to override
-     * builder configurations at a particular layer
-     *
-     */
-    public static interface  ConfOverride  {
-        void override(int i,Builder builder);
-
-    }
 
     /**
      * Fluent interface for building a list of configurations
@@ -801,7 +791,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public ListBuilder override(ConfOverride override) {
             for(int i = 0; i < layerwise.size(); i++)
-                override.override(i,layerwise.get(i));
+                override.overrideLayer(i, layerwise.get(i));
             return this;
         }
 
@@ -889,7 +879,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return listeners;
     }
 
-    public void setListeners(Collection<IterationListener> listeners) {
+    public void setListeners(List<IterationListener> listeners) {
         this.listeners = listeners;
     }
 
@@ -905,6 +895,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         module.addSerializer(LayerFactory.class,new LayerFactorySerializer());
         module.addDeserializer(LayerFactory.class,new LayerFactoryDeSerializer());
 
+        module.addSerializer(IterationListener.class,new IterationSerializer());
+        module.addDeserializer(IterationListener.class,new IterationListenerDeSerializer());
 
         module.addDeserializer(ActivationFunction.class, new ActivationFunctionDeSerializer());
         module.addSerializer(ActivationFunction.class, new ActivationFunctionSerializer());
@@ -917,6 +909,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         module.addSerializer(StepFunction.class, new StepFunctionSerializer());
         module.addDeserializer(StepFunction.class, new StepFunctionDeSerializer());
+
+
+        module.addSerializer(OutputPreProcessor.class,new PreProcessorSerializer());
+        module.addDeserializer(OutputPreProcessor.class,new PreProcessorDeSerializer());
 
         ret.registerModule(module);
         return ret;
@@ -962,10 +958,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int[] weightShape;
         private int[] filterSize = {2,2,2,2};
         private int[] featureMapSize = {2,2};
-        private int numInFeatureMaps = 2;
         //subsampling layers
         private int[] stride = {2,2};
-        private Collection<IterationListener> listeners;
+        private List<IterationListener> listeners;
         private StepFunction stepFunction = new DefaultStepFunction();
         private LayerFactory layerFactory;
         private int batchSize = 0;
@@ -1036,7 +1031,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder  listeners(Collection<IterationListener> listeners) {
+        public Builder  listeners(List<IterationListener> listeners) {
             this.listeners = listeners;
             return this;
         }

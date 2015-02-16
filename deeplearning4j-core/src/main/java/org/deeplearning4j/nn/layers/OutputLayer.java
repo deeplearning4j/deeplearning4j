@@ -48,7 +48,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public void update(Gradient gradient) {
-        setParams(params().addi(gradient.gradient(conf.getGradientList())));
+        setParams(params().addi(gradient.gradient(conf.variables())));
     }
 
     /**
@@ -75,7 +75,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * @return the gradient (bias and weight matrix)
      */
     @Override
-    public Gradient getGradient() {
+    public Gradient gradient() {
         LinAlgExceptions.assertRows(input,labels);
 
 
@@ -89,8 +89,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         INDArray bGradient = dy.mean(0);
         Gradient g = new DefaultGradient();
 
-        g.gradientLookupTable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
-        g.gradientLookupTable().put(DefaultParamInitializer.BIAS_KEY,bGradient);
+        g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
+        g.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,bGradient);
 
         return g;
 
@@ -98,7 +98,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(getGradient(),score());
+        return new Pair<>(gradient(),score());
     }
 
 
@@ -220,7 +220,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         this.input = examples;
         this.labels = labels;
         Solver solver = new Solver.Builder()
-                .configure(conf()).listeners(conf.getListeners())
+                .configure(conf())
                 .model(this).build();
         solver.optimize();
     }

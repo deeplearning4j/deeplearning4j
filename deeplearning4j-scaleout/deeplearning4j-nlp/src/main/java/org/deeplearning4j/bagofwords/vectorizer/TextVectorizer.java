@@ -60,16 +60,17 @@ public interface TextVectorizer extends Vectorizer {
     /**
      *
      * @param input the text to vectorize
-     * @param LABEL the label of the text
-     * @return a dataset with a applyTransformToDestination of weights(relative to impl; could be word counts or tfidf scores)
+     * @param label the label of the text
+     * @return {@link DataSet} with a applyTransformToDestination of
+     *          weights(relative to impl; could be word counts or tfidf scores)
      */
     DataSet vectorize(File input,String label);
 
 
     /**
      * Transforms the matrix
-     * @param text
-     * @return
+     * @param text text to transform
+     * @return {@link INDArray}
      */
     INDArray transform(String text);
 

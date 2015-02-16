@@ -80,7 +80,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
     private WorkRetriever workRetriever = new LocalWorkRetriever();
     protected UpdateSaver saver;
     private volatile IAtomicReference<Boolean> isPretrain;
-    private static Logger log = LoggerFactory.getLogger(HazelCastStateTracker.class);
+    private static final Logger log = LoggerFactory.getLogger(HazelCastStateTracker.class);
     private transient Config config;
     public final static int DEFAULT_HAZELCAST_PORT = 2510;
     private transient HazelcastInstance h;

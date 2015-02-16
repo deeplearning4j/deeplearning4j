@@ -44,7 +44,7 @@ public class FilterRenderer {
     public String title = "TEST";
     private int heightOffset = 0;
     private int widthOffset = 0;
-    private static Logger log = LoggerFactory.getLogger(FilterRenderer.class);
+    private static final Logger log = LoggerFactory.getLogger(FilterRenderer.class);
 
 
 

@@ -2,7 +2,6 @@ package org.deeplearning4j.models.featuredetectors.autoencoder;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.Model;
@@ -10,7 +9,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.GradientAdjustment;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.plot.NeuralNetPlotter;
@@ -37,7 +35,7 @@ public class AutoEncoderTest {
                                     Layer l = (Layer) model;
                                     plotter.renderFilter(l.getParam(PretrainParamInitializer.WEIGHT_KEY));
 
-                                    INDArray gradient = l.getGradient().gradient();
+                                    INDArray gradient = l.gradient().gradient();
                                     GradientAdjustment.updateGradientAccordingToParams(l.conf(),0,l.getOptimizer().getAdaGrad(),gradient,l.params(),l.batchSize());
 
                                 }

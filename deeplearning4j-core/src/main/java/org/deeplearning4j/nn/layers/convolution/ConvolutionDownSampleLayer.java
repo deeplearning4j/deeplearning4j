@@ -10,8 +10,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.Shape;
 
 /**
  * Convolution layer
@@ -106,7 +104,7 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
     }
 
     @Override
-    public Gradient getGradient() {
+    public Gradient gradient() {
         return null;
     }
 

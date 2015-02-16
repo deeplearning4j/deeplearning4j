@@ -39,7 +39,7 @@ public class GlovePerformer implements WorkerPerformer {
     public final static String LOOKUPTABLE_SIZE = NAME_SPACE + ".lookuptablesize";
     private StateTracker stateTracker;
     private double xMax = 0.75;
-    private static Logger log = LoggerFactory.getLogger(org.deeplearning4j.scaleout.perform.models.glove.GlovePerformer.class);
+    private static final Logger log = LoggerFactory.getLogger(org.deeplearning4j.scaleout.perform.models.glove.GlovePerformer.class);
     private CoOccurrences coOccurrences;
     private double maxCount = 100;
     private int[] lookupTableSize;
