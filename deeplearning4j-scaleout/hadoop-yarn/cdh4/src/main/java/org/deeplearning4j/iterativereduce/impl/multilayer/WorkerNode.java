@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,DeepLearningConfigurable {
 
     private MultiLayerNetwork multiLayerNetwork;
-    private static Logger log = LoggerFactory.getLogger(WorkerNode.class);
+    private static final Logger log = LoggerFactory.getLogger(WorkerNode.class);
     private RecordReader recordParser;
     private DataSetIterator hdfsDataSetIterator = null;
     private long totalRecordsProcessed = 0;

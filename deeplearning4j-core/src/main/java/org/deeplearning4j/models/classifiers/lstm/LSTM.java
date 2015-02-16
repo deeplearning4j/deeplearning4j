@@ -132,9 +132,9 @@ public class LSTM extends BaseLayer {
         clear();
 
         Gradient gradient = new DefaultGradient();
-        gradient.gradientLookupTable().put(LSTMParamInitializer.DECODER_BIAS,dBd);
-        gradient.gradientLookupTable().put(LSTMParamInitializer.DECODER_WEIGHTS,dWd);
-        gradient.gradientLookupTable().put(LSTMParamInitializer.RECURRENT_WEIGHTS,dRecurrentWeights);
+        gradient.gradientForVariable().put(LSTMParamInitializer.DECODER_BIAS,dBd);
+        gradient.gradientForVariable().put(LSTMParamInitializer.DECODER_WEIGHTS,dWd);
+        gradient.gradientForVariable().put(LSTMParamInitializer.RECURRENT_WEIGHTS,dRecurrentWeights);
         return gradient;
 
     }
@@ -418,7 +418,7 @@ public class LSTM extends BaseLayer {
     public void fit() {
         Solver solver = new Solver.Builder()
                 .model(this).configure(conf())
-                .listeners(conf().getListeners()).build();
+                .build();
         solver.optimize();
     }
 
@@ -485,7 +485,7 @@ public class LSTM extends BaseLayer {
         xs = data.get(everythingElse);
         Solver solver = new Solver.Builder()
                 .configure(conf).model(this)
-                .listeners(conf.getListeners()).build();
+                .build();
         solver.optimize();
     }
 
@@ -495,7 +495,7 @@ public class LSTM extends BaseLayer {
     }
 
     @Override
-    public Gradient getGradient() {
+    public Gradient gradient() {
         INDArray forward = forward(xi,xs);
         INDArray probas = Activations.softMaxRows().applyDerivative(forward);
         return backward(probas);
@@ -503,7 +503,7 @@ public class LSTM extends BaseLayer {
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(getGradient(),score());
+        return new Pair<>(gradient(),score());
     }
 
     @Override

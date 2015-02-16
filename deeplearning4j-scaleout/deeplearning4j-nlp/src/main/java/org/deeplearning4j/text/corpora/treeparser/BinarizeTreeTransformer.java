@@ -22,7 +22,7 @@ public class BinarizeTreeTransformer implements TreeTransformer {
 
 
 
-    private static Logger log = LoggerFactory.getLogger(BinarizeTreeTransformer.class);
+    private static final Logger log = LoggerFactory.getLogger(BinarizeTreeTransformer.class);
 
     @Override
     public Tree transform(Tree t) {

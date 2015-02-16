@@ -1,5 +1,8 @@
 package org.deeplearning4j.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.Properties;
@@ -9,7 +12,6 @@ import java.util.Properties;
  */
 public class Dl4jReflection {
     private Dl4jReflection() {}
-
     /**
      * Gets the empty constructor from a class
      * @param clazz the class to getFromOrigin the constructor from
@@ -37,7 +39,7 @@ public class Dl4jReflection {
         for (Field field : obj.getClass().getDeclaredFields()) {
             field.setAccessible(true);
             if(props.containsKey(field.getName())) {
-               set(field,obj,props.getProperty(field.getName()));
+                set(field,obj,props.getProperty(field.getName()));
             }
 
         }
@@ -77,8 +79,12 @@ public class Dl4jReflection {
         for (Field field : obj.getClass().getDeclaredFields()) {
             field.setAccessible(true);
             Class<?> type = field.getType();
-            if(clazzes == null || contains(type,clazzes))
-                props.put(field.getName(),field.get(obj).toString());
+            if(clazzes == null || contains(type,clazzes)) {
+                Object val = field.get(obj);
+                if (val != null)
+                    props.put(field.getName(), val.toString());
+
+            }
         }
 
         return props;

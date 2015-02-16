@@ -24,33 +24,6 @@ public interface Layer extends Serializable,Cloneable,Model {
      */
     void merge(Layer layer,int batchSize);
 
-    /**
-     * Get the parameter
-     * @param param the key of the parameter
-     * @return the parameter vector/matrix with that particular key
-     */
-    INDArray getParam(String param);
-
-    /**
-     * Initialize the parameters
-     */
-    void initParams();
-
-    /**
-     * The param table
-     * @return
-     */
-    Map<String,INDArray>  paramTable();
-
-    void setParamTable(Map<String,INDArray> paramTable);
-
-
-    /**
-     * Set the parameter with a new ndarray
-     * @param key the key to se t
-     * @param val the new ndarray
-     */
-    void setParam(String key,INDArray val);
 
     INDArray activationMean();
 

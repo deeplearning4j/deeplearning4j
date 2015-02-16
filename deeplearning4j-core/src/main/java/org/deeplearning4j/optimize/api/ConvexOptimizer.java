@@ -17,9 +17,12 @@
 package org.deeplearning4j.optimize.api;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaGrad;
+
+import java.util.Map;
 
 /**
  * Convex optimizer.
@@ -80,6 +83,27 @@ public interface ConvexOptimizer {
      * @return the adagrad in this model
      */
     AdaGrad getAdaGrad();
+
+    /**
+     * Return the ada grad look up table
+     * @return the ada grad for variables
+     */
+    Map<String,AdaGrad> adaGradForVariables();
+
+    /**
+     * Get adagrad for a variable
+     * @param variable
+     * @return
+     */
+    AdaGrad getAdaGradForVariable(String variable);
+
+
+    /**
+     * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
+     * @param gradient the gradient to modify
+     * @param params the parameters to update
+     */
+    void updateGradientAccordingToParams(Gradient gradient, Model params, int batchSize);
 
 
     /**

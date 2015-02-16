@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
  */
 public class VpTreeNodeTest {
 
-    private static Logger log = LoggerFactory.getLogger(VpTreeNodeTest.class);
+    private static final Logger log = LoggerFactory.getLogger(VpTreeNodeTest.class);
 
 
 

@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  * Created by agibsonccc on 9/1/14.
  */
 public class OutputLayerTest {
-    private static Logger log = LoggerFactory.getLogger(OutputLayerTest.class);
+    private static final Logger log = LoggerFactory.getLogger(OutputLayerTest.class);
 
 
     @Test

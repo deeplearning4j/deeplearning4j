@@ -59,7 +59,7 @@ public class Word2VecPerformer implements WorkerPerformer {
     private int totalWords = 1;
     private int iterations = 5;
     private StateTracker stateTracker;
-    private static Logger log = LoggerFactory.getLogger(Word2VecPerformer.class);
+    private static final Logger log = LoggerFactory.getLogger(Word2VecPerformer.class);
     private int lastChecked = 0;
     public Word2VecPerformer(StateTracker stateTracker) {
         this.stateTracker = stateTracker;
