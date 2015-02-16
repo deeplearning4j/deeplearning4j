@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# DL4J vs. Torch vs. Pylearn/Theano
+# DL4J vs. Torch vs. Pylearn/Theano vs. Caffe
 
 Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a Java-based, industry-focused, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. 
 
@@ -18,6 +18,10 @@ Pylearn2 is a normal (non-distributed) framework that includes everything necess
 [**Torch7**](http://torch.ch/) is a computational framework written in Lua that supports machine-learning algorithms. It is purported to be used by large tech companies that devote in-house teams to deep learning. Lua is a multi-paradigm language developed in Brazil in the early 1990s. 
 
 Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. 
+
+### Caffe
+
+Caffe is a well-known and widely used machine-vision library. It is not intended for other deep-learning applications such as text, sound or time series data. Both Deeplearning4j and Caffe perform image classification with convolutional nets, which represent the state of the art.  
 
 ### Licensing
 
@@ -37,9 +41,11 @@ We're often asked why we chose to implement an open-source deep-learning project
 
 Yet Java has several advantages. First of all, as a language it is inherently faster than Python. Anything written in Python by itself, disregarding its reliance on Cython, will be slower. Admittedly, most computationally expensive operations are written in C or C++. (When we talk about operations, we also consider things like strings and other operations involved with higher-level machine learning processes.) Most deep-learning projects that are initially written in Python will have to be rewritten if they are to be put in production. Not so with Java.
 
-Second, most major companies worldwide use Java or a Java-based system. It remains the most widely used language in the world. That is, many programmers solving real-world problems could benefit from deep learning, but they are separated from it by a language barrier. We want to make deep learning more usable to a large new audience that can put it to immediate use. 
+Secondly, most major companies worldwide use Java or a Java-based system. It remains the most widely used language in the world. That is, many programmers solving real-world problems could benefit from deep learning, but they are separated from it by a language barrier. We want to make deep learning more usable to a large new audience that can put it to immediate use. 
 
 Thirdly, Java's lack of robust scientific computing libraries can be solve by writing them, which we've done with [ND4J](http://nd4j.org), which runs on distributed GPUs or GPUs, and can be interfaced via a Java or Scala API.
+
+Finally, Java is a secure, network language that inherently works cross-platform on Linux servers, Windows and OSX desktops, Android phones and in the low-memory sensors of the Internet of Things via embedded Java. While Torch and Pylearn2 optimize via C++, which presents difficulties for those who try to optimize and maintain it, Java is a "write once, run anywhere" language suitable for companies who need to use deep learning on many platforms. 
 
 ###Ecosystem
 
