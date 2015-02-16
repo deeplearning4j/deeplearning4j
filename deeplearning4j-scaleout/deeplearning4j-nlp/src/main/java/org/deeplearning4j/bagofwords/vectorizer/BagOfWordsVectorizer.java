@@ -40,7 +40,8 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
                                    double sample,
                                    boolean stem,
                                    boolean cleanup) {
-        super(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator,labels,index,batchSize,sample,stem,cleanup);
+        super(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator,
+            labels,index,batchSize,sample,stem,cleanup);
     }
 
     /**
@@ -74,10 +75,10 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
         Tokenizer tokenizer = tokenizerFactory.create(text);
         List<String> tokens = tokenizer.getTokens();
         INDArray input = Nd4j.create(1,cache.numWords());
-        for(int i = 0; i < tokens.size(); i++) {
-            int idx = cache.indexOf(tokens.get(i));
-            if(cache.indexOf(tokens.get(i)) >= 0)
-                input.putScalar(idx,cache.wordFrequency(tokens.get(i)));
+        for (String token : tokens) {
+          int idx = cache.indexOf(token);
+          if (cache.indexOf(token) >= 0)
+            input.putScalar(idx, cache.wordFrequency(token));
         }
 
         INDArray labelMatrix = FeatureUtil.toOutcomeVector(labels.indexOf(label), labels.size());
@@ -111,10 +112,10 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
         Tokenizer tokenizer = tokenizerFactory.create(text);
         List<String> tokens = tokenizer.getTokens();
         INDArray input = Nd4j.create(1, cache.numWords());
-        for(int i = 0; i < tokens.size(); i++) {
-            int idx = cache.indexOf(tokens.get(i));
-            if(cache.indexOf(tokens.get(i)) >= 0)
-                input.putScalar(idx,cache.wordFrequency(tokens.get(i)));
+        for (String token : tokens) {
+         int idx = cache.indexOf(token);
+         if (cache.indexOf(token) >= 0)
+          input.putScalar(idx, cache.wordFrequency(token));
         }
         return input;
     }
@@ -129,8 +130,8 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
 
         @Override
         public TextVectorizer build() {
-            return new BagOfWordsVectorizer(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator,labels,index,batchSize,sample,stem,cleanup);
-
+            return new BagOfWordsVectorizer(cache, tokenizerFactory, stopWords, minWordFrequency,
+                docIter, sentenceIterator,labels,index,batchSize,sample,stem,cleanup);
         }
     }
 

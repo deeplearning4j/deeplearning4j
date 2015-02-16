@@ -20,7 +20,7 @@ public class ZookeeperBuilder implements Watcher {
 	private int timeout;
 	private Watcher watcher;
 	private ZooKeeper keeper;
-	private static Logger log = LoggerFactory.getLogger(ZookeeperBuilder.class);
+	private static final Logger log = LoggerFactory.getLogger(ZookeeperBuilder.class);
 	public ZookeeperBuilder() {
 		host = "localhost";
 		port = 2181;

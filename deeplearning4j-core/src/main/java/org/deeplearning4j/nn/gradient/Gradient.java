@@ -17,7 +17,7 @@ public interface Gradient extends Serializable {
      * Gradient look up table
      * @return the gradient look up table
      */
-    Map<String,INDArray> gradientLookupTable();
+    Map<String,INDArray> gradientForVariable();
     /**
      * The full gradient as one flat vector
      * @return
@@ -34,5 +34,13 @@ public interface Gradient extends Serializable {
      * Clear residual parameters (useful for returning a gradient and then clearing old objects)
      */
     void clear();
+
+    /**
+     * The gradient for the given variable
+     * @param variable the variable to get the gradient for
+     * @return the gradient for the given variable or null
+     */
+    INDArray getGradientFor(String variable);
+
 
 }

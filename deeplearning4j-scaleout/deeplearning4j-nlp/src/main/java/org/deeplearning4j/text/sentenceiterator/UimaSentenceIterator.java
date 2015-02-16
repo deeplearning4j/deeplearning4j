@@ -31,7 +31,7 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
     protected volatile CollectionReader reader;
     protected volatile Iterator<String> sentences;
     protected String path;
-    private static Logger log = LoggerFactory.getLogger(UimaSentenceIterator.class);
+    private static final Logger log = LoggerFactory.getLogger(UimaSentenceIterator.class);
     private static AnalysisEngine defaultAnalysisEngine;
     private UimaResource resource;
 
