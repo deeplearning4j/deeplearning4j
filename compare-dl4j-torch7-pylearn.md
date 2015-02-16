@@ -35,7 +35,7 @@ This brings us to the issue of speed. The bottleneck for speed that most deeplea
 
 For a full list of Deeplearning4j's features, please see our [features page](../features.html).
 
-### Why Java and Scala?
+### Why Java?
 
 We're often asked why we chose to implement an open-source deep-learning project in Java, when so much of the deep-learning community is focused on Python. After all, Python has great syntactic elements that allow you to add matrices together without creating explicit classes, as Java requires you to do. Likewise, Python has an extensive scientific computing environment with native extensions like Theano and Numpy.
 
