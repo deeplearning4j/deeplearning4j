@@ -65,29 +65,7 @@ public class SimpleJCublas {
 
 
 
-    /**
-     * Initialize jcublas only called once
-     */
-    public static void init() {
-        if(init)
-            return;
-        //write the file to somewhere on java.library.path where there is permissions
-        String name = "/" + resourceName().substring(3).replace("X","x");
-        ClassPathResource resource = new ClassPathResource(name);
-        if(!resource.exists() && name.startsWith(File.separator + "lib" + File.separator))
-            resource = new ClassPathResource(name.replaceAll("/lib/",""));
-        else if(!resource.exists()) {
-            resource = new ClassPathResource(name);
-        }
-
-        if(!resource.exists())
-            throw new IllegalStateException("Unable to find resource with name " + resource.getFilename());
-
-        log.info("Loading jcublas from " + resource.getFilename());
-
-        String home = findWritableLibDir();
-        File cuBlastmp = new File(home);
-        LibUtils.OSType os = LibUtils.calculateOS();
+    public static void loadJCublas(File cuBlastmp,ClassPathResource resource, LibUtils.OSType os) {
         File shared = new File(cuBlastmp,os == LibUtils.OSType.WINDOWS ? resourceName().replace("X","x").replaceAll("lib","") : resourceName().replace("X","x"));
         try {
             if(shared.exists())
@@ -102,33 +80,46 @@ public class SimpleJCublas {
         } catch (IOException e) {
             throw new RuntimeException("Unable to initialize jcublas",e);
         }
+    }
 
-        File libs = new File(libDir());
-        log.info("Loading cuda from " + libs.getAbsolutePath());
-        Iterator<File> iter = FileUtils.iterateFiles(libs,null,false);
-        while(iter.hasNext()) {
-            File next = iter.next();
-            File dst = new File(cuBlastmp,next.getName());
-            try {
-                FileUtils.copyFile(next,dst);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            dst.deleteOnExit();
+
+
+
+    /**
+     * Initialize jcublas only called once
+     */
+    public static void init() {
+        if(init)
+            return;
+
+
+        String path = System.getProperty("java.library.path");
+        log.info("Loading native artifacts from " + path);
+        //write the file to somewhere on java.library.path where there is permissions
+        String name = "/" + resourceName().substring(3).replace("X","x");
+        ClassPathResource resource = new ClassPathResource(name);
+
+        if(!resource.exists() && name.startsWith(File.separator + "lib" + File.separator))
+            resource = new ClassPathResource(name.replaceAll("/lib/",""));
+        else if(!resource.exists()) {
+            resource = new ClassPathResource(name);
         }
 
+        if(!resource.exists())
+            throw new IllegalStateException("Unable to find resource with name " + resource.getFilename());
+
+        log.info("Loading jcublas from " + resource.getFilename());
 
 
+        String home = findWritableLibDir();
+        File cuBlastmp = new File(home);
+        LibUtils.OSType os = LibUtils.calculateOS();
+        loadJCublas(cuBlastmp, resource, os);
 
 
         JCublas.setLogLevel(LogLevel.LOG_DEBUG);
         JCublas.setExceptionsEnabled(true);
-       
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                JCublas.cublasShutdown();
-            }
-        });
+
         init = true;
     }
 
@@ -201,6 +192,45 @@ public class SimpleJCublas {
         throw new IllegalStateException("Please specify a cuda home property in your environment (export CUDA_HOME=/path/to/your/dir) or via -Djcuda.home=/path/to/your/dir");
 
     }
+
+
+
+    private static String jcudaRuntimeName() {
+        LibUtils.OSType osType = LibUtils.calculateOS();
+        LibUtils.ARCHType ar = LibUtils.calculateArch();
+
+        switch(osType) {
+            case APPLE:
+                return String.format("JCudaRuntime-apple-%s.dylib",ar.toString());
+            case LINUX:
+                return String.format("JCudaRuntime-linux-%s.so",ar.toString());
+            case SUN:
+                return String.format("JCudaRuntime-linux-%s.so",ar.toString());
+            case WINDOWS:
+                return String.format("JCudaRuntime-windows-%s.dll",ar.toString());
+            default:
+                return null;
+        }
+    }
+
+    private static String jcudaDriverName() {
+        LibUtils.OSType osType = LibUtils.calculateOS();
+        LibUtils.ARCHType ar = LibUtils.calculateArch();
+
+        switch(osType) {
+            case APPLE:
+                return String.format("JCudaDriver-apple-%s.dylib",ar.toString());
+            case LINUX:
+                return String.format("JCudaDriver-linux-%s.so",ar.toString());
+            case SUN:
+                return String.format("JCudaDriver-linux-%s.so",ar.toString());
+            case WINDOWS:
+                return String.format("JCudaDriver-windows-%s.dll",ar.toString());
+            default:
+                return null;
+        }
+    }
+
     private static String resourceName() {
         LibUtils.OSType osType = LibUtils.calculateOS();
         LibUtils.ARCHType ar = LibUtils.calculateArch();
@@ -267,7 +297,7 @@ public class SimpleJCublas {
 
         DataTypeValidation.assertDouble(A,B,C);
         assertCudaBuffer(A.data(),B.data(),C.data());
-       
+
 
 
         Pointer cAPointer = getPointer(A);
@@ -304,7 +334,7 @@ public class SimpleJCublas {
     public static INDArray gemv(INDArray A, INDArray B, INDArray C, float alpha, float beta) {
 
         DataTypeValidation.assertFloat(A,B,C);
-       
+
 
         Pointer cAPointer = getPointer(A);
         Pointer cBPointer = getPointer(B);
@@ -345,7 +375,7 @@ public class SimpleJCublas {
             , IComplexDouble b) {
         DataTypeValidation.assertSameDataType(A,B,C);
 
-       
+
 
 
         Pointer cAPointer = getPointer(A);
@@ -388,7 +418,7 @@ public class SimpleJCublas {
             , IComplexFloat b) {
         DataTypeValidation.assertFloat(A,B,C);
         assertCudaBuffer(A,B,C);
-       
+
         Pointer cAPointer = getPointer(A);
         Pointer cBPointer = getPointer(B);
         Pointer cCPointer = getPointer(C);
@@ -430,7 +460,7 @@ public class SimpleJCublas {
             , IComplexDouble b) {
         DataTypeValidation.assertSameDataType(A,B,C);
 
-       
+
 
 
         Pointer cAPointer = getPointer(A);
@@ -457,7 +487,7 @@ public class SimpleJCublas {
                 C.rows()); // ldc
 
 
-          return C;
+        return C;
 
     }
 
@@ -473,7 +503,7 @@ public class SimpleJCublas {
     public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexFloat a,IComplexNDArray C
             , IComplexFloat b) {
         DataTypeValidation.assertFloat(A,B,C);
-       
+
 
 
         Pointer cAPointer = getPointer(A);
@@ -518,7 +548,7 @@ public class SimpleJCublas {
                                 double alpha, double beta) {
 
         DataTypeValidation.assertDouble(A,B,C);
-       
+
 
         JCublasNDArray cA = (JCublasNDArray) A;
         JCublasNDArray cB = (JCublasNDArray) B;
@@ -563,7 +593,7 @@ public class SimpleJCublas {
                                 float alpha, float beta) {
         DataTypeValidation.assertFloat(A,B,C);
 
-       
+
 
         Pointer cAPointer = getPointer(A);
         Pointer cBPointer = getPointer(B);
@@ -598,7 +628,7 @@ public class SimpleJCublas {
      * @return
      */
     public static double nrm2(IComplexNDArray A) {
-       
+
 
         Pointer cAPointer = getPointer(A);
         if(A.data().dataType() == DataBuffer.FLOAT) {
@@ -619,9 +649,9 @@ public class SimpleJCublas {
      */
     public static void copy(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x,y);
-       
 
-         Pointer xCPointer = getPointer(x);
+
+        Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
 
         if(x.data().dataType() == DataBuffer.FLOAT) {
@@ -692,7 +722,7 @@ public class SimpleJCublas {
     public static void swap(INDArray x, INDArray y) {
 
         DataTypeValidation.assertSameDataType(x,y);
-       
+
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
 
@@ -726,7 +756,7 @@ public class SimpleJCublas {
      * @return
      */
     public static double asum(INDArray x) {
-       
+
         Pointer xCPointer = getPointer(x);
         if(x.data().dataType() == DataBuffer.FLOAT) {
             float sum = JCublas.cublasSasum(x.length(), xCPointer,1);
@@ -745,7 +775,7 @@ public class SimpleJCublas {
      * @return
      */
     public static float nrm2(INDArray x) {
-       
+
         Pointer xCPointer = getPointer(x);
 
 
@@ -760,7 +790,7 @@ public class SimpleJCublas {
      * @return
      */
     public static int iamax(INDArray x) {
-       
+
 
         Pointer xCPointer = getPointer(x);
 
@@ -787,7 +817,7 @@ public class SimpleJCublas {
      * @param B
      */
     public static void axpy(float da, INDArray A, INDArray B) {
-       
+
         DataTypeValidation.assertFloat(A,B);
 
         Pointer xAPointer = getPointer(A);
@@ -831,7 +861,7 @@ public class SimpleJCublas {
         DataTypeValidation.assertFloat(A,B);
 
 
-       
+
 
         Pointer aCPointer = getPointer(A);
         Pointer bCPointer = getPointer(B);
@@ -860,7 +890,7 @@ public class SimpleJCublas {
         DataTypeValidation.assertDouble(A,B);
 
 
-       
+
 
         Pointer aCPointer = getPointer(A);
         Pointer bCPointer = getPointer(B);
@@ -890,7 +920,7 @@ public class SimpleJCublas {
     public static INDArray scal(double alpha, INDArray x) {
         DataTypeValidation.assertDouble(x);
 
-       
+
 
         Pointer xCPointer = getPointer(x);
         JCublas.cublasDscal(
@@ -913,7 +943,7 @@ public class SimpleJCublas {
     public static INDArray scal(float alpha, INDArray x) {
 
         DataTypeValidation.assertFloat(x);
-       
+
 
         Pointer xCPointer = getPointer(x);
         JCublas.cublasSscal(
@@ -938,11 +968,12 @@ public class SimpleJCublas {
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
         if(x.data().dataType() == DataBuffer.DOUBLE) {
-            JCublas.cublasDcopy(x.length(),
+            JCublas.cublasDcopy(
+                    x.length(),
                     xCPointer,
-                    1,
+                    x.secondaryStride(),
                     yCPointer,
-                    1);
+                    y.secondaryStride());
 
 
         }
@@ -950,9 +981,9 @@ public class SimpleJCublas {
             JCublas.cublasScopy(
                     x.length(),
                     xCPointer,
-                    1,
+                    x.secondaryStride(),
                     yCPointer,
-                    1);
+                    y.secondaryStride());
 
 
         }
@@ -970,7 +1001,7 @@ public class SimpleJCublas {
      */
     public static double dot(INDArray x, INDArray y) {
         DataTypeValidation.assertSameDataType(x,y);
-       
+
 
 
         Pointer xCPointer = getPointer(x);
@@ -1004,7 +1035,7 @@ public class SimpleJCublas {
 
     public static IComplexDouble dot(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x,y);
-       
+
 
 
         Pointer aCPointer = getPointer(x);
@@ -1025,7 +1056,7 @@ public class SimpleJCublas {
 
     public static INDArray ger(INDArray A, INDArray B, INDArray C, double alpha) {
         DataTypeValidation.assertDouble(A,B,C);
-       
+
         // = alpha * A * transpose(B) + C
         Pointer aCPointer = getPointer(A);
         Pointer bCPointer = getPointer(B);
@@ -1052,7 +1083,7 @@ public class SimpleJCublas {
 
     public static INDArray ger(INDArray A, INDArray B, INDArray C, float alpha) {
         DataTypeValidation.assertFloat(A,B,C);
-       
+
         // = alpha * A * transpose(B) + C
 
         Pointer aCPointer = getPointer(A);
@@ -1086,7 +1117,7 @@ public class SimpleJCublas {
      */
     public static IComplexNDArray scal(IComplexFloat alpha, IComplexNDArray x) {
         DataTypeValidation.assertFloat(x);
-       
+
 
         Pointer xCPointer = getPointer(x);
 
@@ -1110,7 +1141,7 @@ public class SimpleJCublas {
      */
     public static IComplexNDArray scal(IComplexDouble alpha, IComplexNDArray x) {
         DataTypeValidation.assertDouble(x);
-       
+
 
         Pointer xCPointer = getPointer(x);
 
@@ -1226,7 +1257,7 @@ public class SimpleJCublas {
                 C.rows()    // lda
         );
 
-     return C;
+        return C;
     }
 
     /***
@@ -1316,7 +1347,7 @@ public class SimpleJCublas {
      */
     public static void axpy(double alpha, INDArray x, INDArray y) {
         DataTypeValidation.assertDouble(x,y);
-       
+
 
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
@@ -1335,8 +1366,8 @@ public class SimpleJCublas {
      */
     public static void saxpy(float alpha, INDArray x, INDArray y) {
         DataTypeValidation.assertFloat(x,y);
-       
-         Pointer xCPointer = getPointer(x);
+
+        Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
 
         JCublas.cublasSaxpy(x.length(),alpha,xCPointer,1,yCPointer,1);

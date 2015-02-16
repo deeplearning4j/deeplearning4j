@@ -29,34 +29,6 @@ public class FFTSliceOp implements SliceOp {
 
 
 
-
-
-    /**
-     * Operates on an ndarray slice
-     *
-     * @param nd the result to operate on
-     */
-    @Override
-    public void operate(DimensionSlice nd) {
-        if(nd.getResult() instanceof INDArray) {
-            INDArray a = (INDArray) nd.getResult();
-
-            int n = this.n < 1 ? a.length() : this.n;
-
-            INDArray result = new VectorFFT(n).apply(Nd4j.createComplex(a)).getReal();
-            for(int i = 0; i < result.length(); i++)
-                a.putScalar(i,result.getDouble(i));
-        }
-        else if(nd.getResult() instanceof IComplexNDArray) {
-            IComplexNDArray a = (IComplexNDArray) nd.getResult();
-            IComplexNDArray result = new VectorFFT(n).apply(a);
-            for(int i = 0; i <result.length(); i++) {
-                a.put(i,result.getScalar(i));
-            }
-
-        }
-    }
-
     /**
      * Operates on an ndarray slice
      *

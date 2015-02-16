@@ -81,39 +81,18 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
 
         else if(other == null && scalarValue != null) {
             int num = from.vectorsAlongDimension(0);
-            final CountDownLatch latch = new CountDownLatch(num);
             for(int i = 0; i < num; i++) {
                 final int iDup = i;
-                getThreads().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                         final  INDArray fromCurr = from != null ? from.vectorAlongDimension(iDup,0) : null;
+                final  INDArray fromCurr = from != null ? from.vectorAlongDimension(iDup,0) : null;
+                for(int j = 0; j < fromCurr.length(); j++) {
+                    applyTransformToOrigin(fromCurr,j,scalarValue);
+                }
 
-
-                        getThreads().execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                for(int j = 0; j < fromCurr.length(); j++) {
-                                   applyTransformToOrigin(fromCurr,j,scalarValue);
-                                }
-
-                                latch.countDown();
-                            }
-                        });
-
-
-
-                    }
-                });
 
 
             }
 
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+
         }
 
 
@@ -121,41 +100,19 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
 
             assert from.length() == to.length() : "From and to must be same length";
             int num = from.vectorsAlongDimension(0);
-            final CountDownLatch latch = new CountDownLatch(num);
             for(int i = 0; i < num; i++) {
                 final int iDup = i;
-                getThreads().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        final INDArray curr = to.vectorAlongDimension(iDup,0);
-                        final INDArray currOther = other != null ? other.vectorAlongDimension(iDup,0) : null;
-                        final  INDArray fromCurr = from != null ? from.vectorAlongDimension(iDup,0) : null;
+                final INDArray curr = to.vectorAlongDimension(iDup,0);
+                final INDArray currOther = other != null ? other.vectorAlongDimension(iDup,0) : null;
+                final  INDArray fromCurr = from != null ? from.vectorAlongDimension(iDup,0) : null;
+                for(int j = 0; j < fromCurr.length(); j++) {
+                    applyTransformToDestination(fromCurr,curr,currOther,j);
+                }
 
-
-                        getThreads().execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                for(int j = 0; j < fromCurr.length(); j++) {
-                                    applyTransformToDestination(fromCurr,curr,currOther,j);
-                                }
-
-                                latch.countDown();
-                            }
-                        });
-
-
-
-                    }
-                });
 
 
             }
 
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
 
         }
 

@@ -1,15 +1,15 @@
 package org.nd4j.linalg.jcublas.buffer;
 
+import jcuda.CudaException;
 import jcuda.Pointer;
 import jcuda.jcublas.JCublas;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
+import org.nd4j.linalg.ops.ElementWiseOp;
 
 /**
  * Base class for a data buffer
@@ -20,6 +20,11 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected int length;
     protected int elementSize;
 
+    static {
+        SimpleJCublas.init();
+    }
+
+
     /**
      * Base constructor
      * @param length the length of the buffer
@@ -28,6 +33,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public BaseCudaDataBuffer(int length,int elementSize) {
         this.length = length;
         this.elementSize = elementSize;
+        if(pointer() == null)
+            alloc();
     }
 
     @Override
@@ -50,7 +57,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void set(Pointer pointer) {
-        JCublas.cublasInit();
         JCublas.cublasSetVector(
                 length,
                 elementSize,
@@ -66,7 +72,52 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param to the buffer to copy data to
      */
     protected void copyTo(JCudaBuffer to) {
-        JCuda.cudaMemcpy(to.pointer(), pointer(), length() * elementSize(), cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+        if(to.dataType() != dataType())
+            throw new IllegalArgumentException("Unable to copy buffer, mis matching data types.");
+        if(dataType() == DataBuffer.FLOAT) {
+            JCublas.cublasCcopy(length(),pointer(),1,to.pointer(),1);
+        }
+        else {
+            JCublas.cublasDcopy(length(),pointer(),1,to.pointer(),1);
+        }
+
+    }
+
+
+    @Override
+    public void assign(Number value) {
+        assign(value,0);
+    }
+
+    /**
+     * Get element with the specified index
+     * @param index the index of the element to get
+     * @param init the initialized pointer
+     */
+    protected void get(int index,int length,Pointer init) {
+        if(index == 0 && length == length()) {
+            if(dataType() == DataBuffer.FLOAT)
+                JCublas.cublasCcopy(length,pointer(),1,init,1);
+            else
+                JCublas.cublasDcopy(length,pointer(),1,init,1);
+
+        }
+
+
+        else {
+            try {
+                JCublas.cublasGetVector(
+                        length,
+                        elementSize(),
+                        pointer().withByteOffset(index * elementSize()),
+                        1,
+                        init,
+                        1);
+            }catch(CudaException e) {
+                throw new RuntimeException("Cuda exception with offset " + index + " and " + length + " out of total length " + length(),e);
+            }
+        }
+
     }
 
     /**
@@ -75,15 +126,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param init the initialized pointer
      */
     protected void get(int index,Pointer init) {
-
-        JCublas.cublasGetVector(
-                1,
-                elementSize(),
-                pointer().withByteOffset(index *  elementSize()),
-                1,
-                init,
-                1);
-
+        get(index, 1, init);
     }
 
 
@@ -107,15 +150,37 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param index the index of the element
      * @param from the element to get data from
      */
-    protected void set(int index,Pointer from) {
-        JCublas.cublasInit();
+    protected void set(int index,int length,Pointer from,int inc) {
         JCublas.cublasSetVector(
-                1,
-                elementSize,
+                length,
+                elementSize(),
                 from,
                 1,
                 pointer().withByteOffset(index *  elementSize()),
-                1);
+                inc);
+    }
+    /**
+     * Set an individual element
+     * @param index the index of the element
+     * @param from the element to get data from
+     */
+    protected void set(int index,int length,Pointer from) {
+        set(index,length,from,1);
+    }
+
+    @Override
+    public void assign(DataBuffer data) {
+        JCudaBuffer buf = (JCudaBuffer) data;
+        set(0,buf.pointer());
+    }
+
+    /**
+     * Set an individual element
+     * @param index the index of the element
+     * @param from the element to get data from
+     */
+    protected void set(int index,Pointer from) {
+        set(index,1,from);
     }
 
 
@@ -179,17 +244,19 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void put(int i, float element) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public void put(int i, double element) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public void put(int i, int element) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -212,6 +279,22 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public void flush() {
         throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void apply(ElementWiseOp op) {
+        apply(op,0);
+    }
+
+    @Override
+    public void assign(int[] indices, float[] data, boolean contiguous) {
+        assign(indices,data,contiguous,1);
+    }
+
+    @Override
+    public void assign(int[] indices, double[] data, boolean contiguous) {
+        assign(indices, data, contiguous,1);
     }
 
     @Override

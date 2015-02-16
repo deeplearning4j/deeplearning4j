@@ -27,37 +27,6 @@
 
     <profiles>
         <profile>
-            <id>cuda</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-jcublas</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>jblas</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-jblas</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>netlib</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-netlib-blas</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
             <id>release-sign-artifacts</id>
             <activation>
                 <property>
@@ -182,6 +151,16 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.12.4</version>
+                <configuration>
+                    <environmentVariables>
+                        <LD_LIBRARY_PATH>$LD_LIBRARY_PATH:${user.dir}</LD_LIBRARY_PATH>
+                    </environmentVariables>
+                </configuration>
             </plugin>
         </plugins>
 

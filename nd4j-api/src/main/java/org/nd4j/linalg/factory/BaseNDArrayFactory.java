@@ -1031,10 +1031,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         final AtomicInteger i = new AtomicInteger(0);
         for(INDArray a : arrs) {
             a.iterateOverAllColumns(new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
 
-                }
 
                 @Override
                 public void operate(INDArray nd) {
@@ -1077,11 +1074,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
         for(INDArray arr : arrs) {
             arr.iterateOverAllRows(new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-
-                }
-
                 @Override
                 public void operate(INDArray nd) {
                     ret.putRow(i.get(),nd);

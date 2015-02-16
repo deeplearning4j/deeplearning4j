@@ -25,13 +25,16 @@ public  class DoubleBuffer extends BaseDataBuffer {
 
 
     public  DoubleBuffer(double[] buffer) {
-        this(buffer,false);
+        this(buffer,true);
     }
 
     public  DoubleBuffer(double[] buffer,boolean copy) {
         super(buffer.length);
         this.buffer = copy ? Arrays.copyOf(buffer,buffer.length) : buffer;
     }
+
+
+
 
 
     @Override
@@ -50,7 +53,7 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public synchronized byte[] asBytes() {
+    public  byte[] asBytes() {
         byte[][] ret1 = new byte[length][];
         for(int i = 0; i < length; i++) {
             ret1[i] = toByteArray(buffer[i]);
@@ -60,12 +63,12 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public synchronized int dataType() {
+    public  int dataType() {
         return DataBuffer.DOUBLE;
     }
 
     @Override
-    public synchronized float[] asFloat() {
+    public  float[] asFloat() {
         float[] ret = new float[length];
         for(int i = 0; i < ret.length; i++) {
             ret[i] = (float) buffer[i];
@@ -74,7 +77,7 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public synchronized double[] asDouble() {
+    public  double[] asDouble() {
         if(buffer == null) {
             buffer = new double[length];
             for(int i = 0; i < length; i++) {
@@ -91,7 +94,7 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public synchronized int[] asInt() {
+    public  int[] asInt() {
         int[] ret = new int[length];
         for(int i = 0; i < ret.length; i++) {
             ret[i] = (int) buffer[i];
@@ -101,7 +104,7 @@ public  class DoubleBuffer extends BaseDataBuffer {
 
 
     @Override
-    public synchronized double getDouble(int i) {
+    public  double getDouble(int i) {
         if(buffer != null)
             return buffer[i];
         else {
@@ -112,26 +115,35 @@ public  class DoubleBuffer extends BaseDataBuffer {
         }
     }
 
+
+
     @Override
-    public synchronized float getFloat(int i) {
+    public void assign(Number value, int offset) {
+        for(int i = offset; i < length(); i++) {
+             buffer[i] = value.doubleValue();
+        }
+    }
+
+    @Override
+    public  float getFloat(int i) {
         return (float) getDouble(i);
     }
 
     @Override
-    public synchronized Number getNumber(int i) {
+    public  Number getNumber(int i) {
         return (int) getDouble(i);
     }
 
 
 
     @Override
-    public synchronized void put(int i, float element) {
+    public  void put(int i, float element) {
         put(i,(double) element);
 
     }
 
     @Override
-    public synchronized void put(int i, double element) {
+    public  void put(int i, double element) {
         if(buffer != null)
             buffer[i] = element;
         else {
@@ -143,7 +155,7 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public synchronized void put(int i, int element) {
+    public  void put(int i, int element) {
         put(i,(double ) element);
     }
 
@@ -151,17 +163,17 @@ public  class DoubleBuffer extends BaseDataBuffer {
 
 
     @Override
-    public synchronized int getInt(int ix) {
+    public  int getInt(int ix) {
         return (int) buffer[ix];
     }
 
     @Override
-    public synchronized DataBuffer dup() {
+    public  DataBuffer dup() {
         return new DoubleBuffer(buffer);
     }
 
     @Override
-    public synchronized void flush() {
+    public  void flush() {
         path = UUID.randomUUID().toString();
         if(memoryMappedBuffer != null)
             return;
@@ -186,7 +198,7 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public synchronized void destroy() {
+    public  void destroy() {
         if(buffer != null)
             buffer = null;
        if(memoryMappedBuffer != null) {
@@ -201,7 +213,7 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public synchronized boolean equals(Object o) {
+    public  boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof DoubleBuffer)) return false;
 
@@ -213,7 +225,7 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public synchronized int hashCode() {
+    public  int hashCode() {
         return buffer != null ? Arrays.hashCode(buffer) : 0;
     }
 }

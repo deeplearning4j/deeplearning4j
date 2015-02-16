@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api.buffer;
 
 import com.google.common.primitives.Bytes;
+import org.nd4j.linalg.ops.ElementWiseOp;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.IOException;
@@ -29,6 +30,18 @@ public class FloatBuffer extends BaseDataBuffer {
         super(buffer.length);
         this.buffer = copy ? Arrays.copyOf(buffer,buffer.length) : buffer;
     }
+
+
+
+    @Override
+    public void assign(Number value, int offset) {
+        for(int i = offset; i < length(); i++) {
+             buffer[i] = value.floatValue();
+        }
+    }
+
+
+
 
     @Override
     public void setData(int[] data) {
@@ -196,6 +209,9 @@ public class FloatBuffer extends BaseDataBuffer {
             }
         }
     }
+
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

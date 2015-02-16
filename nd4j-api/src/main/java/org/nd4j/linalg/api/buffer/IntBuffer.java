@@ -24,6 +24,7 @@ public class IntBuffer extends BaseDataBuffer {
             buffer = new int[buffer.length];
             System.arraycopy(buffer,0,this.buffer,0,this.buffer.length);
         }
+
     }
 
     public IntBuffer(int[] buffer) {
@@ -67,6 +68,15 @@ public class IntBuffer extends BaseDataBuffer {
         }
         return ret;
     }
+
+
+    @Override
+    public void assign(Number value, int offset) {
+        for(int i = offset; i < length(); i++) {
+              buffer[i] = value.intValue();
+        }
+    }
+
 
     @Override
     public double[] asDouble() {

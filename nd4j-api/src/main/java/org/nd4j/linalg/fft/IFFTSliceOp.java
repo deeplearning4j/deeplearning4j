@@ -29,32 +29,7 @@ public class IFFTSliceOp implements SliceOp {
     }
 
 
-    /**
-     * Operates on an ndarray slice
-     *
-     * @param nd the result to operate on
-     */
-    @Override
-    public void operate(DimensionSlice nd) {
-        if(nd.getResult() instanceof INDArray) {
-            INDArray a = (INDArray) nd.getResult();
-            int n = this.n < 1 ? a.length() : this.n;
 
-            INDArray result = new VectorIFFT(n).apply(Nd4j.createComplex(a)).getReal();
-            for(int i = 0; i < result.length(); i++) {
-                a.put(i,result.getScalar(i));
-            }
-
-        }
-        else if(nd.getResult() instanceof IComplexNDArray) {
-            IComplexNDArray a = (IComplexNDArray) nd.getResult();
-            int n = this.n < 1 ? a.length() : this.n;
-            INDArray result = new VectorIFFT(n).apply(a).getReal();
-            for(int i = 0; i < result.length(); i++) {
-                a.put(i,result.getScalar(i));
-            }
-        }
-    }
 
     /**
      * Operates on an ndarray slice

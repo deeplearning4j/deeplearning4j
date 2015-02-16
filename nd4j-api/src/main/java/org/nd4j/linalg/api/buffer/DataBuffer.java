@@ -19,6 +19,73 @@ public interface DataBuffer extends Serializable {
     public final static int FLOAT = 1;
     public final static int INT = 2;
 
+
+    /**
+     * Assign the given elements to the given indices
+     * @param indices the indices to assign
+     * @param data the data to assign
+     * @param contiguous whether the indices are contiguous or not
+     * @param inc the number to increment by when assigning
+     */
+    void assign(int[] indices,float[] data,boolean contiguous,int inc);
+    /**
+     * Assign the given elements to the given indices
+     * @param indices the indices to assign
+     * @param data the data to assign
+     * @param contiguous whether the data is contiguous or not
+     * @param inc the number to increment by when assigning
+     */
+    void assign(int[] indices,double[] data,boolean contiguous,int inc);
+
+
+    /**
+     * Assign the given elements to the given indices
+     * @param indices the indices to assign
+     * @param data the data to assign
+     * @param contiguous whether the indices are contiguous or not
+     */
+    void assign(int[] indices,float[] data,boolean contiguous);
+    /**
+     * Assign the given elements to the given indices
+     * @param indices the indices to assign
+     * @param data the data to assign
+     * @param contiguous whether the data is contiguous or not
+     */
+    void assign(int[] indices,double[] data,boolean contiguous);
+
+    /**
+     * Get the doubles at a particular offset
+     * @param offset the offset to start
+     * @param length the length of the array
+     *
+     * @return the doubles at the specified offset and length
+     */
+    double[] getDoublesAt(int offset,int length);
+
+
+
+    /**
+     * Get the doubles at a particular offset
+     * @param offset the offset to start
+     * @param length the length of the array
+     * @return the doubles at the specified offset and length
+     */
+    float[] getFloatsAt(int offset,int length);
+
+    /**
+     * Assign the given value to the buffer
+     * @param value the value to assign
+     */
+    void assign(Number value);
+
+    /**
+     * Assign the given value to the buffer
+     * starting at offset
+     * @param value assign the value to set
+     * @param offset the offset to start at
+     */
+    void assign(Number value,int offset);
+
     /**
      * Set the data for this buffer
      * @param data the data for this buffer
@@ -194,4 +261,10 @@ public interface DataBuffer extends Serializable {
      */
     void apply(ElementWiseOp op,int offset);
 
+    /**
+     * Assign the contents of this buffer
+     * to this buffer
+     * @param data the data to assign
+     */
+    void assign(DataBuffer data);
 }

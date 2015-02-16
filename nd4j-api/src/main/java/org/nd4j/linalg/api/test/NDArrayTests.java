@@ -96,7 +96,8 @@ public abstract class NDArrayTests {
         row1.addi(1);
         INDArray result = Nd4j.create(new float[]{1,2,4,5},new int[]{2,2});
         assertEquals(result,oneThroughFour);
-
+        oneThroughFour.data().destroy();
+        row1.data().destroy();
 
 
     }
@@ -110,6 +111,8 @@ public abstract class NDArrayTests {
         linear.putScalar(3,7);
         assertEquals(6,linear.getFloat(2),1e-1);
         assertEquals(7,linear.getFloat(3),1e-1);
+        test.data().destroy();
+        linear.data().destroy();
     }
 
 
@@ -181,7 +184,7 @@ public abstract class NDArrayTests {
 
         INDArray firstAndSecondRowTest = twoByTwo.get(NDArrayIndex.interval(1, 3));
         assertEquals(firstAndSecondRow, firstAndSecondRowTest);
-
+        twoByTwo.data().destroy();
 
     }
 
@@ -468,7 +471,7 @@ public abstract class NDArrayTests {
         INDArray arr = Nd4j.create(new int[]{3, 2});
         INDArray column2 = arr.getColumn(0);
         assertEquals(true,Shape.shapeEquals(new int[]{3,1}, column2.shape()));
-        INDArray column = Nd4j.create(new float[]{1, 2, 3}, new int[]{3});
+        INDArray column = Nd4j.create(new double[]{1, 2, 3}, new int[]{3});
         arr.putColumn(0,column);
 
         INDArray firstColumn = arr.getColumn(0);
@@ -476,7 +479,7 @@ public abstract class NDArrayTests {
         assertEquals(column,firstColumn);
 
 
-        INDArray column1 = Nd4j.create(new float[]{4, 5, 6}, new int[]{3});
+        INDArray column1 = Nd4j.create(new double[]{4, 5, 6}, new int[]{3});
         arr.putColumn(1,column1);
         assertEquals(true, Shape.shapeEquals(new int[]{3,1}, arr.getColumn(1).shape()));
         INDArray testRow1 = arr.getColumn(1);
@@ -484,8 +487,8 @@ public abstract class NDArrayTests {
 
 
 
-        INDArray evenArr = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
-        INDArray put = Nd4j.create(new float[]{5, 6}, new int[]{2});
+        INDArray evenArr = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
+        INDArray put = Nd4j.create(new double[]{5, 6}, new int[]{2});
         evenArr.putColumn(1,put);
         INDArray testColumn = evenArr.getColumn(1);
         assertEquals(put,testColumn);
@@ -494,12 +497,12 @@ public abstract class NDArrayTests {
 
         INDArray n = Nd4j.create(Nd4j.linspace(1, 4, 4).data(), new int[]{2, 2});
         INDArray column23 = n.getColumn(0);
-        INDArray column12 = Nd4j.create(new float[]{1, 3}, new int[]{2});
+        INDArray column12 = Nd4j.create(new double[]{1, 3}, new int[]{2});
         assertEquals(column23,column12);
 
 
         INDArray column0 = n.getColumn(1);
-        INDArray column01 = Nd4j.create(new float[]{2, 4}, new int[]{2});
+        INDArray column01 = Nd4j.create(new double[]{2, 4}, new int[]{2});
         assertEquals(column0,column01);
 
 
@@ -535,13 +538,13 @@ public abstract class NDArrayTests {
 
         INDArray nLast = Nd4j.create(Nd4j.linspace(1, 4, 4).data(), new int[]{2, 2});
         INDArray row = nLast.getRow(1);
-        INDArray row1 = Nd4j.create(new float[]{3, 4}, new int[]{2});
+        INDArray row1 = Nd4j.create(new double[]{3, 4}, new int[]{2});
         assertEquals(row,row1);
 
 
 
         INDArray arr = Nd4j.create(new int[]{3, 2});
-        INDArray evenRow = Nd4j.create(new float[]{1, 2}, new int[]{2});
+        INDArray evenRow = Nd4j.create(new double[]{1, 2}, new int[]{2});
         arr.putRow(0,evenRow);
         INDArray firstRow = arr.getRow(0);
         assertEquals(true, Shape.shapeEquals(new int[]{2},firstRow.shape()));
@@ -549,7 +552,7 @@ public abstract class NDArrayTests {
         assertEquals(evenRow,testRowEven);
 
 
-        INDArray row12 = Nd4j.create(new float[]{5, 6}, new int[]{2});
+        INDArray row12 = Nd4j.create(new double[]{5, 6}, new int[]{2});
         arr.putRow(1,row12);
         assertEquals(true, Shape.shapeEquals(new int[]{2}, arr.getRow(0).shape()));
         INDArray testRow1 = arr.getRow(1);
@@ -557,8 +560,8 @@ public abstract class NDArrayTests {
 
 
         INDArray multiSliceTest = Nd4j.create(Nd4j.linspace(1, 16, 16).data(), new int[]{4, 2, 2});
-        INDArray test = Nd4j.create(new float[]{7, 8}, new int[]{2});
-        INDArray test2 = Nd4j.create(new float[]{9, 10}, new int[]{2});
+        INDArray test = Nd4j.create(new double[]{7, 8}, new int[]{2});
+        INDArray test2 = Nd4j.create(new double[]{9, 10}, new int[]{2});
 
         assertEquals(test,multiSliceTest.slice(1).getRow(1));
         assertEquals(test2,multiSliceTest.slice(1).getRow(2));
@@ -884,6 +887,8 @@ public abstract class NDArrayTests {
         INDArray test = Nd4j.create(testList, new int[]{testList.size()});
         INDArray expected = Nd4j.create(new float[]{1, 2, 3, 4, 5}, new int[]{5});
         assertEquals(expected,test);
+        test.data().destroy();
+        expected.data().dataType();
     }
 
 
@@ -895,21 +900,7 @@ public abstract class NDArrayTests {
         final AtomicInteger count = new AtomicInteger(0);
         //row wise
         test.iterateOverDimension(1,new SliceOp() {
-            @Override
-            public void operate(DimensionSlice nd) {
-                INDArray test = (INDArray) nd.getResult();
-                if(count.get() == 0) {
-                    INDArray firstDimension = Nd4j.create(new float[]{1, 2}, new int[]{2});
-                    assertEquals(firstDimension,test);
-                }
-                else {
-                    INDArray firstDimension = Nd4j.create(new float[]{3, 4}, new int[]{2});
-                    assertEquals(firstDimension,test);
 
-                }
-
-                count.incrementAndGet();
-            }
 
             /**
              * Operates on an ndarray slice
@@ -940,22 +931,7 @@ public abstract class NDArrayTests {
 
         //columnwise
         test.iterateOverDimension(0,new SliceOp() {
-            @Override
-            public void operate(DimensionSlice nd) {
-                log.info("Operator " + nd);
-                INDArray test = (INDArray) nd.getResult();
-                if(count.get() == 0) {
-                    INDArray firstDimension = Nd4j.create(new float[]{1, 3}, new int[]{2});
-                    assertEquals(firstDimension,test);
-                }
-                else {
-                    INDArray firstDimension = Nd4j.create(new float[]{2, 4}, new int[]{2});
-                    assertEquals(firstDimension,test);
 
-                }
-
-                count.incrementAndGet();
-            }
 
             /**
              * Operates on an ndarray slice
@@ -973,6 +949,7 @@ public abstract class NDArrayTests {
                 else {
                     INDArray firstDimension = Nd4j.create(new float[]{2, 4}, new int[]{2});
                     assertEquals(firstDimension,test);
+                    firstDimension.data().destroy();
 
                 }
 
@@ -981,6 +958,9 @@ public abstract class NDArrayTests {
 
         },false);
 
+
+
+        test.data().destroy();
 
 
 
@@ -1085,7 +1065,8 @@ public abstract class NDArrayTests {
         log.info("Reduced " + reduced);
         reduced = arr.reduce(Ops.DimensionOp.MAX,2);
         log.info("Reduced " + reduced);
-
+        arr.data().destroy();
+        reduced.data().destroy();
 
     }
 
@@ -1365,14 +1346,15 @@ public abstract class NDArrayTests {
 
     @Test
     public void testPutRowGetRowOrdering() {
+        Nd4j.dtype = DataBuffer.DOUBLE;
         INDArray row1 = Nd4j.linspace(1, 4, 4).reshape(2,2);
-        INDArray put = Nd4j.create(new float[]{5, 6});
+        INDArray put = Nd4j.create(new double[]{5, 6});
         row1.putRow(1,put);
 
         Nd4j.factory().setOrder('f');
 
         INDArray row1Fortran = Nd4j.linspace(1, 4, 4).reshape(2,2);
-        INDArray putFortran = Nd4j.create(new float[]{5, 6});
+        INDArray putFortran = Nd4j.create(new double[]{5, 6});
         row1Fortran.putRow(1,putFortran);
         assertNotEquals(row1,row1Fortran);
         INDArray row1CTest = row1.getRow(1);
@@ -1389,13 +1371,13 @@ public abstract class NDArrayTests {
     @Test
     public void testPutRowFortran() {
         INDArray row1 = Nd4j.linspace(1, 4, 4).reshape(2,2);
-        INDArray put = Nd4j.create(new float[]{5, 6});
+        INDArray put = Nd4j.create(new double[]{5, 6});
         row1.putRow(1,put);
 
         Nd4j.factory().setOrder('f');
 
-        INDArray row1Fortran = Nd4j.create(new float[][]{{1, 2}, {3, 4}});
-        INDArray putFortran = Nd4j.create(new float[]{5, 6});
+        INDArray row1Fortran = Nd4j.create(new double[][]{{1, 2}, {3, 4}});
+        INDArray putFortran = Nd4j.create(new double[]{5, 6});
         row1Fortran.putRow(1,putFortran);
         assertEquals(row1,row1Fortran);
 
@@ -1409,7 +1391,8 @@ public abstract class NDArrayTests {
     public void testElementWiseOps() {
         INDArray n1 = Nd4j.scalar(1);
         INDArray n2 = Nd4j.scalar(2);
-        assertEquals(Nd4j.scalar(3),n1.add(n2));
+        INDArray nClone = n1.add(n2);
+        assertEquals(Nd4j.scalar(3),nClone);
         assertFalse(n1.add(n2).equals(n1));
 
         INDArray n3 = Nd4j.scalar(3);
@@ -1478,37 +1461,7 @@ public abstract class NDArrayTests {
         final AtomicInteger count = new AtomicInteger(0);
 
         arr.iterateOverDimension(arr.shape().length - 1,new SliceOp() {
-            @Override
-            public void operate(DimensionSlice nd) {
-                INDArray test =(INDArray) nd.getResult();
-                if(count.get() == 0) {
-                    INDArray answer = Nd4j.create(new float[]{1, 7, 13, 19}, new int[]{4});
-                    assertEquals(answer,test);
-                }
-                else if(count.get() == 1) {
-                    INDArray answer = Nd4j.create(new float[]{2, 8, 14, 20}, new int[]{4});
-                    assertEquals(answer,test);
-                }
-                else if(count.get() == 2) {
-                    INDArray answer = Nd4j.create(new float[]{3, 9, 15, 21}, new int[]{4});
-                    assertEquals(answer,test);
-                }
-                else if(count.get() == 3) {
-                    INDArray answer = Nd4j.create(new float[]{4, 10, 16, 22}, new int[]{4});
-                    assertEquals(answer,test);
-                }
-                else if(count.get() == 4) {
-                    INDArray answer = Nd4j.create(new float[]{5, 11, 17, 23}, new int[]{4});
-                    assertEquals(answer,test);
-                }
-                else if(count.get() == 5) {
-                    INDArray answer = Nd4j.create(new float[]{6, 12, 18, 24}, new int[]{4});
-                    assertEquals(answer,test);
-                }
 
-
-                count.incrementAndGet();
-            }
 
             /**
              * Operates on an ndarray slice
@@ -1533,14 +1486,17 @@ public abstract class NDArrayTests {
                 else if(count.get() == 3) {
                     INDArray answer = Nd4j.create(new float[]{7, 8}, new int[]{2});
                     assertEquals(answer,test);
+                    answer.data().destroy();
                 }
                 else if(count.get() == 4) {
                     INDArray answer = Nd4j.create(new float[]{9, 10}, new int[]{2});
                     assertEquals(answer,test);
+                    answer.data().destroy();
                 }
                 else if(count.get() == 5) {
                     INDArray answer = Nd4j.create(new float[]{11, 12}, new int[]{2});
                     assertEquals(answer,test);
+                    answer.data().destroy();
                 }
 
 
@@ -1549,57 +1505,6 @@ public abstract class NDArrayTests {
         },false);
     }
 
-    @Test
-    public void printoutTest() {
 
-
-        Nd4j.dtype = DataBuffer.DOUBLE;
-        INDArray nd1 = Nd4j.create(new double[]{1,2,3,4,5,6},new int[]{2,3});
-        System.out.println("nd1:\n"+nd1);
-        
-        //create nd-array variable ndv to be able to print result of nondestructive operations. add scalar to matrix and assign ndv the sum.
-
-        INDArray ndv = nd1.add(1);
-
-        System.out.println("nd1.add(1):\n"+ndv);
-
-        ndv = nd1.mul(5);
-        System.out.println("nd1.mul(5):\n"+ndv);
-
-        ndv = nd1.sub(3);
-        System.out.println("nd1.sub(3):\n"+ndv);
-
-        ndv = nd1.div(2);
-        System.out.println("nd1.div(2):\n"+ndv);
-
-        //add column vector to matrix
-
-        INDArray nd2 = Nd4j.create(new double[]{10,20},new int[]{2,1}); //vector as column
-        System.out.println("nd2:\n"+nd2);
-
-        ndv = nd1.addColumnVector(nd2);
-
-        System.out.println("nd1.addColumnVector(nd2):\n"+ndv);
-
-        // add row vector to matrix
-
-        INDArray nd3 = Nd4j.create(new double[]{30,40,50},new int[]{3}); //vegctor as row
-        System.out.println("nd3:\n"+nd3);
-
-        ndv = nd1.addRowVector(nd3);
-
-        System.out.println("nd1.addRowVector(nd3):\n"+ndv);
-
-        //multiply two matrices of equal dimensions elementwise.
-
-        INDArray nd4 = Nd4j.create(new double[]{1,2,1,2,1,2},new int[]{2,3});
-        System.out.println("nd4:\n"+nd4);
-
-        ndv = nd1.mul(nd4);
-
-        System.out.println("nd1.mul(nd4):\n"+ndv);
-
-
-    }
 
 }

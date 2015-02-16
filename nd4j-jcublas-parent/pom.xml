@@ -10,7 +10,6 @@
     <packaging>pom</packaging>
 
     <name>nd4j-jcublas-parent</name>
-    <url>http://maven.apache.org</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

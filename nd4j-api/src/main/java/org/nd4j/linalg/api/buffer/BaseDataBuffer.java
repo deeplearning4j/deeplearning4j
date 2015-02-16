@@ -31,6 +31,51 @@ public abstract  class BaseDataBuffer implements DataBuffer {
         this.length = length;
     }
 
+
+    @Override
+    public void assign(int[] indices, float[] data,boolean contiguous,int inc) {
+        if(indices.length != data.length)
+            throw new IllegalArgumentException("Indices and data length must be the same");
+        if(indices.length > length())
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+        for(int i = 0; i < indices.length; i++) {
+            put(indices[i],data[i]);
+        }
+    }
+
+    @Override
+    public void assign(int[] indices, double[] data,boolean contiguous,int inc) {
+        if(indices.length != data.length)
+            throw new IllegalArgumentException("Indices and data length must be the same");
+        if(indices.length > length())
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+        for(int i = 0; i < indices.length; i+= inc) {
+            put(indices[i],data[i]);
+        }
+    }
+
+
+    @Override
+    public void assign(DataBuffer data) {
+        if(data.length() != length())
+            throw new IllegalArgumentException("Unable to assign buffer of length " + data.length() + " to this buffer of length " + length());
+
+
+        for(int i = 0; i < data.length(); i++) {
+            put(i,data);
+        }
+    }
+
+    @Override
+    public void assign(int[] indices, float[] data,boolean contiguous) {
+        assign(indices,data,contiguous,1);
+    }
+
+    @Override
+    public void assign(int[] indices, double[] data,boolean contiguous) {
+        assign(indices, data, contiguous,1);
+    }
+
     @Override
     public   int length() {
         return length;
@@ -68,12 +113,54 @@ public abstract  class BaseDataBuffer implements DataBuffer {
         return ByteBuffer.wrap(bytes).getFloat();
     }
 
+
+    @Override
+    public void assign(Number value) {
+        assign(value,0);
+    }
+
     @Override
     public <E> E getElement(int i) {
         throw new UnsupportedOperationException();
 
     }
 
+    @Override
+    public double[] getDoublesAt(int offset, int length) {
+        if(length + offset > length()) {
+            length -= offset;
+        }
+
+        if(length > length())
+            throw new IllegalArgumentException("Length must not be > " + length);
+        if(offset > length())
+            throw new IllegalArgumentException("Length must not be > " + length);
+        if(offset + length > length())
+            length = length() - offset;
+        double[] ret = new double[length];
+        for(int i = 0; i < length; i++) {
+            ret[i] = getDouble(i + offset);
+        }
+
+
+        return ret;
+    }
+
+    @Override
+    public float[] getFloatsAt(int offset, int length) {
+        if(length + offset > length())
+            throw new IllegalArgumentException("Unable to get length " + length + " offset of " + offset + " was too high");
+
+        if(length >= length())
+            throw new IllegalArgumentException("Length must not be > " + length);
+        if(offset >= length())
+            throw new IllegalArgumentException("Length must not be > " + length);
+        float[] ret = new float[length];
+        for(int i = 0; i < length; i++) {
+            ret[i] = getFloat(i + offset);
+        }
+        return ret;
+    }
 
     @Override
     public IComplexFloat getComplexFloat(int i) {
@@ -95,15 +182,22 @@ public abstract  class BaseDataBuffer implements DataBuffer {
         INDArray from = op.from();
         if(from instanceof IComplexNDArray) {
             for(int i = offset; i < length(); i++) {
-                put(i,op.apply(from,getComplex(i),i));
+                IComplexNumber result = op.apply(from,getComplex(i),i);
+                put(i,result);
             }
         }
         else {
             for(int i = offset; i < length(); i++) {
-                put(i,op.apply(from,getDouble(i),i));
+                double result = op.apply(from, getDouble(i), i);
+                put(i,result);
             }
         }
 
+    }
+
+    @Override
+    public void apply(ElementWiseOp op) {
+        apply(op,0);
     }
 
 

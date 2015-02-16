@@ -5,7 +5,12 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.ArrayOps;
+import org.nd4j.linalg.ops.ElementWiseOp;
+import org.nd4j.linalg.ops.factory.ElementWiseOpFactories;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
  * Created by agibsonccc on 2/14/15.
@@ -23,6 +28,14 @@ public abstract class DataBufferTest {
     }
 
     @Test
+    public void testDup() {
+        double[] d1 = new double[]{1,2,3,4};
+        DataBuffer d = Nd4j.createBuffer(d1);
+        DataBuffer d2 = d.dup();
+        assertEquals(d,d2);
+    }
+
+    @Test
     public void testPut() {
         double[] d1 = new double[]{1,2,3,4};
         DataBuffer d = Nd4j.createBuffer(d1);
@@ -32,6 +45,59 @@ public abstract class DataBufferTest {
         assertArrayEquals(d1,result,1e-1);
         d.destroy();
     }
+
+    @Test
+    public void testApply() {
+        INDArray ones = Nd4j.valueArrayOf(5, 2.0);
+        DataBuffer buffer = ones.data();
+        //square
+        ElementWiseOp op = new ArrayOps()
+                .from(ones).op(ElementWiseOpFactories.pow()).extraArgs(new Object[]{2})
+                .build();
+        buffer.apply(op);
+        INDArray four = Nd4j.valueArrayOf(5,4.0);
+        DataBuffer d = four.data();
+        assertEquals(buffer,d);
+
+
+
+
+    }
+
+    @Test
+    public void testGetRange() {
+        DataBuffer buffer = Nd4j.linspace(1,5,5).data();
+        double[] get = buffer.getDoublesAt(0,3);
+        double[] data = new double[]{1,2,3};
+        assertArrayEquals(get,data,1e-1);
+
+
+        double[] get2 = buffer.asDouble();
+        double[] allData = buffer.getDoublesAt(0,buffer.length());
+        assertArrayEquals(get2,allData,1e-1);
+
+
+
+    }
+
+
+    @Test
+    public void testGetOffsetRange() {
+        DataBuffer buffer = Nd4j.linspace(1,5,5).data();
+        double[] get = buffer.getDoublesAt(1,3);
+        double[] data = new double[]{2,3,4};
+        assertArrayEquals(get,data,1e-1);
+
+
+        double[] allButLast = new double[]{2,3,4,5};
+
+        double[] allData = buffer.getDoublesAt(1,buffer.length());
+        assertArrayEquals(allButLast,allData,1e-1);
+
+
+
+    }
+
 
 
 

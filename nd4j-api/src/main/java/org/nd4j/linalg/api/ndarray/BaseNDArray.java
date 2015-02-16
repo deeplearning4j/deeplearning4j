@@ -437,7 +437,8 @@ public  abstract class BaseNDArray  implements INDArray {
     @Override
     public  int majorStride() {
         //return ordering == NDArrayFactory.C ? stride[0] : stride[stride.length - 1];r
-        return stride[0];}
+        return stride[0];
+    }
 
     @Override
     public  int secondaryStride() {
@@ -602,12 +603,11 @@ public  abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public  INDArray assign(INDArray arr) {
-        LinAlgExceptions.assertSameShape(this,arr);
-        INDArray linear = linearView();
-        INDArray arrLinear = arr.linearView();
-        for(int i = 0; i < length(); i++)
-            linear.putScalar(i,arrLinear.getDouble(i));
-
+        if(!arr.isVector() && !isVector())
+            LinAlgExceptions.assertSameShape(this,arr);
+        else if(isVector() && arr.isVector() && length() != arr.length())
+            throw new IllegalArgumentException("Illegal assignment, must be of same length");
+        Nd4j.getBlasWrapper().copy(arr,this);
         return this;
     }
 
@@ -1029,15 +1029,8 @@ public  abstract class BaseNDArray  implements INDArray {
 
     @Override
     public    INDArray dup() {
-        INDArray ret = Nd4j.create(shape());
-        INDArray linear = linearView();
-        INDArray retLinear = ret.linearView();
-        for(int i = 0; i < ret.length(); i++) {
-            double put = linear.getDouble(i);
-            if(Double.isNaN(put))
-                put = Nd4j.EPS_THRESHOLD;
-            retLinear.putScalar(i,put);
-        }
+        DataBuffer dup = data().dup();
+        INDArray ret = Nd4j.create(dup,shape(),stride(),offset());
         return ret;
     }
 
@@ -1311,48 +1304,6 @@ public  abstract class BaseNDArray  implements INDArray {
     }
 
 
-
-
-    //get one result along one dimension based on the given offset
-    public  DimensionSlice vectorForDimensionAndOffset(int dimension, int offset) {
-        if(isScalar() && dimension == 0 && offset == 0)
-            return new DimensionSlice(false,getScalar(offset),new int[]{offset});
-
-
-            //need whole vector
-        else   if (isVector()) {
-            if(dimension == 0) {
-                int[] indices = new int[length];
-                for(int i = 0; i < indices.length; i++)
-                    indices[i] = i;
-                return new DimensionSlice(false,dup(),indices);
-            }
-            else if(dimension == 1)
-                return new DimensionSlice(false,getScalar(offset),new int[]{offset});
-            else
-                throw new IllegalArgumentException("Illegal dimension for vector " + dimension);
-
-        }
-
-        else {
-
-            int count = 0;
-            List<Integer> indices = new ArrayList<>();
-            INDArray ret = Nd4j.create(new int[]{shape[dimension]});
-
-            for(int j = offset; count < this.shape[dimension]; j+= this.stride[dimension]) {
-                double d = data.getDouble(j);
-                ret.putScalar(count++, d);
-                indices.add(j);
-
-
-            }
-
-            return new DimensionSlice(false,ret,ArrayUtil.toArray(indices));
-
-        }
-
-    }
 
 
     //getFromOrigin one result along one dimension based on the given offset
@@ -1835,66 +1786,21 @@ public  abstract class BaseNDArray  implements INDArray {
     public  void iterateOverDimension(int dimension,SliceOp op,boolean modify) {
         if(dimension >= shape.length)
             throw new IllegalArgumentException("Unable to remove dimension  " + dimension + " was >= shape length");
-
-        if(isScalar()) {
-            if(dimension > 0)
-                throw new IllegalArgumentException("Dimension must be 0 for a scalar");
-            else {
-                DimensionSlice slice = this.vectorForDimensionAndOffset(0,0);
-                op.operate(slice);
-                if(modify && slice.getIndices() != null) {
-                    INDArray result = (INDArray) slice.getResult();
-                    for(int i = 0; i < slice.getIndices().length; i++) {
-                        data.put(slice.getIndices()[i],result.getDouble(i));
-                    }
-                }
-            }
+        int vectors =  vectorsAlongDimension(dimension);
+        for(int i = 0; i < vectors; i++) {
+            INDArray vector = vectorAlongDimension(i,dimension);
+            op.operate(vector);
         }
-
-        else if(isVector()) {
-            if(dimension == 0) {
-                DimensionSlice slice = this.vectorForDimensionAndOffset(0,0);
-                op.operate(slice);
-                if(modify && slice.getIndices() != null) {
-                    INDArray result = (INDArray) slice.getResult();
-                    for(int i = 0; i < slice.getIndices().length; i++) {
-                        data.put(slice.getIndices()[i],result.getDouble(i));
-                    }
-                }
-            }
-            else if(dimension == 1) {
-                for(int i = 0; i < length; i++) {
-                    DimensionSlice slice = vectorForDimensionAndOffset(dimension,i);
-                    op.operate(slice);
-                    if(modify && slice.getIndices() != null) {
-                        INDArray result = (INDArray) slice.getResult();
-                        for(int j = 0; j < slice.getIndices().length; j++) {
-                            data.put(slice.getIndices()[j],result.getDouble(j));
-                        }
-                    }
-
-                }
-            }
-            else
-                throw new IllegalArgumentException("Illegal dimension for vector " + dimension);
-        }
-
-
-        else {
-            int vectors =  vectorsAlongDimension(dimension);
-            for(int i = 0; i < vectors; i++) {
-                INDArray vector = vectorAlongDimension(i,dimension);
-                op.operate(vector);
-            }
-
-        }
-
-
 
     }
 
 
-
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        if(data != null)
+            data.destroy();
+    }
 
     @Override
     public  void setStride(int[] stride) {
@@ -2852,9 +2758,7 @@ public  abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public  INDArray assign(Number value) {
-        INDArray one = linearView();
-        for(int i = 0; i < one.length(); i++)
-            one.putScalar(i,value.doubleValue());
+        data().assign(value);
         return this;
     }
 
@@ -3146,8 +3050,7 @@ public  abstract class BaseNDArray  implements INDArray {
     public  INDArray putRow(int row, INDArray toPut) {
         assert toPut.isVector() && toPut.length() == columns : "Illegal length for row " + toPut.length() + " should have been " + columns;
         INDArray r = getRow(row);
-        for(int i = 0; i < r.length(); i++)
-            r.putScalar(i,toPut.getDouble(i));
+        r.assign(toPut);
         return this;
     }
 
@@ -3164,9 +3067,7 @@ public  abstract class BaseNDArray  implements INDArray {
     public  INDArray putColumn(int column, INDArray toPut) {
         assert toPut.isVector() && toPut.length() == rows() : "Illegal length for row " + toPut.length() + " should have been " + rows();
         INDArray r = getColumn(column);
-        for(int i = 0; i < r.length(); i++)
-            r.putScalar(i,toPut.getDouble(i));
-
+        r.assign(toPut);
         return this;
     }
 
@@ -3438,12 +3339,7 @@ public  abstract class BaseNDArray  implements INDArray {
         int[] shape = shape().length == 1 || dimension == Integer.MAX_VALUE ? new int[] {1} : ArrayUtil.removeIndex(shape(),dimension);
         final INDArray put = Nd4j.create(new int[]{ArrayUtil.prod(shape)});
         SliceOp op = new SliceOp() {
-            @Override
-            public  void operate(DimensionSlice nd) {
-                INDArray arr2 = (INDArray) nd.getResult();
-                put.put(i.get(),func.apply(arr2));
-                i.incrementAndGet();
-            }
+
 
             /**
              * Operates on an ndarray slice
