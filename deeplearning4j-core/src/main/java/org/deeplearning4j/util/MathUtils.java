@@ -469,6 +469,9 @@ public class MathUtils  {
         return ret;
     }//end sumOfMeanDifferences
 
+    public static double variance(double[] vector) {
+        return sumOfMeanDifferencesOnePoint(vector) / vector.length;
+    }
 
     /**
      * This returns the product of all numbers in the given array.
