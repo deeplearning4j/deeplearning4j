@@ -6,6 +6,7 @@ public class IterationInfo {
 
 	private int							index;
 	private ClusterSetInfo				clusterSetInfo;
+	private boolean						strategyApplied;
 	
 	
 	public IterationInfo(int index) {
@@ -32,6 +33,14 @@ public class IterationInfo {
 	}
 	public void setClusterSetInfo(ClusterSetInfo clusterSetInfo) {
 		this.clusterSetInfo = clusterSetInfo;
+	}
+
+	public boolean isStrategyApplied() {
+		return strategyApplied;
+	}
+
+	public void setStrategyApplied(boolean optimizationApplied) {
+		this.strategyApplied = optimizationApplied;
 	}
 
 	

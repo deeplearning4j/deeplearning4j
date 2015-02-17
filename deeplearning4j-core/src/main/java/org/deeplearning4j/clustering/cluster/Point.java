@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.ops.reduceops.Ops.DimensionOp;
@@ -32,12 +33,18 @@ public class Point implements INDArray {
 		this.array = array;
 	}
 
+	public Point(String id, String label, double[] data) {
+		this(id, label, Nd4j.create(data));
+	}
+	
 	public Point(String id, String label, INDArray array) {
 		super();
 		this.id = id;
 		this.label = label;
 		this.array = array;
 	}
+	
+	
 
 	public static List<Point> toPoints(List<INDArray> vectors) {
 		List<Point> points = new ArrayList<Point>();

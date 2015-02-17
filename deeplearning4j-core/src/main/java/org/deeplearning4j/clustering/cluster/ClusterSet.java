@@ -1,98 +1,151 @@
 package org.deeplearning4j.clustering.cluster;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.distancefunction.DistanceFunction;
-
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
 
 public class ClusterSet {
 
 	private Class<? extends DistanceFunction>	distanceFunction;
-	private List<Cluster>						clusters	= new ArrayList<Cluster>();
-	
-	public ClusterSet() {
+	private List<Cluster>						clusters;
+	private Map<String, String>					pointDistribution;
 
+	public ClusterSet() {
+		this(null);
 	}
 
 	public ClusterSet(Class<? extends DistanceFunction> distanceFunction) {
 		this.distanceFunction = distanceFunction;
+		this.clusters = Collections.synchronizedList(new ArrayList<Cluster>());
+		this.pointDistribution = Collections.synchronizedMap(new HashMap<String, String>());
+	}
+	
+	public Cluster addNewClusterWithCenter(Point center) {
+		Cluster newCluster = new Cluster(center, distanceFunction);
+		getClusters().add(newCluster);
+		setPointLocation(center, newCluster);
+		return newCluster;
+	}
+
+	public PointClassification classifyPoint(Point point) {
+		return classifyPoint(point, true);
+	}
+	
+	public void classifyPoints(List<Point> points) {
+		classifyPoints(points, true);
+	}
+
+	public void classifyPoints(List<Point> points, boolean moveClusterCenter) {
+		for (Point point : points)
+			classifyPoint(point, moveClusterCenter);
+	}
+
+	public PointClassification classifyPoint(Point point, boolean moveClusterCenter) {
+		Pair<Cluster, Double> nearestCluster = nearestCluster(point);
+		Cluster newCluster = nearestCluster.getFirst();
+		boolean locationChange = isPointLocationChange(point, newCluster);
+		addPointToCluster(point, newCluster, moveClusterCenter);
+		return new PointClassification(nearestCluster.getFirst(), nearestCluster.getSecond(), locationChange);
+	}
+	
+	private boolean isPointLocationChange(Point point, Cluster newCluster) {
+		if( !getPointDistribution().containsKey(point.getId()) )
+			return true;
+		return !getPointDistribution().get(point.getId()).equals(newCluster.getId());
+	}
+	
+	private void addPointToCluster(Point point, Cluster cluster, boolean moveClusterCenter) {
+		cluster.addPoint(point, moveClusterCenter);
+		setPointLocation(point, cluster);
+	}
+	
+	private void setPointLocation(Point point, Cluster cluster) {
+		pointDistribution.put(point.getId(), cluster.getId());
 	}
 
 	
-	public void addNewClusterWithCenter(Point center) {
-		getClusters().add(new Cluster(center));
-	}
-	
-	
-	
-	public void addPoint(Point point) {
-		nearestCluster(point).addPoint(point, true);
-	}
-	public void addPoint(Point point, boolean moveClusterCenter) {
-		nearestCluster(point).addPoint(point, moveClusterCenter);
-	}
-	
-	public void addPoints(List<Point> points) {
-		addPoints(points, true);
-	}
-	public void addPoints(List<Point> points, boolean moveClusterCenter) {
-		for( Point point : points )
-			addPoint(point, moveClusterCenter);
-	}
-	
-	public Cluster classify(Point point) {
-		return classify(point, distanceFunction);
-	}
-
-	public Cluster classify(Point point, Class<? extends DistanceFunction> distanceFunction) {
-		return nearestCluster(point);
-	}
-
-	protected Cluster nearestCluster(Point point) {
+	public Pair<Cluster, Double> nearestCluster(Point point) {
 
 		Cluster nearestCluster = null;
 		double minDistance = Float.MAX_VALUE;
 
 		double currentDistance;
 		for (Cluster cluster : getClusters()) {
-			Point currentCenter = cluster.getCenter();
-			if (currentCenter != null) {
-				currentDistance = getDistance(currentCenter, point);
-				if (currentDistance < minDistance) {
-					minDistance = currentDistance;
-					nearestCluster = cluster;
-				}
+			currentDistance = cluster.getDistanceToCenter(point);
+			if (currentDistance < minDistance) {
+				minDistance = currentDistance;
+				nearestCluster = cluster;
 			}
 		}
 
-		return nearestCluster;
+		return new Pair<Cluster, Double>(nearestCluster, minDistance);
+
 	}
 
-	private double getDistance(Point m1, Point m2) {
+	public double getDistance(Point m1, Point m2) {
 		DistanceFunction function;
 		try {
-			function = distanceFunction.getConstructor(Point.class).newInstance(m1);
+			function = distanceFunction.getConstructor(INDArray.class).newInstance(m1.getArray());
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 		return function.apply(m2);
 	}
-	
+
 	public double getDistanceFromNearestCluster(Point point) {
-		Cluster nearestCluster = nearestCluster(point);
-		return getDistance(nearestCluster.getCenter(), point);
+		return nearestCluster(point).getSecond();
 	}
-	
+
+	public String getClusterCenterId(String clusterId) {
+		Point clusterCenter = getClusterCenter(clusterId);
+		return clusterCenter == null ? null : clusterCenter.getId();
+	}
+
+	public Point getClusterCenter(String clusterId) {
+		Cluster cluster = getCluster(clusterId);
+		return cluster == null ? null : cluster.getCenter();
+	}
+
+	public Cluster getCluster(String id) {
+		for (int i = 0, j = clusters.size(); i < j; i++)
+			if (id.equals(clusters.get(i).getId()))
+				return clusters.get(i);
+		return null;
+	}
+
 	public int getClusterCount() {
-		return getClusters()==null ? 0 : getClusters().size();
+		return getClusters() == null ? 0 : getClusters().size();
 	}
-	
+
 	public void removePoints() {
-		for(Cluster cluster : getClusters() )
+		for (Cluster cluster : getClusters())
 			cluster.removePoints();
+	}
+
+	public List<Cluster> getMostPopulatedClusters(int count) {
+		List<Cluster> mostPopulated = new ArrayList<Cluster>(clusters);
+		Collections.sort(mostPopulated, new Comparator<Cluster>() {
+			public int compare(Cluster o1, Cluster o2) {
+				return new Integer(o1.getPoints().size()).compareTo(new Integer(o2.getPoints().size()));
+			}
+		});
+		return mostPopulated.subList(0, count);
+	}
+
+	public List<Cluster> removeEmptyClusters() {
+		List<Cluster> emptyClusters = new ArrayList<Cluster>();
+		for (Cluster cluster : clusters)
+			if (cluster.isEmpty())
+				emptyClusters.add(cluster);
+		clusters.removeAll(emptyClusters);
+		return emptyClusters;
 	}
 
 	public List<Cluster> getClusters() {
@@ -110,7 +163,13 @@ public class ClusterSet {
 	public void setDistanceFunction(Class<? extends DistanceFunction> distanceFunction) {
 		this.distanceFunction = distanceFunction;
 	}
-	
-	
+
+	public Map<String, String> getPointDistribution() {
+		return pointDistribution;
+	}
+
+	public void setPointDistribution(Map<String, String> pointDistribution) {
+		this.pointDistribution = pointDistribution;
+	}
 
 }
