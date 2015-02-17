@@ -20,7 +20,7 @@ import static org.junit.Assert.assertEquals;
  * Created by agibsonccc on 12/3/14.
  */
 public class ParagraphVectorsTest {
-    private static Logger log = LoggerFactory.getLogger(ParagraphVectorsTest.class);
+    private static final Logger log = LoggerFactory.getLogger(ParagraphVectorsTest.class);
 
     @Before
     public void before() {

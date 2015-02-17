@@ -23,7 +23,7 @@ public class DefaultModelSaver implements ModelSaver {
 	private static final long serialVersionUID = -7563476748417989927L;
 	private File file;
 	private boolean rewrite = false;
-    private static Logger log = LoggerFactory.getLogger(DefaultModelSaver.class);
+    private static final Logger log = LoggerFactory.getLogger(DefaultModelSaver.class);
 
 	public DefaultModelSaver(File file) {
 		this(file,false);

@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
  */
 public class EnumUtilTest {
 
-    private static Logger log = LoggerFactory.getLogger(EnumUtil.class);
+    private static final Logger log = LoggerFactory.getLogger(EnumUtil.class);
 
     @Test
     public void testGetEnum() {

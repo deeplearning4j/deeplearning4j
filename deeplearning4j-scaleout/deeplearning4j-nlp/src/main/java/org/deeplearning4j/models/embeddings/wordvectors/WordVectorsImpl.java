@@ -269,7 +269,6 @@ public class WordVectorsImpl implements WordVectors {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
 
             INDArray syn0 = l.getSyn0();
-            VpTreeNode<VpTreePointINDArray> tree = VpTreeNode.buildVpTree(VpTreePointINDArray.dataPoints(l.getSyn0()));
 
             INDArray weights = mean;
             INDArray distances = syn0.mmul(weights.transpose());

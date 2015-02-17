@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class DeepLearning4jDistributedApp implements DeepLearningConfigurable {
-	protected static Logger log = LoggerFactory.getLogger(DeepLearning4jDistributedApp.class);
+	protected static final Logger log = LoggerFactory.getLogger(DeepLearning4jDistributedApp.class);
 
 	@Option(name="-h",usage="the host to connect to as a master (default: 127.0.0.1)")
 	protected String host = "localhost";
@@ -87,10 +87,6 @@ public class DeepLearning4jDistributedApp implements DeepLearningConfigurable {
 		}
 
 	}
-
-
-
-
 
 	@SuppressWarnings("unchecked")
 	public void exec() throws Exception {
@@ -122,18 +118,8 @@ public class DeepLearning4jDistributedApp implements DeepLearningConfigurable {
 			runner = new DeepLearning4jDistributed("master",iter);
 			runner.setStateTrackerPort(stateTrackerPort);
 			runner.setup(conf);
-
-
-
-
-
-
 		}
-
-
-
 	}
-
 
 	/**
 	 * Initializes the training.
@@ -146,19 +132,13 @@ public class DeepLearning4jDistributedApp implements DeepLearningConfigurable {
        runner.train();
 	}
 
-
 	public void shutdown() {
 
 	}
 
-
-
-
-
 	public boolean isDone() {
 		return iter.hasNext();
 	}
-
 
 	/**
 	 * @param args

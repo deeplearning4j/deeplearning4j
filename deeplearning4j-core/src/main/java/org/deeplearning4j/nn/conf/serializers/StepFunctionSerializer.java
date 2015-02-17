@@ -13,7 +13,7 @@ import java.io.IOException;
 public class StepFunctionSerializer extends JsonSerializer<StepFunction> {
     @Override
     public void serialize(StepFunction value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-        jgen.writeStringField("stepFunction",value.getClass().getName());
+        jgen.writeString(value.getClass().getName());
 
     }
 }

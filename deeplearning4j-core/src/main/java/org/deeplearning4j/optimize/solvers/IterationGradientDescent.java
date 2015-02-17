@@ -7,7 +7,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TerminationCondition;
-import org.deeplearning4j.optimize.terminations.EpsTermination;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -32,16 +31,11 @@ public class IterationGradientDescent extends BaseOptimizer {
     public boolean optimize() {
         for(int i = 0; i < conf.getNumIterations(); i++) {
             model.setScore();
-            model.iterate(model.input());
-            Pair<Gradient,Double> score = model.gradientAndScore();
-            INDArray gradient = score.getFirst().gradient(conf.getGradientList());
-            INDArray params = model.params();
-            updateGradientAccordingToParams(gradient,params,model.batchSize());
-            INDArray newParams = params.addi(gradient);
-            model.setParams(newParams);
+            Pair<Gradient,Double> score = gradientAndScore();
+            updateGradientAccordingToParams(score.getFirst(), model, batchSize());
+            model.update(score.getFirst());
             for(IterationListener listener : conf.getListeners())
                 listener.iterationDone(model,i);
-            log.info("Error at iteration " + i + " was " + model.score());
 
         }
         return true;
@@ -49,7 +43,8 @@ public class IterationGradientDescent extends BaseOptimizer {
 
     @Override
     public void preProcessLine(INDArray line) {
-
+          if(conf.isConstrainGradientToUnitNorm())
+              line.divi(line.norm2(Integer.MAX_VALUE));
     }
 
     @Override

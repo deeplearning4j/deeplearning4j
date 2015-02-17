@@ -28,7 +28,7 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 	protected int inputColumns = -1;
 	protected DataSet curr;
 	protected int totalExamples;
-	protected static Logger log = LoggerFactory.getLogger(BaseDataFetcher.class);
+	protected static final Logger log = LoggerFactory.getLogger(BaseDataFetcher.class);
 	
 	/**
 	 * Creates a feature vector

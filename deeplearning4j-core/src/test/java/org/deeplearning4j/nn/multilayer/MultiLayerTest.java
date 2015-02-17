@@ -8,17 +8,17 @@ import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.api.LayerFactory;
-import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
+
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
-import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -35,8 +35,7 @@ import org.slf4j.LoggerFactory;
  */
 public class MultiLayerTest {
 
-
-    private static Logger log = LoggerFactory.getLogger(MultiLayerTest.class);
+    private static final Logger log = LoggerFactory.getLogger(MultiLayerTest.class);
 
     @Test
     public void testDbnFaces() {
@@ -52,11 +51,11 @@ public class MultiLayerTest {
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .constrainGradientToUnitNorm(true)
                 .weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(new MersenneTwister(123), 1e-5))
-                .iterations(100).learningRate(1e-3).iterationListener(new NeuralNetPlotterIterationListener(10))
+                .iterations(100).learningRate(1e-3).iterationListener(new ScoreIterationListener(10))
                 .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
-                .list(4).hiddenLayerSizes(600,250,100).override(new NeuralNetConfiguration.ConfOverride() {
+                .list(4).hiddenLayerSizes(600,250,100).override(new ConfOverride() {
                     @Override
-                    public void override(int i, NeuralNetConfiguration.Builder builder) {
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 3) {
                             builder.layerFactory(new DefaultLayerFactory(OutputLayer.class));
                             builder.activationFunction(Activations.softMaxRows());
@@ -69,11 +68,8 @@ public class MultiLayerTest {
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.fit(next);
 
-
-
-
-
     }
+
     @Test
     public void testDbn() {
         LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
@@ -82,9 +78,9 @@ public class MultiLayerTest {
                 .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
                 .activationFunction(Activations.tanh())
                 .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
-                .list(3).hiddenLayerSizes(new int[]{3, 2}).override(new NeuralNetConfiguration.ConfOverride() {
+                .list(3).hiddenLayerSizes(new int[]{3, 2}).override(new ConfOverride() {
                     @Override
-                    public void override(int i, NeuralNetConfiguration.Builder builder) {
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 2) {
                             builder.layerFactory(new DefaultLayerFactory(OutputLayer.class));
                             builder.activationFunction(Activations.softMaxRows());

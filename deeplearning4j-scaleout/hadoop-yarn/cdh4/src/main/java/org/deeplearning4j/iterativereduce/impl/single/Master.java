@@ -23,7 +23,7 @@ public class Master implements ComputableMaster<ParameterVectorUpdateable> {
     ParameterVectorUpdateable lastMasterUpdate = null;
     protected Configuration conf = null;
     protected INDArray paramVector;
-    private static Logger log = LoggerFactory.getLogger(Master.class);
+    private static final Logger log = LoggerFactory.getLogger(Master.class);
 
 
     /**

@@ -5,6 +5,7 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.routing.RoundRobinPool;
 import org.apache.commons.io.FileUtils;
+
 import org.deeplearning4j.models.word2vec.StreamWork;
 import org.deeplearning4j.models.word2vec.VocabWork;
 import org.deeplearning4j.models.word2vec.actor.VocabActor;
@@ -40,14 +41,13 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     protected transient SentenceIterator sentenceIterator;
     protected transient LabelAwareSentenceIterator labelSentenceIter;
     protected AtomicLong numWordsEncountered =  new AtomicLong(0);
-    private static Logger log = LoggerFactory.getLogger(BaseTextVectorizer.class);
+    private static final Logger log = LoggerFactory.getLogger(BaseTextVectorizer.class);
     protected InvertedIndex index;
     protected int batchSize = 1000;
     protected double sample = 0.0;
     protected boolean stem = false;
-    protected boolean cleanup = false;
 
-    public BaseTextVectorizer(){}
+  public BaseTextVectorizer(){}
 
     protected BaseTextVectorizer(VocabCache cache, TokenizerFactory tokenizerFactory, List<String> stopWords, int minWordFrequency, DocumentIterator docIter, SentenceIterator sentenceIterator,List<String> labels,InvertedIndex index,int batchSize,double sample,boolean stem,boolean cleanup) {
         this.cache = cache;
@@ -124,7 +124,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
                 try {
                     Thread.sleep(1);
                 } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();;
+                    Thread.currentThread().interrupt();
                 }
             }
 
@@ -146,7 +146,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
                    try {
                        Thread.sleep(1);
                    } catch (InterruptedException e) {
-                       Thread.currentThread().interrupt();;
+                       Thread.currentThread().interrupt();
                    }
                }
 
@@ -160,6 +160,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
                String sentence = getSentenceIterator().nextSentence();
                if(sentence == null)
                    break;
+               if(sentence.isEmpty()) continue;
                vocabActor.tell(new VocabWork(latch,sentence,stem), vocabActor);
                queued.incrementAndGet();
                if(queued.get() % 10000 == 0) {
@@ -167,7 +168,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
                    try {
                        Thread.sleep(1);
                    } catch (InterruptedException e) {
-                       Thread.currentThread().interrupt();;
+                       Thread.currentThread().interrupt();
                    }
                }
 
@@ -189,13 +190,9 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
             }
         }
 
-
-
         log.info("Invoking finish on index");
         index.finish();
         trainingSystem.shutdown();
-
-
     }
 
     @Override

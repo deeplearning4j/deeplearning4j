@@ -20,7 +20,7 @@ public class DistributionSerializer extends JsonSerializer<RealDistribution> {
     @Override
     public void serialize(RealDistribution value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
         try {
-            jgen.writeStringField("dist",value.getClass().getName() + "\t" + Dl4jReflection.getFieldsAsProperties(value,null));
+            jgen.writeString(value.getClass().getName() + "\t" + Dl4jReflection.getFieldsAsProperties(value,null));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
