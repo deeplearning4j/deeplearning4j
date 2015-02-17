@@ -23,7 +23,7 @@ import akka.dispatch.OnComplete;
 public class ActorRefUtils implements DeepLearningConfigurable {
 	
 	
-	private static Logger log = LoggerFactory.getLogger(ActorRefUtils.class);
+	private static final Logger log = LoggerFactory.getLogger(ActorRefUtils.class);
 	
 	/**
 	 * Adds a shutdown hook for the system to shutdown

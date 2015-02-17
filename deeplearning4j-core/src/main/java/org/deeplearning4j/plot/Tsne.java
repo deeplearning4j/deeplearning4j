@@ -103,7 +103,7 @@ public class Tsne implements Serializable {
         }
 
     }
-    protected static Logger log = LoggerFactory.getLogger(Tsne.class);
+    protected static final Logger log = LoggerFactory.getLogger(Tsne.class);
 
     public Tsne(
             int maxIter,

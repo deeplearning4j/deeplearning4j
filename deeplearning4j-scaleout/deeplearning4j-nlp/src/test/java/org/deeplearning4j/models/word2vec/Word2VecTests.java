@@ -25,7 +25,7 @@ import java.util.ArrayList;
  */
 public class Word2VecTests {
 
-    private static Logger log = LoggerFactory.getLogger(Word2VecTests.class);
+    private static final Logger log = LoggerFactory.getLogger(Word2VecTests.class);
 
 
     @Before
@@ -45,7 +45,8 @@ public class Word2VecTests {
         TokenizerFactory t = new UimaTokenizerFactory();
 
         WeightLookupTable table = new InMemoryLookupTable
-                .Builder().vectorLength(100).useAdaGrad(false).cache(cache)
+                .Builder()
+                .vectorLength(100).useAdaGrad(false).cache(cache)
                 .lr(0.025f).build();
 
         Word2Vec vec = new Word2Vec.Builder()

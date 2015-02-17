@@ -1,6 +1,5 @@
 package org.deeplearning4j.spark.impl.multilayer;
 
-import org.apache.spark.Accumulator;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -12,12 +11,12 @@ import org.canova.api.records.reader.RecordReader;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.spark.canova.RDDMiniBatches;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
-import org.deeplearning4j.spark.impl.common.ParamAccumulator;
+import org.deeplearning4j.spark.impl.common.Add;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,11 +33,11 @@ public class SparkDl4jMultiLayer implements Serializable {
     private transient JavaSparkContext sc;
     private MultiLayerConfiguration conf;
     private MultiLayerNetwork network;
-    private Accumulator<INDArray> accum;
     private Broadcast<INDArray> params;
     private boolean averageEachIteration = false;
     public final static String AVERAGE_EACH_ITERATION = "org.deeplearning4j.spark.iteration.average";
-    private static Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
+    private static final Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
+
     /**
      * Instantiate a multi layer spark instance
      * with the given context and network.
@@ -49,9 +48,9 @@ public class SparkDl4jMultiLayer implements Serializable {
     public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerNetwork network) {
         this.sparkContext = sparkContext;
         this.averageEachIteration = sparkContext.conf().getBoolean(AVERAGE_EACH_ITERATION,false);
-        this.conf = conf.clone();
-        sc = new JavaSparkContext(this.sparkContext);
         this.network = network;
+        this.conf = this.network.getLayerWiseConfigurations().clone();
+        sc = new JavaSparkContext(this.sparkContext);
     }
 
     /**
@@ -80,7 +79,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param path the path to the text file
      * @param labelIndex the label index
      * @param recordReader the record reader to parse results
-     * @return
+     * @return {@link MultiLayerNetwork}
      */
     public MultiLayerNetwork fit(String path,int labelIndex,RecordReader recordReader) {
         JavaRDD<String> lines = sc.textFile(path);
@@ -89,6 +88,14 @@ public class SparkDl4jMultiLayer implements Serializable {
                 , labelIndex, conf.getConf(conf.getConfs().size() - 1).getnOut()));
         return fitDataSet(points);
 
+    }
+
+    public MultiLayerNetwork getNetwork() {
+        return network;
+    }
+
+    public void setNetwork(MultiLayerNetwork network) {
+        this.network = network;
     }
 
     /**
@@ -130,25 +137,25 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @return the multi layer network
      */
     public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd) {
-        int batchSize = conf.getConf(0).getBatchSize();
         int iterations = conf.getConf(0).getNumIterations();
-        JavaRDD<DataSet> miniBatches = new RDDMiniBatches(batchSize,rdd).miniBatchesJava();
-        log.info("Running distributed training averaging each iteration " + averageEachIteration + " with a mini batch size of " + batchSize + " and number of iterations " + iterations);
+        long count = rdd.count();
+        int batchSize = conf.getConf(0).getBatchSize();
+        int newBatchSize = (int) (count / batchSize);
+        rdd = rdd.repartition(newBatchSize);
+        log.info("Running distributed training averaging each iteration " + averageEachIteration + " and " + rdd.partitions().size() + " partitions");
         if(!averageEachIteration) {
             MultiLayerNetwork network = new MultiLayerNetwork(conf);
             network.init();
             final INDArray params = network.params();
             this.params = sc.broadcast(params);
-            accum = sc.accumulator(params,"params",new ParamAccumulator());
 
             int paramsLength = network.numParams();
             if(params.length() != paramsLength)
                 throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
 
-
-
-            miniBatches.foreach(new DataSetTrain(accum,this.params,conf.toJson()));
-            INDArray newParams = accum.value().divi(miniBatches.count());
+            JavaRDD<INDArray> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),this.params));
+            INDArray newParams = results.fold(Nd4j.zeros(results.first().shape()),new Add());
+            newParams.divi(rdd.partitions().size());
             network.setParameters(newParams);
             this.network = network;
         }
@@ -162,14 +169,14 @@ public class SparkDl4jMultiLayer implements Serializable {
 
             for(int i = 0; i < iterations; i++) {
 
-                accum = sc.accumulator(params,"params",new ParamAccumulator());
 
                 int paramsLength = network.numParams();
                 if(params.length() != paramsLength)
                     throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
+                JavaRDD<INDArray> miniBatchParams = rdd.map(new IterativeReduce(this.params,conf.toJson()));
 
-                miniBatches.foreach(new DataSetTrain(accum,this.params,conf.toJson()));
-                this.params =  sc.broadcast(accum.value().divi(miniBatches.count()));
+                INDArray add = miniBatchParams.reduce(new Add());
+                this.params =  sc.broadcast(add.divi(rdd.partitions().size()));
             }
 
 

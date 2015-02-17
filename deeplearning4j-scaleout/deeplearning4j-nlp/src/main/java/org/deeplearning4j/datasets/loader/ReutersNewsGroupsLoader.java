@@ -28,7 +28,7 @@ public class ReutersNewsGroupsLoader extends BaseDataFetcher {
     private boolean tfidf;
     public final static String NEWSGROUP_URL = "http://qwone.com/~jason/20Newsgroups/20news-18828.tar.gz";
     private File reutersRootDir;
-    private static Logger log = LoggerFactory.getLogger(ReutersNewsGroupsLoader.class);
+    private static final Logger log = LoggerFactory.getLogger(ReutersNewsGroupsLoader.class);
     private DataSet load;
 
 

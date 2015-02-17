@@ -32,7 +32,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class BagOfWordsVectorizerTest {
 
-    private static Logger log = LoggerFactory.getLogger(BagOfWordsVectorizerTest.class);
+    private static final Logger log = LoggerFactory.getLogger(BagOfWordsVectorizerTest.class);
     private InvertedIndex index;
     private VocabCache cache;
 

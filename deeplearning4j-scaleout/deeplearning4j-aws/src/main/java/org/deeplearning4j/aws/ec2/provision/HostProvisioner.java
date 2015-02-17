@@ -28,7 +28,7 @@ public class HostProvisioner implements UserInfo {
 	private String user;
 	private int port = 22;
 	private String password;
-	private static Logger log = LoggerFactory.getLogger(HostProvisioner.class);
+	private static final Logger log = LoggerFactory.getLogger(HostProvisioner.class);
 
 	/**
 	 * 

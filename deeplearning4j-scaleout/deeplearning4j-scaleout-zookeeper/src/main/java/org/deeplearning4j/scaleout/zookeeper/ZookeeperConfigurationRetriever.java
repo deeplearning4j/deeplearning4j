@@ -25,7 +25,7 @@ public class ZookeeperConfigurationRetriever implements Watcher {
     private String host;
     private int port;
     private String id;
-    private static Logger log = LoggerFactory.getLogger(ZookeeperConfigurationRetriever.class);
+    private static final Logger log = LoggerFactory.getLogger(ZookeeperConfigurationRetriever.class);
 
 
 

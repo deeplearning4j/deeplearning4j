@@ -17,7 +17,7 @@ public class LayerFactorySerializer extends JsonSerializer<LayerFactory> {
     @Override
     public void serialize(LayerFactory value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
         String write = value.getClass().getName() + "," + value.layerClazzName();
-        jgen.writeStringField("layerFactory",write);
+        jgen.writeString(write);
 
     }
 }

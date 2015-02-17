@@ -12,8 +12,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.gradient.Gradient;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +30,7 @@ import org.springframework.core.io.ClassPathResource;
 public class NeuralNetPlotter implements Serializable {
 
     private static 	ClassPathResource r = new ClassPathResource("/scripts/plot.py");
-    private static Logger log = LoggerFactory.getLogger(NeuralNetPlotter.class);
+    private static final Logger log = LoggerFactory.getLogger(NeuralNetPlotter.class);
     private static   FilterRenderer render = new FilterRenderer();
 
 
@@ -90,15 +88,15 @@ public class NeuralNetPlotter implements Serializable {
                         network.getParam(DefaultParamInitializer.WEIGHT_KEY),
                         network.getParam(PretrainParamInitializer.BIAS_KEY),
                         network.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY),
-                        gradient.gradientLookupTable().get(DefaultParamInitializer.WEIGHT_KEY),
-                        gradient.gradientLookupTable().get(DefaultParamInitializer.BIAS_KEY),
-                        gradient.gradientLookupTable().get(PretrainParamInitializer.VISIBLE_BIAS_KEY)
+                        gradient.gradientForVariable().get(DefaultParamInitializer.WEIGHT_KEY),
+                        gradient.gradientForVariable().get(DefaultParamInitializer.BIAS_KEY),
+                        gradient.gradientForVariable().get(PretrainParamInitializer.VISIBLE_BIAS_KEY)
                 });
     }
 
 
     public void hist(Layer network) {
-        hist(network,network.getGradient());
+        hist(network,network.gradient());
     }
 
     public void plotNetworkGradient(Layer network,Gradient gradient,int patchesPerRow) {
@@ -109,9 +107,9 @@ public class NeuralNetPlotter implements Serializable {
                         network.getParam(DefaultParamInitializer.WEIGHT_KEY),
                         network.getParam(PretrainParamInitializer.BIAS_KEY),
                         network.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY),
-                        gradient.gradientLookupTable().get(DefaultParamInitializer.WEIGHT_KEY),
-                        gradient.gradientLookupTable().get(DefaultParamInitializer.BIAS_KEY),
-                        gradient.gradientLookupTable().get(PretrainParamInitializer.VISIBLE_BIAS_KEY)
+                        gradient.gradientForVariable().get(DefaultParamInitializer.WEIGHT_KEY),
+                        gradient.gradientForVariable().get(DefaultParamInitializer.BIAS_KEY),
+                        gradient.gradientForVariable().get(PretrainParamInitializer.VISIBLE_BIAS_KEY)
 
                 });
         plotActivations(network);
@@ -119,12 +117,8 @@ public class NeuralNetPlotter implements Serializable {
         FilterRenderer render = new FilterRenderer();
         try {
             INDArray w =  network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
-            INDArray render2 = w;
-            render.renderFilters(render2, "currimg.png", (int)Math.sqrt(render2.rows()) , (int) Math.sqrt( render2.rows()),patchesPerRow);
-
-
-
-
+            render.renderFilters(w, "currimg.png", (int)Math.sqrt(w.rows()),
+                (int) Math.sqrt( w.rows()),patchesPerRow);
         } catch (Exception e) {
             log.error("Unable to plot filter, continuing...",e);
         }
@@ -205,7 +199,7 @@ public class NeuralNetPlotter implements Serializable {
         write.deleteOnExit();
         for(int i = 0; i < matrix.rows(); i++) {
             INDArray row = matrix.getRow(i);
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             for(int j = 0; j < row.length(); j++) {
                 sb.append(String.format("%.10f", row.getDouble(j)));
                 if(j < row.length() - 1)

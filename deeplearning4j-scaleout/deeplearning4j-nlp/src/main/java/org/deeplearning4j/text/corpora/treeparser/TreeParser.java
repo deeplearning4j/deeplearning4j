@@ -43,7 +43,7 @@ public class TreeParser {
     private  AnalysisEngine parser;
     private AnalysisEngine tokenizer;
     private CasPool pool;
-    private static Logger log = LoggerFactory.getLogger(TreeParser.class);
+    private static final Logger log = LoggerFactory.getLogger(TreeParser.class);
     private TokenizerFactory tf;
 
 

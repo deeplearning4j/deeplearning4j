@@ -1,35 +1,35 @@
 package org.deeplearning4j.bagofwords.vectorizer;
 
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeNotNull;
-
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
-import org.junit.Before;
-import org.junit.After;
-
-import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-import java.io.File;
-import java.util.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeNotNull;
 
 /**
  * @author Adam Gibson
  */
 public class TfIdfVectorizerTest {
 
-    private static Logger log = LoggerFactory.getLogger(TfIdfVectorizerTest.class);
+    private static final Logger log = LoggerFactory.getLogger(TfIdfVectorizerTest.class);
 
     private InvertedIndex index;
     private  VocabCache cache;
@@ -52,10 +52,7 @@ public class TfIdfVectorizerTest {
             index.cleanup();
 
         FileUtils.deleteDirectory(new File("tfidf"));
-
-
     }
-
 
     @Test
     public void testTfIdfVectorizer() throws Exception {
@@ -86,7 +83,7 @@ public class TfIdfVectorizerTest {
 
         int[] docs = vectorizer.index().allDocs();
         for(int i : docs) {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             List<VocabWord> doc = vectorizer.index().document(i);
             for(VocabWord w : doc)
                 sb.append(" " + w.getWord());
@@ -96,9 +93,5 @@ public class TfIdfVectorizerTest {
         assertEquals(docStrings.size(),docs.length);
         assertEquals(docStrings.size(), vectorizer.index().documents(word).length);
 
-
-
     }
-
-
 }
