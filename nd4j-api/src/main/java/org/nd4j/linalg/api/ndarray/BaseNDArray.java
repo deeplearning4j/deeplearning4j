@@ -959,6 +959,7 @@ public  abstract class BaseNDArray  implements INDArray {
         INDArray linear = linearView();
         INDArray resultLinear = result == this ? linear : result.linearView();
         double val = n.doubleValue();
+
         for (int i = 0; i < length; i++) {
             resultLinear.putScalar(i, linear.getDouble(i) * val);
         }
@@ -1795,12 +1796,7 @@ public  abstract class BaseNDArray  implements INDArray {
     }
 
 
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-        if(data != null)
-            data.destroy();
-    }
+
 
     @Override
     public  void setStride(int[] stride) {
@@ -3720,7 +3716,6 @@ public  abstract class BaseNDArray  implements INDArray {
         }
 
         return true;
-
 
     }
 

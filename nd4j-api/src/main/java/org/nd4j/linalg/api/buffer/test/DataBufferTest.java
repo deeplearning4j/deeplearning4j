@@ -10,19 +10,19 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.ArrayOps;
 import org.nd4j.linalg.ops.ElementWiseOp;
 import org.nd4j.linalg.ops.factory.ElementWiseOpFactories;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
  * Created by agibsonccc on 2/14/15.
  */
 public abstract class DataBufferTest {
 
+
     @Test
     public void testGetSet() {
         double[] d1 = new double[]{1,2,3,4};
         DataBuffer d = Nd4j.createBuffer(d1);
         double[] d2 = d.asDouble();
-        assertArrayEquals(d1,d2,1e-1);
+        assertArrayEquals(d1, d2, 1e-1);
         d.destroy();
 
     }
@@ -33,6 +33,8 @@ public abstract class DataBufferTest {
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
         assertEquals(d,d2);
+        d.destroy();
+        d2.destroy();
     }
 
     @Test
@@ -49,6 +51,7 @@ public abstract class DataBufferTest {
     @Test
     public void testApply() {
         INDArray ones = Nd4j.valueArrayOf(5, 2.0);
+        ones.toString();
         DataBuffer buffer = ones.data();
         //square
         ElementWiseOp op = new ArrayOps()
@@ -58,7 +61,8 @@ public abstract class DataBufferTest {
         INDArray four = Nd4j.valueArrayOf(5,4.0);
         DataBuffer d = four.data();
         assertEquals(buffer,d);
-
+        buffer.destroy();
+        d.destroy();
 
 
 
@@ -75,6 +79,7 @@ public abstract class DataBufferTest {
         double[] get2 = buffer.asDouble();
         double[] allData = buffer.getDoublesAt(0,buffer.length());
         assertArrayEquals(get2,allData,1e-1);
+        buffer.destroy();
 
 
 
@@ -93,7 +98,7 @@ public abstract class DataBufferTest {
 
         double[] allData = buffer.getDoublesAt(1,buffer.length());
         assertArrayEquals(allButLast,allData,1e-1);
-
+        buffer.destroy();
 
 
     }

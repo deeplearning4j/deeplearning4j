@@ -148,12 +148,14 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray linspace(int lower,int upper,int num) {
-        INDArray ret = create(num);
+        double[] data = new double[num];
         for (int i = 0; i < num; i++) {
             double t = (double) i / (num - 1);
-            ret.putScalar(i,lower * (1 - t) + t * upper);
+            data[i] = lower * (1 - t) + t * upper;
 
         }
+
+        INDArray ret = create(data);
         return ret;
     }
 

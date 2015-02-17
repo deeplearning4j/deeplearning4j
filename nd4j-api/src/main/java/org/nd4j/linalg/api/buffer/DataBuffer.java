@@ -72,6 +72,29 @@ public interface DataBuffer extends Serializable {
      */
     float[] getFloatsAt(int offset,int length);
 
+
+    /**
+     * Get the doubles at a particular offset
+     * @param offset the offset to start
+     * @param inc the increment to use
+     * @param length the length of the array
+     *
+     * @return the doubles at the specified offset and length
+     */
+    double[] getDoublesAt(int offset,int inc,int length);
+
+
+
+    /**
+     * Get the doubles at a particular offset
+     * @param offset the offset to start
+     * @param inc the increment to use
+     * @param length the length of the array
+     * @return the doubles at the specified offset and length
+     */
+    float[] getFloatsAt(int offset,int inc,int length);
+
+
     /**
      * Assign the given value to the buffer
      * @param value the value to assign
@@ -267,4 +290,119 @@ public interface DataBuffer extends Serializable {
      * @param data the data to assign
      */
     void assign(DataBuffer data);
+
+
+    /**
+     * Element wise addition
+     * @param n the number to add
+     */
+    void addi(Number n);
+
+    /**
+     * Element wise addition
+     * @param n the number to add
+     */
+    void subi(Number n);
+
+    /**
+     * Element wise multiplication
+     * @param n the number to multiply
+     */
+    void muli(Number n);
+
+    /**
+     * Element wise division
+     * @param n the number to divide by
+     */
+    void divi(Number n);
+
+
+    /**
+     * Element wise addition
+     * @param n the number to add
+     */
+    void addi(Number n,int inc,int offset);
+
+    /**
+     * Element wise addition
+     * @param n the number to add
+     */
+    void subi(Number n,int inc,int offset);
+
+    /**
+     * Element wise multiplication
+     * @param n the number to multiply
+     */
+    void muli(Number n,int inc,int offset);
+
+    /**
+     * Element wise division
+     * @param n the number to divide by
+     */
+    void divi(Number n,int inc,int offset);
+
+    /**
+     * Add the items in this buffer by
+     * the elements in the other buffer
+     * @param buffer the buffer to add
+     */
+    void addi(DataBuffer buffer);
+
+    /**
+     * Subtract the items in this buffer
+     * from the other buffer
+     * @param buffer the buffer to subtract
+     */
+    void subi(DataBuffer buffer);
+    /**
+     * Multiply the items in this buffer
+     * from the other buffer
+     * @param buffer the buffer to multiply
+     */
+    void muli(DataBuffer buffer);
+    /**
+     * Divide the items in this buffer
+     * from the other buffer
+     * @param buffer the buffer to divide
+     */
+    void divi(DataBuffer buffer);
+
+    /**
+     *
+     * @param n
+     * @param buffer
+     * @param offset
+     * @param incx
+     * @param incy
+     */
+    void addi(DataBuffer buffer,int n,int offset,int yOffset,int incx,int incy);
+
+
+    /**
+     *@param n
+     * @param buffer
+     * @param offset
+     * @param incx
+     * @param incy
+     */
+    void subi(DataBuffer buffer,int n,int offset,int yOffset,int incx,int incy);
+
+    /**
+     * @param n
+     * @param buffer
+     * @param offset
+     * @param incx
+     * @param incy
+     */
+    void muli(DataBuffer buffer,int n,int offset,int yOffset,int incx,int incy);
+
+    /**
+     * @param n
+     * @param buffer
+     * @param offset
+     * @param incx
+     * @param incy
+     */
+    void divi(DataBuffer buffer,int n,int offset,int yOffset,int incx,int incy);
+
 }

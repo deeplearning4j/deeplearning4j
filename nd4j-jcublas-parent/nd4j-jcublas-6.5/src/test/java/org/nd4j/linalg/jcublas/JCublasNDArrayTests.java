@@ -20,6 +20,7 @@ public class JCublasNDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
 
 
 
+
     @Test
     public void testAddColumn() {
         Nd4j.factory().setOrder('f');

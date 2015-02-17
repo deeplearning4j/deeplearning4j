@@ -68,6 +68,8 @@ public class Nd4j {
     public static int MAX_ELEMENTS_PER_SLICE = 3;
     public static int MAX_SLICES_TO_PRINT = 3;
     public static boolean ENFORCE_NUMERICAL_STABILITY = false;
+    public static boolean copyOnOps = true;
+    public final static String COPY_OPS = "ndarray.copyops";
 
 
     static {
@@ -84,6 +86,7 @@ public class Nd4j {
             props.load(c.getInputStream());
             String otherDtype =  System.getProperty(DTYPE,props.get(DTYPE).toString());
             dtype = otherDtype.equals("float") ? DataBuffer.FLOAT : DataBuffer.DOUBLE;
+            copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS,"true"));
             ORDER = System.getProperty(ORDER_KEY,props.getProperty(ORDER_KEY,"c").toString()).charAt(0);
             if(fftInstanceClazz == null)
                 fftInstanceClazz = (Class<? extends FFTInstance>) Class.forName(System.getProperty(FFT_OPS, DefaultFFTInstance.class.getName()));
@@ -417,12 +420,29 @@ public class Nd4j {
         return createBuffer(new double[(int) length]);
     }
 
+
+    /**
+     * Create a buffer based on the data type
+     * @param data the data to create the buffer with
+     * @return the created buffer
+     */
     public static DataBuffer createBuffer(float[] data) {
-        return DATA_BUFFER_FACTORY_INSTANCE.createFloat(data);
+        if(dataType() == DataBuffer.FLOAT)
+            return DATA_BUFFER_FACTORY_INSTANCE.createFloat(data);
+        else
+            return DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data));
     }
 
+    /**
+     * Create a buffer based on the data type
+     * @param data the data to create the buffer with
+     * @return the created buffer
+     */
     public static DataBuffer createBuffer(double[] data) {
-        return DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
+        if(dataType() == DataBuffer.DOUBLE)
+            return DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
+        else
+            return DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data));
     }
 
     public static <E> DataBuffer createBuffer(E[] data) {

@@ -65,17 +65,17 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
 
     @Override
-    public double[] getDoublesAt(int offset, int length) {
-        return ArrayUtil.toDoubles(getFloatsAt(offset, length));
+    public double[] getDoublesAt(int offset, int inc, int length) {
+        return ArrayUtil.toDoubles(getFloatsAt(offset,inc, length));
     }
 
     @Override
-    public float[] getFloatsAt(int offset, int length) {
+    public float[] getFloatsAt(int offset, int inc, int length) {
         if(offset + length > length())
             length -= offset;
         float[] ret = new float[length];
         Pointer p = Pointer.to(ret);
-        get(offset,length,p);
+        get(offset,inc,length,p);
         return ret;
     }
 
@@ -100,16 +100,23 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         if(data.length != length)
             throw new IllegalArgumentException("Unable to set vector, must be of length " + length() + " but found length " + data.length);
 
+        if(pointer() != null) {
+            destroy();
+            pointer = null;
+        }
+
         if(pointer() == null)
             alloc();
 
         JCublas.cublasSetVector(
-                length,
-                elementSize,
-                Pointer.to(data),
-                1,
-                pointer(),
-                1);
+                length(),
+                elementSize()
+                ,Pointer.to(data)
+                ,1
+                ,pointer()
+                ,1);
+
+
     }
 
     @Override
@@ -222,6 +229,103 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         p = Pointer.to(data);
         set(offset,arrLength,p);
 
+    }
+
+    @Override
+    public void addi(Number n, int inc, int offset) {
+        if(offset == 0 && inc == 1) {
+            float[] data = asFloat();
+            for(int i = 0; i < length(); i++) {
+                data[i] += n.floatValue();
+            }
+            setData(data);
+        }
+        else {
+            float[] data = getFloatsAt(offset,inc,length());
+            for(int i = 0; i < data.length; i++) {
+                data[i] += n.floatValue();
+            }
+            set(offset,length(),Pointer.to(data));
+        }
+    }
+
+    @Override
+    public void subi(Number n, int inc, int offset) {
+        if(offset == 0 && inc == 1) {
+            float[] data = asFloat();
+            for(int i = 0; i < length(); i++) {
+                data[i] -= n.floatValue();
+            }
+            setData(data);
+        }
+        else {
+            float[] data = getFloatsAt(offset,inc,length());
+            for(int i = 0; i < data.length; i++) {
+                data[i] -= n.floatValue();
+            }
+            set(offset,length(),Pointer.to(data));
+        }
+    }
+
+    @Override
+    public void muli(Number n, int inc, int offset) {
+        if(offset == 0 && inc == 1) {
+            float[] data = asFloat();
+            for(int i = 0; i < length(); i++) {
+                data[i] *= n.floatValue();
+            }
+            setData(data);
+        }
+        else {
+            float[] data = getFloatsAt(offset,inc,length());
+            for(int i = 0; i < data.length; i++) {
+                data[i] *= n.floatValue();
+            }
+            set(offset,length(),Pointer.to(data));
+        }
+    }
+
+    @Override
+    public void divi(Number n, int inc, int offset) {
+        if(offset == 0 && inc == 1) {
+            float[] data = asFloat();
+            for(int i = 0; i < length(); i++) {
+                data[i] /= n.floatValue();
+            }
+            setData(data);
+        }
+        else {
+            float[] data = getFloatsAt(offset,inc,length());
+            for(int i = 0; i < data.length; i++) {
+                data[i] /= n.floatValue();
+            }
+            set(offset,length(),Pointer.to(data));
+        }
+    }
+
+    @Override
+    public void addi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+        JCudaBuffer b = (JCudaBuffer) buffer;
+        JCublas.cublasSaxpy(n,1.0f,b.pointer(),incx,pointer(),incy);
+    }
+
+    @Override
+    public void subi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+        JCudaBuffer b = (JCudaBuffer) buffer;
+        JCublas.cublasSaxpy(n,-1.0f,b.pointer(),incx,pointer(),incy);
+
+    }
+
+    @Override
+    public void muli(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+        JCudaBuffer b = (JCudaBuffer) buffer;
+
+
+    }
+
+    @Override
+    public void divi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+        JCudaBuffer b = (JCudaBuffer) buffer;
     }
 
 

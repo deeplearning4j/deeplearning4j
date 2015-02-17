@@ -124,9 +124,29 @@ public abstract  class BaseDataBuffer implements DataBuffer {
         throw new UnsupportedOperationException();
 
     }
-
     @Override
     public double[] getDoublesAt(int offset, int length) {
+       return getDoublesAt(0,1,length);
+    }
+
+    @Override
+    public float[] getFloatsAt(int offset, int inc, int length) {
+        if(length + offset > length())
+            throw new IllegalArgumentException("Unable to get length " + length + " offset of " + offset + " was too high");
+
+        if(length >= length())
+            throw new IllegalArgumentException("Length must not be > " + length);
+        if(offset >= length())
+            throw new IllegalArgumentException("Length must not be > " + length);
+        float[] ret = new float[length];
+        for(int i = 0; i < length; i++) {
+            ret[i] = getFloat(i + offset);
+        }
+        return ret;
+    }
+
+    @Override
+    public double[] getDoublesAt(int offset, int inc,int length) {
         if(length + offset > length()) {
             length -= offset;
         }
@@ -148,18 +168,7 @@ public abstract  class BaseDataBuffer implements DataBuffer {
 
     @Override
     public float[] getFloatsAt(int offset, int length) {
-        if(length + offset > length())
-            throw new IllegalArgumentException("Unable to get length " + length + " offset of " + offset + " was too high");
-
-        if(length >= length())
-            throw new IllegalArgumentException("Length must not be > " + length);
-        if(offset >= length())
-            throw new IllegalArgumentException("Length must not be > " + length);
-        float[] ret = new float[length];
-        for(int i = 0; i < length; i++) {
-            ret[i] = getFloat(i + offset);
-        }
-        return ret;
+        return getFloatsAt(offset,1,length);
     }
 
     @Override
@@ -202,6 +211,153 @@ public abstract  class BaseDataBuffer implements DataBuffer {
 
 
 
+
+    @Override
+    public void addi(Number n) {
+        addi(n,1,0);
+    }
+
+    @Override
+    public void subi(Number n) {
+        subi(n,1,0);
+    }
+
+    @Override
+    public void muli(Number n) {
+        muli(n,1,0);
+    }
+
+    @Override
+    public void divi(Number n) {
+        divi(n,1,0);
+    }
+
+    @Override
+    public void addi(Number n, int inc, int offset) {
+        for(int i = offset;i < length(); i+= inc) {
+            put(i,getDouble(i) + n.doubleValue());
+        }
+    }
+
+    @Override
+    public void subi(Number n, int inc, int offset) {
+        for(int i = offset;i < length(); i+= inc) {
+            put(i,getDouble(i) - n.doubleValue());
+
+        }
+    }
+
+    @Override
+    public void muli(Number n, int inc, int offset) {
+        for(int i = offset;i < length(); i+= inc) {
+            put(i,getDouble(i) * n.doubleValue());
+
+        }
+    }
+
+    @Override
+    public void divi(Number n, int inc, int offset) {
+        for(int i = offset;i < length(); i+= inc) {
+            put(i,getDouble(i) / n.doubleValue());
+
+        }
+    }
+
+    @Override
+    public void addi(DataBuffer buffer) {
+        addi(buffer,length(),0,0,1,1);
+    }
+
+    @Override
+    public void subi(DataBuffer buffer) {
+        subi(buffer,length(),0,0,1,1);
+    }
+
+    @Override
+    public void muli(DataBuffer buffer) {
+        muli(buffer,length(),0,0,1,1);
+    }
+
+    @Override
+    public void divi(DataBuffer buffer) {
+        divi(buffer,length(),0,0,1,1);
+    }
+
+    @Override
+    public void addi(DataBuffer buffer,int n, int offset, int yOffset, int incx, int incy) {
+        if (incx == 1 && incy == 1 && offset == 0 && yOffset == 0) {
+            for (int i = 0; i < n; i++) {
+                put(i, getDouble(i) + buffer.getDouble(i));
+            }
+
+        }
+        else {
+            for (int c = 0, xi = offset, yi = yOffset; c < n; c++, xi += incx, yi += incy) {
+                put(yi,getDouble(yi) + buffer.getDouble(xi));
+            }
+
+
+        }
+
+    }
+
+    @Override
+    public void subi(DataBuffer buffer,int n, int offset, int yOffset, int incx, int incy) {
+
+
+        if (incx == 1 && incy == 1 && offset == 0 && yOffset == 0) {
+            for (int i = 0; i < n; i++) {
+                put(i, getDouble(i) - buffer.getDouble(i));
+            }
+
+        }
+        else {
+            for (int c = 0, xi = offset, yi = yOffset; c < n; c++, xi += incx, yi += incy) {
+                put(yi,getDouble(yi) - buffer.getDouble(xi));
+            }
+
+
+        }
+    }
+
+    @Override
+    public void muli(DataBuffer buffer, int n,int offset, int yOffset, int incx, int incy) {
+
+
+        if (incx == 1 && incy == 1 && offset == 0 && yOffset == 0) {
+            for (int i = 0; i < n; i++) {
+                put(i, getDouble(i) * buffer.getDouble(i));
+            }
+
+        }
+        else {
+            for (int c = 0, xi = offset, yi = yOffset; c < n; c++, xi += incx, yi += incy) {
+                put(yi,getDouble(yi) * buffer.getDouble(xi));
+            }
+
+
+        }
+    }
+
+    @Override
+    public void divi(DataBuffer buffer,int n, int offset, int yOffset, int incx, int incy) {
+
+
+        if (incx == 1 && incy == 1 && offset == 0 && yOffset == 0) {
+            for (int i = 0; i < n; i++) {
+                put(i, getDouble(i) / buffer.getDouble(i));
+            }
+
+        }
+
+        else {
+            for (int c = 0, xi = offset, yi = yOffset; c < n; c++, xi += incx, yi += incy) {
+                put(yi,getDouble(yi) / buffer.getDouble(xi));
+            }
+
+
+        }
+    }
 
     @Override
     public <E> void put(int i, E element) {

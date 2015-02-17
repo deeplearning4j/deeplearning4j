@@ -1,8 +1,9 @@
 package org.nd4j.linalg.jcublas.buffer;
 
-import jcuda.CudaException;
 import jcuda.Pointer;
 import jcuda.jcublas.JCublas;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -10,6 +11,8 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.ops.ElementWiseOp;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base class for a data buffer
@@ -19,6 +22,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected Pointer pointer;
     protected int length;
     protected int elementSize;
+    private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
 
     static {
         SimpleJCublas.init();
@@ -44,26 +48,41 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void alloc() {
-        SimpleJCublas.init();
-        JCublas.cublasInit();
         pointer = new Pointer();
         //allocate memory for the pointer
-        JCublas.cublasAlloc(
-                length,
-                elementSize
-                , pointer());
+        try {
+            JCuda.cudaMalloc(pointer(),
+                    length() * elementSize()
+            );
+
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
     @Override
     public void set(Pointer pointer) {
-        JCublas.cublasSetVector(
-                length,
-                elementSize,
-                pointer,
-                1,
-                pointer(),
-                1);
+        if(dataType() == DOUBLE) {
+            JCublas.cublasDcopy(
+                    length(),
+                    pointer,
+                    1,
+                    pointer(),
+                    1
+            );
+        }
+        else {
+            JCublas.cublasScopy(
+                    length(),
+                    pointer,
+                    1,
+                    pointer(),
+                    1
+            );
+        }
+
+
     }
 
 
@@ -74,19 +93,78 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected void copyTo(JCudaBuffer to) {
         if(to.dataType() != dataType())
             throw new IllegalArgumentException("Unable to copy buffer, mis matching data types.");
-        if(dataType() == DataBuffer.FLOAT) {
-            JCublas.cublasCcopy(length(),pointer(),1,to.pointer(),1);
-        }
-        else {
-            JCublas.cublasDcopy(length(),pointer(),1,to.pointer(),1);
-        }
+
+        JCuda.cudaMemcpy(
+                to.pointer()
+                ,pointer()
+                ,length() * elementSize()
+                , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+
 
     }
 
+    @Override
+    public void addi(Number n) {
+        addi(n,1,0);
+    }
+
+    @Override
+    public void subi(Number n) {
+        subi(n,1,0);
+    }
+
+    @Override
+    public void muli(Number n) {
+        muli(n,1,0);
+    }
+
+    @Override
+    public void divi(Number n) {
+        divi(n,1,0);
+    }
+
+    @Override
+    public void addi(DataBuffer buffer) {
+        addi(buffer,length(),0,0,1,1);
+    }
+
+    @Override
+    public void subi(DataBuffer buffer) {
+        subi(buffer,length(),0,0,1,1);
+    }
+
+    @Override
+    public void muli(DataBuffer buffer) {
+        muli(buffer,length(),0,0,1,1);
+    }
+
+    @Override
+    public void divi(DataBuffer buffer) {
+        divi(buffer,length(),0,0,1,1);
+    }
 
     @Override
     public void assign(Number value) {
         assign(value,0);
+    }
+
+
+    /**
+     * Get element with the specified index
+     * @param index the index of the element to get
+     * @param inc the increment step when getting data
+     * @param length the length to iterate for
+     * @param init the initialized pointer
+     */
+    protected void get(int index,int inc,int length,Pointer init) {
+        JCublas.cublasGetVector(
+                length
+                ,elementSize(),
+                pointer().withByteOffset(index * elementSize())
+                ,
+                inc,
+                init
+                ,1);
     }
 
     /**
@@ -95,29 +173,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param init the initialized pointer
      */
     protected void get(int index,int length,Pointer init) {
-        if(index == 0 && length == length()) {
-            if(dataType() == DataBuffer.FLOAT)
-                JCublas.cublasCcopy(length,pointer(),1,init,1);
-            else
-                JCublas.cublasDcopy(length,pointer(),1,init,1);
-
-        }
-
-
-        else {
-            try {
-                JCublas.cublasGetVector(
-                        length,
-                        elementSize(),
-                        pointer().withByteOffset(index * elementSize()),
-                        1,
-                        init,
-                        1);
-            }catch(CudaException e) {
-                throw new RuntimeException("Cuda exception with offset " + index + " and " + length + " out of total length " + length(),e);
-            }
-        }
-
+        get(index,1,length,init);
     }
 
     /**
@@ -155,9 +211,11 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 length,
                 elementSize(),
                 from,
-                1,
-                pointer().withByteOffset(index *  elementSize()),
-                inc);
+                inc,
+                pointer().withByteOffset(elementSize() * index)
+                ,1);
+
+
     }
     /**
      * Set an individual element
@@ -188,8 +246,17 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public void destroy() {
         JCublas.cublasFree(pointer);
+
+    }
+    @Override
+    public double[] getDoublesAt(int offset, int length) {
+        return getDoublesAt(0,1,length);
     }
 
+    @Override
+    public float[] getFloatsAt(int offset, int length) {
+        return getFloatsAt(offset,1,length);
+    }
 
     @Override
     public int elementSize() {

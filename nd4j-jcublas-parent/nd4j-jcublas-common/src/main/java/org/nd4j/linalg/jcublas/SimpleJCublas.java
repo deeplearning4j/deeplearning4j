@@ -1,32 +1,25 @@
 package org.nd4j.linalg.jcublas;
 
 import jcuda.*;
-import jcuda.driver.JCudaDriver;
 import jcuda.jcublas.JCublas;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
-import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-import javax.xml.crypto.Data;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.Iterator;
 
 /**
  * Created by mjk on 8/20/14.
@@ -65,58 +58,13 @@ public class SimpleJCublas {
 
 
 
-    public static void loadJCublas(File cuBlastmp,ClassPathResource resource, LibUtils.OSType os) {
-        File shared = new File(cuBlastmp,os == LibUtils.OSType.WINDOWS ? resourceName().replace("X","x").replaceAll("lib","") : resourceName().replace("X","x"));
-        try {
-            if(shared.exists())
-                shared.delete();
-            shared.createNewFile();
-            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(shared));
-            IOUtils.copy(resource.getInputStream(),bos);
-            bos.flush();
-            bos.close();
-            shared.deleteOnExit();
-
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to initialize jcublas",e);
-        }
-    }
-
-
-
-
     /**
      * Initialize jcublas only called once
      */
     public static void init() {
         if(init)
             return;
-
-
         String path = System.getProperty("java.library.path");
-        log.info("Loading native artifacts from " + path);
-        //write the file to somewhere on java.library.path where there is permissions
-        String name = "/" + resourceName().substring(3).replace("X","x");
-        ClassPathResource resource = new ClassPathResource(name);
-
-        if(!resource.exists() && name.startsWith(File.separator + "lib" + File.separator))
-            resource = new ClassPathResource(name.replaceAll("/lib/",""));
-        else if(!resource.exists()) {
-            resource = new ClassPathResource(name);
-        }
-
-        if(!resource.exists())
-            throw new IllegalStateException("Unable to find resource with name " + resource.getFilename());
-
-        log.info("Loading jcublas from " + resource.getFilename());
-
-
-        String home = findWritableLibDir();
-        File cuBlastmp = new File(home);
-        LibUtils.OSType os = LibUtils.calculateOS();
-        loadJCublas(cuBlastmp, resource, os);
-
-
         JCublas.setLogLevel(LogLevel.LOG_DEBUG);
         JCublas.setExceptionsEnabled(true);
 
@@ -125,160 +73,6 @@ public class SimpleJCublas {
 
 
 
-    private static String libDir() {
-        int bits =  thirtyTwoOrSixtyFour();
-        LibUtils.OSType o = LibUtils.calculateOS();
-        if(o != LibUtils.OSType.WINDOWS) {
-            String base = cudaBase() + File.separator  + libFolder();
-            String ret =  base + (bits == 64 ? "64" : "");
-            File test = new File(ret);
-            boolean exists = test.exists();
-            if(exists)
-                return ret;
-            if(!exists) {
-                File maybeThirtyTwoBit = new File(base);
-                if(bits == 64 && maybeThirtyTwoBit.exists()) {
-                    log.warn("Loading 32 bit cuda...no 64 bit found");
-                    return base;
-                }
-            }
-            else {
-                File testOther = new File(base);
-                if(!exists && !testOther.exists())
-                    throw new IllegalStateException("No lib directory found");
-                else
-                    return base;
-            }
-
-            return ret;
-
-        }
-
-        else {
-            String base = cudaBase() + File.separator  + libFolder() + File.separator;
-            if(bits == 32) {
-                base += "Win32";
-            }
-            else
-                base += "x64";
-            return base;
-        }
-    }
-
-
-    private static String libFolder() {
-        return  "lib";
-    }
-
-    private static int thirtyTwoOrSixtyFour() {
-        LibUtils.ARCHType ar = LibUtils.calculateArch();
-        switch(ar) {
-            case X86_64:
-                return 64;
-            case PPC_64:
-                return 64;
-            default:
-                return 32;
-        }
-
-    }
-
-
-    private static String cudaBase() {
-        String cudaHome = System.getProperty(JCUDA_HOME_PROP,System.getenv(CUDA_HOME));
-
-        if(cudaHome != null)
-            return cudaHome;
-        throw new IllegalStateException("Please specify a cuda home property in your environment (export CUDA_HOME=/path/to/your/dir) or via -Djcuda.home=/path/to/your/dir");
-
-    }
-
-
-
-    private static String jcudaRuntimeName() {
-        LibUtils.OSType osType = LibUtils.calculateOS();
-        LibUtils.ARCHType ar = LibUtils.calculateArch();
-
-        switch(osType) {
-            case APPLE:
-                return String.format("JCudaRuntime-apple-%s.dylib",ar.toString());
-            case LINUX:
-                return String.format("JCudaRuntime-linux-%s.so",ar.toString());
-            case SUN:
-                return String.format("JCudaRuntime-linux-%s.so",ar.toString());
-            case WINDOWS:
-                return String.format("JCudaRuntime-windows-%s.dll",ar.toString());
-            default:
-                return null;
-        }
-    }
-
-    private static String jcudaDriverName() {
-        LibUtils.OSType osType = LibUtils.calculateOS();
-        LibUtils.ARCHType ar = LibUtils.calculateArch();
-
-        switch(osType) {
-            case APPLE:
-                return String.format("JCudaDriver-apple-%s.dylib",ar.toString());
-            case LINUX:
-                return String.format("JCudaDriver-linux-%s.so",ar.toString());
-            case SUN:
-                return String.format("JCudaDriver-linux-%s.so",ar.toString());
-            case WINDOWS:
-                return String.format("JCudaDriver-windows-%s.dll",ar.toString());
-            default:
-                return null;
-        }
-    }
-
-    private static String resourceName() {
-        LibUtils.OSType osType = LibUtils.calculateOS();
-        LibUtils.ARCHType ar = LibUtils.calculateArch();
-
-        switch(osType) {
-            case APPLE:
-                return String.format("libJCublas-apple-%s.dylib",ar.toString());
-            case LINUX:
-                return String.format("libJCublas-linux-%s.so",ar.toString());
-            case SUN:
-                return String.format("libJCublas-linux-%s.so",ar.toString());
-            case WINDOWS:
-                return String.format("libJCublas-windows-%s.dll",ar.toString());
-            default:
-                return null;
-        }
-    }
-
-    //finds a writable directory on the java.library.path
-    private static String findWritableLibDir() {
-        String[] libPath = System.getProperty("java.library.path").split(File.pathSeparator);
-        for(String s : libPath) {
-            File dir = new File(s);
-            if(canWrite(dir))
-                return s;
-        }
-
-        throw new IllegalStateException("Unable to write to any library directories for jcublas");
-    }
-
-    private static boolean canWrite(File dir) {
-        if(!dir.exists())
-            return false;
-        else if(dir.isFile())
-            throw new IllegalArgumentException("Tests only directories");
-        else {
-            File newFile = new File(dir,"dummyfile");
-            newFile.deleteOnExit();
-            try {
-                if(!newFile.createNewFile())
-                    return false;
-            }catch(IOException e) {
-                return false;
-            }
-
-            return true;
-        }
-    }
 
 
 

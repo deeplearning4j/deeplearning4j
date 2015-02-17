@@ -184,7 +184,7 @@ public class Transforms {
         return neg(ndArray,true);
     }
     public static IComplexNDArray neg(IComplexNDArray ndArray) {
-        return neg(ndArray,true);
+        return neg(ndArray,Nd4j.copyOnOps);
     }
 
 
@@ -194,7 +194,7 @@ public class Transforms {
      * @return
      */
     public static INDArray eq(INDArray ndArray) {
-        return eq(ndArray,true);
+        return eq(ndArray,Nd4j.copyOnOps);
 
     }
 
@@ -204,7 +204,7 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray eq(IComplexNDArray ndArray) {
-        return eq(ndArray,true);
+        return eq(ndArray,Nd4j.copyOnOps);
     }
 
     /**
@@ -213,7 +213,7 @@ public class Transforms {
      * @return
      */
     public static INDArray neq(INDArray ndArray) {
-        return neq(ndArray,true);
+        return neq(ndArray,Nd4j.copyOnOps);
 
     }
 
@@ -223,7 +223,7 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray neq(IComplexNDArray ndArray) {
-        return neq(ndArray,true);
+        return neq(ndArray,Nd4j.copyOnOps);
     }
 
 
@@ -234,7 +234,7 @@ public class Transforms {
      * @return
      */
     public static INDArray floor(INDArray ndArray) {
-        return floor(ndArray,true);
+        return floor(ndArray,Nd4j.copyOnOps);
 
     }
 
@@ -244,7 +244,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sign(IComplexNDArray toSign) {
-        return sign(toSign,true);
+        return sign(toSign,Nd4j.copyOnOps);
     }
 
     /**
@@ -253,7 +253,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sign(INDArray toSign) {
-        return sign(toSign,true);
+        return sign(toSign,Nd4j.copyOnOps);
     }
 
 
@@ -263,7 +263,7 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray floor(IComplexNDArray ndArray) {
-        return floor(ndArray,true);
+        return floor(ndArray,Nd4j.copyOnOps);
     }
 
 
@@ -276,7 +276,7 @@ public class Transforms {
      * @return
      */
     public static INDArray gt(INDArray ndArray) {
-        return gt(ndArray,true);
+        return gt(ndArray,Nd4j.copyOnOps);
     }
 
 
@@ -287,7 +287,7 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray gt(IComplexNDArray ndArray) {
-        return gt(ndArray,true);
+        return gt(ndArray,Nd4j.copyOnOps);
     }
 
 
@@ -298,7 +298,7 @@ public class Transforms {
      * @return
      */
     public static INDArray lt(INDArray ndArray) {
-        return lt(ndArray,true);
+        return lt(ndArray,Nd4j.copyOnOps);
 
     }
 
@@ -308,14 +308,14 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray lt(IComplexNDArray ndArray) {
-        return lt(ndArray,true);
+        return lt(ndArray,Nd4j.copyOnOps);
     }
 
     public static INDArray stabilize(INDArray ndArray,double k) {
-        return stabilize(ndArray,k,true);
+        return stabilize(ndArray,k,Nd4j.copyOnOps);
     }
     public static IComplexNDArray stabilize(IComplexNDArray ndArray,double k) {
-        return stabilize(ndArray,k,true);
+        return stabilize(ndArray,k,Nd4j.copyOnOps);
     }
 
 
@@ -328,30 +328,30 @@ public class Transforms {
 
     }
     public static IComplexNDArray abs(IComplexNDArray ndArray) {
-        return abs(ndArray,true);
+        return abs(ndArray,Nd4j.copyOnOps);
     }
 
     public static INDArray exp(INDArray ndArray) {
-        return exp(ndArray,true);
+        return exp(ndArray,Nd4j.copyOnOps);
     }
     public static IComplexNDArray exp(IComplexNDArray ndArray) {
-        return exp(ndArray,true);
+        return exp(ndArray,Nd4j.copyOnOps);
     }
     public static INDArray hardTanh(INDArray ndArray) {
-        return hardTanh(ndArray,true);
+        return hardTanh(ndArray,Nd4j.copyOnOps);
 
     }
     public static IComplexNDArray hardTanh(IComplexNDArray ndArray) {
-        return hardTanh(ndArray,true);
+        return hardTanh(ndArray,Nd4j.copyOnOps);
     }
     public static INDArray identity(INDArray ndArray) {
-        return identity(ndArray,true);
+        return identity(ndArray,Nd4j.copyOnOps);
     }
     public static IComplexNDArray identity(IComplexNDArray ndArray) {
-        return identity(ndArray,true);
+        return identity(ndArray,Nd4j.copyOnOps);
     }
     public static INDArray max(INDArray ndArray) {
-        return max(ndArray,true);
+        return max(ndArray,Nd4j.copyOnOps);
     }
 
     /**
@@ -361,7 +361,7 @@ public class Transforms {
      * @return
      */
     public static INDArray max(INDArray ndArray,double max) {
-        return max(ndArray,max,true);
+        return max(ndArray,max,Nd4j.copyOnOps);
     }
 
     /**
@@ -371,47 +371,47 @@ public class Transforms {
      * @return
      */
     public static IComplexNDArray max(IComplexNDArray ndArray,double max) {
-        return max(ndArray,max,true);
+        return max(ndArray,max,Nd4j.copyOnOps);
     }
     public static IComplexNDArray max(IComplexNDArray ndArray) {
-        return max(ndArray,true);
+        return max(ndArray,Nd4j.copyOnOps);
     }
     public static INDArray pow(INDArray ndArray,Number power) {
-        return pow(ndArray,power,true);
+        return pow(ndArray,power,Nd4j.copyOnOps);
 
     }
     public static IComplexNDArray pow(IComplexNDArray ndArray,IComplexNumber power) {
-        return pow(ndArray,power,true);
+        return pow(ndArray,power,Nd4j.copyOnOps);
     }
     public static INDArray round(INDArray ndArray) {
-        return round(ndArray,true);
+        return round(ndArray,Nd4j.copyOnOps);
     }
     public static IComplexNDArray round(IComplexNDArray ndArray) {
-        return round(ndArray,true);
+        return round(ndArray,Nd4j.copyOnOps);
     }
     public static INDArray sigmoid(INDArray ndArray) {
-        return sigmoid(ndArray,true);
+        return sigmoid(ndArray,Nd4j.copyOnOps);
     }
     public static IComplexNDArray sigmoid(IComplexNDArray ndArray) {
-        return sigmoid(ndArray,true);
+        return sigmoid(ndArray,Nd4j.copyOnOps);
     }
     public static INDArray sqrt(INDArray ndArray) {
-        return sqrt(ndArray,true);
+        return sqrt(ndArray,Nd4j.copyOnOps);
     }
     public static IComplexNDArray sqrt(IComplexNDArray ndArray) {
-        return sqrt(ndArray,true);
+        return sqrt(ndArray,Nd4j.copyOnOps);
     }
     public static INDArray tanh(INDArray ndArray) {
-        return tanh(ndArray,true);
+        return tanh(ndArray,Nd4j.copyOnOps);
     }
     public static IComplexNDArray tanh(IComplexNDArray ndArray) {
-        return tanh(ndArray,true);
+        return tanh(ndArray,Nd4j.copyOnOps);
     }
     public static INDArray log(INDArray ndArray) {
-        return log(ndArray,true);
+        return log(ndArray,Nd4j.copyOnOps);
     }
     public static IComplexNDArray log(IComplexNDArray ndArray) {
-        return log(ndArray,true);
+        return log(ndArray,Nd4j.copyOnOps);
     }
 
 

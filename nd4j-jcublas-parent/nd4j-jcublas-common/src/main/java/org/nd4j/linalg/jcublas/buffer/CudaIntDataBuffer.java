@@ -67,6 +67,16 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
+    public double[] getDoublesAt(int offset, int inc, int length) {
+        return new double[0];
+    }
+
+    @Override
+    public float[] getFloatsAt(int offset, int inc, int length) {
+        return new float[0];
+    }
+
+    @Override
     public void assign(Number value, int offset) {
         int arrLength = length - offset;
         int[] data = new int[arrLength];
@@ -179,6 +189,46 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void apply(ElementWiseOp op, int offset) {
+
+    }
+
+    @Override
+    public void addi(Number n, int inc, int offset) {
+
+    }
+
+    @Override
+    public void subi(Number n, int inc, int offset) {
+
+    }
+
+    @Override
+    public void muli(Number n, int inc, int offset) {
+
+    }
+
+    @Override
+    public void divi(Number n, int inc, int offset) {
+
+    }
+
+    @Override
+    public void addi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+
+    }
+
+    @Override
+    public void subi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+
+    }
+
+    @Override
+    public void muli(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+
+    }
+
+    @Override
+    public void divi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
 
     }
 

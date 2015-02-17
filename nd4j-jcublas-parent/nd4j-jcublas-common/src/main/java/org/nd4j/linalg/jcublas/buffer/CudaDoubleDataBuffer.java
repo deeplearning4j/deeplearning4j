@@ -70,18 +70,28 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public double[] getDoublesAt(int offset, int length) {
-        if(offset + length > length())
-            length -= offset;
-
-        double[] ret = new double[length];
-        Pointer p = Pointer.to(ret);
-        get(offset,length,p);
-        return ret;
+        return getDoublesAt(0,1,length);
     }
 
     @Override
     public float[] getFloatsAt(int offset, int length) {
         return ArrayUtil.toFloats(getDoublesAt(offset,length));
+    }
+
+    @Override
+    public double[] getDoublesAt(int offset, int inc, int length) {
+        if(offset + length > length())
+            length -= offset;
+
+        double[] ret = new double[length];
+        Pointer p = Pointer.to(ret);
+        get(offset,inc,length,p);
+        return ret;
+    }
+
+    @Override
+    public float[] getFloatsAt(int offset, int inc, int length) {
+        return ArrayUtil.toFloats(getDoublesAt(offset,1,length));
     }
 
     @Override
@@ -112,13 +122,15 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         if(pointer() == null)
             alloc();
 
+
         JCublas.cublasSetVector(
-                length,
-                elementSize,
-                Pointer.to(data),
-                1,
-                pointer(),
-                1);
+                length()
+                ,elementSize()
+                ,Pointer.to(data)
+                ,1
+                ,pointer()
+                ,1);
+
 
     }
 
@@ -205,7 +217,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public DataBuffer dup() {
-        CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(length);
+        CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(length());
         copyTo(buffer);
         return buffer;
     }
@@ -227,6 +239,46 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         floatBuffer.apply(op);
         p = Pointer.to(data);
         set(offset,arrLength,p);
+    }
+
+    @Override
+    public void addi(Number n, int inc, int offset) {
+
+    }
+
+    @Override
+    public void subi(Number n, int inc, int offset) {
+
+    }
+
+    @Override
+    public void muli(Number n, int inc, int offset) {
+
+    }
+
+    @Override
+    public void divi(Number n, int inc, int offset) {
+
+    }
+
+    @Override
+    public void addi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+
+    }
+
+    @Override
+    public void subi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+
+    }
+
+    @Override
+    public void muli(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+
+    }
+
+    @Override
+    public void divi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+
     }
 
 

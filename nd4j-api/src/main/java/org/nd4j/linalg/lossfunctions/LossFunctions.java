@@ -125,8 +125,6 @@ public class LossFunctions {
 
         INDArray logSigV = log(sigV);
         INDArray sigVRsub1 = sigV.rsub(1);
-        if(!Shape.shapeEquals(sigVRsub1.shape(), input.shape()))
-            throw new IllegalStateException("hmm");
 
         INDArray logSigVRSub1 =  log(sigVRsub1);
         INDArray inputRsub1 = input.rsub(1);
@@ -140,7 +138,9 @@ public class LossFunctions {
 
             double ret = mean.getDouble(0);
             ret /= (double) input.rows();
-
+            rows.data().destroy();
+            mean.data().destroy();
+            inner.data().destroy();
 
             return -ret;
         }catch(Exception e) {
