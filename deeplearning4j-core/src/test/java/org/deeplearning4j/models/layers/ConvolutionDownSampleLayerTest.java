@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
@@ -80,9 +81,9 @@ public class ConvolutionDownSampleLayerTest {
                 .list(2)
                 .preProcessor(0,new ConvolutionPostProcessor())
                 .hiddenLayerSizes(new int[]{9})
-                .override(new NeuralNetConfiguration.ConfOverride() {
+                .override(new ConfOverride() {
                     @Override
-                    public void override(int i, NeuralNetConfiguration.Builder builder) {
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 1) {
                             builder.layerFactory(new DefaultLayerFactory(OutputLayer.class));
                             builder.activationFunction(Activations.softMaxRows());

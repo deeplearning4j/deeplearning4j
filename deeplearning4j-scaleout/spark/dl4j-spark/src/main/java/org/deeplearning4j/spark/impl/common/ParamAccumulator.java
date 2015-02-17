@@ -21,6 +21,6 @@ public class ParamAccumulator implements AccumulatorParam<INDArray> {
 
     @Override
     public INDArray zero(INDArray indArray) {
-        return Nd4j.zeros(indArray.shape());
+        return indArray;
     }
 }

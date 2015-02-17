@@ -8,9 +8,6 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.deeplearning4j.util.MathUtils.binomial;
-
-
 /**
  *  Autoencoder.
  * Add Gaussian noise to input and learn
@@ -31,9 +28,6 @@ public class AutoEncoder extends BasePretrainNetwork  {
         super(conf, input);
     }
 
-
-
-
     @Override
     public Pair<INDArray, INDArray> sampleHiddenGivenVisible(
             INDArray v) {
@@ -41,15 +35,12 @@ public class AutoEncoder extends BasePretrainNetwork  {
         return new Pair<>(ret,ret);
     }
 
-
     @Override
     public Pair<INDArray, INDArray> sampleVisibleGivenHidden(
             INDArray h) {
         INDArray ret = decode(h);
         return new Pair<>(ret,ret);
     }
-
-
 
     // Encode
     public INDArray encode(INDArray x) {
@@ -60,12 +51,12 @@ public class AutoEncoder extends BasePretrainNetwork  {
         if(conf.isConcatBiases()) {
             INDArray concat = Nd4j.hstack(W,hBias.transposei());
             preAct =  x.mmul(concat);
-
         }
-        else
-            preAct = x.mmul(W).addiRowVector(hBias);
-        INDArray ret = conf.getActivationFunction().apply(preAct);
-        return ret;
+        else {
+          preAct = x.mmul(W).addiRowVector(hBias);
+        }
+
+        return conf.getActivationFunction().apply(preAct);
     }
 
     // Decode
@@ -94,7 +85,7 @@ public class AutoEncoder extends BasePretrainNetwork  {
     }
 
     @Override
-    public  Gradient getGradient() {
+    public  Gradient gradient() {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
 
         double corruptionLevel = conf.getCorruptionLevel();

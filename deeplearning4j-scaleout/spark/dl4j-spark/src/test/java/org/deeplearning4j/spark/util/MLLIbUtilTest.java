@@ -19,7 +19,7 @@ import java.util.List;
  * Created by agibsonccc on 1/23/15.
  */
 public class MLLIbUtilTest extends BaseSparkTest {
-    private static Logger log = LoggerFactory.getLogger(MLLIbUtilTest.class);
+    private static final Logger log = LoggerFactory.getLogger(MLLIbUtilTest.class);
 
     @Test
     public void testMlLibTest() {

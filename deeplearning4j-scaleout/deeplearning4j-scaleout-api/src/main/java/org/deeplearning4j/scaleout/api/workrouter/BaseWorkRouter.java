@@ -15,7 +15,7 @@ public abstract class BaseWorkRouter implements WorkRouter {
 
     protected StateTracker stateTracker;
     protected boolean waitForWorkers = true;
-    protected static Logger log = LoggerFactory.getLogger(WorkRouter.class);
+    protected static final Logger log = LoggerFactory.getLogger(WorkRouter.class);
 
     public BaseWorkRouter() {
 

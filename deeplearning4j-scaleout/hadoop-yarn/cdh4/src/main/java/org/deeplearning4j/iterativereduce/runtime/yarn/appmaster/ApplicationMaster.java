@@ -1,39 +1,58 @@
 package org.deeplearning4j.iterativereduce.runtime.yarn.appmaster;
 
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.security.PrivilegedExceptionAction;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.hadoop.mapred.InputFormat;
+import org.apache.hadoop.mapred.InputSplit;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
-import org.apache.hadoop.yarn.api.records.*;
+import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
+import org.apache.hadoop.yarn.api.records.Container;
+import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.ContainerStatus;
+import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
+import org.apache.hadoop.yarn.api.records.LocalResource;
+import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
+import org.apache.hadoop.yarn.api.records.ResourceRequest;
 import org.apache.hadoop.yarn.exceptions.YarnRemoteException;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.deeplearning4j.iterativereduce.runtime.ComputableMaster;
 import org.deeplearning4j.iterativereduce.runtime.ConfigFields;
-import org.deeplearning4j.scaleout.api.ir.Updateable;
 import org.deeplearning4j.iterativereduce.runtime.Utils;
 import org.deeplearning4j.iterativereduce.runtime.yarn.ContainerManagerHandler;
 import org.deeplearning4j.iterativereduce.runtime.yarn.ResourceManagerHandler;
 import org.deeplearning4j.iterativereduce.runtime.yarn.avro.generated.FileSplit;
 import org.deeplearning4j.iterativereduce.runtime.yarn.avro.generated.StartupConfiguration;
 import org.deeplearning4j.iterativereduce.runtime.yarn.avro.generated.WorkerId;
+import org.deeplearning4j.scaleout.api.ir.Updateable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.security.PrivilegedExceptionAction;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /*
  * Future YARN entry point
@@ -75,7 +94,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
   }
 
   public ApplicationMaster(ComputableMaster<T> computableMaster,
-                           Class<T> updatable) throws FileNotFoundException, IOException {
+                           Class<T> updatable) throws IOException {
 
     // TODO: make port configurable
     this(9999, computableMaster, updatable);
@@ -196,7 +215,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
     FileSystem fs = FileSystem.get(conf);
     FileStatus f = fs.getFileStatus( inputPath );
     //BlockLocation[] bl = fs.getFileBlockLocations(p, 0, f.getLen());
-    Set<ConfigurationTuple> configTuples = new HashSet<ConfigurationTuple>();
+    Set<ConfigurationTuple> configTuples = new HashSet<>();
     int workerId = 0;
 
     JobConf job = new JobConf( new Configuration() );
@@ -267,7 +286,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
   private Map<String, Integer> getNumberContainersHostMapping(
           Set<ConfigurationTuple> configTuples) {
 
-    Map<String, Integer> containerHostMapping = new HashMap<String, Integer>();
+    Map<String, Integer> containerHostMapping = new HashMap<>();
 
     for (ConfigurationTuple tuple : configTuples) {
       Integer count = containerHostMapping.get(tuple.getHost());
@@ -293,13 +312,12 @@ public class ApplicationMaster<T extends Updateable> extends Configured
           throws YarnRemoteException { // TODO: fix - find a way around this
 
     Map<String, Integer> numberContainerHostsMapping = getNumberContainersHostMapping(configTuples);
-    List<ResourceRequest> requestedContainers = new ArrayList<ResourceRequest>();
+    List<ResourceRequest> requestedContainers = new ArrayList<>();
     int memory = Integer.parseInt(props.getProperty(ConfigFields.YARN_MEMORY,
             "512"));
 
     // Get the cluster map so we can do some assignment stuff
     rmHandler.getClientResourceManager();
-    List<NodeReport> nodes = rmHandler.getClusterNodes();
 
     for (Map.Entry<String, Integer> entry : numberContainerHostsMapping
             .entrySet()) {
@@ -415,8 +433,8 @@ public class ApplicationMaster<T extends Updateable> extends Configured
 
         // Get status
         cmHandler.getContainerStatus();
-      } catch (YarnRemoteException ex) { // Container status, fatalish
-      } catch (IOException ex) { // Starting container, fatal
+      } catch (IOException ex) {
+       // Starting container, fatal
       }
     }
   }
@@ -464,10 +482,10 @@ public class ApplicationMaster<T extends Updateable> extends Configured
     try {
       int needed = configTuples.size();
       int got = 0;
-      int maxAttempts = Integer.parseInt(props.getProperty(ConfigFields.APP_ALLOCATION_MAX_ATTEMPTS, "10"));;
+      int maxAttempts = Integer.parseInt(props.getProperty(ConfigFields.APP_ALLOCATION_MAX_ATTEMPTS, "10"));
       int attempts = 0;
 
-      List<Container> acquiredContainers = null;
+      List<Container> acquiredContainers;
 
       while (got < needed && attempts < maxAttempts) {
         LOG.info("Requesting containers" + ", got=" + got + ", needed="
@@ -539,7 +557,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
     // Launch our worker process, as we now expect workers to actally do
     // something
     LOG.info("Starting master service");
-    ApplicationMasterService<T> masterService = new ApplicationMasterService<T>(
+    ApplicationMasterService<T> masterService = new ApplicationMasterService<>(
             masterAddr, startupConf, masterComputable, masterUpdateable, appConfig,
             conf);
 

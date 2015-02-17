@@ -125,7 +125,7 @@ public class MultiLayerConfiguration implements Serializable {
     public String toJson() {
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
         try {
-            return mapper.writeValueAsString(this).replaceAll("\"activationFunction\",", "").replaceAll("\"rng\",","").replaceAll("\"dist\",", "").replaceAll("\"stepFunction\",","").replaceAll("\"layerFactory\",","");
+            return mapper.writeValueAsString(this);
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -145,9 +145,19 @@ public class MultiLayerConfiguration implements Serializable {
         }
     }
 
-
-    public MultiLayerConfiguration clone() {
-        return new MultiLayerConfiguration(this);
+    @Override
+    public String toString() {
+        return "MultiLayerConfiguration{" +
+                "hiddenLayerSizes=" + Arrays.toString(hiddenLayerSizes) +
+                ", confs=" + confs +
+                ", useDropConnect=" + useDropConnect +
+                ", useGaussNewtonVectorProductBackProp=" + useGaussNewtonVectorProductBackProp +
+                ", pretrain=" + pretrain +
+                ", useRBMPropUpAsActivations=" + useRBMPropUpAsActivations +
+                ", dampingFactor=" + dampingFactor +
+                ", processors=" + processors +
+                ", backward=" + backward +
+                '}';
     }
 
     @Override
@@ -157,13 +167,16 @@ public class MultiLayerConfiguration implements Serializable {
 
         MultiLayerConfiguration that = (MultiLayerConfiguration) o;
 
-        return Double.compare(that.dampingFactor, dampingFactor) == 0
-            && pretrain == that.pretrain && useDropConnect == that.useDropConnect
-            && useGaussNewtonVectorProductBackProp == that.useGaussNewtonVectorProductBackProp
-            && useRBMPropUpAsActivations == that.useRBMPropUpAsActivations
-            && !(confs != null ? !confs.equals(that.confs) : that.confs != null)
-            && Arrays.equals(hiddenLayerSizes, that.hiddenLayerSizes);
+        if (backward != that.backward) return false;
+        if (Double.compare(that.dampingFactor, dampingFactor) != 0) return false;
+        if (pretrain != that.pretrain) return false;
+        if (useDropConnect != that.useDropConnect) return false;
+        if (useGaussNewtonVectorProductBackProp != that.useGaussNewtonVectorProductBackProp) return false;
+        if (useRBMPropUpAsActivations != that.useRBMPropUpAsActivations) return false;
+        if (confs != null ? !confs.equals(that.confs) : that.confs != null) return false;
+        if (!Arrays.equals(hiddenLayerSizes, that.hiddenLayerSizes)) return false;
 
+        return true;
     }
 
     @Override
@@ -178,7 +191,13 @@ public class MultiLayerConfiguration implements Serializable {
         result = 31 * result + (useRBMPropUpAsActivations ? 1 : 0);
         temp = Double.doubleToLongBits(dampingFactor);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (processors != null ? processors.hashCode() : 0);
+        result = 31 * result + (backward ? 1 : 0);
         return result;
+    }
+
+    public MultiLayerConfiguration clone() {
+        return new MultiLayerConfiguration(this);
     }
 
     public static class Builder {
@@ -256,6 +275,19 @@ public class MultiLayerConfiguration implements Serializable {
         }
 
         @Override
+        public String toString() {
+            return "Builder{" +
+                    "confs=" + confs +
+                    ", hiddenLayerSizes=" + Arrays.toString(hiddenLayerSizes) +
+                    ", useDropConnect=" + useDropConnect +
+                    ", pretrain=" + pretrain +
+                    ", useRBMPropUpAsActivations=" + useRBMPropUpAsActivations +
+                    ", dampingFactor=" + dampingFactor +
+                    ", preProcessors=" + preProcessors +
+                    '}';
+        }
+
+        @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (!(o instanceof Builder)) return false;
@@ -266,8 +298,7 @@ public class MultiLayerConfiguration implements Serializable {
                 && pretrain == builder.pretrain && useDropConnect == builder.useDropConnect
                 && useRBMPropUpAsActivations == builder.useRBMPropUpAsActivations
                 && !(confs != null ? !confs.equals(builder.confs) : builder.confs != null)
-                && Arrays.equals(hiddenLayerSizes, builder.hiddenLayerSizes)
-                && !(preProcessors != null ? !preProcessors.equals(builder.preProcessors) : builder.preProcessors != null);
+                && Arrays.equals(hiddenLayerSizes, builder.hiddenLayerSizes);
 
         }
 
@@ -286,6 +317,8 @@ public class MultiLayerConfiguration implements Serializable {
             return result;
         }
     }
+
+
 
 
 }

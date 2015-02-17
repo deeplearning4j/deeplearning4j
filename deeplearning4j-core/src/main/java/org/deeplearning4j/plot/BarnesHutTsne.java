@@ -26,11 +26,11 @@ import org.nd4j.linalg.learning.AdaGrad;
 
 
 import java.util.List;
+import java.util.Map;
 
 import static org.nd4j.linalg.factory.Nd4j.ones;
 import static org.nd4j.linalg.factory.Nd4j.randn;
 import static org.nd4j.linalg.factory.Nd4j.zeros;
-import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 
 /**
@@ -183,6 +183,31 @@ public class BarnesHutTsne extends Tsne implements Model {
     @Override
     public ConvexOptimizer getOptimizer() {
         return null;
+    }
+
+    @Override
+    public INDArray getParam(String param) {
+        return null;
+    }
+
+    @Override
+    public void initParams() {
+
+    }
+
+    @Override
+    public Map<String, INDArray> paramTable() {
+        return null;
+    }
+
+    @Override
+    public void setParamTable(Map<String, INDArray> paramTable) {
+
+    }
+
+    @Override
+    public void setParam(String key, INDArray val) {
+
     }
 
     /* compute the gradient given the current solution, the probabilities and the constant */
@@ -373,7 +398,7 @@ public class BarnesHutTsne extends Tsne implements Model {
      */
     @Override
     public void step(INDArray p,int i) {
-        Gradient g = getGradient();
+        Gradient g = gradient();
         update(g);
         y.addi(yIncs);
 
@@ -382,7 +407,7 @@ public class BarnesHutTsne extends Tsne implements Model {
 
     @Override
     public void update(Gradient gradient) {
-        INDArray yGrads = gradient.gradientLookupTable().get(Y_GRAD);
+        INDArray yGrads = gradient.gradientForVariable().get(Y_GRAD);
 
         gains = gains.add(.2)
                 .muli(sign(yGrads)).neqi(sign(yIncs))
@@ -409,7 +434,7 @@ public class BarnesHutTsne extends Tsne implements Model {
         yIncs.muli(momentum).subi(gradChange);
 
 
-        gradient.gradientLookupTable().put(Y_GRAD,yIncs);
+        gradient.gradientForVariable().put(Y_GRAD,yIncs);
 
     }
 
@@ -490,7 +515,7 @@ public class BarnesHutTsne extends Tsne implements Model {
     }
 
     @Override
-    public Gradient getGradient() {
+    public Gradient gradient() {
         if(yIncs == null)
             yIncs =  zeros(y.shape());
         if(gains == null)
@@ -511,13 +536,13 @@ public class BarnesHutTsne extends Tsne implements Model {
         INDArray dC = posF.subi(negF.divi(sumQ));
 
         Gradient ret = new DefaultGradient();
-        ret.gradientLookupTable().put(Y_GRAD,dC);
+        ret.gradientForVariable().put(Y_GRAD,dC);
         return ret;
     }
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(getGradient(),score());
+        return new Pair<>(gradient(),score());
     }
 
     @Override

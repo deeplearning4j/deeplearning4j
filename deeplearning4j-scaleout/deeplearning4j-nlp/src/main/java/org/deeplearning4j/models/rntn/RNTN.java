@@ -141,7 +141,7 @@ public class RNTN implements Layer {
 
     private Map<Integer,Double> classWeights;
 
-    private static Logger log = LoggerFactory.getLogger(RNTN.class);
+    private static final Logger log = LoggerFactory.getLogger(RNTN.class);
 
 
     private transient ActorSystem rnTnActorSystem = ActorSystem.create("RNTN");
@@ -1034,7 +1034,7 @@ public class RNTN implements Layer {
     }
 
     @Override
-    public Gradient getGradient() {
+    public Gradient gradient() {
         return null;
     }
 

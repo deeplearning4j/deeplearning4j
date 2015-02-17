@@ -28,7 +28,7 @@ public  class HdfsLock implements Watcher {
 	private ZooKeeper zk;
 	private String host;
 	private int port;
-	private static Logger log = LoggerFactory.getLogger(HdfsLock.class);
+	private static final Logger log = LoggerFactory.getLogger(HdfsLock.class);
 	public HdfsLock(String host,int port) {
 		this.host = host;
 		this.port = port;

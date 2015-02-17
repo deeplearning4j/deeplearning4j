@@ -5,13 +5,11 @@ import java.io.InputStream;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.fit.factory.AnalysisEngineFactory;
 import org.apache.uima.resource.ResourceInitializationException;
-import org.apache.uima.util.CasPool;
 import org.deeplearning4j.text.annotator.SentenceAnnotator;
-import org.deeplearning4j.text.annotator.StemmerAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
-import org.deeplearning4j.text.tokenization.tokenizer.UimaTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
+import org.deeplearning4j.text.tokenization.tokenizer.UimaTokenizer;
 import org.deeplearning4j.text.uima.UimaResource;
 
 
@@ -25,27 +23,22 @@ import org.deeplearning4j.text.uima.UimaResource;
  */
 public class UimaTokenizerFactory implements TokenizerFactory {
 
-
 	private UimaResource uimaResource;
 	private boolean checkForLabel;
 	private static AnalysisEngine defaultAnalysisEngine;
-    private TokenPreProcess preProcess;
+  private TokenPreProcess preProcess;
 
 	public UimaTokenizerFactory() throws ResourceInitializationException {
 		this(defaultAnalysisEngine(),true);
 	}
 
-
 	public UimaTokenizerFactory(UimaResource resource) {
 		this(resource,true);
 	}
 
-
 	public UimaTokenizerFactory(AnalysisEngine tokenizer) {
 		this(tokenizer,true);
 	}
-
-
 
 	public UimaTokenizerFactory(UimaResource resource,boolean checkForLabel) {
 		this.uimaResource = resource;
@@ -56,31 +49,24 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 		this(defaultAnalysisEngine(),checkForLabel);
 	}
 
-
-
 	public UimaTokenizerFactory(AnalysisEngine tokenizer,boolean checkForLabel) {
 		super();
 		this.checkForLabel = checkForLabel;
 		try {
 			this.uimaResource = new UimaResource(tokenizer);
-
-
 		}catch(Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-
-
 	@Override
 	public  Tokenizer create(String toTokenize) {
 		if(toTokenize == null || toTokenize.isEmpty())
 			throw new IllegalArgumentException("Unable to proceed; on sentence to tokenize");
-		Tokenizer ret =  new UimaTokenizer(toTokenize,uimaResource,checkForLabel);
+		Tokenizer ret = new UimaTokenizer(toTokenize,uimaResource,checkForLabel);
         ret.setTokenPreProcessor(preProcess);
         return ret;
 	}
-
 
 	public UimaResource getUimaResource() {
 		return uimaResource;
@@ -94,7 +80,6 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 	public static AnalysisEngine defaultAnalysisEngine()  {
 		try {
 			if(defaultAnalysisEngine == null)
-
 				defaultAnalysisEngine =  AnalysisEngineFactory.createEngine(
 						AnalysisEngineFactory.createEngineDescription(
 								SentenceAnnotator.getDescription(),
