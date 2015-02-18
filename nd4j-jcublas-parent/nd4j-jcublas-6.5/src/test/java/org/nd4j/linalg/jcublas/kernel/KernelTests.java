@@ -16,6 +16,8 @@
 
 package org.nd4j.linalg.jcublas.kernel;
 
+
+
 import jcuda.Pointer;
 import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUfunction;
@@ -25,7 +27,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
-
+import static org.junit.Assert.assertArrayEquals;
 /**
  * Created by agibsonccc on 2/17/15.
  */
@@ -48,7 +50,8 @@ public class KernelTests {
                 ,Pointer.to(KernelFunctions.alloc(ones))
                 , Pointer.to(KernelFunctions.alloc(two))
                 ,Pointer.to(result2));
-        KernelFunctions.invoke(2,function,pointer,result2,DataBuffer.FLOAT);
+        float[] result4 = (float[]) KernelFunctions.invoke(2,function,pointer,result2,DataBuffer.FLOAT);
+        assertArrayEquals(result,result4,1e-1f);
 
     }
 

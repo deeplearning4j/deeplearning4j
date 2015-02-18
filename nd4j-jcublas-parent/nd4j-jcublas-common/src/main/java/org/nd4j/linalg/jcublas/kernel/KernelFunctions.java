@@ -102,7 +102,7 @@ public class KernelFunctions {
      * @param kernelParameters the parameters
      * @param deviceOutput     the output pointer
      */
-    public static void invoke(int numElements, CUfunction function, Pointer kernelParameters, CUdeviceptr deviceOutput, int dType) {
+    public static Object invoke(int numElements, CUfunction function, Pointer kernelParameters, CUdeviceptr deviceOutput, int dType) {
         // Call the kernel function.
         int blockSizeX = 256;
         int gridSizeX = (int) Math.ceil((double) numElements / blockSizeX);
@@ -120,11 +120,13 @@ public class KernelFunctions {
             float hostOutput[] = new float[numElements];
             cuMemcpyDtoH(Pointer.to(hostOutput), deviceOutput,
                     numElements * Sizeof.FLOAT);
+            return hostOutput;
 
         } else {
             double hostOutput[] = new double[numElements];
             cuMemcpyDtoH(Pointer.to(hostOutput), deviceOutput,
                     numElements * Sizeof.DOUBLE);
+            return hostOutput;
 
         }
 
