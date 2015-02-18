@@ -51,20 +51,16 @@ public class Pair<F, S> implements Serializable,Comparable<Pair<F,S>> {
 	}
 
 	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (!(o instanceof Pair))
-			return false;
+    if (this == o)
+      return true;
+    if (!(o instanceof Pair))
+      return false;
 
-		final Pair pair = (Pair) o;
+    final Pair pair = (Pair) o;
 
-		if (first != null ? !first.equals(pair.first) : pair.first != null)
-			return false;
-		if (second != null ? !second.equals(pair.second) : pair.second != null)
-			return false;
+    return !(first != null ? !first.equals(pair.first) : pair.first != null) && !(second != null ? !second.equals(pair.second) : pair.second != null);
 
-		return true;
-	}
+  }
 
 	public int hashCode() {
 		int result;

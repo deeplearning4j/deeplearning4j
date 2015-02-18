@@ -42,10 +42,10 @@ public class RecursiveParamInitializer extends DefaultParamInitializer {
         int vis = conf.getnIn();
         int out = vis * 2;
 
-        params.put(W, WeightInitUtil.initWeights(new int[]{out,vis},conf.getWeightInit(),conf.getActivationFunction(),conf.getDist()));
-        params.put(U, WeightInitUtil.initWeights(new int[]{vis,out},conf.getWeightInit(),conf.getActivationFunction(),conf.getDist()));
-        params.put(BIAS, WeightInitUtil.initWeights(new int[]{out},conf.getWeightInit(),conf.getActivationFunction(),conf.getDist()));
-        params.put(C, WeightInitUtil.initWeights(new int[]{vis},conf.getWeightInit(),conf.getActivationFunction(),conf.getDist()));
+        params.put(W, WeightInitUtil.initWeights(new int[]{out,vis},conf.getWeightInit(), conf.getDist()));
+        params.put(U, WeightInitUtil.initWeights(new int[]{vis,out},conf.getWeightInit(), conf.getDist()));
+        params.put(BIAS, WeightInitUtil.initWeights(new int[]{out},conf.getWeightInit(), conf.getDist()));
+        params.put(C, WeightInitUtil.initWeights(new int[]{vis},conf.getWeightInit(), conf.getDist()));
 
         conf.addVariable(W);
         conf.addVariable(U);
