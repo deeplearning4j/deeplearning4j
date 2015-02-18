@@ -5,7 +5,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.nd4j.linalg.api.activation.ActivationFunction;
-import org.nd4j.linalg.api.ndarray.DimensionSlice;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.convolution.Convolution;
@@ -55,18 +54,8 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
         final INDArray broadCasted = bias.broadcast(pooled.shape());
         broadCasted.iterateOverAllRows(new SliceOp() {
             @Override
-            public void operate(DimensionSlice nd) {
-
-            }
-
-            @Override
             public void operate(final INDArray nd1) {
                 pooled.iterateOverAllRows(new SliceOp() {
-                    @Override
-                    public void operate(DimensionSlice nd) {
-
-                    }
-
                     @Override
                     public void operate(INDArray nd2) {
                         nd1.addi(nd2);
