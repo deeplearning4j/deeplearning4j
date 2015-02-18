@@ -1,7 +1,22 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.api.buffer;
 
 import com.google.common.primitives.Bytes;
-import org.nd4j.linalg.ops.ElementWiseOp;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.IOException;
@@ -11,9 +26,9 @@ import java.util.Arrays;
 import java.util.UUID;
 
 /**
- *  Data buffer for floats
+ * Data buffer for floats
  *
- *  @author Adam Gibson
+ * @author Adam Gibson
  */
 public class FloatBuffer extends BaseDataBuffer {
 
@@ -23,24 +38,23 @@ public class FloatBuffer extends BaseDataBuffer {
         super(length);
         this.buffer = new float[length];
     }
+
     public FloatBuffer(float[] buffer) {
-         this(buffer,false);
-    }
-    public FloatBuffer(float[] buffer,boolean copy) {
-        super(buffer.length);
-        this.buffer = copy ? Arrays.copyOf(buffer,buffer.length) : buffer;
+        this(buffer, false);
     }
 
+    public FloatBuffer(float[] buffer, boolean copy) {
+        super(buffer.length);
+        this.buffer = copy ? Arrays.copyOf(buffer, buffer.length) : buffer;
+    }
 
 
     @Override
     public void assign(Number value, int offset) {
-        for(int i = offset; i < length(); i++) {
-             buffer[i] = value.floatValue();
+        for (int i = offset; i < length(); i++) {
+            buffer[i] = value.floatValue();
         }
     }
-
-
 
 
     @Override
@@ -50,18 +64,18 @@ public class FloatBuffer extends BaseDataBuffer {
 
     @Override
     public void setData(float[] data) {
-       this.buffer = data;
+        this.buffer = data;
     }
 
     @Override
     public void setData(double[] data) {
-      this.buffer = ArrayUtil.toFloats(data);
+        this.buffer = ArrayUtil.toFloats(data);
     }
 
     @Override
     public byte[] asBytes() {
         byte[][] ret1 = new byte[length][];
-        for(int i = 0; i < length; i++) {
+        for (int i = 0; i < length; i++) {
             ret1[i] = toByteArray(buffer[i]);
         }
 
@@ -75,9 +89,9 @@ public class FloatBuffer extends BaseDataBuffer {
 
     @Override
     public float[] asFloat() {
-        if(buffer == null) {
+        if (buffer == null) {
             buffer = new float[length];
-            for(int i = 0; i < length; i++) {
+            for (int i = 0; i < length; i++) {
                 buffer[i] = getFloat(i);
             }
             try {
@@ -93,7 +107,7 @@ public class FloatBuffer extends BaseDataBuffer {
     @Override
     public double[] asDouble() {
         double[] ret = new double[length];
-        for(int i = 0; i < ret.length; i++) {
+        for (int i = 0; i < ret.length; i++) {
             ret[i] = (double) buffer[i];
         }
         return ret;
@@ -102,17 +116,16 @@ public class FloatBuffer extends BaseDataBuffer {
     @Override
     public int[] asInt() {
         int[] ret = new int[length];
-        for(int i = 0; i < ret.length; i++) {
+        for (int i = 0; i < ret.length; i++) {
             ret[i] = (int) buffer[i];
         }
         return ret;
     }
 
 
-
     @Override
     public double getDouble(int i) {
-        if(buffer != null)
+        if (buffer != null)
             return buffer[i];
         else {
             long p = i * 8;
@@ -133,16 +146,15 @@ public class FloatBuffer extends BaseDataBuffer {
     }
 
 
-
     @Override
     public void put(int i, float element) {
-        put(i,(double) element);
+        put(i, (double) element);
 
     }
 
     @Override
     public void put(int i, double element) {
-        if(buffer != null)
+        if (buffer != null)
             buffer[i] = (float) element;
         else {
             long p = i * 8;
@@ -154,10 +166,8 @@ public class FloatBuffer extends BaseDataBuffer {
 
     @Override
     public void put(int i, int element) {
-        put(i,(double) element);
+        put(i, (double) element);
     }
-
-
 
 
     @Override
@@ -173,10 +183,10 @@ public class FloatBuffer extends BaseDataBuffer {
     @Override
     public void flush() {
         path = UUID.randomUUID().toString();
-        if(memoryMappedBuffer != null)
+        if (memoryMappedBuffer != null)
             return;
         try {
-            memoryMappedBuffer = new RandomAccessFile(path,"rw");
+            memoryMappedBuffer = new RandomAccessFile(path, "rw");
             long size = 8L * length;
             for (long offset = 0; offset < size; offset += MAPPING_SIZE) {
                 long size2 = Math.min(size - offset, MAPPING_SIZE);
@@ -184,8 +194,8 @@ public class FloatBuffer extends BaseDataBuffer {
             }
         } catch (IOException e) {
             try {
-                if(memoryMappedBuffer != null)
-                memoryMappedBuffer.close();
+                if (memoryMappedBuffer != null)
+                    memoryMappedBuffer.close();
             } catch (IOException e1) {
                 throw new RuntimeException(e);
             }
@@ -197,9 +207,9 @@ public class FloatBuffer extends BaseDataBuffer {
 
     @Override
     public void destroy() {
-        if(buffer != null)
+        if (buffer != null)
             buffer = null;
-        if(memoryMappedBuffer != null) {
+        if (memoryMappedBuffer != null) {
             try {
                 this.mappings.clear();
                 this.memoryMappedBuffer.close();
@@ -209,7 +219,6 @@ public class FloatBuffer extends BaseDataBuffer {
             }
         }
     }
-
 
 
     @Override

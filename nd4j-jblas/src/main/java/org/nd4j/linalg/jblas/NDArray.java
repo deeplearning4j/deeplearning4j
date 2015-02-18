@@ -1,34 +1,47 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.jblas;
 
 
+import org.jblas.DoubleMatrix;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.jblas.DoubleMatrix;
 
-
-import java.util.*;
+import java.util.List;
 
 
 /**
  * NDArray: (think numpy)
- *
+ * <p/>
  * A few things of note.
- *
+ * <p/>
  * An NDArray can have any number of dimensions.
- *
+ * <p/>
  * An NDArray is accessed via strides.
- *
+ * <p/>
  * Strides are how to index over
  * a contiguous block of data.
- *
+ * <p/>
  * This block of data has 2 orders(as of right now):
  * fortran and c
- *
- *
  *
  * @author Adam Gibson
  */
@@ -238,7 +251,6 @@ public class NDArray extends BaseNDArray {
     }
 
 
-
     public NDArray(float[] data, int[] shape, int[] stride, int offset) {
         super(data, shape, stride, offset);
     }
@@ -249,7 +261,7 @@ public class NDArray extends BaseNDArray {
 
 
     public NDArray(DoubleMatrix doubleMatrix) {
-        this(new int[]{doubleMatrix.rows,doubleMatrix.columns});
+        this(new int[]{doubleMatrix.rows, doubleMatrix.columns});
         this.data = Nd4j.createBuffer(doubleMatrix.data);
 
     }
@@ -266,7 +278,7 @@ public class NDArray extends BaseNDArray {
     }
 
     public NDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
-        super(data,shape,stride,offset);
+        super(data, shape, stride, offset);
 
     }
 
@@ -275,7 +287,7 @@ public class NDArray extends BaseNDArray {
     }
 
     public NDArray(DataBuffer data, int[] shape) {
-        super(data,shape);
+        super(data, shape);
     }
 
     public NDArray(DataBuffer buffer, int[] shape, int offset) {
@@ -303,14 +315,13 @@ public class NDArray extends BaseNDArray {
     }
 
     public NDArray(DoubleBuffer buffer, int[] shape, int offset) {
-        super(buffer,shape,offset);
+        super(buffer, shape, offset);
     }
 
     public NDArray(int[] shape, DataBuffer buffer) {
         this.data = buffer;
         initShape(shape);
     }
-
 
 
 }

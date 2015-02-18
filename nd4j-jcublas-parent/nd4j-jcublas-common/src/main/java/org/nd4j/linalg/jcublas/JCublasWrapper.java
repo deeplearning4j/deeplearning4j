@@ -1,9 +1,25 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.jcublas;
 
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 
@@ -16,22 +32,21 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray swap(INDArray x, INDArray y) {
-        SimpleJCublas.swap(x,y);
+        SimpleJCublas.swap(x, y);
         return y;
     }
 
     @Override
     public INDArray scal(double alpha, INDArray x) {
-        return SimpleJCublas.scal(alpha,x);
+        return SimpleJCublas.scal(alpha, x);
 
     }
 
     @Override
     public INDArray scal(float alpha, INDArray x) {
-        SimpleJCublas.scal(alpha,x);
+        SimpleJCublas.scal(alpha, x);
         return x;
     }
-
 
 
     @Override
@@ -48,54 +63,53 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public INDArray copy(INDArray x, INDArray y) {
-        SimpleJCublas.copy(x,y);
+        SimpleJCublas.copy(x, y);
         return y;
     }
 
     @Override
     public IComplexNDArray copy(IComplexNDArray x, IComplexNDArray y) {
-        SimpleJCublas.copy(x,y);
+        SimpleJCublas.copy(x, y);
         return y;
     }
 
     @Override
     public INDArray axpy(double da, INDArray dx, INDArray dy) {
-        SimpleJCublas.axpy(da,dx,dy);
+        SimpleJCublas.axpy(da, dx, dy);
         return dy;
     }
 
     @Override
     public INDArray axpy(float da, INDArray dx, INDArray dy) {
-        SimpleJCublas.axpy(da,dx,dy);
+        SimpleJCublas.axpy(da, dx, dy);
         return dy;
     }
 
 
-
     @Override
     public IComplexNDArray axpy(IComplexNumber da, IComplexNDArray dx, IComplexNDArray dy) {
-        if(da instanceof IComplexDouble) {
-            SimpleJCublas.axpy((IComplexDouble) da,dx,dy);
+        if (da instanceof IComplexDouble) {
+            SimpleJCublas.axpy((IComplexDouble) da, dx, dy);
 
-        }
-        else
-            SimpleJCublas.axpy((IComplexFloat) da,dx,dy);
+        } else
+            SimpleJCublas.axpy((IComplexFloat) da, dx, dy);
 
         return dy;
     }
 
     public double dot(INDArray x, INDArray y) {
 
-        return SimpleJCublas.dot(x,y);
+        return SimpleJCublas.dot(x, y);
     }
+
     //@Override
     public double dotd(INDArray x, INDArray y) {
-        return SimpleJCublas.dot(x,y);
+        return SimpleJCublas.dot(x, y);
     }
 
     @Override
     public IComplexNumber dotc(IComplexNDArray x, IComplexNDArray y) {
-        return SimpleJCublas.dot(x,y);
+        return SimpleJCublas.dot(x, y);
     }
 
     @Override
@@ -136,34 +150,34 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public INDArray gemv(double alpha, INDArray a, INDArray x, double beta, INDArray y) {
-        SimpleJCublas.gemv(a,x,y,alpha,beta);
+        SimpleJCublas.gemv(a, x, y, alpha, beta);
         return y;
     }
 
     @Override
     public INDArray gemv(float alpha, INDArray a, INDArray x, float beta, INDArray y) {
-        return SimpleJCublas.gemv(a,x,y, alpha, beta);
+        return SimpleJCublas.gemv(a, x, y, alpha, beta);
     }
 
     @Override
     public INDArray ger(double alpha, INDArray x, INDArray y, INDArray a) {
-        return SimpleJCublas.ger(x,y,a,alpha);
+        return SimpleJCublas.ger(x, y, a, alpha);
     }
 
     @Override
     public INDArray ger(float alpha, INDArray x, INDArray y, INDArray a) {
-        return SimpleJCublas.ger(x,y,a,alpha);
+        return SimpleJCublas.ger(x, y, a, alpha);
     }
 
     @Override
     public IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a, IComplexNDArray x, IComplexDouble beta, IComplexNDArray y) {
-        return SimpleJCublas.gemv(a,x,alpha,y,beta);
+        return SimpleJCublas.gemv(a, x, alpha, y, beta);
 
     }
 
     @Override
     public IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y) {
-        return SimpleJCublas.gemv(a,x,alpha,y,beta);
+        return SimpleJCublas.gemv(a, x, alpha, y, beta);
     }
 
     @Override
@@ -190,22 +204,21 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public INDArray gemm(double alpha, INDArray a, INDArray b, double beta, INDArray c) {
-        return SimpleJCublas.gemm(a,b,c,alpha,beta);
+        return SimpleJCublas.gemm(a, b, c, alpha, beta);
     }
 
     @Override
     public INDArray gemm(float alpha, INDArray a, INDArray b, float beta, INDArray c) {
-        return SimpleJCublas.gemm(a,b,c,alpha,beta);
+        return SimpleJCublas.gemm(a, b, c, alpha, beta);
     }
-
 
 
     @Override
     public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta, IComplexNDArray c) {
-        if(beta instanceof IComplexDouble)
-            SimpleJCublas.gemm(a,b,alpha.asDouble(),c,beta.asDouble());
+        if (beta instanceof IComplexDouble)
+            SimpleJCublas.gemm(a, b, alpha.asDouble(), c, beta.asDouble());
         else
-            SimpleJCublas.gemm(a,b,alpha.asFloat(),c,beta.asFloat());
+            SimpleJCublas.gemm(a, b, alpha.asFloat(), c, beta.asFloat());
 
         return c;
     }
@@ -305,7 +318,7 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public void saxpy(double alpha, INDArray x, INDArray y) {
-        SimpleJCublas.axpy(alpha,x,y);
+        SimpleJCublas.axpy(alpha, x, y);
     }
 
     /**
@@ -317,7 +330,7 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public void saxpy(float alpha, INDArray x, INDArray y) {
-        SimpleJCublas.saxpy(alpha,x,y);
+        SimpleJCublas.saxpy(alpha, x, y);
     }
 
 

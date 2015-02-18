@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.api.buffer;
 
 
@@ -12,29 +28,27 @@ import java.util.UUID;
 
 /**
  * Double buffer implementation of data buffer
+ *
  * @author Adam Gibson
  */
-public  class DoubleBuffer extends BaseDataBuffer {
+public class DoubleBuffer extends BaseDataBuffer {
 
     private double[] buffer;
 
-    public  DoubleBuffer(int length) {
+    public DoubleBuffer(int length) {
         super(length);
         this.buffer = new double[length];
     }
 
 
-    public  DoubleBuffer(double[] buffer) {
-        this(buffer,true);
+    public DoubleBuffer(double[] buffer) {
+        this(buffer, true);
     }
 
-    public  DoubleBuffer(double[] buffer,boolean copy) {
+    public DoubleBuffer(double[] buffer, boolean copy) {
         super(buffer.length);
-        this.buffer = copy ? Arrays.copyOf(buffer,buffer.length) : buffer;
+        this.buffer = copy ? Arrays.copyOf(buffer, buffer.length) : buffer;
     }
-
-
-
 
 
     @Override
@@ -49,13 +63,13 @@ public  class DoubleBuffer extends BaseDataBuffer {
 
     @Override
     public void setData(double[] data) {
-       this.buffer = data;
+        this.buffer = data;
     }
 
     @Override
-    public  byte[] asBytes() {
+    public byte[] asBytes() {
         byte[][] ret1 = new byte[length][];
-        for(int i = 0; i < length; i++) {
+        for (int i = 0; i < length; i++) {
             ret1[i] = toByteArray(buffer[i]);
         }
 
@@ -63,24 +77,24 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public  int dataType() {
+    public int dataType() {
         return DataBuffer.DOUBLE;
     }
 
     @Override
-    public  float[] asFloat() {
+    public float[] asFloat() {
         float[] ret = new float[length];
-        for(int i = 0; i < ret.length; i++) {
+        for (int i = 0; i < ret.length; i++) {
             ret[i] = (float) buffer[i];
         }
         return ret;
     }
 
     @Override
-    public  double[] asDouble() {
-        if(buffer == null) {
+    public double[] asDouble() {
+        if (buffer == null) {
             buffer = new double[length];
-            for(int i = 0; i < length; i++) {
+            for (int i = 0; i < length; i++) {
                 buffer[i] = getDouble(i);
             }
             try {
@@ -94,9 +108,9 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public  int[] asInt() {
+    public int[] asInt() {
         int[] ret = new int[length];
-        for(int i = 0; i < ret.length; i++) {
+        for (int i = 0; i < ret.length; i++) {
             ret[i] = (int) buffer[i];
         }
         return ret;
@@ -104,8 +118,8 @@ public  class DoubleBuffer extends BaseDataBuffer {
 
 
     @Override
-    public  double getDouble(int i) {
-        if(buffer != null)
+    public double getDouble(int i) {
+        if (buffer != null)
             return buffer[i];
         else {
             long p = i * 8;
@@ -116,35 +130,33 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
 
-
     @Override
     public void assign(Number value, int offset) {
-        for(int i = offset; i < length(); i++) {
-             buffer[i] = value.doubleValue();
+        for (int i = offset; i < length(); i++) {
+            buffer[i] = value.doubleValue();
         }
     }
 
     @Override
-    public  float getFloat(int i) {
+    public float getFloat(int i) {
         return (float) getDouble(i);
     }
 
     @Override
-    public  Number getNumber(int i) {
+    public Number getNumber(int i) {
         return (int) getDouble(i);
     }
 
 
-
     @Override
-    public  void put(int i, float element) {
-        put(i,(double) element);
+    public void put(int i, float element) {
+        put(i, (double) element);
 
     }
 
     @Override
-    public  void put(int i, double element) {
-        if(buffer != null)
+    public void put(int i, double element) {
+        if (buffer != null)
             buffer[i] = element;
         else {
             long p = i * 8;
@@ -155,30 +167,28 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public  void put(int i, int element) {
-        put(i,(double ) element);
+    public void put(int i, int element) {
+        put(i, (double) element);
     }
 
 
-
-
     @Override
-    public  int getInt(int ix) {
+    public int getInt(int ix) {
         return (int) buffer[ix];
     }
 
     @Override
-    public  DataBuffer dup() {
+    public DataBuffer dup() {
         return new DoubleBuffer(buffer);
     }
 
     @Override
-    public  void flush() {
+    public void flush() {
         path = UUID.randomUUID().toString();
-        if(memoryMappedBuffer != null)
+        if (memoryMappedBuffer != null)
             return;
         try {
-            memoryMappedBuffer = new RandomAccessFile(path,"rw");
+            memoryMappedBuffer = new RandomAccessFile(path, "rw");
             long size = 8L * length;
             for (long offset = 0; offset < size; offset += MAPPING_SIZE) {
                 long size2 = Math.min(size - offset, MAPPING_SIZE);
@@ -186,7 +196,7 @@ public  class DoubleBuffer extends BaseDataBuffer {
             }
         } catch (IOException e) {
             try {
-                if(memoryMappedBuffer != null)
+                if (memoryMappedBuffer != null)
                     memoryMappedBuffer.close();
             } catch (IOException e1) {
                 throw new RuntimeException(e);
@@ -198,22 +208,22 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public  void destroy() {
-        if(buffer != null)
+    public void destroy() {
+        if (buffer != null)
             buffer = null;
-       if(memoryMappedBuffer != null) {
-           try {
-               this.memoryMappedBuffer.close();
-              mappings.clear();
-           } catch (IOException e) {
-               throw new RuntimeException(e);
+        if (memoryMappedBuffer != null) {
+            try {
+                this.memoryMappedBuffer.close();
+                mappings.clear();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
 
-           }
-       }
+            }
+        }
     }
 
     @Override
-    public  boolean equals(Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof DoubleBuffer)) return false;
 
@@ -225,7 +235,7 @@ public  class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public  int hashCode() {
+    public int hashCode() {
         return buffer != null ? Arrays.hashCode(buffer) : 0;
     }
 }

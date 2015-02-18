@@ -1,16 +1,24 @@
-/* Copyright (C) 2002 Univ. of Massachusetts Amherst, Computer Science Dept.
-   This file is part of "MALLET" (MAchine Learning for LanguagE Toolkit).
-   http://www.cs.umass.edu/~mccallum/mallet
-   This software is provided under the terms of the Common Public License,
-   version 1.0, as published by http://www.opensource.org.  For further
-   information, see the file `LICENSE' included with this distribution. */
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
 
 /**
  @author Andrew McCallum <a href="mailto:mccallum@cs.umass.edu">mccallum@cs.umass.edu</a>
  */
 
 package org.nd4j.linalg.solvers;
-
 
 
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -25,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Modified based on cc.mallet.optimize.ConjugateGradient <p/>
- * no termination when zero tolerance 
+ * no termination when zero tolerance
  *
  * @author Adam Gibson
  * @since 2013-08-25
@@ -36,7 +44,9 @@ import org.slf4j.LoggerFactory;
 
 public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatrix {
     private static Logger logger = LoggerFactory.getLogger(VectorizedNonZeroStoppingConjugateGradient.class);
-
+    // "eps" is a small number to recitify the special case of converging
+    // to exactly zero function value
+    final double eps = 1.0e-10f;
     boolean converged = false;
     OptimizableByGradientValueMatrix optimizable;
     VectorizedBackTrackLineSearch lineMaximizer;
@@ -45,20 +55,12 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
     double tolerance = 1e-5f;
     double gradientTolerance = 1e-5f;
     int maxIterations = 10000;
-    private String myName = "";
-    private IterationListener listener;
-
     // The state of a conjugate gradient search
     double fp, gg, gam, dgg, step, fret;
     INDArray xi, g, h;
     int j, iterations;
-
-
-
-
-    // "eps" is a small number to recitify the special case of converging
-    // to exactly zero function value
-    final double eps = 1.0e-10f;
+    private String myName = "";
+    private IterationListener listener;
 
     public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, double initialStepSize) {
         this.initialStepSize = initialStepSize;
@@ -70,14 +72,14 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 
     }
 
-    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function,IterationListener listener) {
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, IterationListener listener) {
         this(function, 0.01f);
         this.listener = listener;
 
     }
 
-    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, double initialStepSize,IterationListener listener) {
-        this(function,initialStepSize);
+    public VectorizedNonZeroStoppingConjugateGradient(OptimizableByGradientValueMatrix function, double initialStepSize, IterationListener listener) {
+        this(function, initialStepSize);
         this.listener = listener;
 
 
@@ -93,17 +95,16 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
     }
 
 
-
     public void setLineMaximizer(LineOptimizerMatrix lineMaximizer) {
         this.lineMaximizer = (VectorizedBackTrackLineSearch) lineMaximizer;
     }
 
-    public void setInitialStepSize(double initialStepSize) {
-        this.initialStepSize = initialStepSize;
-    }
-
     public double getInitialStepSize() {
         return this.initialStepSize;
+    }
+
+    public void setInitialStepSize(double initialStepSize) {
+        this.initialStepSize = initialStepSize;
     }
 
     public double getStepSize() {
@@ -140,7 +141,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             last = curr;
             optimizable.setCurrentIteration(iterationCount);
             try {
-                step = lineMaximizer.optimize(xi, iterationCount,step);
+                step = lineMaximizer.optimize(xi, iterationCount, step);
             } catch (InvalidStepException e) {
                 logger.warn("Breaking: negative slope");
             }
@@ -164,7 +165,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
                 logger.info("ConjugateGradient converged: gradient two norm " + twoNorm + ", less than "
                         + gradientTolerance);
                 converged = true;
-                if(listener != null) {
+                if (listener != null) {
                     listener.iterationDone(iterationCount);
                 }
                 return true;
@@ -172,7 +173,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 
             dgg = gg = 0.0f;
             gg = Transforms.pow(g, 2).sum(Integer.MAX_VALUE).getDouble(0);
-            dgg =  xi.mul(xi.sub(g)).sum(Integer.MAX_VALUE).getDouble(0);
+            dgg = xi.mul(xi.sub(g)).sum(Integer.MAX_VALUE).getDouble(0);
             gam = dgg / gg;
 
 
@@ -202,19 +203,18 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             if (iterations > maxIterations) {
                 logger.info("Passed max number of iterations");
                 converged = true;
-                if(listener != null) {
+                if (listener != null) {
                     listener.iterationDone(iterationCount);
                 }
                 return true;
             }
 
 
-
-            if(listener != null) {
+            if (listener != null) {
                 listener.iterationDone(iterationCount);
             }
 
-            if(eval != null && eval.shouldStop(iterations)) {
+            if (eval != null && eval.shouldStop(iterations)) {
                 return true;
             }
 

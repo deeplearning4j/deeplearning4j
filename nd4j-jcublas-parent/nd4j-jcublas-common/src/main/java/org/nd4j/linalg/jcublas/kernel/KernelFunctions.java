@@ -1,29 +1,40 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.jcublas.kernel;
 
 
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.driver.*;
-
-import static jcuda.driver.JCudaDriver.*;
-
-import java.io.*;
-
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import static jcuda.driver.JCudaDriver.*;
+
 /**
  * Kernel functions.
- *
+ * <p/>
  * Derived from:
  * http://www.jcuda.org/samples/JCudaVectorAdd.java
  *
@@ -33,30 +44,62 @@ public class KernelFunctions {
 
 
     private static Logger log = LoggerFactory.getLogger(KernelFunctions.class);
-    private static Map<String,CUfunction> functions = new HashMap<>();
+    private static Map<String, CUfunction> functions = new HashMap<>();
 
 
-    private KernelFunctions() {}
+    private KernelFunctions() {
+    }
 
 
     private static int sizeFor(int dataType) {
         return dataType == DataBuffer.DOUBLE ? Sizeof.DOUBLE : Sizeof.FLOAT;
     }
 
+    /**
+     * Construct and allocate a device pointer
+     * @param length the length of the pointer
+     * @param dType the data type to choose
+     * @return the new pointer
+     */
+    public static CUdeviceptr constructAndAlloc(int length,int dType) {
+        // Allocate device output memory
+        CUdeviceptr deviceOutput = new CUdeviceptr();
+        cuMemAlloc(deviceOutput, length * dType == DataBuffer.FLOAT ? Sizeof.FLOAT : Sizeof.DOUBLE);
+        return deviceOutput;
+    }
+
+    /**
+     * Construct kernel parameters from the given pointers.
+     * Think of it as follows. If I have a standard linear operator
+     * such as 2 vectors with 1 output vector, this would be 3 pointers
+     * such that the first 2 are the inputs and the third one is the outputs
+     * @param pointers the pointers to create parameters from
+     * @return the pointer to the pointers
+     */
+    public static Pointer constructKernelParameters(Pointer...pointers) {
+        Pointer[] ret = new Pointer[pointers.length + 1];
+        ret[0] = Pointer.to(new int[]{pointers.length});
+        for(int i = 1; i < ret.length; i++) {
+            ret[i] = pointers[i - 1];
+        }
+        return Pointer.to(ret);
+    }
+
 
     /**
      * Invoke a function with the given number of parameters
+     *
      * @param numElements
-     * @param function the function to invoke
+     * @param function         the function to invoke
      * @param kernelParameters the parameters
-     * @param deviceOutput the output pointer
+     * @param deviceOutput     the output pointer
      */
-    public static void invoke(int numElements,CUfunction function,Pointer kernelParameters,CUdeviceptr deviceOutput,int dType) {
+    public static void invoke(int numElements, CUfunction function, Pointer kernelParameters, CUdeviceptr deviceOutput, int dType) {
         // Call the kernel function.
         int blockSizeX = 256;
-        int gridSizeX = (int)Math.ceil( (double)numElements / blockSizeX);
+        int gridSizeX = (int) Math.ceil((double) numElements / blockSizeX);
         cuLaunchKernel(function,
-                gridSizeX,  1, 1,      // Grid dimension
+                gridSizeX, 1, 1,      // Grid dimension
                 blockSizeX, 1, 1,      // Block dimension
                 0, null,               // Shared memory size and stream
                 kernelParameters, null // Kernel- and extra parameters
@@ -65,13 +108,12 @@ public class KernelFunctions {
 
         // Allocate host output memory and copy the device output
         // to the host.
-        if(dType == DataBuffer.FLOAT) {
+        if (dType == DataBuffer.FLOAT) {
             float hostOutput[] = new float[numElements];
             cuMemcpyDtoH(Pointer.to(hostOutput), deviceOutput,
                     numElements * Sizeof.FLOAT);
 
-        }
-        else {
+        } else {
             double hostOutput[] = new double[numElements];
             cuMemcpyDtoH(Pointer.to(hostOutput), deviceOutput,
                     numElements * Sizeof.DOUBLE);
@@ -82,6 +124,7 @@ public class KernelFunctions {
 
     /**
      * Allocate a pointer of a given data type
+     *
      * @param data the data for the pointer
      * @return the pointer
      */
@@ -97,6 +140,7 @@ public class KernelFunctions {
 
     /**
      * Allocate a pointer of a given data type
+     *
      * @param data the data for the pointer
      * @return the pointer
      */
@@ -113,11 +157,12 @@ public class KernelFunctions {
 
     /**
      * Allocate a pointer of a given data type
+     *
      * @param dataType the data type
-     * @param length the length of the pointer
+     * @param length   the length of the pointer
      * @return the pointer
      */
-    public static Pointer alloc(int dataType,int length) {
+    public static Pointer alloc(int dataType, int length) {
         // Allocate the device input data, and copy the
         // host input data to the device
         CUdeviceptr deviceInputA = new CUdeviceptr();
@@ -128,14 +173,15 @@ public class KernelFunctions {
 
     /**
      * Execute a cuda function
-     * @param function the function to execute
-     * @param blockSize the block size to execute on
-     * @param gridSize the grid size to execute on
+     *
+     * @param function         the function to execute
+     * @param blockSize        the block size to execute on
+     * @param gridSize         the grid size to execute on
      * @param kernelParameters the kernel parameters
      */
-    public static void exec(CUfunction function,int blockSize,int gridSize, Pointer kernelParameters) {
+    public static void exec(CUfunction function, int blockSize, int gridSize, Pointer kernelParameters) {
         cuLaunchKernel(function,
-                blockSize,  1, 1,      // Grid dimension
+                blockSize, 1, 1,      // Grid dimension
                 gridSize, 1, 1,      // Block dimension
                 0, null,               // Shared memory size and stream
                 kernelParameters, null // Kernel- and extra parameters
@@ -147,16 +193,17 @@ public class KernelFunctions {
 
     /**
      * Load the given file
+     *
      * @param fileName the file name
      * @param dataType the data type
      * @throws IOException
      */
-    public static String load(String fileName,int dataType) throws IOException {
+    public static String load(String fileName, int dataType) throws IOException {
         // Enable exceptions and omit all subsequent error checks
         JCudaDriver.setExceptionsEnabled(true);
 
         // Create the PTX file by calling the NVCC
-        String ptxFileName = preparePtxFile(fileName,dataType);
+        String ptxFileName = preparePtxFile(fileName, dataType);
 
         // Initialize the driver and create a context for the first device.
         cuInit(0);
@@ -175,28 +222,27 @@ public class KernelFunctions {
     }
 
 
-
     private static String dataFolder(int type) {
-        return "/kernels/" +  (type == DataBuffer.FLOAT ? "float" : "double");
+        return "/kernels/" + (type == DataBuffer.FLOAT ? "float" : "double");
     }
 
     //extract the source file
-    private static void extract(String file,int dataType) throws IOException {
+    private static void extract(String file, int dataType) throws IOException {
 
-        String path =  dataFolder(dataType);
+        String path = dataFolder(dataType);
         String tmpDir = System.getProperty("java.io.tmpdir");
-        File dataDir = new File(tmpDir,path);
-        if(!dataDir.exists())
+        File dataDir = new File(tmpDir, path);
+        if (!dataDir.exists())
             dataDir.mkdirs();
         ClassPathResource resource = new ClassPathResource(dataFolder(dataType) + "/" + file);
-        if(!resource.exists())
+        if (!resource.exists())
             throw new IllegalStateException("Unable to find file " + resource);
         File out = new File(dataDir, file);
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(out));
-        IOUtils.copy(resource.getInputStream(),bos);
+        IOUtils.copy(resource.getInputStream(), bos);
         bos.flush();
         bos.close();
-        
+
         out.deleteOnExit();
 
     }
@@ -204,13 +250,14 @@ public class KernelFunctions {
 
     /**
      * Load the function
+     *
      * @param deviceNumber the device number to load on
-     * @param ptxFileName the ptx file name
+     * @param ptxFileName  the ptx file name
      * @param functionName the function name to use as a handle
      */
-    public static CUfunction loadFunction(int deviceNumber,String ptxFileName,String functionName) {
-      if(functions.containsKey(functionName))
-          return functions.get(functionName);
+    public static CUfunction loadFunction(int deviceNumber, String ptxFileName, String functionName) {
+        if (functions.containsKey(functionName))
+            return functions.get(functionName);
         // Initialize the driver and create a context for the first device.
         cuInit(deviceNumber);
         CUdevice device = new CUdevice();
@@ -224,8 +271,8 @@ public class KernelFunctions {
 
         // Obtain a function pointer to the "add" function.
         CUfunction function = new CUfunction();
-        cuModuleGetFunction(function, module,functionName);
-        functions.put(functionName,function);
+        cuModuleGetFunction(function, module, functionName);
+        functions.put(functionName, function);
 
         return function;
 
@@ -237,32 +284,30 @@ public class KernelFunctions {
      * If the file with the resulting name does not exist, it is
      * compiled from the given file using NVCC. The name of the
      * PTX file is returned.
-     *
-     *
+     * <p/>
+     * <p/>
      * Note that you may run in to an error akin to:
      * Unsupported GCC version
-     *
+     * <p/>
      * At your own risk, comment the lines under:
      * /usr/local/cuda-$VERSION/include/host_config.h
-     *
+     * <p/>
      * #if defined(__GNUC__)
-
-    *    if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8)
-     *   #error -- unsupported GNU version! gcc 4.9 and up are not supported!
-
-     *     #endif /* __GNUC__> 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8)
-
-    *  #endif  __GNUC__
-
-    *  This will allow you to bypass the compiler restrictions. Again, do so at your own risk.
-     *
-     *
+     * <p/>
+     * if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8)
+     * #error -- unsupported GNU version! gcc 4.9 and up are not supported!
+     * <p/>
+     * #endif /* __GNUC__> 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8)
+     * <p/>
+     * #endif  __GNUC__
+     * <p/>
+     * This will allow you to bypass the compiler restrictions. Again, do so at your own risk.
      *
      * @param cuFileName The name of the .CU file
      * @return The name of the PTX file
      * @throws IOException If an I/O error occurs
      */
-    private static String preparePtxFile(String cuFileName,int dataType) throws IOException {
+    private static String preparePtxFile(String cuFileName, int dataType) throws IOException {
 
 
         int endIndex = cuFileName.lastIndexOf('.');
@@ -270,30 +315,26 @@ public class KernelFunctions {
             endIndex = cuFileName.length() - 1;
         }
 
-        String path =  dataFolder(dataType);
+        String path = dataFolder(dataType);
         String tmpDir = System.getProperty("java.io.tmpdir");
-        File dataDir = new File(tmpDir,path);
+        File dataDir = new File(tmpDir, path);
 
 
         String ptxFileName = cuFileName.substring(0, endIndex + 1) + "ptx";
-        File ptxFile = new File(dataDir,ptxFileName);
+        File ptxFile = new File(dataDir, ptxFileName);
         if (ptxFile.exists()) {
             return ptxFileName;
-        }
+        } else
+            extract(cuFileName, dataType);
 
 
-        else
-             extract(cuFileName,dataType);
-
-
-        File cuFile = new File(dataDir,cuFileName);
+        File cuFile = new File(dataDir, cuFileName);
         if (!cuFile.exists())
             throw new IOException("Input file not found: " + cuFileName);
 
 
-
-        String modelString = "-m"+System.getProperty("sun.arch.data.model");
-        String command = "nvcc " + modelString + " -ptx "+ cuFile.getPath()+" -o "+ ptxFileName;
+        String modelString = "-m" + System.getProperty("sun.arch.data.model");
+        String command = "nvcc " + modelString + " -ptx " + cuFile.getPath() + " -o " + ptxFileName;
 
         log.info("Executing " + command);
         Process process = Runtime.getRuntime().exec(command);
@@ -303,23 +344,20 @@ public class KernelFunctions {
         String outputMessage =
                 new String(toByteArray(process.getInputStream()));
         int exitValue = 0;
-        try
-        {
+        try {
             exitValue = process.waitFor();
-        }
-        catch (InterruptedException e)
-        {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException(
                     "Interrupted while waiting for nvcc output", e);
         }
 
         if (exitValue != 0) {
-            log.info("nvcc process exitValue "+exitValue);
-            log.info("errorMessage:\n"+errorMessage);
-            log.info("outputMessage:\n"+outputMessage);
+            log.info("nvcc process exitValue " + exitValue);
+            log.info("errorMessage:\n" + errorMessage);
+            log.info("outputMessage:\n" + outputMessage);
             throw new IOException(
-                    "Could not create .ptx file: "+errorMessage);
+                    "Could not create .ptx file: " + errorMessage);
         }
 
         log.info("Finished creating PTX file");
@@ -334,15 +372,12 @@ public class KernelFunctions {
      * @throws IOException If an I/O error occurs
      */
     private static byte[] toByteArray(InputStream inputStream)
-            throws IOException
-    {
+            throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         byte buffer[] = new byte[8192];
-        while (true)
-        {
+        while (true) {
             int read = inputStream.read(buffer);
-            if (read == -1)
-            {
+            if (read == -1) {
                 break;
             }
             baos.write(buffer, 0, read);

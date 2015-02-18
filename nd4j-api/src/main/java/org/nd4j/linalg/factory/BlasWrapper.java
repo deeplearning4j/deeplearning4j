@@ -1,38 +1,20 @@
-// --- BEGIN LICENSE BLOCK ---
-/* 
- * Copyright (c) 2009-2011, Mikio L. Braun
- *               2011, Nicolas Oury
- * All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- * 
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- * 
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
- * 
- *     * Neither the name of the Technische Universität Berlin nor the
- *       names of its contributors may be used to endorse or promote
- *       products derived from this software without specific prior
- *       written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
  */
+
+// --- BEGIN LICENSE BLOCK ---
 // --- END LICENSE BLOCK ---
 
 package org.nd4j.linalg.factory;
@@ -42,7 +24,6 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
 
 
 /**
@@ -96,14 +77,17 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
      * Compute x^T * y (dot product)
      */
     public double dot(NDARRAY_TYPE x, NDARRAY_TYPE y);
+
     /**
      * Compute x^T * y (dot product)
      */
     public IComplexNumber dotc(IComplexNDArray x, IComplexNDArray y);
+
     /**
      * Compute x^T * y (dot product)
      */
     public IComplexNumber dotu(IComplexNDArray x, IComplexNDArray y);
+
     /**
      * Compute || x ||_2 (2-norm)
      */
@@ -131,7 +115,9 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
      * @return index of element with largest absolute value.
      */
     public int iamax(IComplexNDArray x);
-    /***************************************************************************
+
+    /**
+     * ************************************************************************
      * BLAS Level 2
      */
 
@@ -155,7 +141,7 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
                             NDARRAY_TYPE y, NDARRAY_TYPE a);
 
     IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a,
-                  IComplexNDArray x, IComplexDouble beta, IComplexNDArray y);
+                         IComplexNDArray x, IComplexDouble beta, IComplexNDArray y);
 
     IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y);
 
@@ -166,6 +152,7 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
      */
     public IComplexNDArray geru(IComplexFloat alpha, IComplexNDArray x,
                                 IComplexNDArray y, IComplexNDArray a);
+
     /**
      * Compute A <- alpha * x * y^H + A (general rank-1 update)
      */
@@ -175,7 +162,8 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
     IComplexNDArray gerc(IComplexDouble alpha, IComplexNDArray x,
                          IComplexNDArray y, IComplexNDArray a);
 
-    /***************************************************************************
+    /**
+     * ************************************************************************
      * BLAS Level 3
      */
 
@@ -188,11 +176,13 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
      */
     public NDARRAY_TYPE gemm(float alpha, NDARRAY_TYPE a,
                              NDARRAY_TYPE b, float beta, NDARRAY_TYPE c);
+
     public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a,
                                 IComplexNDArray b, IComplexNumber beta, IComplexNDArray c);
 
 
-    /***************************************************************************
+    /**
+     * ************************************************************************
      * LAPACK
      */
 
@@ -235,13 +225,13 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
 
     /**
      * Generalized Least Squares via *GELSD.
-     *
+     * <p/>
      * Note that B must be padded to contain the solution matrix. This occurs when A has fewer rows
      * than columns.
-     *
+     * <p/>
      * For example: in A * X = B, A is (m,n), X is (n,k) and B is (m,k). Now if m < n, since B is overwritten to contain
      * the solution (in classical LAPACK style), B needs to be padded to be an (n,k) matrix.
-     *
+     * <p/>
      * Likewise, if m > n, the solution consists only of the first n rows of B.
      *
      * @param A an (m,n) matrix
@@ -251,25 +241,21 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
 
     public void geqrf(NDARRAY_TYPE A, NDARRAY_TYPE tau);
 
-    public  void ormqr(char side, char trans, NDARRAY_TYPE A, NDARRAY_TYPE tau, NDARRAY_TYPE C);
+    public void ormqr(char side, char trans, NDARRAY_TYPE A, NDARRAY_TYPE tau, NDARRAY_TYPE C);
 
 
-    public  void dcopy(int n, float[] dx, int dxIdx, int incx, float[] dy, int dyIdx, int incy);
+    public void dcopy(int n, float[] dx, int dxIdx, int incx, float[] dy, int dyIdx, int incy);
 
     void saxpy(double alpha, INDArray x, INDArray y);
 
     /**
      * Abstraction over saxpy
+     *
      * @param alpha the alpha to scale by
-     * @param x the ndarray to use
-     * @param y the ndarray to use
+     * @param x     the ndarray to use
+     * @param y     the ndarray to use
      */
-    void saxpy(float alpha,INDArray x,INDArray y);
-
-
-
-
-
+    void saxpy(float alpha, INDArray x, INDArray y);
 
 
 }

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.dimensionalityreduction;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -7,8 +23,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 /**
- *
  * PCA class for dimensionality reduction
+ *
  * @author Adam Gibson
  */
 public class PCA {
@@ -16,25 +32,24 @@ public class PCA {
     /**
      * Reduce the dimension of x
      * to the specified number of dimensions.
-     *
+     * <p/>
      * Happily based on the great work done in the tsne paper here:
      * http://homepage.tudelft.nl/19j49/t-SNE.html
      *
-     *
-     * @param X the x to reduce
-     * @param nDims the number of dimensions to reduce to
+     * @param X         the x to reduce
+     * @param nDims     the number of dimensions to reduce to
      * @param normalize normalize
      * @return the reduced dimension
      */
-    public static INDArray pca(INDArray X,int nDims,boolean normalize) {
-        if(normalize) {
+    public static INDArray pca(INDArray X, int nDims, boolean normalize) {
+        if (normalize) {
             INDArray mean = X.mean(0);
             X = X.subiRowVector(mean);
 
         }
 
         INDArray C;
-        if(X.size(1) < X.size(0))
+        if (X.size(1) < X.size(0))
             C = X.transpose().mmul(X);
 
         else
@@ -49,15 +64,13 @@ public class PCA {
         //change lambda to be the indexes
         lambda = Nd4j.createComplex(sorted[1]);
 
-        INDArray indices =  sorted[0];
+        INDArray indices = sorted[0];
 
         NDArrayIndex[] indices2 = NDArrayIndex.create(indices.get(
-                new NDArrayIndex[]{
-                        NDArrayIndex.interval(0,nDims)
-                }));
+                NDArrayIndex.interval(0, nDims)));
 
         NDArrayIndex[] rowsAndColumnIndices = new NDArrayIndex[]{
-                NDArrayIndex.interval(0,M.rows()),indices2[0]
+                NDArrayIndex.interval(0, M.rows()), indices2[0]
         };
 
         M = M.get(rowsAndColumnIndices);

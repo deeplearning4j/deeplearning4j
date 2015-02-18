@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.jblas.complex;
 
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -13,13 +29,13 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDouble {
 
-    public final static ComplexDouble UNIT = new ComplexDouble(1,0);
-    public final static ComplexDouble NEG = new ComplexDouble(-1,0);
-    public final static ComplexDouble ZERO = new ComplexDouble(0,0);
+    public final static ComplexDouble UNIT = new ComplexDouble(1, 0);
+    public final static ComplexDouble NEG = new ComplexDouble(-1, 0);
+    public final static ComplexDouble ZERO = new ComplexDouble(0, 0);
 
 
     public ComplexDouble(org.jblas.ComplexDouble c) {
-        super(c.real(),c.imag());
+        super(c.real(), c.imag());
     }
 
     public ComplexDouble(double real, double imag) {
@@ -29,20 +45,21 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     public ComplexDouble(double real) {
         super(real);
     }
+
     @Override
     public IComplexNumber eqc(IComplexNumber num) {
         double val = num.realComponent().doubleValue();
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if(val == otherVal)
-            return Nd4j.createComplexNumber(1,0);
-        else if(val != otherVal)
-            return Nd4j.createComplexNumber(0,0);
-        else if(imag == otherImag)
-            return Nd4j.createComplexNumber(1,0);
+        if (val == otherVal)
+            return Nd4j.createComplexNumber(1, 0);
+        else if (val != otherVal)
+            return Nd4j.createComplexNumber(0, 0);
+        else if (imag == otherImag)
+            return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0,0);
+            return Nd4j.createComplexNumber(0, 0);
     }
 
     @Override
@@ -51,14 +68,14 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if(val != otherVal)
-            return Nd4j.createComplexNumber(1,0);
-        else if(val == otherVal)
-            return Nd4j.createComplexNumber(0,0);
-        else if(imag != otherImag)
-            return Nd4j.createComplexNumber(1,0);
+        if (val != otherVal)
+            return Nd4j.createComplexNumber(1, 0);
+        else if (val == otherVal)
+            return Nd4j.createComplexNumber(0, 0);
+        else if (imag != otherImag)
+            return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0,0);
+            return Nd4j.createComplexNumber(0, 0);
     }
 
     @Override
@@ -67,14 +84,14 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if(val > otherVal)
-            return Nd4j.createComplexNumber(1,0);
-        else if(val < otherVal)
-            return Nd4j.createComplexNumber(0,0);
-        else if(imag > otherImag)
-            return Nd4j.createComplexNumber(1,0);
+        if (val > otherVal)
+            return Nd4j.createComplexNumber(1, 0);
+        else if (val < otherVal)
+            return Nd4j.createComplexNumber(0, 0);
+        else if (imag > otherImag)
+            return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0,0);
+            return Nd4j.createComplexNumber(0, 0);
     }
 
     @Override
@@ -83,14 +100,14 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if(val < otherVal)
-            return Nd4j.createComplexNumber(1,0);
-        else if(val > otherVal)
-            return Nd4j.createComplexNumber(0,0);
-        else if(imag < otherImag)
-            return Nd4j.createComplexNumber(1,0);
+        if (val < otherVal)
+            return Nd4j.createComplexNumber(1, 0);
+        else if (val > otherVal)
+            return Nd4j.createComplexNumber(0, 0);
+        else if (imag < otherImag)
+            return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0,0);
+            return Nd4j.createComplexNumber(0, 0);
     }
 
     /**
@@ -116,7 +133,7 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
      */
     @Override
     public IComplexFloat asFloat() {
-        return Nd4j.createFloat((float) real(),(float) imag());
+        return Nd4j.createFloat((float) real(), (float) imag());
     }
 
     /**
@@ -148,7 +165,7 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
 
     @Override
     public IComplexNumber set(Number real, Number imag) {
-        super.set(real.doubleValue(),imag.doubleValue());
+        super.set(real.doubleValue(), imag.doubleValue());
         return this;
     }
 
@@ -168,9 +185,9 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     @Override
     public IComplexNumber addi(IComplexNumber c, IComplexNumber result) {
         if (this == result) {
-            set(real() + c.realComponent().doubleValue(),imag() + c.imaginaryComponent().doubleValue());
+            set(real() + c.realComponent().doubleValue(), imag() + c.imaginaryComponent().doubleValue());
         } else {
-            result.set(result.realComponent().doubleValue() + c.realComponent().doubleValue(),result.imaginaryComponent().doubleValue() + c.imaginaryComponent().doubleValue());
+            result.set(result.realComponent().doubleValue() + c.realComponent().doubleValue(), result.imaginaryComponent().doubleValue() + c.imaginaryComponent().doubleValue());
 
         }
         return this;
@@ -183,7 +200,7 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
      */
     @Override
     public IComplexNumber addi(IComplexNumber c) {
-       return addi(c,this);
+        return addi(c, this);
     }
 
     /**
@@ -205,9 +222,9 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     @Override
     public IComplexNumber addi(Number a, IComplexNumber result) {
         if (this == result) {
-            set(real() + a.doubleValue(),imag() + a.doubleValue());
+            set(real() + a.doubleValue(), imag() + a.doubleValue());
         } else {
-            result.set(result.realComponent().doubleValue() + a.doubleValue(),result.imaginaryComponent().doubleValue() + a.doubleValue());
+            result.set(result.realComponent().doubleValue() + a.doubleValue(), result.imaginaryComponent().doubleValue() + a.doubleValue());
 
         }
         return result;
@@ -220,7 +237,7 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
      */
     @Override
     public IComplexNumber addi(Number c) {
-        return addi(c,this);
+        return addi(c, this);
     }
 
     /**
@@ -242,9 +259,9 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     @Override
     public IComplexNumber subi(IComplexNumber c, IComplexNumber result) {
         if (this == result) {
-            set(real() - c.realComponent().doubleValue(),imag() - c.imaginaryComponent().doubleValue());
+            set(real() - c.realComponent().doubleValue(), imag() - c.imaginaryComponent().doubleValue());
         } else {
-            result.set(result.realComponent().doubleValue() - c.realComponent().doubleValue(),result.imaginaryComponent().doubleValue() - c.imaginaryComponent().doubleValue());
+            result.set(result.realComponent().doubleValue() - c.realComponent().doubleValue(), result.imaginaryComponent().doubleValue() - c.imaginaryComponent().doubleValue());
 
         }
         return this;
@@ -252,7 +269,7 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
 
     @Override
     public IComplexNumber subi(IComplexNumber c) {
-        return subi(c,this);
+        return subi(c, this);
     }
 
     /**
@@ -268,9 +285,9 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     @Override
     public IComplexNumber subi(Number a, IComplexNumber result) {
         if (this == result) {
-            set(real() - a.doubleValue(),imag() - a.doubleValue());
+            set(real() - a.doubleValue(), imag() - a.doubleValue());
         } else {
-            result.set(result.realComponent().doubleValue() - a.doubleValue(),imaginaryComponent().doubleValue() - a.doubleValue());
+            result.set(result.realComponent().doubleValue() - a.doubleValue(), imaginaryComponent().doubleValue() - a.doubleValue());
 
         }
         return result;
@@ -278,7 +295,7 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
 
     @Override
     public IComplexNumber subi(Number a) {
-        return subi(a,this);
+        return subi(a, this);
     }
 
     @Override
@@ -295,14 +312,14 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     @Override
     public IComplexNumber muli(IComplexNumber c, IComplexNumber result) {
         double newR = (real() * c.realComponent().doubleValue() - imag() * c.imaginaryComponent().doubleValue());
-        double newI = (real()* c.imaginaryComponent().doubleValue() + imag() * c.realComponent().doubleValue());
-        result.set(newR,newI);
+        double newI = (real() * c.imaginaryComponent().doubleValue() + imag() * c.realComponent().doubleValue());
+        result.set(newR, newI);
         return result;
     }
 
     @Override
     public IComplexNumber muli(IComplexNumber c) {
-        return muli(c,this);
+        return muli(c, this);
     }
 
     /**
@@ -323,9 +340,9 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     @Override
     public IComplexNumber muli(Number v, IComplexNumber result) {
         if (this == result) {
-            set(real() * v.doubleValue(),imag() * v.doubleValue());
+            set(real() * v.doubleValue(), imag() * v.doubleValue());
         } else {
-            result.set(result.realComponent().doubleValue() * v.doubleValue(),imaginaryComponent() * v.doubleValue());
+            result.set(result.realComponent().doubleValue() * v.doubleValue(), imaginaryComponent() * v.doubleValue());
 
         }
         return result;
@@ -333,7 +350,7 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
 
     @Override
     public IComplexNumber muli(Number v) {
-        return muli(v,this);
+        return muli(v, this);
     }
 
     /**
@@ -357,21 +374,21 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
         double d = c.realComponent().doubleValue() * c.realComponent().doubleValue() + c.imaginaryComponent().doubleValue() * c.imaginaryComponent().doubleValue();
         double newR = (real() * c.realComponent().doubleValue() + imag() * c.imaginaryComponent().doubleValue()) / d;
         double newI = (imag() * c.realComponent().doubleValue() - real() * c.imaginaryComponent().doubleValue()) / d;
-        result.set(newR,newI);
+        result.set(newR, newI);
         return result;
     }
 
     @Override
     public IComplexNumber divi(IComplexNumber c) {
-        return divi(c,this);
+        return divi(c, this);
     }
 
     @Override
     public IComplexNumber divi(Number v, IComplexNumber result) {
         if (this == result) {
-            set(real() / v.doubleValue(),imag());
+            set(real() / v.doubleValue(), imag());
         } else {
-            result.set(result.realComponent().doubleValue() / v.doubleValue(),imaginaryComponent());
+            result.set(result.realComponent().doubleValue() / v.doubleValue(), imaginaryComponent());
 
         }
         return result;
@@ -379,7 +396,7 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
 
     @Override
     public IComplexNumber divi(Number v) {
-        return divi(v,this);
+        return divi(v, this);
     }
 
     @Override
@@ -635,13 +652,13 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
      */
     @Override
     public Double complexArgument() {
-        return (double) Math.acos(realComponent()/ absoluteValue());
+        return Math.acos(realComponent() / absoluteValue());
     }
 
     @Override
     public ComplexDouble invi() {
         double d = realComponent() * realComponent() + imaginaryComponent() * imaginaryComponent();
-        set(realComponent() / d,-imaginaryComponent() / d);
+        set(realComponent() / d, -imaginaryComponent() / d);
         return this;
     }
 
@@ -657,16 +674,16 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
 
     @Override
     public ComplexDouble negi() {
-        set(-realComponent(),-imaginaryComponent());
+        set(-realComponent(), -imaginaryComponent());
         return this;
     }
 
     @Override
     public ComplexDouble sqrt() {
         double a = absoluteValue();
-        double s2 = (double)Math.sqrt(2);
-        double p = (double)Math.sqrt(a + realComponent())/s2;
-        double q = (double)Math.sqrt(a - realComponent())/s2 * Math.signum(imaginaryComponent());
+        double s2 = Math.sqrt(2);
+        double p = Math.sqrt(a + realComponent()) / s2;
+        double q = Math.sqrt(a - realComponent()) / s2 * Math.signum(imaginaryComponent());
         return new ComplexDouble(p, q);
     }
 

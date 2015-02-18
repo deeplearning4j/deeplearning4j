@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.ops;
 
 
@@ -6,18 +22,16 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.Shape;
 
-import java.util.concurrent.CountDownLatch;
-
 
 /**
  * Apply an operation and save it to a resulting matrix
  *
  * @author Adam Gibson
  */
-public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp implements TwoArrayElementWiseOp {
+public abstract class BaseTwoArrayElementWiseOp extends BaseElementWiseOp implements TwoArrayElementWiseOp {
 
 
-    protected INDArray to,other;
+    protected INDArray to, other;
 
 
     /**
@@ -25,35 +39,33 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
      * in to. The value from to is passed in to apply
      * and then a transform of the matching elements in
      * both from and to are used for a transformation.
-     *
+     * <p/>
      * If a scalar is specified, this will apply a scalar wise operation
      * based on the scalar and the origin matrix instead
+     *
      * @param i the index to apply to
      */
     @Override
-    public void applyTransformToDestination(INDArray from,INDArray destination,INDArray other,int i) {
-        if(scalarValue != null) {
-            if(destination instanceof IComplexNDArray) {
-                IComplexNumber number = (IComplexNumber) apply(destination,  scalarValue, i);
+    public void applyTransformToDestination(INDArray from, INDArray destination, INDArray other, int i) {
+        if (scalarValue != null) {
+            if (destination instanceof IComplexNDArray) {
+                IComplexNumber number = (IComplexNumber) apply(destination, scalarValue, i);
                 IComplexNDArray c2 = (IComplexNDArray) destination;
-                c2.putScalar(i,number);
-            }
-            else {
-                double f = (double)  apply(from,  scalarValue, i);
-                destination.putScalar(i,f);
+                c2.putScalar(i, number);
+            } else {
+                double f = (double) apply(from, scalarValue, i);
+                destination.putScalar(i, f);
             }
 
-        }
-
-        else {
-            if(destination instanceof  IComplexNDArray) {
+        } else {
+            if (destination instanceof IComplexNDArray) {
                 IComplexNDArray c2 = (IComplexNDArray) destination;
-                IComplexNumber n = (IComplexNumber) apply(destination,getOther(other,i),i);
-                c2.putScalar(i,n);
+                IComplexNumber n = (IComplexNumber) apply(destination, getOther(other, i), i);
+                c2.putScalar(i, n);
             }
 
-            double f = (double) apply(from,getOther(other,i),i);
-            destination.putScalar(i,f);
+            double f = (double) apply(from, getOther(other, i), i);
+            destination.putScalar(i, f);
 
         }
     }
@@ -64,51 +76,43 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
      */
     @Override
     public void exec() {
-        if(from != null && to != null && !from.isScalar() && !to.isScalar())
-            assert Shape.shapeEquals(from.shape(),to.shape()) : "From and to must be same length";
-        if(from != null && other != null && !from.isScalar() && !to.isScalar())
+        if (from != null && to != null && !from.isScalar() && !to.isScalar())
+            assert Shape.shapeEquals(from.shape(), to.shape()) : "From and to must be same length";
+        if (from != null && other != null && !from.isScalar() && !to.isScalar())
             assert from.length() == other.length() : "From and other must be the same length";
 
-        if(to == null) {
-            if(scalarValue != null)
-                for(int i = 0; i < from.length(); i++)
-                    if(scalarValue != null)
-                        applyTransformToOrigin(from,i,scalarValue);
+        if (to == null) {
+            if (scalarValue != null)
+                for (int i = 0; i < from.length(); i++)
+                    if (scalarValue != null)
+                        applyTransformToOrigin(from, i, scalarValue);
                     else
-                        applyTransformToOrigin(from,i);
-        }
-
-
-        else if(other == null && scalarValue != null) {
+                        applyTransformToOrigin(from, i);
+        } else if (other == null && scalarValue != null) {
             int num = from.vectorsAlongDimension(0);
-            for(int i = 0; i < num; i++) {
+            for (int i = 0; i < num; i++) {
                 final int iDup = i;
-                final  INDArray fromCurr = from != null ? from.vectorAlongDimension(iDup,0) : null;
-                for(int j = 0; j < fromCurr.length(); j++) {
-                    applyTransformToOrigin(fromCurr,j,scalarValue);
+                final INDArray fromCurr = from != null ? from.vectorAlongDimension(iDup, 0) : null;
+                for (int j = 0; j < fromCurr.length(); j++) {
+                    applyTransformToOrigin(fromCurr, j, scalarValue);
                 }
-
 
 
             }
 
 
-        }
-
-
-        else {
+        } else {
 
             assert from.length() == to.length() : "From and to must be same length";
             int num = from.vectorsAlongDimension(0);
-            for(int i = 0; i < num; i++) {
+            for (int i = 0; i < num; i++) {
                 final int iDup = i;
-                final INDArray curr = to.vectorAlongDimension(iDup,0);
-                final INDArray currOther = other != null ? other.vectorAlongDimension(iDup,0) : null;
-                final  INDArray fromCurr = from != null ? from.vectorAlongDimension(iDup,0) : null;
-                for(int j = 0; j < fromCurr.length(); j++) {
-                    applyTransformToDestination(fromCurr,curr,currOther,j);
+                final INDArray curr = to.vectorAlongDimension(iDup, 0);
+                final INDArray currOther = other != null ? other.vectorAlongDimension(iDup, 0) : null;
+                final INDArray fromCurr = from != null ? from.vectorAlongDimension(iDup, 0) : null;
+                for (int j = 0; j < fromCurr.length(); j++) {
+                    applyTransformToDestination(fromCurr, curr, currOther, j);
                 }
-
 
 
             }
@@ -127,7 +131,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
      */
     @Override
     public Object getOther(INDArray other, int i) {
-        if(other instanceof IComplexNDArray) {
+        if (other instanceof IComplexNDArray) {
             IComplexNDArray c = (IComplexNDArray) other;
             return c.getComplex(i);
         }
@@ -136,13 +140,13 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
     }
 
 
-    protected Object doOp(INDArray originNDArray,int i,Object value) {
-        Object origin = getFromOrigin(originNDArray,i);
-        if(value instanceof IComplexNumber) {
+    protected Object doOp(INDArray originNDArray, int i, Object value) {
+        Object origin = getFromOrigin(originNDArray, i);
+        if (value instanceof IComplexNumber) {
             IComplexNDArray complexValue = (IComplexNDArray) value;
             IComplexNumber otherValue = (IComplexNumber) complexValue.element();
             //complex + complex
-            if(origin instanceof IComplexNDArray) {
+            if (origin instanceof IComplexNDArray) {
                 IComplexNDArray originComplex = (IComplexNDArray) origin;
                 IComplexNumber originValue = (IComplexNumber) originComplex.element();
                 return complexComplex(originValue, otherValue);
@@ -151,19 +155,17 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
             //real + complex
             else {
                 double element = (double) origin;
-                return realComplex(element,otherValue);
+                return realComplex(element, otherValue);
 
             }
 
 
-        }
-
-        else {
+        } else {
             //complex + real
-            if(origin instanceof IComplexNumber) {
+            if (origin instanceof IComplexNumber) {
                 IComplexNumber firstValue = (IComplexNumber) origin;
                 double realValue = (double) value;
-                return complexReal(firstValue,realValue);
+                return complexReal(firstValue, realValue);
 
             }
 
@@ -171,7 +173,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
             else {
                 double firstElement = (double) origin;
                 double secondElement = (double) value;
-                return realReal(firstElement,secondElement);
+                return realReal(firstElement, secondElement);
             }
 
 
@@ -179,13 +181,13 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
     }
 
 
-    protected abstract IComplexNumber complexComplex(IComplexNumber num1,IComplexNumber num2);
+    protected abstract IComplexNumber complexComplex(IComplexNumber num1, IComplexNumber num2);
 
-    protected abstract IComplexNumber realComplex(double real,IComplexNumber other);
+    protected abstract IComplexNumber realComplex(double real, IComplexNumber other);
 
-    protected abstract IComplexNumber complexReal(IComplexNumber origin,double secondValue);
+    protected abstract IComplexNumber complexReal(IComplexNumber origin, double secondValue);
 
-    protected abstract double realReal(double firstElement,double secondElement);
+    protected abstract double realReal(double firstElement, double secondElement);
 
     /**
      * The transformation for a given value
@@ -194,8 +196,8 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
      * @return the transformed value based on the input
      */
     @Override
-    public Object apply(INDArray origin,Object value, int i) {
-        return doOp(origin,i,value);
+    public Object apply(INDArray origin, Object value, int i) {
+        return doOp(origin, i, value);
     }
 
 

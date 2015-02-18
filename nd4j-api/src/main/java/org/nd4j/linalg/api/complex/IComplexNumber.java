@@ -1,8 +1,24 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.api.complex;
 
 /**
  * Baseline interface for a complex number with realComponent and imaginary components.
- *
+ * <p/>
  * Based off of the jblas api by mikio braun
  *
  * @author Adam Gibson
@@ -15,33 +31,51 @@ public interface IComplexNumber {
     public Number realComponent();
 
     public Number imaginaryComponent();
-  
+
     public IComplexNumber dup();
 
     public IComplexNumber copy(IComplexNumber other);
 
-    /** Add two complex numbers in-place */
+    /**
+     * Add two complex numbers in-place
+     */
     public IComplexNumber addi(IComplexNumber c, IComplexNumber result);
 
-    /** Add two complex numbers in-place storing the result in this. */
+    /**
+     * Add two complex numbers in-place storing the result in this.
+     */
     public IComplexNumber addi(IComplexNumber c);
-    /** Add two complex numbers. */
+
+    /**
+     * Add two complex numbers.
+     */
     public IComplexNumber add(IComplexNumber c);
 
-    /** Add a realComponent number to a complex number in-place. */
+    /**
+     * Add a realComponent number to a complex number in-place.
+     */
     public IComplexNumber addi(Number a, IComplexNumber result);
 
-    /** Add a realComponent number to complex number in-place, storing the result in this. */
+    /**
+     * Add a realComponent number to complex number in-place, storing the result in this.
+     */
     public IComplexNumber addi(Number c);
-    /** Add a realComponent number to a complex number. */
+
+    /**
+     * Add a realComponent number to a complex number.
+     */
     public IComplexNumber add(Number c);
-    
-    /** Subtract two complex numbers, in-place */
+
+    /**
+     * Subtract two complex numbers, in-place
+     */
     public IComplexNumber subi(IComplexNumber c, IComplexNumber result);
 
     public IComplexNumber subi(IComplexNumber c);
 
-    /** Subtract two complex numbers */
+    /**
+     * Subtract two complex numbers
+     */
     public IComplexNumber sub(IComplexNumber c);
 
     public IComplexNumber subi(Number a, IComplexNumber result);
@@ -50,12 +84,16 @@ public interface IComplexNumber {
 
     public IComplexNumber sub(Number r);
 
-    /** Multiply two complex numbers, inplace */
+    /**
+     * Multiply two complex numbers, inplace
+     */
     public IComplexNumber muli(IComplexNumber c, IComplexNumber result);
 
     public IComplexNumber muli(IComplexNumber c);
 
-    /** Multiply two complex numbers */
+    /**
+     * Multiply two complex numbers
+     */
     public IComplexNumber mul(IComplexNumber c);
 
     public IComplexNumber mul(Number v);
@@ -64,22 +102,32 @@ public interface IComplexNumber {
 
     public IComplexNumber muli(Number v);
 
-    /** Divide two complex numbers */
+    /**
+     * Divide two complex numbers
+     */
     public IComplexNumber div(IComplexNumber c);
 
-    /** Divide two complex numbers, in-place */
+    /**
+     * Divide two complex numbers, in-place
+     */
     public IComplexNumber divi(IComplexNumber c, IComplexNumber result);
 
     public IComplexNumber divi(IComplexNumber c);
+
     public IComplexNumber divi(Number v, IComplexNumber result);
 
     public IComplexNumber divi(Number v);
 
     public IComplexNumber div(Number v);
-    /** Return the absolute value */
+
+    /**
+     * Return the absolute value
+     */
     public Number absoluteValue();
 
-    /** Returns the argument of a complex number. */
+    /**
+     * Returns the argument of a complex number.
+     */
     public Number complexArgument();
 
     public IComplexNumber invi();
@@ -97,7 +145,6 @@ public interface IComplexNumber {
     public IComplexNumber sqrt();
 
 
-
     public boolean eq(IComplexNumber c);
 
     public boolean ne(IComplexNumber c);
@@ -110,35 +157,45 @@ public interface IComplexNumber {
 
     /**
      * Convert to a float
+     *
      * @return this complex number as a float
      */
     public IComplexFloat asFloat();
+
     /**
      * Convert to a double
+     *
      * @return this complex number as a double
      */
     public IComplexDouble asDouble();
 
     /**
      * Equals returning a complex number
+     *
      * @param num the number to compare
      * @return 1 if equal 0 otherwise
      */
     public IComplexNumber eqc(IComplexNumber num);
+
     /**
      * Not Equals returning a complex number
+     *
      * @param num the number to compare
      * @return 1 if not equal 0 otherwise
      */
     public IComplexNumber neqc(IComplexNumber num);
+
     /**
      * Greater than returning a complex number
+     *
      * @param num the number to compare
      * @return 1 if greater than 0 otherwise
      */
     public IComplexNumber gt(IComplexNumber num);
+
     /**
      * Less than returning a complex number
+     *
      * @param num the number to compare
      * @return 1 if less than 0 otherwise
      */

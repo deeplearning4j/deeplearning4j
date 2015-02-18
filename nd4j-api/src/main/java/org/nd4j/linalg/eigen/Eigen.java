@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.eigen;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -18,7 +34,7 @@ public class Eigen {
      */
     public static IComplexNDArray eigenvalues(INDArray A) {
         assert A.rows() == A.columns();
-        INDArray WR = Nd4j.create(A.rows(),A.rows());
+        INDArray WR = Nd4j.create(A.rows(), A.rows());
         INDArray WI = WR.dup();
         Nd4j.getBlasWrapper().geev(
                 'N',
@@ -59,13 +75,12 @@ public class Eigen {
     }
 
 
-
     /**
      * Computes the eigenvalues and eigenvectors of a general matrix.
-     *
+     * <p/>
      * For matlab users note the following from their documentation:
      * The columns of V present eigenvectors of A. The diagonal matrix D contains eigenvalues.
-     *
+     * <p/>
      * This is in reverse order of the matlab eig(A) call.
      *
      * @param A the ndarray to getFloat the eigen vectors for
@@ -77,7 +92,7 @@ public class Eigen {
         INDArray WR = Nd4j.create(A.rows());
         INDArray WI = WR.dup();
         INDArray VR = Nd4j.create(A.rows(), A.rows());
-        INDArray VL = Nd4j.create(A.rows(),A.rows());
+        INDArray VL = Nd4j.create(A.rows(), A.rows());
 
         Nd4j.getBlasWrapper().geev(
                 'v',
@@ -90,23 +105,20 @@ public class Eigen {
 
         // transferring the result
         IComplexNDArray E = Nd4j.createComplex(WR, WI);
-        IComplexNDArray V =  Nd4j.createComplex(A.rows(), A.rows());
+        IComplexNDArray V = Nd4j.createComplex(A.rows(), A.rows());
         for (int i = 0; i < A.rows(); i++) {
             if (E.getComplex(i).isReal()) {
                 IComplexNDArray column = Nd4j.createComplex(VR.getColumn(i));
-                V.putColumn(i,column);
-            }
-            else {
+                V.putColumn(i, column);
+            } else {
                 IComplexNDArray v = Nd4j.createComplex(VR.getColumn(i), VR.getColumn(i + 1));
                 V.putColumn(i, v);
                 V.putColumn(i + 1, v.conji());
                 i += 1;
             }
         }
-        return new IComplexNDArray[]{ Nd4j.diag(E),V};
+        return new IComplexNDArray[]{Nd4j.diag(E), V};
     }
-
-
 
 
     /**

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.api.complex;
 
 import org.nd4j.linalg.factory.Nd4j;
@@ -9,12 +25,12 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public abstract class BaseComplexFloat implements IComplexFloat {
 
-    protected float real,imag;
+    protected float real, imag;
 
     public BaseComplexFloat() {
     }
 
-    public BaseComplexFloat(Float real,Float imag) {
+    public BaseComplexFloat(Float real, Float imag) {
         this.real = real;
         this.imag = imag;
     }
@@ -26,7 +42,7 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     }
 
     public BaseComplexFloat(float real) {
-        this(real,0);
+        this(real, 0);
     }
 
     @Override
@@ -35,14 +51,14 @@ public abstract class BaseComplexFloat implements IComplexFloat {
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if(val == otherVal)
-            return Nd4j.createComplexNumber(1,0);
-        else if(val != otherVal)
-            return Nd4j.createComplexNumber(0,0);
-        else if(imag == otherImag)
-            return Nd4j.createComplexNumber(1,0);
+        if (val == otherVal)
+            return Nd4j.createComplexNumber(1, 0);
+        else if (val != otherVal)
+            return Nd4j.createComplexNumber(0, 0);
+        else if (imag == otherImag)
+            return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0,0);
+            return Nd4j.createComplexNumber(0, 0);
     }
 
     @Override
@@ -51,14 +67,14 @@ public abstract class BaseComplexFloat implements IComplexFloat {
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if(val != otherVal)
-            return Nd4j.createComplexNumber(1,0);
-        else if(val == otherVal)
-            return Nd4j.createComplexNumber(0,0);
-        else if(imag != otherImag)
-            return Nd4j.createComplexNumber(1,0);
+        if (val != otherVal)
+            return Nd4j.createComplexNumber(1, 0);
+        else if (val == otherVal)
+            return Nd4j.createComplexNumber(0, 0);
+        else if (imag != otherImag)
+            return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0,0);
+            return Nd4j.createComplexNumber(0, 0);
     }
 
     @Override
@@ -67,14 +83,14 @@ public abstract class BaseComplexFloat implements IComplexFloat {
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if(val > otherVal)
-            return Nd4j.createComplexNumber(1,0);
-        else if(val < otherVal)
-            return Nd4j.createComplexNumber(0,0);
-        else if(imag > otherImag)
-            return Nd4j.createComplexNumber(1,0);
+        if (val > otherVal)
+            return Nd4j.createComplexNumber(1, 0);
+        else if (val < otherVal)
+            return Nd4j.createComplexNumber(0, 0);
+        else if (imag > otherImag)
+            return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0,0);
+            return Nd4j.createComplexNumber(0, 0);
     }
 
     @Override
@@ -83,14 +99,14 @@ public abstract class BaseComplexFloat implements IComplexFloat {
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if(val < otherVal)
-            return Nd4j.createComplexNumber(1,0);
-        else if(val > otherVal)
-            return Nd4j.createComplexNumber(0,0);
-        else if(imag < otherImag)
-            return Nd4j.createComplexNumber(1,0);
+        if (val < otherVal)
+            return Nd4j.createComplexNumber(1, 0);
+        else if (val > otherVal)
+            return Nd4j.createComplexNumber(0, 0);
+        else if (imag < otherImag)
+            return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0,0);
+            return Nd4j.createComplexNumber(0, 0);
     }
 
 
@@ -113,7 +129,6 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     public IComplexFloat asFloat() {
         return this;
     }
-
 
 
     @Override
@@ -150,9 +165,9 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     @Override
     public IComplexNumber addi(IComplexNumber c, IComplexNumber result) {
         if (this == result) {
-            set(realComponent() + c.realComponent().floatValue(),imaginaryComponent() + result.imaginaryComponent().floatValue());
+            set(realComponent() + c.realComponent().floatValue(), imaginaryComponent() + result.imaginaryComponent().floatValue());
         } else {
-            result.set(result.realComponent().floatValue() + c.realComponent().floatValue(),result.imaginaryComponent().floatValue() + c.imaginaryComponent().floatValue());
+            result.set(result.realComponent().floatValue() + c.realComponent().floatValue(), result.imaginaryComponent().floatValue() + c.imaginaryComponent().floatValue());
 
         }
         return this;
@@ -165,7 +180,7 @@ public abstract class BaseComplexFloat implements IComplexFloat {
      */
     @Override
     public IComplexNumber addi(IComplexNumber c) {
-        return addi(c,this);
+        return addi(c, this);
     }
 
     /**
@@ -187,9 +202,9 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     @Override
     public IComplexNumber addi(Number a, IComplexNumber result) {
         if (this == result) {
-            set(realComponent()+ a.floatValue(),imaginaryComponent() + a.floatValue());
+            set(realComponent() + a.floatValue(), imaginaryComponent() + a.floatValue());
         } else {
-            result.set(result.realComponent().floatValue() + a.floatValue(),imaginaryComponent() + a.floatValue());
+            result.set(result.realComponent().floatValue() + a.floatValue(), imaginaryComponent() + a.floatValue());
 
         }
         return result;
@@ -203,7 +218,7 @@ public abstract class BaseComplexFloat implements IComplexFloat {
      */
     @Override
     public IComplexNumber addi(Number c) {
-        return addi(c,this);
+        return addi(c, this);
     }
 
     /**
@@ -225,9 +240,9 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     @Override
     public IComplexNumber subi(IComplexNumber c, IComplexNumber result) {
         if (this == result) {
-            set(realComponent()- c.realComponent().floatValue(),imaginaryComponent() - result.imaginaryComponent().floatValue());
+            set(realComponent() - c.realComponent().floatValue(), imaginaryComponent() - result.imaginaryComponent().floatValue());
         } else {
-            return result.set(result.realComponent().floatValue() - c.realComponent().floatValue(),result.imaginaryComponent().floatValue() - c.imaginaryComponent().floatValue());
+            return result.set(result.realComponent().floatValue() - c.realComponent().floatValue(), result.imaginaryComponent().floatValue() - c.imaginaryComponent().floatValue());
 
         }
         return this;
@@ -235,7 +250,7 @@ public abstract class BaseComplexFloat implements IComplexFloat {
 
     @Override
     public IComplexNumber subi(IComplexNumber c) {
-        return subi(c,this);
+        return subi(c, this);
     }
 
     /**
@@ -251,9 +266,9 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     @Override
     public IComplexNumber subi(Number a, IComplexNumber result) {
         if (this == result) {
-            set(realComponent()- a.floatValue(),imaginaryComponent() - a.floatValue());
+            set(realComponent() - a.floatValue(), imaginaryComponent() - a.floatValue());
         } else {
-            return result.set(result.realComponent().floatValue() - a.floatValue(),imaginaryComponent() - a.floatValue());
+            return result.set(result.realComponent().floatValue() - a.floatValue(), imaginaryComponent() - a.floatValue());
 
         }
         return result;
@@ -261,7 +276,7 @@ public abstract class BaseComplexFloat implements IComplexFloat {
 
     @Override
     public IComplexNumber subi(Number a) {
-        return subi(a,this);
+        return subi(a, this);
     }
 
     @Override
@@ -277,15 +292,15 @@ public abstract class BaseComplexFloat implements IComplexFloat {
      */
     @Override
     public IComplexNumber muli(IComplexNumber c, IComplexNumber result) {
-        float newR = realComponent()* c.realComponent().floatValue() - imaginaryComponent() * c.imaginaryComponent().floatValue();
-        float newI = realComponent()* c.imaginaryComponent().floatValue() + imaginaryComponent() * c.realComponent().floatValue();
-        result.set(newR,newI);
+        float newR = realComponent() * c.realComponent().floatValue() - imaginaryComponent() * c.imaginaryComponent().floatValue();
+        float newI = realComponent() * c.imaginaryComponent().floatValue() + imaginaryComponent() * c.realComponent().floatValue();
+        result.set(newR, newI);
         return result;
     }
 
     @Override
     public IComplexNumber muli(IComplexNumber c) {
-        return muli(c,this);
+        return muli(c, this);
     }
 
     /**
@@ -306,9 +321,9 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     @Override
     public IComplexNumber muli(Number v, IComplexNumber result) {
         if (this == result) {
-            set(realComponent() * v.floatValue(),imaginaryComponent() * v.floatValue());
+            set(realComponent() * v.floatValue(), imaginaryComponent() * v.floatValue());
         } else {
-            result.set(result.realComponent().floatValue() * v.floatValue(),result.imaginaryComponent().floatValue() * v.floatValue());
+            result.set(result.realComponent().floatValue() * v.floatValue(), result.imaginaryComponent().floatValue() * v.floatValue());
 
         }
         return result;
@@ -316,7 +331,7 @@ public abstract class BaseComplexFloat implements IComplexFloat {
 
     @Override
     public IComplexNumber muli(Number v) {
-        return muli(v,this);
+        return muli(v, this);
     }
 
     /**
@@ -338,23 +353,23 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     @Override
     public IComplexNumber divi(IComplexNumber c, IComplexNumber result) {
         float d = c.realComponent().floatValue() * c.realComponent().floatValue() + c.imaginaryComponent().floatValue() * c.imaginaryComponent().floatValue();
-        float newR = (realComponent()* c.realComponent().floatValue() + imaginaryComponent() * c.imaginaryComponent().floatValue()) / d;
-        float newI = (imaginaryComponent() * c.realComponent().floatValue() - realComponent()* c.imaginaryComponent().floatValue()) / d;
-        result.set(newR,newI);
+        float newR = (realComponent() * c.realComponent().floatValue() + imaginaryComponent() * c.imaginaryComponent().floatValue()) / d;
+        float newI = (imaginaryComponent() * c.realComponent().floatValue() - realComponent() * c.imaginaryComponent().floatValue()) / d;
+        result.set(newR, newI);
         return result;
     }
 
     @Override
     public IComplexNumber divi(IComplexNumber c) {
-        return divi(c,this);
+        return divi(c, this);
     }
 
     @Override
     public IComplexNumber divi(Number v, IComplexNumber result) {
         if (this == result) {
-            set(realComponent()/ v.floatValue(),imaginaryComponent() / v.floatValue());
+            set(realComponent() / v.floatValue(), imaginaryComponent() / v.floatValue());
         } else {
-            result.set(result.realComponent().floatValue() / v.floatValue(),imaginaryComponent() / v.floatValue());
+            result.set(result.realComponent().floatValue() / v.floatValue(), imaginaryComponent() / v.floatValue());
 
         }
         return result;
@@ -362,7 +377,7 @@ public abstract class BaseComplexFloat implements IComplexFloat {
 
     @Override
     public IComplexNumber divi(Number v) {
-        return divi(v,this);
+        return divi(v, this);
     }
 
     @Override
@@ -381,8 +396,6 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     }
 
 
-
-
     @Override
     public Float realComponent() {
         return real;
@@ -392,11 +405,6 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     public Float imaginaryComponent() {
         return imag;
     }
-
-
-
-
-
 
 
     @Override
@@ -424,13 +432,13 @@ public abstract class BaseComplexFloat implements IComplexFloat {
      */
     @Override
     public Float complexArgument() {
-        return (float) Math.acos(realComponent()/ absoluteValue());
+        return (float) Math.acos(realComponent() / absoluteValue());
     }
 
     @Override
     public IComplexFloat invi() {
         float d = realComponent() * realComponent() + imaginaryComponent() * imaginaryComponent();
-        set(realComponent() / d,-imaginaryComponent() / d);
+        set(realComponent() / d, -imaginaryComponent() / d);
         return this;
     }
 
@@ -446,16 +454,16 @@ public abstract class BaseComplexFloat implements IComplexFloat {
 
     @Override
     public IComplexFloat negi() {
-        set(-realComponent(),-imaginaryComponent());
+        set(-realComponent(), -imaginaryComponent());
         return this;
     }
 
     @Override
     public IComplexFloat sqrt() {
         float a = absoluteValue();
-        float s2 = (float)Math.sqrt(2);
-        float p = (float)Math.sqrt(a + realComponent())/s2;
-        float q = (float)Math.sqrt(a - realComponent())/s2 * Math.signum(imaginaryComponent());
+        float s2 = (float) Math.sqrt(2);
+        float p = (float) Math.sqrt(a + realComponent()) / s2;
+        float q = (float) Math.sqrt(a - realComponent()) / s2 * Math.signum(imaginaryComponent());
         return Nd4j.createFloat(p, q);
     }
 

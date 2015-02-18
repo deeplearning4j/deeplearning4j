@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.util;
 
 
@@ -23,46 +39,6 @@ public class ComplexNDArrayUtil {
 
     private static Logger log = LoggerFactory.getLogger(ComplexNDArrayUtil.class);
 
-    public static enum ScalarOp {
-        SUM,
-        MEAN,
-        PROD,
-        MAX,
-        MIN,
-        ARG_MAX,
-        ARG_MIN,
-        NORM_2,
-        NORM_1,
-        NORM_MAX
-    }
-
-
-    public static enum DimensionOp {
-        SUM,
-        MEAN,
-        PROD,
-        MAX,
-        MIN,
-        ARG_MIN,
-        NORM_2,
-        NORM_1,
-        NORM_MAX,
-        FFT
-    }
-
-
-    public static enum MatrixOp {
-        COLUMN_MIN,
-        COLUMN_MAX,
-        COLUMN_SUM,
-        COLUMN_MEAN,
-        ROW_MIN,
-        ROW_MAX,
-        ROW_SUM,
-        ROW_MEAN
-    }
-
-
     public static IComplexNDArray exp(IComplexNDArray toExp) {
         return expi(toExp.dup());
     }
@@ -83,7 +59,6 @@ public class ComplexNDArrayUtil {
         return flattened.reshape(toExp.shape());
     }
 
-
     /**
      * Center an array
      *
@@ -97,17 +72,16 @@ public class ComplexNDArrayUtil {
             return arr;
 
         INDArray shapeMatrix = ArrayUtil.toNDArray(shape);
-        for(int i = 0; i < shape.length; i++)
-            if(shape.length < 1)
+        for (int i = 0; i < shape.length; i++)
+            if (shape.length < 1)
                 throw new IllegalArgumentException("Illegal shape passed in with value < 0");
-        INDArray currShape =  ArrayUtil.toNDArray(arr.shape());
+        INDArray currShape = ArrayUtil.toNDArray(arr.shape());
 
         INDArray startIndex = currShape.sub(shapeMatrix).divi(Nd4j.scalar(2));
         INDArray endIndex = startIndex.add(shapeMatrix);
         if (shapeMatrix.length() > 1) {
-            arr = Nd4j.createComplex(arr.get(NDArrayIndex.interval((int) startIndex.getDouble(0),(int) endIndex.getDouble(0) + 1), NDArrayIndex.interval((int) startIndex.getDouble(1), (int) endIndex.getDouble(1) + 1)));
-        }
-        else {
+            arr = Nd4j.createComplex(arr.get(NDArrayIndex.interval((int) startIndex.getDouble(0), (int) endIndex.getDouble(0) + 1), NDArrayIndex.interval((int) startIndex.getDouble(1), (int) endIndex.getDouble(1) + 1)));
+        } else {
             IComplexNDArray ret = Nd4j.createComplex(new int[]{(int) shapeMatrix.getDouble(0)});
             int start = (int) startIndex.getDouble(0);
             int end = (int) endIndex.getDouble(0);
@@ -122,7 +96,6 @@ public class ComplexNDArrayUtil {
 
         return arr;
     }
-
 
     /**
      * Truncates an ndarray to the specified shape.
@@ -219,7 +192,6 @@ public class ComplexNDArrayUtil {
 
     }
 
-
     /**
      * Pads an ndarray with zeros
      *
@@ -240,7 +212,6 @@ public class ComplexNDArrayUtil {
 
     }
 
-
     private static boolean isRowOp(MatrixOp op) {
         return
                 op == MatrixOp.ROW_MIN ||
@@ -248,7 +219,6 @@ public class ComplexNDArrayUtil {
                         op == MatrixOp.ROW_SUM ||
                         op == MatrixOp.ROW_MEAN;
     }
-
 
     private static boolean isColumnOp(MatrixOp op) {
         return
@@ -259,8 +229,44 @@ public class ComplexNDArrayUtil {
     }
 
 
+    public static enum ScalarOp {
+        SUM,
+        MEAN,
+        PROD,
+        MAX,
+        MIN,
+        ARG_MAX,
+        ARG_MIN,
+        NORM_2,
+        NORM_1,
+        NORM_MAX
+    }
 
 
+    public static enum DimensionOp {
+        SUM,
+        MEAN,
+        PROD,
+        MAX,
+        MIN,
+        ARG_MIN,
+        NORM_2,
+        NORM_1,
+        NORM_MAX,
+        FFT
+    }
+
+
+    public static enum MatrixOp {
+        COLUMN_MIN,
+        COLUMN_MAX,
+        COLUMN_SUM,
+        COLUMN_MEAN,
+        ROW_MIN,
+        ROW_MAX,
+        ROW_SUM,
+        ROW_MEAN
+    }
 
 
 }

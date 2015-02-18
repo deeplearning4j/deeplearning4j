@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.fft;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -9,26 +25,27 @@ import org.nd4j.linalg.util.ComplexNDArrayUtil;
 /**
  * Abstract FFT Instance mostly handling basic things that shouldn't change
  * such as method overloading.
+ *
  * @author Adam Gibson
  */
 public abstract class BaseFFTInstance implements FFTInstance {
 
     /**
      * FFT along a particular dimension
-     * @param transform the ndarray to transform
+     *
+     * @param transform   the ndarray to transform
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
     @Override
-    public IComplexNDArray fft(INDArray transform,int numElements) {
+    public IComplexNDArray fft(INDArray transform, int numElements) {
         IComplexNDArray inputC = Nd4j.createComplex(transform);
-        if(inputC.isVector())
-            return  new VectorFFT(inputC.length()).apply(inputC);
+        if (inputC.isVector())
+            return new VectorFFT(inputC.length()).apply(inputC);
         else {
-            return rawfft(inputC,numElements,inputC.shape().length - 1);
+            return rawfft(inputC, numElements, inputC.shape().length - 1);
         }
     }
-
 
 
     /**
@@ -36,15 +53,16 @@ public abstract class BaseFFTInstance implements FFTInstance {
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
+     *
      * @param inputC the input to transform
      * @return the the discrete fourier transform of the passed in input
      */
     @Override
-    public  IComplexNDArray fft(IComplexNDArray inputC) {
-        if(inputC.isVector())
-            return  new VectorFFT(inputC.length()).apply(inputC);
+    public IComplexNDArray fft(IComplexNDArray inputC) {
+        if (inputC.isVector())
+            return new VectorFFT(inputC.length()).apply(inputC);
         else {
-            return rawfft(inputC,inputC.size(inputC.shape().length - 1),inputC.shape().length - 1);
+            return rawfft(inputC, inputC.size(inputC.shape().length - 1), inputC.shape().length - 1);
         }
     }
 
@@ -53,50 +71,51 @@ public abstract class BaseFFTInstance implements FFTInstance {
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
+     *
      * @param input the input to transform
      * @return the the discrete fourier transform of the passed in input
      */
     @Override
-    public  IComplexNDArray fft(INDArray input) {
+    public IComplexNDArray fft(INDArray input) {
         IComplexNDArray inputC = Nd4j.createComplex(input);
         return fft(inputC);
     }
 
 
-
-
     /**
      * 1d discrete fourier transform, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
+     *
      * @param inputC the input to transform
      * @return the the discrete fourier transform of the passed in input
      */
     @Override
-    public  IComplexNDArray fft(IComplexNDArray inputC,int numElements) {
-        return fft(inputC,numElements,inputC.shape().length - 1);
+    public IComplexNDArray fft(IComplexNDArray inputC, int numElements) {
+        return fft(inputC, numElements, inputC.shape().length - 1);
     }
 
 
     /**
      * ND IFFT, computes along the first on singleton dimension of
      * transform
-     * @param transform the ndarray to transform
-     * @param dimension the dimension to iterate along
+     *
+     * @param transform   the ndarray to transform
+     * @param dimension   the dimension to iterate along
      * @param numElements the desired number of elements in each fft
      * @return the reverse ifft of the passed in array
      */
     @Override
-    public IComplexNDArray ifftn(INDArray transform,int dimension,int numElements) {
-        return ifftn(Nd4j.createComplex(transform),dimension,numElements);
+    public IComplexNDArray ifftn(INDArray transform, int dimension, int numElements) {
+        return ifftn(Nd4j.createComplex(transform), dimension, numElements);
     }
 
     @Override
     public IComplexNDArray irfftn(IComplexNDArray arr) {
         int[] shape = arr.shape();
         IComplexNDArray ret = arr.dup();
-        for(int i = 0; i < shape.length - 1; i++) {
+        for (int i = 0; i < shape.length - 1; i++) {
             ret = ifftn(ret, i, shape[i]);
         }
 
@@ -106,7 +125,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
 
     @Override
-    public IComplexNDArray irfft(IComplexNDArray arr,int dimension) {
+    public IComplexNDArray irfft(IComplexNDArray arr, int dimension) {
         return fftn(arr, arr.size(dimension), dimension);
     }
 
@@ -117,14 +136,15 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
     /**
      * ND IFFT
-     * @param transform the ndarray to transform
-     * @param dimension the dimension to iterate along
+     *
+     * @param transform   the ndarray to transform
+     * @param dimension   the dimension to iterate along
      * @param numElements the desired number of elements in each fft
      * @return the transformed array
      */
     @Override
-    public IComplexNDArray ifftn(IComplexNDArray transform,int dimension,int numElements) {
-        if(numElements < 1)
+    public IComplexNDArray ifftn(IComplexNDArray transform, int dimension, int numElements) {
+        if (numElements < 1)
             throw new IllegalArgumentException("No elements specified");
 
         int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
@@ -134,12 +154,10 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
         int desiredElementsAlongDimension = result.size(dimension);
 
-        if(numElements > desiredElementsAlongDimension) {
+        if (numElements > desiredElementsAlongDimension) {
             result = ComplexNDArrayUtil.padWithZeros(result, finalShape);
-        }
-
-        else if(numElements < desiredElementsAlongDimension)
-            result = ComplexNDArrayUtil.truncate(result,numElements,dimension);
+        } else if (numElements < desiredElementsAlongDimension)
+            result = ComplexNDArrayUtil.truncate(result, numElements, dimension);
 
         return rawifftn(result, finalShape, axes);
     }
@@ -148,15 +166,16 @@ public abstract class BaseFFTInstance implements FFTInstance {
     /**
      * Performs FFT along the first non singleton dimension of
      * transform. This means
-     * @param transform the ndarray to transform
-     * @param dimension the dimension to iterate along
+     *
+     * @param transform   the ndarray to transform
+     * @param dimension   the dimension to iterate along
      * @param numElements the desired number of elements in each fft
      *                    along each dimension from each slice (note: each slice)
      * @return the transformed array
      */
     @Override
-    public IComplexNDArray fftn(IComplexNDArray transform,int dimension,int numElements) {
-        if(numElements < 1)
+    public IComplexNDArray fftn(IComplexNDArray transform, int dimension, int numElements) {
+        if (numElements < 1)
             throw new IllegalArgumentException("No elements specified");
 
         int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
@@ -166,58 +185,59 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
         int desiredElementsAlongDimension = result.size(dimension);
 
-        if(numElements > desiredElementsAlongDimension) {
-            result = ComplexNDArrayUtil.padWithZeros(result,finalShape);
-        }
+        if (numElements > desiredElementsAlongDimension) {
+            result = ComplexNDArrayUtil.padWithZeros(result, finalShape);
+        } else if (numElements < desiredElementsAlongDimension)
+            result = ComplexNDArrayUtil.truncate(result, numElements, dimension);
 
-        else if(numElements < desiredElementsAlongDimension)
-            result = ComplexNDArrayUtil.truncate(result,numElements,dimension);
-
-        return rawfftn(result,finalShape,axes);
+        return rawfftn(result, finalShape, axes);
     }
 
 
     /**
      * Computes the fft along the first non singleton dimension of transform
      * when it is a matrix
-     * @param transform the ndarray to transform
-     * @param dimension the dimension to do fft along
+     *
+     * @param transform   the ndarray to transform
+     * @param dimension   the dimension to do fft along
      * @param numElements the desired number of elements in each fft
      * @return the fft of the specified ndarray
      */
     @Override
-    public IComplexNDArray fftn(INDArray transform,int dimension,int numElements) {
-        return fftn(Nd4j.createComplex(transform),dimension,numElements);
+    public IComplexNDArray fftn(INDArray transform, int dimension, int numElements) {
+        return fftn(Nd4j.createComplex(transform), dimension, numElements);
     }
 
     /**
      * FFT on the whole array (n is equal the first dimension shape)
+     *
      * @param transform the matrix to transform
      * @return the ffted array
      */
     @Override
     public IComplexNDArray fftn(INDArray transform) {
-        return fftn(transform,transform.shape().length - 1,transform.shape()[transform.shape().length - 1]);
+        return fftn(transform, transform.shape().length - 1, transform.shape()[transform.shape().length - 1]);
     }
 
     /**
      * FFT on the whole array (n is equal the first dimension shape)
+     *
      * @param transform the matrix to transform
      * @return the ffted array
      */
     @Override
     public IComplexNDArray fftn(IComplexNDArray transform) {
-        return fftn(transform,transform.shape().length - 1,transform.shape()[transform.shape().length - 1]);
+        return fftn(transform, transform.shape().length - 1, transform.shape()[transform.shape().length - 1]);
     }
 
     @Override
-    public IComplexNDArray ifftn(IComplexNDArray transform,int dimension) {
+    public IComplexNDArray ifftn(IComplexNDArray transform, int dimension) {
         return ifftn(transform, dimension, transform.shape()[dimension]);
     }
 
     @Override
     public IComplexNDArray ifftn(IComplexNDArray transform) {
-        return ifftn(transform, transform.shape().length - 1,transform.size(transform.shape().length - 1));
+        return ifftn(transform, transform.shape().length - 1, transform.size(transform.shape().length - 1));
     }
 
     @Override
@@ -227,15 +247,14 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
     //underlying ifftn
     @Override
-    public IComplexNDArray rawifftn(IComplexNDArray transform,int[] shape,int[] axes) {
+    public IComplexNDArray rawifftn(IComplexNDArray transform, int[] shape, int[] axes) {
         assert shape.length > 0 : "Shape length must be > 0";
         assert shape.length == axes.length : "Axes and shape must be the same length";
 
         IComplexNDArray result = transform.dup();
 
 
-
-        for(int i =  shape.length - 1; i >= 0; i--) {
+        for (int i = shape.length - 1; i >= 0; i--) {
             result = ifft(result, shape[i], axes[i]);
         }
 
@@ -245,10 +264,10 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
     //underlying fftn
     @Override
-    public IComplexNDArray rawfftn(IComplexNDArray transform,int[] shape,int[] axes) {
+    public IComplexNDArray rawfftn(IComplexNDArray transform, int[] shape, int[] axes) {
         IComplexNDArray result = transform.dup();
 
-        for(int i = shape.length - 1; i >= 0; i--) {
+        for (int i = shape.length - 1; i >= 0; i--) {
             result = fft(result, shape[i], axes[i]);
         }
 
@@ -257,13 +276,11 @@ public abstract class BaseFFTInstance implements FFTInstance {
     }
 
 
-
     //underlying fftn
     @Override
-    public IComplexNDArray rawifft(IComplexNDArray transform,int dimension) {
-        return rawifft(transform,transform.shape()[dimension],dimension);
+    public IComplexNDArray rawifft(IComplexNDArray transform, int dimension) {
+        return rawifft(transform, transform.shape()[dimension], dimension);
     }
-
 
 
 }

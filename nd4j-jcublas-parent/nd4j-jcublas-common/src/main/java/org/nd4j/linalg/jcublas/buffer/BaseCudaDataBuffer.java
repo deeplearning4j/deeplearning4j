@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.jcublas.buffer;
 
 import jcuda.Pointer;
@@ -16,28 +32,29 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Base class for a data buffer
+ *
  * @author Adam Gibson
  */
 public abstract class BaseCudaDataBuffer implements JCudaBuffer {
-    protected Pointer pointer;
-    protected int length;
-    protected int elementSize;
     private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
-
     static {
         SimpleJCublas.init();
     }
+    protected Pointer pointer;
+    protected int length;
+    protected int elementSize;
 
 
     /**
      * Base constructor
-     * @param length the length of the buffer
+     *
+     * @param length      the length of the buffer
      * @param elementSize the size of each element
      */
-    public BaseCudaDataBuffer(int length,int elementSize) {
+    public BaseCudaDataBuffer(int length, int elementSize) {
         this.length = length;
         this.elementSize = elementSize;
-        if(pointer() == null)
+        if (pointer() == null)
             alloc();
     }
 
@@ -55,7 +72,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                     length() * elementSize()
             );
 
-        }catch(Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -63,7 +80,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void set(Pointer pointer) {
-        if(dataType() == DOUBLE) {
+        if (dataType() == DOUBLE) {
             JCublas.cublasDcopy(
                     length(),
                     pointer,
@@ -71,8 +88,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                     pointer(),
                     1
             );
-        }
-        else {
+        } else {
             JCublas.cublasScopy(
                     length(),
                     pointer,
@@ -88,16 +104,17 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     /**
      * Copy the data of this buffer to another buffer on the gpu
+     *
      * @param to the buffer to copy data to
      */
     protected void copyTo(JCudaBuffer to) {
-        if(to.dataType() != dataType())
+        if (to.dataType() != dataType())
             throw new IllegalArgumentException("Unable to copy buffer, mis matching data types.");
 
         JCuda.cudaMemcpy(
                 to.pointer()
-                ,pointer()
-                ,length() * elementSize()
+                , pointer()
+                , length() * elementSize()
                 , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
 
 
@@ -105,83 +122,86 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void addi(Number n) {
-        addi(n,1,0);
+        addi(n, 1, 0);
     }
 
     @Override
     public void subi(Number n) {
-        subi(n,1,0);
+        subi(n, 1, 0);
     }
 
     @Override
     public void muli(Number n) {
-        muli(n,1,0);
+        muli(n, 1, 0);
     }
 
     @Override
     public void divi(Number n) {
-        divi(n,1,0);
+        divi(n, 1, 0);
     }
 
     @Override
     public void addi(DataBuffer buffer) {
-        addi(buffer,length(),0,0,1,1);
+        addi(buffer, length(), 0, 0, 1, 1);
     }
 
     @Override
     public void subi(DataBuffer buffer) {
-        subi(buffer,length(),0,0,1,1);
+        subi(buffer, length(), 0, 0, 1, 1);
     }
 
     @Override
     public void muli(DataBuffer buffer) {
-        muli(buffer,length(),0,0,1,1);
+        muli(buffer, length(), 0, 0, 1, 1);
     }
 
     @Override
     public void divi(DataBuffer buffer) {
-        divi(buffer,length(),0,0,1,1);
+        divi(buffer, length(), 0, 0, 1, 1);
     }
 
     @Override
     public void assign(Number value) {
-        assign(value,0);
+        assign(value, 0);
     }
 
 
     /**
      * Get element with the specified index
-     * @param index the index of the element to get
-     * @param inc the increment step when getting data
+     *
+     * @param index  the index of the element to get
+     * @param inc    the increment step when getting data
      * @param length the length to iterate for
-     * @param init the initialized pointer
+     * @param init   the initialized pointer
      */
-    protected void get(int index,int inc,int length,Pointer init) {
+    protected void get(int index, int inc, int length, Pointer init) {
         JCublas.cublasGetVector(
                 length
-                ,elementSize(),
+                , elementSize(),
                 pointer().withByteOffset(index * elementSize())
                 ,
                 inc,
                 init
-                ,1);
+                , 1);
     }
 
     /**
      * Get element with the specified index
+     *
      * @param index the index of the element to get
-     * @param init the initialized pointer
+     * @param init  the initialized pointer
      */
-    protected void get(int index,int length,Pointer init) {
-        get(index,1,length,init);
+    protected void get(int index, int length, Pointer init) {
+        get(index, 1, length, init);
     }
 
     /**
      * Get element with the specified index
+     *
      * @param index the index of the element to get
-     * @param init the initialized pointer
+     * @param init  the initialized pointer
      */
-    protected void get(int index,Pointer init) {
+    protected void get(int index, Pointer init) {
         get(index, 1, init);
     }
 
@@ -193,7 +213,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public IComplexDouble getComplexDouble(int i) {
-        return Nd4j.createDouble(getDouble(i),getDouble(i + 1));
+        return Nd4j.createDouble(getDouble(i), getDouble(i + 1));
     }
 
     @Override
@@ -203,44 +223,47 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     /**
      * Set an individual element
+     *
      * @param index the index of the element
-     * @param from the element to get data from
+     * @param from  the element to get data from
      */
-    protected void set(int index,int length,Pointer from,int inc) {
+    protected void set(int index, int length, Pointer from, int inc) {
         JCublas.cublasSetVector(
                 length,
                 elementSize(),
                 from,
                 inc,
                 pointer().withByteOffset(elementSize() * index)
-                ,1);
+                , 1);
 
 
     }
+
     /**
      * Set an individual element
+     *
      * @param index the index of the element
-     * @param from the element to get data from
+     * @param from  the element to get data from
      */
-    protected void set(int index,int length,Pointer from) {
-        set(index,length,from,1);
+    protected void set(int index, int length, Pointer from) {
+        set(index, length, from, 1);
     }
 
     @Override
     public void assign(DataBuffer data) {
         JCudaBuffer buf = (JCudaBuffer) data;
-        set(0,buf.pointer());
+        set(0, buf.pointer());
     }
 
     /**
      * Set an individual element
+     *
      * @param index the index of the element
-     * @param from the element to get data from
+     * @param from  the element to get data from
      */
-    protected void set(int index,Pointer from) {
-        set(index,1,from);
+    protected void set(int index, Pointer from) {
+        set(index, 1, from);
     }
-
 
 
     @Override
@@ -248,14 +271,15 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         JCublas.cublasFree(pointer);
 
     }
+
     @Override
     public double[] getDoublesAt(int offset, int length) {
-        return getDoublesAt(0,1,length);
+        return getDoublesAt(0, 1, length);
     }
 
     @Override
     public float[] getFloatsAt(int offset, int length) {
-        return getFloatsAt(offset,1,length);
+        return getFloatsAt(offset, 1, length);
     }
 
     @Override
@@ -332,7 +356,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
 
 
-
     @Override
     public int getInt(int ix) {
         return 0;
@@ -351,17 +374,17 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void apply(ElementWiseOp op) {
-        apply(op,0);
+        apply(op, 0);
     }
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous) {
-        assign(indices,data,contiguous,1);
+        assign(indices, data, contiguous, 1);
     }
 
     @Override
     public void assign(int[] indices, double[] data, boolean contiguous) {
-        assign(indices, data, contiguous,1);
+        assign(indices, data, contiguous, 1);
     }
 
     @Override
@@ -373,10 +396,10 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
         if (elementSize != that.elementSize) return false;
         if (length != that.length) return false;
-        for(int i = 0; i < length; i++) {
+        for (int i = 0; i < length; i++) {
             double element = getDouble(i);
             double other = that.getDouble(i);
-            if(element != other)
+            if (element != other)
                 return false;
         }
         return true;

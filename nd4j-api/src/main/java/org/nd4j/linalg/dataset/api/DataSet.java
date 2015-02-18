@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.dataset.api;
 
 import com.google.common.base.Function;
@@ -14,17 +30,14 @@ import java.util.Map;
 /**
  * Created by agibsonccc on 8/26/14.
  */
-public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>,Serializable {
+public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Serializable {
     INDArray getFeatures();
-
-
-    Map<Integer,Double> labelCounts();
-
-    void apply(Condition condition,Function<Number,Number> function);
 
     void setFeatures(INDArray features);
 
-    void setLabels(INDArray labels);
+    Map<Integer, Double> labelCounts();
+
+    void apply(Condition condition, Function<Number, Number> function);
 
     org.nd4j.linalg.dataset.DataSet copy();
 
@@ -38,9 +51,7 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>,Seria
 
     void squishToRange(double min, double max);
 
-
-
-    void scaleMinAndMax(double min,double max);
+    void scaleMinAndMax(double min, double max);
 
     void scale();
 
@@ -87,6 +98,8 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>,Seria
     SplitTestAndTrain splitTestAndTrain(int numHoldout);
 
     INDArray getLabels();
+
+    void setLabels(INDArray labels);
 
     INDArray getFeatureMatrix();
 

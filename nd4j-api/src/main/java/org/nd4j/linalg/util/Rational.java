@@ -1,38 +1,64 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.util;
 /*
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
 // package org.nevec.rjm ;
-import java.math.*;
 
-/** Fractions (rational numbers).
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
+import java.math.RoundingMode;
+
+/**
+ * Fractions (rational numbers).
  * They are divisions of two BigInteger variables, reduced to greatest
  * common divisors of 1.
  */
 class Rational implements Cloneable {
 
-    /** numerator
-     */
-    BigInteger a;
-    /** denominator
-     */
-    BigInteger b;
     /* The maximum and minimum value of a standard Java integer, 2^31.
      */
     static BigInteger MAX_INT = new BigInteger("2147483647");
     static BigInteger MIN_INT = new BigInteger("-2147483648");
     static Rational ONE = new Rational(1, 1);
     static Rational ZERO = new Rational();
+    /**
+     * numerator
+     */
+    BigInteger a;
+    /**
+     * denominator
+     */
+    BigInteger b;
 
-    /** Default ctor, which represents the zero.
+    /**
+     * Default ctor, which represents the zero.
      */
     public Rational() {
         a = BigInteger.ZERO;
         b = BigInteger.ONE;
     }
 
-    /** ctor from a numerator and denominator.
+    /**
+     * ctor from a numerator and denominator.
+     *
      * @param a the numerator.
      * @param b the denominator.
      */
@@ -42,7 +68,9 @@ class Rational implements Cloneable {
         normalize();
     }
 
-    /** ctor from a numerator.
+    /**
+     * ctor from a numerator.
+     *
      * @param a the BigInteger.
      */
     public Rational(BigInteger a) {
@@ -50,7 +78,9 @@ class Rational implements Cloneable {
         b = new BigInteger("1");
     }
 
-    /** ctor from a numerator and denominator.
+    /**
+     * ctor from a numerator and denominator.
+     *
      * @param a the numerator.
      * @param b the denominator.
      */
@@ -58,23 +88,27 @@ class Rational implements Cloneable {
         this(new BigInteger("" + a), new BigInteger("" + b));
     }
 
-    /** ctor from a string representation.
+    /**
+     * ctor from a string representation.
+     *
      * @param str the string.
-     * This either has a slash in it, separating two integers, or, if there is no slash,
-     * is representing the numerator with implicit denominator equal to 1.
+     *            This either has a slash in it, separating two integers, or, if there is no slash,
+     *            is representing the numerator with implicit denominator equal to 1.
      * @warning this does not yet test for a denominator equal to zero
      */
     public Rational(String str) throws NumberFormatException {
         this(str, 10);
     }
 
-    /** ctor from a string representation in a specified base.
-     * @param str the string.
-     * This either has a slash in it, separating two integers, or, if there is no slash,
-     * is just representing the numerator.
+    /**
+     * ctor from a string representation in a specified base.
+     *
+     * @param str   the string.
+     *              This either has a slash in it, separating two integers, or, if there is no slash,
+     *              is just representing the numerator.
      * @param radix the number base for numerator and denominator
      * @warning this does not yet test for a denominator equal to zero
-    5
+     * 5
      */
     public Rational(String str, int radix) throws NumberFormatException {
         int hasslah = str.indexOf("/");
@@ -91,7 +125,44 @@ class Rational implements Cloneable {
         }
     }
 
-    /** Create a copy.
+    /**
+     * binomial (n choose m).
+     *
+     * @param n the numerator. Equals the size of the set to choose from.
+     * @param m the denominator. Equals the number of elements to select.
+     * @return the binomial coefficient.
+     */
+    public static Rational binomial(Rational n, BigInteger m) {
+        if (m.compareTo(BigInteger.ZERO) == 0) {
+            return Rational.ONE;
+        }
+        Rational bin = n;
+        for (BigInteger i = new BigInteger("2"); i.compareTo(m) != 1; i = i.add(BigInteger.ONE)) {
+            bin = bin.multiply(n.subtract(i.subtract(BigInteger.ONE))).divide(i);
+        }
+        return bin;
+    } /* Rational.binomial */
+
+    /**
+     * binomial (n choose m).
+     *
+     * @param n the numerator. Equals the size of the set to choose from.
+     * @param m the denominator. Equals the number of elements to select.
+     * @return the binomial coefficient.
+     */
+    public static Rational binomial(Rational n, int m) {
+        if (m == 0) {
+            return Rational.ONE;
+        }
+        Rational bin = n;
+        for (int i = 2; i <= m; i++) {
+            bin = bin.multiply(n.subtract(i - 1)).divide(i);
+        }
+        return bin;
+    } /* Rational.binomial */
+
+    /**
+     * Create a copy.
      */
     @Override
     public Rational clone() {
@@ -103,8 +174,9 @@ class Rational implements Cloneable {
         return new Rational(aclon, bclon);
     } /* Rational.clone */
 
-
-    /** Multiply by another fraction.
+    /**
+     * Multiply by another fraction.
+     *
      * @param val a second rational number.
      * @return the product of this with the val.
      */
@@ -117,8 +189,9 @@ class Rational implements Cloneable {
         return (new Rational(num, deno));
     } /* Rational.multiply */
 
-
-    /** Multiply by a BigInteger.
+    /**
+     * Multiply by a BigInteger.
+     *
      * @param val a second number.
      * @return the product of this with the value.
      */
@@ -127,8 +200,9 @@ class Rational implements Cloneable {
         return (multiply(val2));
     } /* Rational.multiply */
 
-
-    /** Multiply by an integer.
+    /**
+     * Multiply by an integer.
+     *
      * @param val a second number.
      * @return the product of this with the value.
      */
@@ -137,8 +211,9 @@ class Rational implements Cloneable {
         return multiply(tmp);
     } /* Rational.multiply */
 
-
-    /** Power to an integer.
+    /**
+     * Power to an integer.
+     *
      * @param exponent the exponent.
      * @return this value raised to the power given by the exponent.
      * If the exponent is 0, the value 1 is returned.
@@ -156,8 +231,9 @@ class Rational implements Cloneable {
         }
     } /* Rational.pow */
 
-
-    /** Power to an integer.
+    /**
+     * Power to an integer.
+     *
      * @param exponent the exponent.
      * @return this value raised to the power given by the exponent.
      * If the exponent is 0, the value 1 is returned.
@@ -174,8 +250,9 @@ class Rational implements Cloneable {
         return pow(exponent.intValue());
     } /* Rational.pow */
 
-
-    /** Divide by another fraction.
+    /**
+     * Divide by another fraction.
+     *
      * @param val A second rational number.
      * @return The value of this/val
      */
@@ -188,8 +265,9 @@ class Rational implements Cloneable {
         return (new Rational(num, deno));
     } /* Rational.divide */
 
-
-    /** Divide by an integer.
+    /**
+     * Divide by an integer.
+     *
      * @param val a second number.
      * @return the value of this/val
      */
@@ -198,8 +276,9 @@ class Rational implements Cloneable {
         return (divide(val2));
     } /* Rational.divide */
 
-
-    /** Divide by an integer.
+    /**
+     * Divide by an integer.
+     *
      * @param val A second number.
      * @return The value of this/val
      */
@@ -208,8 +287,9 @@ class Rational implements Cloneable {
         return (divide(val2));
     } /* Rational.divide */
 
-
-    /** Add another fraction.
+    /**
+     * Add another fraction.
+     *
      * @param val The number to be added
      * @return this+val.
      */
@@ -219,8 +299,9 @@ class Rational implements Cloneable {
         return (new Rational(num, deno));
     } /* Rational.add */
 
-
-    /** Add another integer.
+    /**
+     * Add another integer.
+     *
      * @param val The number to be added
      * @return this+val.
      */
@@ -229,17 +310,19 @@ class Rational implements Cloneable {
         return (add(val2));
     } /* Rational.add */
 
-
-    /** Compute the negative.
+    /**
+     * Compute the negative.
+     *
      * @return -this.
      */
     public Rational negate() {
         return (new Rational(a.negate(), b));
     } /* Rational.negate */
 
-
-    /** Subtract another fraction.
-     7
+    /**
+     * Subtract another fraction.
+     * 7
+     *
      * @param val the number to be subtracted from this
      * @return this - val.
      */
@@ -248,8 +331,9 @@ class Rational implements Cloneable {
         return (add(val2));
     } /* Rational.subtract */
 
-
-    /** Subtract an integer.
+    /**
+     * Subtract an integer.
+     *
      * @param val the number to be subtracted from this
      * @return this - val.
      */
@@ -258,8 +342,9 @@ class Rational implements Cloneable {
         return (subtract(val2));
     } /* Rational.subtract */
 
-
-    /** Subtract an integer.
+    /**
+     * Subtract an integer.
+     *
      * @param val the number to be subtracted from this
      * @return this - val.
      */
@@ -268,63 +353,36 @@ class Rational implements Cloneable {
         return (subtract(val2));
     } /* Rational.subtract */
 
-
-    /** binomial (n choose m).
-     * @param n the numerator. Equals the size of the set to choose from.
-     * @param m the denominator. Equals the number of elements to select.
-     * @return the binomial coefficient.
-     */
-    public static Rational binomial(Rational n, BigInteger m) {
-        if (m.compareTo(BigInteger.ZERO) == 0) {
-            return Rational.ONE;
-        }
-        Rational bin = n;
-        for (BigInteger i = new BigInteger("2"); i.compareTo(m) != 1; i = i.add(BigInteger.ONE)) {
-            bin = bin.multiply(n.subtract(i.subtract(BigInteger.ONE))).divide(i);
-        }
-        return bin;
-    } /* Rational.binomial */
-
-
-    /** binomial (n choose m).
-     * @param n the numerator. Equals the size of the set to choose from.
-     * @param m the denominator. Equals the number of elements to select.
-     * @return the binomial coefficient.
-     */
-    public static Rational binomial(Rational n, int m) {
-        if (m == 0) {
-            return Rational.ONE;
-        }
-        Rational bin = n;
-        for (int i = 2; i <= m; i++) {
-            bin = bin.multiply(n.subtract(i - 1)).divide(i);
-        }
-        return bin;
-    } /* Rational.binomial */
-
-
-    /** Get the numerator.
+    /**
+     * Get the numerator.
+     *
      * @return The numerator of the reduced fraction.
      */
     public BigInteger numer() {
         return a;
     }
 
-    /** Get the denominator.
+    /**
+     * Get the denominator.
+     *
      * @return The denominator of the reduced fraction.
      */
     public BigInteger denom() {
         return b;
     }
 
-    /** Absolute value.
+    /**
+     * Absolute value.
+     *
      * @return The absolute (non-negative) value of this.
      */
     public Rational abs() {
         return (new Rational(a.abs(), b.abs()));
     }
 
-    /** floor(): the nearest integer not greater than this.
+    /**
+     * floor(): the nearest integer not greater than this.
+     *
      * @return The integer rounded towards negative infinity.
      */
     public BigInteger floor() {
@@ -340,7 +398,9 @@ class Rational implements Cloneable {
     } /* Rational.floor */
 
 
-    /** Remove the fractional part.
+    /**
+     * Remove the fractional part.
+     *
      * @return The integer rounded towards zero.
      */
     public BigInteger trunc() {
@@ -354,7 +414,9 @@ class Rational implements Cloneable {
     } /* Rational.trunc */
 
 
-    /** Compares the value of this with another constant.
+    /**
+     * Compares the value of this with another constant.
+     *
      * @param val the other constant to compare with
      * @return -1, 0 or 1 if this number is numerically less than, equal to,
      * or greater than val.
@@ -369,7 +431,9 @@ class Rational implements Cloneable {
     } /* Rational.compareTo */
 
 
-    /** Compares the value of this with another constant.
+    /**
+     * Compares the value of this with another constant.
+     *
      * @param val the other constant to compare with
      * @return -1, 0 or 1 if this number is numerically less than, equal to,
      * or greater than val.
@@ -380,8 +444,10 @@ class Rational implements Cloneable {
     } /* Rational.compareTo */
 
 
-    /** Return a string in the format number/denom.
+    /**
+     * Return a string in the format number/denom.
      * If the denominator equals 1, print just the numerator without a slash.
+     *
      * @return the human-readable version in base 10
      */
     @Override
@@ -394,7 +460,9 @@ class Rational implements Cloneable {
     } /* Rational.toString */
 
 
-    /** Return a double value representation.
+    /**
+     * Return a double value representation.
+     *
      * @return The value with double precision.
      */
     public double doubleValue() {
@@ -407,7 +475,9 @@ class Rational implements Cloneable {
     } /* Rational.doubleValue */
 
 
-    /** Return a float value representation.
+    /**
+     * Return a float value representation.
+     *
      * @return The value with single precision.
      */
     public float floatValue() {
@@ -416,7 +486,9 @@ class Rational implements Cloneable {
     } /* Rational.floatValue */
 
 
-    /** Return a representation as BigDecimal.
+    /**
+     * Return a representation as BigDecimal.
+     *
      * @param mc the mathematical context which determines precision, rounding mode etc
      * @return A representation as a BigDecimal floating point number.
      */
@@ -429,7 +501,9 @@ class Rational implements Cloneable {
     } /* Rational.BigDecimnalValue */
 
 
-    /** Return a string in floating point format.
+    /**
+     * Return a string in floating point format.
+     *
      * @param digits The precision (number of digits)
      * @return The human-readable version in base 10.
      */
@@ -444,7 +518,9 @@ class Rational implements Cloneable {
     } /* Rational.toFString */
 
 
-    /** Compares the value of this with another constant.
+    /**
+     * Compares the value of this with another constant.
+     *
      * @param val The other constant to compare with
      * @return The arithmetic maximum of this and val.
      */
@@ -457,7 +533,9 @@ class Rational implements Cloneable {
     } /* Rational.max */
 
 
-    /** Compares the value of this with another constant.
+    /**
+     * Compares the value of this with another constant.
+     *
      * @param val The other constant to compare with
      * @return The arithmetic minimum of this and val.
      */
@@ -470,7 +548,9 @@ class Rational implements Cloneable {
     } /* Rational.min */
 
 
-    /** Compute Pochhammer’s symbol (this)_n.
+    /**
+     * Compute Pochhammer’s symbol (this)_n.
+     *
      * @param n The number of product terms in the evaluation.
      * @return Gamma(this+n)/Gamma(this) = this*(this+1)*...*(this+n-1).
      */
@@ -492,7 +572,9 @@ class Rational implements Cloneable {
     } /* Rational.pochhammer */
 
 
-    /** Compute pochhammer’s symbol (this)_n.
+    /**
+     * Compute pochhammer’s symbol (this)_n.
+     *
      * @param n The number of product terms in the evaluation.
      * @return Gamma(this+n)/GAMMA(this).
      */
@@ -501,7 +583,8 @@ class Rational implements Cloneable {
     } /* Rational.pochhammer */
 
 
-    /** Normalize to coprime numerator and denominator.
+    /**
+     * Normalize to coprime numerator and denominator.
      * Also copy a negative sign of the denominator to the numerator.
      */
     protected void normalize() {

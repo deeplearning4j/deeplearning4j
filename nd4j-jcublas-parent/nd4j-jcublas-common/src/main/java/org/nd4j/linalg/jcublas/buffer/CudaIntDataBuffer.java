@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.jcublas.buffer;
 
 import jcuda.Pointer;
@@ -7,13 +23,14 @@ import org.nd4j.linalg.ops.ElementWiseOp;
 
 /**
  * Cuda int buffer
+ *
  * @author Adam Gibson
  */
 public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     /**
      * Base constructor
      *
-     * @param length      the length of the buffer
+     * @param length the length of the buffer
      */
     public CudaIntDataBuffer(int length) {
         super(length, Sizeof.INT);
@@ -25,33 +42,31 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    public void assign(int[] indices, float[] data, boolean contiguous,int inc) {
-        if(indices.length != data.length)
+    public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
+        if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
-        if(indices.length > length())
+        if (indices.length > length())
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
 
-        if(contiguous) {
+        if (contiguous) {
             int offset = indices[0];
             Pointer p = Pointer.to(data);
-        }
-        else
+        } else
             throw new UnsupportedOperationException("Non contiguous is not supported");
 
     }
 
     @Override
-    public void assign(int[] indices, double[] data, boolean contiguous,int inc) {
-        if(indices.length != data.length)
+    public void assign(int[] indices, double[] data, boolean contiguous, int inc) {
+        if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
-        if(indices.length > length())
+        if (indices.length > length())
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
 
-        if(contiguous) {
+        if (contiguous) {
             int offset = indices[0];
             Pointer p = Pointer.to(data);
-        }
-        else
+        } else
             throw new UnsupportedOperationException("Non contiguous is not supported");
 
     }
@@ -80,9 +95,9 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     public void assign(Number value, int offset) {
         int arrLength = length - offset;
         int[] data = new int[arrLength];
-        for(int i = 0; i < data.length; i++)
+        for (int i = 0; i < data.length; i++)
             data[i] = value.intValue();
-        set(offset,arrLength, Pointer.to(data));
+        set(offset, arrLength, Pointer.to(data));
     }
 
     @Override
@@ -169,7 +184,6 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     public <E> void put(int i, E element) {
 
     }
-
 
 
     @Override

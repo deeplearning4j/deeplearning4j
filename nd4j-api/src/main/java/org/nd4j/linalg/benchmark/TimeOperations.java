@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.linalg.benchmark;
 
 import org.apache.commons.lang3.time.StopWatch;
@@ -21,10 +37,10 @@ public class TimeOperations implements Runnable {
     private INDArray other;
 
     public TimeOperations(INDArray n) {
-        this(n,1);
+        this(n, 1);
     }
 
-    public TimeOperations(INDArray n,int numTimesRun) {
+    public TimeOperations(INDArray n, int numTimesRun) {
         this.testing = n;
         this.other = Nd4j.ones(n.shape());
         this.numTimesRun = numTimesRun;
@@ -41,8 +57,6 @@ public class TimeOperations implements Runnable {
     }
 
 
-
-
     public void benchMarkElementWiseMul() {
         System.out.println("Element wise  multiplication took " + runNTimes(new Runnable() {
             @Override
@@ -51,7 +65,6 @@ public class TimeOperations implements Runnable {
             }
         }).getMean() + " milliseconds");
     }
-
 
 
     public void benchMarkScalarAdd() {
@@ -64,8 +77,6 @@ public class TimeOperations implements Runnable {
     }
 
 
-
-
     public void benchMarkElementWiseAdd() {
         System.out.println("Element wise  addition took " + runNTimes(new Runnable() {
             @Override
@@ -74,8 +85,6 @@ public class TimeOperations implements Runnable {
             }
         }).getMean() + " milliseconds");
     }
-
-
 
 
     public void benchmarkCreation() {
@@ -101,14 +110,13 @@ public class TimeOperations implements Runnable {
 
     public SummaryStatistics runNTimes(Runnable run) {
         SummaryStatistics sum = new SummaryStatistics();
-        for(int i = 0; i < numTimesRun; i++) {
+        for (int i = 0; i < numTimesRun; i++) {
             sum.addValue(timeOp(run));
         }
 
         return sum;
 
     }
-
 
 
     public long timeOp(Runnable run) {
@@ -121,9 +129,6 @@ public class TimeOperations implements Runnable {
     }
 
 
-
-
-
     @Override
     public void run() {
         benchmarkRavel();
@@ -133,8 +138,6 @@ public class TimeOperations implements Runnable {
         benchMarkElementWiseMul();
         benchMarkScalarMuli();
     }
-
-
 
 
 }
