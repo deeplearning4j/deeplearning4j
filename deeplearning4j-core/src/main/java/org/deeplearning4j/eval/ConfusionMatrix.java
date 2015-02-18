@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.deeplearning4j.eval;
 import java.util.HashMap;
 import java.util.Map;
@@ -7,27 +23,6 @@ import java.util.TreeSet;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Ordering;
-
-/**
- * This data structure provides an easy way to build and output a confusion matrix. A confusion
- * matrix is a two dimensional table with a row and table for each class. Each element in the matrix
- * shows the number of test examples for which the actual class is the row and the predicted class
- * is the column. Display of this matrix is useful for identifying when a system is confusing two
- * classes
- * 
- * <br>
- * For more info @see <a href="http://en.wikipedia.org/wiki/Confusion_matrix">The Wikipedia page on
- * Confusion Matrices</a>
- * 
- * <br>
- * Copyright (c) 2011, Regents of the University of Colorado <br>
- * All rights reserved.
- * 
- * @author Lee Becker
- * 
- * @param <T>
- *          The data type used to represent the class labels
- */
 
 public class ConfusionMatrix<T extends Comparable<? super T>> {
   private Map<T, Multiset<T>> matrix;
