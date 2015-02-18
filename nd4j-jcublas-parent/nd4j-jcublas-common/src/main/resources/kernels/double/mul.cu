@@ -1,5 +1,5 @@
 extern "C"
-__global__ void add(int n, float *a, float *b, float *sum)
+__global__ void mul_double(int n, double *a, double *b, double *sum)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i<n)

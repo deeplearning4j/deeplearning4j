@@ -29,6 +29,7 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static jcuda.driver.JCudaDriver.*;
@@ -48,9 +49,55 @@ public class KernelFunctions {
     private static Map<String, CUfunction> functions = new HashMap<>();
     private static Map<Integer,CUcontext> devices = new ConcurrentHashMap<>();
 
+    public final static String NAME_SPACE = "org.nd4j.linalg.jcublas";
+    public final static String DOUBLE = NAME_SPACE + ".double.functions";
+    public final static String FLOAT = NAME_SPACE + ".float.functions";
     private KernelFunctions() {
     }
 
+
+    static {
+        try {
+            register();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void register() throws IOException {
+        ClassPathResource res = new ClassPathResource("/cudafunctions.properties");
+        if (!res.exists())
+            throw new IllegalStateException("Please put a cudafunctions.properties in your class path");
+        Properties props = new Properties();
+        props.load(res.getInputStream());
+        log.info("Registering cuda functions...");
+        String d = props.getProperty(DOUBLE);
+        if (d != null) {
+            String[] split = d.split(",");
+            log.info("Found functions for double" + d);
+            for (String s : split) {
+                String loaded = KernelFunctions.load("/kernels/double/" + s + ".cu", DataBuffer.DOUBLE);
+                KernelFunctions.loadFunction(loaded,s,"double");
+            }
+
+
+        }
+        String f = props.getProperty(FLOAT);
+        if (f != null) {
+            String[] split = f.split(",");
+            log.info("Found functions for float" + d);
+
+            for (String s : split) {
+                String loaded = KernelFunctions.load("/kernels/float/" + s + ".cu", DataBuffer.DOUBLE);
+                KernelFunctions.loadFunction(loaded,s,"float");
+            }
+        }
+    }
+
+
+    public static CUfunction getFunction(String name,String dType) {
+        return functions.get(name + "_" + dType);
+    }
 
     public static void initDevices() {
         if(devices.containsKey(0))
@@ -97,10 +144,33 @@ public class KernelFunctions {
     /**
      * Invoke a function with the given number of parameters
      *
+     * @param numElements the number of
+     * @param function   the function to invoke
+     * @param kernelParameters the parameters
+     */
+    public static void invoke(int numElements, CUfunction function, Pointer kernelParameters) {
+        // Call the kernel function.
+        int blockSizeX = 256;
+        int gridSizeX = (int) Math.ceil((double) numElements / blockSizeX);
+        cuLaunchKernel(function,
+                gridSizeX, 1, 1,      // Grid dimension
+                blockSizeX, 1, 1,      // Block dimension
+                0, null,               // Shared memory size and stream
+                kernelParameters, null // Kernel- and extra parameters
+        );
+        cuCtxSynchronize();
+
+
+    }
+
+    /**
+     * Invoke a function with the given number of parameters
+     *
      * @param numElements
      * @param function         the function to invoke
      * @param kernelParameters the parameters
      * @param deviceOutput     the output pointer
+     * @return the data (either float or double array)
      */
     public static Object invoke(int numElements, CUfunction function, Pointer kernelParameters, CUdeviceptr deviceOutput, int dType) {
         // Call the kernel function.
@@ -238,10 +308,10 @@ public class KernelFunctions {
         File dataDir = new File(tmpDir, path);
         if (!dataDir.exists())
             dataDir.mkdirs();
-        ClassPathResource resource = new ClassPathResource(dataFolder(dataType) + "/" + file);
+        ClassPathResource resource = new ClassPathResource(file);
         if (!resource.exists())
             throw new IllegalStateException("Unable to find file " + resource);
-        File out = new File(dataDir, file);
+        File out = new File(tmpDir,file);
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(out));
         IOUtils.copy(resource.getInputStream(), bos);
         bos.flush();
@@ -254,12 +324,11 @@ public class KernelFunctions {
 
     /**
      * Load the function
-     *
-     * @param deviceNumber the device number to load on
      * @param ptxFileName  the ptx file name
      * @param functionName the function name to use as a handle
+     * @param dataType the data type(float or double) to operate on
      */
-    public static CUfunction loadFunction(int deviceNumber, String ptxFileName, String functionName) {
+    public static CUfunction loadFunction(String ptxFileName, String functionName,String dataType) {
         if (functions.containsKey(functionName))
             return functions.get(functionName);
         // Initialize the driver and create a context for the first device.
@@ -270,8 +339,8 @@ public class KernelFunctions {
 
         // Obtain a function pointer to the "add" function.
         CUfunction function = new CUfunction();
-        cuModuleGetFunction(function, module, functionName);
-        functions.put(functionName, function);
+        cuModuleGetFunction(function, module, functionName + "_" + dataType);
+        functions.put(functionName + "_" + dataType, function);
 
         return function;
 
@@ -319,7 +388,7 @@ public class KernelFunctions {
         File dataDir = new File(tmpDir, path);
 
 
-        String ptxFileName = cuFileName.substring(0, endIndex + 1) + "ptx";
+        String ptxFileName = tmpDir + cuFileName.substring(0, endIndex + 1) + "ptx";
         File ptxFile = new File(dataDir, ptxFileName);
         if (ptxFile.exists()) {
             return ptxFileName;
@@ -327,7 +396,7 @@ public class KernelFunctions {
             extract(cuFileName, dataType);
 
 
-        File cuFile = new File(dataDir, cuFileName);
+        File cuFile = new File(tmpDir,cuFileName);
         if (!cuFile.exists())
             throw new IOException("Input file not found: " + cuFileName);
 

@@ -21,6 +21,7 @@ import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.ops.ElementWiseOp;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -324,6 +325,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     @Override
     public void muli(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
         JCudaBuffer b = (JCudaBuffer) buffer;
+        KernelFunctions.invoke(n,KernelFunctions.getFunction("mul","float"),null);
 
 
     }

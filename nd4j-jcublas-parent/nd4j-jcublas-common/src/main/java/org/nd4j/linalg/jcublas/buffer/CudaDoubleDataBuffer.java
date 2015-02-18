@@ -43,6 +43,10 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
             alloc();
     }
 
+    /**
+     * Instantiate based on the given data
+     * @param data the data to instantiate with
+     */
     public CudaDoubleDataBuffer(double[] data) {
         this(data.length);
         setData(data);
