@@ -17,6 +17,7 @@
 package org.nd4j.linalg.factory;
 
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import static org.junit.Assert.assertEquals;
@@ -29,8 +30,9 @@ public abstract class BlasWrapperTests {
 
     @Test
     public void axpyTest() {
+        Nd4j.dtype = DataBuffer.DOUBLE;
         INDArray a = Nd4j.getBlasWrapper().axpy(1.0, Nd4j.ones(3), Nd4j.ones(3));
-        INDArray a2 = Nd4j.create(new float[]{2, 2, 2});
+        INDArray a2 = Nd4j.create(new double[]{2, 2, 2});
         assertEquals(a2, a);
 
         INDArray matrix = Nd4j.linspace(1, 4, 4).reshape(2, 2);

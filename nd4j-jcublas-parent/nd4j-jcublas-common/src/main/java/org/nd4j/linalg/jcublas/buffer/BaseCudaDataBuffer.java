@@ -274,7 +274,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public double[] getDoublesAt(int offset, int length) {
-        return getDoublesAt(0, 1, length);
+        return getDoublesAt(offset, 1, length);
     }
 
     @Override
