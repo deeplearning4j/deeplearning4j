@@ -17,7 +17,7 @@ public class CosineDistance extends BaseDistanceFunction {
 
 	@Override
 	public Float apply(INDArray input) {
-		return (float) (1 - similarity.apply(input));
+    return 1 - similarity.apply(input);
 	}
 
 }

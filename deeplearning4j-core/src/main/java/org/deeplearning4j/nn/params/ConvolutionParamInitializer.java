@@ -42,7 +42,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
 
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf) {
-       return WeightInitUtil.initWeights(conf.getFilterSize(),conf.getWeightInit(),conf.getActivationFunction(),conf.getDist());
+       return WeightInitUtil.initWeights(conf.getFilterSize(),conf.getWeightInit(), conf.getDist());
     }
 
 }
