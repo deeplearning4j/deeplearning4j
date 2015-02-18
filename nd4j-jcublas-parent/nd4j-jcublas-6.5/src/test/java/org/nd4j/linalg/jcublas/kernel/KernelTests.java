@@ -1,5 +1,7 @@
 package org.nd4j.linalg.jcublas.kernel;
 
+import static org.junit.Assert.*;
+
 import jcuda.driver.CUfunction;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -16,6 +18,10 @@ public class KernelTests {
     public  void testKernelLoading() throws IOException {
         KernelFunctions.load("addi.cu", DataBuffer.FLOAT);
         CUfunction function = KernelFunctions.loadFunction(0, KernelFunctions.load("addi.cu", DataBuffer.FLOAT),"add");
+        assertEquals(function,KernelFunctions.loadFunction(0, KernelFunctions.load("addi.cu", DataBuffer.FLOAT),"add"));
     }
+
+
+
 
 }

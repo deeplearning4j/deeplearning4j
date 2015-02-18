@@ -2,6 +2,7 @@ package org.nd4j.linalg.jcublas.kernel;
 
 
 import jcuda.Pointer;
+import jcuda.Sizeof;
 import jcuda.driver.*;
 
 import static jcuda.driver.JCudaDriver.*;
@@ -17,6 +18,8 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Kernel functions.
@@ -30,9 +33,98 @@ public class KernelFunctions {
 
 
     private static Logger log = LoggerFactory.getLogger(KernelFunctions.class);
+    private static Map<String,CUfunction> functions = new HashMap<>();
+
 
     private KernelFunctions() {}
 
+
+    private static int sizeFor(int dataType) {
+        return dataType == DataBuffer.DOUBLE ? Sizeof.DOUBLE : Sizeof.FLOAT;
+    }
+
+
+    /**
+     * Invoke a function with the given number of parameters
+     * @param numElements
+     * @param function the function to invoke
+     * @param kernelParameters the parameters
+     * @param deviceOutput the output pointer
+     */
+    public static void invoke(int numElements,CUfunction function,Pointer kernelParameters,CUdeviceptr deviceOutput,int dType) {
+        // Call the kernel function.
+        int blockSizeX = 256;
+        int gridSizeX = (int)Math.ceil( (double)numElements / blockSizeX);
+        cuLaunchKernel(function,
+                gridSizeX,  1, 1,      // Grid dimension
+                blockSizeX, 1, 1,      // Block dimension
+                0, null,               // Shared memory size and stream
+                kernelParameters, null // Kernel- and extra parameters
+        );
+        cuCtxSynchronize();
+
+        // Allocate host output memory and copy the device output
+        // to the host.
+        if(dType == DataBuffer.FLOAT) {
+            float hostOutput[] = new float[numElements];
+            cuMemcpyDtoH(Pointer.to(hostOutput), deviceOutput,
+                    numElements * Sizeof.FLOAT);
+
+        }
+        else {
+            double hostOutput[] = new double[numElements];
+            cuMemcpyDtoH(Pointer.to(hostOutput), deviceOutput,
+                    numElements * Sizeof.DOUBLE);
+
+        }
+
+    }
+
+    /**
+     * Allocate a pointer of a given data type
+     * @param data the data for the pointer
+     * @return the pointer
+     */
+    public static Pointer alloc(double[] data) {
+        // Allocate the device input data, and copy the
+        // host input data to the device
+        CUdeviceptr deviceInputA = new CUdeviceptr();
+        cuMemAlloc(deviceInputA, data.length * Sizeof.DOUBLE);
+        cuMemcpyHtoD(deviceInputA, Pointer.to(data),
+                data.length * Sizeof.DOUBLE);
+        return deviceInputA;
+    }
+
+    /**
+     * Allocate a pointer of a given data type
+     * @param data the data for the pointer
+     * @return the pointer
+     */
+    public static Pointer alloc(float[] data) {
+        // Allocate the device input data, and copy the
+        // host input data to the device
+        CUdeviceptr deviceInputA = new CUdeviceptr();
+        cuMemAlloc(deviceInputA, data.length * Sizeof.FLOAT);
+        cuMemcpyHtoD(deviceInputA, Pointer.to(data),
+                data.length * Sizeof.FLOAT);
+        return deviceInputA;
+    }
+
+
+    /**
+     * Allocate a pointer of a given data type
+     * @param dataType the data type
+     * @param length the length of the pointer
+     * @return the pointer
+     */
+    public static Pointer alloc(int dataType,int length) {
+        // Allocate the device input data, and copy the
+        // host input data to the device
+        CUdeviceptr deviceInputA = new CUdeviceptr();
+        cuMemAlloc(deviceInputA, length * sizeFor(dataType));
+
+        return deviceInputA;
+    }
 
     /**
      * Execute a cuda function
@@ -88,7 +180,7 @@ public class KernelFunctions {
         return "/kernels/" +  (type == DataBuffer.FLOAT ? "float" : "double");
     }
 
-
+    //extract the source file
     private static void extract(String file,int dataType) throws IOException {
 
         String path =  dataFolder(dataType);
@@ -117,6 +209,8 @@ public class KernelFunctions {
      * @param functionName the function name to use as a handle
      */
     public static CUfunction loadFunction(int deviceNumber,String ptxFileName,String functionName) {
+      if(functions.containsKey(functionName))
+          return functions.get(functionName);
         // Initialize the driver and create a context for the first device.
         cuInit(deviceNumber);
         CUdevice device = new CUdevice();
@@ -131,6 +225,8 @@ public class KernelFunctions {
         // Obtain a function pointer to the "add" function.
         CUfunction function = new CUfunction();
         cuModuleGetFunction(function, module,functionName);
+        functions.put(functionName,function);
+
         return function;
 
     }
