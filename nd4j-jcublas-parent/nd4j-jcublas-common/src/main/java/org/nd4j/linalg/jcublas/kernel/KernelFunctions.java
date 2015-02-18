@@ -29,6 +29,7 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static jcuda.driver.JCudaDriver.*;
 
@@ -45,11 +46,23 @@ public class KernelFunctions {
 
     private static Logger log = LoggerFactory.getLogger(KernelFunctions.class);
     private static Map<String, CUfunction> functions = new HashMap<>();
-
+    private static Map<Integer,CUcontext> devices = new ConcurrentHashMap<>();
 
     private KernelFunctions() {
     }
 
+
+    public static void initDevices() {
+        if(devices.containsKey(0))
+            return;
+        // Initialize the driver and create a context for the first device.
+        cuInit(0);
+        CUdevice device = new CUdevice();
+        cuDeviceGet(device, 0);
+        CUcontext context = new CUcontext();
+        cuCtxCreate(context, 0, device);
+        devices.put(0,context);
+    }
 
     private static int sizeFor(int dataType) {
         return dataType == DataBuffer.DOUBLE ? Sizeof.DOUBLE : Sizeof.FLOAT;
@@ -77,12 +90,7 @@ public class KernelFunctions {
      * @return the pointer to the pointers
      */
     public static Pointer constructKernelParameters(Pointer...pointers) {
-        Pointer[] ret = new Pointer[pointers.length + 1];
-        ret[0] = Pointer.to(new int[]{pointers.length});
-        for(int i = 1; i < ret.length; i++) {
-            ret[i] = pointers[i - 1];
-        }
-        return Pointer.to(ret);
+        return Pointer.to(pointers);
     }
 
 
@@ -201,16 +209,10 @@ public class KernelFunctions {
     public static String load(String fileName, int dataType) throws IOException {
         // Enable exceptions and omit all subsequent error checks
         JCudaDriver.setExceptionsEnabled(true);
-
+        initDevices();
         // Create the PTX file by calling the NVCC
         String ptxFileName = preparePtxFile(fileName, dataType);
 
-        // Initialize the driver and create a context for the first device.
-        cuInit(0);
-        CUdevice device = new CUdevice();
-        cuDeviceGet(device, 0);
-        CUcontext context = new CUcontext();
-        cuCtxCreate(context, 0, device);
 
         // Load the ptx file.
         CUmodule module = new CUmodule();
@@ -259,12 +261,7 @@ public class KernelFunctions {
         if (functions.containsKey(functionName))
             return functions.get(functionName);
         // Initialize the driver and create a context for the first device.
-        cuInit(deviceNumber);
-        CUdevice device = new CUdevice();
-        cuDeviceGet(device, deviceNumber);
-        CUcontext context = new CUcontext();
-        cuCtxCreate(context, deviceNumber, device);
-
+        initDevices();
         // Load the ptx file.
         CUmodule module = new CUmodule();
         cuModuleLoad(module, ptxFileName);

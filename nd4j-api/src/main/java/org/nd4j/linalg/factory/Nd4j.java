@@ -2738,6 +2738,7 @@ public class Nd4j {
     public void initContext() {
         try {
             ClassPathResource c = new ClassPathResource(LINALG_PROPS);
+            props = new Properties();
             props.load(c.getInputStream());
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
             dtype = otherDtype.equals("float") ? DataBuffer.FLOAT : DataBuffer.DOUBLE;

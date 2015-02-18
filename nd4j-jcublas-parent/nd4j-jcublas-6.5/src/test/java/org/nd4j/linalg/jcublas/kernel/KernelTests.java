@@ -43,7 +43,11 @@ public class KernelTests {
         float[] two = new float[]{2,2};
         float[] result = new float[]{3,3};
         CUdeviceptr result2 = KernelFunctions.constructAndAlloc(2,DataBuffer.FLOAT);
-        Pointer pointer = KernelFunctions.constructKernelParameters(Pointer.to(ones), Pointer.to(two), result2);
+        Pointer pointer = KernelFunctions.constructKernelParameters(
+                Pointer.to(new int[]{2})
+                ,Pointer.to(KernelFunctions.alloc(ones))
+                , Pointer.to(KernelFunctions.alloc(two))
+                ,Pointer.to(result2));
         KernelFunctions.invoke(2,function,pointer,result2,DataBuffer.FLOAT);
 
     }
