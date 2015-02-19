@@ -339,8 +339,9 @@ public class KernelFunctions {
 
         // Obtain a function pointer to the "add" function.
         CUfunction function = new CUfunction();
-        cuModuleGetFunction(function, module, functionName + "_" + dataType);
-        functions.put(functionName + "_" + dataType, function);
+        String name = functionName + "_" + dataType;
+        cuModuleGetFunction(function, module, name);
+        functions.put(name, function);
 
         return function;
 
