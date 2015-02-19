@@ -1,9 +1,9 @@
-package org.deeplearning4j.cli.api;
+package org.deeplearning4j.cli.subcommands;
 
 /**
  * Interface for all subcommands
  *
- * Created by sonali on 2/10/15.
+ * @author sonali
  */
 public interface SubCommand {
 
