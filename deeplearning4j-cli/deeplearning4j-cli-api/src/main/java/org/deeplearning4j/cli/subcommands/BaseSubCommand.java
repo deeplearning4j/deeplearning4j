@@ -1,6 +1,5 @@
 package org.deeplearning4j.cli.subcommands;
 
-import org.deeplearning4j.cli.api.SubCommand;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.slf4j.Logger;
@@ -9,7 +8,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Base class for subcommand
  *
- * Created by sonali on 2/10/15.
+ * @author sonali
  */
 public abstract class BaseSubCommand implements SubCommand {
     protected String[] args;
@@ -28,5 +27,6 @@ public abstract class BaseSubCommand implements SubCommand {
             parser.printUsage(System.err);
             log.error("Unable to parse args",e);
         }
+
     }
 }

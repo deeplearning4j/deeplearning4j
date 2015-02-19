@@ -1,6 +1,5 @@
 package org.deeplearning4j.cli.subcommands;
 
-import org.deeplearning4j.cli.api.SubCommand;
 import org.kohsuke.args4j.Option;
 
 /**
@@ -11,7 +10,7 @@ import org.kohsuke.args4j.Option;
  *          --input: input data file for model
  *          --model: json configuration for model
  *
- * Created by sonali on 2/10/15.
+ * @author sonali
  */
 public class Test extends BaseSubCommand {
 
