@@ -1,6 +1,5 @@
 package org.deeplearning4j.cli.subcommands;
 
-import org.deeplearning4j.cli.api.SubCommand;
 import org.kohsuke.args4j.Option;
 
 /**
@@ -12,7 +11,7 @@ import org.kohsuke.args4j.Option;
  *          --model: json configuration for model
  *          --output: destination for saving model
  *
- * Created by sonali on 2/10/15.
+ * @author sonali
  */
 public class Predict extends BaseSubCommand {
 
