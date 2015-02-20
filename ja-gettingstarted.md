@@ -2,7 +2,7 @@
 layout: ja-default
 ---
 
-# Deeplearning4jはじめよう
+# Deeplearning4jをはじめましょう
 
 コンテンツ
 
