@@ -46,7 +46,7 @@ public class KernelFunctions {
 
 
     private static Logger log = LoggerFactory.getLogger(KernelFunctions.class);
-    private static Map<String, CUfunction> functions = new HashMap<>();
+    private static Map<String, CUfunction> functions = new ConcurrentHashMap<>();
     private static Map<Integer,CUcontext> devices = new ConcurrentHashMap<>();
 
     public final static String NAME_SPACE = "org.nd4j.linalg.jcublas";
@@ -99,7 +99,12 @@ public class KernelFunctions {
         }
     }
 
-
+    /**
+     * Get the cuda function of the given name and data type
+     * @param name the name of the function
+     * @param dType the data type (float or double)
+     * @return the given function or null
+     */
     public static CUfunction getFunction(String name,String dType) {
         return functions.get(name + "_" + dType);
     }
@@ -179,7 +184,6 @@ public class KernelFunctions {
         int blockSizeX = 256;
         int gridSizeX = (int) Math.ceil((double) numElements / blockSizeX);
 
-
         cuLaunchKernel(function,
                 gridSizeX, 1, 1,      // Grid dimension
                 blockSizeX, 1, 1,      // Block dimension
@@ -190,6 +194,7 @@ public class KernelFunctions {
 
 
     }
+
 
     /**
      * Invoke a function with the given number of parameters

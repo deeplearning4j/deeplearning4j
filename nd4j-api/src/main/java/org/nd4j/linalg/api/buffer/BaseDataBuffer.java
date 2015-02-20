@@ -43,7 +43,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected String path;
     protected RandomAccessFile memoryMappedBuffer;
 
-
+    /**
+     * Instantiate a buffer with the given length
+     * @param length the length of the buffer
+     */
     protected BaseDataBuffer(int length) {
         this.length = length;
     }
@@ -361,6 +364,303 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
 
 
+        }
+    }
+
+    @Override
+    public void rsubi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+
+        if (incx == 1 && incy == 1 && offset == 0 && yOffset == 0) {
+            for (int i = 0; i < n; i++) {
+                put(i, buffer.getDouble(i) - getDouble(i));
+            }
+
+        } else {
+            for (int c = 0, xi = offset, yi = yOffset; c < n; c++, xi += incx, yi += incy) {
+                put(yi,  buffer.getDouble(xi) - getDouble(yi));
+            }
+
+
+        }
+    }
+
+    @Override
+    public void rdivi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+
+        if (incx == 1 && incy == 1 && offset == 0 && yOffset == 0) {
+            for (int i = 0; i < n; i++) {
+                put(i, buffer.getDouble(i) / getDouble(i));
+            }
+
+        } else {
+            for (int c = 0, xi = offset, yi = yOffset; c < n; c++, xi += incx, yi += incy) {
+                put(yi, buffer.getDouble(xi) / getDouble(yi));
+            }
+
+
+        }
+    }
+
+    @Override
+    public void rsubi(DataBuffer buffer) {
+        for (int i = 0; i < buffer.length(); i++) {
+            put(i, buffer.getDouble(i) - getDouble(i));
+        }
+    }
+
+    @Override
+    public void rdivi(DataBuffer buffer) {
+        for (int i = 0; i < buffer.length(); i++) {
+            put(i, buffer.getDouble(i) / getDouble(i));
+        }
+    }
+
+    @Override
+    public void rdivi(Number n, int inc, int offset) {
+        for (int i = offset; i < length(); i += inc) {
+            put(i, n.doubleValue() / getDouble(i));
+
+        }
+    }
+
+    @Override
+    public void rsubi(Number n, int inc, int offset) {
+        for (int i = offset; i < length(); i += inc) {
+            put(i, n.doubleValue() / getDouble(i));
+
+        }
+    }
+
+    @Override
+    public void rdivi(Number n) {
+       rdivi(n,0,1);
+    }
+
+    @Override
+    public void rsubi(Number n) {
+      rsubi(n,0,1);
+    }
+
+
+    @Override
+    public void rsubi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
+        if (incx == 1 && incy == 1 && offset == 0 && yOffset == 0) {
+            for (int i = 0; i < n; i++) {
+                result.put(i, buffer.getDouble(i) - getDouble(i));
+            }
+
+        } else {
+            for (int c = 0, xi = offset, yi = yOffset; c < n; c++, xi += incx, yi += incy) {
+                result.put(yi, buffer.getDouble(xi) - getDouble(yi));
+            }
+
+
+        }
+    }
+
+    @Override
+    public void rdivi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
+        if (incx == 1 && incy == 1 && offset == 0 && yOffset == 0) {
+            for (int i = 0; i < n; i++) {
+                result.put(i, buffer.getDouble(i) / getDouble(i));
+            }
+
+        } else {
+            for (int c = 0, xi = offset, yi = yOffset; c < n; c++, xi += incx, yi += incy) {
+                result.put(yi, buffer.getDouble(xi) / getDouble(yi));
+            }
+
+
+        }
+    }
+
+    @Override
+    public void divi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
+        if (incx == 1 && incy == 1 && offset == 0 && yOffset == 0) {
+            for (int i = 0; i < n; i++) {
+                result.put(i, getDouble(i) / buffer.getDouble(i));
+            }
+
+        } else {
+            for (int c = 0, xi = offset, yi = yOffset; c < n; c++, xi += incx, yi += incy) {
+                result.put(yi, getDouble(yi) / buffer.getDouble(xi));
+            }
+
+
+        }
+    }
+
+    @Override
+    public void muli(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
+        if (incx == 1 && incy == 1 && offset == 0 && yOffset == 0) {
+            for (int i = 0; i < n; i++) {
+                result.put(i, getDouble(i) * buffer.getDouble(i));
+            }
+
+        } else {
+            for (int c = 0, xi = offset, yi = yOffset; c < n; c++, xi += incx, yi += incy) {
+                result.put(yi, getDouble(yi) * buffer.getDouble(xi));
+            }
+
+
+        }
+    }
+
+    @Override
+    public void subi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
+        if (incx == 1 && incy == 1 && offset == 0 && yOffset == 0) {
+            for (int i = 0; i < n; i++) {
+                result.put(i, getDouble(i) - buffer.getDouble(i));
+            }
+
+        } else {
+            for (int c = 0, xi = offset, yi = yOffset; c < n; c++, xi += incx, yi += incy) {
+                result.put(yi, getDouble(yi) - buffer.getDouble(xi));
+            }
+
+
+        }
+    }
+
+    @Override
+    public void addi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
+        if (incx == 1 && incy == 1 && offset == 0 && yOffset == 0) {
+            for (int i = 0; i < n; i++) {
+                result.put(i, getDouble(i) + buffer.getDouble(i));
+            }
+
+        } else {
+            for (int c = 0, xi = offset, yi = yOffset; c < n; c++, xi += incx, yi += incy) {
+                result.put(yi, getDouble(yi) + buffer.getDouble(xi));
+            }
+
+
+        }
+    }
+
+    @Override
+    public void rsubi(DataBuffer buffer, DataBuffer result) {
+        for(int i = 0; i < length(); i++) {
+            result.put(i,buffer.getDouble(i) - getDouble(i));
+        }
+    }
+
+    @Override
+    public void rdivi(DataBuffer buffer, DataBuffer result) {
+        for(int i = 0; i < length(); i++) {
+            result.put(i,buffer.getDouble(i) / getDouble(i));
+        }
+    }
+
+    @Override
+    public void divi(DataBuffer buffer, DataBuffer result) {
+        for(int i = 0; i < length(); i++) {
+            result.put(i,getDouble(i) / buffer.getDouble(i));
+        }
+    }
+
+    @Override
+    public void muli(DataBuffer buffer, DataBuffer result) {
+        for(int i = 0; i < length(); i++) {
+            result.put(i,getDouble(i) * buffer.getDouble(i));
+        }
+    }
+
+    @Override
+    public void subi(DataBuffer buffer, DataBuffer result) {
+        for(int i = 0; i < length(); i++) {
+            result.put(i,getDouble(i) - buffer.getDouble(i));
+        }
+    }
+
+    @Override
+    public void addi(DataBuffer buffer, DataBuffer result) {
+        for(int i = 0; i < length(); i++) {
+            result.put(i,getDouble(i) + buffer.getDouble(i));
+        }
+    }
+
+    @Override
+    public void rdivi(Number n, int inc, int offset, DataBuffer result) {
+        for(int i = offset; i < length(); i+= inc) {
+            result.put(i,n.doubleValue() / getDouble(i));
+        }
+    }
+
+    @Override
+    public void divi(Number n, int inc, int offset, DataBuffer result) {
+        for(int i = offset; i < length(); i+= inc) {
+            result.put(i,getDouble(i) / n.doubleValue());
+        }
+    }
+
+    @Override
+    public void muli(Number n, int inc, int offset, DataBuffer result) {
+        for(int i = offset; i < length(); i+= inc) {
+            result.put(i,getDouble(i) * n.doubleValue());
+        }
+    }
+
+    @Override
+    public void rsubi(Number n, int inc, int offset, DataBuffer result) {
+        for(int i = offset; i < length(); i+= inc) {
+            result.put(i,n.doubleValue() - getDouble(i));
+        }
+    }
+
+    @Override
+    public void subi(Number n, int inc, int offset, DataBuffer result) {
+        for(int i = offset; i < length(); i+= inc) {
+            result.put(i,getDouble(i) - n.doubleValue());
+        }
+    }
+
+    @Override
+    public void addi(Number n, int inc, int offset, DataBuffer result) {
+        for(int i = offset; i < length(); i+= inc) {
+            result.put(i,getDouble(i) + n.doubleValue());
+        }
+    }
+
+    @Override
+    public void rdivi(Number n, DataBuffer result) {
+        for(int i = 0; i < length(); i++) {
+            result.put(i,n.doubleValue() / getDouble(i));
+        }
+    }
+
+    @Override
+    public void divi(Number n, DataBuffer result) {
+        for(int i = 0; i < length(); i++) {
+            result.put(i,getDouble(i) / n.doubleValue());
+        }
+    }
+
+    @Override
+    public void muli(Number n, DataBuffer result) {
+        for(int i = 0; i < length(); i++) {
+            result.put(i,getDouble(i) * n.doubleValue());
+        }
+    }
+
+    @Override
+    public void rsubi(Number n, DataBuffer result) {
+        for(int i = 0; i < length(); i++) {
+            result.put(i,n.doubleValue() - getDouble(i));
+        }
+    }
+
+    @Override
+    public void subi(Number n, DataBuffer result) {
+        for(int i = 0; i < length(); i++) {
+            result.put(i,getDouble(i) - n.doubleValue());
+        }
+    }
+
+    @Override
+    public void addi(Number n, DataBuffer result) {
+        for(int i = 0; i < length(); i++) {
+            result.put(i,getDouble(i) + n.doubleValue());
         }
     }
 

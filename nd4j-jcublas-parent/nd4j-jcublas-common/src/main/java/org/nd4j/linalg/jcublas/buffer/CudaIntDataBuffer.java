@@ -207,6 +207,16 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
+    public void rsubi(Number n) {
+
+    }
+
+    @Override
+    public void rdivi(Number n) {
+
+    }
+
+    @Override
     public void addi(Number n, int inc, int offset) {
 
     }
@@ -217,12 +227,32 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
+    public void rsubi(Number n, int inc, int offset) {
+
+    }
+
+    @Override
     public void muli(Number n, int inc, int offset) {
 
     }
 
     @Override
     public void divi(Number n, int inc, int offset) {
+
+    }
+
+    @Override
+    public void rdivi(Number n, int inc, int offset) {
+
+    }
+
+    @Override
+    public void rdivi(DataBuffer buffer) {
+
+    }
+
+    @Override
+    public void rsubi(DataBuffer buffer) {
 
     }
 
@@ -243,6 +273,136 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void divi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+
+    }
+
+    @Override
+    public void rdivi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+
+    }
+
+    @Override
+    public void rsubi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
+
+    }
+
+    @Override
+    public void addi(Number n, DataBuffer result) {
+
+    }
+
+    @Override
+    public void subi(Number n, DataBuffer result) {
+
+    }
+
+    @Override
+    public void rsubi(Number n, DataBuffer result) {
+
+    }
+
+    @Override
+    public void muli(Number n, DataBuffer result) {
+
+    }
+
+    @Override
+    public void divi(Number n, DataBuffer result) {
+
+    }
+
+    @Override
+    public void rdivi(Number n, DataBuffer result) {
+
+    }
+
+    @Override
+    public void addi(Number n, int inc, int offset, DataBuffer result) {
+
+    }
+
+    @Override
+    public void subi(Number n, int inc, int offset, DataBuffer result) {
+
+    }
+
+    @Override
+    public void rsubi(Number n, int inc, int offset, DataBuffer result) {
+
+    }
+
+    @Override
+    public void muli(Number n, int inc, int offset, DataBuffer result) {
+
+    }
+
+    @Override
+    public void divi(Number n, int inc, int offset, DataBuffer result) {
+
+    }
+
+    @Override
+    public void rdivi(Number n, int inc, int offset, DataBuffer result) {
+
+    }
+
+    @Override
+    public void addi(DataBuffer buffer, DataBuffer result) {
+
+    }
+
+    @Override
+    public void subi(DataBuffer buffer, DataBuffer result) {
+
+    }
+
+    @Override
+    public void muli(DataBuffer buffer, DataBuffer result) {
+
+    }
+
+    @Override
+    public void divi(DataBuffer buffer, DataBuffer result) {
+
+    }
+
+    @Override
+    public void rdivi(DataBuffer buffer, DataBuffer result) {
+
+    }
+
+    @Override
+    public void rsubi(DataBuffer buffer, DataBuffer result) {
+
+    }
+
+    @Override
+    public void addi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
+
+    }
+
+    @Override
+    public void subi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
+
+    }
+
+    @Override
+    public void muli(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
+
+    }
+
+    @Override
+    public void divi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
+
+    }
+
+    @Override
+    public void rdivi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
+
+    }
+
+    @Override
+    public void rsubi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
 
     }
 

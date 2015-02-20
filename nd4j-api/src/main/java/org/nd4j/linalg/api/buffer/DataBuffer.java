@@ -360,11 +360,20 @@ public interface DataBuffer extends Serializable {
     void addi(Number n);
 
     /**
-     * Element wise addition
+     * Element wise subtract
      *
      * @param n the number to add
      */
     void subi(Number n);
+
+
+    /**
+     * Element wise reverse subtraction
+     *
+     * @param n the number to add
+     */
+    void rsubi(Number n);
+
 
     /**
      * Element wise multiplication
@@ -380,6 +389,13 @@ public interface DataBuffer extends Serializable {
      */
     void divi(Number n);
 
+    /**
+     * Element wise reverse division
+     *
+     * @param n the number to divide by
+     */
+    void rdivi(Number n);
+
 
     /**
      * Element wise addition
@@ -389,11 +405,18 @@ public interface DataBuffer extends Serializable {
     void addi(Number n, int inc, int offset);
 
     /**
-     * Element wise addition
+     * Element wise subtraction
      *
-     * @param n the number to add
+     * @param n the number to subtract
      */
     void subi(Number n, int inc, int offset);
+
+    /**
+     * Element wise reverse subdivision
+     *
+     * @param n the number to reverse subtract
+     */
+    void rsubi(Number n, int inc, int offset);
 
     /**
      * Element wise multiplication
@@ -408,6 +431,14 @@ public interface DataBuffer extends Serializable {
      * @param n the number to divide by
      */
     void divi(Number n, int inc, int offset);
+
+    /**
+     * Element wise reverse division
+     *
+     * @param n the number to divide by
+     */
+    void rdivi(Number n, int inc, int offset);
+
 
     /**
      * Add the items in this buffer by
@@ -440,6 +471,22 @@ public interface DataBuffer extends Serializable {
      * @param buffer the buffer to divide
      */
     void divi(DataBuffer buffer);
+
+    /**
+     * Reverse Divide the items in this buffer
+     * from the other buffer
+     *
+     * @param buffer the buffer to divide
+     */
+    void rdivi(DataBuffer buffer);
+
+    /**
+     * Reverse subtract the items in this buffer
+     * from the other buffer
+     *
+     * @param buffer the buffer to divide
+     */
+    void rsubi(DataBuffer buffer);
 
     /**
      * @param n
@@ -477,5 +524,213 @@ public interface DataBuffer extends Serializable {
      * @param incy
      */
     void divi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy);
+    /**
+     * @param n
+     * @param buffer
+     * @param offset
+     * @param incx
+     * @param incy
+     */
+    void rdivi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy);
 
+    /**
+     * @param n
+     * @param buffer
+     * @param offset
+     * @param incx
+     * @param incy
+     */
+    void rsubi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy);
+
+
+
+    /**
+     * Element wise addition
+     *
+     * @param n the number to add
+     */
+    void addi(Number n,DataBuffer result);
+
+    /**
+     * Element wise subtract
+     *
+     * @param n the number to add
+     */
+    void subi(Number n,DataBuffer result);
+
+
+    /**
+     * Element wise reverse subtraction
+     *
+     * @param n the number to add
+     */
+    void rsubi(Number n,DataBuffer result);
+
+
+    /**
+     * Element wise multiplication
+     *
+     * @param n the number to multiply
+     */
+    void muli(Number n,DataBuffer result);
+
+    /**
+     * Element wise division
+     *
+     * @param n the number to divide by
+     */
+    void divi(Number n,DataBuffer result);
+
+    /**
+     * Element wise reverse division
+     *
+     * @param n the number to divide by
+     */
+    void rdivi(Number n,DataBuffer result);
+
+
+    /**
+     * Element wise addition
+     *
+     * @param n the number to add
+     */
+    void addi(Number n, int inc, int offset,DataBuffer result);
+
+    /**
+     * Element wise subtraction
+     *
+     * @param n the number to subtract
+     */
+    void subi(Number n, int inc, int offset,DataBuffer result);
+
+    /**
+     * Element wise reverse subdivision
+     *
+     * @param n the number to reverse subtract
+     */
+    void rsubi(Number n, int inc, int offset,DataBuffer result);
+
+    /**
+     * Element wise multiplication
+     *
+     * @param n the number to multiply
+     */
+    void muli(Number n, int inc, int offset,DataBuffer result);
+
+    /**
+     * Element wise division
+     *
+     * @param n the number to divide by
+     */
+    void divi(Number n, int inc, int offset,DataBuffer result);
+
+    /**
+     * Element wise reverse division
+     *
+     * @param n the number to divide by
+     */
+    void rdivi(Number n, int inc, int offset,DataBuffer result);
+
+
+    /**
+     * Add the items in this buffer by
+     * the elements in the other buffer
+     *
+     * @param buffer the buffer to add
+     */
+    void addi(DataBuffer buffer,DataBuffer result);
+
+    /**
+     * Subtract the items in this buffer
+     * from the other buffer
+     *
+     * @param buffer the buffer to subtract
+     */
+    void subi(DataBuffer buffer,DataBuffer result);
+
+    /**
+     * Multiply the items in this buffer
+     * from the other buffer
+     *
+     * @param buffer the buffer to multiply
+     */
+    void muli(DataBuffer buffer,DataBuffer result);
+
+    /**
+     * Divide the items in this buffer
+     * from the other buffer
+     *
+     * @param buffer the buffer to divide
+     */
+    void divi(DataBuffer buffer,DataBuffer result);
+
+    /**
+     * Reverse Divide the items in this buffer
+     * from the other buffer
+     *
+     * @param buffer the buffer to divide
+     */
+    void rdivi(DataBuffer buffer,DataBuffer result);
+
+    /**
+     * Reverse subtract the items in this buffer
+     * from the other buffer
+     *
+     * @param buffer the buffer to divide
+     */
+    void rsubi(DataBuffer buffer,DataBuffer result);
+
+    /**
+     * @param n
+     * @param buffer
+     * @param offset
+     * @param incx
+     * @param incy
+     */
+    void addi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy,DataBuffer result);
+
+
+    /**
+     * @param n
+     * @param buffer
+     * @param offset
+     * @param incx
+     * @param incy
+     */
+    void subi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy,DataBuffer result);
+
+    /**
+     * @param n
+     * @param buffer
+     * @param offset
+     * @param incx
+     * @param incy
+     */
+    void muli(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy,DataBuffer result);
+
+    /**
+     * @param n
+     * @param buffer
+     * @param offset
+     * @param incx
+     * @param incy
+     */
+    void divi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy,DataBuffer result);
+    /**
+     * @param n
+     * @param buffer
+     * @param offset
+     * @param incx
+     * @param incy
+     */
+    void rdivi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy,DataBuffer result);
+
+    /**
+     * @param n
+     * @param buffer
+     * @param offset
+     * @param incx
+     * @param incy
+     */
+    void rsubi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy,DataBuffer result);
 }

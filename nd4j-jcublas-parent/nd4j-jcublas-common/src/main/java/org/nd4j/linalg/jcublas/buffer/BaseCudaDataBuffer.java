@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.ops.ElementWiseOp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -411,5 +412,141 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         result = 31 * result + length;
         result = 31 * result + elementSize;
         return result;
+    }
+
+    /**
+     * Execute an operation on this buffer with a scalar
+     * @param dType the data type to operate on (float or double)
+     * @param dYIdx the index to
+     * @param scalar the scalar to operate with
+     * @param n the number of items to iterate on
+     * @param incy the increment for this buffer
+     * @param op the operation to execute
+     */
+    protected void execScalar(String dType,int dYIdx,Number scalar,int n,int incy,String op) {
+        execScalar(dType, dYIdx, scalar, n, incy, op,this);
+    }
+
+    /**
+     * Execute an operation on this buffer and the incoming buffer
+     * @param buffer the other buffer to execute on
+     * @param dType the dType(double or float)
+     * @param dxIdx the index to begin at for the other buffer
+     * @param dYIdx the index to begin at for this buffer
+     * @param n the length to iterate for
+     * @param incx the increment of the passed in buffer
+     * @param incy the increment of this buffer
+     * @param op the operation to execute
+     */
+    protected void exec2d(DataBuffer buffer,String dType,int dxIdx,int dYIdx,int n,int incx,int incy,String op) {
+         exec2d(buffer,dType,dxIdx,dYIdx,n,incx,incy,op,this);
+    }
+
+
+
+    @Override
+    public void rdivi(DataBuffer buffer) {
+        rdivi(buffer,length(),0,0,1,1);
+    }
+
+    @Override
+    public void rsubi(DataBuffer buffer) {
+        rsubi(buffer, length(), 0, 0, 1, 1);
+    }
+
+    @Override
+    public void addi(DataBuffer buffer, DataBuffer result) {
+        addi(buffer,length(),0,0,1,1,result);
+    }
+
+    @Override
+    public void subi(DataBuffer buffer, DataBuffer result) {
+        subi(buffer,length(),0,0,1,1,result);
+
+    }
+
+    @Override
+    public void muli(DataBuffer buffer, DataBuffer result) {
+        muli(buffer,length(),0,0,1,1,result);
+
+    }
+
+    @Override
+    public void divi(DataBuffer buffer, DataBuffer result) {
+        divi(buffer,length(), 0,0,1,1,result);
+
+    }
+
+    @Override
+    public void rdivi(DataBuffer buffer, DataBuffer result) {
+        rdivi(buffer,length(),0,0,1,1,result);
+
+    }
+
+    @Override
+    public void rsubi(DataBuffer buffer, DataBuffer result) {
+        rsubi(buffer,length(),0,0,1,1,result);
+
+    }
+
+
+
+    /**
+     * Execute an operation on this buffer with a scalar
+     * @param dType the data type to operate on (float or double)
+     * @param dYIdx the index to
+     * @param scalar the scalar to operate with
+     * @param n the number of items to iterate on
+     * @param incy the increment for this buffer
+     * @param op the operation to execute
+     */
+    protected void execScalar(String dType,int dYIdx,Number scalar,int n,int incy,String op,DataBuffer result) {
+        Pointer scalarP = dType.equals("double") ? Pointer.to(new double[]{scalar.doubleValue()}) : Pointer.to(new float[]{scalar.floatValue()});
+        Pointer twoP = Pointer.to(pointer());
+        JCudaBuffer resultBuffer = (JCudaBuffer) result;
+
+
+        Pointer resultP = Pointer.to(resultBuffer.pointer());
+
+
+        Pointer kernelParameters = KernelFunctions.constructKernelParameters(
+                //number of elements
+                Pointer.to(new int[]{n}),
+                Pointer.to(new int[]{dYIdx})
+                , scalarP
+                , twoP
+                , Pointer.to(new int[]{incy}),resultP);
+
+        KernelFunctions.invoke2d(2,KernelFunctions.getFunction(op,dType),kernelParameters);
+    }
+
+    /**
+     * Execute an operation on this buffer and the incoming buffer
+     * @param buffer the other buffer to execute on
+     * @param dType the dType(double or float)
+     * @param dxIdx the index to begin at for the other buffer
+     * @param dYIdx the index to begin at for this buffer
+     * @param n the length to iterate for
+     * @param incx the increment of the passed in buffer
+     * @param incy the increment of this buffer
+     * @param op the operation to execute
+     */
+    protected void exec2d(DataBuffer buffer,String dType,int dxIdx,int dYIdx,int n,int incx,int incy,String op,DataBuffer result) {
+        JCudaBuffer b = (JCudaBuffer) buffer;
+        JCudaBuffer resultBuffer = (JCudaBuffer) result;
+        Pointer onesP = Pointer.to(b.pointer());
+        Pointer twoP = Pointer.to(pointer());
+        Pointer resultP = Pointer.to(resultBuffer.pointer());
+
+        Pointer kernelParameters = KernelFunctions.constructKernelParameters(
+                //number of elements
+                Pointer.to(new int[]{n}),
+                Pointer.to(new int[]{dxIdx}),
+                Pointer.to(new int[]{dYIdx})
+                , onesP
+                , twoP
+                , Pointer.to(new int[]{incx})
+                , Pointer.to(new int[]{incy}),resultP);
+        KernelFunctions.invoke2d(2,KernelFunctions.getFunction(op + "_strided",dType),kernelParameters);
     }
 }
