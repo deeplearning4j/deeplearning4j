@@ -62,7 +62,7 @@ If you're using IntelliJ as your IDE, this should work already.
 
 * Lapack offers the alternative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). 
 
-* Alternatively, you can bypass MinGW and jcopy the Blas dll files to the right path. 
+* Alternatively, you can bypass MinGW and jcopy the Blas dll files to the right path. For example, the path to the MinGW bin folder is: /usr/x86_64-w64-mingw32/sys-root/mingw/bin.
 
 ###<a name="source">Working With Source</a>
 
