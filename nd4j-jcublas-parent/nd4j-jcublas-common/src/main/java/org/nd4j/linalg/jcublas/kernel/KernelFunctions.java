@@ -64,6 +64,11 @@ public class KernelFunctions {
         }
     }
 
+    /**
+     * Called at initialization in the static context.
+     * Registers cuda functions based on the cudafunctions.properties in the classpath
+     * @throws IOException
+     */
     public static void register() throws IOException {
         ClassPathResource res = new ClassPathResource("/cudafunctions.properties");
         if (!res.exists())
@@ -88,7 +93,7 @@ public class KernelFunctions {
             log.info("Found functions for float" + d);
 
             for (String s : split) {
-                String loaded = KernelFunctions.load("/kernels/float/" + s + ".cu", DataBuffer.DOUBLE);
+                String loaded = KernelFunctions.load("/kernels/float/" + s + ".cu", DataBuffer.FLOAT);
                 KernelFunctions.loadFunction(loaded,s,"float");
             }
         }
@@ -140,7 +145,6 @@ public class KernelFunctions {
         return Pointer.to(pointers);
     }
 
-
     /**
      * Invoke a function with the given number of parameters
      *
@@ -152,6 +156,30 @@ public class KernelFunctions {
         // Call the kernel function.
         int blockSizeX = 256;
         int gridSizeX = (int) Math.ceil((double) numElements / blockSizeX);
+
+        cuLaunchKernel(function,
+                gridSizeX, 1, 1,      // Grid dimension
+                blockSizeX, 1, 1,      // Block dimension
+                0, null,               // Shared memory size and stream
+                kernelParameters, null // Kernel- and extra parameters
+        );
+        cuCtxSynchronize();
+
+
+    }
+    /**
+     * Invoke a function with the given number of parameters
+     *
+     * @param numElements the number of
+     * @param function   the function to invoke
+     * @param kernelParameters the parameters
+     */
+    public static void invoke2d(int numElements, CUfunction function, Pointer kernelParameters) {
+        // Call the kernel function.
+        int blockSizeX = 256;
+        int gridSizeX = (int) Math.ceil((double) numElements / blockSizeX);
+
+
         cuLaunchKernel(function,
                 gridSizeX, 1, 1,      // Grid dimension
                 blockSizeX, 1, 1,      // Block dimension

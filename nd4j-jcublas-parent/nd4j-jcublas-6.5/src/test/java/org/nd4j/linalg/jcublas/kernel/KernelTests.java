@@ -34,31 +34,73 @@ import static org.junit.Assert.assertArrayEquals;
  * Created by agibsonccc on 2/17/15.
  */
 public class KernelTests {
-
-
-
-
-
-
     @Test
-    public void testKernelLoading() throws IOException {
-        String loaded = KernelFunctions.load("add.cu", DataBuffer.FLOAT);
-        CUfunction function = KernelFunctions.loadFunction(loaded, "add","float");
-        assertEquals(function, KernelFunctions.loadFunction(loaded, "add","float"));
-
-
+    public void testStridedAdditionInvocationBuffer() {
         float[] ones = new float[]{1,1};
         float[] two = new float[]{2,2};
         float[] result = new float[]{3,3};
-        CUdeviceptr result2 = KernelFunctions.constructAndAlloc(2,DataBuffer.FLOAT);
-        Pointer pointer = KernelFunctions.constructKernelParameters(
+
+        JCudaBuffer buff1 = (JCudaBuffer) Nd4j.createBuffer(ones);
+        JCudaBuffer buff2 = (JCudaBuffer) Nd4j.createBuffer(two);
+
+
+
+        Pointer onesP = Pointer.to(buff1.pointer());
+        Pointer twoP = Pointer.to(buff2.pointer());
+
+        Pointer kernelParameters = KernelFunctions.constructKernelParameters(
                 //number of elements
-                Pointer.to(new int[]{2})
-                ,Pointer.to(KernelFunctions.alloc(ones))
-                , Pointer.to(KernelFunctions.alloc(two))
-                ,Pointer.to(result2));
-        float[] result4 = (float[]) KernelFunctions.invoke(2,function,pointer,result2,DataBuffer.FLOAT);
-        assertArrayEquals(result,result4,1e-1f);
+                Pointer.to(new int[]{ones.length})
+                ,onesP
+                , twoP
+                ,Pointer.to(new int[]{1})
+                ,Pointer.to(new int[]{1}));
+        KernelFunctions.invoke2d(2,KernelFunctions.getFunction("add_strided","float"),kernelParameters);
+        assertArrayEquals(result, buff2.asFloat(), 1e-1f);
+        buff1.destroy();
+        buff2.destroy();
+
+    }
+
+    @Test
+    public void testStridedAdditionInvocationBufferSkip() {
+        float[] ones = new float[]{1,1};
+        float[] two = new float[]{2,2};
+        float[] result = new float[]{3,2};
+
+        JCudaBuffer buff1 = (JCudaBuffer) Nd4j.createBuffer(ones);
+        JCudaBuffer buff2 = (JCudaBuffer) Nd4j.createBuffer(two);
+
+
+
+        Pointer onesP = Pointer.to(buff1.pointer());
+        Pointer twoP = Pointer.to(buff2.pointer());
+
+        Pointer kernelParameters = KernelFunctions.constructKernelParameters(
+                //number of elements
+                Pointer.to(new int[]{ones.length})
+                ,onesP
+                , twoP
+                ,Pointer.to(new int[]{2})
+                ,Pointer.to(new int[]{2}));
+        KernelFunctions.invoke2d(2,KernelFunctions.getFunction("add_strided","float"),kernelParameters);
+        assertArrayEquals(result, buff2.asFloat(), 1e-1f);
+
+    }
+
+
+    @Test
+    public void testStridedAdditionInvocation() {
+        float[] ones = new float[]{1,1};
+        float[] two = new float[]{2,2};
+        Pointer onesP = KernelFunctions.alloc(ones);
+        Pointer twoP = KernelFunctions.alloc(two);
+        Pointer kernelParameters = KernelFunctions.constructKernelParameters(
+                //number of elements
+                Pointer.to(new int[]{ones.length})
+                ,Pointer.to(onesP)
+                , Pointer.to(twoP),Pointer.to(new int[]{1}),Pointer.to(new int[]{1}));
+        KernelFunctions.invoke(2, KernelFunctions.getFunction("add_strided", "float"), kernelParameters);
 
     }
 
