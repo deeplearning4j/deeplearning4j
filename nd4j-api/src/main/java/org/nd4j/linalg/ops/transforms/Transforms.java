@@ -32,6 +32,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Functional interface for the different transform classes
+ * @author Adam Gibson
  */
 public class Transforms {
 
@@ -199,8 +200,13 @@ public class Transforms {
     }
 
 
+    /**
+     * Returns the negative of an ndarray
+     * @param ndArray the ndarray to take the negative of
+     * @return the negative of the ndarray
+     */
     public static INDArray neg(INDArray ndArray) {
-        return neg(ndArray, true);
+        return neg(ndArray, Nd4j.copyOnOps);
     }
 
     public static IComplexNDArray neg(IComplexNDArray ndArray) {
