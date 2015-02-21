@@ -21,6 +21,7 @@ import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.ops.ElementWiseOp;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -227,6 +228,11 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
+    public void put(int i, IComplexNumber result) {
+
+    }
+
+    @Override
     public void apply(ElementWiseOp op, int offset) {
         if (offset >= length)
             throw new IllegalArgumentException("Illegal start " + offset + " greater than length of " + length);
@@ -296,12 +302,12 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void rsubi(Number n, int inc, int offset) {
-        execScalar("double",offset,n,length(),inc,"rsub");
+        execScalar("double",offset,n,length(),inc,"rsub_scalar");
     }
 
     @Override
     public void rdivi(Number n, int inc, int offset) {
-        execScalar("double",offset,n,length(),inc,"rdiv");
+        execScalar("double",offset,n,length(),inc,"rdiv_scalar");
     }
 
 

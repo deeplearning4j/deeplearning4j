@@ -108,11 +108,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (data.length() != length())
             throw new IllegalArgumentException("Unable to assign buffer of length " + data.length() + " to this buffer of length " + length());
 
-
         for (int i = 0; i < data.length(); i++) {
-            put(i, data);
+            put(i, data.getDouble(i));
         }
     }
+
+
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous) {
@@ -134,11 +135,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         assign(value, 0);
     }
 
-    @Override
-    public <E> E getElement(int i) {
-        throw new UnsupportedOperationException();
 
-    }
 
     @Override
     public double[] getDoublesAt(int offset, int length) {
@@ -217,6 +214,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
         }
 
+    }
+
+    @Override
+    public void put(int i, IComplexNumber result) {
+        put(i,result.realComponent().doubleValue());
+        put(i + 1,result.imaginaryComponent().doubleValue());
     }
 
     @Override
@@ -664,13 +667,5 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
-    @Override
-    public <E> void put(int i, E element) {
-        throw new UnsupportedOperationException();
-    }
 
-    @Override
-    public <E> E[] asType() {
-        throw new UnsupportedOperationException();
-    }
 }

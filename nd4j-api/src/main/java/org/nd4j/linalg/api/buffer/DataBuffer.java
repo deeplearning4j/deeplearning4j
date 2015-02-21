@@ -200,14 +200,6 @@ public interface DataBuffer extends Serializable {
     public int[] asInt();
 
     /**
-     * Returns the element buffer of the specified type.
-     *
-     * @param <E>
-     * @return the element buffer of the specified type
-     */
-    public <E> E[] asType();
-
-    /**
      * Get element i in the buffer as a double
      *
      * @param i the element to getFloat
@@ -231,13 +223,6 @@ public interface DataBuffer extends Serializable {
      */
     public Number getNumber(int i);
 
-    /**
-     * Get element i in the buffer as a double
-     *
-     * @param i the element to getFloat
-     * @return the element at this index
-     */
-    public <E> E getElement(int i);
 
     /**
      * Assign an element in the buffer to the specified index
@@ -263,13 +248,6 @@ public interface DataBuffer extends Serializable {
      */
     void put(int i, int element);
 
-    /**
-     * Assign an element in the buffer to the specified index
-     *
-     * @param i       the index
-     * @param element the element to assign
-     */
-    <E> void put(int i, E element);
 
 
     /**
@@ -327,6 +305,8 @@ public interface DataBuffer extends Serializable {
      * Clears this buffer
      */
     void destroy();
+
+    void put(int i, IComplexNumber result);
 
     /**
      * Apply an element wise op to the data buffer

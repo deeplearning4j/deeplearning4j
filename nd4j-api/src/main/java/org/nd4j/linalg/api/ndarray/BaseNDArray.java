@@ -3002,19 +3002,7 @@ public abstract class BaseNDArray implements INDArray {
         return this;
     }
 
-    @Override
-    public <E> E getElement(int i) {
-        int idx = linearIndex(i);
-        if (idx < 0)
-            throw new IllegalStateException("Illegal index " + i);
-        return data.getElement(idx);
-    }
 
-    @Override
-    public <E> E getElement(int i, int j) {
-        int idx = index(i, j);
-        return data.getElement(idx);
-    }
 
     @Override
     public double getDouble(int i) {

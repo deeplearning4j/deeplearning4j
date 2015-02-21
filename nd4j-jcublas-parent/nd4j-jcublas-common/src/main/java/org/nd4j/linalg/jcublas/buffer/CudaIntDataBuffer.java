@@ -140,10 +140,6 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         return new int[0];
     }
 
-    @Override
-    public <E> E[] asType() {
-        return null;
-    }
 
     @Override
     public double getDouble(int i) {
@@ -160,12 +156,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         return null;
     }
 
-    @Override
-    public <E> E getElement(int i) {
-        return null;
-    }
-
-    @Override
+     @Override
     public void put(int i, float element) {
 
     }
@@ -180,10 +171,6 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
 
     }
 
-    @Override
-    public <E> void put(int i, E element) {
-
-    }
 
 
     @Override

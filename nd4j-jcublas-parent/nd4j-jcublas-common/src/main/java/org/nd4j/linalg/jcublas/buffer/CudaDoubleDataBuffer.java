@@ -18,9 +18,14 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import jcuda.Pointer;
 import jcuda.Sizeof;
+import jcuda.cuComplex;
+import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
+import org.nd4j.linalg.api.complex.IComplexDouble;
+import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.ops.ElementWiseOp;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -238,10 +243,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         return buffer;
     }
 
-    @Override
-    public void flush() {
 
-    }
+
 
     @Override
     public void apply(ElementWiseOp op, int offset) {

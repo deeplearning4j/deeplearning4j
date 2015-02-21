@@ -1326,9 +1326,6 @@ public interface INDArray extends Serializable {
      */
     public float getFloat(int[] indices);
 
-    <E> E getElement(int i);
-
-    <E> E getElement(int i, int j);
 
     double getDouble(int i);
 

@@ -17,6 +17,8 @@
 package org.nd4j.linalg.jcublas.buffer;
 
 import jcuda.Pointer;
+import jcuda.cuComplex;
+import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
@@ -26,6 +28,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
+import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.ops.ElementWiseOp;
 import org.slf4j.Logger;
@@ -57,6 +60,28 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         this.elementSize = elementSize;
         if (pointer() == null)
             alloc();
+    }
+
+    @Override
+    public void put(int i, IComplexNumber result) {
+        if(dataType() == DataBuffer.FLOAT) {
+            JCublas.cublasSetVector(
+                    length(),
+                    new cuComplex[]{CudaComplexConversion.toComplex(result.asFloat())}
+                    ,i
+                    ,1
+                    ,pointer()
+                    ,1);
+        }
+        else {
+            JCublas.cublasSetVector(
+                    length(),
+                    new cuDoubleComplex[]{CudaComplexConversion.toComplexDouble(result.asDouble())}
+                    ,i
+                    ,1
+                    ,pointer()
+                    ,1);
+        }
     }
 
     @Override
@@ -120,6 +145,9 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
 
     }
+
+
+
 
     @Override
     public void addi(Number n) {
@@ -309,10 +337,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         return new int[0];
     }
 
-    @Override
-    public <E> E[] asType() {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public double getDouble(int i) {
@@ -329,10 +353,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         return null;
     }
 
-    @Override
-    public <E> E getElement(int i) {
-        throw new UnsupportedOperationException();
-    }
+
 
     @Override
     public void put(int i, float element) {
@@ -351,10 +372,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public <E> void put(int i, E element) {
-        throw new UnsupportedOperationException();
-    }
+
 
 
     @Override
@@ -547,6 +565,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 , twoP
                 , Pointer.to(new int[]{incx})
                 , Pointer.to(new int[]{incy}),resultP);
-        KernelFunctions.invoke2d(2,KernelFunctions.getFunction(op + "_strided",dType),kernelParameters);
+        KernelFunctions.invoke2d(2,KernelFunctions.getFunction(op,dType),kernelParameters);
     }
 }
