@@ -3,6 +3,8 @@ title:
 layout: default
 ---
 
+# Record-Breaking Accuracy
+
 Deep learning has knocked down one record after another on benchmark dataset after benchmark dataset since 2006. In many competitions, the only algorithm deep learning is up against any more is itself. Below we list a few reports and resources indicating the power and persistent advance of deep neural nets:
 
 * [MNIST: Regularization of Neural Networks using DropConnect](http://cs.nyu.edu/~wanli/dropc/); 0.21% error using DropConnect
@@ -30,3 +32,5 @@ Here's a list of the [competitions that Juergen Schmidhuber and his team have wo
 * ICDAR 2009 Arabic Connected Handwriting Competition 
 * ICDAR 2009 Handwritten Farsi/Arabic Character Recognition Competition (idem).
 * ICDAR 2009 French Connected Handwriting Competition. 
+
+We could go on, but we'd start to sound like a broken record. :)
