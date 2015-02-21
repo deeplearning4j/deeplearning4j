@@ -6,14 +6,13 @@ layout: default
 
 Deeplearning4j is the first commercial-grade, open-source, distributed deep-learning library written for Java and Scala. Integrated with Hadoop and Spark, DL4J is designed to be used in business environments, rather than as a research tool. It aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers.
 
-### Problems for deep learning
+### [Deep learning use cases](use_cases.html)
 
 * Face/image recognition
 * Voice search
 * Speech-to-text (transcription)
 * Spam filtering (anomaly detection)
 * E-commerce fraud detection
-* And [other use cases](use_cases.html)
 
 ### DL4J's main features
 
