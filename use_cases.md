@@ -7,13 +7,15 @@ layout: default
 
 Deep learning excels at identifying patterns in unstructured data, which most people know as media such as images, sound, video and text. 
 
-Traditional machine learning has the advantage of feature introspection -- that is, it knows why it is classifying an input in one way or another, which is important for analytics -- but that very advantage is what excludes it from working with unstructured, unsupervised data, as well as attaining the record-breaking accuracy of the latest deep learning models. 
-
-For cases where feature introspection is necessary (e.g. when the law requires that you justify a decision to say close a bank account for fraud or deny a loan due to predicted credit risk), we recommend using a deep net in an ensemble with machine-learning algorithms, allowing each one to vote and relying on each for its strength; in this way, you can combine the accuracy of deep-learning with the explanatory power of feature introspection.
-
 Below is a list of sample use cases we've run across, paired with the sectors where they pertain. 
 
 ![Alt text](../img/use_case_industries.png)
+
+## Feature Introspection
+
+Traditional machine learning has the advantage of feature introspection -- that is, it knows why it is classifying an input in one way or another, which is important for analytics -- but that very advantage is what excludes it from working with unstructured, unsupervised data, as well as attaining the record-breaking accuracy of the latest deep learning models. 
+
+For cases where feature introspection is necessary (e.g. the law requires that you justify a decision to, say, close a bank account for fraud or deny a loan due to predicted credit risk), we recommend using a deep net in an ensemble with machine-learning algorithms, allowing each one to vote and relying on each for its strength; in this way, you can combine the accuracy of deep-learning with the explanatory power of feature introspection.
 
 ## Text
 
