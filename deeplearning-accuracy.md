@@ -20,7 +20,7 @@ Deep learning has knocked down one record after another on benchmark dataset aft
 * George Dahl et al improved pharma company Merck's ability to predict useful drug candidates by 15% using deep learning in 2012. 
 * In 2013, all entrants to the ImageNet competition used deep learning.
 
-Here's a list of the competitions that Juergen Schmidhuber and his team have won with their deep recurrent nets:
+Here's a list of the [competitions that Juergen Schmidhuber and his team have won](http://www.kurzweilai.net/how-bio-inspired-deep-learning-keeps-winning-competitions) with their deep recurrent nets:
 
 * IJCNN 2011 Traffic Sign Recognition Competition
 * ICPR 2012 Contest on “Mitosis Detection in Breast Cancer Histological Images.” This is important for breast cancer prognosis. Humans tend to find it very difficult to distinguish mitosis from other tissue.
