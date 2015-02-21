@@ -34,7 +34,7 @@ Deeplearning4j includes a distributed multi-threaded deep-learning framework and
 * [Recursive Neural Tensor Networks](http://deeplearning4j.org/recursiveneuraltensornetwork.html) (scenes, parsing)
 * See our ["How to Choose a Neural Net" page](neuralnetworktable.html)
 
-For a quick introduction to neural nets, please visit our [overview](../overview.html) page. In a nutshell, Deeplearning4j lets you compose deep nets from various shallow nets, each of which form a layer. This flexibility lets you combine restricted Boltzmann machines, autoencoders, convolutional nets and recurrent nets as needed in a distributed, production-grade framework on Spark, Hadoop and elsewhere. 
+Deep neural nets are capable of [record-breaking accuracy](../accuracy.html). For a quick introduction to them, please visit our [overview](../overview.html) page. In a nutshell, Deeplearning4j lets you compose deep nets from various shallow nets, each of which form a layer. This flexibility lets you combine restricted Boltzmann machines, autoencoders, convolutional nets and recurrent nets as needed in a distributed, production-grade framework on Spark, Hadoop and elsewhere. 
 
 There are a lot of parameters to adjust when you're training a deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers.
 
