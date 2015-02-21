@@ -110,7 +110,7 @@ public class LossFunctions {
      * @return the reconstruction cross entropy for the given parameters
      */
     public static double reconEntropy(INDArray input, INDArray hBias, INDArray vBias, INDArray W, ActivationFunction activationFunction) {
-        INDArray preSigH = input.mmul(W).addRowVector(hBias);
+        INDArray preSigH = input.mmul(W).addiRowVector(hBias);
         INDArray sigH = activationFunction.apply(preSigH);
         assert !Nd4j.hasInvalidNumber(sigH);
         //transpose doesn't go in right
