@@ -2446,13 +2446,8 @@ public abstract class BaseNDArray implements INDArray {
             return other.divi(getDouble(0), result);
         }
 
-        INDArray otherLinear = other.linearView();
-        INDArray resultLinear = result.linearView();
-        INDArray linearView = linearView();
+        data().divi(other.data(),length(),other.offset(),offset(),other.majorStride(),majorStride(),result.data());
 
-        for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, linearView.getDouble(i) / otherLinear.getDouble(i));
-        }
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
         return result;
@@ -2485,14 +2480,7 @@ public abstract class BaseNDArray implements INDArray {
             return other.muli(getDouble(0), result);
         }
 
-        INDArray otherLinear = other.linearView();
-        INDArray resultLinear = result.linearView();
-        INDArray linearView = linearView();
-
-        for (int i = 0; i < length; i++) {
-            resultLinear.putScalar(i, linearView.getDouble(i) * otherLinear.getDouble(i));
-        }
-
+        data().muli(other.data(),length(),other.offset(),offset(),other.majorStride(),majorStride(),result.data());
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
 

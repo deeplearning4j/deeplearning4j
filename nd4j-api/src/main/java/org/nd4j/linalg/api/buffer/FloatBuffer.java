@@ -40,7 +40,7 @@ public class FloatBuffer extends BaseDataBuffer {
     }
 
     public FloatBuffer(float[] buffer) {
-        this(buffer, false);
+        this(buffer, true);
     }
 
     public FloatBuffer(float[] buffer, boolean copy) {

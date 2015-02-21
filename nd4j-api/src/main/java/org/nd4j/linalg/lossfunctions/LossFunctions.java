@@ -110,41 +110,28 @@ public class LossFunctions {
      * @return the reconstruction cross entropy for the given parameters
      */
     public static double reconEntropy(INDArray input, INDArray hBias, INDArray vBias, INDArray W, ActivationFunction activationFunction) {
-        INDArray preSigH = input.mmul(W).addiRowVector(hBias);
+        INDArray preSigH = input.mmul(W).addRowVector(hBias);
         INDArray sigH = activationFunction.apply(preSigH);
         assert !Nd4j.hasInvalidNumber(sigH);
         //transpose doesn't go in right
-        INDArray preSigV = sigH.mmul(W.transpose()).addiRowVector(vBias);
+        INDArray preSigV = sigH.mmul(W.transpose()).addRowVector(vBias);
         INDArray sigV = activationFunction.apply(preSigV);
         assert !Nd4j.hasInvalidNumber(sigH);
 
-        INDArray logSigV = log(sigV);
-        INDArray sigVRsub1 = sigV.rsub(1);
-
-        INDArray logSigVRSub1 = log(sigVRsub1);
-        INDArray inputRsub1 = input.rsub(1);
-
-        try {
-            INDArray inner = input.mul(logSigV).addi(inputRsub1.muli(logSigVRSub1));
+        INDArray inner =
+                input.mul(log(sigV))
+                        .add(input.rsub(1)
+                                .mul(log(sigV.rsub(1))));
 
 
-            INDArray rows = inner.sum(1);
-            INDArray mean = rows.mean(Integer.MAX_VALUE);
+        INDArray rows = inner.sum(1);
+        INDArray mean = rows.mean(Integer.MAX_VALUE);
 
-            double ret = mean.getDouble(0);
-            ret /= (double) input.rows();
-            rows.data().destroy();
-            mean.data().destroy();
-            inner.data().destroy();
+        double ret = mean.getDouble(0);
 
-            return -ret;
-        } catch (Exception e) {
-            INDArray inputTimesLogSigV = input.mul(logSigV);
-            INDArray innerPart = inputRsub1.muli(logSigVRSub1);
-            INDArray otherPart = inputTimesLogSigV.addi(innerPart);
-            e.printStackTrace();
-            return 0.0;
-        }
+        ret /= input.rows();
+
+        return  ret;
     }
 
     /**
