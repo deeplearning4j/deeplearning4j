@@ -29,6 +29,8 @@ public class NeuralNetPlotterIterationListener implements IterationListener {
     private int iterations = 10;
     private NeuralNetPlotter plotter = new NeuralNetPlotter();
     private int patchesPerRow = 100;
+    private boolean renderFirst = false;
+
 
     /**
      *
@@ -37,9 +39,7 @@ public class NeuralNetPlotterIterationListener implements IterationListener {
      * @param patchesPerRow the number of patches per row for rendering filters
      */
     public NeuralNetPlotterIterationListener(int iterations, NeuralNetPlotter plotter, int patchesPerRow) {
-        this.iterations = iterations;
-        this.plotter = plotter;
-        this.patchesPerRow = patchesPerRow;
+        this(iterations,plotter,patchesPerRow,false);
     }
 
     /**
@@ -48,8 +48,32 @@ public class NeuralNetPlotterIterationListener implements IterationListener {
      * @param patchesPerRow the number of patches per row for rendering filters
      */
     public NeuralNetPlotterIterationListener(int iterations, int patchesPerRow) {
+        this(iterations,patchesPerRow,false);
+    }
+
+
+    /**
+     *
+     * @param iterations the number of iterations to render every
+     * @param plotter the plotter to use
+     * @param patchesPerRow the number of patches per row for rendering filters
+     */
+    public NeuralNetPlotterIterationListener(int iterations, NeuralNetPlotter plotter, int patchesPerRow,boolean renderFirst) {
+        this.iterations = iterations;
+        this.plotter = plotter;
+        this.patchesPerRow = patchesPerRow;
+        this.renderFirst = renderFirst;
+    }
+
+    /**
+     *
+     * @param iterations the number of iterations to render every
+     * @param patchesPerRow the number of patches per row for rendering filters
+     */
+    public NeuralNetPlotterIterationListener(int iterations, int patchesPerRow,boolean renderFirst) {
         this.iterations = iterations;
         this.patchesPerRow = patchesPerRow;
+        this.renderFirst = renderFirst;
     }
 
     /**
@@ -62,7 +86,7 @@ public class NeuralNetPlotterIterationListener implements IterationListener {
 
     @Override
     public void iterationDone(Model model, int iteration) {
-        if(iteration > 0 && iteration % this.iterations == 0) {
+        if(iteration == 0 && renderFirst || iteration > 0 && iteration % this.iterations == 0) {
             Layer layer = (Layer) model;
             plotter.plotNetworkGradient(layer,layer.gradient(),patchesPerRow);
         }
