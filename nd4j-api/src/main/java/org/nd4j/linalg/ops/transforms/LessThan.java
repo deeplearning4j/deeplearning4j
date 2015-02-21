@@ -58,4 +58,9 @@ public class LessThan extends BaseElementWiseOp {
 
         }
     }
+
+    @Override
+    public String name() {
+        return "lt";
+    }
 }

@@ -54,4 +54,9 @@ public class Sigmoid extends BaseElementWiseOp {
             return val;
         }
     }
+
+    @Override
+    public String name() {
+        return "sigmoid";
+    }
 }

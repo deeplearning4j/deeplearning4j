@@ -14,12 +14,14 @@
  *    limitations under the License.
  */
 
-package org.nd4j.linalg.jblas.buffer;
+package org.nd4j.linalg.netlib.buffer;
 
-import org.nd4j.linalg.api.buffer.test.DataBufferTest;
+import org.nd4j.linalg.api.buffer.test.FloatDataBufferTest;
 
 /**
  * Created by agibsonccc on 2/14/15.
  */
-public class TestBuffer extends DataBufferTest {
+public class TestBufferFloat extends FloatDataBufferTest {
+
+
 }

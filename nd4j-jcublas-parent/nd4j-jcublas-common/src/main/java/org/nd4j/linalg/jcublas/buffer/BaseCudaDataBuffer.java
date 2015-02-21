@@ -19,6 +19,7 @@ package org.nd4j.linalg.jcublas.buffer;
 import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
+import jcuda.driver.CUfunction;
 import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
@@ -457,7 +458,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param op the operation to execute
      */
     protected void exec2d(DataBuffer buffer,String dType,int dxIdx,int dYIdx,int n,int incx,int incy,String op) {
-         exec2d(buffer,dType,dxIdx,dYIdx,n,incx,incy,op,this);
+        exec2d(buffer,dType,dxIdx,dYIdx,n,incx,incy,op,this);
     }
 
 
@@ -534,9 +535,99 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 , scalarP
                 , twoP
                 , Pointer.to(new int[]{incy}),resultP);
-
-        KernelFunctions.invoke2d(2,KernelFunctions.getFunction(op,dType),kernelParameters);
+        //actually call the kernel
+        KernelFunctions.invoke(
+                2,
+                KernelFunctions.getFunction(op, dType)
+                , kernelParameters);
     }
+
+
+    /**
+     * Invoke an element wise transformation such as (exp,floor,tanh,..)
+     * on a buffer
+     * @param function the function to invoke
+     * @param dType the data type to use
+     * @param n the number of elements
+     * @param offset the offset to start
+     * @param inc the increment along the buffer
+     * @param result the result buffer
+     */
+    protected void invokeElementWise(String function,String dType,int n,int offset,int inc,DataBuffer result) {
+         invokeElementWise(function,dType,n,offset,inc,null,result);
+    }
+
+    /**
+     * Invoke an element wise transformation such as (exp,floor,tanh,..)
+     * on a buffer
+     * @param function the function to invoke
+     * @param dType the data type to use
+     * @param n the number of elements
+     * @param offset the offset to start
+     * @param inc the increment along the buffer
+     * @param extraArgs the extra arguments (for say, pow(,2))
+     * @param result the result buffer
+     */
+    protected void invokeElementWise(String function,String dType,int n,int offset,int inc,Object[] extraArgs,DataBuffer result) {
+        JCudaBuffer resultBuffer = (JCudaBuffer) result;
+        Pointer p = Pointer.to(pointer());
+        Pointer resultP = Pointer.to(resultBuffer.pointer());
+        if(extraArgs == null || extraArgs.length < 1) {
+            Pointer kernelParameters = KernelFunctions.constructKernelParameters(
+                    //number of elements
+                    Pointer.to(new int[]{n}),
+                    Pointer.to(new int[]{offset})
+                    , p
+                    , Pointer.to(new int[]{inc})
+                    , resultP);
+
+
+            KernelFunctions.invoke(n,KernelFunctions.getFunction(function,dType),kernelParameters);
+        }
+
+        else {
+            /**
+             * Construct pointer arguments in the following order:
+             * n
+             * offset,
+             * pointer to buffer
+             * increment,
+             * extraArgs,
+             * result
+             */
+            Pointer[] results = new Pointer[5 + extraArgs.length];
+            results[0] = Pointer.to(new int[]{n});
+            results[1] = Pointer.to(new int[]{offset});
+            results[2] = p;
+            results[3] = Pointer.to(new int[]{inc});
+
+            //start at the extra args slot and iterate over each argument
+            for(int i = 4,count = 0; count < extraArgs.length; i++,count++) {
+                Object o = extraArgs[count];
+                if(o instanceof Integer) {
+                    results[i] = Pointer.to(new int[]{Integer.valueOf(o.toString())});
+                }
+                else if(o instanceof Double) {
+                    results[i] = Pointer.to(new double[]{Double.valueOf(o.toString())});
+                }
+                else if(o instanceof Float) {
+                    results[i] = Pointer.to(new float[]{Float.valueOf(o.toString())});
+                }
+            }
+
+            results[results.length - 1] = resultP;
+
+            Pointer kernelParameters = KernelFunctions.constructKernelParameters(results);
+
+
+            KernelFunctions.invoke(n,KernelFunctions.getFunction(function,dType),kernelParameters);
+
+        }
+
+    }
+
+
+
 
     /**
      * Execute an operation on this buffer and the incoming buffer
@@ -565,6 +656,16 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 , twoP
                 , Pointer.to(new int[]{incx})
                 , Pointer.to(new int[]{incy}),resultP);
-        KernelFunctions.invoke2d(2,KernelFunctions.getFunction(op,dType),kernelParameters);
+        KernelFunctions.invoke(
+                2
+                ,KernelFunctions.getFunction(op,dType)
+                ,kernelParameters);
+    }
+
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        destroy();
     }
 }

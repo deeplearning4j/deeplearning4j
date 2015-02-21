@@ -43,4 +43,9 @@ public class Negative extends BaseElementWiseOp {
             return -val;
         }
     }
+
+    @Override
+    public String name() {
+        return "neg";
+    }
 }

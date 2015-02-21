@@ -52,6 +52,7 @@ public class KernelFunctions {
     public final static String NAME_SPACE = "org.nd4j.linalg.jcublas";
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
+
     private KernelFunctions() {
     }
 
@@ -87,6 +88,7 @@ public class KernelFunctions {
 
 
         }
+
         String f = props.getProperty(FLOAT);
         if (f != null) {
             String[] split = f.split(",");
@@ -108,6 +110,7 @@ public class KernelFunctions {
     public static CUfunction getFunction(String name,String dType) {
         return functions.get(name + "_" + dType);
     }
+
 
     public static void initDevices() {
         if(devices.containsKey(0))
@@ -150,6 +153,9 @@ public class KernelFunctions {
         return Pointer.to(pointers);
     }
 
+
+
+
     /**
      * Invoke a function with the given number of parameters
      *
@@ -158,28 +164,6 @@ public class KernelFunctions {
      * @param kernelParameters the parameters
      */
     public static void invoke(int numElements, CUfunction function, Pointer kernelParameters) {
-        // Call the kernel function.
-        int blockSizeX = 256;
-        int gridSizeX = (int) Math.ceil((double) numElements / blockSizeX);
-
-        cuLaunchKernel(function,
-                gridSizeX, 1, 1,      // Grid dimension
-                blockSizeX, 1, 1,      // Block dimension
-                0, null,               // Shared memory size and stream
-                kernelParameters, null // Kernel- and extra parameters
-        );
-        cuCtxSynchronize();
-
-
-    }
-    /**
-     * Invoke a function with the given number of parameters
-     *
-     * @param numElements the number of
-     * @param function   the function to invoke
-     * @param kernelParameters the parameters
-     */
-    public static void invoke2d(int numElements, CUfunction function, Pointer kernelParameters) {
         // Call the kernel function.
         int blockSizeX = 256;
         int gridSizeX = (int) Math.ceil((double) numElements / blockSizeX);
@@ -354,7 +338,6 @@ public class KernelFunctions {
 
     }
 
-
     /**
      * Load the function
      * @param ptxFileName  the ptx file name
@@ -373,7 +356,11 @@ public class KernelFunctions {
         // Obtain a function pointer to the "add" function.
         CUfunction function = new CUfunction();
         String name = functionName + "_" + dataType;
-        cuModuleGetFunction(function, module, name);
+        try {
+            cuModuleGetFunction(function, module, name);
+        }catch(Exception e) {
+            throw new RuntimeException("Function " + name + " not found!");
+        }
         functions.put(name, function);
 
         return function;

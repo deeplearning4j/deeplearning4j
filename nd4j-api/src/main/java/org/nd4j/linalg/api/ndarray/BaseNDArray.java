@@ -2587,14 +2587,7 @@ public abstract class BaseNDArray implements INDArray {
             else
                 Nd4j.getBlasWrapper().axpy(1.0f, this, result);
         } else {
-
-            INDArray resultLinear = result.linearView();
-            INDArray otherLinear = other.linearView();
-            INDArray linear = linearView();
-            for (int i = 0; i < resultLinear.length(); i++) {
-                resultLinear.putScalar(i, otherLinear.getDouble(i) + linear.getDouble(i));
-            }
-
+            data().addi(other.data(),length(),other.offset(),offset(),other.majorStride(),majorStride());
         }
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)

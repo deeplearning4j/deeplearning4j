@@ -57,4 +57,9 @@ public class GreaterThan extends BaseElementWiseOp {
 
         }
     }
+
+    @Override
+    public String name() {
+        return "gt";
+    }
 }

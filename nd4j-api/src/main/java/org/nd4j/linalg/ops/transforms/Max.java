@@ -62,4 +62,9 @@ public class Max extends BaseElementWiseOp {
         double val = (double) value;
         return Math.max(max.doubleValue(), val);
     }
+
+    @Override
+    public String name() {
+        return "max";
+    }
 }

@@ -47,4 +47,9 @@ public class Tanh extends BaseElementWiseOp {
             return FastMath.tanh(d);
         }
     }
+
+    @Override
+    public String name() {
+        return "tanh";
+    }
 }

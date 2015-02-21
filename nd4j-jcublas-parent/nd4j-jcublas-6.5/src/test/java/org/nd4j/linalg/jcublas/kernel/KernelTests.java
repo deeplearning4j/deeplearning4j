@@ -55,7 +55,7 @@ public class KernelTests {
                 , twoP
                 ,Pointer.to(new int[]{1})
                 ,Pointer.to(new int[]{1}));
-        KernelFunctions.invoke2d(2,KernelFunctions.getFunction("add_strided","float"),kernelParameters);
+        KernelFunctions.invoke(2,KernelFunctions.getFunction("add_strided","float"),kernelParameters);
         assertArrayEquals(result, buff2.asFloat(), 1e-1f);
         buff1.destroy();
         buff2.destroy();
@@ -83,7 +83,7 @@ public class KernelTests {
                 , twoP
                 ,Pointer.to(new int[]{2})
                 ,Pointer.to(new int[]{2}));
-        KernelFunctions.invoke2d(2,KernelFunctions.getFunction("add_strided","float"),kernelParameters);
+        KernelFunctions.invoke(2,KernelFunctions.getFunction("add_strided","float"),kernelParameters);
         assertArrayEquals(result, buff2.asFloat(), 1e-1f);
 
     }

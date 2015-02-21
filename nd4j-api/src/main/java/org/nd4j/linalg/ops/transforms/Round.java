@@ -44,4 +44,9 @@ public class Round extends BaseElementWiseOp {
         }
 
     }
+
+    @Override
+    public String name() {
+        return "round";
+    }
 }

@@ -57,4 +57,9 @@ public class NotEqualTo extends BaseElementWiseOp {
 
         }
     }
+
+    @Override
+    public String name() {
+       return "neq";
+    }
 }

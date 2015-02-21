@@ -53,6 +53,11 @@ public class MaxOut extends BaseElementWiseOp {
         }
     }
 
+    @Override
+    public String name() {
+        return "maxout";
+    }
+
     /**
      * The transformation for a given value (a scalar)
      *

@@ -28,6 +28,25 @@ public interface ElementWiseOp {
 
 
     /**
+     * Setter for extra arguments
+     * @param args the extra arguments to set
+     */
+    void setExtraArgs(Object[] args);
+
+    /**
+     * Extra arguments to the element wise operation
+     * @return the operation's extra arguments
+     */
+    Object[] extraArgs();
+
+    /**
+     *
+     * The name of the function
+     * @return the name of the function
+     */
+    String name();
+
+    /**
      * The input matrix
      *
      * @return

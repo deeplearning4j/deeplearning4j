@@ -30,27 +30,42 @@ public class Pow extends BaseElementWiseOp {
 
 
     private double power;
+    private float floatPower;
     private IComplexNumber powComplex;
+
 
     public Pow(Integer n) {
         this.power = n;
+        extraArgs = new Object[]{this.power};
     }
 
     public Pow(Double n) {
         this.power = n;
+        extraArgs = new Object[]{this.power};
     }
 
     public Pow(double power, IComplexNumber powComplex) {
         this.power = power;
         this.powComplex = powComplex;
+        extraArgs = new Object[]{this.power};
     }
 
     public Pow(IComplexNumber powComplex) {
         this.powComplex = powComplex;
     }
 
+
+    public Pow(float power) {
+        this.floatPower = power;
+        extraArgs = new Object[]{this.floatPower};
+
+    }
+
+
     public Pow(double power) {
         this.power = power;
+        extraArgs = new Object[]{this.power};
+
     }
 
     /**
@@ -68,5 +83,10 @@ public class Pow extends BaseElementWiseOp {
         }
         double d = (double) value;
         return Math.pow(d, power);
+    }
+
+    @Override
+    public String name() {
+        return "pow";
     }
 }

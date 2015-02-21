@@ -18,17 +18,21 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import jcuda.jcublas.JCublas;
 import org.junit.Before;
-import org.nd4j.linalg.api.buffer.test.DataBufferTest;
+import org.junit.BeforeClass;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.test.DoubleDataBufferTest;
+import org.nd4j.linalg.api.buffer.test.FloatDataBufferTest;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
+
+import java.io.IOException;
 
 /**
  * Created by agibsonccc on 2/14/15.
  */
-public class TestBuffer extends DataBufferTest {
-    @Before
-    public void before() {
-        JCublas.cublasInit();
+public class TestBufferDouble extends DoubleDataBufferTest {
 
-    }
+
 
 
 }

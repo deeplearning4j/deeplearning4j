@@ -48,4 +48,9 @@ public class DivideOp extends BaseTwoArrayElementWiseOp {
     protected double realReal(double firstElement, double secondElement) {
         return firstElement / secondElement;
     }
+
+    @Override
+    public String name() {
+        return "div";
+    }
 }

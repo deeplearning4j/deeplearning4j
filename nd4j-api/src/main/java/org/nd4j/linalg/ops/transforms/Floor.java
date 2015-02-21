@@ -50,4 +50,9 @@ public class Floor extends BaseElementWiseOp {
         double val = (double) value;
         return Math.floor(val);
     }
+
+    @Override
+    public String name() {
+        return "floor";
+    }
 }

@@ -43,4 +43,9 @@ public class Sqrt extends BaseElementWiseOp {
 
         return FastMath.sqrt((double) value);
     }
+
+    @Override
+    public String name() {
+        return "sqrt";
+    }
 }

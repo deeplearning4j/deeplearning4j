@@ -57,4 +57,9 @@ public class EqualTo extends BaseElementWiseOp {
 
         }
     }
+
+    @Override
+    public String name() {
+        return "eq";
+    }
 }

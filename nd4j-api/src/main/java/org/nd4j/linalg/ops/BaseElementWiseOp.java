@@ -37,6 +37,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
     protected INDArray from;
     //this is for operations like adding or multiplying a scalar over the from array
     protected Object scalarValue;
+    protected Object[] extraArgs;
 
 
     /**
@@ -103,6 +104,15 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
         return origin.getDouble(i);
     }
 
+    @Override
+    public Object[] extraArgs() {
+        return extraArgs;
+    }
+
+    @Override
+    public void setExtraArgs(Object[] args) {
+        this.extraArgs = args;
+    }
 
     /**
      * The input matrix

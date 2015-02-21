@@ -39,4 +39,9 @@ public class Abs extends BaseElementWiseOp {
         }
         return Math.abs((double) value);
     }
+
+    @Override
+    public String name() {
+        return "abs";
+    }
 }

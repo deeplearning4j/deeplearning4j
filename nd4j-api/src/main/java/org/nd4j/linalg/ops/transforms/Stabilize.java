@@ -79,4 +79,9 @@ public class Stabilize extends BaseElementWiseOp {
 
         return value;
     }
+
+    @Override
+    public String name() {
+        return "stabilize";
+    }
 }

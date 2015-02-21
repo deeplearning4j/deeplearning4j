@@ -69,4 +69,9 @@ public class Exp extends BaseElementWiseOp {
         // 64 / 186 = 1/2.90625
         return Double.longBitsToDouble((tmp - error) << 32);
     }
+
+    @Override
+    public String name() {
+        return "exp";
+    }
 }

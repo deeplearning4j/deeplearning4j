@@ -21,7 +21,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.BaseElementWiseOp;
 
 /**
- * Minyou  function
+ * Min function
  *
  * @author Adam Gibson
  */
@@ -61,5 +61,10 @@ public class Min extends BaseElementWiseOp {
 
         double val = (double) value;
         return Math.min(min.doubleValue(), val);
+    }
+
+    @Override
+    public String name() {
+        return "min";
     }
 }

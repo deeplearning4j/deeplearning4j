@@ -36,4 +36,9 @@ public class Identity extends BaseElementWiseOp {
     public Object apply(INDArray from, Object value, int i) {
         return value;
     }
+
+    @Override
+    public String name() {
+        return "identity";
+    }
 }

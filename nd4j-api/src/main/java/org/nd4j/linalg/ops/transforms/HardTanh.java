@@ -60,4 +60,9 @@ public class HardTanh extends BaseElementWiseOp {
                 return ret;
         }
     }
+
+    @Override
+    public String name() {
+        return "hardtanh";
+    }
 }

@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.api.buffer.test;
 
-
+import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,19 +29,37 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Created by agibsonccc on 2/14/15.
+ * Created by agibsonccc on 2/21/15.
  */
-public abstract class DataBufferTest {
+public abstract class DoubleDataBufferTest {
 
+    @Before
+    public void before() {
+        Nd4j.dtype = DataBuffer.DOUBLE;
+    }
 
     @Test
     public void testGetSet() {
         double[] d1 = new double[]{1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         double[] d2 = d.asDouble();
-        assertArrayEquals(d1, d2, 1e-1);
+        assertArrayEquals(d1, d2, 1e-1f);
         d.destroy();
 
+    }
+
+
+    @Test
+    public void testPow() {
+        DataBuffer buffer = Nd4j.ones(5).data();
+        double[] data = buffer.asDouble();
+        double[] newData = buffer.asDouble();
+        buffer.apply(ElementWiseOpFactories.pow().create(new Object[]{new Double(2)}));
+        newData = buffer.asDouble();
+        for(int i = 0; i < data.length; i++) {
+            assertEquals(data[i],newData[i],1e-1);
+        }
+        buffer.destroy();
     }
 
     @Test
@@ -61,40 +79,23 @@ public abstract class DataBufferTest {
         d.put(0, 0.0);
         double[] result = new double[]{0, 2, 3, 4};
         d1 = d.asDouble();
-        assertArrayEquals(d1, result, 1e-1);
+        assertArrayEquals(d1, result, 1e-1f);
         d.destroy();
     }
 
-    @Test
-    public void testApply() {
-        INDArray ones = Nd4j.valueArrayOf(5, 2.0);
-        ones.toString();
-        DataBuffer buffer = ones.data();
-        //square
-        ElementWiseOp op = new ArrayOps()
-                .from(ones).op(ElementWiseOpFactories.pow()).extraArgs(new Object[]{2})
-                .build();
-        buffer.apply(op);
-        INDArray four = Nd4j.valueArrayOf(5, 4.0);
-        DataBuffer d = four.data();
-        assertEquals(buffer, d);
-        buffer.destroy();
-        d.destroy();
 
-
-    }
 
     @Test
     public void testGetRange() {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         double[] get = buffer.getDoublesAt(0, 3);
         double[] data = new double[]{1, 2, 3};
-        assertArrayEquals(get, data, 1e-1);
+        assertArrayEquals(get, data, 1e-1f);
 
 
         double[] get2 = buffer.asDouble();
         double[] allData = buffer.getDoublesAt(0, buffer.length());
-        assertArrayEquals(get2, allData, 1e-1);
+        assertArrayEquals(get2, allData, 1e-1f);
         buffer.destroy();
 
 
@@ -106,13 +107,13 @@ public abstract class DataBufferTest {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         double[] get = buffer.getDoublesAt(1, 3);
         double[] data = new double[]{2, 3, 4};
-        assertArrayEquals(get, data, 1e-1);
+        assertArrayEquals(get, data, 1e-1f);
 
 
         double[] allButLast = new double[]{2, 3, 4, 5};
 
         double[] allData = buffer.getDoublesAt(1, buffer.length());
-        assertArrayEquals(allButLast, allData, 1e-1);
+        assertArrayEquals(allButLast, allData, 1e-1f);
         buffer.destroy();
 
 
@@ -122,33 +123,33 @@ public abstract class DataBufferTest {
     public void testBufferElementWiseOperations() {
         DataBuffer buffer = Nd4j.ones(5).data();
         buffer.addi(1.0);
-        float[] data = buffer.asFloat();
+        double[] data = buffer.asDouble();
         for(int i = 0; i < data.length; i++)
-              assertEquals(2.0,data[i],1e-1);
+            assertEquals(2.0,data[i],1e-1f);
         buffer.subi(1.0);
-        data = buffer.asFloat();
+        data = buffer.asDouble();
         for(int i = 0; i < data.length; i++)
-            assertEquals(1.0,data[i],1e-1);
+            assertEquals(1.0,data[i],1e-1f);
         buffer.muli(1.0);
-        data = buffer.asFloat();
+        data = buffer.asDouble();
         for(int i = 0; i < data.length; i++)
-            assertEquals(1.0,data[i],1e-1);
+            assertEquals(1.0,data[i],1e-1f);
 
         buffer.divi(1.0);
-        data = buffer.asFloat();
+        data = buffer.asDouble();
         for(int i = 0; i < data.length; i++)
-            assertEquals(1.0,data[i],1e-1);
+            assertEquals(1.0,data[i],1e-1f);
 
 
         buffer.destroy();
         buffer = Nd4j.ones(5).data();
 
         DataBuffer buffer2 = Nd4j.linspace(1,5,5).data();
-        float[] data3 = buffer2.asFloat();
+        double[] data3 = buffer2.asDouble();
         buffer.muli(buffer2);
-        data = buffer.asFloat();
+        data = buffer.asDouble();
         for(int i = 0; i < data3.length; i++)
-            assertEquals(data[i],data3[i],1e-1);
+            assertEquals(data[i],data3[i],1e-1f);
 
 
 

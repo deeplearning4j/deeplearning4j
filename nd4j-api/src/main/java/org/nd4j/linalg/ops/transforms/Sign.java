@@ -56,4 +56,9 @@ public class Sign extends BaseElementWiseOp {
         }
 
     }
+
+    @Override
+    public String name() {
+        return "sign";
+    }
 }

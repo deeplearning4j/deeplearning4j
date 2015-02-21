@@ -144,13 +144,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public float[] getFloatsAt(int offset, int inc, int length) {
-        if (length + offset > length())
-            throw new IllegalArgumentException("Unable to get length " + length + " offset of " + offset + " was too high");
-
-        if (length >= length())
-            throw new IllegalArgumentException("Length must not be > " + length);
-        if (offset >= length())
-            throw new IllegalArgumentException("Length must not be > " + length);
+        if (offset + length > length())
+            length -= offset;
         float[] ret = new float[length];
         for (int i = 0; i < length; i++) {
             ret[i] = getFloat(i + offset);
@@ -160,16 +155,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public double[] getDoublesAt(int offset, int inc, int length) {
-        if (length + offset > length()) {
-            length -= offset;
-        }
-
-        if (length > length())
-            throw new IllegalArgumentException("Length must not be > " + length);
-        if (offset > length())
-            throw new IllegalArgumentException("Length must not be > " + length);
         if (offset + length > length())
-            length = length() - offset;
+            length -= offset;
+
         double[] ret = new double[length];
         for (int i = 0; i < length; i++) {
             ret[i] = getDouble(i + offset);

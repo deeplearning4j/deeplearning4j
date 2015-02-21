@@ -45,4 +45,9 @@ public class Log extends BaseElementWiseOp {
             return Nd4j.EPS_THRESHOLD;
         return ret;
     }
+
+    @Override
+    public String name() {
+        return "log";
+    }
 }
