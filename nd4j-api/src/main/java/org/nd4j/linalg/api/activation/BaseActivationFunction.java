@@ -22,7 +22,9 @@ import org.nd4j.linalg.ops.ElementWiseOp;
 import org.nd4j.linalg.util.Shape;
 
 /**
- * Base activation function: mainly to give the function a canonical representation
+ * Base activation function: mainly to
+ * give the function a canonical representation
+ * @author Adam Gibson
  */
 public abstract class BaseActivationFunction implements ActivationFunction {
     /**
@@ -75,7 +77,10 @@ public abstract class BaseActivationFunction implements ActivationFunction {
         ElementWiseOp op = new ArrayOps().from(passIn)
                 .op(transformFactory())
                 .build();
-        op.exec();
+
+        passIn.data().apply(op);
+
+
         if (!Shape.shapeEquals(passIn.shape(), input.shape()))
             throw new IllegalStateException("Element wise operation of type " + op.toString() + " returned element not of same shape");
 

@@ -63,7 +63,7 @@ public class Tanh extends BaseActivationFunction {
         if (input instanceof IComplexNDArray) {
             return Nd4j.complexOnes(input.shape()).subi(input);
         } else
-            return Nd4j.ones(input.shape()).subi(input);
+            return input.rsub(input);
     }
 
 

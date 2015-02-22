@@ -102,19 +102,13 @@ public class SoftMax extends BaseActivationFunction {
             if (input.ordering() == NDArrayFactory.FORTRAN) {
                 INDArray max = input.max(0).transpose();
                 INDArray diff = input.subRowVector(max);
-                new ArrayOps()
-                        .from(diff)
-                        .op(ElementWiseOpFactories.exp())
-                        .build().exec();
+                diff.data().apply(ElementWiseOpFactories.exp().create());
                 diff.diviRowVector(diff.sum(0));
                 return diff;
             } else {
                 INDArray max = input.max(0).transpose();
                 INDArray diff = input.subRowVector(max);
-                new ArrayOps()
-                        .from(diff)
-                        .op(ElementWiseOpFactories.exp())
-                        .build().exec();
+                diff.data().apply(ElementWiseOpFactories.exp().create());
                 diff.diviRowVector(diff.sum(0));
                 return diff;
             }
