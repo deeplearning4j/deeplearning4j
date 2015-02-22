@@ -19,7 +19,7 @@ Here's a non-exhaustive list of Deeplearning4j's features. We'll be updating it 
 * Java 
 * (A Python SDK is forthcoming)
 
-Libraries
+### Libraries
 
 * [ND4J: N-dimensional arrays for the JVM](http://nd4j.org)
 
