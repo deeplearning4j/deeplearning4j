@@ -1,0 +1,14 @@
+---
+title: 
+layout: default
+---
+
+# Scala and Deep Learning
+
+Scala is one of the most exciting languages to be created in the 21st century. It is a multi-paradigm language that fully supports functional, object-oriented, imperative and concurrent programming. It also has a strong type system, and from our point of view, strong type is a convenient form of self-documenting code.
+
+Scala works on the JVM and has access to the riches of the Java ecosystem, but it is less verbose than Java. As we employ it for ND4J, its syntax is strikingly similar to Python, a language that many data scientists are comfortable with. Like Python, Scala makes programmers happy, but like Java, it is quite fast. 
+
+Finally, [Apache Spark](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark) is written in Scala, and any library that purports to work on distributed run times should at the very least be able to interface with Spark. Deeplearning4j and ND4J go a step further, because they work in a Spark cluster, and boast a [Scala API](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-scala-api/src/main/scala/org/nd4j/api/linalg). 
+
+We believe Scala's many strengths will lead it to dominate numerical computing, as well as deep learning. We think that will happen on Spark. And we have tried to build the tools to make that happen. 
