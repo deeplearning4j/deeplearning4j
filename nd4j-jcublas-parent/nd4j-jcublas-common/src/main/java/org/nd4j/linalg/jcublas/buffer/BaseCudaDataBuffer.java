@@ -662,6 +662,24 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 ,kernelParameters);
     }
 
+    @Override
+    public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
+
+    }
+
+    @Override
+    public void assign(DataBuffer... buffers) {
+        int[] offsets = new int[buffers.length];
+        int[] strides = new int[buffers.length];
+        for(int i = 0; i < strides.length; i++)
+            strides[i] = 1;
+        assign(offsets,strides,buffers);
+    }
+
+    @Override
+    public void assign(int[] offsets, int[] strides, DataBuffer... buffers) {
+        assign(offsets,strides,length(),buffers);
+    }
 
     @Override
     protected void finalize() throws Throwable {

@@ -73,15 +73,11 @@ public abstract class FloatDataBufferTest {
 
     @Test
     public void testApply() {
-        INDArray ones = Nd4j.valueArrayOf(5, 2.0);
-        ones.toString();
+        INDArray ones = Nd4j.valueArrayOf(5, 2.0f);
         DataBuffer buffer = ones.data();
-        //square
-        ElementWiseOp op = new ArrayOps()
-                .from(ones).op(ElementWiseOpFactories.pow()).extraArgs(new Object[]{2})
-                .build();
-        buffer.apply(op);
-        INDArray four = Nd4j.valueArrayOf(5, 4.0);
+
+        buffer.apply(ElementWiseOpFactories.pow().create(new Object[]{2.0}));
+        INDArray four = Nd4j.valueArrayOf(5, 4.0f);
         DataBuffer d = four.data();
         assertEquals(buffer, d);
         buffer.destroy();

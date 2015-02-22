@@ -36,6 +36,10 @@ public class Pow extends BaseElementWiseOp {
 
     public Pow(Object[] args) {
         this.extraArgs = args;
+        if(extraArgs[0] instanceof Double)
+            this.power = (Double) extraArgs[0];
+        else if(extraArgs[0] instanceof Float)
+            this.floatPower = (Float) extraArgs[0];
     }
 
     public Pow(Integer n) {
@@ -86,7 +90,11 @@ public class Pow extends BaseElementWiseOp {
             return ComplexUtil.pow(n, power);
         }
         double d = (double) value;
-        return Math.pow(d, power);
+        if(power != 0)
+            return Math.pow(d,power);
+        else if(floatPower != 0)
+            return Math.pow(d,floatPower);
+        return Math.pow(d,power);
     }
 
     @Override

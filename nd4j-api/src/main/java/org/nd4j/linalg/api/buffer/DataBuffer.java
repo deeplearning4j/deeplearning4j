@@ -713,4 +713,15 @@ public interface DataBuffer extends Serializable {
      * @param incy
      */
     void rsubi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy,DataBuffer result);
+
+    void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers);
+
+    /**
+     * Assign the given data buffers to this buffer
+     * @param buffers the buffers to assign
+     */
+    void assign(DataBuffer...buffers);
+
+
+    void assign(int[] offsets, int[] strides, DataBuffer... buffers);
 }

@@ -424,12 +424,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void rdivi(Number n) {
-       rdivi(n,0,1);
+        rdivi(n,0,1);
     }
 
     @Override
     public void rsubi(Number n) {
-      rsubi(n,0,1);
+        rsubi(n,0,1);
     }
 
 
@@ -654,6 +654,45 @@ public abstract class BaseDataBuffer implements DataBuffer {
             result.put(i,getDouble(i) + n.doubleValue());
         }
     }
+
+    @Override
+    public void assign(int[] offsets, int[] strides, DataBuffer... buffers) {
+        assign(offsets,strides,length(),buffers);
+    }
+
+    @Override
+    public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
+        if(offsets.length != strides.length || strides.length != buffers.length)
+            throw new IllegalArgumentException("Unable to assign buffers, please specify equal lengths strides, offsets, and buffers");
+        int length = 0;
+        for(int i = 0; i < buffers.length;i++)
+            length += buffers[i].length();
+
+        if(length != n)
+            throw new IllegalArgumentException("Buffers must fill up specified length " + n);
+
+        int count = 0;
+        for(int i = 0; i < buffers.length; i++) {
+            for(int j = offsets[i]; j < buffers[i].length(); j += strides[i]) {
+                put(count++,buffers[i].getDouble(j));
+            }
+        }
+
+        if(count != n)
+            throw new IllegalArgumentException("Strides and offsets didn't match up to length " + n);
+
+    }
+
+    @Override
+    public void assign(DataBuffer... buffers) {
+        int[] offsets = new int[buffers.length];
+        int[] strides = new int[buffers.length];
+        for(int i = 0; i < strides.length; i++)
+            strides[i] = 1;
+        assign(offsets,strides,buffers);
+    }
+
+
 
 
 }
