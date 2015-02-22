@@ -64,6 +64,8 @@ If you're using IntelliJ as your IDE, this should work already.
 
 * Alternatively, you can bypass MinGW and jcopy the Blas dll files to the right path. For example, the path to the MinGW bin folder is: /usr/x86_64-w64-mingw32/sys-root/mingw/bin.
 
+* Once you've completed these steps, you're ready to start solving problems with Deeplearning4j. 
+
 ###<a name="source">Working With Source</a>
 
 For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deeplearning4j/). If you want to develop for Deeplearning4j, install Github for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). Then git clone the repository, and run this command for Maven:
