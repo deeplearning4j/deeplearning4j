@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Scala and Deep Learning
+# Scala, Spark and Deep Learning
 
 Scala is one of the most exciting languages to be created in the 21st century. It is a multi-paradigm language that fully supports functional, object-oriented, imperative and concurrent programming. It also has a strong type system, and from our point of view, strong type is a convenient form of self-documenting code.
 
