@@ -7,19 +7,40 @@ layout: default
 
 Here's a non-exhaustive list of Deeplearning4j's features. We'll be updating it as new nets and tools are added. 
 
-### nets
+### Integrations
+
+* Spark
+* Hadoop/YARN
+* Akka + AWS
+
+### APIs
+
+* Scala
+* Java 
+* (A Python SDK is forthcoming)
+
+Libraries
+
+* [ND4J: N-dimensional arrays for the JVM](http://nd4j.org)
+
+### Nets
 
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
+* [Convolutional nets](../convolutionalnets.html)
+* [Recursive neural tensor networks](http://nlp.stanford.edu/sentiment/)
+* Recursive autoencoders
+* Recurrent nets: Long Short-Term Memory (LSTM)
 * [Deep-belief networks](../deepbeliefnetwork.html)
 * [Denoising and Stacked Denoising autoencoders](../denoisingautoencoder.html)
 * [Deep autoencoders](../deepautoencoder.html)
-* [Convolutional deep-belief networks](../convolutionalnets.html)
-* [Recursive neural tensor networks](http://nlp.stanford.edu/sentiment/)
 
-### tools
+Since Deeplearning4j is a composable framework, users can arrange shallow nets to create various types of deeper nets. Combining convolutional nets with recurrent nets, for example, is how Google accurately generated captions from images in late 2014.
+
+### Tools
 
 DL4J contains the following built-in vectorization algorithms:
 
+* [Canova: The Rosetta Stone of Vectorization](https://github.com/deeplearning4j/Canova)
 * Moving-window for images
 * Moving-window for text 
 * Viterbi for sequential classification
@@ -32,7 +53,7 @@ DL4J supports two kinds of back propagation (optimization algorithms):
 * Normal stochastic gradient descent
 * Conjugate gradient line search (c.f. [Hinton 2006](http://www.cs.toronto.edu/~hinton/science.pdf))
 
-### knobs
+### Hyperparameters
 
 * Dropout (random ommission of feature detectors to prevent overfitting)
 * Sparsity (force activations of sparse/rare inputs)
@@ -41,7 +62,7 @@ DL4J supports two kinds of back propagation (optimization algorithms):
 * Weight transforms (useful for deep autoencoders)
 * Probability distribution manipulation for initial weight generation
 
-### loss/objective functions
+### Loss/objective functions
 
 * Reconstruction entropy
 * Squared loss
@@ -49,7 +70,7 @@ DL4J supports two kinds of back propagation (optimization algorithms):
 * Negative log likelihood
 * Momentum
 
-### activation functions 
+### Activation functions 
 
 * Tanh
 * Sigmoid
