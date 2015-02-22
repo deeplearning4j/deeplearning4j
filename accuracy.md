@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Deep learning Accuracy
+# Deep Learning's Accuracy
 
 Deep learning has knocked down one record after another on benchmark dataset after benchmark dataset since 2006. In many competitions, the only algorithm deep learning is up against any more is itself. Below we list a few reports and resources indicating the power and persistent advance of deep neural nets:
 
