@@ -5,7 +5,7 @@ layout: default
 
 # Deep Learning's Accuracy
 
-Deep learning has knocked down one record after another on benchmark dataset after benchmark dataset since 2006. In many competitions, the only algorithm deep learning is up against any more is itself. Below we list a few reports and resources indicating the power and persistent advance of deep neural nets:
+Deep learning has knocked down one record after another on benchmark dataset after benchmark dataset since 2006. In many competitions, the only algorithm deep learning is up against is itself. Below are a few reports and resources indicating the power and persistent advance of deep neural nets:
 
 * [MNIST: Regularization of Neural Networks using DropConnect](http://cs.nyu.edu/~wanli/dropc/); 0.21% error using DropConnect
 * [DeepFace: Closing the Gap to Human-Level Performance in Face Verification](https://research.facebook.com/publications/480567225376225/deepface-closing-the-gap-to-human-level-performance-in-face-verification/); Reaches an accuracy of 97.35% on the Labeled Faces in the Wild (LFW) dataset, reducing the error of the current state of the art by more than 27%, closely approaching human-level performance (~97.53 percent).
