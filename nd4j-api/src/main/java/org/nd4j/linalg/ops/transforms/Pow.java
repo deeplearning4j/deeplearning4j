@@ -34,6 +34,10 @@ public class Pow extends BaseElementWiseOp {
     private IComplexNumber powComplex;
 
 
+    public Pow(Object[] args) {
+        this.extraArgs = args;
+    }
+
     public Pow(Integer n) {
         this.power = n;
         extraArgs = new Object[]{this.power};

@@ -35,6 +35,7 @@ public abstract class LossFunctionTests {
     private static Logger log = LoggerFactory.getLogger(LossFunctionTests.class);
 
 
+
     @Test
     public void testReconEntropy() {
         Nd4j.factory().setOrder('f');
@@ -54,8 +55,8 @@ public abstract class LossFunctionTests {
 
     @Test
     public void testRMseXent() {
-        INDArray in = Nd4j.create(new float[][]{{1, 2}, {3, 4}});
-        INDArray out = Nd4j.create(new float[][]{{5, 6}, {7, 8}});
+        INDArray in = Nd4j.create(new double[][]{{1, 2}, {3, 4}});
+        INDArray out = Nd4j.create(new double[][]{{5, 6}, {7, 8}});
         double diff = LossFunctions.score(in, LossFunctions.LossFunction.RMSE_XENT, out, 0, false);
         assertEquals(8, diff, 1e-1);
     }
@@ -72,13 +73,13 @@ public abstract class LossFunctionTests {
         INDArray softmax = Nd4j.create(new double[][]{{0.6, 0.4}, {0.7, 0.3}});
         INDArray trueLabels = Nd4j.create(new double[][]{{1, 0}, {0, 1}});
         double score = LossFunctions.score(trueLabels, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, softmax, 0, false);
-        assertEquals(1.71479842809, score, 1e-1);
+        assertEquals(0.8573992252349854, score, 1e-1);
 
 
         INDArray softmax2 = Nd4j.create(new double[][]{{0.33, 0.33, 0.33}, {0.33, 0.33, 0.33}});
         INDArray trueLabels2 = Nd4j.create(new double[][]{{1, 0, 0}, {1, 0, 0}});
         double score2 = LossFunctions.score(trueLabels2, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, softmax2, 0, false);
-        assertEquals(1.90961775772, score2, 1e-1);
+        assertEquals(0.9548089504241943, score2, 1e-1);
 
     }
 

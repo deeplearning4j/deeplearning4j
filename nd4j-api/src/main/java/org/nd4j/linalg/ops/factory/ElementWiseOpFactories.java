@@ -19,6 +19,9 @@ package org.nd4j.linalg.ops.factory;
 import org.nd4j.linalg.ops.factory.impl.*;
 
 /**
+ *
+ * Util class for different element wise operation factories
+ *
  * @author Adam Gibson
  */
 public class ElementWiseOpFactories {
@@ -42,22 +45,42 @@ public class ElementWiseOpFactories {
     private static ElementWiseOpFactory GREATER_THAN = new GreaterThanElementWiseOpFactory();
 
 
+    /**
+     * Greater than function
+     * @return
+     */
     public static ElementWiseOpFactory greaterThan() {
         return GREATER_THAN;
     }
 
+    /**
+     * Hard tanh function
+     * @return
+     */
     public static ElementWiseOpFactory hardTanh() {
         return HARD_TANH;
     }
 
+    /**
+     * Sigmoid function
+     * @return
+     */
     public static ElementWiseOpFactory sigmoid() {
         return SIGMOID;
     }
 
+    /**
+     * Abs function
+     * @return
+     */
     public static ElementWiseOpFactory abs() {
         return ABS;
     }
 
+    /**
+     * Equal to function
+     * @return
+     */
     public static ElementWiseOpFactory equalTo() {
         return EQUAL_TO;
     }
@@ -123,6 +146,10 @@ public class ElementWiseOpFactories {
         return new PowElementWiseOpFactory();
     }
 
+    /**
+     * Less than function
+     * @return
+     */
     public static ElementWiseOpFactory lessThan() {
         return LESS_THAN;
     }

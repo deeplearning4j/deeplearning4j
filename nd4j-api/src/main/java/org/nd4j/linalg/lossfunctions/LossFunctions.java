@@ -67,7 +67,7 @@ public class LossFunctions {
                 break;
             case RMSE_XENT:
                 INDArray rmseXentDiff = labels.sub(z);
-                INDArray squaredrmseXentDiff = pow(rmseXentDiff, 2);
+                INDArray squaredrmseXentDiff = pow(rmseXentDiff, 2.0);
                 INDArray sqrt = sqrt(squaredrmseXentDiff);
                 ret = sqrt.sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;

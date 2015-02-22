@@ -1,5 +1,4 @@
 extern "C"
-
 #include <math.h>
 
  __global__ void log_double(int n,int idx,double *dy,int incy,double *result) {

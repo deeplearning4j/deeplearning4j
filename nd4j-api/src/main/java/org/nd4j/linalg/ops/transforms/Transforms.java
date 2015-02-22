@@ -417,6 +417,12 @@ public class Transforms {
         return max(ndArray, Nd4j.copyOnOps);
     }
 
+    /**
+     * Pow function
+     * @param ndArray the ndarray to raise hte power of
+     * @param power the power to raise by
+     * @return the ndarray raised to this power
+     */
     public static INDArray pow(INDArray ndArray, Number power) {
         return pow(ndArray, power, Nd4j.copyOnOps);
 
@@ -669,7 +675,9 @@ public class Transforms {
     }
 
     public static INDArray pow(INDArray ndArray, Number power, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.pow(), new Object[]{power}, dup);
+        int dType = Nd4j.dataType();
+        Object[] extraArgs = dType == DataBuffer.DOUBLE ? new Object[]{new Double(power.doubleValue())} : new Object[]{new Float(power.floatValue())};
+        return exec(ndArray, ElementWiseOpFactories.pow(),extraArgs, dup);
     }
 
     public static IComplexNDArray pow(IComplexNDArray ndArray, IComplexNumber power, boolean dup) {
@@ -725,19 +733,30 @@ public class Transforms {
         return exec(ndArray, ElementWiseOpFactories.negative(), null, dup);
     }
 
-
+    /**
+     * Apply the given elementwise op
+     *
+     * @param indArray the ndarray to apply to
+     * @param factory the factory to create the op
+     * @param extraArgs the arguments to pass to the operation
+     * @param dup whether to duplicate the result or do it in place
+     * @return the new ndarray
+     */
     private static INDArray exec(INDArray indArray, ElementWiseOpFactory factory, Object[] extraArgs, boolean dup) {
         INDArray in = dup ? indArray.dup() : indArray;
-        ElementWiseOp ops = new ArrayOps().
-                from(in)
-                .op(factory)
-                .extraArgs(extraArgs)
-                .build();
-        ops.exec();
-
+        in.data().apply(factory.create(extraArgs));
         return in;
     }
 
+    /**
+     * Apply the given elementwise op
+     *
+     * @param indArray the ndarray to apply to
+     * @param factory the factory to create the op
+     * @param extraArgs the arguments to pass to the operation
+     * @param dup whether to duplicate the result or do it in place
+     * @return the new ndarray
+     */
     private static IComplexNDArray exec(IComplexNDArray indArray, ElementWiseOpFactory factory, Object[] extraArgs, boolean dup) {
         IComplexNDArray in = dup ? indArray.dup() : indArray;
         ElementWiseOp ops = new ArrayOps().

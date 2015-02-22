@@ -37,8 +37,7 @@ public class PowElementWiseOpFactory extends BaseElementWiseOpFactory {
         if (FUNCTIONS.containsKey(pow))
             return FUNCTIONS.get(pow);
         else {
-            ElementWiseOp ret = new Pow(pow);
-            ret.setExtraArgs(args);
+            ElementWiseOp ret = new Pow(args);
             FUNCTIONS.put(pow, ret);
             return ret;
         }
