@@ -31,7 +31,7 @@ public class FFT {
     /**
      * FFT along a particular dimension
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
@@ -41,26 +41,26 @@ public class FFT {
 
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier op, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
      *
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to op
+     * @return the the discrete fourier op of the passed in input
      */
     public static IComplexNDArray fft(IComplexNDArray inputC) {
         return Nd4j.getFFt().fft(inputC);
     }
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier op, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
      *
-     * @param input the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param input the input to op
+     * @return the the discrete fourier op of the passed in input
      */
     public static IComplexNDArray fft(INDArray input) {
         return Nd4j.getFFt().fft(input);
@@ -70,7 +70,7 @@ public class FFT {
     /**
      * FFT along a particular dimension
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
@@ -80,13 +80,13 @@ public class FFT {
 
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier op, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
      *
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to op
+     * @return the the discrete fourier op of the passed in input
      */
     public static IComplexNDArray fft(IComplexNDArray inputC, int numElements) {
         return Nd4j.getFFt().fft(inputC, numElements, inputC.shape().length - 1);
@@ -94,13 +94,13 @@ public class FFT {
 
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier op, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
      *
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to op
+     * @return the the discrete fourier op of the passed in input
      */
     public static IComplexNDArray fft(IComplexNDArray inputC, int numElements, int dimension) {
         return Nd4j.getFFt().fft(inputC, numElements, dimension);
@@ -110,7 +110,7 @@ public class FFT {
     /**
      * IFFT along a particular dimension
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param numElements the desired number of elements in each fft
      * @param dimension   the dimension to do fft along
      * @return the iffted output
@@ -121,13 +121,13 @@ public class FFT {
 
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier op, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
      *
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to op
+     * @return the the discrete fourier op of the passed in input
      */
     public static IComplexNDArray ifft(IComplexNDArray inputC) {
         return Nd4j.getFFt().ifft(inputC);
@@ -137,7 +137,7 @@ public class FFT {
     /**
      * FFT along a particular dimension
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
@@ -147,13 +147,13 @@ public class FFT {
 
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier op, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
      *
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to op
+     * @return the the discrete fourier op of the passed in input
      */
     public static IComplexNDArray ifft(IComplexNDArray inputC, int numElements, int dimension) {
         return Nd4j.getFFt().ifft(inputC, numElements, dimension);
@@ -161,9 +161,9 @@ public class FFT {
 
     /**
      * ND IFFT, computes along the first on singleton dimension of
-     * transform
+     * op
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param dimension   the dimension to iterate along
      * @param numElements the desired number of elements in each fft
      * @return the reverse ifft of the passed in array
@@ -189,7 +189,7 @@ public class FFT {
     /**
      * ND IFFT
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param dimension   the dimension to iterate along
      * @param numElements the desired number of elements in each fft
      * @return the transformed array
@@ -201,9 +201,9 @@ public class FFT {
 
     /**
      * Performs FFT along the first non singleton dimension of
-     * transform. This means
+     * op. This means
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param dimension   the dimension to iterate along
      * @param numElements the desired number of elements in each fft
      *                    along each dimension from each slice (note: each slice)
@@ -215,10 +215,10 @@ public class FFT {
 
 
     /**
-     * Computes the fft along the first non singleton dimension of transform
+     * Computes the fft along the first non singleton dimension of op
      * when it is a matrix
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param dimension   the dimension to do fft along
      * @param numElements the desired number of elements in each fft
      * @return the fft of the specified ndarray
@@ -230,7 +230,7 @@ public class FFT {
     /**
      * FFT on the whole array (n is equal the first dimension shape)
      *
-     * @param transform the matrix to transform
+     * @param transform the matrix to op
      * @return the ffted array
      */
     public static IComplexNDArray fftn(INDArray transform) {
@@ -241,7 +241,7 @@ public class FFT {
     /**
      * FFT on the whole array (n is equal the first dimension shape)
      *
-     * @param transform the matrix to transform
+     * @param transform the matrix to op
      * @return the ffted array
      */
     public static IComplexNDArray fftn(IComplexNDArray transform) {
@@ -277,7 +277,7 @@ public class FFT {
     /**
      * Underlying fft algorithm
      *
-     * @param transform the ndarray to transform
+     * @param transform the ndarray to op
      * @param n         the desired number of elements
      * @param dimension the dimension to do fft along
      * @return the transformed ndarray

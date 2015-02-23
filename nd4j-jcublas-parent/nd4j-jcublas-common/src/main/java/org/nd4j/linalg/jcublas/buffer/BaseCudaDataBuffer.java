@@ -19,7 +19,6 @@ package org.nd4j.linalg.jcublas.buffer;
 import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
-import jcuda.driver.CUfunction;
 import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
@@ -31,7 +30,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
-import org.nd4j.linalg.ops.ElementWiseOp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -392,10 +390,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
 
 
-    @Override
-    public void apply(ElementWiseOp op) {
-        apply(op, 0);
-    }
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous) {

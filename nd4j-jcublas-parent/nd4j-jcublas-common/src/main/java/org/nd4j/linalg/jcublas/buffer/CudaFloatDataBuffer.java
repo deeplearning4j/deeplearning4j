@@ -22,10 +22,7 @@ import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
-import org.nd4j.linalg.ops.ElementWiseOp;
 import org.nd4j.linalg.util.ArrayUtil;
 
 /**
@@ -240,15 +237,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     }
 
-    @Override
-    public void apply(ElementWiseOp op, int offset) {
-        if (offset >= length)
-            throw new IllegalArgumentException("Illegal start " + offset + " greater than length of " + length);
-        if(op.extraArgs() == null)
-            invokeElementWise(op.name(),"float",length(),0,1,this);
-        else
-            invokeElementWise(op.name(),"float",length(),0,1,op.extraArgs(),this);
-    }
 
     @Override
     public void addi(Number n, int inc, int offset) {

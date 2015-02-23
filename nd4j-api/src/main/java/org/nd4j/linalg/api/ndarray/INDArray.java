@@ -19,9 +19,9 @@ package org.nd4j.linalg.api.ndarray;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
-import org.nd4j.linalg.ops.reduceops.Ops;
 
 import java.io.Serializable;
 import java.util.List;
@@ -650,15 +650,6 @@ public interface INDArray extends Serializable {
 
     void sliceVectors(List<INDArray> list);
 
-    /**
-     * http://docs.scipy.org/doc/numpy/reference/generated/numpy.ufunc.reduce.html
-     *
-     * @param op        the operation to do
-     * @param dimension the dimension to return from
-     * @return the results of the reduce (applying the operation along the specified
-     * dimension)t
-     */
-    public INDArray reduce(Ops.DimensionOp op, int dimension);
 
     /**
      * Assigns the given matrix (put) to the specified slice

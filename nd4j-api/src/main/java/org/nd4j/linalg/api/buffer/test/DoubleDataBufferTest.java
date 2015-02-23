@@ -19,11 +19,8 @@ package org.nd4j.linalg.api.buffer.test;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.ArrayOps;
-import org.nd4j.linalg.ops.ElementWiseOp;
-import org.nd4j.linalg.ops.factory.ElementWiseOpFactories;
+
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -48,19 +45,6 @@ public abstract class DoubleDataBufferTest {
 
     }
 
-
-    @Test
-    public void testPow() {
-        DataBuffer buffer = Nd4j.ones(5).data();
-        double[] data = buffer.asDouble();
-        double[] newData = buffer.asDouble();
-        buffer.apply(ElementWiseOpFactories.pow().create(new Object[]{new Double(2)}));
-        newData = buffer.asDouble();
-        for(int i = 0; i < data.length; i++) {
-            assertEquals(data[i],newData[i],1e-1);
-        }
-        buffer.destroy();
-    }
 
     @Test
     public void testDup() {

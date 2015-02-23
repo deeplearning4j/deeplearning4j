@@ -29,6 +29,8 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
 import org.nd4j.linalg.fft.DefaultFFTInstance;
@@ -61,6 +63,8 @@ public class Nd4j {
     public final static String ORDER_KEY = "ndarray.order";
     public final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
     public final static String COPY_OPS = "ndarray.copyops";
+    public final static String OP_EXECUTIONER = "opexec";
+
     static {
         Nd4j nd4j = new Nd4j();
         nd4j.initContext();
@@ -81,20 +85,38 @@ public class Nd4j {
     protected static Class<? extends FFTInstance> fftInstanceClazz;
     protected static Class<? extends ConvolutionInstance> convolutionInstanceClazz;
     protected static Class<? extends DataBufferFactory> dataBufferFactoryClazz;
+    protected static Class<? extends OpExecutioner> opExecutionerClazz;
     protected static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
     protected static NDArrayFactory INSTANCE;
     protected static FFTInstance FFT_INSTANCE;
     protected static ConvolutionInstance CONVOLUTION_INSTANCE;
+    protected static OpExecutioner OP_EXECUTIONER_INSTANCE;
     protected static Properties props = new Properties();
 
     public static void setNdArrayFactoryClazz(Class<? extends NDArrayFactory> clazz) {
         ndArrayFactoryClazz = clazz;
     }
 
+    /**
+     * Get the convolution singleton
+     * @return the convolution singleton
+     */
     public static ConvolutionInstance getConvolution() {
         return CONVOLUTION_INSTANCE;
     }
+
+    /**
+     * Get the operation executioner instance
+     * @return the operation executioner instance
+     */
+    public static OpExecutioner getExecutioner() {
+        return OP_EXECUTIONER_INSTANCE;
+    }
+
+
+
+
 
     /**
      * Set a convolution instance
@@ -2650,8 +2672,16 @@ public class Nd4j {
         return INSTANCE.create(shape, ordering);
     }
 
-    public static IComplexNDArray createComplex(float[] data, int[] ints, int offset, char ordering) {
-        return INSTANCE.createComplex(data, ints, ArrayUtil.calcStrides(ints, 2), offset, ordering);
+    /**
+     * Create complex ndarray
+     * @param data
+     * @param shape
+     * @param offset
+     * @param ordering
+     * @return
+     */
+    public static IComplexNDArray createComplex(float[] data, int[] shape, int offset, char ordering) {
+        return INSTANCE.createComplex(data, shape, ArrayUtil.calcStrides(shape, 2), offset, ordering);
     }
 
     public static IComplexNDArray createComplex(double[] data, int[] shape, int offset) {
@@ -2732,18 +2762,23 @@ public class Nd4j {
         return INSTANCE.create(buffer);
     }
 
+
+
     /**
      * Initializes nd4j
      */
     public void initContext() {
         try {
-            ClassPathResource c = new ClassPathResource(LINALG_PROPS);
+             ClassPathResource c = new ClassPathResource(LINALG_PROPS);
             props = new Properties();
             props.load(c.getInputStream());
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
             dtype = otherDtype.equals("float") ? DataBuffer.FLOAT : DataBuffer.DOUBLE;
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
+
             ORDER = System.getProperty(ORDER_KEY, props.getProperty(ORDER_KEY, "c").toString()).charAt(0);
+            if(opExecutionerClazz == null)
+                opExecutionerClazz = (Class<? extends OpExecutioner>) Class.forName(System.getProperty(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
             if (fftInstanceClazz == null)
                 fftInstanceClazz = (Class<? extends FFTInstance>) Class.forName(System.getProperty(FFT_OPS, DefaultFFTInstance.class.getName()));
             if (ndArrayFactoryClazz == null)
@@ -2757,7 +2792,7 @@ public class Nd4j {
             if (blasWrapperClazz == null)
                 blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS, props.get(BLAS_OPS).toString()));
 
-
+            OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             FFT_INSTANCE = fftInstanceClazz.newInstance();
             Constructor c2 = ndArrayFactoryClazz.getConstructor(int.class, char.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);

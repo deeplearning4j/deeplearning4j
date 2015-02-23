@@ -19,7 +19,9 @@ package org.nd4j.linalg.api.buffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.ops.ElementWiseOp;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
+
 
 import java.io.Serializable;
 
@@ -274,6 +276,9 @@ public interface DataBuffer extends Serializable {
      */
     IComplexNumber getComplex(int i);
 
+
+
+
     /**
      * Returns the length of the buffer
      *
@@ -306,22 +311,11 @@ public interface DataBuffer extends Serializable {
      */
     void destroy();
 
+
     void put(int i, IComplexNumber result);
 
-    /**
-     * Apply an element wise op to the data buffer
-     *
-     * @param op the operation to apply
-     */
-    void apply(ElementWiseOp op);
 
-    /**
-     * Apply an element wise op to the data buffer
-     *
-     * @param op     the operation to apply
-     * @param offset the offset to start applying the function from
-     */
-    void apply(ElementWiseOp op, int offset);
+
 
     /**
      * Assign the contents of this buffer
@@ -714,6 +708,16 @@ public interface DataBuffer extends Serializable {
      */
     void rsubi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy,DataBuffer result);
 
+    /**
+     * Assign the given buffers to this buffer
+     * based on the given offsets and strides.
+     * Note that the offsets and strides must be of equal
+     * length to the number of buffers
+     * @param offsets the offsets to use
+     * @param strides the strides to use
+     * @param n the number of elements to operate on
+     * @param buffers the buffers to assign data from
+     */
     void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers);
 
     /**
@@ -722,6 +726,16 @@ public interface DataBuffer extends Serializable {
      */
     void assign(DataBuffer...buffers);
 
-
+    /**
+     * Assign the given buffers to this buffer
+     * based on the given offsets and strides.
+     * Note that the offsets and strides must be of equal
+     * length to the number of buffers
+     * @param offsets the offsets to use
+     * @param strides the strides to use
+     * @param buffers the buffers to assign data from
+     */
     void assign(int[] offsets, int[] strides, DataBuffer... buffers);
+
+
 }

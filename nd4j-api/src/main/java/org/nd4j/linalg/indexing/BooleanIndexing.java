@@ -100,11 +100,11 @@ public class BooleanIndexing {
 
     /**
      * Based on the matching elements
-     * transform to based on condition to with function function
+     * op to based on condition to with function function
      *
-     * @param to        the ndarray to transform
-     * @param condition the condition on transform
-     * @param function  the function to apply the transform to
+     * @param to        the ndarray to op
+     * @param condition the condition on op
+     * @param function  the function to apply the op to
      */
     public static void applyWhere(INDArray to, Condition condition, Function<Number, Number> function) {
         INDArray linear = to.linearView();
@@ -123,11 +123,11 @@ public class BooleanIndexing {
 
     /**
      * Based on the matching elements
-     * transform to based on condition to with function function
+     * op to based on condition to with function function
      *
-     * @param to        the ndarray to transform
-     * @param condition the condition on transform
-     * @param function  the function to apply the transform to
+     * @param to        the ndarray to op
+     * @param condition the condition on op
+     * @param function  the function to apply the op to
      */
     public static void applyWhere(IComplexNDArray to, Condition condition, Function<IComplexNumber, IComplexNumber> function) {
         IComplexNDArray linear = to.linearView();

@@ -155,7 +155,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      *
      * @param rows the row size
      * @param cols the column size
-     * @return a copy of this data transform with the input resized
+     * @return a copy of this data op with the input resized
      */
     @Override
     public DataSet reshape(int rows, int cols) {

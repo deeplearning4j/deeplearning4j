@@ -18,20 +18,20 @@ package org.nd4j.linalg.ops.transforms;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.ops.ArrayOps;
-import org.nd4j.linalg.ops.ElementWiseOp;
-import org.nd4j.linalg.ops.factory.ElementWiseOpFactories;
-import org.nd4j.linalg.ops.factory.ElementWiseOpFactory;
 import org.nd4j.linalg.util.ArrayUtil;
 
 
 /**
- * Functional interface for the different transform classes
+ * Functional interface for the different op classes
  * @author Adam Gibson
  */
 public class Transforms {
@@ -155,10 +155,7 @@ public class Transforms {
      * @return
      */
     public static double cosineSim(INDArray d1, INDArray d2) {
-        d1 = unitVec(d1.dup());
-        d2 = unitVec(d2.dup());
-        double ret = Nd4j.getBlasWrapper().dot(d1, d2);
-        return ret;
+      return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(d1,d2,d1.length())).currentResult().doubleValue();
     }
 
     /**
@@ -209,52 +206,6 @@ public class Transforms {
         return neg(ndArray, Nd4j.copyOnOps);
     }
 
-    public static IComplexNDArray neg(IComplexNDArray ndArray) {
-        return neg(ndArray, Nd4j.copyOnOps);
-    }
-
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static INDArray eq(INDArray ndArray) {
-        return eq(ndArray, Nd4j.copyOnOps);
-
-    }
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static IComplexNDArray eq(IComplexNDArray ndArray) {
-        return eq(ndArray, Nd4j.copyOnOps);
-    }
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static INDArray neq(INDArray ndArray) {
-        return neq(ndArray, Nd4j.copyOnOps);
-
-    }
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static IComplexNDArray neq(IComplexNDArray ndArray) {
-        return neq(ndArray, Nd4j.copyOnOps);
-    }
 
 
     /**
@@ -268,15 +219,6 @@ public class Transforms {
 
     }
 
-    /**
-     * Signum function of this ndarray
-     *
-     * @param toSign
-     * @return
-     */
-    public static INDArray sign(IComplexNDArray toSign) {
-        return sign(toSign, Nd4j.copyOnOps);
-    }
 
     /**
      * Signum function of this ndarray
@@ -287,106 +229,45 @@ public class Transforms {
     public static INDArray sign(INDArray toSign) {
         return sign(toSign, Nd4j.copyOnOps);
     }
+    
 
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static IComplexNDArray floor(IComplexNDArray ndArray) {
-        return floor(ndArray, Nd4j.copyOnOps);
-    }
-
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static INDArray gt(INDArray ndArray) {
-        return gt(ndArray, Nd4j.copyOnOps);
-    }
-
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static IComplexNDArray gt(IComplexNDArray ndArray) {
-        return gt(ndArray, Nd4j.copyOnOps);
-    }
-
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static INDArray lt(INDArray ndArray) {
-        return lt(ndArray, Nd4j.copyOnOps);
-
-    }
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static IComplexNDArray lt(IComplexNDArray ndArray) {
-        return lt(ndArray, Nd4j.copyOnOps);
-    }
-
+    
     public static INDArray stabilize(INDArray ndArray, double k) {
         return stabilize(ndArray, k, Nd4j.copyOnOps);
     }
 
-    public static IComplexNDArray stabilize(IComplexNDArray ndArray, double k) {
-        return stabilize(ndArray, k, Nd4j.copyOnOps);
-    }
 
-
+    /**
+     * Abs funciton
+     * @param ndArray
+     * @return
+     */
     public static INDArray abs(INDArray ndArray) {
         return abs(ndArray, true);
-
-
     }
 
-    public static IComplexNDArray abs(IComplexNDArray ndArray) {
-        return abs(ndArray, Nd4j.copyOnOps);
-    }
 
     public static INDArray exp(INDArray ndArray) {
         return exp(ndArray, Nd4j.copyOnOps);
     }
 
-    public static IComplexNDArray exp(IComplexNDArray ndArray) {
-        return exp(ndArray, Nd4j.copyOnOps);
-    }
 
     public static INDArray hardTanh(INDArray ndArray) {
         return hardTanh(ndArray, Nd4j.copyOnOps);
 
     }
 
-    public static IComplexNDArray hardTanh(IComplexNDArray ndArray) {
-        return hardTanh(ndArray, Nd4j.copyOnOps);
-    }
 
     public static INDArray identity(INDArray ndArray) {
         return identity(ndArray, Nd4j.copyOnOps);
     }
 
-    public static IComplexNDArray identity(IComplexNDArray ndArray) {
-        return identity(ndArray, Nd4j.copyOnOps);
-    }
 
+    /**
+     * Max funciton
+     * @param ndArray
+     * @return
+     */
     public static INDArray max(INDArray ndArray) {
         return max(ndArray, Nd4j.copyOnOps);
     }
@@ -402,20 +283,7 @@ public class Transforms {
         return max(ndArray, max, Nd4j.copyOnOps);
     }
 
-    /**
-     * Max function
-     *
-     * @param ndArray the ndarray to take the max function of
-     * @param max     the value to compare
-     * @return
-     */
-    public static IComplexNDArray max(IComplexNDArray ndArray, double max) {
-        return max(ndArray, max, Nd4j.copyOnOps);
-    }
 
-    public static IComplexNDArray max(IComplexNDArray ndArray) {
-        return max(ndArray, Nd4j.copyOnOps);
-    }
 
     /**
      * Pow function
@@ -428,114 +296,52 @@ public class Transforms {
 
     }
 
-    public static IComplexNDArray pow(IComplexNDArray ndArray, IComplexNumber power) {
-        return pow(ndArray, power, Nd4j.copyOnOps);
-    }
-
+    /**
+     * Rounding function
+     * @param ndArray
+     * @return
+     */
     public static INDArray round(INDArray ndArray) {
         return round(ndArray, Nd4j.copyOnOps);
     }
 
-    public static IComplexNDArray round(IComplexNDArray ndArray) {
-        return round(ndArray, Nd4j.copyOnOps);
-    }
 
     public static INDArray sigmoid(INDArray ndArray) {
         return sigmoid(ndArray, Nd4j.copyOnOps);
     }
 
-    public static IComplexNDArray sigmoid(IComplexNDArray ndArray) {
-        return sigmoid(ndArray, Nd4j.copyOnOps);
-    }
 
     public static INDArray sqrt(INDArray ndArray) {
         return sqrt(ndArray, Nd4j.copyOnOps);
     }
 
-    public static IComplexNDArray sqrt(IComplexNDArray ndArray) {
-        return sqrt(ndArray, Nd4j.copyOnOps);
-    }
 
     public static INDArray tanh(INDArray ndArray) {
         return tanh(ndArray, Nd4j.copyOnOps);
     }
 
-    public static IComplexNDArray tanh(IComplexNDArray ndArray) {
-        return tanh(ndArray, Nd4j.copyOnOps);
-    }
 
     public static INDArray log(INDArray ndArray) {
         return log(ndArray, Nd4j.copyOnOps);
     }
 
-    public static IComplexNDArray log(IComplexNDArray ndArray) {
-        return log(ndArray, Nd4j.copyOnOps);
-    }
 
 
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static INDArray eq(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.equalTo(), null, dup);
 
-    }
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static IComplexNDArray eq(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.equalTo(), null, dup);
-    }
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static INDArray neq(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.notEqualTo(), null, dup);
-
-    }
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static IComplexNDArray neq(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.notEqualTo(), null, dup);
-    }
 
 
     /**
-     * Binary matrix of whether the number at a given index is greater than
+     * Floor function
      *
      * @param ndArray
      * @return
      */
     public static INDArray floor(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.floor(), null, dup);
+        return exec(dup ? new Floor(ndArray) :  new Floor(ndArray),null);
 
     }
 
-    /**
-     * Signum function of this ndarray
-     *
-     * @param toSign
-     * @return
-     */
-    public static INDArray sign(IComplexNDArray toSign, boolean dup) {
-        return exec(toSign, ElementWiseOpFactories.sign(), null, dup);
-    }
+
 
     /**
      * Signum function of this ndarray
@@ -544,108 +350,73 @@ public class Transforms {
      * @return
      */
     public static INDArray sign(INDArray toSign, boolean dup) {
-        return exec(toSign, ElementWiseOpFactories.sign(), null, dup);
+        return exec(dup ? new Sign(toSign,toSign.dup()) : new Sign(toSign),null);
     }
 
 
     /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
+     * Stabilize to be within a range of k
+     * @param ndArray tbe ndarray
+     * @param k
+     * @param dup
      * @return
      */
-    public static IComplexNDArray floor(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.floor(), null, dup);
-    }
-
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static INDArray gt(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.greaterThan(), null, dup);
-    }
-
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static IComplexNDArray gt(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.greaterThan(), null, dup);
-    }
-
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static INDArray lt(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.lessThan(), null, dup);
-
-    }
-
-    /**
-     * Binary matrix of whether the number at a given index is equal
-     *
-     * @param ndArray
-     * @return
-     */
-    public static IComplexNDArray lt(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.lessThan(), null, dup);
-    }
-
     public static INDArray stabilize(INDArray ndArray, double k, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.stabilize(), new Object[]{k}, dup);
-    }
-
-    public static IComplexNDArray stabilize(IComplexNDArray ndArray, double k, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.stabilize(), new Object[]{k}, dup);
+        return exec(dup ? new Stabilize(ndArray,ndArray.dup()): new Stabilize(ndArray), new Object[]{k});
     }
 
 
+    /**
+     * Abs funciton
+     * @param ndArray
+     * @param dup
+     * @return
+     */
     public static INDArray abs(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.abs(), null, dup);
+        return exec(dup ? new Abs(ndArray,ndArray.dup()) : new Abs(ndArray),null);
 
     }
 
-    public static IComplexNDArray abs(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.abs(), null, dup);
-    }
-
+    /**
+     * Exp function
+     * @param ndArray
+     * @param dup
+     * @return
+     */
     public static INDArray exp(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.exp(), null, dup);
+        return exec(dup ? new Exp(ndArray,ndArray.dup()) :  new Exp(ndArray),null);
     }
 
-    public static IComplexNDArray exp(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.exp(), null, dup);
-    }
 
+    /**
+     * Hard tanh
+     * @param ndArray the input
+     * @param dup whether to duplicate the ndarray and return it as the result
+     * @return the output
+     */
     public static INDArray hardTanh(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.hardTanh(), null, dup);
+        return exec(dup ? new HardTanh(ndArray,ndArray.dup()) : new HardTanh(ndArray),null);
     }
 
-    public static IComplexNDArray hardTanh(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.hardTanh(), null, dup);
-    }
-
+    /**
+     * Identity function
+     * @param ndArray
+     * @param dup
+     * @return
+     */
     public static INDArray identity(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.identity(), null, dup);
+        return exec(dup ? new Identity(ndArray,ndArray.dup()) : new Identity(ndArray),null);
     }
 
-    public static IComplexNDArray identity(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.identity(), null, dup);
-    }
 
+    /**
+     *
+     * @param ndArray
+     * @param dup
+     * @return
+     */
     public static INDArray max(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.max(), null, dup);
+        return exec( dup ? new Max(ndArray,ndArray.dup()) : new Max(ndArray),null);
     }
 
     /**
@@ -656,115 +427,94 @@ public class Transforms {
      * @return
      */
     public static INDArray max(INDArray ndArray, double max, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.max(), new Object[]{max}, dup);
+        return exec(dup ? new Max(ndArray,ndArray.dup()) : new Max(ndArray), new Object[]{max});
     }
 
     /**
-     * Max function
-     *
-     * @param ndArray the ndarray to take the max function of
-     * @param max     the value to compare
+     * Pow function
+     * @param ndArray
+     * @param power
+     * @param dup
      * @return
      */
-    public static IComplexNDArray max(IComplexNDArray ndArray, double max, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.max(), new Object[]{max}, dup);
-    }
-
-    public static IComplexNDArray max(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.max(), null, dup);
-    }
-
     public static INDArray pow(INDArray ndArray, Number power, boolean dup) {
         int dType = Nd4j.dataType();
         Object[] extraArgs = dType == DataBuffer.DOUBLE ? new Object[]{new Double(power.doubleValue())} : new Object[]{new Float(power.floatValue())};
-        return exec(ndArray, ElementWiseOpFactories.pow(),extraArgs, dup);
+        return exec(dup ? new Pow(ndArray,ndArray.dup()) : new Pow(ndArray),extraArgs);
     }
 
-    public static IComplexNDArray pow(IComplexNDArray ndArray, IComplexNumber power, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.pow(), new Object[]{power}, dup);
-    }
-
+    /**
+     * Rounding function
+     * @param ndArray the ndarray
+     * @param dup
+     * @return
+     */
     public static INDArray round(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.round(), null, dup);
+        return exec(dup ? new Round(ndArray,ndArray.dup()) : new Round(ndArray),null);
     }
 
-    public static IComplexNDArray round(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.round(), null, dup);
-    }
 
+    /**
+     * Sigmoid function
+     * @param ndArray
+     * @param dup
+     * @return
+     */
     public static INDArray sigmoid(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.sigmoid(), null, dup);
+        return exec(dup ? new Sigmoid(ndArray,ndArray.dup()) : new Sigmoid(ndArray),null);
     }
 
-    public static IComplexNDArray sigmoid(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.sigmoid(), null, dup);
-    }
-
+    /**
+     * Sqrt function
+     * @param ndArray
+     * @param dup
+     * @return
+     */
     public static INDArray sqrt(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.sqrt(), null, dup);
+        return exec(dup ? new Sqrt(ndArray,ndArray.dup()) :  new Sqrt(ndArray), null);
     }
 
-    public static IComplexNDArray sqrt(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.sqrt(), null, dup);
-    }
-
+    /**
+     * Tanh function
+     * @param ndArray
+     * @param dup
+     * @return
+     */
     public static INDArray tanh(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.tanh(), null, dup);
+        return exec(dup ? new Tanh(ndArray,ndArray.dup()) : new Tanh(ndArray), null);
     }
 
-    public static IComplexNDArray tanh(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.tanh(), null, dup);
-    }
-
+    /**
+     * Log function
+     * @param ndArray
+     * @param dup
+     * @return
+     */
     public static INDArray log(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.log(), null, dup);
-    }
-
-    public static IComplexNDArray log(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.log(), null, dup);
+        return exec(dup ? new Log(ndArray,ndArray.dup()) : new Log(ndArray),null);
     }
 
 
+    /**
+     * Negative
+     * @param ndArray
+     * @param dup
+     * @return
+     */
     public static INDArray neg(INDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.negative(), null, dup);
-    }
-
-    public static IComplexNDArray neg(IComplexNDArray ndArray, boolean dup) {
-        return exec(ndArray, ElementWiseOpFactories.negative(), null, dup);
+        return exec(dup ? new Negative(ndArray,ndArray.dup()) : new Negative(ndArray), null);
     }
 
     /**
      * Apply the given elementwise op
      *
-     * @param indArray the ndarray to apply to
-     * @param factory the factory to create the op
+     * @param op the factory to create the op
      * @param extraArgs the arguments to pass to the operation
-     * @param dup whether to duplicate the result or do it in place
      * @return the new ndarray
      */
-    private static INDArray exec(INDArray indArray, ElementWiseOpFactory factory, Object[] extraArgs, boolean dup) {
-        INDArray in = dup ? indArray.dup() : indArray;
-        in.data().apply(factory.create(extraArgs));
-        return in;
+    private static INDArray exec(TransformOp op, Object[] extraArgs) {
+        return Nd4j.getExecutioner().execAndReturn(op,extraArgs);
     }
 
-    /**
-     * Apply the given elementwise op
-     *
-     * @param indArray the ndarray to apply to
-     * @param factory the factory to create the op
-     * @param extraArgs the arguments to pass to the operation
-     * @param dup whether to duplicate the result or do it in place
-     * @return the new ndarray
-     */
-    private static IComplexNDArray exec(IComplexNDArray indArray, ElementWiseOpFactory factory, Object[] extraArgs, boolean dup) {
-        IComplexNDArray in = dup ? indArray.dup() : indArray;
-        ElementWiseOp ops = new ArrayOps().
-                from(in)
-                .op(factory)
-                .extraArgs(extraArgs)
-                .build();
-        ops.exec();
-        return in;
-    }
+
 }

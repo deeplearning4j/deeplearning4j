@@ -18,9 +18,11 @@ package org.nd4j.linalg.api.dimensionfunctions;
 
 import com.google.common.base.Function;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.reduceops.Ops;
 
 /**
  * Dimension wise functions
@@ -137,7 +139,8 @@ public class DimensionFunctions {
         return new Function<INDArray, INDArray>() {
             @Override
             public INDArray apply(INDArray input) {
-                return Nd4j.scalar(Ops.norm2(input));
+                Accumulation acc = Nd4j.getExecutioner().execAndReturn(new Norm2(input));
+                return input instanceof IComplexNDArray ? Nd4j.scalar(acc.currentResultComplex()) : Nd4j.scalar(acc.currentResult().doubleValue());
             }
         };
     }
@@ -146,7 +149,8 @@ public class DimensionFunctions {
         return new Function<INDArray, INDArray>() {
             @Override
             public INDArray apply(INDArray input) {
-                return Nd4j.scalar(Ops.norm1(input));
+                Accumulation acc = Nd4j.getExecutioner().execAndReturn(new Norm1(input));
+                return input instanceof IComplexNDArray ? Nd4j.scalar(acc.currentResultComplex()) : Nd4j.scalar(acc.currentResult().doubleValue());
             }
         };
     }
@@ -156,7 +160,8 @@ public class DimensionFunctions {
         return new Function<INDArray, INDArray>() {
             @Override
             public INDArray apply(INDArray input) {
-                return Nd4j.scalar(Ops.sum(input));
+                Accumulation acc = Nd4j.getExecutioner().execAndReturn(new Sum(input));
+                return input instanceof IComplexNDArray ? Nd4j.scalar(acc.currentResultComplex()) : Nd4j.scalar(acc.currentResult().doubleValue());
             }
         };
     }
@@ -165,8 +170,8 @@ public class DimensionFunctions {
         return new Function<INDArray, INDArray>() {
             @Override
             public INDArray apply(INDArray input) {
-
-                return Nd4j.scalar(Ops.var(input));
+                Accumulation acc = Nd4j.getExecutioner().execAndReturn(new Variance(input));
+                return input instanceof IComplexNDArray ? Nd4j.scalar(acc.currentResultComplex()) : Nd4j.scalar(acc.currentResult().doubleValue());
             }
         };
     }
@@ -175,7 +180,8 @@ public class DimensionFunctions {
         return new Function<INDArray, INDArray>() {
             @Override
             public INDArray apply(INDArray input) {
-                return Nd4j.scalar(Ops.std(input));
+                Accumulation acc = Nd4j.getExecutioner().execAndReturn(new StandardDeviation(input));
+                return input instanceof IComplexNDArray ? Nd4j.scalar(acc.currentResultComplex()) : Nd4j.scalar(acc.currentResult().doubleValue());
             }
         };
     }
@@ -184,7 +190,8 @@ public class DimensionFunctions {
         return new Function<INDArray, INDArray>() {
             @Override
             public INDArray apply(INDArray input) {
-                return Nd4j.scalar(Ops.prod(input));
+                Accumulation acc = Nd4j.getExecutioner().execAndReturn(new Prod(input));
+                return input instanceof IComplexNDArray ? Nd4j.scalar(acc.currentResultComplex()) : Nd4j.scalar(acc.currentResult().doubleValue());
             }
         };
     }
@@ -212,7 +219,8 @@ public class DimensionFunctions {
         return new Function<INDArray, INDArray>() {
             @Override
             public INDArray apply(INDArray input) {
-                return Nd4j.scalar(Ops.mean(input));
+                Accumulation acc = Nd4j.getExecutioner().execAndReturn(new Mean(input));
+                return input instanceof IComplexNDArray ? Nd4j.scalar(acc.currentResultComplex()) : Nd4j.scalar(acc.currentResult().doubleValue());
             }
         };
     }
@@ -221,7 +229,8 @@ public class DimensionFunctions {
         return new Function<INDArray, INDArray>() {
             @Override
             public INDArray apply(INDArray input) {
-                return Nd4j.scalar(Ops.min(input));
+                Accumulation acc = Nd4j.getExecutioner().execAndReturn(new Min(input));
+                return input instanceof IComplexNDArray ? Nd4j.scalar(acc.currentResultComplex()) : Nd4j.scalar(acc.currentResult().doubleValue());
             }
         };
     }
@@ -230,7 +239,8 @@ public class DimensionFunctions {
         return new Function<INDArray, INDArray>() {
             @Override
             public INDArray apply(INDArray input) {
-                return Nd4j.scalar(Ops.max(input));
+                Accumulation acc = Nd4j.getExecutioner().execAndReturn(new Max(input));
+                return input instanceof IComplexNDArray ? Nd4j.scalar(acc.currentResultComplex()) : Nd4j.scalar(acc.currentResult().doubleValue());
             }
         };
     }
@@ -239,7 +249,8 @@ public class DimensionFunctions {
         return new Function<INDArray, INDArray>() {
             @Override
             public INDArray apply(INDArray input) {
-                return Nd4j.scalar(Ops.normmax(input));
+                Accumulation acc = Nd4j.getExecutioner().execAndReturn(new NormMax(input));
+                return input instanceof IComplexNDArray ? Nd4j.scalar(acc.currentResultComplex()) : Nd4j.scalar(acc.currentResult().doubleValue());
             }
         };
     }

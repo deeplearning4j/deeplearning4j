@@ -20,7 +20,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
-import org.nd4j.linalg.ops.reduceops.Ops;
 
 /**
  * Complex numbers
@@ -568,16 +567,7 @@ public interface IComplexNDArray extends INDArray {
     @Override
     void iterateOverDimension(int dimension, SliceOp op, boolean modify);
 
-    /**
-     * http://docs.scipy.org/doc/numpy/reference/generated/numpy.ufunc.reduce.html
-     *
-     * @param op        the operation to do
-     * @param dimension the dimension to return from
-     * @return the results of the reduce (applying the operation along the specified
-     * dimension)t
-     */
-    @Override
-    IComplexNDArray reduce(Ops.DimensionOp op, int dimension);
+
 
     IComplexNDArray put(int i, IComplexNDArray element);
 

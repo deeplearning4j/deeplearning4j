@@ -20,12 +20,8 @@ package org.nd4j.linalg.api.buffer.test;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.ArrayOps;
-import org.nd4j.linalg.ops.ElementWiseOp;
-import org.nd4j.linalg.ops.factory.ElementWiseOpFactories;
-import org.nd4j.linalg.util.ArrayUtil;
+
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -71,62 +67,7 @@ public abstract class FloatDataBufferTest {
         d.destroy();
     }
 
-    @Test
-    public void testApply() {
-        INDArray ones = Nd4j.valueArrayOf(5, 2.0f);
-        DataBuffer buffer = ones.data();
 
-        buffer.apply(ElementWiseOpFactories.pow().create(new Object[]{2.0}));
-        INDArray four = Nd4j.valueArrayOf(5, 4.0f);
-        DataBuffer d = four.data();
-        assertEquals(buffer, d);
-        buffer.destroy();
-        d.destroy();
-
-
-    }
-
-    @Test
-    public void testElementWiseOp() {
-        DataBuffer buffer = Nd4j.ones(5).data();
-        float[] data = ArrayUtil.copy(buffer.asFloat());
-        buffer.apply(ElementWiseOpFactories.negative().create());
-        float[] newData = buffer.asFloat();
-        //negative
-        for(int i = 0; i < data.length; i++) {
-            assertEquals(-data[i],newData[i],1e-1);
-        }
-        //now back to positive
-        buffer.apply(ElementWiseOpFactories.abs().create());
-        newData = buffer.asFloat();
-        for(int i = 0; i < data.length; i++) {
-            assertEquals(data[i],newData[i],1e-1);
-        }
-
-        buffer.apply(ElementWiseOpFactories.pow().create(new Object[]{new Float(2)}));
-        newData = buffer.asFloat();
-        for(int i = 0; i < data.length; i++) {
-            assertEquals(data[i],newData[i],1e-1);
-        }
-
-        buffer.destroy();
-
-
-
-    }
-
-    @Test
-    public void testPow() {
-        DataBuffer buffer = Nd4j.ones(5).data();
-        float[] data = buffer.asFloat();
-        float[] newData = buffer.asFloat();
-        buffer.apply(ElementWiseOpFactories.pow().create(new Object[]{new Float(2)}));
-        newData = buffer.asFloat();
-        for(int i = 0; i < data.length; i++) {
-            assertEquals(data[i],newData[i],1e-1);
-        }
-        buffer.destroy();
-    }
 
 
     @Test

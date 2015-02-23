@@ -32,7 +32,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     /**
      * FFT along a particular dimension
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
@@ -47,13 +47,13 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     }
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier op, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
      *
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to op
+     * @return the the discrete fourier op of the passed in input
      */
     @Override
     public IComplexNDArray fft(IComplexNDArray inputC, int numElements, int dimension) {
@@ -68,7 +68,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     /**
      * IFFT along a particular dimension
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param numElements the desired number of elements in each fft
      * @param dimension   the dimension to do fft along
      * @return the iffted output
@@ -84,13 +84,13 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     }
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier op, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
      *
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to op
+     * @return the the discrete fourier op of the passed in input
      */
     @Override
     public IComplexNDArray ifft(IComplexNDArray inputC, int numElements, int dimension) {
@@ -104,7 +104,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     /**
      * FFT along a particular dimension
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
@@ -119,13 +119,13 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     }
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier op, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
      *
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to op
+     * @return the the discrete fourier op of the passed in input
      */
     @Override
     public IComplexNDArray ifft(IComplexNDArray inputC) {
@@ -140,7 +140,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     /**
      * Underlying fft algorithm
      *
-     * @param transform the ndarray to transform
+     * @param transform the ndarray to op
      * @param n         the desired number of elements
      * @param dimension the dimension to do fft along
      * @return the transformed ndarray

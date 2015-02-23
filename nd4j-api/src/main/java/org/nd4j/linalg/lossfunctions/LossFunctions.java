@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.lossfunctions;
 
-import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -53,7 +52,7 @@ public class LossFunctions {
                 INDArray xEntLogZ2 = log(z);
                 INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
                 INDArray xEntOneMinusLogOneMinusZ2 = log(z).rsubi(1);
-                ret = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
+                ret = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).mean(Integer.MAX_VALUE).getDouble(0);
                 break;
             case MCXENT:
                 INDArray columnSums = labels.mul(log(z));
@@ -100,39 +99,6 @@ public class LossFunctions {
 
     }
 
-    /**
-     * Reconstruction entropy for Denoising AutoEncoders and RBMs
-     *
-     * @param input the input ndarray
-     * @param hBias the hidden bias of the neural network
-     * @param vBias the visible bias of the neural network
-     * @param W     the weight matrix of the neural network
-     * @return the reconstruction cross entropy for the given parameters
-     */
-    public static double reconEntropy(INDArray input, INDArray hBias, INDArray vBias, INDArray W, ActivationFunction activationFunction) {
-        INDArray preSigH = input.mmul(W).addiRowVector(hBias);
-        INDArray sigH = activationFunction.apply(preSigH);
-        assert !Nd4j.hasInvalidNumber(sigH);
-        //transpose doesn't go in right
-        INDArray preSigV = sigH.mmul(W.transpose()).addRowVector(vBias);
-        INDArray sigV = activationFunction.apply(preSigV);
-        assert !Nd4j.hasInvalidNumber(sigH);
-
-        INDArray inner =
-                input.mul(log(sigV))
-                        .add(input.rsub(1)
-                                .mul(log(sigV.rsub(1))));
-
-
-        INDArray rows = inner.sum(1);
-        INDArray mean = rows.mean(Integer.MAX_VALUE);
-
-        double ret = mean.getDouble(0);
-
-        ret /= input.rows();
-
-        return  ret;
-    }
 
     /**
      * MSE: Mean Squared Error: Linear Regression

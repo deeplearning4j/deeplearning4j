@@ -18,11 +18,9 @@ package org.nd4j.linalg.api.buffer;
 
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.ElementWiseOp;
+
 
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -187,32 +185,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return dataType() == DataBuffer.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
     }
 
-    @Override
-    public void apply(ElementWiseOp op, int offset) {
-        INDArray from = op.from();
-        if (from instanceof IComplexNDArray) {
-            for (int i = offset; i < length(); i++) {
-                IComplexNumber result = op.apply(from, getComplex(i), i);
-                put(i, result);
-            }
-        } else {
-            for (int i = offset; i < length(); i++) {
-                double result = op.apply(from, getDouble(i), i);
-                put(i, result);
-            }
-        }
 
-    }
 
     @Override
     public void put(int i, IComplexNumber result) {
         put(i,result.realComponent().doubleValue());
         put(i + 1,result.imaginaryComponent().doubleValue());
-    }
-
-    @Override
-    public void apply(ElementWiseOp op) {
-        apply(op, 0);
     }
 
 
@@ -691,8 +669,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
             strides[i] = 1;
         assign(offsets,strides,buffers);
     }
-
-
 
 
 }
