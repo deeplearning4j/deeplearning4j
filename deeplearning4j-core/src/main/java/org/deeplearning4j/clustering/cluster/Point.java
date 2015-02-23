@@ -733,13 +733,6 @@ public class Point implements INDArray {
 		return array.getFloat(indices);
 	}
 
-	public <E> E getElement(int i) {
-		return array.getElement(i);
-	}
-
-	public <E> E getElement(int i, int j) {
-		return array.getElement(i, j);
-	}
 
 	public double getDouble(int i) {
 		return array.getDouble(i);
