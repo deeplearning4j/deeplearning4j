@@ -58,47 +58,46 @@ public class WordVectorSerializer {
     public static Word2Vec loadGoogleModel(String path,boolean binary) throws IOException {
         InMemoryLookupTable lookupTable;
         VocabCache cache;
-        float[] data;
+        INDArray syn0;
+
         if(binary) {
-          float vector;
+            float vector;
             int words,size;
-            int count = 0;
-          try (BufferedInputStream bis =
-                   new BufferedInputStream(path.endsWith(".gz") ?
-                       new GZIPInputStream(new FileInputStream(path)) :
-                       new FileInputStream(path)); DataInputStream dis = new DataInputStream(bis)) {
-            words = Integer.parseInt(readString(dis));
-            size = Integer.parseInt(readString(dis));
-            data = new float[words * size];
-            cache = new InMemoryLookupCache(false);
-            lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder().cache(cache)
-                .vectorLength(size).build();
+            try (BufferedInputStream bis =
+                         new BufferedInputStream(path.endsWith(".gz") ?
+                                 new GZIPInputStream(new FileInputStream(path)) :
+                                 new FileInputStream(path)); DataInputStream dis = new DataInputStream(bis)) {
+                words = Integer.parseInt(readString(dis));
+                size = Integer.parseInt(readString(dis));
+                syn0 = Nd4j.create(words,size);
+                cache = new InMemoryLookupCache(false);
+                lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder().cache(cache)
+                        .vectorLength(size).build();
 
-            String word;
-            for (int i = 0; i < words; i++) {
+                String word;
+                for (int i = 0; i < words; i++) {
 
-              word = readString(dis);
-              log.info("Loading " + word + " with word " + i);
-              if (word.isEmpty())
-                continue;
+                    word = readString(dis);
+                    log.info("Loading " + word + " with word " + i);
+                    if (word.isEmpty())
+                        continue;
 
-              for (int j = 0; j < size; j++) {
-                vector = dis.readFloat();
-                data[count++] = vector;
-              }
+                    for (int j = 0; j < size; j++) {
+                        vector = dis.readFloat();
+                        syn0.put(i,j,vector);
+                    }
 
 
-              cache.addWordToIndex(cache.numWords(), word);
-              cache.addToken(new VocabWord(1, word));
-              cache.putVocabWord(word);
+                    cache.addWordToIndex(cache.numWords(), word);
+                    cache.addToken(new VocabWord(1, word));
+                    cache.putVocabWord(word);
+                }
             }
-          }
 
 
             Word2Vec ret = new Word2Vec();
 
-            INDArray weightMatrix = Nd4j.create(new FloatBuffer(data),new int[]{words,size});
-            lookupTable.setSyn0(weightMatrix);
+            lookupTable.setSyn0(syn0);
             ret.setVocab(cache);
             ret.setLookupTable(lookupTable);
             return ret;
@@ -111,12 +110,12 @@ public class WordVectorSerializer {
             String[] initial = line.split(" ");
             int words = Integer.parseInt(initial[0]);
             int layerSize = Integer.parseInt(initial[1]);
-            float[] buffer = new float[words * layerSize];
-            int count = 0;
+            syn0 = Nd4j.create(words,layerSize);
+
             cache = new InMemoryLookupCache();
 
 
-
+            int currLine = 0;
             while((line = reader.readLine()) != null) {
                 String[] split = line.split(" ");
                 String word = split[0];
@@ -125,11 +124,11 @@ public class WordVectorSerializer {
                     continue;
 
                 for(int i = 1; i < split.length; i++) {
-                    buffer[count++] = Float.parseFloat(split[i]);
+                    syn0.put(currLine,i - 1,Float.parseFloat(split[i]));
 
                 }
 
-                 cache.addWordToIndex(cache.numWords(),word);
+                cache.addWordToIndex(cache.numWords(),word);
                 cache.addToken(new VocabWord(1,word));
                 cache.putVocabWord(word);
 
@@ -138,7 +137,7 @@ public class WordVectorSerializer {
 
             lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder().cache(cache)
                     .vectorLength(layerSize).build();
-            lookupTable.setSyn0(Nd4j.create(new FloatBuffer(buffer),new int[]{words,layerSize}));
+            lookupTable.setSyn0(syn0);
 
             Word2Vec ret = new Word2Vec();
             ret.setVocab(cache);
@@ -152,18 +151,6 @@ public class WordVectorSerializer {
     }
 
 
-
-
-    private static void writeVector(float[] vec,File to) throws IOException {
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(to));
-        DataOutputStream dos = new DataOutputStream(bos);
-        for(float v : vec) {
-          dos.writeFloat(v);
-        }
-
-        bos.flush();
-        bos.close();
-    }
 
 
     /**
@@ -312,7 +299,7 @@ public class WordVectorSerializer {
         for(int i = 0; i < syn.rows(); i++)
             syn.putRow(i,arrays.get(i));
 
-       l =  (InMemoryLookupTable) new InMemoryLookupTable.Builder().vectorLength(arrays.get(0).columns())
+        l =  (InMemoryLookupTable) new InMemoryLookupTable.Builder().vectorLength(arrays.get(0).columns())
                 .useAdaGrad(false).cache(cache)
                 .build();
         Nd4j.clearNans(syn);
