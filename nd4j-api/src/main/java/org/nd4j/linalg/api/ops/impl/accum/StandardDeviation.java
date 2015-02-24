@@ -34,6 +34,10 @@ public class StandardDeviation extends Variance {
         super(x);
     }
 
+    public StandardDeviation(INDArray x, INDArray y) {
+        super(x, y);
+    }
+
     @Override
     public void update(Number result) {
         super.update(result);

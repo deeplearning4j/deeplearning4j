@@ -34,6 +34,10 @@ public class Min extends BaseAccumulation {
         super(x);
     }
 
+    public Min(INDArray x, INDArray y) {
+        super(x, y);
+    }
+
     @Override
     public void update(Number result) {
         if(result.doubleValue() < currentResult().doubleValue())

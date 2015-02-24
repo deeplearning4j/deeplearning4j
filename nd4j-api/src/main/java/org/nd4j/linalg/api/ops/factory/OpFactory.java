@@ -26,13 +26,14 @@ import org.nd4j.linalg.api.ops.TransformOp;
  * @author Adam Gibson
  */
 public interface OpFactory  {
+
     /**
-     * Accmulation operation
+     * Accumulation operation
      * @param name the name of the function to create
      * @param x the input to the function
      * @return the operation
      */
-    Accumulation create(String name,INDArray x);
+    Accumulation createAccum(String name,INDArray x);
 
     /**
      * Accumulation operation
@@ -42,7 +43,7 @@ public interface OpFactory  {
      * @param z the output
      * @return the operation
      */
-    Accumulation create(String name,INDArray x,INDArray y,INDArray z);
+    Accumulation createAccum(String name,INDArray x,INDArray y,INDArray z);
 
     /**
      *
@@ -51,7 +52,7 @@ public interface OpFactory  {
      * @param y
      * @return
      */
-    Accumulation create(String name,INDArray x,INDArray y);
+    Accumulation createAccum(String name,INDArray x,INDArray y);
 
     /**
      *
@@ -60,7 +61,7 @@ public interface OpFactory  {
      * @param y
      * @return
      */
-    TransformOp crete(String name,INDArray x,INDArray y);
+    TransformOp createTransform(String name,INDArray x,INDArray y);
 
 
     /**
@@ -69,7 +70,7 @@ public interface OpFactory  {
      * @param x
      * @return
      */
-    TransformOp crete(String name,INDArray x);
+    TransformOp createTransform(String name,INDArray x);
 
 
     /**
@@ -80,7 +81,9 @@ public interface OpFactory  {
      * @param z
      * @return
      */
-    TransformOp crete(String name,INDArray x,INDArray y,INDArray z);
+    TransformOp createTransform(String name,INDArray x,INDArray y,INDArray z);
+
+
 
 
 

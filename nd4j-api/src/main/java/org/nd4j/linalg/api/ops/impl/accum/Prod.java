@@ -34,6 +34,10 @@ public class Prod extends BaseAccumulation {
         super(x);
     }
 
+    public Prod(INDArray x, INDArray y) {
+        super(x, y);
+    }
+
     @Override
     public void update(Number result) {
         currentResult = currentResult.doubleValue() * result.doubleValue();

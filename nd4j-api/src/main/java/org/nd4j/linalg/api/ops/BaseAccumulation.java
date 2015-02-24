@@ -46,6 +46,10 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         init();
     }
 
+    public BaseAccumulation(INDArray x, INDArray y) {
+        this(x,y,x.length());
+    }
+
     private void init() {
         currentResult = zero();
         currentComplexResult = zeroComplex();

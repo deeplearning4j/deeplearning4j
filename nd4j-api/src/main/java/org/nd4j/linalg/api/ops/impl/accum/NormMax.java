@@ -36,6 +36,10 @@ public class NormMax extends BaseAccumulation {
         super(x);
     }
 
+    public NormMax(INDArray x, INDArray y) {
+        super(x, y);
+    }
+
     @Override
     public void update(Number result) {
         double abs = FastMath.abs(result.doubleValue());

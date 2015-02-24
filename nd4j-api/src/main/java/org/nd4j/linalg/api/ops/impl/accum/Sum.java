@@ -34,6 +34,10 @@ public class Sum extends BaseAccumulation {
         super(x);
     }
 
+    public Sum(INDArray x, INDArray y) {
+        super(x, y);
+    }
+
     @Override
     public void update(Number result) {
         currentResult = currentResult.doubleValue() + result.doubleValue();

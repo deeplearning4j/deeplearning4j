@@ -35,6 +35,10 @@ public class ACos extends BaseTransformOp {
         super(x);
     }
 
+    public ACos(INDArray x, INDArray y) {
+        super(x, y);
+    }
+
     @Override
     public String name() {
         return "acos";

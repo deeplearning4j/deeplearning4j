@@ -31,6 +31,8 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
+import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
 import org.nd4j.linalg.fft.DefaultFFTInstance;
@@ -64,6 +66,7 @@ public class Nd4j {
     public final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
     public final static String COPY_OPS = "ndarray.copyops";
     public final static String OP_EXECUTIONER = "opexec";
+    public final static String OP_FACTORY = "opfactory";
 
     static {
         Nd4j nd4j = new Nd4j();
@@ -86,12 +89,14 @@ public class Nd4j {
     protected static Class<? extends ConvolutionInstance> convolutionInstanceClazz;
     protected static Class<? extends DataBufferFactory> dataBufferFactoryClazz;
     protected static Class<? extends OpExecutioner> opExecutionerClazz;
+    protected static Class<? extends OpFactory> opFactoryClazz;
     protected static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
     protected static NDArrayFactory INSTANCE;
     protected static FFTInstance FFT_INSTANCE;
     protected static ConvolutionInstance CONVOLUTION_INSTANCE;
     protected static OpExecutioner OP_EXECUTIONER_INSTANCE;
+    protected static OpFactory OP_FACTORY_INSTANCE;
     protected static Properties props = new Properties();
 
     public static void setNdArrayFactoryClazz(Class<? extends NDArrayFactory> clazz) {
@@ -115,6 +120,13 @@ public class Nd4j {
     }
 
 
+    /**
+     * Get the operation factory
+     * @return the operation factory
+     */
+    public static OpFactory getOpFactory() {
+        return OP_FACTORY_INSTANCE;
+    }
 
 
 
@@ -2789,6 +2801,10 @@ public class Nd4j {
                 String defaultName = props.getProperty(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
                 dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
             }
+
+            if(opFactoryClazz == null)
+                opFactoryClazz = (Class<? extends OpFactory>) Class.forName(System.getProperty(OP_FACTORY,DefaultOpFactory.class.getName()));
+
             if (blasWrapperClazz == null)
                 blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS, props.get(BLAS_OPS).toString()));
 
@@ -2799,7 +2815,7 @@ public class Nd4j {
             CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
             DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
-
+            OP_FACTORY_INSTANCE = opFactoryClazz.newInstance();
             UNIT = Nd4j.createFloat(1, 0);
             ZERO = Nd4j.createFloat(0, 0);
             NEG_UNIT = Nd4j.createFloat(-1, 0);

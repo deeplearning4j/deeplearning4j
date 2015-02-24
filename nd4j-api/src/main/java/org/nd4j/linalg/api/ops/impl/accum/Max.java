@@ -34,6 +34,10 @@ public class Max extends BaseAccumulation {
         super(x);
     }
 
+    public Max(INDArray x, INDArray y) {
+        super(x, y);
+    }
+
     @Override
     public void update(Number result) {
         if(result.doubleValue() > currentResult().doubleValue())

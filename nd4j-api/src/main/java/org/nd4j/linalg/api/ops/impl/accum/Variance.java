@@ -38,6 +38,10 @@ public class Variance extends BaseAccumulation {
         super(x);
     }
 
+    public Variance(INDArray x, INDArray y) {
+        super(x, y);
+    }
+
     @Override
     public void update(Number result) {
         if(otherAccum().isEmpty()) {

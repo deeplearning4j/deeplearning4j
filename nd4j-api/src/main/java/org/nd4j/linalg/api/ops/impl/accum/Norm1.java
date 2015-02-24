@@ -35,6 +35,10 @@ public class Norm1 extends BaseAccumulation {
         super(x);
     }
 
+    public Norm1(INDArray x, INDArray y) {
+        super(x, y);
+    }
+
     @Override
     public void update(Number result) {
         currentResult = currentResult.doubleValue() + FastMath.abs(result.doubleValue());

@@ -34,6 +34,10 @@ public class Mean extends BaseAccumulation {
         super(x);
     }
 
+    public Mean(INDArray x, INDArray y) {
+        super(x, y);
+    }
+
     @Override
     public void update(Number result) {
         if(Double.isInfinite(currentResult.doubleValue()))
