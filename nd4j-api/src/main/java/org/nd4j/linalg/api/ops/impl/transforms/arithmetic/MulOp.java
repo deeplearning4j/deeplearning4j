@@ -128,10 +128,12 @@ public class MulOp extends BaseTransformOp {
 
     @Override
     public Op opForDimension(int index,int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+
         if(y() != null)
-            return new MulOp(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+            return new MulOp(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
         else
-            return new MulOp(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+            return new MulOp(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
 
     }
 }

@@ -62,9 +62,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
                             x = op.x().offset(); c < op.n();
                     x+= op.x().majorStride(),c++) {
                     if(extraArgs != null)
-                        apply(t,c,x);
-                    else
                         apply(t,c,x,extraArgs);
+                    else
+                        apply(t,c,x);
 
                 }
 
@@ -203,7 +203,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
         //x is real
         else
-            zData.put(c,op.op(xData.getDouble(x)));
+            zData.put(c,op.op(xData.getDouble(x),extraArgs));
     }
 
     //apply a pairwise op to x and store the result

@@ -127,10 +127,12 @@ public class DivOp extends BaseTransformOp {
     }
     @Override
     public Op opForDimension(int index,int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+
         if(y() != null)
-            return new DivOp(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+            return new DivOp(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
         else
-            return new DivOp(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+            return new DivOp(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
 
     }
 }

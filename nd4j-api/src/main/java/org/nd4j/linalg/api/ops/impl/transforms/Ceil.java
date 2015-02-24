@@ -91,10 +91,12 @@ public class Ceil extends BaseTransformOp {
     }
     @Override
     public Op opForDimension(int index,int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+
         if(y() != null)
-            return new Ceil(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+            return new Ceil(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
         else
-            return new Ceil(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+            return new Ceil(xAlongDimension,z.vectorAlongDimension(index,dimension));
 
     }
 }

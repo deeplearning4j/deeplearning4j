@@ -70,8 +70,10 @@ public class Norm2 extends BaseAccumulation {
 
     @Override
     public Op opForDimension(int index,int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+
         if(y() != null)
-            return new Norm2(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),x.length());
+            return new Norm2(xAlongDimension,y.vectorAlongDimension(index,dimension),xAlongDimension.length());
         else
             return new Norm2(x.vectorAlongDimension(index,dimension));
 

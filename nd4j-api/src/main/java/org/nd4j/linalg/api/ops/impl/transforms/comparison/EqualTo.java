@@ -135,10 +135,12 @@ public class EqualTo extends BaseTransformOp {
     }
     @Override
     public Op opForDimension(int index,int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+
         if(y() != null)
-            return new EqualTo(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+            return new EqualTo(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
         else
-            return new EqualTo(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+            return new EqualTo(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
 
     }
 

@@ -62,8 +62,10 @@ public class StandardDeviation extends Variance {
 
     @Override
     public Op opForDimension(int index,int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+
         if(y() != null)
-            return new StandardDeviation(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),x.length());
+            return new StandardDeviation(xAlongDimension,y.vectorAlongDimension(index,dimension),xAlongDimension.length());
         else
             return new StandardDeviation(x.vectorAlongDimension(index,dimension));
 

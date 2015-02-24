@@ -91,10 +91,11 @@ public class Sqrt extends BaseTransformOp {
     }
     @Override
     public Op opForDimension(int index,int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
         if(y() != null)
-            return new Sqrt(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+            return new Sqrt(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
         else
-            return new Sqrt(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+            return new Sqrt(xAlongDimension,z.vectorAlongDimension(index,dimension),x.length());
 
     }
 }

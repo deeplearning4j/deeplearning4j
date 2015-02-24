@@ -23,7 +23,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AdaGradTest {
+public abstract class AdaGradTest {
 
     private static Logger log = LoggerFactory.getLogger(AdaGradTest.class);
 

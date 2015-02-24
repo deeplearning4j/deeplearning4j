@@ -98,6 +98,7 @@ public class DefaultOpFactory implements OpFactory {
             case "sqrt" : return new Sqrt(x,y);
             case "stabilize": return new Stabilize(x,y);
             case "tanh" : return new Tanh(x,y);
+            case "softmax" : return new SoftMax(x,y);
             default: throw new IllegalArgumentException("Illegal name " + name);
         }
 
@@ -127,6 +128,8 @@ public class DefaultOpFactory implements OpFactory {
             case "sqrt" : return new Sqrt(x);
             case "stabilize": return new Stabilize(x);
             case "tanh" : return new Tanh(x);
+            case "softmax" : return new SoftMax(x);
+
             default: throw new IllegalArgumentException("Illegal name " + name);
         }
 
@@ -156,6 +159,8 @@ public class DefaultOpFactory implements OpFactory {
             case "sqrt" : return new Sqrt(x,z);
             case "stabilize": return new Stabilize(x,z);
             case "tanh" : return new Tanh(x,z);
+            case "softmax" : return new SoftMax(x,z);
+
             default: throw new IllegalArgumentException("Illegal name " + name);
         }
     }

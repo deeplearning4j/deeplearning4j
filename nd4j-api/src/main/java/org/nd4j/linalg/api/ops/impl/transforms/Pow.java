@@ -99,16 +99,18 @@ public class Pow extends BaseTransformOp {
     }
 
     private double pow(Object[] extraArgs) {
-        if(extraArgs.length < 1)
+        if(extraArgs == null || extraArgs.length < 1)
             throw new IllegalArgumentException("Extra arguments must contain a power");
         return Double.valueOf(extraArgs[0].toString());
     }
     @Override
     public Op opForDimension(int index,int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+
         if(y() != null)
-            return new Pow(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+            return new Pow(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
         else
-            return new Pow(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+            return new Pow(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
 
     }
 }
