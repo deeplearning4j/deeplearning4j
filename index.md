@@ -28,7 +28,7 @@ Deeplearning4j includes a distributed multi-threaded deep-learning framework and
 * [Convolutional Nets](http://deeplearning4j.org/convolutionalnets.html) (images)
 * [Stacked Denoising Autoencoders](../stackeddenoisingautoencoder.html) 
 * Recurrent Nets/LSTMs (time series)
-* Recursive autoencoders
+* [Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/autoencoder/recursive/RecursiveAutoEncoderTest.java)
 * [Deep-belief networks](../deepbeliefnetwork.html)
 * [Deep Autoencoders](http://deeplearning4j.org/deepautoencoder.html) (QA/information retrieval)
 * [Recursive Neural Tensor Networks](http://deeplearning4j.org/recursiveneuraltensornetwork.html) (scenes, parsing)
