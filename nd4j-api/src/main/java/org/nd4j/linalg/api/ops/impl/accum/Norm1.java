@@ -20,6 +20,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -65,5 +66,12 @@ public class Norm1 extends BaseAccumulation {
     public String name() {
         return "norm1";
     }
+    @Override
+    public Op opForDimension(int index,int dimension) {
+        if(y() != null)
+            return new Norm1(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),x.length());
+        else
+            return new Norm1(x.vectorAlongDimension(index,dimension));
 
+    }
 }

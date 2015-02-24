@@ -20,6 +20,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ComplexUtil;
 
@@ -138,5 +139,14 @@ public class Variance extends BaseAccumulation {
     public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
         this.mean = Double.valueOf(extraArgs[0].toString());
         return super.op(origin, extraArgs);
+    }
+
+    @Override
+    public Op opForDimension(int index,int dimension) {
+        if(y() != null)
+            return new Variance(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),x.length());
+        else
+            return new Variance(x.vectorAlongDimension(index,dimension));
+
     }
 }

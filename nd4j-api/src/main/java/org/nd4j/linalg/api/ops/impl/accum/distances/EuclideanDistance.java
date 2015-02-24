@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.accum.distances;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -104,5 +105,13 @@ public class EuclideanDistance extends BaseAccumulation {
     @Override
     public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
         return origin;
+    }
+    @Override
+    public Op opForDimension(int index,int dimension) {
+        if(y() != null)
+            return new EuclideanDistance(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),x.length());
+        else
+            return new EuclideanDistance(x.vectorAlongDimension(index,dimension));
+
     }
 }

@@ -122,4 +122,6 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public List<Number> otherAccum() {
         return otherAccum;
     }
+
+
 }

@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.accum.distances;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -119,5 +120,12 @@ public class CosineSimilarity extends BaseAccumulation {
         if(constantNormalizedByNorm2 == Double.MIN_VALUE)
             this.constantNormalizedByNorm2 = Double.valueOf(extraArgs[0].toString());
     }
+    @Override
+    public Op opForDimension(int index,int dimension) {
+        if(y() != null)
+            return new CosineSimilarity(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),x.length());
+        else
+            return new CosineSimilarity(x.vectorAlongDimension(index,dimension));
 
+    }
 }

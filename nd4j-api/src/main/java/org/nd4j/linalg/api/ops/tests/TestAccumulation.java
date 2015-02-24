@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.tests;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -96,5 +97,10 @@ public class TestAccumulation extends BaseAccumulation {
     @Override
     public IComplexNumber op(IComplexNumber origin) {
         return origin;
+    }
+
+    @Override
+    public Op opForDimension(int index, int dimension) {
+        return null;
     }
 }

@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.accum;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -77,5 +78,12 @@ public class Mean extends BaseAccumulation {
     public String name() {
         return "mean";
     }
+    @Override
+    public Op opForDimension(int index,int dimension) {
+        if(y() != null)
+            return new Mean(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),x.length());
+        else
+            return new Mean(x.vectorAlongDimension(index,dimension));
 
+    }
 }
