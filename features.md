@@ -28,8 +28,8 @@ Here's a non-exhaustive list of Deeplearning4j's features. We'll be updating it 
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
 * [Convolutional nets](../convolutionalnets.html)
 * [Recursive neural tensor networks](http://nlp.stanford.edu/sentiment/)
-* Recursive autoencoders
-* Recurrent nets: Long Short-Term Memory (LSTM)
+* [Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/autoencoder/recursive/RecursiveAutoEncoderTest.java)
+* [Recurrent nets: Long Short-Term Memory (LSTM)](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/classifiers/lstm/LSTMTest.java)
 * [Deep-belief networks](../deepbeliefnetwork.html)
 * [Denoising and Stacked Denoising autoencoders](../denoisingautoencoder.html)
 * [Deep autoencoders](../deepautoencoder.html)
