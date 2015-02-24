@@ -74,4 +74,56 @@ public interface OpExecutioner {
     Accumulation execAndReturn(Accumulation op);
 
 
+
+
+    /**
+     * Execute the operation
+     * @param op the operation to execute
+     */
+    Op exec(Op op,int dimension);
+
+    /**
+     * Execute an op with extra arguments
+     * @param op the operation to execute
+     * @param extraArgs the extra arguments
+     */
+    Op exec(Op op, Object[] extraArgs,int dimension);
+
+
+
+    /**
+     * Execute the operation
+     * @param op the operation to execute
+     */
+    INDArray execAndReturn(TransformOp op,int dimension);
+
+    /**
+     * Execute an op with extra arguments
+     * @param op the operation to execute
+     * @param extraArgs the extra arguments
+     */
+    INDArray execAndReturn(TransformOp op,int dimension, Object[] extraArgs);
+
+    /**
+     * Execute and return the result from an accumulation
+     * along a dimension
+     * @param op the operation to execute
+     * @param extraArgs the extra arguments to invoke with
+     * @return the accumulated result
+     */
+    Accumulation execAndReturn(Accumulation op,int dimension,Object[] extraArgs);
+
+
+    /**
+     * Execute and return the result from an accumulation
+     * @param op the operation to execute
+     * @return the accumulated result
+     */
+    Accumulation execAndReturn(Accumulation op,int dimension);
+
+
+
+
+
+
 }

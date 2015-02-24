@@ -129,6 +129,40 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return (Accumulation) exec(op);
     }
 
+    @Override
+    public Op exec(Op op, int dimension) {
+        return exec(op,null,dimension);
+    }
+
+    @Override
+    public Op exec(Op op, Object[] extraArgs, int dimension) {
+        for(int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+            
+        }
+        return null;
+    }
+
+    @Override
+    public INDArray execAndReturn(TransformOp op, int dimension) {
+        return execAndReturn(op,dimension,null);
+    }
+
+    @Override
+    public INDArray execAndReturn(TransformOp op, int dimension, Object[] extraArgs) {
+
+        return null;
+    }
+
+    @Override
+    public Accumulation execAndReturn(Accumulation op, int dimension, Object[] extraArgs) {
+        return null;
+    }
+
+    @Override
+    public Accumulation execAndReturn(Accumulation op, int dimension) {
+        return execAndReturn(op,dimension,null);
+    }
+
 
     //apply a singular op to x and store the result
     private void apply(TransformOp op,int c,int x,Object[] extraArgs) {

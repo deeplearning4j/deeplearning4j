@@ -30,4 +30,12 @@ public interface TransformOp extends Op {
      */
     INDArray z();
 
+    /**
+     * The derivative operation for this op
+     * @return the derivative operation
+     * for this op's inputs
+     */
+    TransformOp derivative();
+
+
 }

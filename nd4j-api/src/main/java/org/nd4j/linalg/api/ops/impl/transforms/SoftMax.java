@@ -19,6 +19,8 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
@@ -33,7 +35,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 
-public class SoftMax extends Exp {
+public class SoftMax extends BaseTransformOp {
     private double sum = Double.NaN;
     private double max = Double.NaN;
 
@@ -51,6 +53,11 @@ public class SoftMax extends Exp {
 
     public SoftMax(INDArray x) {
         super(x);
+    }
+
+    @Override
+    public String name() {
+        return "softmax";
     }
 
     @Override
@@ -101,6 +108,10 @@ public class SoftMax extends Exp {
         return ComplexUtil.exp(origin.sub(max)).divi(sum);
     }
 
+    @Override
+    public TransformOp derivative() {
+        return new SoftMaxDerivative(x,y,z,n);
+    }
 
     private void initFromArgs(Object[] extraArgs) {
         if(extraArgs.length < 2)

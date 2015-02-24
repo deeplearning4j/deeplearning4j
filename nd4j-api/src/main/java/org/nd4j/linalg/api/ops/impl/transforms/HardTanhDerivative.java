@@ -20,28 +20,28 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * Hard tanh elementwise function
  * @author Adam Gibson
  */
-public class HardTanh extends BaseTransformOp {
+public class HardTanhDerivative extends BaseTransformOp {
 
-    public HardTanh(INDArray x, INDArray z) {
+    public HardTanhDerivative(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public HardTanh(INDArray x, INDArray z, int n) {
+    public HardTanhDerivative(INDArray x, INDArray z, int n) {
         super(x, z, n);
     }
 
-    public HardTanh(INDArray x, INDArray y, INDArray z, int n) {
+    public HardTanhDerivative(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
     }
 
-    public HardTanh(INDArray x) {
+    public HardTanhDerivative(INDArray x) {
         super(x);
     }
 
@@ -52,17 +52,35 @@ public class HardTanh extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
-        return ComplexUtil.hardTanh(origin);
+        if (origin.realComponent().doubleValue() < -1)
+            origin.set(-1, origin.imaginaryComponent().doubleValue());
+        else if (origin.realComponent().doubleValue() > 1)
+            origin.set(1, origin.imaginaryComponent().doubleValue());
+        else
+            origin = Nd4j.createDouble(1, 0).subi(ComplexUtil.pow(ComplexUtil.tanh(origin), 2));
+        return origin;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
-        return ComplexUtil.hardTanh(origin);
+        if (origin.realComponent().doubleValue() < -1)
+            origin.set(-1, origin.imaginaryComponent().doubleValue());
+        else if (origin.realComponent().doubleValue() > 1)
+            origin.set(1, origin.imaginaryComponent().doubleValue());
+        else
+            origin = Nd4j.createDouble(1, 0).subi(ComplexUtil.pow(ComplexUtil.tanh(origin), 2));
+        return origin;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
-        return ComplexUtil.hardTanh(origin);
+        if (origin.realComponent().doubleValue() < -1)
+            origin.set(-1, origin.imaginaryComponent().doubleValue());
+        else if (origin.realComponent().doubleValue() > 1)
+            origin.set(1, origin.imaginaryComponent().doubleValue());
+        else
+            origin = Nd4j.createDouble(1, 0).subi(ComplexUtil.pow(ComplexUtil.tanh(origin), 2));
+        return origin;
     }
 
     @Override
@@ -87,14 +105,16 @@ public class HardTanh extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
-        return ComplexUtil.hardTanh(origin);
+        if (origin.realComponent().doubleValue() < -1)
+            origin.set(-1, origin.imaginaryComponent().doubleValue());
+        else if (origin.realComponent().doubleValue() > 1)
+            origin.set(1, origin.imaginaryComponent().doubleValue());
+        else
+            origin = Nd4j.createDouble(1, 0).subi(ComplexUtil.pow(ComplexUtil.tanh(origin), 2));
+        return origin;
     }
 
 
-    @Override
-    public TransformOp derivative() {
-        return new HardTanhDerivative(x,y,z,n);
-    }
 
     private float hardTanh(float num) {
         return (float) hardTanh((double) num);
@@ -102,7 +122,7 @@ public class HardTanh extends BaseTransformOp {
 
     private double hardTanh(double num) {
         double tanh = FastMath.tanh(num);
-        return tanh < -1.0 ? -1.0 : tanh > 1.0 ? 1.0 : tanh;
+        return tanh < -1.0 ? -1.0 : 1 - num > 1.0 ? 1.0 : 1 - num;
     }
 
 }

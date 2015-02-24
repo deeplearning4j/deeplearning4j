@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.Ones;
 
 /**
  * A base op for basic getters and setters
@@ -63,6 +64,11 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
     @Override
     public INDArray z() {
         return z;
+    }
+
+    @Override
+    public TransformOp derivative() {
+        return new Ones(x,y,z,n);
     }
 
 

@@ -38,6 +38,10 @@ public class CosineSimilarity extends BaseAccumulation {
         super(x);
     }
 
+    public CosineSimilarity(INDArray x, INDArray y) {
+        super(x, y);
+    }
+
     @Override
     public void update(Number result) {
         currentResult = currentResult.doubleValue() + result.doubleValue();

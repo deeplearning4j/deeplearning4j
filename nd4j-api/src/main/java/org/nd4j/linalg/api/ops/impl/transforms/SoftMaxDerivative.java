@@ -14,95 +14,87 @@
  *    limitations under the License.
  */
 
-package org.nd4j.linalg.api.ops.impl.accum.distances;
+package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Euclidean distance distance
+ * Softmax derivative
  *
  * @author Adam Gibson
  */
-public class EuclideanDistance extends BaseAccumulation {
-
-    public EuclideanDistance(INDArray x, INDArray y, int n) {
-        super(x, y, n);
+public class SoftMaxDerivative extends SoftMax {
+    public SoftMaxDerivative(INDArray x, INDArray z) {
+        super(x, z);
     }
 
-    public EuclideanDistance(INDArray x) {
+    public SoftMaxDerivative(INDArray x, INDArray z, int n) {
+        super(x, z, n);
+    }
+
+    public SoftMaxDerivative(INDArray x, INDArray y, INDArray z, int n) {
+        super(x, y, z, n);
+    }
+
+    public SoftMaxDerivative(INDArray x) {
         super(x);
     }
 
-    public EuclideanDistance(INDArray x, INDArray y) {
-        super(x, y);
-    }
-
-    @Override
-    public void update(Number result) {
-        currentResult = currentResult.doubleValue() + result.doubleValue();
-    }
-
-    @Override
-    public void update(IComplexNumber result) {
-         currentComplexResult.addi(result);
-    }
-
-    @Override
-    public Number zero() {
-        return 0.0;
-    }
-
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0, 0.0);
-    }
-
-    @Override
-    public String name() {
-        return "euclidean";
-    }
-
-
     @Override
     public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
-        return origin.sub(other);
+        IComplexNumber softmax =  super.op(origin, other, extraArgs);
+        return softmax.mul(Nd4j.createComplexNumber(1, 1).sub(softmax));
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
-        return origin.sub(other);
+        IComplexNumber softmax =  super.op(origin, other, extraArgs);
+        return softmax.mul(Nd4j.createComplexNumber(1, 1).sub(softmax));
+
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
-        return origin.sub(other);
+        IComplexNumber softmax =  super.op(origin, other, extraArgs);
+        return softmax.mul(Nd4j.createComplexNumber(1, 1).sub(softmax));
+
     }
 
     @Override
     public float op(float origin, float other, Object[] extraArgs) {
-        return origin - other;
+        float softmax = super.op(origin, other, extraArgs);
+        return softmax * (1 - softmax);
     }
 
     @Override
     public double op(double origin, double other, Object[] extraArgs) {
-        return origin - other;
+        double softmax =  super.op(origin, other, extraArgs);
+        return softmax * (1 - softmax);
     }
 
     @Override
     public double op(double origin, Object[] extraArgs) {
-        return origin;
+        double softmax = super.op(origin, extraArgs);
+        return softmax * (1 - softmax);
     }
 
     @Override
     public float op(float origin, Object[] extraArgs) {
-        return origin;
+        float softmax = super.op(origin, extraArgs);
+        return softmax * (1 - softmax);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
-        return origin;
+        IComplexNumber softmax =  super.op(origin, extraArgs);
+        return softmax.mul(Nd4j.createComplexNumber(1, 1).sub(softmax));
+
+    }
+
+    @Override
+    public String name() {
+        return "softmaxderivative";
     }
 }

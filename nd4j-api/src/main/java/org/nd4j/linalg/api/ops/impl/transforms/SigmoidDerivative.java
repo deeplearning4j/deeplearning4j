@@ -14,95 +14,80 @@
  *    limitations under the License.
  */
 
-package org.nd4j.linalg.api.ops.impl.accum.distances;
+package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Euclidean distance distance
- *
+ * Sigmoid derivative
  * @author Adam Gibson
  */
-public class EuclideanDistance extends BaseAccumulation {
-
-    public EuclideanDistance(INDArray x, INDArray y, int n) {
-        super(x, y, n);
+public class SigmoidDerivative extends BaseTransformOp {
+    public SigmoidDerivative(INDArray x, INDArray z) {
+        super(x, z);
     }
 
-    public EuclideanDistance(INDArray x) {
+    public SigmoidDerivative(INDArray x, INDArray z, int n) {
+        super(x, z, n);
+    }
+
+    public SigmoidDerivative(INDArray x, INDArray y, INDArray z, int n) {
+        super(x, y, z, n);
+    }
+
+    public SigmoidDerivative(INDArray x) {
         super(x);
-    }
-
-    public EuclideanDistance(INDArray x, INDArray y) {
-        super(x, y);
-    }
-
-    @Override
-    public void update(Number result) {
-        currentResult = currentResult.doubleValue() + result.doubleValue();
-    }
-
-    @Override
-    public void update(IComplexNumber result) {
-         currentComplexResult.addi(result);
-    }
-
-    @Override
-    public Number zero() {
-        return 0.0;
-    }
-
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0, 0.0);
     }
 
     @Override
     public String name() {
-        return "euclidean";
+        return "sigmoidderivative";
     }
-
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
-        return origin.sub(other);
+        IComplexNumber oneMinus = Nd4j.createComplexNumber(1,1).subi(origin);
+        return origin.muli(oneMinus);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
-        return origin.sub(other);
+        IComplexNumber oneMinus = Nd4j.createComplexNumber(1,1).subi(origin);
+        return origin.muli(oneMinus);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
-        return origin.sub(other);
+        IComplexNumber oneMinus = Nd4j.createComplexNumber(1,1).subi(origin);
+        return origin.muli(oneMinus);
     }
 
     @Override
     public float op(float origin, float other, Object[] extraArgs) {
-        return origin - other;
+        return origin * (1 - origin);
     }
 
     @Override
     public double op(double origin, double other, Object[] extraArgs) {
-        return origin - other;
+        return origin * (1 - origin);
     }
 
     @Override
     public double op(double origin, Object[] extraArgs) {
-        return origin;
+        return origin * (1 - origin);
     }
 
     @Override
     public float op(float origin, Object[] extraArgs) {
-        return origin;
+        return origin * (1 - origin);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
-        return origin;
+        IComplexNumber oneMinus = Nd4j.createComplexNumber(1,1).subi(origin);
+        return origin.muli(oneMinus);
     }
 }
