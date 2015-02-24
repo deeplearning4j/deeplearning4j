@@ -20,6 +20,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
@@ -122,6 +123,15 @@ public class SoftMax extends BaseTransformOp {
         if(Double.isNaN(sum)) {
             sum = Double.valueOf(extraArgs[1].toString());
         }
+    }
+
+    @Override
+    public Op opForDimension(int index,int dimension) {
+        if(y() != null)
+            return new SoftMax(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+        else
+            return new SoftMax(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+
     }
 
 }

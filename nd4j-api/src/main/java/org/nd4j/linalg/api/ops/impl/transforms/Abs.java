@@ -20,6 +20,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
@@ -66,7 +67,7 @@ public class Abs extends BaseTransformOp {
 
     @Override
     public float op(float origin, float other, Object[] extraArgs) {
-        return (float) FastMath.abs(origin);
+        return  FastMath.abs(origin);
     }
 
     @Override
@@ -87,5 +88,14 @@ public class Abs extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
         return ComplexUtil.abs(origin);
+    }
+
+    @Override
+    public Op opForDimension(int index,int dimension) {
+        if(y() != null)
+            return new Abs(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+        else
+            return new Abs(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+
     }
 }

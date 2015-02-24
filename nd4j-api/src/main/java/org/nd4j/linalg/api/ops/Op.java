@@ -188,4 +188,13 @@ public interface Op {
      * @return the new element
      */
     IComplexNumber op(IComplexNumber origin,Object[] extraArgs);
+
+    /**
+     * A copy of this operation for a particular dimension of the input
+     * @param index the index of the op to iterate over
+     * @param dimension the dimension to ge the input for
+     * @return the operation for that dimension
+     */
+    Op opForDimension(int index,int dimension);
+
 }

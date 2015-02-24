@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.Op;
 
 /**
  * Addition operation
@@ -29,6 +30,13 @@ public class AddOp extends BaseTransformOp {
         super(x, y, z, n);
     }
 
+    public AddOp(INDArray x, INDArray z) {
+        super(x, z);
+    }
+
+    public AddOp(INDArray x, INDArray z, int n) {
+        super(x, z, n);
+    }
 
     public AddOp(INDArray x) {
         super(x);
@@ -117,5 +125,14 @@ public class AddOp extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
         return op(origin);
+    }
+
+    @Override
+    public Op opForDimension(int index,int dimension) {
+        if(y() != null)
+            return new AddOp(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+        else
+            return new AddOp(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+
     }
 }

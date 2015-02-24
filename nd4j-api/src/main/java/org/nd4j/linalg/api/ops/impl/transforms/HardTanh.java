@@ -20,6 +20,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
@@ -103,6 +104,14 @@ public class HardTanh extends BaseTransformOp {
     private double hardTanh(double num) {
         double tanh = FastMath.tanh(num);
         return tanh < -1.0 ? -1.0 : tanh > 1.0 ? 1.0 : tanh;
+    }
+    @Override
+    public Op opForDimension(int index,int dimension) {
+        if(y() != null)
+            return new HardTanh(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+        else
+            return new HardTanh(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+
     }
 
 }

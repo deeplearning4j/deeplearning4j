@@ -136,10 +136,23 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public Op exec(Op op, Object[] extraArgs, int dimension) {
-        for(int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
-            
+       //only accumulate along a particular dimension
+        if(op instanceof Accumulation) {
+            Accumulation a = (Accumulation) op;
+            return exec(a,extraArgs);
         }
-        return null;
+        for(int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+            Op op2 = op.opForDimension(i,dimension);
+            exec(op2,extraArgs);
+            if(op instanceof TransformOp) {
+                TransformOp t = (TransformOp) op;
+                TransformOp t2 = (TransformOp) op2;
+                t.z().vectorAlongDimension(i,dimension).assign(t2.z());
+            }
+
+
+        }
+        return op;
     }
 
     @Override
@@ -149,13 +162,23 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray execAndReturn(TransformOp op, int dimension, Object[] extraArgs) {
+        for(int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+            Op op2 = op.opForDimension(i,dimension);
+            exec(op2,extraArgs);
+            if(op instanceof TransformOp) {
+                TransformOp t =  op;
+                TransformOp t2 = (TransformOp) op2;
+                t.z().vectorAlongDimension(i,dimension).assign(t2.z());
+            }
 
-        return null;
+
+        }
+        return op.z();
     }
 
     @Override
     public Accumulation execAndReturn(Accumulation op, int dimension, Object[] extraArgs) {
-        return null;
+        return execAndReturn(op,extraArgs);
     }
 
     @Override

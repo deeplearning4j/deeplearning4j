@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.Op;
 
 /**
  * Negative function
@@ -84,5 +85,13 @@ public class Negative extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
         return origin.neg();
+    }
+    @Override
+    public Op opForDimension(int index,int dimension) {
+        if(y() != null)
+            return new Negative(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+        else
+            return new Negative(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+
     }
 }

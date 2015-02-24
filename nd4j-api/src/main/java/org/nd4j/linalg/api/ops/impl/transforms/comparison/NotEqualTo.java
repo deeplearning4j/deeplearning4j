@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.comparison;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -33,6 +34,14 @@ public class NotEqualTo extends BaseTransformOp {
 
     public NotEqualTo(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
+    }
+
+    public NotEqualTo(INDArray x, INDArray z) {
+        super(x, z);
+    }
+
+    public NotEqualTo(INDArray x, INDArray z, int n) {
+        super(x, z, n);
     }
 
     @Override
@@ -122,5 +131,13 @@ public class NotEqualTo extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
         return op(origin);
+    }
+    @Override
+    public Op opForDimension(int index,int dimension) {
+        if(y() != null)
+            return new NotEqualTo(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+        else
+            return new NotEqualTo(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+
     }
 }

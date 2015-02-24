@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -111,6 +112,13 @@ public class MaxOut extends BaseTransformOp {
             maxComplex = (IComplexNumber) extraArgs[0];
         }
     }
+    @Override
+    public Op opForDimension(int index,int dimension) {
+        if(y() != null)
+            return new MaxOut(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+        else
+            return new MaxOut(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
 
+    }
 
 }

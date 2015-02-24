@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -104,6 +105,15 @@ public class Sign extends BaseTransformOp {
             return Nd4j.createDouble(-1, 0);
 
         return Nd4j.createDouble(0, 0);
+    }
+
+    @Override
+    public Op opForDimension(int index,int dimension) {
+        if(y() != null)
+            return new Sign(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+        else
+            return new Sign(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),x.length());
+
     }
 
 }
