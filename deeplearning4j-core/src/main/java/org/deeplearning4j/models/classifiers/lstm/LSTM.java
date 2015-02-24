@@ -29,7 +29,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.deeplearning4j.optimize.Solver;
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -105,7 +104,7 @@ public class LSTM extends BaseLayer {
 
 
         for(int t = n -1; t > 0; t--) {
-            if(conf.getActivationFunction().type().equals("tanh")) {
+            if(conf.getActivationFunction().equals("tanh")) {
                 INDArray tanhCt = tanh(c.slice(t));
                 dIFogF.slice(t).put(new NDArrayIndex[]{interval(2 * d,3 * d)},tanhCt.mul(dHout.slice(t)));
                 dC.slice(t).addi(pow(tanhCt,2).rsubi(1).muli(iFogF.slice(t).get(interval(2 * d, 3 * d)).mul(dHout.slice(t))));
@@ -202,7 +201,7 @@ public class LSTM extends BaseLayer {
                 c.slice(t).addi(iFogF.slice(t).get(interval(d,2 * d)).mul(c.getRow(t - 1)));
 
 
-            if(conf.getActivationFunction().type().equals("tanh"))
+            if(conf.getActivationFunction().equals("tanh"))
                 hOut.slice(t).assign(iFogF.slice(t).get(interval(2 * d,3 * d)).mul(tanh(c.getRow(t))));
 
             else
@@ -447,14 +446,14 @@ public class LSTM extends BaseLayer {
 
     @Override
     public double score() {
-        INDArray forward = Activations.softMaxRows().apply(forward(xi, xs));
+        INDArray forward =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", forward(xi,xs)).derivative(), 1);
         return LossFunctions.score(xs,conf.getLossFunction(),forward,conf.getL2(),conf.isUseRegularization());
         //return -log(forward.sum(Integer.MAX_VALUE)).getDouble(0);
     }
 
     @Override
     public INDArray transform(INDArray data) {
-        return Activations.softMaxRows().apply(forward(xi,xs));
+        return  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", forward(xi,xs)).derivative(), 1);
     }
 
 
@@ -513,7 +512,7 @@ public class LSTM extends BaseLayer {
     @Override
     public Gradient gradient() {
         INDArray forward = forward(xi,xs);
-        INDArray probas = Activations.softMaxRows().applyDerivative(forward);
+        INDArray probas = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",forward).derivative(),1);
         return backward(probas);
     }
 

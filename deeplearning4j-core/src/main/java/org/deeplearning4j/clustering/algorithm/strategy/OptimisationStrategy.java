@@ -21,20 +21,20 @@ import org.deeplearning4j.clustering.algorithm.condition.ConvergenceCondition;
 import org.deeplearning4j.clustering.algorithm.condition.FixedIterationCountCondition;
 import org.deeplearning4j.clustering.algorithm.iteration.IterationHistory;
 import org.deeplearning4j.clustering.algorithm.optimisation.ClusteringOptimization;
+
 import org.deeplearning4j.clustering.algorithm.optimisation.ClusteringOptimizationType;
-import org.nd4j.linalg.distancefunction.DistanceFunction;
 
 public class OptimisationStrategy extends BaseClusteringStrategy {
 	public static int									defaultIterationCount	= 100;
 
-	private ClusteringOptimization						clusteringOptimisation;
-	private ClusteringAlgorithmCondition				clusteringOptimisationApplicationCondition;
+	private ClusteringOptimization	clusteringOptimisation;
+	private ClusteringAlgorithmCondition clusteringOptimisationApplicationCondition;
 
-	protected OptimisationStrategy(int initialClusterCount, Class<? extends DistanceFunction> distanceFunction) {
+	protected OptimisationStrategy(int initialClusterCount, String distanceFunction) {
 		super(ClusteringStrategyType.OPTIMIZATION, initialClusterCount, distanceFunction, false);
 	}
 
-	public static OptimisationStrategy setup(int initialClusterCount, Class<? extends DistanceFunction> distanceFunction) {
+	public static OptimisationStrategy setup(int initialClusterCount,String distanceFunction) {
 		return new OptimisationStrategy(initialClusterCount, distanceFunction);
 	}
 	

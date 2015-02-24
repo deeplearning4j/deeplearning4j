@@ -18,7 +18,7 @@ package org.deeplearning4j.clustering.algorithm.strategy;
 
 import org.deeplearning4j.clustering.algorithm.condition.ClusteringAlgorithmCondition;
 import org.deeplearning4j.clustering.algorithm.iteration.IterationHistory;
-import org.nd4j.linalg.distancefunction.DistanceFunction;
+import org.nd4j.linalg.api.ops.Accumulation;
 
 public interface ClusteringStrategy {
 
@@ -27,7 +27,7 @@ public interface ClusteringStrategy {
 	
 	Integer getInitialClusterCount();
 	
-	Class<? extends DistanceFunction> getDistanceFunction();
+	String getDistanceFunction();
 
 	boolean isAllowEmptyClusters();
 

@@ -20,7 +20,6 @@ package org.deeplearning4j.nn.weights;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.distributions.Distributions;
-import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -119,8 +118,7 @@ public class WeightInitUtil {
    * @return a matrix of the specified dimensions with the specified
    * distribution based on the initialization scheme
    */
-  public static INDArray initWeights(int nIn, int nOut, WeightInit initScheme,
-                                     ActivationFunction act, RealDistribution dist) {
+  public static INDArray initWeights(int nIn, int nOut, WeightInit initScheme, RealDistribution dist) {
     return initWeights(new int[]{nIn, nOut}, initScheme, dist);
   }
 

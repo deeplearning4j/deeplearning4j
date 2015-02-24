@@ -61,7 +61,6 @@ public class DefaultParamInitializer implements ParamInitializer {
                 conf.getnIn(),
                 conf.getnOut(),
                 conf.getWeightInit(),
-                conf.getActivationFunction(),
                 conf.getDist());
         return W;
     }

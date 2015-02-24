@@ -26,7 +26,6 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -62,10 +61,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         super(conf, input);
     }
 
-    @Override
-    public void update(Gradient gradient) {
-        setParams(params().addi(gradient.gradient(conf.variables())));
-    }
 
     /**
      * Objective function:  the specified objective
@@ -126,9 +121,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             case MCXENT:
                 INDArray preOut = preOutput(input);
                 //input activation
-                INDArray p_y_given_x = Activations.softMaxRows().apply(preOut);
+                INDArray pYGivenX = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",preOut),0);
                 //difference of outputs
-                INDArray dy = labels.sub(p_y_given_x);
+                INDArray dy = labels.sub(pYGivenX);
                 return input.transpose().mmul(dy);
 
             case XENT:
@@ -331,7 +326,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
         this.input = x;
         INDArray preOutput = preOutput(x);
-        INDArray ret = conf.getActivationFunction().apply(preOutput);
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preOutput), 0);
         applyDropOutIfNecessary(ret);
         return ret;
 
