@@ -36,7 +36,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.junit.Test;
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -74,7 +73,7 @@ public class MultiLayerTest {
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 3) {
                             builder.layerFactory(new DefaultLayerFactory(OutputLayer.class));
-                            builder.activationFunction(Activations.softMaxRows());
+                            builder.activationFunction("softmax");
                             builder.lossFunction(LossFunctions.LossFunction.MCXENT);
 
                         }
@@ -92,14 +91,14 @@ public class MultiLayerTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
-                .activationFunction(Activations.tanh())
+                .activationFunction("tanh")
                 .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
                 .list(3).hiddenLayerSizes(new int[]{3, 2}).override(new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 2) {
                             builder.layerFactory(new DefaultLayerFactory(OutputLayer.class));
-                            builder.activationFunction(Activations.softMaxRows());
+                            builder.activationFunction("softmax");
                             builder.lossFunction(LossFunctions.LossFunction.MCXENT);
 
                         }

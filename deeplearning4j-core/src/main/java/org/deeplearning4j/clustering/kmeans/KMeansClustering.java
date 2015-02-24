@@ -19,7 +19,7 @@ package org.deeplearning4j.clustering.kmeans;
 import org.deeplearning4j.clustering.algorithm.BaseClusteringAlgorithm;
 import org.deeplearning4j.clustering.algorithm.strategy.ClusteringStrategy;
 import org.deeplearning4j.clustering.algorithm.strategy.FixedClusterCountStrategy;
-import org.nd4j.linalg.distancefunction.DistanceFunction;
+
 
 /**
  * 
@@ -38,13 +38,13 @@ public class KMeansClustering extends BaseClusteringAlgorithm {
 
 
 
-	public static KMeansClustering setup(int clusterCount, int maxIterationCount, Class<? extends DistanceFunction> distanceFunction) {
+	public static KMeansClustering setup(int clusterCount, int maxIterationCount,String distanceFunction) {
 		ClusteringStrategy clusteringStrategy = FixedClusterCountStrategy.setup(clusterCount, distanceFunction);
 		clusteringStrategy.endWhenIterationCountEquals(maxIterationCount);
 		return new KMeansClustering(clusteringStrategy);
 	}
 
-	public static KMeansClustering setup(int clusterCount, double minDistributionVariationRate, Class<? extends DistanceFunction> distanceFunction, boolean allowEmptyClusters) {
+	public static KMeansClustering setup(int clusterCount, double minDistributionVariationRate, String distanceFunction, boolean allowEmptyClusters) {
 		ClusteringStrategy clusteringStrategy = FixedClusterCountStrategy.setup(clusterCount, distanceFunction);
 		clusteringStrategy.endWhenDistributionVariationRateLessThan(minDistributionVariationRate);
 		return new KMeansClustering(clusteringStrategy);

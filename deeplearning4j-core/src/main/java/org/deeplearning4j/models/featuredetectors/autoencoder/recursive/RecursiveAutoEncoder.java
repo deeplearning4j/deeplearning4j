@@ -63,12 +63,12 @@ public class RecursiveAutoEncoder extends BaseLayer {
 
     @Override
     public INDArray transform(INDArray data) {
-        return conf.getActivationFunction().apply(data.mmul(params.get(RecursiveParamInitializer.W)).addiRowVector(params.get(RecursiveParamInitializer.C)));
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), data.mmul(params.get(RecursiveParamInitializer.W)).addiRowVector(params.get(RecursiveParamInitializer.C))));
     }
 
 
     public INDArray decode(INDArray input) {
-        return conf.getActivationFunction().apply(input.mmul(params.get(RecursiveParamInitializer.U).addiRowVector(params.get(RecursiveParamInitializer.BIAS))));
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input.mmul(params.get(RecursiveParamInitializer.U).addiRowVector(params.get(RecursiveParamInitializer.BIAS)))));
     }
 
 
