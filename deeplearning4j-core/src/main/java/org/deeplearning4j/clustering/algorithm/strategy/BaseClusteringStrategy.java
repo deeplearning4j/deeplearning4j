@@ -19,20 +19,20 @@ package org.deeplearning4j.clustering.algorithm.strategy;
 import org.deeplearning4j.clustering.algorithm.condition.ClusteringAlgorithmCondition;
 import org.deeplearning4j.clustering.algorithm.condition.ConvergenceCondition;
 import org.deeplearning4j.clustering.algorithm.condition.FixedIterationCountCondition;
-import org.nd4j.linalg.distancefunction.DistanceFunction;
+import org.nd4j.linalg.api.ops.Accumulation;
 
 public abstract class BaseClusteringStrategy implements ClusteringStrategy {
 
-	protected ClusteringStrategyType			type;
-	protected Integer							initialClusterCount;
-	protected ClusteringAlgorithmCondition		optimizationPhaseCondition;
-	protected ClusteringAlgorithmCondition		terminationCondition;
+	protected ClusteringStrategyType type;
+	protected Integer initialClusterCount;
+	protected ClusteringAlgorithmCondition optimizationPhaseCondition;
+	protected ClusteringAlgorithmCondition terminationCondition;
 
-	protected Class<? extends DistanceFunction>	distanceFunction;
+	protected String	distanceFunction;
 
 	protected boolean							allowEmptyClusters;
 
-	protected BaseClusteringStrategy(ClusteringStrategyType type, Integer initialClusterCount, Class<? extends DistanceFunction> distanceFunction,
+	protected BaseClusteringStrategy(ClusteringStrategyType type, Integer initialClusterCount, String distanceFunction,
 			boolean allowEmptyClusters) {
 		super();
 		this.type = type;
@@ -63,11 +63,11 @@ public abstract class BaseClusteringStrategy implements ClusteringStrategy {
 		this.initialClusterCount = clusterCount;
 	}
 
-	public Class<? extends DistanceFunction> getDistanceFunction() {
+	public String getDistanceFunction() {
 		return distanceFunction;
 	}
 
-	public void setDistanceFunction(Class<? extends DistanceFunction> distanceFunction) {
+	public void setDistanceFunction(String distanceFunction) {
 		this.distanceFunction = distanceFunction;
 	}
 

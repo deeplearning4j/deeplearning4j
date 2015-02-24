@@ -28,7 +28,6 @@ import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
-import org.nd4j.linalg.ops.reduceops.Ops.DimensionOp;
 
 public class Point implements INDArray {
 
@@ -413,9 +412,6 @@ public class Point implements INDArray {
 		array.sliceVectors(list);
 	}
 
-	public INDArray reduce(DimensionOp op, int dimension) {
-		return array.reduce(op, dimension);
-	}
 
 	public INDArray putSlice(int slice, INDArray put) {
 		return array.putSlice(slice, put);

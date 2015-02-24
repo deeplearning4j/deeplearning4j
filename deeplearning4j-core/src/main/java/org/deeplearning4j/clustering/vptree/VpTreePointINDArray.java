@@ -24,8 +24,7 @@ import com.google.common.base.Preconditions;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
-import org.nd4j.linalg.distancefunction.DistanceFunction;
-import org.nd4j.linalg.distancefunction.EuclideanDistance;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * VPTree point for ndarrays
@@ -34,7 +33,6 @@ import org.nd4j.linalg.distancefunction.EuclideanDistance;
  */
 public class VpTreePointINDArray implements VpTreePoint<VpTreePointINDArray> {
   private INDArray data;
-  private DistanceFunction distanceFunction;
   private int index = 0;
 
 
@@ -47,7 +45,6 @@ public class VpTreePointINDArray implements VpTreePoint<VpTreePointINDArray> {
     if (!data.isVector())
       throw new IllegalArgumentException("Data should only be a vector");
     this.data = data;
-    distanceFunction = new EuclideanDistance(data);
     this.index = index;
   }
 
@@ -61,13 +58,12 @@ public class VpTreePointINDArray implements VpTreePoint<VpTreePointINDArray> {
     if (!data.isVector())
       throw new IllegalArgumentException("Data should only be a vector");
     this.data = data;
-    distanceFunction = new EuclideanDistance(data);
   }
 
   @Override
   public double distance(VpTreePointINDArray p) {
     Preconditions.checkArgument(p != null);
-    return distanceFunction.apply(p.data);
+    return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createAccum("euclidean",data,p.data)).currentResult().doubleValue();
   }
 
   @Override
@@ -104,7 +100,6 @@ public class VpTreePointINDArray implements VpTreePoint<VpTreePointINDArray> {
   @Override
   public int hashCode() {
     int result = data != null ? data.hashCode() : 0;
-    result = 31 * result + (distanceFunction != null ? distanceFunction.hashCode() : 0);
     return result;
   }
 
@@ -121,13 +116,6 @@ public class VpTreePointINDArray implements VpTreePoint<VpTreePointINDArray> {
     this.data = data;
   }
 
-  public DistanceFunction getDistanceFunction() {
-    return distanceFunction;
-  }
-
-  public void setDistanceFunction(DistanceFunction distanceFunction) {
-    this.distanceFunction = distanceFunction;
-  }
 
   public int getIndex() {
     return index;

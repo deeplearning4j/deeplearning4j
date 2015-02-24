@@ -28,7 +28,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.job.Job;
 import org.junit.Test;
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -50,7 +49,7 @@ public class MultiLayerWorkPerformerTests extends NeuralNetWorkPerformerTest {
 
                         if (i == 1) {
                             builder.weightInit(WeightInit.ZERO);
-                            builder.activationFunction(Activations.softMaxRows());
+                            builder.activationFunction("softmax");
                             builder.lossFunction(LossFunctions.LossFunction.MCXENT);
 
                         }

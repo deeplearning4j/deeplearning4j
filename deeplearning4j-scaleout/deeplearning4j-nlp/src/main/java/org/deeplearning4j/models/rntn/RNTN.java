@@ -34,8 +34,6 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.nd4j.linalg.api.activation.ActivationFunction;
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -81,8 +79,8 @@ public class RNTN implements Layer {
     private boolean randomFeatureVectors = true;
     private double scalingForInit = 1.0f;
     private boolean lowerCasefeatureNames;
-    protected ActivationFunction activationFunction = Activations.tanh();
-    protected ActivationFunction outputActivation = Activations.softmax();
+    protected String activationFunction = "tanh";
+    protected String outputActivation = "softmax";
     protected AdaGrad paramAdaGrad;
     protected int numParameters = -1;
     /** Regularization cost for the applyTransformToOrigin matrix  */
@@ -172,7 +170,7 @@ public class RNTN implements Layer {
                  boolean randomFeatureVectors,
                  double scalingForInit,
                  boolean lowerCasefeatureNames,
-                 ActivationFunction activationFunction,
+                 String activationFunction,
                  int adagradResetFrequency,
                  double regTransformINDArray,
                  WeightLookupTable featureVectors,
@@ -634,7 +632,7 @@ public class RNTN implements Layer {
             word = getVocabWord(word);
 
 
-            INDArray currentVectorDerivative = activationFunction.apply(currentVector);
+            INDArray currentVectorDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunction,currentVector));
             INDArray deltaFromClass = getUnaryClassification(category).transpose().mmul(deltaClass);
             deltaFromClass = deltaFromClass.get(interval(0, numHidden),interval(0, 1)).mul(currentVectorDerivative);
             INDArray deltaFull = deltaFromClass.add(deltaUp);
@@ -652,7 +650,7 @@ public class RNTN implements Layer {
                 binaryCD.put(leftCategory, rightCategory, binaryCD.get(leftCategory, rightCategory).add(localCD));
             }
 
-            INDArray currentVectorDerivative = activationFunction.applyDerivative(currentVector);
+            INDArray currentVectorDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunction, currentVector));
             INDArray deltaFromClass = getBinaryClassification(leftCategory, rightCategory).transpose().mmul(deltaClass);
 
             INDArray mult = deltaFromClass.get(interval(0, numHidden),interval(0, 1));
@@ -679,8 +677,8 @@ public class RNTN implements Layer {
                 deltaDown = getBinaryTransform(leftCategory, rightCategory).transpose().mmul(deltaFull);
             }
 
-            INDArray leftDerivative = activationFunction.apply(leftVector);
-            INDArray rightDerivative = activationFunction.apply(rightVector);
+            INDArray leftDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunction, leftVector));
+            INDArray rightDerivative =Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunction, rightVector));
             INDArray leftDeltaDown = deltaDown.get(interval(0, deltaFull.rows()),interval( 0, 1));
             INDArray rightDeltaDown = deltaDown.get(interval(deltaFull.rows(), deltaFull.rows() * 2),interval( 0, 1));
             backpropDerivativesAndError(tree.children().get(0), binaryTD, binaryCD, binaryINDArrayTD, unaryCD, wordVectorD, leftDerivative.mul(leftDeltaDown));
@@ -738,7 +736,7 @@ public class RNTN implements Layer {
             }
 
 
-            nodeVector = activationFunction.apply(wordVector);
+            nodeVector = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunction, wordVector));
         } else if (tree.children().size() == 1) {
             throw new AssertionError("Non-preterminal nodes of size 1 should have already been collapsed");
         } else if (tree.children().size() == 2) {
@@ -761,11 +759,12 @@ public class RNTN implements Layer {
                 INDArray doubleT = getBinaryINDArray(leftCategory, rightCategory);
                 INDArray INDArrayIn = Nd4j.concat(0,leftVector, rightVector);
                 INDArray INDArrayOut = Nd4j.bilinearProducts(doubleT,INDArrayIn);
-                nodeVector = activationFunction.apply(W.mmul(childrenVector).add(INDArrayOut));
+                nodeVector = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunction, W.mmul(childrenVector).addi(INDArrayOut)));
+
             }
 
             else
-                nodeVector = activationFunction.apply(W.mmul(childrenVector));
+                nodeVector = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunction, W.mmul(childrenVector)));
 
         } else {
             throw new AssertionError("Tree not correctly binarized");
@@ -775,7 +774,7 @@ public class RNTN implements Layer {
         if(inputWithBias.rows() != classification.columns())
             inputWithBias = inputWithBias.transpose();
         INDArray preAct = classification.mmul(inputWithBias);
-        INDArray predictions = outputActivation.apply(preAct);
+        INDArray predictions = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(outputActivation, preAct));
 
         tree.setPrediction(predictions);
         tree.setVector(nodeVector);
@@ -1189,8 +1188,8 @@ public class RNTN implements Layer {
         private boolean randomFeatureVectors;
         private double scalingForInit = 1e-3f;
         private boolean lowerCasefeatureNames;
-        private ActivationFunction activationFunction = Activations.sigmoid(),
-                outputActivationFunction = Activations.softmax();
+        private String activationFunction = "sigmoid",
+                outputActivationFunction = "softmax";
         private int adagradResetFrequency;
         private double regTransformINDArray;
         private WeightLookupTable featureVectors;
@@ -1212,7 +1211,7 @@ public class RNTN implements Layer {
 
 
 
-        public Builder withOutputActivation(ActivationFunction outputActivationFunction) {
+        public Builder withOutputActivation(String outputActivationFunction) {
             this.outputActivationFunction = outputActivationFunction;
             return this;
         }
@@ -1262,7 +1261,7 @@ public class RNTN implements Layer {
             return this;
         }
 
-        public Builder setActivationFunction(ActivationFunction activationFunction) {
+        public Builder setActivationFunction(String activationFunction) {
             this.activationFunction = activationFunction;
             return this;
         }

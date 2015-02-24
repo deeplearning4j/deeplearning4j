@@ -25,7 +25,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
@@ -49,7 +48,7 @@ public class OutputLayerTest {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
-                .activationFunction(Activations.softMaxRows())
+                .activationFunction("softmax")
                 .iterations(100).weightInit(WeightInit.ZERO)
                 .rng(gen).regularization(true).l2(2e-4).momentum(0.9)
                 .learningRate(1e-1).nIn(4).nOut(3).build();

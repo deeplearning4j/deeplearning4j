@@ -54,16 +54,15 @@ import org.slf4j.LoggerFactory;
  */
 public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializable {
 
-	private static final long			serialVersionUID	= 338231277453149972L;
-	private static Logger				log					= LoggerFactory.getLogger(BaseClusteringAlgorithm.class);
+	private static final long serialVersionUID	= 338231277453149972L;
+	private static Logger log = LoggerFactory.getLogger(BaseClusteringAlgorithm.class);
 
-	private ClusteringStrategy			clusteringStrategy;
-	private IterationHistory			iterationHistory;
-	private int							currentIteration	= 0;
-	private ClusterSet					clusterSet;
-	private List<Point>					initialPoints;
-
-	private transient ExecutorService	exec;
+	private ClusteringStrategy clusteringStrategy;
+	private IterationHistory iterationHistory;
+	private int	currentIteration = 0;
+	private ClusterSet	clusterSet;
+	private List<Point>	initialPoints;
+    private transient ExecutorService exec;
 
 	protected BaseClusteringAlgorithm(ClusteringStrategy clusteringStrategy) {
 		this.clusteringStrategy = clusteringStrategy;

@@ -25,19 +25,20 @@ import java.util.Map;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.distancefunction.DistanceFunction;
+import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.factory.Nd4j;
 
 public class ClusterSet {
 
-	private Class<? extends DistanceFunction>	distanceFunction;
-	private List<Cluster>						clusters;
-	private Map<String, String>					pointDistribution;
+	private String	distanceFunction;
+	private List<Cluster> clusters;
+	private Map<String, String>	pointDistribution;
 
 	public ClusterSet() {
 		this(null);
 	}
 
-	public ClusterSet(Class<? extends DistanceFunction> distanceFunction) {
+	public ClusterSet(String distanceFunction) {
 		this.distanceFunction = distanceFunction;
 		this.clusters = Collections.synchronizedList(new ArrayList<Cluster>());
 		this.pointDistribution = Collections.synchronizedMap(new HashMap<String, String>());
@@ -106,14 +107,8 @@ public class ClusterSet {
 	}
 
 	public double getDistance(Point m1, Point m2) {
-		DistanceFunction function;
-		try {
-			function = distanceFunction.getConstructor(INDArray.class).newInstance(m1.getArray());
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		return function.apply(m2);
-	}
+		return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createAccum(distanceFunction,m1.getArray(),m2.getArray())).currentResult().doubleValue();
+    }
 
 	public double getDistanceFromNearestCluster(Point point) {
 		return nearestCluster(point).getSecond();
@@ -172,11 +167,11 @@ public class ClusterSet {
 		this.clusters = clusters;
 	}
 
-	public Class<? extends DistanceFunction> getDistanceFunction() {
+	public String getAccumulation() {
 		return distanceFunction;
 	}
 
-	public void setDistanceFunction(Class<? extends DistanceFunction> distanceFunction) {
+	public void setAccumulation(String distanceFunction) {
 		this.distanceFunction = distanceFunction;
 	}
 
