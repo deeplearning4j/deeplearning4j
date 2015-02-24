@@ -37,5 +37,4 @@ public interface TransformOp extends Op {
      */
     TransformOp derivative();
 
-
 }

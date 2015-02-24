@@ -19,7 +19,6 @@ package org.nd4j.linalg.api.ndarray;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
@@ -35,7 +34,7 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * Resets the lienar view
+     * Resets the linear view
      */
     void resetLinearView();
 
@@ -121,8 +120,19 @@ public interface INDArray extends Serializable {
      */
     public INDArray putScalar(int i, double value);
 
+    /**
+     * Insert a scalar float at the specified index
+     * @param i
+     * @param value
+     * @return
+     */
     INDArray putScalar(int i, float value);
-
+    /**
+     * Insert a scalar int at the specified index
+     * @param i
+     * @param value
+     * @return
+     */
     INDArray putScalar(int i, int value);
 
     /**

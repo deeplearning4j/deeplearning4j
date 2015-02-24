@@ -103,6 +103,11 @@ public abstract class NDArrayTests {
         ascending.data().destroy();
     }
 
+    @Test
+    public void testVariance() {
+        INDArray ones = Nd4j.ones(5);
+        ones.var(0);
+    }
 
     @Test
     public void testAddVectorWithOffset() {

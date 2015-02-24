@@ -22,6 +22,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.impl.accum.Max;
+import org.nd4j.linalg.api.ops.impl.accum.Mean;
+import org.nd4j.linalg.api.ops.impl.accum.Sum;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
@@ -63,49 +67,41 @@ public class SoftMax extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
-        initFromArgs(extraArgs);
         return ComplexUtil.exp(origin.sub(max)).divi(sum);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
-        initFromArgs(extraArgs);
         return ComplexUtil.exp(origin.sub(max)).divi(sum);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
-        initFromArgs(extraArgs);
         return ComplexUtil.exp(origin.sub(max)).divi(sum);
     }
 
     @Override
     public float op(float origin, float other, Object[] extraArgs) {
-        initFromArgs(extraArgs);
         return (float) ((FastMath.exp(origin - max)) / sum);
     }
 
     @Override
     public double op(double origin, double other, Object[] extraArgs) {
-        initFromArgs(extraArgs);
         return ((FastMath.exp(origin - max)) / sum);
     }
 
     @Override
     public double op(double origin, Object[] extraArgs) {
-        initFromArgs(extraArgs);
         return ((FastMath.exp(origin - max)) / sum);
     }
 
     @Override
     public float op(float origin, Object[] extraArgs) {
-        initFromArgs(extraArgs);
         return (float) ((FastMath.exp(origin - max)) / sum);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
-        initFromArgs(extraArgs);
         return ComplexUtil.exp(origin.sub(max)).divi(sum);
     }
 
@@ -114,16 +110,7 @@ public class SoftMax extends BaseTransformOp {
         return new SoftMaxDerivative(x,y,z,n);
     }
 
-    private void initFromArgs(Object[] extraArgs) {
-        if(extraArgs.length < 2)
-            throw new IllegalArgumentException("Please specify the max and the sum for this vector");
-        if(Double.isNaN(max)) {
-            max = Double.valueOf(extraArgs[0].toString());
-        }
-        if(Double.isNaN(sum)) {
-            sum = Double.valueOf(extraArgs[1].toString());
-        }
-    }
+
 
     @Override
     public Op opForDimension(int index,int dimension) {
@@ -134,4 +121,11 @@ public class SoftMax extends BaseTransformOp {
 
     }
 
+    @Override
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        this.max = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResult().doubleValue();
+        this.sum = Nd4j.getExecutioner().execAndReturn(new Sum(x)).currentResult().doubleValue();
+
+    }
 }

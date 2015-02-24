@@ -71,5 +71,8 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         return new Ones(x,y,z,n);
     }
 
-
+    @Override
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        //default is no-op
+    }
 }

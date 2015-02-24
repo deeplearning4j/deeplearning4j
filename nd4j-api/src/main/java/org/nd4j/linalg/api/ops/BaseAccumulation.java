@@ -123,5 +123,8 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         return otherAccum;
     }
 
-
+    @Override
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        //no-op
+    }
 }

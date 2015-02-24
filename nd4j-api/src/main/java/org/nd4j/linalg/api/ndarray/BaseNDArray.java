@@ -592,7 +592,7 @@ public abstract class BaseNDArray implements INDArray {
                 putScalar(i, s);
             }
         } else if (dimension == Integer.MAX_VALUE || dimension == shape.length - 1) {
-            INDArray flattened = ravel().dup();
+            INDArray flattened = ravel();
             double prevVal = flattened.getDouble(0);
             for (int i = 1; i < flattened.length(); i++) {
                 double d = prevVal + flattened.getDouble(i);

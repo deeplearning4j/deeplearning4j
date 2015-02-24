@@ -95,49 +95,41 @@ public class Variance extends BaseAccumulation {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
-        this.mean = Double.valueOf(extraArgs[0].toString());
         return super.op(origin, other, extraArgs);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
-        this.mean = Double.valueOf(extraArgs[0].toString());
         return super.op(origin, other, extraArgs);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
-        this.mean = Double.valueOf(extraArgs[0].toString());
         return super.op(origin, other, extraArgs);
     }
 
     @Override
     public float op(float origin, float other, Object[] extraArgs) {
-        this.mean = Double.valueOf(extraArgs[0].toString());
         return super.op(origin, other, extraArgs);
     }
 
     @Override
     public double op(double origin, double other, Object[] extraArgs) {
-        this.mean = Double.valueOf(extraArgs[0].toString());
         return super.op(origin, other, extraArgs);
     }
 
     @Override
     public double op(double origin, Object[] extraArgs) {
-        this.mean = Double.valueOf(extraArgs[0].toString());
         return super.op(origin, extraArgs);
     }
 
     @Override
     public float op(float origin, Object[] extraArgs) {
-        this.mean = Double.valueOf(extraArgs[0].toString());
         return super.op(origin, extraArgs);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
-        this.mean = Double.valueOf(extraArgs[0].toString());
         return super.op(origin, extraArgs);
     }
 
@@ -148,5 +140,11 @@ public class Variance extends BaseAccumulation {
         else
             return new Variance(x.vectorAlongDimension(index,dimension));
 
+    }
+
+    @Override
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).currentResult().doubleValue();
     }
 }
