@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -26,6 +27,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.Mean;
 import org.nd4j.linalg.api.ops.impl.accum.Sum;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
@@ -41,8 +43,11 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 
 public class SoftMax extends BaseTransformOp {
-    private double sum = Double.NaN;
-    private double max = Double.NaN;
+    private double sum;
+    private double max;
+    private IComplexNumber maxComplex,sumComplex;
+    private INDArray expXMinusMax;
+    private IComplexNDArray complexExpMinusMax;
 
     public SoftMax(INDArray x, INDArray z) {
         super(x, z);
@@ -67,42 +72,58 @@ public class SoftMax extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
-        return ComplexUtil.exp(origin.sub(max)).divi(sum);
+        IComplexNumber ret = complexExpMinusMax.getComplex(numProcessed).divi(sumComplex);
+        numProcessed++;
+        return ret;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
-        return ComplexUtil.exp(origin.sub(max)).divi(sum);
+        IComplexNumber ret = complexExpMinusMax.getComplex(numProcessed).divi(sumComplex);
+        numProcessed++;
+        return ret;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
-        return ComplexUtil.exp(origin.sub(max)).divi(sum);
+        IComplexNumber ret = complexExpMinusMax.getComplex(numProcessed).divi(sumComplex);
+        numProcessed++;
+        return ret;
     }
 
     @Override
     public float op(float origin, float other, Object[] extraArgs) {
-        return (float) ((FastMath.exp(origin - max)) / sum);
+        float ret = (float) (expXMinusMax.getFloat(numProcessed) / sum);
+        numProcessed++;
+        return ret;
     }
 
     @Override
     public double op(double origin, double other, Object[] extraArgs) {
-        return ((FastMath.exp(origin - max)) / sum);
+        double ret = expXMinusMax.getDouble(numProcessed) / sum;
+        numProcessed++;
+        return ret;
     }
 
     @Override
     public double op(double origin, Object[] extraArgs) {
-        return ((FastMath.exp(origin - max)) / sum);
+        double ret = expXMinusMax.getDouble(numProcessed) / sum;
+        numProcessed++;
+        return ret;
     }
 
     @Override
     public float op(float origin, Object[] extraArgs) {
-        return (float) ((FastMath.exp(origin - max)) / sum);
+        float ret = (float) (expXMinusMax.getFloat(numProcessed) / sum);
+        numProcessed++;
+        return ret;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
-        return ComplexUtil.exp(origin.sub(max)).divi(sum);
+        IComplexNumber ret = ComplexUtil.exp(origin.sub(max)).divi(sum);
+        numProcessed++;
+        return ret;
     }
 
     @Override
@@ -116,17 +137,28 @@ public class SoftMax extends BaseTransformOp {
     public Op opForDimension(int index,int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
         if(y() != null)
-            return new SoftMax(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new SoftMax(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
         else
-            return new SoftMax(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new SoftMax(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
 
     }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
-        this.max = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResult().doubleValue();
-        this.sum = Nd4j.getExecutioner().execAndReturn(new Sum(x)).currentResult().doubleValue();
+        if(x instanceof IComplexNDArray) {
+            this.maxComplex = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResultComplex();
+            IComplexNDArray complexX = (IComplexNDArray) x;
+            complexExpMinusMax = (IComplexNDArray) Transforms.exp(complexX.sub(maxComplex));
+            this.sumComplex =  Nd4j.getExecutioner().execAndReturn(new Sum(expXMinusMax)).currentResultComplex();
+        }
+        else {
+            this.max = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResult().doubleValue();
+            expXMinusMax = Transforms.exp(x.sub(max));
+            this.sum = Nd4j.getExecutioner().execAndReturn(new Sum(expXMinusMax)).currentResult().doubleValue();
+
+        }
+
 
     }
 }

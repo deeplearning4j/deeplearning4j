@@ -67,11 +67,7 @@ public interface Accumulation extends Op {
      */
     IComplexNumber zeroComplex();
 
-    /**
-     * Number processed
-     * @return the number of elements accumulated
-     */
-    int numProcessed();
+
 
     /**
      * Other accmuluations from the primary

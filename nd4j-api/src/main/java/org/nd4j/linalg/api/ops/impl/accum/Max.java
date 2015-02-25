@@ -55,7 +55,7 @@ public class Max extends BaseAccumulation {
 
     @Override
     public Number zero() {
-        return Double.MIN_VALUE;
+        return 0.0;
     }
 
     @Override

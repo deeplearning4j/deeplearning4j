@@ -29,6 +29,7 @@ public abstract class BaseOp implements Op {
 
     protected INDArray x,y;
     protected int n;
+    protected int numProcessed;
 
     /**
      * Base operation constructor
@@ -40,6 +41,7 @@ public abstract class BaseOp implements Op {
         this.x = x;
         this.y = y;
         this.n = n;
+        init(x,y,n);
     }
 
     /**
@@ -107,5 +109,15 @@ public abstract class BaseOp implements Op {
     @Override
     public IComplexNumber op(IComplexNumber origin) {
         return op(origin, (Object[]) null);
+    }
+
+    @Override
+    public void init(INDArray x, INDArray y, int n) {
+
+    }
+
+    @Override
+    public int numProcessed() {
+        return numProcessed;
     }
 }

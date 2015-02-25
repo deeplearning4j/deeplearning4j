@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -40,6 +41,17 @@ public abstract class OpExecutionerTests {
         TestAccumulation acc = new TestAccumulation(x.dup());
         opExecutioner.exec(acc);
         assertEquals(5.0,acc.currentResult());
+    }
+
+    @Test
+    public void testSoftMax() {
+        OpExecutioner opExecutioner = Nd4j.getExecutioner();
+        INDArray arr = Nd4j.linspace(1,6,6).reshape(2,3);
+        SoftMax softMax = new SoftMax(arr);
+        opExecutioner.exec(softMax,0);
+        for(int i = 0; i < arr.slices(); i++) {
+            assertEquals(1.0,arr.slice(i,0).sum(Integer.MAX_VALUE).getDouble(0),1e-1);
+        }
     }
 
 

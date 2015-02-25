@@ -37,4 +37,13 @@ public interface TransformOp extends Op {
      */
     TransformOp derivative();
 
+    /**
+     * Initialize the operation based on the parameters
+     * @param x the input
+     * @param y the pairwise transform ndarray
+     * @param z the resulting ndarray
+     * @param n the number of elements
+     */
+    void init(INDArray x,INDArray y,INDArray z,int n);
+
 }

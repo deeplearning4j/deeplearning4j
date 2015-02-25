@@ -202,9 +202,15 @@ public interface Op {
      * Initialize the operation based on the parameters
      * @param x the input
      * @param y the pairwise transform ndarray
-     * @param z the output
      * @param n the number of elements
      */
-    void init(INDArray x,INDArray y,INDArray z,int n);
+    void init(INDArray x,INDArray y,int n);
+
+    /**
+     * Number processed
+     * @return the number of elements accumulated
+     */
+    int numProcessed();
+
 
 }

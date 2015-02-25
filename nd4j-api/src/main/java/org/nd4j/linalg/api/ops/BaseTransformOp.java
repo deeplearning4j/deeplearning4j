@@ -29,7 +29,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
     /**
      * Specify an alternative result array
      * @param x the input
-     * @param z the output paray
+     * @param z the output array
      */
     public BaseTransformOp(INDArray x, INDArray z) {
         this(x,z,x.length());
@@ -42,14 +42,14 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
      * @param n the number of elements to iterate on
      */
     public BaseTransformOp(INDArray x, INDArray z, int n) {
-        super(x,null,n);
-        this.z = z;
+        this(x,null,z,n);
     }
 
 
     public BaseTransformOp(INDArray x, INDArray y, INDArray z, int n) {
         super(x,y,n);
         this.z = z;
+        init(x,y,z,n);
     }
 
     /**
@@ -71,8 +71,11 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         return new Ones(x,y,z,n);
     }
 
+
+
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x,y,n);
         //default is no-op
     }
 }

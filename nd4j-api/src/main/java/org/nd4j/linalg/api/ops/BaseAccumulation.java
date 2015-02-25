@@ -32,7 +32,6 @@ import java.util.List;
 public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected Number currentResult;
     protected IComplexNumber currentComplexResult;
-    protected int numProcessed = 0;
     protected List<Number> otherAccum;
     protected List<IComplexNumber> otherAccumComplex;
 
@@ -124,7 +123,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, int n) {
         //no-op
     }
 }

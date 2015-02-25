@@ -146,8 +146,8 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
-        super.init(x, y, z, n);
+    public void init(INDArray x, INDArray y, int n) {
+        super.init(x, y, n);
         this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).currentResult().doubleValue();
     }
 }

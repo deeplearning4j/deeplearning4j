@@ -270,14 +270,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if(op.x() instanceof IComplexNDArray) {
             IComplexNumber curr = xData.getComplex(x);
             if(op.y() instanceof IComplexNDArray)
-                zData.put(c,op.op(curr));
+                zData.put(x,op.op(curr));
 
             else
-                zData.put(c,op.op(curr));
+                zData.put(x,op.op(curr));
         }
         //x is real
         else
-            zData.put(c,op.op(xData.getDouble(x)));
+            zData.put(x,op.op(xData.getDouble(x)));
     }
 
     //apply a pairwise op to x and store the result
@@ -290,14 +290,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if(op.x() instanceof IComplexNDArray) {
             IComplexNumber curr = xData.getComplex(x);
             if(op.y() instanceof IComplexNDArray)
-                zData.put(c,op.op(curr, yData.getComplex(y)));
+                zData.put(x,op.op(curr, yData.getComplex(y)));
 
             else
-                zData.put(c,op.op(curr, op.y().getDouble(y)));
+                zData.put(x,op.op(curr, op.y().getDouble(y)));
         }
         //x is real
         else
-            zData.put(c, op.op(xData.getDouble(x), yData.getDouble(y)));
+            zData.put(x, op.op(xData.getDouble(x), yData.getDouble(y)));
 
     }
 
