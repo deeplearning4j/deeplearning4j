@@ -202,7 +202,11 @@ public abstract class BaseLayer implements Layer {
     public  INDArray activate() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), getInput().mmul(W).addiRowVector(b)));
+        if(conf.getActivationFunction().equals("softmax"))
+            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), getInput().mmul(W).addiRowVector(b)));
+        else
+            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), getInput().mmul(W).addiRowVector(b)));
+
     }
 
     @Override
@@ -216,7 +220,7 @@ public abstract class BaseLayer implements Layer {
     public INDArray activationMean() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        return getInput().mmul(W).addRowVector(b);
+        return getInput().mmul(W).addiRowVector(b);
     }
 
     @Override

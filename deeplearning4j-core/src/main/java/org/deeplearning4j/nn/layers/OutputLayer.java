@@ -36,6 +36,7 @@ import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
+import org.nd4j.linalg.util.Shape;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.log;
 import static org.nd4j.linalg.ops.transforms.Transforms.pow;
@@ -78,6 +79,19 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
         return  -LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
 
+
+    }
+
+    @Override
+    public void setScore() {
+        LinAlgExceptions.assertRows(input,labels);
+        INDArray output  = output(input);
+        BooleanIndexing.applyWhere(output, Conditions.isNan(),new Value(Nd4j.EPS_THRESHOLD));
+        assert !Nd4j.hasInvalidNumber(output) : "Invalid number on output!";
+        if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
+            score = LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
+
+        score =  -LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
 
     }
 
@@ -236,6 +250,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         solver.optimize();
     }
 
+
     /**
      * Fit the model
      *
@@ -326,7 +341,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
         this.input = x;
         INDArray preOutput = preOutput(x);
-        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preOutput), 0);
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preOutput), 1);
         applyDropOutIfNecessary(ret);
         return ret;
 
