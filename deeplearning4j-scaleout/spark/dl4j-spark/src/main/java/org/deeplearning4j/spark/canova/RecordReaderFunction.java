@@ -31,7 +31,8 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Turn a string in to a dataset based ona  record reader
+ * Turn a string in to a dataset based on
+ * a record reader
  *
  * @author Adam Gibson
  */

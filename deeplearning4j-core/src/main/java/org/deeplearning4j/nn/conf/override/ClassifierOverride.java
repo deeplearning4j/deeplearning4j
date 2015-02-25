@@ -23,7 +23,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
- * CLassifier over ride
+ * Classifier over ride
  * @author Adam Gibson
  */
 public class ClassifierOverride implements ConfOverride {
