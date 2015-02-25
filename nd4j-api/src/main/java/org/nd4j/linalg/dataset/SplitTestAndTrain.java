@@ -40,7 +40,6 @@ public class SplitTestAndTrain {
     }
 
     public DataSet getTrain() {
-
         return train;
     }
 

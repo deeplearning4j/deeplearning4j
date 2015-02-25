@@ -20,6 +20,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 
 
@@ -40,6 +43,10 @@ public class DefaultOpFactory implements OpFactory {
            case "prod" : return new Prod(x);
            case "std" : return new StandardDeviation(x);
            case "var" : return new Variance(x);
+           case "euclidean" : return new EuclideanDistance(x);
+           case "cosine" : return new CosineSimilarity(x);
+           case "manhattan" : return new ManhattanDistance(x);
+
            default: throw new IllegalArgumentException("Illegal name " + name);
        }
     }
@@ -47,14 +54,18 @@ public class DefaultOpFactory implements OpFactory {
     @Override
     public Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z) {
         switch(name) {
-            case "sum" : return new Sum(x);
-            case "max" : return new Max(x);
-            case "min" : return new Min(x);
-            case "norm1" : return new Norm1(x);
-            case "norm2" : return new Norm2(x);
-            case "prod" : return new Prod(x);
-            case "std" : return new StandardDeviation(x);
-            case "var" : return new Variance(x);
+            case "sum" : return new Sum(x,y,x.length());
+            case "max" : return new Max(x,y,x.length());
+            case "min" : return new Min(x,y,x.length());
+            case "norm1" : return new Norm1(x,y,x.length());
+            case "norm2" : return new Norm2(x,y,x.length());
+            case "prod" : return new Prod(x,y,x.length());
+            case "std" : return new StandardDeviation(x,y,x.length());
+            case "var" : return new Variance(x,y,x.length());
+            case "euclidean" : return new EuclideanDistance(x,y,x.length());
+            case "cosine" : return new CosineSimilarity(x,y,x.length());
+            case "manhattan" : return new ManhattanDistance(x,y,x.length());
+
             default: throw new IllegalArgumentException("Illegal name " + name);
         }
     }
@@ -70,6 +81,10 @@ public class DefaultOpFactory implements OpFactory {
             case "prod" : return new Prod(x,y);
             case "std" : return new StandardDeviation(x,y);
             case "var" : return new Variance(x,y);
+            case "euclidean" : return new EuclideanDistance(x,y,x.length());
+            case "cosine" : return new CosineSimilarity(x,y,x.length());
+            case "manhattan" : return new ManhattanDistance(x,y,x.length());
+
             default: throw new IllegalArgumentException("Illegal name " + name);
         }
     }
