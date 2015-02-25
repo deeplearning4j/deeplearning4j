@@ -25,13 +25,29 @@ package org.nd4j.linalg.api.complex;
  */
 public interface IComplexNumber {
 
-
+    /**
+     * Set the real and imaginary components
+     * @param real the real numbers
+     * @param imag the imaginary components
+     * @return the imaginary components
+     */
     public IComplexNumber set(Number real, Number imag);
 
+    /**
+     * The real component of this number
+     * @return the real component of this number
+     */
     public Number realComponent();
-
+    /**
+     * The imaginary component of this number
+     * @return the real component of this number
+     */
     public Number imaginaryComponent();
 
+    /**
+     * Clone
+     * @return
+     */
     public IComplexNumber dup();
 
     public IComplexNumber copy(IComplexNumber other);
@@ -84,6 +100,18 @@ public interface IComplexNumber {
 
     public IComplexNumber sub(Number r);
 
+
+    /**
+     * Subtract two complex numbers
+     */
+    public IComplexNumber rsub(IComplexNumber c);
+
+    public IComplexNumber rsubi(Number a, IComplexNumber result);
+
+    public IComplexNumber rsubi(Number a);
+
+    public IComplexNumber rsub(Number r);
+
     /**
      * Multiply two complex numbers, inplace
      */
@@ -120,6 +148,25 @@ public interface IComplexNumber {
 
     public IComplexNumber div(Number v);
 
+
+    /**
+     * Divide two complex numbers
+     */
+    public IComplexNumber rdiv(IComplexNumber c);
+
+    /**
+     * Divide two complex numbers, in-place
+     */
+    public IComplexNumber rdivi(IComplexNumber c, IComplexNumber result);
+
+    public IComplexNumber rdivi(IComplexNumber c);
+
+    public IComplexNumber rdivi(Number v, IComplexNumber result);
+
+    public IComplexNumber rdivi(Number v);
+
+    public IComplexNumber rdiv(Number v);
+
     /**
      * Return the absolute value
      */
@@ -134,14 +181,35 @@ public interface IComplexNumber {
 
     public IComplexNumber inv();
 
+    /**
+     * The negation of this complex number
+     * @return
+     */
     public IComplexNumber neg();
 
+    /**
+     * The inplace negation of this number
+     * @return
+     */
     public IComplexNumber negi();
 
+    /**
+     * The inplace conjugate of this
+     * number
+     * @return
+     */
     public IComplexNumber conji();
-
+    /**
+     * The  conjugate of this
+     * number
+     * @return
+     */
     public IComplexNumber conj();
-
+    /**
+     * The  sqrt of this
+     * number
+     * @return
+     */
     public IComplexNumber sqrt();
 
 
@@ -149,10 +217,25 @@ public interface IComplexNumber {
 
     public boolean ne(IComplexNumber c);
 
+    /**
+     * Whether this number is
+     * wholly zero or not
+     * @return true if the number is wholly
+     * zero false otherwise
+     */
     public boolean isZero();
 
+    /**
+     * Returns whether the number
+     * only has a real component (0 for imaginary)
+     * @return true if the number has only a real component or not
+     */
     public boolean isReal();
-
+    /**
+     * Returns whether the number
+     * only has a imaginary component (0 for real)
+     * @return true if the number has only a real component or not
+     */
     public boolean isImag();
 
     /**
@@ -201,5 +284,26 @@ public interface IComplexNumber {
      */
     public IComplexNumber lt(IComplexNumber num);
 
+    /**
+     * Reverse subtract a number
+     * @param c the complex number to reverse subtract
+     * @return the reverse subtracted number
+     */
+    IComplexNumber rsubi(IComplexNumber c);
+
+    /**
+     * Set a complex number's components to be this ones
+     * @param set the complex number to set
+     * @return a reference to this
+     */
+    IComplexNumber set(IComplexNumber set);
+
+    /**
+     * Reverse subtraction
+     * @param a the number to subtract
+     * @param result the result to set
+     * @return the result
+     */
+    IComplexNumber rsubi(IComplexNumber a, IComplexNumber result);
 
 }

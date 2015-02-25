@@ -14,24 +14,25 @@
  *    limitations under the License.
  */
 
-package org.nd4j.linalg.api.complex;
+package org.nd4j.linalg.api.ops;
+
+import org.nd4j.linalg.api.complex.IComplexNumber;
 
 /**
- * Complex Double
- *
  * @author Adam Gibson
  */
-public interface IComplexDouble extends IComplexNumber {
+public interface ScalarOp extends Op {
 
-    @Override
-    Double realComponent();
+    /**
+     * The normal scalar
+     * @return the scalar
+     */
+    double scalar();
 
-    @Override
-    Double imaginaryComponent();
-
-    IComplexDouble divi(double v);
-
-    IComplexNumber div(double v);
-
+    /**
+     * The complex sscalar
+     * @return
+     */
+    IComplexNumber complexScalar();
 
 }

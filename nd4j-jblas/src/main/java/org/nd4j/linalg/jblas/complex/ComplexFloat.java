@@ -109,6 +109,21 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
             return Nd4j.createComplexNumber(0, 0);
     }
 
+    @Override
+    public IComplexNumber rsubi(IComplexNumber c) {
+        return rsubi(c,this);
+    }
+
+    @Override
+    public IComplexNumber set(IComplexNumber set) {
+        return set(set.realComponent(),set.imaginaryComponent());
+    }
+
+    @Override
+    public IComplexNumber rsubi(IComplexNumber a, IComplexNumber result) {
+        return result.set(a.sub(this));
+    }
+
     /**
      * Returns the argument of a complex number.
      */
@@ -170,9 +185,7 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
 
     @Override
     public IComplexNumber copy(IComplexNumber other) {
-
-        return null;
-
+           return other.set(this);
     }
 
     /**
@@ -303,6 +316,26 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
         return dup().subi(r);
     }
 
+    @Override
+    public IComplexNumber rsub(IComplexNumber c) {
+        return dup().rsubi(c);
+    }
+
+    @Override
+    public IComplexNumber rsubi(Number a, IComplexNumber result) {
+        return result.set(a.doubleValue() - realComponent().doubleValue(),imag());
+    }
+
+    @Override
+    public IComplexNumber rsubi(Number a) {
+        return rsubi(a,this);
+    }
+
+    @Override
+    public IComplexNumber rsub(Number r) {
+        return dup().rsubi(r,this);
+    }
+
     /**
      * Multiply two complex numbers, inplace
      *
@@ -402,6 +435,36 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
     @Override
     public IComplexNumber div(Number v) {
         return dup().divi(v);
+    }
+
+    @Override
+    public IComplexNumber rdiv(IComplexNumber c) {
+        return dup().rdivi(c);
+    }
+
+    @Override
+    public IComplexNumber rdivi(IComplexNumber c, IComplexNumber result) {
+        return result.set(c.div(this));
+    }
+
+    @Override
+    public IComplexNumber rdivi(IComplexNumber c) {
+        return rdivi(c,this);
+    }
+
+    @Override
+    public IComplexNumber rdivi(Number v, IComplexNumber result) {
+        return result.set(v.floatValue() / real(),imag());
+    }
+
+    @Override
+    public IComplexNumber rdivi(Number v) {
+        return rdivi(v,this);
+    }
+
+    @Override
+    public IComplexNumber rdiv(Number v) {
+        return dup().rdivi(v);
     }
 
     @Override

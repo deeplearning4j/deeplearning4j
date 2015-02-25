@@ -27,6 +27,8 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.dimensionfunctions.DimensionFunctions;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.Negative;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
@@ -2293,7 +2295,7 @@ public abstract class BaseNDArray implements INDArray {
             return other.divi(getDouble(0), result);
         }
 
-        data().divi(other.data(),length(),other.offset(),offset(),other.majorStride(),majorStride(),result.data());
+        Nd4j.getExecutioner().exec(new DivOp(this.linearView(),other.linearView(),result.linearView(),length()));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -2327,7 +2329,7 @@ public abstract class BaseNDArray implements INDArray {
             return other.muli(getDouble(0), result);
         }
 
-        data().muli(other.data(),length(),other.offset(),offset(),other.majorStride(),majorStride(),result.data());
+        Nd4j.getExecutioner().exec(new MulOp(this.linearView(), other.linearView(), result.linearView(), length()));
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
 

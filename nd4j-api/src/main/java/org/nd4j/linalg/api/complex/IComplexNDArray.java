@@ -525,8 +525,19 @@ public interface IComplexNDArray extends INDArray {
     @Override
     IComplexNDArray putSlice(int slice, INDArray put);
 
+    /**
+     * Get the imaginary component at the specified index
+     * @param i
+     * @return
+     */
     double getImag(int i);
 
+    /**
+     *
+     * Get the real component at the specified index
+     * @param i
+     * @return
+     */
     double getReal(int i);
 
 
@@ -568,7 +579,12 @@ public interface IComplexNDArray extends INDArray {
     void iterateOverDimension(int dimension, SliceOp op, boolean modify);
 
 
-
+    /**
+     * Put a scalar ndarray at the specified index
+     * @param i
+     * @param element
+     * @return
+     */
     IComplexNDArray put(int i, IComplexNDArray element);
 
     /**

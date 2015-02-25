@@ -14,24 +14,27 @@
  *    limitations under the License.
  */
 
-package org.nd4j.linalg.api.complex;
+package org.nd4j.linalg.api.ops;
+
+import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * Complex Double
- *
- * @author Adam Gibson
+ * Created by agibsonccc on 2/25/15.
  */
-public interface IComplexDouble extends IComplexNumber {
+public abstract class BaseScalarOp extends BaseOp {
+   protected double num;
+    protected IComplexNumber complexNumber;
 
-    @Override
-    Double realComponent();
+    public BaseScalarOp(INDArray x, INDArray y, int n) {
+        super(x, y, n);
+    }
 
-    @Override
-    Double imaginaryComponent();
+    public BaseScalarOp(INDArray x) {
+        super(x);
+    }
 
-    IComplexDouble divi(double v);
 
-    IComplexNumber div(double v);
 
 
 }
