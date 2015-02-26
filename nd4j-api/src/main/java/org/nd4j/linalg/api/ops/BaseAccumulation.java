@@ -54,6 +54,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         currentComplexResult = zeroComplex();
         otherAccum = new ArrayList<>();
         otherAccumComplex = new ArrayList<>();
+        init(x,y,x.length());
     }
 
     @Override
@@ -120,6 +121,16 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     @Override
     public List<Number> otherAccum() {
         return otherAccum;
+    }
+
+    @Override
+    public void setCurrentResult(Number number) {
+        this.currentResult = number;
+    }
+
+    @Override
+    public void setCurrentResultComplex(IComplexNumber complexNumber) {
+        this.currentComplexResult = complexNumber;
     }
 
     @Override

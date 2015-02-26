@@ -80,4 +80,19 @@ public interface Accumulation extends Op {
      * @return other accumulations from the primary
      */
     List<Number> otherAccum();
+
+    /**
+     * Set the current result
+     * @param number the result
+     */
+    void setCurrentResult(Number number);
+
+    /**
+     * Set the current complex number
+     * result
+     * @param complexNumber the current complex number
+     *  result
+     */
+    void setCurrentResultComplex(IComplexNumber complexNumber);
+
 }

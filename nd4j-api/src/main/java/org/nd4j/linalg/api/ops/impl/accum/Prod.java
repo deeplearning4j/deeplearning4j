@@ -53,17 +53,17 @@ public class Prod extends BaseAccumulation {
 
     @Override
     public Number zero() {
-        return 0.0;
+        return 1.0;
     }
 
     @Override
     public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0,0.0);
+        return Nd4j.createComplexNumber(1.0,0.0);
     }
 
     @Override
     public String name() {
-        return "sum";
+        return "prod";
     }
     @Override
     public Op opForDimension(int index,int dimension) {

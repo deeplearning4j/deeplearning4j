@@ -42,6 +42,10 @@ public class AddOp extends BaseTransformOp {
         super(x);
     }
 
+    public AddOp(INDArray x, INDArray xDup, INDArray z) {
+        super(x, xDup, z,x.length());
+    }
+
     @Override
     public String name() {
         return "add";
@@ -136,5 +140,12 @@ public class AddOp extends BaseTransformOp {
         else
             return new AddOp(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
 
+    }
+
+    @Override
+    public void init(INDArray x, INDArray y, int n) {
+        super.init(x, y, n);
+        if(y == null)
+            throw new IllegalArgumentException("No components to add");
     }
 }

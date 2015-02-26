@@ -2781,9 +2781,11 @@ public class Nd4j {
      */
     public void initContext() {
         try {
-             ClassPathResource c = new ClassPathResource(LINALG_PROPS);
+            ClassPathResource c = new ClassPathResource(LINALG_PROPS);
             props = new Properties();
             props.load(c.getInputStream());
+            for(String key : props.stringPropertyNames())
+                System.setProperty(key,props.getProperty(key));
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
             dtype = otherDtype.equals("float") ? DataBuffer.FLOAT : DataBuffer.DOUBLE;
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
@@ -66,6 +67,18 @@ public class Max extends BaseAccumulation {
     @Override
     public String name() {
         return "max";
+    }
+
+    @Override
+    public void init(INDArray x, INDArray y, int n) {
+        super.init(x, y, n);
+        if(x instanceof IComplexNDArray) {
+            IComplexNDArray complexX = (IComplexNDArray) x;
+            currentComplexResult = complexX.getComplex(0);
+        }
+        else {
+            currentResult = x.getDouble(0);
+        }
     }
 
     @Override

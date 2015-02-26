@@ -17,11 +17,14 @@
 package org.nd4j.linalg.jcublas.kernel;
 
 
+import jcuda.CudaException;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.driver.*;
+import jcuda.jcublas.JCublas;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -30,7 +33,9 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import static jcuda.driver.JCudaDriver.*;
 
@@ -48,10 +53,12 @@ public class KernelFunctions {
     private static Logger log = LoggerFactory.getLogger(KernelFunctions.class);
     private static Map<String, CUfunction> functions = new ConcurrentHashMap<>();
     private static Map<Integer,CUcontext> devices = new ConcurrentHashMap<>();
-
+    private static Set<String> reduceFunctions = new ConcurrentSkipListSet<>();
     public final static String NAME_SPACE = "org.nd4j.linalg.jcublas";
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
+    public final static String REDUCE = NAME_SPACE + ".reducefunctions";
+
 
     private KernelFunctions() {
     }
@@ -99,6 +106,11 @@ public class KernelFunctions {
                 KernelFunctions.loadFunction(loaded,s,"float");
             }
         }
+
+        String reduceFunctionsList = props.getProperty(REDUCE);
+        for(String function : reduceFunctionsList.split(","))
+            reduceFunctions.add(function);
+
     }
 
     /**
@@ -153,12 +165,96 @@ public class KernelFunctions {
         return Pointer.to(pointers);
     }
 
+    /**
+     * Invoke a reduce
+     * function with the given number of parameters
+     * Invoke reduce makes a different set of assumptions
+     * about how to allocate memory.
+     * From Nvidia's dot product example:
+     *      #define imin(a,b) (a<b?a:b)
+     *
+     *        const int N = 33 * 1024;
+     *        const int threadsPerBlock = 256;
+     *       const int blocksPerGrid =
+     *        imin( 32, (N+threadsPerBlock-1) / threadsPerBlock );
+     *        dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,
+     *        dev_partial_c );
+     *
+     *  The major thing is that the number of threads per block have to be even
+     * @param threadsPerBlock the number of threads to use per block
+     * @param blocks  the number of blocks to use
+     * @param function   the function to invoke
+     * @param kernelParameters the parameters
+     */
+    public static void invokeReduce(int threadsPerBlock,int blocks, CUfunction function, Pointer kernelParameters) {
+        // Call the kernel function.
+        //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
+        int sharedMemSize = threadsPerBlock * (Nd4j.dataType() == DataBuffer.DOUBLE ? Sizeof.DOUBLE : Sizeof.FLOAT);
+        if (threadsPerBlock <= 32)
+            sharedMemSize *= 2;
+
+        cuLaunchKernel(function,
+                blocks, 1, 1,      // Grid dimension
+                threadsPerBlock, 1, 1,      // Block dimension
+                sharedMemSize, null,               // Shared memory size and stream
+                kernelParameters, null // Kernel- and extra parameters
+        );
+
+        cuCtxSynchronize();
+
+
+    }
 
 
 
     /**
-     * Invoke a function with the given number of parameters
+     * Perform a reduction of the specified number of elements in the given
+     * device input memory, using the given number of threads and blocks,
+     * and write the results into the given output memory.
      *
+     * @param size The size (number of elements)
+     * @param threads The number of threads
+     * @param blocks The number of blocks
+     * @param deviceInput The device input memory
+     * @param deviceOutput The device output memory. Its size must at least
+     * be numBlocks*Sizeof.FLOAT
+     */
+    private static void reduce(CUfunction function,int size, int threads, int blocks,
+                               Pointer deviceInput, Pointer deviceOutput) {
+        //System.out.println("Reduce "+size+" elements with "+
+        //    threads+" threads in "+blocks+" blocks");
+
+        // Compute the shared memory size (as done in
+        // the NIVIDA sample)
+        int sharedMemSize = threads * Sizeof.FLOAT;
+        if (threads <= 32)
+
+            sharedMemSize *= 2;
+
+
+        // Set up the kernel parameters: A pointer to an array
+        // of pointers which point to the actual values.
+        Pointer kernelParameters = Pointer.to(
+                Pointer.to(deviceInput),
+                Pointer.to(deviceOutput),
+                Pointer.to(new int[]{size})
+        );
+
+        // Call the kernel function.
+        cuLaunchKernel(function,
+                blocks,  1, 1,         // Grid dimension
+                threads, 1, 1,         // Block dimension
+                sharedMemSize, null,   // Shared memory size and stream
+                kernelParameters, null // Kernel- and extra parameters
+        );
+        cuCtxSynchronize();
+    }
+
+
+    /**
+     * Invoke a function with the given number of parameters
+     * The block size is 256 and the grid size is set with respect
+     * to the number of elements now
      * @param numElements the number of
      * @param function   the function to invoke
      * @param kernelParameters the parameters
@@ -166,12 +262,15 @@ public class KernelFunctions {
     public static void invoke(int numElements, CUfunction function, Pointer kernelParameters) {
         // Call the kernel function.
         int blockSizeX = 256;
-        int gridSizeX = (int) Math.ceil((double) numElements / blockSizeX);
+        int threads = (int) Math.ceil((double) numElements / blockSizeX);
+        int sharedMemSize = threads * Nd4j.dataType() == DataBuffer.DOUBLE ? Sizeof.DOUBLE : Sizeof.FLOAT;
+        if (threads <= 32)
+            sharedMemSize *= 2;
 
         cuLaunchKernel(function,
-                gridSizeX, 1, 1,      // Grid dimension
+                threads, 1, 1,      // Grid dimension
                 blockSizeX, 1, 1,      // Block dimension
-                0, null,               // Shared memory size and stream
+                sharedMemSize, null,               // Shared memory size and stream
                 kernelParameters, null // Kernel- and extra parameters
         );
         cuCtxSynchronize();
@@ -451,6 +550,15 @@ public class KernelFunctions {
 
         log.info("Finished creating PTX file");
         return ptxFileName;
+    }
+
+    /**
+     * Returns whether the given function is a reduce function
+     * @param functionName the function name to check for
+     * @return true if the function is a reduce function false otherwise
+     */
+    public static boolean isReduce(String functionName) {
+        return reduceFunctions.contains(functionName);
     }
 
     /**

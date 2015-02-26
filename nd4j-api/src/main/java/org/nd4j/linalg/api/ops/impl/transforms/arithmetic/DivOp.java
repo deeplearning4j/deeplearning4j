@@ -135,4 +135,12 @@ public class DivOp extends BaseTransformOp {
             return new DivOp(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
 
     }
+
+
+    @Override
+    public void init(INDArray x, INDArray y, int n) {
+        super.init(x, y, n);
+        if(y == null)
+            throw new IllegalArgumentException("No components to divide");
+    }
 }

@@ -22,7 +22,9 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -36,11 +38,31 @@ public abstract class OpExecutionerTests {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray x = Nd4j.ones(5);
         INDArray xDup = x.dup();
-        opExecutioner.exec(new TestOp(x));
-        assertEquals(xDup,x);
-        TestAccumulation acc = new TestAccumulation(x.dup());
+        INDArray solution = Nd4j.valueArrayOf(5,2.0);
+        opExecutioner.exec(new AddOp(x,xDup,x));
+        assertEquals(solution,x);
+        Sum acc = new Sum(x.dup());
         opExecutioner.exec(acc);
-        assertEquals(5.0,acc.currentResult());
+        assertEquals(10.0,acc.currentResult().doubleValue(),1e-1);
+        Prod prod = new Prod(x.dup());
+        opExecutioner.exec(prod);
+        assertEquals(32.0,prod.currentResult().doubleValue(),1e-1);
+    }
+
+    @Test
+    public void testMaxMin() {
+        OpExecutioner opExecutioner = Nd4j.getExecutioner();
+        INDArray x = Nd4j.linspace(1,5,5);
+        Max max = new Max(x);
+        opExecutioner.exec(max);
+        assertEquals(5,max.currentResult().doubleValue(),1e-1);
+        Min min = new Min(x);
+        assertEquals(1,min.currentResult().doubleValue(),1e-1);
+        Mean mean = new Mean(x);
+        opExecutioner.exec(mean);
+        assertEquals(3.0,mean.currentResult().doubleValue(),1e-1);
+
+
     }
 
     @Test
