@@ -202,7 +202,11 @@ public abstract class BaseLayer implements Layer {
     public  INDArray activate() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        return conf.getActivationFunction().apply(getInput().mmul(W).addiRowVector(b));
+        if(conf.getActivationFunction().equals("softmax"))
+            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), getInput().mmul(W).addiRowVector(b)));
+        else
+            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), getInput().mmul(W).addiRowVector(b)));
+
     }
 
     @Override
@@ -216,7 +220,7 @@ public abstract class BaseLayer implements Layer {
     public INDArray activationMean() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        return getInput().mmul(W).addRowVector(b);
+        return getInput().mmul(W).addiRowVector(b);
     }
 
     @Override
@@ -278,8 +282,8 @@ public abstract class BaseLayer implements Layer {
 
         Layer layer = null;
         try {
-            Constructor c = getClass().getConstructor(NeuralNetConfiguration.class,INDArray.class,INDArray.class,INDArray.class);
-            layer = (Layer) c.newInstance(conf,W.dup(),b.dup(),input != null  ? input.dup() : null);
+            Constructor c = getClass().getConstructor(NeuralNetConfiguration.class, INDArray.class, INDArray.class, INDArray.class);
+            layer = (Layer) c.newInstance(conf, W.dup(), b.dup(), input != null ? input.dup() : null);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -364,12 +368,12 @@ public abstract class BaseLayer implements Layer {
 
         Layer layer = null;
         try {
-            Constructor c = getClass().getConstructor(NeuralNetConfiguration.class,INDArray.class,INDArray.class,INDArray.class);
+            Constructor c = getClass().getConstructor(NeuralNetConfiguration.class, INDArray.class, INDArray.class, INDArray.class);
             NeuralNetConfiguration clone = conf.clone();
             int nIn = clone.getnOut(),nOut = clone.getnIn();
             clone.setnIn(nIn);
             clone.setnOut(nOut);
-            layer = (Layer) c.newInstance(conf,W.transpose().dup(),b.transpose().dup(),input != null  ? input.transpose().dup() : null);
+            layer = (Layer) c.newInstance(conf, W.transpose().dup(), b.transpose().dup(), input != null ? input.transpose().dup() : null);
         } catch (Exception e) {
             e.printStackTrace();
         }

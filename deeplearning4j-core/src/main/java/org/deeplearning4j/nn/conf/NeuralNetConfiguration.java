@@ -36,8 +36,6 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
-import org.nd4j.linalg.api.activation.ActivationFunction;
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.IOException;
@@ -96,7 +94,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //feed forward nets
     protected int nIn,nOut;
 
-    protected ActivationFunction activationFunction;
+    protected String activationFunction;
 
     //RBMs
     private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
@@ -149,7 +147,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   long seed,
                                   int nIn,
                                   int nOut,
-                                  ActivationFunction activationFunction,
+                                  String activationFunction,
                                   RBM.VisibleUnit visibleUnit,
                                   RBM.HiddenUnit hiddenUnit,
                                   int[] weightShape,
@@ -374,11 +372,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.lossFunction = lossFunction;
     }
 
-    public ActivationFunction getActivationFunction() {
+    public String getActivationFunction() {
         return activationFunction;
     }
 
-    public void setActivationFunction(ActivationFunction activationFunction) {
+    public void setActivationFunction(String activationFunction) {
         this.activationFunction = activationFunction;
     }
 
@@ -626,7 +624,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         if (Double.compare(that.sparsity, sparsity) != 0) return false;
         if (useAdaGrad != that.useAdaGrad) return false;
         if (useRegularization != that.useRegularization) return false;
-        if (activationFunction != null ? !activationFunction.type().equals(that.activationFunction.type()) : that.activationFunction != null)
+        if (activationFunction != null ? !activationFunction.equals(that.activationFunction) : that.activationFunction != null)
             return false;
         if (dist != null ? !dist.getClass().getName().equals(that.dist.getClass().getName()) : that.dist != null) return false;
         if (!Arrays.equals(featureMapSize, that.featureMapSize)) return false;
@@ -914,8 +912,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         module.addSerializer(IterationListener.class,new IterationSerializer());
         module.addDeserializer(IterationListener.class,new IterationListenerDeSerializer());
 
-        module.addDeserializer(ActivationFunction.class, new ActivationFunctionDeSerializer());
-        module.addSerializer(ActivationFunction.class, new ActivationFunctionSerializer());
 
         module.addDeserializer(RandomGenerator.class, new RandomGeneratorDeSerializer());
         module.addSerializer(RandomGenerator.class, new RandomGeneratorSerializer());
@@ -967,7 +963,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private int nIn;
         private int nOut;
-        private ActivationFunction activationFunction = Activations.sigmoid();
+        private String activationFunction = "sigmoid";
         private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
         private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
         private int numIterations = 1000;
@@ -1214,7 +1210,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder activationFunction(ActivationFunction activationFunction) {
+        public Builder activationFunction(String activationFunction) {
             this.activationFunction = activationFunction;
             return this;
         }
