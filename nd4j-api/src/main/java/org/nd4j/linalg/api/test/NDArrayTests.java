@@ -316,6 +316,7 @@ public abstract class NDArrayTests {
     public void testNorm2() {
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         float assertion = 5.47722557505f;
+        INDArray norm3 = n.norm2(Integer.MAX_VALUE);
         assertEquals(assertion, n.norm2(Integer.MAX_VALUE).getFloat(0), 1e-1);
 
         INDArray row = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});

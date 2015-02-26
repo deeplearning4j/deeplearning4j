@@ -45,12 +45,16 @@ public class Norm2 extends BaseAccumulation {
     public void update(Number result) {
         currentResult = currentResult.doubleValue() + FastMath.pow(result.doubleValue(), 2);
         numProcessed++;
+        if(numProcessed == n)
+            currentResult = FastMath.sqrt(currentResult.doubleValue());
     }
 
     @Override
     public void update(IComplexNumber result) {
         currentComplexResult.addi(ComplexUtil.pow(result,2));
         numProcessed++;
+        if(numProcessed == n)
+            currentComplexResult.set(ComplexUtil.sqrt(currentComplexResult));
     }
 
     @Override
