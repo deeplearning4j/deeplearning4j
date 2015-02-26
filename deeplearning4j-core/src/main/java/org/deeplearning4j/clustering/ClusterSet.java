@@ -20,13 +20,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.distancefunction.DistanceFunction;
+import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.factory.Nd4j;
 
 public class ClusterSet {
 
-	private Class<? extends DistanceFunction>	distanceFunction;
-	private List<Cluster>						clusters	= new ArrayList<Cluster>();
+	private Class<? extends Accumulation>	distanceFunction;
+	private List<Cluster>						clusters	= new ArrayList<>();
 
 	public ClusterSet() {
 
@@ -38,7 +39,7 @@ public class ClusterSet {
 		}
 	}
 	
-	public ClusterSet(Class<? extends DistanceFunction> distanceFunction) {
+	public ClusterSet(Class<? extends Accumulation> distanceFunction) {
 		this.distanceFunction = distanceFunction;
 	}
 
@@ -74,7 +75,7 @@ public class ClusterSet {
 		return classify(point, distanceFunction);
 	}
 
-	public Cluster classify(INDArray point, Class<? extends DistanceFunction> distanceFunction) {
+	public Cluster classify(INDArray point, Class<? extends Accumulation> distanceFunction) {
 		return nearestCluster(point);
 	}
 
@@ -99,13 +100,7 @@ public class ClusterSet {
 	}
 
 	private double getDistance(INDArray m1, INDArray m2) {
-		DistanceFunction function;
-		try {
-			function = distanceFunction.getConstructor(INDArray.class).newInstance(m1);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		return function.apply(m2);
+      return Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(m1,m2)).currentResult().doubleValue();
 	}
 	
 	public double getDistanceFromNearestCluster(INDArray point) {
@@ -130,11 +125,11 @@ public class ClusterSet {
 		this.clusters = clusters;
 	}
 
-	public Class<? extends DistanceFunction> getDistanceFunction() {
+	public Class<? extends Accumulation> getDistanceFunction() {
 		return distanceFunction;
 	}
 
-	public void setDistanceFunction(Class<? extends DistanceFunction> distanceFunction) {
+	public void setDistanceFunction(Class<? extends Accumulation> distanceFunction) {
 		this.distanceFunction = distanceFunction;
 	}
 

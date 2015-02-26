@@ -32,14 +32,12 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
 import org.deeplearning4j.util.MultiLayerUtil;
-import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.sampling.Sampling;
-import org.nd4j.linalg.transformation.MatrixTransform;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.slf4j.Logger;
@@ -67,12 +65,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
   //default training examples and associated neuralNets
   protected INDArray input, labels;
   //sometimes we may need to transform weights; this allows a
-  //weight transform upon layer setup
-  protected Map<Integer, MatrixTransform> weightTransforms = new HashMap<>();
-  //hidden bias transforms; for initialization
-  protected Map<Integer, MatrixTransform> hiddenBiasTransforms = new HashMap<>();
-  //visible bias transforms for initialization
-  protected Map<Integer, MatrixTransform> visibleBiasTransforms = new HashMap<>();
   protected boolean initCalled = false;
 
 
@@ -544,7 +536,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 		 */
     List<INDArray> weights = new ArrayList<>();
     List<INDArray> biases = new ArrayList<>();
-    List<ActivationFunction> activationFunctions = new ArrayList<>();
+    List<String> activationFunctions = new ArrayList<>();
 
 
     for (int j = 0; j < getLayers().length; j++) {
@@ -564,8 +556,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
       applyDropConnectIfNecessary(deltas[i]);
 
       if (i > 0)
-        rix = rix.mmul(weights.get(i).addRowVector(biases.get(i)).transpose()).muli(activationFunctions.get(i - 1).applyDerivative(activations.get(i)));
-
+        rix = rix.mmul(weights.get(i).addRowVector(biases.get(i)).transpose()).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunctions.get(i - 1),activations.get(i)).derivative()));
 
     }
 
@@ -627,7 +618,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     List<INDArray> weights = new ArrayList<>();
     List<INDArray> biases = new ArrayList<>();
 
-    List<ActivationFunction> activationFunctions = new ArrayList<>();
+    List<String> activationFunctions = new ArrayList<>();
     for (int j = 0; j < getLayers().length; j++) {
       weights.add(getLayers()[j].getParam(DefaultParamInitializer.WEIGHT_KEY));
       biases.add(getLayers()[j].getParam(DefaultParamInitializer.BIAS_KEY));
@@ -643,7 +634,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
       if (i > 0) {
         //W[i] + b[i] * f'(z[i - 1])
-        ix = ix.mmul(weights.get(i).transpose()).muli(activationFunctions.get(i - 1).applyDerivative(activations.get(i)));
+        ix = ix.mmul(weights.get(i).transpose()).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunctions.get(i - 1),activations.get(i)).derivative()));
       }
     }
 
@@ -668,7 +659,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     List<INDArray> activations = feedForward();
 
     //- y - h
-    INDArray ix = labels.sub(activations.get(activations.size() - 1)).subi(getOutputLayer().conf().getActivationFunction().applyDerivative(activations.get(activations.size() - 1)));
+    INDArray ix = labels.sub(activations.get(activations.size() - 1)).subi(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(getOutputLayer().conf().getActivationFunction(),activations.get(activations.size() - 1)).derivative()));
 
 		/*
 		 * Precompute activations and z's (pre activation network outputs)
@@ -676,7 +667,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     List<INDArray> weights = new ArrayList<>();
     List<INDArray> biases = new ArrayList<>();
 
-    List<ActivationFunction> activationFunctions = new ArrayList<>();
+    List<String> activationFunctions = new ArrayList<>();
     for (int j = 0; j < getLayers().length; j++) {
       weights.add(getLayers()[j].getParam(DefaultParamInitializer.WEIGHT_KEY));
       biases.add(getLayers()[j].getParam(DefaultParamInitializer.BIAS_KEY));
@@ -703,7 +694,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         INDArray weightsPlusBias = weights.get(i).transpose();
         INDArray activation = activations.get(i);
         if (i > 0)
-          ix = ix.mmul(weightsPlusBias).muli(activationFunctions.get(i - 1).applyDerivative(activation));
+          ix = ix.mmul(weightsPlusBias).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunctions.get(i - 1),activation).derivative()));
 
       }
 
@@ -1256,11 +1247,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
   public void update(MultiLayerNetwork network) {
     this.defaultConfiguration = network.defaultConfiguration;
     this.input = network.input;
-    this.labels = network.labels;
-    this.weightTransforms = network.weightTransforms;
-    this.visibleBiasTransforms = network.visibleBiasTransforms;
-    this.hiddenBiasTransforms = network.hiddenBiasTransforms;
-    this.layers = ArrayUtils.clone(network.layers);
+    this.labels = network.labels;this.layers = ArrayUtils.clone(network.layers);
 
 
   }
@@ -1455,11 +1442,11 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     List<INDArray> W = MultiLayerUtil.weightMatrices(this);
 
     for (int i = 0; i < layers.length; i++) {
-      ActivationFunction derivative = getLayers()[i].conf().getActivationFunction();
+      String derivative = getLayers()[i].conf().getActivationFunction();
       //R[i] * W[i] + acts[i] * (vW[i] + vB[i]) .* f'([acts[i + 1])
       R.add(R.get(i).mmul(W.get(i)).addi(acts.get(i)
           .mmul(vWvB.get(i).getFirst().addRowVector(vWvB.get(i).getSecond())))
-          .muli((derivative.applyDerivative(acts.get(i + 1)))));
+          .muli((Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(derivative,acts.get(i + 1)).derivative()))));
     }
 
     return R;
@@ -1532,23 +1519,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
   }
 
 
-  public Map<Integer, MatrixTransform> getWeightTransforms() {
-    return weightTransforms;
-  }
 
 
   public void setLabels(INDArray labels) {
     this.labels = labels;
   }
 
-
-  public Map<Integer, MatrixTransform> getHiddenBiasTransforms() {
-    return hiddenBiasTransforms;
-  }
-
-  public Map<Integer, MatrixTransform> getVisibleBiasTransforms() {
-    return visibleBiasTransforms;
-  }
 
   public int getnLayers() {
     return layerWiseConfigurations.getHiddenLayerSizes().length + 1;

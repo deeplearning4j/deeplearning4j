@@ -72,7 +72,7 @@ public class AutoEncoder extends BasePretrainNetwork  {
           preAct = x.mmul(W).addiRowVector(hBias);
         }
 
-        return conf.getActivationFunction().apply(preAct);
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
     }
 
     // Decode
@@ -84,12 +84,14 @@ public class AutoEncoder extends BasePretrainNetwork  {
             //row already accounted for earlier
             INDArray preAct = y.mmul(W.transposei());
             preAct = Nd4j.hstack(preAct,Nd4j.ones(preAct.rows(),1));
-            return conf.getActivationFunction().apply(preAct);
+            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
+
         }
         else {
             INDArray preAct = y.mmul(W.transposei());
             preAct.addiRowVector(vBias);
-            return conf.getActivationFunction().apply(preAct);
+            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
+
         }
 
     }

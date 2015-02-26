@@ -14,35 +14,19 @@
  *    limitations under the License.
  */
 
-package org.deeplearning4j.cli.subcommands;
+package org.deeplearning4j.cli.api;
 
-import org.kohsuke.args4j.Option;
+import java.net.URI;
 
 /**
- * Created by sonali on 2/11/15.
+ * Interface for loading input data for the model
+ *
+ * Created by sonali on 2/10/15.
  */
-public class DummySubCommand extends BaseSubCommand {
+public interface Input extends SubCommand {
 
-    @Option(name = "--input", usage = "input data",aliases = "-i", required = true)
-    private String dummyValue;
+    URI parseUri();
 
-    /**
-     * @param args arguments for command
-     */
-    public DummySubCommand(String[] args) {
-        super(args);
-    }
+    void process();
 
-    @Override
-    public void exec() {
-
-    }
-
-    public String getDummyValue() {
-        return dummyValue;
-    }
-
-    public void setDummyValue(String dummyValue) {
-        this.dummyValue = dummyValue;
-    }
 }

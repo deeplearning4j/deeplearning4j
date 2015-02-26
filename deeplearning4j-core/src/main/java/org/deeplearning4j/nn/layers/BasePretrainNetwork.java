@@ -88,16 +88,7 @@ public abstract class BasePretrainNetwork extends BaseLayer {
             if(conf.isMinimize())
                 score = -score;
         }
-        else {
-            score =  -LossFunctions.reconEntropy(
-                    input,
-                    getParam(PretrainParamInitializer.BIAS_KEY),
-                    getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY),
-                    getParam(PretrainParamInitializer.WEIGHT_KEY),
-                    conf.getActivationFunction());
-            if(conf.isMinimize())
-                score = -score;
-        }
+
     }
 
     /**

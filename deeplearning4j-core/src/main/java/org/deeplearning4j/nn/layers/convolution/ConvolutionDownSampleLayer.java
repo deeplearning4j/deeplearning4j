@@ -20,11 +20,10 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
-import org.nd4j.linalg.api.activation.ActivationFunction;
-import org.nd4j.linalg.api.ndarray.DimensionSlice;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.convolution.Convolution;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
@@ -34,7 +33,10 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  */
 public class ConvolutionDownSampleLayer extends BaseLayer {
 
-
+    /**
+     * Create a layer from a configuration
+     * @param conf
+     */
     public ConvolutionDownSampleLayer(NeuralNetConfiguration conf) {
         super(conf);
     }
@@ -48,7 +50,6 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
 
     @Override
     public INDArray activate() {
-        ActivationFunction f = conf.getActivationFunction();
         INDArray W = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
         if(W.shape()[1] != input.shape()[1])
             throw new IllegalStateException("Input size at dimension 1 must be same as the filter size");
@@ -83,7 +84,7 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
             }
         });
 
-        return f.apply(pooled);
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(),pooled));
     }
 
     @Override

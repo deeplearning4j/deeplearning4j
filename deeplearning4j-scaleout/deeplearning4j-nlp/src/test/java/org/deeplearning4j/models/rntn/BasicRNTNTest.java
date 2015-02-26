@@ -29,7 +29,6 @@ import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.junit.After;
-import org.nd4j.linalg.api.activation.Activations;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.text.corpora.treeparser.TreeVectorizer;
 import org.deeplearning4j.text.sentenceiterator.CollectionSentenceIterator;
@@ -99,7 +98,7 @@ public class BasicRNTNTest {
     @Test
     public void testGetValuesAndDerivativeLengths() throws Exception {
 
-        RNTN rntn = new RNTN.Builder().setActivationFunction(Activations.tanh())
+        RNTN rntn = new RNTN.Builder().setActivationFunction("tanh")
                 .setAdagradResetFrequency(1)
                 .setCombineClassification(true).setFeatureVectors(vec)
                 .setRandomFeatureVectors(false)
