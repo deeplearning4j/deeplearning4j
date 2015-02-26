@@ -21,7 +21,6 @@ import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.junit.Test;
-import org.nd4j.linalg.api.activation.Activations;
 
 /**
  * Created by agibsonccc on 9/13/14.
@@ -30,7 +29,7 @@ public class WeightInitTests {
 
     @Test
     public void testSi() {
-        WeightInitUtil.initWeights(1,2, WeightInit.VI, Activations.linear(), Distributions.normal(new MersenneTwister(123),1));
+        WeightInitUtil.initWeights(1,2, WeightInit.VI, Distributions.normal(new MersenneTwister(123),1));
     }
 
 }

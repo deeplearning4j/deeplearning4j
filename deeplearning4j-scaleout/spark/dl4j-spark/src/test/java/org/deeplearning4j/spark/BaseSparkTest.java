@@ -21,6 +21,8 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.junit.After;
 import org.junit.Before;
 
+
+
 /**
  * Created by agibsonccc on 1/23/15.
  */
@@ -51,6 +53,7 @@ public abstract class BaseSparkTest {
 
 
         sc = new JavaSparkContext(sparkConf);
+
         return sc;
 
     }

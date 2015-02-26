@@ -24,7 +24,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.util.RBMUtil;
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -270,7 +269,7 @@ public  class RBM extends BasePretrainNetwork {
 
         else if(conf.getHiddenUnit() == HiddenUnit.SOFTMAX) {
             INDArray h1Mean = propUp(v);
-            INDArray h1Sample = Activations.softMaxRows().apply(h1Mean);
+            INDArray h1Sample = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", h1Mean),0);
             applyDropOutIfNecessary(h1Sample);
             return new Pair<>(h1Mean,h1Sample);
         }
@@ -324,7 +323,7 @@ public  class RBM extends BasePretrainNetwork {
         }
 
         else if(conf.getVisibleUnit() == VisibleUnit.SOFTMAX) {
-            INDArray v1Sample = Activations.softMaxRows().apply(v1Mean);
+            INDArray v1Sample = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", v1Mean), 0);
             return new Pair<>(v1Mean,v1Sample);
         }
 
@@ -377,7 +376,7 @@ public  class RBM extends BasePretrainNetwork {
         }
 
         else if(conf.getHiddenUnit() == HiddenUnit.SOFTMAX)
-            return Activations.softMaxRows().apply(preSig);
+            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preSig), 0);
 
         throw new IllegalStateException("Hidden unit type should either be binary, gaussian, or rectified linear");
 
@@ -414,7 +413,7 @@ public  class RBM extends BasePretrainNetwork {
         }
 
         else if(conf.getVisibleUnit() == VisibleUnit.SOFTMAX) {
-            return Activations.softMaxRows().apply(vMean);
+            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", vMean), 0);
         }
 
 

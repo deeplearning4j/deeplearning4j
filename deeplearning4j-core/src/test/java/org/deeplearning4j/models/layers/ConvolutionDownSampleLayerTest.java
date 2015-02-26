@@ -25,23 +25,19 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.override.ConfOverride;
+import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
-import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
-import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.junit.Test;
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +85,7 @@ public class ConvolutionDownSampleLayerTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
-                .activationFunction(Activations.tanh()).filterSize(5,1,2,2)
+                .activationFunction("tanh").filterSize(5,1,2,2)
                 .nIn(4).nOut(3).batchSize(batchSize)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
@@ -97,17 +93,7 @@ public class ConvolutionDownSampleLayerTest {
                 .list(2)
                 .preProcessor(0,new ConvolutionPostProcessor())
                 .hiddenLayerSizes(new int[]{9})
-                .override(new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        if (i == 1) {
-                            builder.layerFactory(new DefaultLayerFactory(OutputLayer.class));
-                            builder.activationFunction(Activations.softMaxRows());
-                            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-
-                        }
-                    }
-                }).build();
+                .override(new ClassifierOverride(1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);

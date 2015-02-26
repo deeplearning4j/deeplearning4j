@@ -37,7 +37,6 @@ import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.junit.Test;
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -67,12 +66,12 @@ public class TestSparkMultiLayer extends BaseSparkTest {
             .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class)).visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .activationFunction(Activations.tanh()).list(2).hiddenLayerSizes(3)
+                .activationFunction("tanh").list(2).hiddenLayerSizes(3)
                 .override(new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 1) {
-                            builder.activationFunction(Activations.softMaxRows());
+                            builder.activationFunction("softmax");
                             builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
                             builder.lossFunction(LossFunctions.LossFunction.MCXENT);
                         }
@@ -98,7 +97,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                .momentum(0.9).constrainGradientToUnitNorm(true).iterationListener(new ScoreIterationListener(10))
-                .activationFunction(Activations.tanh()).stepFunction(new GradientStepFunction())
+                .activationFunction("tanh").stepFunction(new GradientStepFunction())
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).dropOut(0.3)
                 .iterations(100).visibleUnit(RBM.VisibleUnit.GAUSSIAN).batchSize(10)
                 .l2(2e-4).regularization(true).weightInit(WeightInit.VI)
@@ -110,7 +109,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
 
                         if (i == 2) {
-                            builder.activationFunction(Activations.softMaxRows());
+                            builder.activationFunction("softmax");
                             builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
                             builder.lossFunction(LossFunctions.LossFunction.MCXENT);
                         }
@@ -152,12 +151,12 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
-                .activationFunction(Activations.tanh()).list(2).hiddenLayerSizes(3)
+                .activationFunction("tanh").list(2).hiddenLayerSizes(3)
                 .override(new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 1) {
-                            builder.activationFunction(Activations.softMaxRows());
+                            builder.activationFunction("softmax");
                             builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
                             builder.lossFunction(LossFunctions.LossFunction.MCXENT);
                         }

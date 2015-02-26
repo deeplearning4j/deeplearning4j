@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.deeplearning4j.clustering.cluster;
 
 import java.util.ArrayList;
@@ -12,7 +28,6 @@ import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
-import org.nd4j.linalg.ops.reduceops.Ops.DimensionOp;
 
 public class Point implements INDArray {
 
@@ -397,9 +412,6 @@ public class Point implements INDArray {
 		array.sliceVectors(list);
 	}
 
-	public INDArray reduce(DimensionOp op, int dimension) {
-		return array.reduce(op, dimension);
-	}
 
 	public INDArray putSlice(int slice, INDArray put) {
 		return array.putSlice(slice, put);
@@ -717,13 +729,6 @@ public class Point implements INDArray {
 		return array.getFloat(indices);
 	}
 
-	public <E> E getElement(int i) {
-		return array.getElement(i);
-	}
-
-	public <E> E getElement(int i, int j) {
-		return array.getElement(i, j);
-	}
 
 	public double getDouble(int i) {
 		return array.getDouble(i);
