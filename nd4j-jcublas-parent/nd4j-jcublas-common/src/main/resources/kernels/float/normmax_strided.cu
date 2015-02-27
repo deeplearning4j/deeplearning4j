@@ -1,6 +1,6 @@
 extern "C"
 #include <math.h>
-__global__ void norm1_strided_float(int n, int xOffset,float *dx,int incx,float *result) {
+__global__ void normmax_strided_float(int n, int xOffset,float *dx,int incx,float *result) {
                   extern __shared__ float sdata[];
 
                  // perform first level of reduction,
@@ -19,7 +19,7 @@ __global__ void norm1_strided_float(int n, int xOffset,float *dx,int incx,float 
                     temp += abs(dx[i]);
                     // ensure we don't read out of bounds
                     if (i + blockDim.x < n) {
-                            temp += abs(dx[i + blockDim.x]);
+                            temp =  max(temp,abs(dx[i + blockDim.x]));
                         }
 
                    }
@@ -34,21 +34,21 @@ __global__ void norm1_strided_float(int n, int xOffset,float *dx,int incx,float 
                  // do reduction in shared mem
                  if (blockDim.x >= 512) {
                  if (tid < 256) {
-                      sdata[tid] = temp = temp + sdata[tid + 256];
+                      sdata[tid] = temp = max(temp,abs(sdata[tid + 256]));
                      }
                    __syncthreads();
                  }
 
                  if (blockDim.x >= 256) {
                       if (tid < 128) {
-                        sdata[tid] = temp = temp + sdata[tid + 128];
+                        sdata[tid] = temp = max(temp,abs(sdata[tid + 128]);
                       }
                      __syncthreads();
                  }
 
                  if (blockDim.x >= 128) {
                       if (tid <  64)  {
-                           sdata[tid] = temp = temp + sdata[tid +  64];
+                           sdata[tid] = temp = max(temp,abs(sdata[tid +  64]));
                        }
                        __syncthreads();
                   }
@@ -59,22 +59,22 @@ __global__ void norm1_strided_float(int n, int xOffset,float *dx,int incx,float 
                      // doesn't reorder stores to it and induce incorrect behavior.
                      volatile float* smem = sdata;
                      if (blockDim.x >=  64) {
-                         smem[tid] = temp = temp + smem[tid + 32];
+                         smem[tid] = temp = max(temp,abs(smem[tid + 32]);
                       }
                      if (blockDim.x >=  32) {
-                         smem[tid] = temp = temp + smem[tid + 16];
+                         smem[tid] = temp = max(temp,abs(smem[tid + 16]);
                      }
                      if (blockDim.x >=  16) {
-                         smem[tid] = temp = temp + smem[tid +  8];
+                         smem[tid] = temp = max(temp,abs(smem[tid +  8]));
                       }
                      if (blockDim.x >=   8) {
-                          smem[tid] = temp = temp + smem[tid +  4];
+                          smem[tid] = temp = max(temp,abs(smem[tid +  4]));
                       }
                      if (blockDim.x >=   4) {
-                         smem[tid] = temp = temp + smem[tid +  2];
+                         smem[tid] = temp = max(temp,abs(smem[tid +  2]);
                       }
                      if (blockDim.x >=   2) {
-                         smem[tid] = temp = temp + smem[tid +  1];
+                         smem[tid] = temp = max(temp,abs(smem[tid +  1]));
                       }
                  }
 

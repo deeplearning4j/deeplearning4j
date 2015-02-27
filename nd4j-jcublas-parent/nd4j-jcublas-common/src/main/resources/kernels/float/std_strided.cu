@@ -1,6 +1,5 @@
 extern "C"
-#include <math.h>
-__global__ void norm1_strided_float(int n, int xOffset,float *dx,int incx,float *result) {
+__global__ void std_strided_float(int n, int xOffset,float *dx,int incx,float mean,float *result) {
                   extern __shared__ float sdata[];
 
                  // perform first level of reduction,
@@ -16,10 +15,10 @@ __global__ void norm1_strided_float(int n, int xOffset,float *dx,int incx,float 
                  // in a larger gridSize and therefore fewer elements per thread
                  while (i < n) {
                    if(i >= xOffset && i % incx == 0) {
-                    temp += abs(dx[i]);
+                    temp += dx[i];
                     // ensure we don't read out of bounds
                     if (i + blockDim.x < n) {
-                            temp += abs(dx[i + blockDim.x]);
+                            temp += dx[i + blockDim.x];
                         }
 
                    }

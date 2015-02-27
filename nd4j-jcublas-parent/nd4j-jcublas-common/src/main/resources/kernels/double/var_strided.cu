@@ -1,7 +1,6 @@
 extern "C"
-#include <math.h>
-__global__ void norm1_strided_float(int n, int xOffset,float *dx,int incx,float *result) {
-                  extern __shared__ float sdata[];
+__global__ void var_strided_double(int n, int xOffset,double *dx,int incx,double mean,double *result) {
+                  extern __shared__ double sdata[];
 
                  // perform first level of reduction,
                  // reading from global memory, writing to shared memory
@@ -9,17 +8,17 @@ __global__ void norm1_strided_float(int n, int xOffset,float *dx,int incx,float 
                  unsigned int i = blockIdx.x*blockDim.x * 2 + threadIdx.x;
                  unsigned int gridSize = blockDim.x * 2 * gridDim.x;
 
-                 float temp = 0;
+                 double temp = 0;
 
                  // we reduce multiple elements per thread.  The number is determined by the
                  // number of active thread blocks (via gridDim).  More blocks will result
                  // in a larger gridSize and therefore fewer elements per thread
                  while (i < n) {
                    if(i >= xOffset && i % incx == 0) {
-                    temp += abs(dx[i]);
+                    temp += dx[i];
                     // ensure we don't read out of bounds
                     if (i + blockDim.x < n) {
-                            temp += abs(dx[i + blockDim.x]);
+                            temp += dx[i + blockDim.x] - mean;
                         }
 
                    }
@@ -57,7 +56,7 @@ __global__ void norm1_strided_float(int n, int xOffset,float *dx,int incx,float 
                      // now that we are using warp-synchronous programming (below)
                      // we need to declare our shared memory volatile so that the compiler
                      // doesn't reorder stores to it and induce incorrect behavior.
-                     volatile float* smem = sdata;
+                     volatile double* smem = sdata;
                      if (blockDim.x >=  64) {
                          smem[tid] = temp = temp + smem[tid + 32];
                       }
