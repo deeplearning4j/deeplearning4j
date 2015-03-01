@@ -46,13 +46,11 @@ public class IterationGradientDescent extends BaseOptimizer {
     @Override
     public boolean optimize() {
         for(int i = 0; i < conf.getNumIterations(); i++) {
-            model.setScore();
             Pair<Gradient,Double> score = gradientAndScore();
-            updateGradientAccordingToParams(score.getFirst(), model, batchSize());
-            model.update(score.getFirst());
+            // model.update(score.getFirst()); // this line causing very bad optimization results
             for(IterationListener listener : conf.getListeners())
                 listener.iterationDone(model,i);
-
+            log.info("Error at iteration " + i + " was " + model.score());
         }
         return true;
     }
