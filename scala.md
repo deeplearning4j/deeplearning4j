@@ -15,6 +15,7 @@ We believe Scala's many strengths will lead it to dominate numerical computing, 
 
 ### See also
 
+* SF Spark Meetup: [Deeplearning4j on Spark, and Data Science on the JVM, with ND4J](https://www.youtube.com/watch?v=LCsc1hFuNac&feature=youtu.be)
 * [Q&A with Adam about Spark with Alexy Khrabrov](https://www.youtube.com/watch?v=LJPL8sL0Daw&feature=youtu.be)
 * [Our Spark integration](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark)
 * [Our early-stage Scala API](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-scala-api/src/main/scala/org/nd4j/api/linalg)([one example(https://github.com/deeplearning4j/nd4j/blob/master/nd4j-scala-api/src/test/scala/org/nd4j/api/linalg/TestNDArray.scala#L18)])
