@@ -18,34 +18,57 @@
 
 package org.deeplearning4j.cli.files;
 
+import org.canova.api.exceptions.UnknownFormatException;
 import org.canova.api.records.reader.RecordReader;
 import org.canova.api.records.reader.factory.RecordReaderFactory;
-import org.canova.api.split.FileSplit;
-import org.canova.api.split.InputSplit;
+import org.canova.api.records.reader.factory.RecordWriterFactory;
+import org.canova.api.records.writer.RecordWriter;
 import org.deeplearning4j.cli.api.schemes.BaseScheme;
-import org.deeplearning4j.cli.api.schemes.FileRecordReaderFactory;
 
-import java.io.File;
 import java.net.URI;
 
 /**
+ * Creates record reader readerFactory for local file scheme
  * @author sonali
  */
 public class FileScheme extends BaseScheme {
 
+    /**
+     * Process data input; create record reader
+     * @param uri
+     */
     @Override
-    public void process(URI uri) {
-        //invoke record reader
+    public RecordReader createReader(URI uri) {
+        try {
+            RecordReader reader = readerFactory.create(uri);
+            return reader;
+        } catch (UnknownFormatException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-        RecordReaderFactory recordReaderFactory = new FileRecordReaderFactory();
-        recordReaderFactory.create(uri);
-
+    /**
+     * Process data output; create record writer
+     * @param uri destination for saving model
+     */
+    @Override
+    public RecordWriter createWriter(URI uri) {
+        try {
+            RecordWriter writer = recordWriterFactory.create(uri);
+            return writer;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
+    @Override
+    public RecordReaderFactory createReaderFactory() {
+        return new FileRecordReaderFactory();
+    }
 
     @Override
-    public FileRecordReaderFactory factory() {
-        return null;
+    public RecordWriterFactory createWriterFactory() {
+        return new FileRecordWriterFactory();
     }
 }

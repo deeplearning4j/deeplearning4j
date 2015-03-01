@@ -17,34 +17,5 @@ import java.util.Objects;
  */
 public abstract class Input extends BaseIOFlag {
 
-    /**
-     * Parse the URI
-     * Figure out source - scheme for reading data (Spark, HDFS, local, etc)
-     * Use Canova for reading data (InputSplit interface)
-     * Determine what type of data input this is (SQL, CSV, JSON, etc)
-     * Then find the appropriate RecordReader class in Canova
-     * (maybe with a tuple of string file extensions and commands)
-     * Then open and vectorize the file using Canova
-     * @return RecordReader object
-     */
 
-
-    @Override
-    public <E> E value(String value) throws Exception {
-        URI uri = URI.create(value);
-        String path = uri.getPath();
-        String extension = path.substring(path.lastIndexOf(".") + 1);
-
-        return (E) createReader(uri);
-    }
-
-    @Override
-    protected RecordWriter createWriter(URI uri) {
-        return null;
-    }
-
-    @Override
-    protected RecordReader createReader(URI uri) {
-        return null;
-    }
 }
