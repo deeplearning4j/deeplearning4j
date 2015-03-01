@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 
 /**
@@ -100,6 +101,20 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
             }
         }
+
+        else if(op instanceof ScalarOp) {
+            ScalarOp scalarOp = (ScalarOp) op;
+            for(int c = 0, x = op.x().offset(); c < op.n();
+                x+= op.x().majorStride(),c++) {
+                if(extraArgs != null)
+                    apply(scalarOp,x,extraArgs);
+
+                else
+                    apply(scalarOp,x);
+
+            }
+        }
+
 
         return op;
     }
@@ -186,7 +201,18 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return execAndReturn(op,dimension,null);
     }
 
+    private void apply(ScalarOp op,int c) {
+        apply(op,c,null);
+    }
 
+    private void apply(ScalarOp op,int c,Object[] extraArgs) {
+        if(op.x() instanceof IComplexNDArray) {
+            IComplexNDArray ndArray = (IComplexNDArray) op.x();
+            ndArray.putScalar(c,op.op(((IComplexNDArray) op.x()).getComplex(c)));
+        }
+        else
+            op.x().putScalar(c,op.op(op.x().getDouble(c)));
+    }
     //apply a singular op to x and store the result
     private void apply(TransformOp op,int c,int x,Object[] extraArgs) {
         DataBuffer xData = op.x().data();

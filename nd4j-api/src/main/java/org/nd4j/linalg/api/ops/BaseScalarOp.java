@@ -23,19 +23,36 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * Base scalar operation
  * @author Adam Gibson
  */
-public abstract class BaseScalarOp extends BaseOp {
-   protected double num;
+public abstract class BaseScalarOp extends BaseOp implements  ScalarOp {
+    protected Number num;
     protected IComplexNumber complexNumber;
 
-    public BaseScalarOp(INDArray x, INDArray y, int n) {
+    public BaseScalarOp(INDArray x, INDArray y, int n,Number num) {
         super(x, y, n);
+        this.num = num;
     }
 
-    public BaseScalarOp(INDArray x) {
+    public BaseScalarOp(INDArray x,Number num) {
         super(x);
+        this.num = num;
+    }
+    public BaseScalarOp(INDArray x, INDArray y, int n,IComplexNumber num) {
+        super(x, y, n);
+        this.complexNumber = num;
     }
 
+    public BaseScalarOp(INDArray x,IComplexNumber num) {
+        super(x);
+        this.complexNumber = num;
+    }
 
+    @Override
+    public double scalar() {
+        return num.doubleValue();
+    }
 
-
+    @Override
+    public IComplexNumber complexScalar() {
+        return complexNumber;
+    }
 }

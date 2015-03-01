@@ -26,12 +26,20 @@ import org.nd4j.linalg.api.ops.Op;
  *  @author Adam Gibson
  */
 public class ScalarDivision extends BaseScalarOp {
-    public ScalarDivision(INDArray x, INDArray y, int n) {
-        super(x, y, n);
+    public ScalarDivision(INDArray x, INDArray y, int n, Number num) {
+        super(x, y, n, num);
     }
 
-    public ScalarDivision(INDArray x) {
-        super(x);
+    public ScalarDivision(INDArray x, Number num) {
+        super(x, num);
+    }
+
+    public ScalarDivision(INDArray x, INDArray y, int n, IComplexNumber num) {
+        super(x, y, n, num);
+    }
+
+    public ScalarDivision(INDArray x, IComplexNumber num) {
+        super(x, num);
     }
 
     @Override
@@ -62,22 +70,22 @@ public class ScalarDivision extends BaseScalarOp {
 
     @Override
     public float op(float origin, float other, Object[] extraArgs) {
-        return (float) (origin / num);
+        return (origin / num.floatValue());
     }
 
     @Override
     public double op(double origin, double other, Object[] extraArgs) {
-        return origin / num;
+        return origin / num.doubleValue();
     }
 
     @Override
     public double op(double origin, Object[] extraArgs) {
-        return origin / num;
+        return origin / num.doubleValue();
     }
 
     @Override
     public float op(float origin, Object[] extraArgs) {
-        return (float) (origin / num);
+        return origin / num.floatValue();
     }
 
     @Override
@@ -89,6 +97,9 @@ public class ScalarDivision extends BaseScalarOp {
 
     @Override
     public Op opForDimension(int index, int dimension) {
-        return new ScalarDivision(x.vectorAlongDimension(index,dimension));
+        if(num != null)
+            return new ScalarDivision(x.vectorAlongDimension(index,dimension),num);
+        else
+            return new ScalarDivision(x.vectorAlongDimension(index, dimension),complexNumber);
     }
 }

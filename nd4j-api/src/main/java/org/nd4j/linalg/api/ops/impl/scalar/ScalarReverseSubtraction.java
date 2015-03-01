@@ -26,12 +26,20 @@ import org.nd4j.linalg.api.ops.Op;
  *  @author Adam Gibson
  */
 public class ScalarReverseSubtraction extends BaseScalarOp {
-    public ScalarReverseSubtraction(INDArray x, INDArray y, int n) {
-        super(x, y, n);
+    public ScalarReverseSubtraction(INDArray x, INDArray y, int n, Number num) {
+        super(x, y, n, num);
     }
 
-    public ScalarReverseSubtraction(INDArray x) {
-        super(x);
+    public ScalarReverseSubtraction(INDArray x, Number num) {
+        super(x, num);
+    }
+
+    public ScalarReverseSubtraction(INDArray x, INDArray y, int n, IComplexNumber num) {
+        super(x, y, n, num);
+    }
+
+    public ScalarReverseSubtraction(INDArray x, IComplexNumber num) {
+        super(x, num);
     }
 
     @Override
@@ -62,22 +70,22 @@ public class ScalarReverseSubtraction extends BaseScalarOp {
 
     @Override
     public float op(float origin, float other, Object[] extraArgs) {
-        return (float) (num - origin);
+        return  (num.floatValue() - origin);
     }
 
     @Override
     public double op(double origin, double other, Object[] extraArgs) {
-        return num - origin;
+        return num.doubleValue() - origin;
     }
 
     @Override
     public double op(double origin, Object[] extraArgs) {
-        return num - origin;
+        return num.doubleValue() - origin;
     }
 
     @Override
     public float op(float origin, Object[] extraArgs) {
-        return (float) (num - origin);
+        return  (num.floatValue() - origin);
     }
 
     @Override
@@ -89,6 +97,9 @@ public class ScalarReverseSubtraction extends BaseScalarOp {
 
     @Override
     public Op opForDimension(int index, int dimension) {
-        return new ScalarReverseSubtraction(x.vectorAlongDimension(index,dimension));
+        if(num != null)
+            return new ScalarReverseSubtraction(x.vectorAlongDimension(index,dimension),num);
+        else
+            return new ScalarReverseSubtraction(x.vectorAlongDimension(index, dimension),complexNumber);
     }
 }
