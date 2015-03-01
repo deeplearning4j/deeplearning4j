@@ -13,20 +13,5 @@ import java.net.URI;
  */
 public abstract class Output extends BaseIOFlag {
 
-    /**
-     * Parse URI first to identify destination
-     * Then save data to this location
-     * @return
-     */
-
-
-    @Override
-    public <E> E value(String value) throws Exception {
-        URI uri = URI.create(value);
-        String path = uri.getPath();
-        String extension = path.substring(path.lastIndexOf(".") + 1);
-
-        return (E) createWriter(uri);
-    }
 
 }

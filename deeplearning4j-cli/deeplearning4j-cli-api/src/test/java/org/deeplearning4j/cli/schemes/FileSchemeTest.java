@@ -40,16 +40,10 @@ import static org.junit.Assert.assertTrue;
  * @author sonali
  */
 public class FileSchemeTest extends BaseSchemeTest {
-    Scheme fileScheme = Schemes.getScheme("file");
-
-    @Override
-    public Scheme getScheme() {
-        return fileScheme;
-    }
 
     @Override
     public void initScheme() {
-
+        scheme = new FileScheme();
     }
 
 }
