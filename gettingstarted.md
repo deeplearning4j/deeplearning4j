@@ -72,6 +72,16 @@ For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deep
 
       mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
+If you want to run Deeplearning4j examples after installing from trunk, you should git clone ND4J, Canova and Deeplearning4j, respectively, and then install all from source using Maven with this command:
+
+      mvn clean install -DskipTests
+
+If you receive a Javadoc error, run this:
+
+      mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+
+Following these steps, you should be able to run the 0.0.3.3 examples. 
+
 ###<a name="eclipse">Eclipse</a> 
 
 After running a git clone, enter this command
