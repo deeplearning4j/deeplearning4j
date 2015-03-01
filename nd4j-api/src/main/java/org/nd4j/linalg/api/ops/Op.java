@@ -212,5 +212,11 @@ public interface Op {
      */
     int numProcessed();
 
+    /**
+     * Extra arguments
+     * @return the extra arguments
+     */
+    Object[] extraArgs();
+
 
 }

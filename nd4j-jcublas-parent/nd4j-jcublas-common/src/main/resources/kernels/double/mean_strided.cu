@@ -19,7 +19,7 @@ __global__ void mean_strided_double(int n, int xOffset,double *dx,int incx,doubl
                     // ensure we don't read out of bounds
                     if (i + blockDim.x < n) {
                             temp += dx[i + blockDim.x];
-                        }
+                      }
 
                    }
                     i += gridSize;

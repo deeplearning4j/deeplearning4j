@@ -1,11 +1,13 @@
 extern "C"
-__global__ void var_strided_float(int n, int xOffset,float *dx,int incx,float mean,float *result) {
+#include <math.h>
+
+__global__ void var_strided_float(int n, int xOffset,float *dx,int incx,float mean,float bias,float *result) {
                   extern __shared__ float sdata[];
 
                  // perform first level of reduction,
                  // reading from global memory, writing to shared memory
                  unsigned int tid = threadIdx.x;
-                 unsigned int i = blockIdx.x*blockDim.x * 2 + threadIdx.x;
+                 unsigned int i = blockIdx.x * blockDim.x * 2 + threadIdx.x;
                  unsigned int gridSize = blockDim.x * 2 * gridDim.x;
 
                  float temp = 0;
@@ -15,10 +17,13 @@ __global__ void var_strided_float(int n, int xOffset,float *dx,int incx,float me
                  // in a larger gridSize and therefore fewer elements per thread
                  while (i < n) {
                    if(i >= xOffset && i % incx == 0) {
-                    temp += dx[i];
+                    float curr = (dx[i] - mean);
+
+                    temp += powf(curr,2);
                     // ensure we don't read out of bounds
                     if (i + blockDim.x < n) {
-                            temp += dx[i + blockDim.x] - mean;
+                            float curr = (dx[i + blockDim.x] - mean);
+                            temp += powf(curr,2);
                         }
 
                    }
@@ -27,6 +32,7 @@ __global__ void var_strided_float(int n, int xOffset,float *dx,int incx,float me
 
                  // each thread puts its local sum into shared memory
                  sdata[tid] = temp;
+
                  __syncthreads();
 
 
@@ -78,8 +84,9 @@ __global__ void var_strided_float(int n, int xOffset,float *dx,int incx,float me
                  }
 
                  // write result for this block to global mem
+
                  if (tid == 0)
-                     result[blockIdx.x] = sdata[0];
+                     result[blockIdx.x] = (sdata[0] - (powf(bias,2) / n)) / (n - 1.0);
 
  }
 

@@ -1,6 +1,5 @@
 extern "C"
 #include <math.h>
-
 __global__ void norm2_strided_double(int n, int xOffset,double *dx,int incx,double *result) {
                   extern __shared__ double sdata[];
 

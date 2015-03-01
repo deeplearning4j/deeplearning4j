@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -532,7 +533,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         //actually call the kernel
         KernelFunctions.invoke(
                 2,
-                KernelFunctions.getFunction(op, dType)
+                KernelFunctionLoader.getInstance().getFunction(op,dType)
                 , kernelParameters);
     }
 
@@ -576,7 +577,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                     , resultP);
 
 
-            KernelFunctions.invoke(n,KernelFunctions.getFunction(function,dType),kernelParameters);
+            KernelFunctions.invoke(n,KernelFunctionLoader.getInstance().getFunction(function, dType),kernelParameters);
         }
 
         else {
@@ -614,7 +615,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             Pointer kernelParameters = KernelFunctions.constructKernelParameters(results);
 
 
-            KernelFunctions.invoke(n,KernelFunctions.getFunction(function,dType),kernelParameters);
+            KernelFunctions.invoke(n,KernelFunctionLoader.getInstance().getFunction(function, dType),kernelParameters);
 
         }
 
@@ -652,7 +653,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 , Pointer.to(new int[]{incy}),resultP);
         KernelFunctions.invoke(
                 2
-                ,KernelFunctions.getFunction(op,dType)
+                ,KernelFunctionLoader.getInstance().getFunction(op,dType)
                 ,kernelParameters);
     }
 

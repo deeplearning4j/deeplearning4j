@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
@@ -29,7 +30,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Variance extends BaseAccumulation {
-    private double mean;
+    private double mean,bias;
 
     public Variance(INDArray x, INDArray y, int n) {
         super(x, y, n);
@@ -45,17 +46,12 @@ public class Variance extends BaseAccumulation {
 
     @Override
     public void update(Number result) {
-        if(otherAccum().isEmpty()) {
-            otherAccum.add(0.0);
-
-        }
         double dev = result.doubleValue() - mean;
         currentResult = currentResult().doubleValue() + FastMath.pow(dev, 2);
-        otherAccum().set(0,otherAccum().get(0).doubleValue() + dev);
         numProcessed++;
 
         if(numProcessed() == n())
-            currentResult = (currentResult.doubleValue() - (FastMath.pow(otherAccum.get(0).doubleValue(),2.0) / n())) / (n() - 1.0);
+            currentResult = (currentResult.doubleValue() - (FastMath.pow(bias,2.0) / n())) / (n() - 1.0);
 
 
     }
@@ -69,11 +65,10 @@ public class Variance extends BaseAccumulation {
 
         IComplexNumber dev = result.sub(mean);
         currentComplexResult.addi(ComplexUtil.pow(dev, 2));
-        otherAccumComplex().get(0).addi(dev);
         numProcessed++;
 
         if(numProcessed() == n())
-            currentComplexResult = (currentComplexResult.sub(ComplexUtil.pow(otherAccumComplex.get(0),2.0).div(Nd4j.createComplexNumber(n(),0))).div(Nd4j.createComplexNumber(n() - 1.0,0.0)));
+            currentComplexResult = (currentComplexResult.sub(ComplexUtil.pow(Nd4j.createComplexNumber(bias,0),2.0).div(Nd4j.createComplexNumber(n(),0))).div(Nd4j.createComplexNumber(n() - 1.0,0.0)));
 
 
     }
@@ -148,6 +143,8 @@ public class Variance extends BaseAccumulation {
     @Override
     public void init(INDArray x, INDArray y, int n) {
         super.init(x, y, n);
+        this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).currentResult().doubleValue();
         this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).currentResult().doubleValue();
+        this.extraArgs = new Object[]{bias,mean};
     }
 }

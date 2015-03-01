@@ -20,7 +20,8 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * Created by agibsonccc on 2/25/15.
+ * Base scalar operation
+ * @author Adam Gibson
  */
 public abstract class BaseScalarOp extends BaseOp {
    protected double num;

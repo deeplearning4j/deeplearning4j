@@ -41,8 +41,8 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 
 public class SoftMax extends BaseTransformOp {
-    private double sum;
-    private double max;
+    private Number sum;
+    private Number max;
     private IComplexNumber maxComplex,sumComplex;
     private INDArray expXMinusMax;
     private IComplexNDArray complexExpMinusMax;
@@ -91,28 +91,28 @@ public class SoftMax extends BaseTransformOp {
 
     @Override
     public float op(float origin, float other, Object[] extraArgs) {
-        float ret = (float) (expXMinusMax.getFloat(numProcessed) / sum);
+        float ret = (float) (expXMinusMax.getFloat(numProcessed) / sum.doubleValue());
         numProcessed++;
         return ret;
     }
 
     @Override
     public double op(double origin, double other, Object[] extraArgs) {
-        double ret = expXMinusMax.getDouble(numProcessed) / sum;
+        double ret = expXMinusMax.getDouble(numProcessed) / sum.doubleValue();
         numProcessed++;
         return ret;
     }
 
     @Override
     public double op(double origin, Object[] extraArgs) {
-        double ret = expXMinusMax.getDouble(numProcessed) / sum;
+        double ret = expXMinusMax.getDouble(numProcessed) / sum.doubleValue();
         numProcessed++;
         return ret;
     }
 
     @Override
     public float op(float origin, Object[] extraArgs) {
-        float ret = (float) (expXMinusMax.getFloat(numProcessed) / sum);
+        float ret = (float) (expXMinusMax.getFloat(numProcessed) / sum.doubleValue());
         numProcessed++;
         return ret;
     }
@@ -149,12 +149,13 @@ public class SoftMax extends BaseTransformOp {
             IComplexNDArray complexX = (IComplexNDArray) x;
             complexExpMinusMax = (IComplexNDArray) Transforms.exp(complexX.sub(maxComplex));
             this.sumComplex =  Nd4j.getExecutioner().execAndReturn(new Sum(expXMinusMax)).currentResultComplex();
+            this.extraArgs = new Object[] {maxComplex,sumComplex};
         }
         else {
-            this.max = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResult().doubleValue();
+            this.max = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResult();
             expXMinusMax = Transforms.exp(x.sub(max));
-            this.sum = Nd4j.getExecutioner().execAndReturn(new Sum(expXMinusMax)).currentResult().doubleValue();
-
+            this.sum = Nd4j.getExecutioner().execAndReturn(new Sum(expXMinusMax)).currentResult();
+            this.extraArgs = new Object[] {max,sum};
         }
 
 

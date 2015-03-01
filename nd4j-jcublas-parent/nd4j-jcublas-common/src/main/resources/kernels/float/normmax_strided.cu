@@ -16,10 +16,10 @@ __global__ void normmax_strided_float(int n, int xOffset,float *dx,int incx,floa
                  // in a larger gridSize and therefore fewer elements per thread
                  while (i < n) {
                    if(i >= xOffset && i % incx == 0) {
-                    temp += abs(dx[i]);
+                    temp += fabsf(dx[i]);
                     // ensure we don't read out of bounds
                     if (i + blockDim.x < n) {
-                            temp =  max(temp,abs(dx[i + blockDim.x]));
+                            temp =  fmaxf(temp,fabsf(dx[i + blockDim.x]));
                         }
 
                    }
@@ -34,21 +34,21 @@ __global__ void normmax_strided_float(int n, int xOffset,float *dx,int incx,floa
                  // do reduction in shared mem
                  if (blockDim.x >= 512) {
                  if (tid < 256) {
-                      sdata[tid] = temp = max(temp,abs(sdata[tid + 256]));
+                      sdata[tid] = temp = fmaxf(temp,fabsf(sdata[tid + 256]));
                      }
                    __syncthreads();
                  }
 
                  if (blockDim.x >= 256) {
                       if (tid < 128) {
-                        sdata[tid] = temp = max(temp,abs(sdata[tid + 128]);
+                        sdata[tid] = temp = fmaxf(temp,fabsf(sdata[tid + 128]));
                       }
                      __syncthreads();
                  }
 
                  if (blockDim.x >= 128) {
                       if (tid <  64)  {
-                           sdata[tid] = temp = max(temp,abs(sdata[tid +  64]));
+                           sdata[tid] = temp = fmaxf(temp,fabsf(sdata[tid +  64]));
                        }
                        __syncthreads();
                   }
@@ -59,22 +59,22 @@ __global__ void normmax_strided_float(int n, int xOffset,float *dx,int incx,floa
                      // doesn't reorder stores to it and induce incorrect behavior.
                      volatile float* smem = sdata;
                      if (blockDim.x >=  64) {
-                         smem[tid] = temp = max(temp,abs(smem[tid + 32]);
+                         smem[tid] = temp = fmaxf(temp,fabsf(smem[tid + 32]));
                       }
                      if (blockDim.x >=  32) {
-                         smem[tid] = temp = max(temp,abs(smem[tid + 16]);
+                         smem[tid] = temp = fmaxf(temp,fabsf(smem[tid + 16]));
                      }
                      if (blockDim.x >=  16) {
-                         smem[tid] = temp = max(temp,abs(smem[tid +  8]));
+                         smem[tid] = temp = fmaxf(temp,fabsf(smem[tid +  8]));
                       }
                      if (blockDim.x >=   8) {
-                          smem[tid] = temp = max(temp,abs(smem[tid +  4]));
+                          smem[tid] = temp = fmaxf(temp,fabsf(smem[tid +  4]));
                       }
                      if (blockDim.x >=   4) {
-                         smem[tid] = temp = max(temp,abs(smem[tid +  2]);
+                         smem[tid] = temp = fmaxf(temp,fabsf(smem[tid +  2]));
                       }
                      if (blockDim.x >=   2) {
-                         smem[tid] = temp = max(temp,abs(smem[tid +  1]));
+                         smem[tid] = temp = fmaxf(temp,fabsf(smem[tid +  1]));
                       }
                  }
 

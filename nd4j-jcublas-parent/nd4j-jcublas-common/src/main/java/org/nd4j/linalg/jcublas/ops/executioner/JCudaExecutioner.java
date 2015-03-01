@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 
 import static jcuda.driver.JCudaDriver.cuMemAlloc;
@@ -43,7 +44,7 @@ import static jcuda.driver.JCudaDriver.cuMemAlloc;
 public class JCudaExecutioner implements OpExecutioner {
     @Override
     public Op exec(Op op) {
-        return exec(op,null);
+        return exec(op,op.extraArgs());
     }
 
     @Override
@@ -61,7 +62,7 @@ public class JCudaExecutioner implements OpExecutioner {
 
     @Override
     public INDArray execAndReturn(TransformOp op) {
-        return execAndReturn(op,null);
+        return execAndReturn(op,op.extraArgs());
     }
 
     @Override
@@ -77,12 +78,12 @@ public class JCudaExecutioner implements OpExecutioner {
 
     @Override
     public Accumulation execAndReturn(Accumulation op) {
-        return execAndReturn(op,null);
+        return execAndReturn(op,op.extraArgs());
     }
 
     @Override
     public Op exec(Op op, int dimension) {
-        return exec(op,null,dimension);
+        return exec(op,op.extraArgs(),dimension);
     }
 
     @Override
@@ -108,7 +109,7 @@ public class JCudaExecutioner implements OpExecutioner {
 
     @Override
     public INDArray execAndReturn(TransformOp op, int dimension) {
-        return execAndReturn(op,dimension,null);
+        return execAndReturn(op,dimension,op.extraArgs());
     }
 
     @Override
@@ -134,7 +135,7 @@ public class JCudaExecutioner implements OpExecutioner {
 
     @Override
     public Accumulation execAndReturn(Accumulation op, int dimension) {
-        return execAndReturn(op,dimension,null);
+        return execAndReturn(op,dimension,op.extraArgs());
     }
 
     private void invoke(Accumulation op,Object[] extraArgs) {
@@ -181,7 +182,6 @@ public class JCudaExecutioner implements OpExecutioner {
                 );
 
                 invokeFunction(op, kernelParams,threads,blocks);
-
                 setResultForOp(op,result);
 
 
@@ -207,7 +207,6 @@ public class JCudaExecutioner implements OpExecutioner {
 
                 Pointer kernelParameters = KernelFunctions.constructKernelParameters(results);
                 invokeFunction(op, kernelParameters,threads,blocks);
-
                 setResultForOp(op,result);
 
             }
@@ -311,7 +310,7 @@ public class JCudaExecutioner implements OpExecutioner {
 
     private void invokeFunction(Op op,Pointer kernelParams,int...extraParams) {
         String functionName = op.name() + "_strided";
-        CUfunction func =  KernelFunctions.getFunction(functionName, op.x().data().dataType() == DataBuffer.DOUBLE ? "double" : "float");
+        CUfunction func =  KernelFunctionLoader.getInstance().getFunction(functionName, op.x().data().dataType() == DataBuffer.DOUBLE ? "double" : "float");
         if(func == null)
             throw new IllegalArgumentException("Function " + functionName + " with data type " + (op.x().data().dataType() == DataBuffer.DOUBLE ? "double does not exist" : "float does not exist"));
         if(KernelFunctions.isReduce(functionName)) {
@@ -325,6 +324,8 @@ public class JCudaExecutioner implements OpExecutioner {
                     op.n(),
                    func
                     , kernelParams);
+
+
     }
 
 

@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +56,12 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         otherAccum = new ArrayList<>();
         otherAccumComplex = new ArrayList<>();
         init(x,y,x.length());
+    }
+
+
+    @Override
+    public IComplexNumber zeroComplex() {
+        return Nd4j.createComplexNumber(zero(),zero());
     }
 
     @Override

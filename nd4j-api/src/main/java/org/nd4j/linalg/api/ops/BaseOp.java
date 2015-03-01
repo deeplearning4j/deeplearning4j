@@ -30,6 +30,7 @@ public abstract class BaseOp implements Op {
     protected INDArray x,y;
     protected int n;
     protected int numProcessed;
+    protected Object[] extraArgs;
 
     /**
      * Base operation constructor
@@ -42,6 +43,11 @@ public abstract class BaseOp implements Op {
         this.y = y;
         this.n = n;
         init(x,y,n);
+    }
+
+    @Override
+    public Object[] extraArgs() {
+        return extraArgs;
     }
 
     /**
@@ -119,5 +125,10 @@ public abstract class BaseOp implements Op {
     @Override
     public int numProcessed() {
         return numProcessed;
+    }
+
+    @Override
+    public String toString() {
+        return name();
     }
 }

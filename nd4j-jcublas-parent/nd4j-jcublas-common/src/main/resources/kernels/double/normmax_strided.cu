@@ -41,7 +41,7 @@ __global__ void normmax_strided_double(int n, int xOffset,double *dx,int incx,do
 
                  if (blockDim.x >= 256) {
                       if (tid < 128) {
-                        sdata[tid] = temp = max(temp,abs(sdata[tid + 128]);
+                        sdata[tid] = temp = max(temp,abs(sdata[tid + 128]));
                       }
                      __syncthreads();
                  }
@@ -59,10 +59,10 @@ __global__ void normmax_strided_double(int n, int xOffset,double *dx,int incx,do
                      // doesn't reorder stores to it and induce incorrect behavior.
                      volatile double* smem = sdata;
                      if (blockDim.x >=  64) {
-                         smem[tid] = temp = max(temp,abs(smem[tid + 32]);
+                         smem[tid] = temp = max(temp,abs(smem[tid + 32]));
                       }
                      if (blockDim.x >=  32) {
-                         smem[tid] = temp = max(temp,abs(smem[tid + 16]);
+                         smem[tid] = temp = max(temp,abs(smem[tid + 16]));
                      }
                      if (blockDim.x >=  16) {
                          smem[tid] = temp = max(temp,abs(smem[tid +  8]));
@@ -71,7 +71,7 @@ __global__ void normmax_strided_double(int n, int xOffset,double *dx,int incx,do
                           smem[tid] = temp = max(temp,abs(smem[tid +  4]));
                       }
                      if (blockDim.x >=   4) {
-                         smem[tid] = temp = max(temp,abs(smem[tid +  2]);
+                         smem[tid] = temp = max(temp,abs(smem[tid +  2]));
                       }
                      if (blockDim.x >=   2) {
                          smem[tid] = temp = max(temp,abs(smem[tid +  1]));

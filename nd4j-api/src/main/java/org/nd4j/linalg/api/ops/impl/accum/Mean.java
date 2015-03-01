@@ -66,13 +66,9 @@ public class Mean extends BaseAccumulation {
 
     @Override
     public Number zero() {
-        return Double.NEGATIVE_INFINITY;
+        return 0.0;
     }
 
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY);
-    }
 
     @Override
     public String name() {

@@ -30,6 +30,7 @@ import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +79,11 @@ public class SimpleJCublas {
         String path = System.getProperty("java.library.path");
         JCublas.setLogLevel(LogLevel.LOG_DEBUG);
         JCublas.setExceptionsEnabled(true);
-
+        try {
+            KernelFunctionLoader.getInstance().load();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         init = true;
     }
 

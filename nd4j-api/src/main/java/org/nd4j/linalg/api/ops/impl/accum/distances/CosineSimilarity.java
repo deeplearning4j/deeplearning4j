@@ -20,6 +20,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -29,7 +30,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class CosineSimilarity extends BaseAccumulation {
-    private double constantNormalizedByNorm2 = Double.MIN_VALUE;
+    private Number constantNormalizedByNorm2;
 
     public CosineSimilarity(INDArray x, INDArray y, int n) {
         super(x, y, n);
@@ -70,44 +71,37 @@ public class CosineSimilarity extends BaseAccumulation {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
-        initNormalizationConstant(extraArgs);
-        return origin.mul(other * constantNormalizedByNorm2);
+        return origin.mul(other * constantNormalizedByNorm2.floatValue());
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
-        initNormalizationConstant(extraArgs);
-        return origin.mul(other * constantNormalizedByNorm2);
+        return origin.mul(other * constantNormalizedByNorm2.floatValue());
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
-        initNormalizationConstant(extraArgs);
         return origin.mul(other.mul(constantNormalizedByNorm2));
     }
 
     @Override
     public float op(float origin, float other, Object[] extraArgs) {
-        initNormalizationConstant(extraArgs);
-        return (float) (origin * other * constantNormalizedByNorm2);
+        return  (origin * other * constantNormalizedByNorm2.floatValue());
     }
 
     @Override
     public double op(double origin, double other, Object[] extraArgs) {
-        initNormalizationConstant(extraArgs);
-        return origin * other * constantNormalizedByNorm2;
+        return origin * other * constantNormalizedByNorm2.floatValue();
     }
 
     @Override
     public double op(double origin, Object[] extraArgs) {
-        initNormalizationConstant(extraArgs);
-        return origin * constantNormalizedByNorm2;
+        return origin * constantNormalizedByNorm2.floatValue();
     }
 
     @Override
     public float op(float origin, Object[] extraArgs) {
-        initNormalizationConstant(extraArgs);
-        return (float) (origin * constantNormalizedByNorm2);
+        return (origin * constantNormalizedByNorm2.floatValue());
     }
 
     @Override
@@ -117,7 +111,7 @@ public class CosineSimilarity extends BaseAccumulation {
     }
 
     private void initNormalizationConstant(Object[] extraArgs) {
-        if(constantNormalizedByNorm2 == Double.MIN_VALUE)
+        if(constantNormalizedByNorm2.doubleValue() == Double.MIN_VALUE)
             this.constantNormalizedByNorm2 = Double.valueOf(extraArgs[0].toString());
     }
     @Override
@@ -126,6 +120,14 @@ public class CosineSimilarity extends BaseAccumulation {
             return new CosineSimilarity(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),x.length());
         else
             return new CosineSimilarity(x.vectorAlongDimension(index,dimension));
+
+    }
+
+    @Override
+    public void init(INDArray x, INDArray y, int n) {
+        super.init(x, y, n);
+        this.constantNormalizedByNorm2 = Nd4j.getExecutioner().execAndReturn(new Norm2(x)).currentResult();
+        this.extraArgs = new Object[]{this.constantNormalizedByNorm2};
 
     }
 }
