@@ -29,9 +29,9 @@ These are the backends you can choose from:
      
      nd4j-netlib-blas
     
-Versions can be found on [Maven Central](http://search.maven.org).
+Versions can be found on [Maven Central](http://search.maven.org/#search%7Cga%7C2%7Cnd4j). When you know which backend you want, search for it on Maven; click the linked version number under "Latest Version"; copy the dependency code on the left side of the subsequent screen; and paste it into your pom.xml.
 
-For core algorithms, you can simply add this to your deeplearning4j pom.xml file:
+For core algorithms, you can simply add this snippet to your deeplearning4j pom.xml file:
 
      <dependency>
          <groupId>org.deeplearning4j</groupId>
