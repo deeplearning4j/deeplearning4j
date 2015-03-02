@@ -145,9 +145,9 @@
         </profile>
     </profiles>
     <scm>
-        <connection>scm:git:git@github.com:agibsonccc/java-deeplearning.git</connection>
-        <developerConnection>scm:git:git@github.com:agibsonccc/java-deeplearning.git</developerConnection>
-        <url>git@github.com:agibsonccc/java-deeplearning.git</url>
+        <connection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git</connection>
+        <developerConnection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git</developerConnection>
+        <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
         <tag>HEAD</tag>
     </scm>
 
