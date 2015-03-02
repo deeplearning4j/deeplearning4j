@@ -4,8 +4,10 @@ layout: default
 ---
 
 
-Use From Maven Central (You must have Maven installed)
+Use From Maven Central 
 =========================================
+
+You must have Maven installed. ([See details here](http://nd4j.org/getstarted.html).)
 
 Include an ND4J backend here:
 
