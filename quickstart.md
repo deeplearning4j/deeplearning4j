@@ -9,12 +9,14 @@ Use from Maven Central (Must have Maven installed)
 
 Include an nd4j backend here:
 
-
- <dependency>
-   <groupId>org.nd4j</groupId>
-   <artifactId>nd4j-$BACKEND_OF_YOUR_CHOICE</artifactId>
-   <version>${nd4j.version}</version>
- </dependency>
+```
+     <dependency>
+       <groupId>org.nd4j</groupId>
+       <artifactId>nd4j-$BACKEND_OF_YOUR_CHOICE</artifactId>
+       <version>${nd4j.version}</version>
+     </dependency>
+ ```
+ 
  
 
 The possible backends right now are:
@@ -29,40 +31,43 @@ For core algorithms, you can get away with:
 
 
 
-
-<dependency>
-    <groupId>org.deeplearning4j</groupId>
-    <artifactId>deeplearning4j-core</artifactId>
-    <version>${deeplearning4j.version}</version>
-</dependency>
-
+```
+     <dependency>
+         <groupId>org.deeplearning4j</groupId>
+         <artifactId>deeplearning4j-core</artifactId>
+         <version>${deeplearning4j.version}</version>
+     </dependency>
+```
 
 
 For nlp:
-
-<dependency>
-    <groupId>org.deeplearning4j</groupId>
-    <artifactId>deeplearning4j-nlp</artifactId>
-    <version>${deeplearning4j.version}</version>
-</dependency>
-
+```
+     <dependency>
+         <groupId>org.deeplearning4j</groupId>
+         <artifactId>deeplearning4j-nlp</artifactId>
+         <version>${deeplearning4j.version}</version>
+     </dependency>
+```
 For scaleout (hadoop/spark):
 
 
 Hadoop:
-<dependency>
-    <groupId>org.deeplearning4j</groupId>
-    <artifactId>cdh4</artifactId>
-    <version>${deeplearning4j.version}</version>
-</dependency>
+```
+      <dependency>
+          <groupId>org.deeplearning4j</groupId>
+          <artifactId>cdh4</artifactId>
+          <version>${deeplearning4j.version}</version>
+      </dependency>
+```
 
 Spark:
-
-<dependency>
-    <groupId>org.deeplearning4j</groupId>
-    <artifactId>dl4j-spark</artifactId>
-    <version>${deeplearning4j.version}</version>
-</dependency>
+ ```
+      <dependency>
+          <groupId>org.deeplearning4j</groupId>
+          <artifactId>dl4j-spark</artifactId>
+          <version>${deeplearning4j.version}</version>
+      </dependency>
+```
 
 
 
