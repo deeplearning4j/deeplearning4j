@@ -8,9 +8,9 @@ import org.scalatest.{Matchers, FlatSpec}
 import DSL._
 
 @RunWith(classOf[JUnitRunner])
-class INDArrayExtSpec extends FlatSpec with Matchers {
+class RichNDArraySpec extends FlatSpec with Matchers {
 
-  "INDArrayExt" should "use the apply method to access values" in {
+  "RichNDArray" should "use the apply method to access values" in {
 
     // -- 2D array
     val nd2 = Nd4j.create(Array[Double](1, 2, 3, 4), Array(4, 1))

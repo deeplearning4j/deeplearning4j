@@ -19,6 +19,6 @@ object DSL {
   /**
    * Make [INDArray] more scala friendly
    */
-  implicit def extend(a: INDArray): INDArrayExt = new INDArrayExt(a)
+  implicit def extend(a: INDArray): RichNDArray = new RichNDArray(a)
 
 }
