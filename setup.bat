@@ -1,4 +1,3 @@
-#!/bin/sh
 cd ..
 git clone https://github.com/deeplearning4j/nd4j.git
 git clone https://github.com/deeplearning4j/Canova.git
