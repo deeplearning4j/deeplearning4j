@@ -4,10 +4,10 @@ layout: default
 ---
 
 
-Use From Maven Central 
+Installing From Maven Central 
 =========================================
 
-You must have Maven installed. ([See details here](http://nd4j.org/getstarted.html).)
+You must first have Maven installed. ([See details here](http://nd4j.org/getstarted.html).)
 
 Include an ND4J backend here:
 
@@ -17,7 +17,7 @@ Include an ND4J backend here:
        <version>${nd4j.version}</version>
      </dependency>
 
-The possible backends right now are:
+These are the backends you can choose from:
 
      //(Ensure cuda is properly setup in your LD_LIBRARY_PATH)
      
@@ -29,7 +29,7 @@ The possible backends right now are:
      
      nd4j-netlib-blas
     
-where versions can be found on [Maven Central](http://search.maven.org).
+Versions can be found on [Maven Central](http://search.maven.org).
 
 For core algorithms, you can simply use:
 
@@ -47,7 +47,7 @@ For Natural-Language Process (NLP):
          <version>${deeplearning4j.version}</version>
      </dependency>
 
-For scaleout (Hadoop/Spark):
+For Scaleout (Hadoop/Spark):
 
 ### Hadoop
 
@@ -66,7 +66,7 @@ For scaleout (Hadoop/Spark):
           <version>${deeplearning4j.version}</version>
       </dependency>
 
-Install From Source 
+Installing From Source 
 ==============================
 
 YOU DON'T HAVE TO DO THIS IF YOU'RE JUST USING THE SOFTWARE FROM MAVEN CENTRAL OR THE DOWNLOADS.
