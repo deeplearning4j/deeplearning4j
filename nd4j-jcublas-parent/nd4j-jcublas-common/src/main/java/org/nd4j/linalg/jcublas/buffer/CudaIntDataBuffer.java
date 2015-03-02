@@ -19,7 +19,6 @@ package org.nd4j.linalg.jcublas.buffer;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.ops.ElementWiseOp;
 
 /**
  * Cuda int buffer
@@ -188,10 +187,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
 
     }
 
-    @Override
-    public void apply(ElementWiseOp op, int offset) {
 
-    }
 
     @Override
     public void rsubi(Number n) {

@@ -27,16 +27,68 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class ComplexUtil {
-
+    private ComplexUtil() {}
 
     /**
-     * Return the  log value of the given complex number
+     * Return the  sin value of the given complex number
+     *
+     * @param num the number to getScalar the absolute value for
+     * @return the absolute value of this complex number
+     */
+    public static IComplexNumber atan(IComplexNumber num) {
+        Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).atan();
+        return Nd4j.createDouble(c.getReal(), c.getImaginary());
+    }
+    /**
+     * Return the  sin value of the given complex number
+     *
+     * @param num the number to getScalar the absolute value for
+     * @return the absolute value of this complex number
+     */
+    public static IComplexNumber acos(IComplexNumber num) {
+        Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).acos();
+        return Nd4j.createDouble(c.getReal(), c.getImaginary());
+    }
+    /**
+     * Return the  sin value of the given complex number
+     *
+     * @param num the number to getScalar the absolute value for
+     * @return the absolute value of this complex number
+     */
+    public static IComplexNumber asin(IComplexNumber num) {
+        Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).asin();
+        return Nd4j.createDouble(c.getReal(), c.getImaginary());
+    }
+    /**
+     * Return the  sin value of the given complex number
+     *
+     * @param num the number to getScalar the absolute value for
+     * @return the absolute value of this complex number
+     */
+    public static IComplexNumber sin(IComplexNumber num) {
+        Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).sin();
+        return Nd4j.createDouble(c.getReal(), c.getImaginary());
+    }
+
+    /**
+     * Return the  ceiling value of the given complex number
+     *
+     * @param num the number to getScalar the absolute value for
+     * @return the absolute value of this complex number
+     */
+    public static IComplexNumber ceil(IComplexNumber num) {
+        Complex c = new Complex(FastMath.ceil(num.realComponent().doubleValue()), FastMath.ceil(num.imaginaryComponent().doubleValue()));
+        return Nd4j.createDouble(c.getReal(), c.getImaginary());
+    }
+
+    /**
+     * Return the  floor value of the given complex number
      *
      * @param num the number to getScalar the absolute value for
      * @return the absolute value of this complex number
      */
     public static IComplexNumber floor(IComplexNumber num) {
-        Complex c = new Complex(Math.floor(num.realComponent().doubleValue()), Math.floor(num.imaginaryComponent().doubleValue()));
+        Complex c = new Complex(FastMath.floor(num.realComponent().doubleValue()), FastMath.floor(num.imaginaryComponent().doubleValue()));
         return Nd4j.createDouble(c.getReal(), c.getImaginary());
     }
 
@@ -122,8 +174,28 @@ public class ComplexUtil {
         return Nd4j.createDouble(c.getReal(), c.getImaginary());
 
     }
-
-
+    /**
+     * Return the cos of a complex number
+     *
+     * @param num the tanh of a complex number
+     * @return the tanh of a complex number
+     */
+    public static IComplexNumber cos(IComplexNumber num) {
+        Complex c = new Complex(num.realComponent().doubleValue(), num.imaginaryComponent().doubleValue()).cos();
+        return Nd4j.createDouble(c.getReal(), c.getImaginary());
+    }
+    /**
+     * Return the tanh of a complex number
+     *
+     * @param num the tanh of a complex number
+     * @return the tanh of a complex number
+     */
+    public static IComplexNumber hardTanh(IComplexNumber num) {
+        Complex c = new Complex(num.realComponent().doubleValue(), num.imaginaryComponent().doubleValue()).tanh();
+        if(c.getReal() < -1.0)
+            c = new Complex(-1.0,c.getImaginary());
+        return Nd4j.createDouble(c.getReal(), c.getImaginary());
+    }
     /**
      * Return the tanh of a complex number
      *

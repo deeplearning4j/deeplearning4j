@@ -30,7 +30,7 @@ public abstract class BaseConvolution implements ConvolutionInstance {
     /**
      * 2d convolution (aka the last 2 dimensions
      *
-     * @param input  the input to transform
+     * @param input  the input to op
      * @param kernel the kernel to convolve with
      * @param type
      * @return

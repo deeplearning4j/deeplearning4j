@@ -29,7 +29,6 @@
     </parent>
 
     <name>nd4j-jcublas</name>
-    <url>http://nd4j.org/</url>
 
     <properties>
         <!-- Set needed version of JCuda here -->
@@ -54,13 +53,18 @@
     </build>
 
     <dependencies>
-
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
-            <scope>test</scope>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
         </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${logback.version}</version>
+
+        </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>jcublas</artifactId>

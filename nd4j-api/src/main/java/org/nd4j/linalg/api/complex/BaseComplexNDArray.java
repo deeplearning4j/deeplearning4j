@@ -19,7 +19,6 @@ package org.nd4j.linalg.api.complex;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
-import org.nd4j.linalg.api.ndarray.DimensionSlice;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -27,7 +26,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
-import org.nd4j.linalg.ops.reduceops.Ops;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.ComplexIterationResult;
@@ -1449,57 +1447,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
 
-    //getFromOrigin one result along one dimension based on the given offset
-    public DimensionSlice vectorForDimensionAndOffsetPair(int dimension, int offset, int currOffsetForSlice) {
-        int count = 0;
-        IComplexNDArray ret = Nd4j.createComplex(new int[]{shape[dimension]});
-        boolean newSlice = false;
-        List<Integer> indices = new ArrayList<>();
-        for (int j = offset; count < this.shape[dimension]; j += this.stride[dimension]) {
-            IComplexDouble d = Nd4j.createDouble(data.getDouble(j), data.getDouble(j + 1));
-            indices.add(j);
-            ret.putScalar(count++, d);
-            if (j >= currOffsetForSlice)
-                newSlice = true;
-
-        }
-
-        return new DimensionSlice(newSlice, ret, ArrayUtil.toArray(indices));
-    }
-
-
-    //getFromOrigin one result along one dimension based on the given offset
-    public DimensionSlice vectorForDimensionAndOffset(int dimension, int offset) {
-        if (isScalar() && dimension == 0 && offset == 0)
-            return new DimensionSlice(false, Nd4j.complexScalar(getDouble(offset)), new int[]{offset});
-
-
-            //need whole vector
-        else if (isVector()) {
-            if (dimension == 0) {
-                int[] indices = new int[length];
-                for (int i = 0; i < indices.length; i++)
-                    indices[i] = i;
-                return new DimensionSlice(false, dup(), indices);
-            } else if (dimension == 1) {
-                return new DimensionSlice(false, Nd4j.complexScalar(getDouble(offset)), new int[]{offset});
-            } else
-                throw new IllegalArgumentException("Illegal dimension for vector " + dimension);
-        } else {
-            int count = 0;
-            IComplexNDArray ret = Nd4j.createComplex(new int[]{shape[dimension]});
-            List<Integer> indices = new ArrayList<>();
-            for (int j = offset; count < this.shape[dimension]; j += this.stride[dimension]) {
-                IComplexDouble d = Nd4j.createDouble(data.getDouble(j), data.getDouble(j + 1));
-                ret.putScalar(count++, d);
-                indices.add(j);
-            }
-
-            return new DimensionSlice(false, ret, ArrayUtil.toArray(indices));
-        }
-
-    }
-
 
     /**
      * Inserts the element at the specified index
@@ -1521,55 +1468,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
 
-    //getFromOrigin one result along one dimension based on the given offset
-    private ComplexIterationResult op(int dimension, int offset, Ops.DimensionOp op, int currOffsetForSlice) {
-        double[] dim = new double[this.shape[dimension]];
-        int count = 0;
-        boolean newSlice = false;
-        for (int j = offset; count < dim.length; j += this.stride[dimension]) {
-            double d = data.getDouble(j);
-            dim[count++] = d;
-            if (j >= currOffsetForSlice)
-                newSlice = true;
-        }
-
-        IComplexNDArray r = Nd4j.createComplex(dim);
-        IComplexDouble r2 = reduceVector(op, r);
-        return new ComplexIterationResult(newSlice, r2);
-    }
 
 
-    //getFromOrigin one result along one dimension based on the given offset
-    private IComplexNumber op(int dimension, int offset, Ops.DimensionOp op) {
-        double[] dim = new double[this.shape[dimension]];
-        int count = 0;
-        for (int j = offset; count < dim.length; j += this.stride[dimension]) {
-            double d = data.getDouble(j);
-            dim[count++] = d;
-        }
 
-        return reduceVector(op, Nd4j.createComplex(dim));
-    }
-
-
-    private IComplexDouble reduceVector(Ops.DimensionOp op, IComplexNDArray vector) {
-
-        switch (op) {
-            case SUM:
-                return (IComplexDouble) vector.sum(Integer.MAX_VALUE).element();
-            case MEAN:
-                return (IComplexDouble) vector.mean(Integer.MAX_VALUE).element();
-            case NORM_1:
-                return Nd4j.createDouble((double) vector.norm1(Integer.MAX_VALUE).element(), 0);
-            case NORM_2:
-                return Nd4j.createDouble((double) vector.norm2(Integer.MAX_VALUE).element(), 0);
-            case NORM_MAX:
-                return Nd4j.createDouble((double) vector.normmax(Integer.MAX_VALUE).element(), 0);
-            case FFT:
-            default:
-                throw new IllegalArgumentException("Illegal operation");
-        }
-    }
 
 
     /**
@@ -1613,76 +1514,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return ret;
     }
 
-    /**
-     * http://docs.scipy.org/doc/numpy/reference/generated/numpy.ufunc.reduce.html
-     *
-     * @param op        the operation to do
-     * @param dimension the dimension to return from
-     * @return the results of the reduce (applying the operation along the specified
-     * dimension)t
-     */
-    @Override
-    public IComplexNDArray reduce(Ops.DimensionOp op, int dimension) {
-        if (isScalar())
-            return this;
-
-
-        if (isVector())
-            return Nd4j.scalar(reduceVector(op, this));
-
-
-        int[] shape = ArrayUtil.removeIndex(this.shape, dimension);
-
-        if (dimension == 0) {
-            double[] data2 = new double[ArrayUtil.prod(shape) * 2];
-            int dataIter = 0;
-
-            //iterating along the dimension is relative to the number of slices
-            //in the return dimension
-            int numTimes = ArrayUtil.prod(shape);
-            for (int offset = this.offset; offset < numTimes; offset++) {
-                IComplexNumber reduce = op(dimension, offset, op);
-                data2[dataIter++] = reduce.realComponent().doubleValue();
-                data2[dataIter++] = reduce.imaginaryComponent().doubleValue();
-
-
-            }
-
-            return Nd4j.createComplex(data2, shape);
-        } else {
-            double[] data2 = new double[ArrayUtil.prod(shape)];
-            int dataIter = 0;
-            //want the milestone to slice[1] and beyond
-            int[] sliceIndices = endsForSlices();
-            int currOffset = 0;
-
-            //iterating along the dimension is relative to the number of slices
-            //in the return dimension
-            int numTimes = ArrayUtil.prod(shape);
-            for (int offset = this.offset; offset < numTimes; offset++) {
-                if (dataIter >= data2.length || currOffset >= sliceIndices.length)
-                    break;
-
-                //do the operation,, and look for whether it exceeded the current slice
-                ComplexIterationResult pair = op(dimension, offset, op, sliceIndices[currOffset]);
-                //append the result
-                IComplexNumber reduce = pair.getNumber();
-                data2[dataIter++] = reduce.realComponent().doubleValue();
-                data2[dataIter++] = reduce.imaginaryComponent().doubleValue();
-                //go to next slice and iterate over that
-                if (pair.isNextIteration()) {
-                    //will update to next step
-                    offset = sliceIndices[currOffset];
-                    numTimes += sliceIndices[currOffset];
-                    currOffset++;
-                }
-
-            }
-
-            return Nd4j.createComplex(data2, shape);
-        }
-
-    }
 
     /**
      * Assigns the given matrix (put) to the specified slice
@@ -1788,7 +1619,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             throw new IllegalArgumentException("Unable to insert anything but a scalar");
         int ix = offset;
         if (indices.length != shape.length)
-            throw new IllegalArgumentException("Unable to transform values: number of indices must be equal to the shape");
+            throw new IllegalArgumentException("Unable to op values: number of indices must be equal to the shape");
 
         for (int i = 0; i < shape.length; i++)
             ix += indices[i] * stride[i];
@@ -2438,7 +2269,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray negi() {
-        return Transforms.neg(this);
+        return (IComplexNDArray) Transforms.neg(this);
     }
 
     @Override

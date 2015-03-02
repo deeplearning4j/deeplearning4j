@@ -22,15 +22,17 @@ import jcuda.Sizeof;
 import jcuda.driver.*;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import static jcuda.driver.JCudaDriver.*;
 
@@ -46,12 +48,13 @@ public class KernelFunctions {
 
 
     private static Logger log = LoggerFactory.getLogger(KernelFunctions.class);
-    private static Map<String, CUfunction> functions = new ConcurrentHashMap<>();
-    private static Map<Integer,CUcontext> devices = new ConcurrentHashMap<>();
-
+    private static Set<String> reduceFunctions = new ConcurrentSkipListSet<>();
     public final static String NAME_SPACE = "org.nd4j.linalg.jcublas";
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
+    public final static String REDUCE = NAME_SPACE + ".reducefunctions";
+
+
     private KernelFunctions() {
     }
 
@@ -59,7 +62,7 @@ public class KernelFunctions {
     static {
         try {
             register();
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -69,57 +72,22 @@ public class KernelFunctions {
      * Registers cuda functions based on the cudafunctions.properties in the classpath
      * @throws IOException
      */
-    public static void register() throws IOException {
+    public static void register() throws Exception {
         ClassPathResource res = new ClassPathResource("/cudafunctions.properties");
         if (!res.exists())
             throw new IllegalStateException("Please put a cudafunctions.properties in your class path");
         Properties props = new Properties();
         props.load(res.getInputStream());
-        log.info("Registering cuda functions...");
-        String d = props.getProperty(DOUBLE);
-        if (d != null) {
-            String[] split = d.split(",");
-            log.info("Found functions for double" + d);
-            for (String s : split) {
-                String loaded = KernelFunctions.load("/kernels/double/" + s + ".cu", DataBuffer.DOUBLE);
-                KernelFunctions.loadFunction(loaded,s,"double");
-            }
+        KernelFunctionLoader.getInstance().load();
 
+        String reduceFunctionsList = props.getProperty(REDUCE);
+        for(String function : reduceFunctionsList.split(","))
+            reduceFunctions.add(function);
 
-        }
-        String f = props.getProperty(FLOAT);
-        if (f != null) {
-            String[] split = f.split(",");
-            log.info("Found functions for float" + d);
-
-            for (String s : split) {
-                String loaded = KernelFunctions.load("/kernels/float/" + s + ".cu", DataBuffer.FLOAT);
-                KernelFunctions.loadFunction(loaded,s,"float");
-            }
-        }
     }
 
-    /**
-     * Get the cuda function of the given name and data type
-     * @param name the name of the function
-     * @param dType the data type (float or double)
-     * @return the given function or null
-     */
-    public static CUfunction getFunction(String name,String dType) {
-        return functions.get(name + "_" + dType);
-    }
 
-    public static void initDevices() {
-        if(devices.containsKey(0))
-            return;
-        // Initialize the driver and create a context for the first device.
-        cuInit(0);
-        CUdevice device = new CUdevice();
-        cuDeviceGet(device, 0);
-        CUcontext context = new CUcontext();
-        cuCtxCreate(context, 0, device);
-        devices.put(0,context);
-    }
+
 
     private static int sizeFor(int dataType) {
         return dataType == DataBuffer.DOUBLE ? Sizeof.DOUBLE : Sizeof.FLOAT;
@@ -151,8 +119,95 @@ public class KernelFunctions {
     }
 
     /**
-     * Invoke a function with the given number of parameters
+     * Invoke a reduce
+     * function with the given number of parameters
+     * Invoke reduce makes a different set of assumptions
+     * about how to allocate memory.
+     * From Nvidia's dot product example:
+     *      #define imin(a,b) (a<b?a:b)
      *
+     *        const int N = 33 * 1024;
+     *        const int threadsPerBlock = 256;
+     *       const int blocksPerGrid =
+     *        imin( 32, (N+threadsPerBlock-1) / threadsPerBlock );
+     *        dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,
+     *        dev_partial_c );
+     *
+     *  The major thing is that the number of threads per block have to be even
+     * @param threadsPerBlock the number of threads to use per block
+     * @param blocks  the number of blocks to use
+     * @param function   the function to invoke
+     * @param kernelParameters the parameters
+     */
+    public static void invokeReduce(int threadsPerBlock,int blocks, CUfunction function, Pointer kernelParameters) {
+        // Call the kernel function.
+        //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
+        int sharedMemSize = threadsPerBlock * (Nd4j.dataType() == DataBuffer.DOUBLE ? Sizeof.DOUBLE : Sizeof.FLOAT);
+        if (threadsPerBlock <= 32)
+            sharedMemSize *= 2;
+
+        cuLaunchKernel(function,
+                blocks, 1, 1,      // Grid dimension
+                threadsPerBlock, 1, 1,      // Block dimension
+                sharedMemSize, null,               // Shared memory size and stream
+                kernelParameters, null // Kernel- and extra parameters
+        );
+
+        cuCtxSynchronize();
+
+
+    }
+
+
+
+    /**
+     * Perform a reduction of the specified number of elements in the given
+     * device input memory, using the given number of threads and blocks,
+     * and write the results into the given output memory.
+     *
+     * @param size The size (number of elements)
+     * @param threads The number of threads
+     * @param blocks The number of blocks
+     * @param deviceInput The device input memory
+     * @param deviceOutput The device output memory. Its size must at least
+     * be numBlocks*Sizeof.FLOAT
+     */
+    private static void reduce(CUfunction function,int size, int threads, int blocks,
+                               Pointer deviceInput, Pointer deviceOutput) {
+        //System.out.println("Reduce "+size+" elements with "+
+        //    threads+" threads in "+blocks+" blocks");
+
+        // Compute the shared memory size (as done in
+        // the NIVIDA sample)
+        int sharedMemSize = threads * Sizeof.FLOAT;
+        if (threads <= 32)
+
+            sharedMemSize *= 2;
+
+
+        // Set up the kernel parameters: A pointer to an array
+        // of pointers which point to the actual values.
+        Pointer kernelParameters = Pointer.to(
+                Pointer.to(deviceInput),
+                Pointer.to(deviceOutput),
+                Pointer.to(new int[]{size})
+        );
+
+        // Call the kernel function.
+        cuLaunchKernel(function,
+                blocks,  1, 1,         // Grid dimension
+                threads, 1, 1,         // Block dimension
+                sharedMemSize, null,   // Shared memory size and stream
+                kernelParameters, null // Kernel- and extra parameters
+        );
+        cuCtxSynchronize();
+    }
+
+
+    /**
+     * Invoke a function with the given number of parameters
+     * The block size is 256 and the grid size is set with respect
+     * to the number of elements now
      * @param numElements the number of
      * @param function   the function to invoke
      * @param kernelParameters the parameters
@@ -160,32 +215,13 @@ public class KernelFunctions {
     public static void invoke(int numElements, CUfunction function, Pointer kernelParameters) {
         // Call the kernel function.
         int blockSizeX = 256;
-        int gridSizeX = (int) Math.ceil((double) numElements / blockSizeX);
+        int threads = (int) Math.ceil((double) numElements / blockSizeX);
+        int sharedMemSize = threads * Nd4j.dataType() == DataBuffer.DOUBLE ? Sizeof.DOUBLE : Sizeof.FLOAT;
+        if (threads <= 32)
+            sharedMemSize *= 2;
 
         cuLaunchKernel(function,
-                gridSizeX, 1, 1,      // Grid dimension
-                blockSizeX, 1, 1,      // Block dimension
-                0, null,               // Shared memory size and stream
-                kernelParameters, null // Kernel- and extra parameters
-        );
-        cuCtxSynchronize();
-
-
-    }
-    /**
-     * Invoke a function with the given number of parameters
-     *
-     * @param numElements the number of
-     * @param function   the function to invoke
-     * @param kernelParameters the parameters
-     */
-    public static void invoke2d(int numElements, CUfunction function, Pointer kernelParameters) {
-        // Call the kernel function.
-        int blockSizeX = 256;
-        int gridSizeX = (int) Math.ceil((double) numElements / blockSizeX);
-
-        cuLaunchKernel(function,
-                gridSizeX, 1, 1,      // Grid dimension
+                threads, 1, 1,      // Grid dimension
                 blockSizeX, 1, 1,      // Block dimension
                 0, null,               // Shared memory size and stream
                 kernelParameters, null // Kernel- and extra parameters
@@ -304,29 +340,7 @@ public class KernelFunctions {
 
     }
 
-    /**
-     * Load the given file
-     *
-     * @param fileName the file name
-     * @param dataType the data type
-     * @throws IOException
-     */
-    public static String load(String fileName, int dataType) throws IOException {
-        // Enable exceptions and omit all subsequent error checks
-        JCudaDriver.setExceptionsEnabled(true);
-        initDevices();
-        // Create the PTX file by calling the NVCC
-        String ptxFileName = preparePtxFile(fileName, dataType);
 
-
-        // Load the ptx file.
-        CUmodule module = new CUmodule();
-        cuModuleLoad(module, ptxFileName);
-
-        return ptxFileName;
-
-
-    }
 
 
     private static String dataFolder(int type) {
@@ -355,137 +369,20 @@ public class KernelFunctions {
     }
 
 
-    /**
-     * Load the function
-     * @param ptxFileName  the ptx file name
-     * @param functionName the function name to use as a handle
-     * @param dataType the data type(float or double) to operate on
-     */
-    public static CUfunction loadFunction(String ptxFileName, String functionName,String dataType) {
-        if (functions.containsKey(functionName))
-            return functions.get(functionName);
-        // Initialize the driver and create a context for the first device.
-        initDevices();
-        // Load the ptx file.
-        CUmodule module = new CUmodule();
-        cuModuleLoad(module, ptxFileName);
 
-        // Obtain a function pointer to the "add" function.
-        CUfunction function = new CUfunction();
-        String name = functionName + "_" + dataType;
-        cuModuleGetFunction(function, module, name);
-        functions.put(name, function);
 
-        return function;
-
-    }
 
 
     /**
-     * The extension of the given file name is replaced with "ptx".
-     * If the file with the resulting name does not exist, it is
-     * compiled from the given file using NVCC. The name of the
-     * PTX file is returned.
-     * <p/>
-     * <p/>
-     * Note that you may run in to an error akin to:
-     * Unsupported GCC version
-     * <p/>
-     * At your own risk, comment the lines under:
-     * /usr/local/cuda-$VERSION/include/host_config.h
-     * <p/>
-     * #if defined(__GNUC__)
-     * <p/>
-     * if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8)
-     * #error -- unsupported GNU version! gcc 4.9 and up are not supported!
-     * <p/>
-     * #endif /* __GNUC__> 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8)
-     * <p/>
-     * #endif  __GNUC__
-     * <p/>
-     * This will allow you to bypass the compiler restrictions. Again, do so at your own risk.
-     *
-     * @param cuFileName The name of the .CU file
-     * @return The name of the PTX file
-     * @throws IOException If an I/O error occurs
+     * Returns whether the given function is a reduce function
+     * @param functionName the function name to check for
+     * @return true if the function is a reduce function false otherwise
      */
-    private static String preparePtxFile(String cuFileName, int dataType) throws IOException {
-
-
-        int endIndex = cuFileName.lastIndexOf('.');
-        if (endIndex == -1) {
-            endIndex = cuFileName.length() - 1;
-        }
-
-        String path = dataFolder(dataType);
-        String tmpDir = System.getProperty("java.io.tmpdir");
-        File dataDir = new File(tmpDir, path);
-
-
-        String ptxFileName = tmpDir + cuFileName.substring(0, endIndex + 1) + "ptx";
-        File ptxFile = new File(dataDir, ptxFileName);
-        if (ptxFile.exists()) {
-            return ptxFileName;
-        } else
-            extract(cuFileName, dataType);
-
-
-        File cuFile = new File(tmpDir,cuFileName);
-        if (!cuFile.exists())
-            throw new IOException("Input file not found: " + cuFileName);
-
-
-        String modelString = "-m" + System.getProperty("sun.arch.data.model");
-        String command = "nvcc " + modelString + " -ptx " + cuFile.getPath() + " -o " + ptxFileName;
-
-        log.info("Executing " + command);
-        Process process = Runtime.getRuntime().exec(command);
-
-        String errorMessage =
-                new String(toByteArray(process.getErrorStream()));
-        String outputMessage =
-                new String(toByteArray(process.getInputStream()));
-        int exitValue = 0;
-        try {
-            exitValue = process.waitFor();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException(
-                    "Interrupted while waiting for nvcc output", e);
-        }
-
-        if (exitValue != 0) {
-            log.info("nvcc process exitValue " + exitValue);
-            log.info("errorMessage:\n" + errorMessage);
-            log.info("outputMessage:\n" + outputMessage);
-            throw new IOException(
-                    "Could not create .ptx file: " + errorMessage);
-        }
-
-        log.info("Finished creating PTX file");
-        return ptxFileName;
+    public static boolean isReduce(String functionName) {
+        return reduceFunctions.contains(functionName);
     }
 
-    /**
-     * Fully reads the given InputStream and returns it as a byte array
-     *
-     * @param inputStream The input stream to read
-     * @return The byte array containing the data from the input stream
-     * @throws IOException If an I/O error occurs
-     */
-    private static byte[] toByteArray(InputStream inputStream)
-            throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte buffer[] = new byte[8192];
-        while (true) {
-            int read = inputStream.read(buffer);
-            if (read == -1) {
-                break;
-            }
-            baos.write(buffer, 0, read);
-        }
-        return baos.toByteArray();
-    }
+
 
 
 }

@@ -72,7 +72,7 @@ public class VectorFFT implements Function<IComplexNDArray, IComplexNDArray> {
         //here
         IComplexNDArray c1 = kTimesN.muli(c2);
         c1.divi(len);
-        IComplexNDArray M = exp(c1);
+        IComplexNDArray M = (IComplexNDArray) exp(c1);
 
 
         IComplexNDArray reshaped = ndArray.reshape(new int[]{ndArray.length()});

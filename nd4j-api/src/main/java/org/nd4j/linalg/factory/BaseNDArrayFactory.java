@@ -219,17 +219,23 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray toFlattened(Collection<INDArray> matrices) {
         int length = 0;
-        for (INDArray m : matrices) length += m.length();
-        int linearIndex = 0;
+        for (INDArray m : matrices)
+            length += m.length();
 
         INDArray ret = Nd4j.create(length);
-        for (INDArray d : matrices) {
-            INDArray flattened = d.linearView();
-            for (int i = 0; i < d.length(); i++) {
-                ret.putScalar(linearIndex++, flattened.getDouble(i));
-            }
+        DataBuffer[] buffers = new DataBuffer[matrices.size()];
+        int[] strides = new int[matrices.size()];
+        int[] offsets = new int[matrices.size()];
+        int count = 0;
+        for(INDArray matrix : matrices) {
+            buffers[count] = matrix.data();
+            strides[count] = matrix.majorStride();
+            offsets[count] = matrix.offset();
+            count++;
         }
 
+
+        ret.data().assign(offsets,strides,buffers);
         return ret;
 
     }

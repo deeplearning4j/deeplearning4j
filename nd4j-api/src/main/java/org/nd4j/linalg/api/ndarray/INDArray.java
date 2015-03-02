@@ -21,7 +21,6 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
-import org.nd4j.linalg.ops.reduceops.Ops;
 
 import java.io.Serializable;
 import java.util.List;
@@ -35,7 +34,7 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * Resets the lienar view
+     * Resets the linear view
      */
     void resetLinearView();
 
@@ -121,8 +120,19 @@ public interface INDArray extends Serializable {
      */
     public INDArray putScalar(int i, double value);
 
+    /**
+     * Insert a scalar float at the specified index
+     * @param i
+     * @param value
+     * @return
+     */
     INDArray putScalar(int i, float value);
-
+    /**
+     * Insert a scalar int at the specified index
+     * @param i
+     * @param value
+     * @return
+     */
     INDArray putScalar(int i, int value);
 
     /**
@@ -650,15 +660,6 @@ public interface INDArray extends Serializable {
 
     void sliceVectors(List<INDArray> list);
 
-    /**
-     * http://docs.scipy.org/doc/numpy/reference/generated/numpy.ufunc.reduce.html
-     *
-     * @param op        the operation to do
-     * @param dimension the dimension to return from
-     * @return the results of the reduce (applying the operation along the specified
-     * dimension)t
-     */
-    public INDArray reduce(Ops.DimensionOp op, int dimension);
 
     /**
      * Assigns the given matrix (put) to the specified slice

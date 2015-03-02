@@ -25,7 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.ops.reduceops.Ops;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.Shape;
@@ -104,6 +103,11 @@ public abstract class NDArrayTests {
         ascending.data().destroy();
     }
 
+    @Test
+    public void testVariance() {
+        INDArray ones = Nd4j.ones(5);
+        ones.var(0);
+    }
 
     @Test
     public void testAddVectorWithOffset() {
@@ -312,6 +316,7 @@ public abstract class NDArrayTests {
     public void testNorm2() {
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         float assertion = 5.47722557505f;
+        INDArray norm3 = n.norm2(Integer.MAX_VALUE);
         assertEquals(assertion, n.norm2(Integer.MAX_VALUE).getFloat(0), 1e-1);
 
         INDArray row = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
@@ -1023,19 +1028,6 @@ public abstract class NDArrayTests {
     }
 
 
-    @Test
-    public void reduceTest() {
-        INDArray arr = Nd4j.create(Nd4j.linspace(1, 24, 24).data(), new int[]{4, 3, 2});
-        INDArray reduced = arr.reduce(Ops.DimensionOp.MAX, 1);
-        log.info("Reduced " + reduced);
-        reduced = arr.reduce(Ops.DimensionOp.MAX, 1);
-        log.info("Reduced " + reduced);
-        reduced = arr.reduce(Ops.DimensionOp.MAX, 2);
-        log.info("Reduced " + reduced);
-        arr.data().destroy();
-        reduced.data().destroy();
-
-    }
 
 
     @Test

@@ -148,6 +148,76 @@ public abstract class BaseComplexDouble implements IComplexDouble {
 
     }
 
+    @Override
+    public IComplexNumber set(IComplexNumber set) {
+        return set(set.realComponent().doubleValue(),set.imaginaryComponent().doubleValue());
+    }
+
+    @Override
+    public IComplexNumber rsubi(IComplexNumber c) {
+        return rsubi(c,this);
+    }
+
+    @Override
+    public IComplexNumber rsub(IComplexNumber c) {
+        return dup().rsubi(c);
+    }
+
+    @Override
+    public IComplexNumber rsubi(IComplexNumber a, IComplexNumber result) {
+        return result.set(a.sub(this));
+    }
+
+    @Override
+    public IComplexNumber rsubi(Number a, IComplexNumber result) {
+        return result.set(a.doubleValue() - realComponent().doubleValue(),imaginaryComponent());
+    }
+
+    @Override
+    public IComplexNumber rsubi(Number a) {
+        return set(a.doubleValue() - realComponent().doubleValue(),imaginaryComponent());
+    }
+
+    @Override
+    public IComplexNumber rsub(Number r) {
+        return dup().rsubi(r);
+    }
+
+    @Override
+    public IComplexNumber rdiv(IComplexNumber c) {
+        return dup().rdivi(c);
+    }
+
+    @Override
+    public IComplexNumber rdivi(IComplexNumber c, IComplexNumber result) {
+        return result.set(c.realComponent().doubleValue() / realComponent().doubleValue(),c.imaginaryComponent().doubleValue() / imaginaryComponent().doubleValue());
+    }
+
+    @Override
+    public IComplexNumber rdivi(IComplexNumber c) {
+        return rdivi(c,this);
+    }
+
+    @Override
+    public IComplexNumber rdivi(Number v, IComplexNumber result) {
+        return result.set(v.doubleValue() / realComponent(),imaginaryComponent());
+    }
+
+    @Override
+    public IComplexNumber rdivi(Number v) {
+        return set(v.doubleValue() / realComponent().doubleValue(),imaginaryComponent());
+    }
+
+    @Override
+    public IComplexNumber rdiv(Number v) {
+        return dup().rdivi(v);
+    }
+
+    @Override
+    public IComplexFloat asFloat() {
+        return Nd4j.createFloat(realComponent().floatValue(),imaginaryComponent().floatValue());
+    }
+
     /**
      * Add two complex numbers in-place
      *

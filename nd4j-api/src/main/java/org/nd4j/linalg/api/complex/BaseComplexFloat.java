@@ -110,6 +110,71 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     }
 
 
+    @Override
+    public IComplexNumber rsubi(IComplexNumber c) {
+        return rsubi(c,this);
+    }
+
+    @Override
+    public IComplexNumber set(IComplexNumber set) {
+        return set(realComponent().floatValue(),realComponent().floatValue());
+    }
+
+    @Override
+    public IComplexNumber rsubi(IComplexNumber a, IComplexNumber result) {
+        return result.set(a.sub(this));
+    }
+
+    @Override
+    public IComplexNumber rsub(IComplexNumber c) {
+        return dup().rsubi(c);
+    }
+
+    @Override
+    public IComplexNumber rsubi(Number a, IComplexNumber result) {
+        return result.set(a.doubleValue() - realComponent().doubleValue(),imaginaryComponent());
+    }
+
+    @Override
+    public IComplexNumber rsubi(Number a) {
+        return rsubi(a,this);
+    }
+
+    @Override
+    public IComplexNumber rsub(Number r) {
+        return dup().rsubi(r);
+    }
+
+    @Override
+    public IComplexNumber rdiv(IComplexNumber c) {
+        return dup().rdivi(c);
+    }
+
+    @Override
+    public IComplexNumber rdivi(IComplexNumber c, IComplexNumber result) {
+        return result.set(c.div(this));
+    }
+
+    @Override
+    public IComplexNumber rdivi(IComplexNumber c) {
+        return rdivi(c,this);
+    }
+
+    @Override
+    public IComplexNumber rdivi(Number v, IComplexNumber result) {
+        return null;
+    }
+
+    @Override
+    public IComplexNumber rdivi(Number v) {
+        return rdivi(v,this);
+    }
+
+    @Override
+    public IComplexNumber rdiv(Number v) {
+        return dup().rdivi(v);
+    }
+
     /**
      * Convert to a double
      *

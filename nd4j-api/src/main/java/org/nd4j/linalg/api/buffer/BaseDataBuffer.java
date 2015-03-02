@@ -18,11 +18,9 @@ package org.nd4j.linalg.api.buffer;
 
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.ElementWiseOp;
+
 
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -144,13 +142,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public float[] getFloatsAt(int offset, int inc, int length) {
-        if (length + offset > length())
-            throw new IllegalArgumentException("Unable to get length " + length + " offset of " + offset + " was too high");
-
-        if (length >= length())
-            throw new IllegalArgumentException("Length must not be > " + length);
-        if (offset >= length())
-            throw new IllegalArgumentException("Length must not be > " + length);
+        if (offset + length > length())
+            length -= offset;
         float[] ret = new float[length];
         for (int i = 0; i < length; i++) {
             ret[i] = getFloat(i + offset);
@@ -160,16 +153,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public double[] getDoublesAt(int offset, int inc, int length) {
-        if (length + offset > length()) {
-            length -= offset;
-        }
-
-        if (length > length())
-            throw new IllegalArgumentException("Length must not be > " + length);
-        if (offset > length())
-            throw new IllegalArgumentException("Length must not be > " + length);
         if (offset + length > length())
-            length = length() - offset;
+            length -= offset;
+
         double[] ret = new double[length];
         for (int i = 0; i < length; i++) {
             ret[i] = getDouble(i + offset);
@@ -199,32 +185,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return dataType() == DataBuffer.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
     }
 
-    @Override
-    public void apply(ElementWiseOp op, int offset) {
-        INDArray from = op.from();
-        if (from instanceof IComplexNDArray) {
-            for (int i = offset; i < length(); i++) {
-                IComplexNumber result = op.apply(from, getComplex(i), i);
-                put(i, result);
-            }
-        } else {
-            for (int i = offset; i < length(); i++) {
-                double result = op.apply(from, getDouble(i), i);
-                put(i, result);
-            }
-        }
 
-    }
 
     @Override
     public void put(int i, IComplexNumber result) {
         put(i,result.realComponent().doubleValue());
         put(i + 1,result.imaginaryComponent().doubleValue());
-    }
-
-    @Override
-    public void apply(ElementWiseOp op) {
-        apply(op, 0);
     }
 
 
@@ -436,12 +402,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void rdivi(Number n) {
-       rdivi(n,0,1);
+        rdivi(n,0,1);
     }
 
     @Override
     public void rsubi(Number n) {
-      rsubi(n,0,1);
+        rsubi(n,0,1);
     }
 
 
@@ -665,6 +631,43 @@ public abstract class BaseDataBuffer implements DataBuffer {
         for(int i = 0; i < length(); i++) {
             result.put(i,getDouble(i) + n.doubleValue());
         }
+    }
+
+    @Override
+    public void assign(int[] offsets, int[] strides, DataBuffer... buffers) {
+        assign(offsets,strides,length(),buffers);
+    }
+
+    @Override
+    public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
+        if(offsets.length != strides.length || strides.length != buffers.length)
+            throw new IllegalArgumentException("Unable to assign buffers, please specify equal lengths strides, offsets, and buffers");
+        int length = 0;
+        for(int i = 0; i < buffers.length;i++)
+            length += buffers[i].length();
+
+        if(length != n)
+            throw new IllegalArgumentException("Buffers must fill up specified length " + n);
+
+        int count = 0;
+        for(int i = 0; i < buffers.length; i++) {
+            for(int j = offsets[i]; j < buffers[i].length(); j += strides[i]) {
+                put(count++,buffers[i].getDouble(j));
+            }
+        }
+
+        if(count != n)
+            throw new IllegalArgumentException("Strides and offsets didn't match up to length " + n);
+
+    }
+
+    @Override
+    public void assign(DataBuffer... buffers) {
+        int[] offsets = new int[buffers.length];
+        int[] strides = new int[buffers.length];
+        for(int i = 0; i < strides.length; i++)
+            strides[i] = 1;
+        assign(offsets,strides,buffers);
     }
 
 

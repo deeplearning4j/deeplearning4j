@@ -18,16 +18,8 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import jcuda.Pointer;
 import jcuda.Sizeof;
-import jcuda.cuComplex;
-import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
-import org.nd4j.linalg.ops.ElementWiseOp;
 import org.nd4j.linalg.util.ArrayUtil;
 
 /**
@@ -94,7 +86,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public double[] getDoublesAt(int offset, int length) {
-        return getDoublesAt(0, 1, length);
+        return getDoublesAt(offset, 1, length);
     }
 
     @Override
@@ -245,29 +237,14 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
 
 
-
-    @Override
-    public void apply(ElementWiseOp op, int offset) {
-        if (offset >= length)
-            throw new IllegalArgumentException("Illegal start " + offset + " greater than length of " + length);
-        int arrLength = Math.abs(length - offset);
-        double[] data = new double[arrLength];
-        Pointer p = Pointer.to(data);
-        get(offset, data.length, p);
-        DataBuffer floatBuffer = new DoubleBuffer(data, false);
-        floatBuffer.apply(op);
-        p = Pointer.to(data);
-        set(offset, arrLength, p);
-    }
-
     @Override
     public void rsubi(Number n) {
-      rsubi(n,1,0);
+        rsubi(n,1,0);
     }
 
     @Override
     public void rdivi(Number n) {
-      rdivi(n,1,0);
+        rdivi(n,1,0);
     }
 
     @Override
@@ -332,7 +309,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void divi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
-        exec2d(buffer,"double",offset,yOffset,n,incx,incy,"mul_strided");
+        exec2d(buffer,"double",offset,yOffset,n,incx,incy,"div_strided");
 
     }
 
@@ -380,7 +357,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void addi(Number n, int inc, int offset, DataBuffer result) {
-      execScalar("double",offset,n,length(),inc,"add_scalar",result);
+        execScalar("double",offset,n,length(),inc,"add_scalar",result);
     }
 
     @Override

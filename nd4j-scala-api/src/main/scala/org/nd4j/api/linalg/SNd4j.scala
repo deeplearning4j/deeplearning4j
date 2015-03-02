@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package org.nd4j.api.linalg
 
 import java.io._
@@ -5,14 +21,13 @@ import java.util
 
 import org.nd4j.api.linalg.{ISComplexNDArray, ISNDArray}
 
-import com.google.common.primitives.Ints
 import org.apache.commons.math3.distribution.RealDistribution
 import org.apache.commons.math3.random.{MersenneTwister, RandomGenerator}
 import org.nd4j.linalg.api.buffer.{FloatBuffer, DataBuffer}
 import org.nd4j.linalg.api.complex.{IComplexDouble, IComplexNumber, IComplexFloat, IComplexNDArray}
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.convolution.ConvolutionInstance
-import org.nd4j.linalg.factory.{NDArrayFactory, BlasWrapper, Nd4j}
+import org.nd4j.linalg.factory.{NDArrayFactory, Nd4j}
 import org.nd4j.linalg.fft.FFTInstance
 import org.nd4j.linalg.indexing.BooleanIndexing
 import org.nd4j.linalg.indexing.conditions.Conditions
@@ -46,7 +61,7 @@ object SNd4j extends Nd4j {
   }
 
   def setNdArrayFactoryClazz(clazz: Class[_ <: NDArrayFactory]) {
-     Nd4j.setNdArrayFactoryClazz(clazz)
+    Nd4j.setNdArrayFactoryClazz(clazz)
   }
 
   def getConvolution: ConvolutionInstance = {
@@ -84,7 +99,7 @@ object SNd4j extends Nd4j {
    * thrown if the theta vector does not exactly fill the matrices.
    */
   def setParams(theta: INDArray, matrices: java.util.Iterator[_ <: INDArray]) {
-     Nd4j.setParams(theta,matrices)
+    Nd4j.setParams(theta,matrices)
   }
 
   def factory: NDArrayFactory = {
@@ -294,7 +309,7 @@ object SNd4j extends Nd4j {
    * @return the buffer to create
    */
   def createBuffer(length: Long): DataBuffer = {
-     return Nd4j.createBuffer(length)
+    return Nd4j.createBuffer(length)
   }
 
   def createBuffer(data: Array[Float]): DataBuffer = {
@@ -342,55 +357,8 @@ object SNd4j extends Nd4j {
     return Nd4j.repeat(n,num).asInstanceOf[ISComplexNDArray]
   }
 
-  /**
-   * Sort an ndarray along a particular dimension
-   * @param ndarray the ndarray to sort
-   * @param dimension the dimension to sort
-   * @return an array with indices and the sorted ndarray
-   */
-  def sortWithIndices(ndarray: IComplexNDArray, dimension: Int, ascending: Boolean): Array[ISNDArray] = {
-    val ret =  Nd4j.sortWithIndices(ndarray,dimension,ascending)
-    val ret2 = new Array[ISNDArray](2)
-    for(i <- 0 until ret.length) {
-      ret2(i) = ret(i).asInstanceOf[ISNDArray]
-    }
-    return ret2
-  }
 
-  /**
-   * Sort an ndarray along a particular dimension
-   * @param ndarray the ndarray to sort
-   * @param dimension the dimension to sort
-   * @return the indices and the sorted ndarray
-   */
-  def sortWithIndices(ndarray: INDArray, dimension: Int, ascending: Boolean): Array[ISNDArray] = {
-    val ret =  Nd4j.sortWithIndices(ndarray,dimension,ascending)
-    val ret2 = new Array[ISNDArray](2)
-    for(i <- 0 until ret.length) {
-      ret2(i) = ret(i).asInstanceOf[ISNDArray]
-    }
-    return ret2
-  }
 
-  /**
-   * Sort an ndarray along a particular dimension
-   * @param ndarray the ndarray to sort
-   * @param dimension the dimension to sort
-   * @return the sorted ndarray
-   */
-  def sort(ndarray: IComplexNDArray, dimension: Int, ascending: Boolean): ISComplexNDArray = {
-    return sort(ndarray,dimension,ascending)
-  }
-
-  /**
-   * Sort an ndarray along a particular dimension
-   * @param ndarray the ndarray to sort
-   * @param dimension the dimension to sort
-   * @return the sorted ndarray
-   */
-  def sort(ndarray: INDArray, dimension: Int, ascending: Boolean): ISNDArray = {
-    return sort(ndarray,dimension,ascending)
-  }
 
   /**
    * Create an n x (shape)
@@ -428,6 +396,52 @@ object SNd4j extends Nd4j {
 
   def toFlattened(length: Int, matrices: java.util.Iterator[_ <: INDArray]): ISNDArray = {
     return Nd4j.toFlattened(length, matrices).asInstanceOf[ISNDArray]
+  }
+
+  /**
+   * Sort an ndarray along a particular dimension
+   *
+   * @param ndarray   the ndarray to sort
+   * @param dimension the dimension to sort
+   * @return an array with indices and the sorted ndarray
+   */
+  def sortWithIndices(ndarray: IComplexNDArray, dimension: Int, ascending: Boolean): Array[INDArray] = {
+    return Nd4j.sortWithIndices(ndarray,dimension,ascending)
+  }
+
+  /**
+   * Sort an ndarray along a particular dimension
+   *
+   * @param ndarray   the ndarray to sort
+   * @param dimension the dimension to sort
+   * @return the indices and the sorted ndarray
+   */
+  def sortWithIndices(ndarray: INDArray, dimension: Int, ascending: Boolean): Array[INDArray] = {
+    return Nd4j.sortWithIndices(ndarray,dimension,ascending)
+  }
+
+
+
+  /**
+   * Sort an ndarray along a particular dimension
+   *
+   * @param ndarray   the ndarray to sort
+   * @param dimension the dimension to sort
+   * @return the sorted ndarray
+   */
+  def sort(ndarray: IComplexNDArray, dimension: Int, ascending: Boolean): IComplexNDArray = {
+    return Nd4j.sort(ndarray,dimension,ascending)
+  }
+
+  /**
+   * Sort an ndarray along a particular dimension
+   *
+   * @param ndarray   the ndarray to sort
+   * @param dimension the dimension to sort
+   * @return the sorted ndarray
+   */
+  def sort(ndarray: INDArray, dimension: Int, ascending: Boolean): INDArray = {
+    return Nd4j.sort(ndarray,dimension,ascending)
   }
 
   /**

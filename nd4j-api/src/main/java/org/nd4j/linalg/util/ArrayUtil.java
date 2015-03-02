@@ -817,4 +817,10 @@ public class ArrayUtil {
             ret[i] = data[i];
         return ret;
     }
+
+    public static float[] copy(float[] data) {
+        float[] result = new float[data.length];
+        System.arraycopy(data,0,result,0,data.length);
+        return result;
+    }
 }

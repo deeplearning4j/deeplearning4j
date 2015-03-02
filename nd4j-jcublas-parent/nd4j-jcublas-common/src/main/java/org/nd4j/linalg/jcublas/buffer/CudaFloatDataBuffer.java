@@ -19,11 +19,10 @@ package org.nd4j.linalg.jcublas.buffer;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
-import org.nd4j.linalg.ops.ElementWiseOp;
 import org.nd4j.linalg.util.ArrayUtil;
 
 /**
@@ -121,15 +120,21 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
         if (pointer() == null)
             alloc();
-
-        JCublas.cublasSetVector(
-                length(),
-                elementSize()
-                , Pointer.to(data)
-                , 1
-                , pointer()
-                , 1);
-
+        try {
+            JCublas.cublasSetVector(
+                    length(),
+                    elementSize()
+                    , Pointer.to(data)
+                    , 1
+                    , pointer()
+                    , 1);
+        }catch(Exception e) {
+            try {
+                JCuda.cudaMemcpy(pointer(), Pointer.to(data), elementSize() * length(), cudaMemcpyKind.cudaMemcpyHostToDevice);
+            }catch(Exception e1) {
+                throw new RuntimeException(e1);
+            }
+        }
 
     }
 
@@ -232,20 +237,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     }
 
-    @Override
-    public void apply(ElementWiseOp op, int offset) {
-        if (offset >= length)
-            throw new IllegalArgumentException("Illegal start " + offset + " greater than length of " + length);
-        int arrLength = Math.abs(length - offset);
-        float[] data = new float[arrLength];
-        Pointer p = Pointer.to(data);
-        get(offset, length(), p);
-        DataBuffer floatBuffer = new FloatBuffer(data, false);
-        floatBuffer.apply(op);
-        p = Pointer.to(data);
-        set(offset, arrLength, p);
-
-    }
 
     @Override
     public void addi(Number n, int inc, int offset) {
@@ -282,12 +273,12 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void muli(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
-        exec2d(buffer,"float",offset,yOffset,n,incx,incy,"mul",this);
+        exec2d(buffer,"float",offset,yOffset,n,incx,incy,"mul_strided",this);
     }
 
     @Override
     public void divi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
-        exec2d(buffer,"float",offset,yOffset,n,incx,incy,"div",this);
+        exec2d(buffer,"float",offset,yOffset,n,incx,incy,"div_strided",this);
     }
 
     @Override

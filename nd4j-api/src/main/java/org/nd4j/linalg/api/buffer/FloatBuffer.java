@@ -237,4 +237,11 @@ public class FloatBuffer extends BaseDataBuffer {
     public int hashCode() {
         return buffer != null ? Arrays.hashCode(buffer) : 0;
     }
+
+    @Override
+    public String toString() {
+        return "FloatBuffer{" +
+                "buffer=" + Arrays.toString(buffer) +
+                '}';
+    }
 }

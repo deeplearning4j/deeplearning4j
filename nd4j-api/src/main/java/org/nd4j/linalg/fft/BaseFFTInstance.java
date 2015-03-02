@@ -33,7 +33,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
     /**
      * FFT along a particular dimension
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
@@ -49,13 +49,13 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier op, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
      *
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to op
+     * @return the the discrete fourier op of the passed in input
      */
     @Override
     public IComplexNDArray fft(IComplexNDArray inputC) {
@@ -67,13 +67,13 @@ public abstract class BaseFFTInstance implements FFTInstance {
     }
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier op, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
      *
-     * @param input the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param input the input to op
+     * @return the the discrete fourier op of the passed in input
      */
     @Override
     public IComplexNDArray fft(INDArray input) {
@@ -83,13 +83,13 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier op, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
      *
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to op
+     * @return the the discrete fourier op of the passed in input
      */
     @Override
     public IComplexNDArray fft(IComplexNDArray inputC, int numElements) {
@@ -99,9 +99,9 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
     /**
      * ND IFFT, computes along the first on singleton dimension of
-     * transform
+     * op
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param dimension   the dimension to iterate along
      * @param numElements the desired number of elements in each fft
      * @return the reverse ifft of the passed in array
@@ -137,7 +137,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
     /**
      * ND IFFT
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param dimension   the dimension to iterate along
      * @param numElements the desired number of elements in each fft
      * @return the transformed array
@@ -165,9 +165,9 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
     /**
      * Performs FFT along the first non singleton dimension of
-     * transform. This means
+     * op. This means
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param dimension   the dimension to iterate along
      * @param numElements the desired number of elements in each fft
      *                    along each dimension from each slice (note: each slice)
@@ -195,10 +195,10 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
 
     /**
-     * Computes the fft along the first non singleton dimension of transform
+     * Computes the fft along the first non singleton dimension of op
      * when it is a matrix
      *
-     * @param transform   the ndarray to transform
+     * @param transform   the ndarray to op
      * @param dimension   the dimension to do fft along
      * @param numElements the desired number of elements in each fft
      * @return the fft of the specified ndarray
@@ -211,7 +211,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
     /**
      * FFT on the whole array (n is equal the first dimension shape)
      *
-     * @param transform the matrix to transform
+     * @param transform the matrix to op
      * @return the ffted array
      */
     @Override
@@ -222,7 +222,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
     /**
      * FFT on the whole array (n is equal the first dimension shape)
      *
-     * @param transform the matrix to transform
+     * @param transform the matrix to op
      * @return the ffted array
      */
     @Override

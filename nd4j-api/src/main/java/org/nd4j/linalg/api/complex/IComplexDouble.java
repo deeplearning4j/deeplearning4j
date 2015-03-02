@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.complex;
  * @author Adam Gibson
  */
 public interface IComplexDouble extends IComplexNumber {
+
     @Override
     Double realComponent();
 
