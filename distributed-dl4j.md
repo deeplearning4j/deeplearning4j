@@ -89,13 +89,7 @@ JCublas gives ND4J the ability to use GPUs.
 
 While GPUs have traditionally been used for video games, they can also manipulate large arrays or matrices, including linear algebra routines that would be common in neural networks. Right now, DL4J/ND4J supports CUDA dev kit 6.0 by default. You are free to download ND4J and change it to your preferred version of CUDA.
 
-To add CUDA spport to your project, add this to your *pom.xml* file, so Maven will build the dependencies for you.
-
-	<dependency>
-		<groupId>org.nd4j</groupId>
-		<artifactId>nd4j-jcublas</artifactId>
-		<version>0.0.3.1</version>
-	</dependency>
+Please see your [quick start](http://deeplearning4j.org/quickstart.html) for more information on adding the necessary dependencies.
 
 ### Running Distributed DL4J
 
