@@ -19,13 +19,16 @@ Include an ND4J backend here:
 
 The possible backends right now are:
 
-    nd4j-jcublas-${YOUR_CUDA_VERSION} 
-    //(Ensure cuda is properly setup in your LD_LIBRARY_PATH)
-    nd4j-jblas 
-    //(Linux: Install Blas/gfortran. OSX is set up. Windows: set up the MINGW Blas libs on your path.)
-    nd4j-netlib-blas
-    //(Linux: Install Blas/gfortran. OSX is set up. Windows: set up the MINGW Blas libs on your path.)
-
+     //(Ensure cuda is properly setup in your LD_LIBRARY_PATH)
+     
+     nd4j-jcublas-${YOUR_CUDA_VERSION} 
+     
+     //(Linux: Install Blas/gfortran. OSX is set up. Windows: set up the MINGW Blas libs on your path.)
+     
+     nd4j-jblas 
+     
+     nd4j-netlib-blas
+    
 where versions can be found on [Maven Central](http://search.maven.org).
 
 For core algorithms, you can simply use:
