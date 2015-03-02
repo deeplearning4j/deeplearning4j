@@ -36,6 +36,9 @@ public class Train extends BaseSubCommand {
     @Option(name = "--model", usage = "model for prediction", aliases = "-m", required = true)
     private String model = "model.json";
 
+    @Option(name = "--output", usage = "location for saving model", aliases = "-o", required = true)
+    private String output = "output.txt";
+
     public Train(String[] args) {
         super(args);
     }
