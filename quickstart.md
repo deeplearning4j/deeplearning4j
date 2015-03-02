@@ -9,7 +9,7 @@ Installing From Maven Central
 
 You must first have Maven installed. ([See details here](http://nd4j.org/getstarted.html).)
 
-Include an ND4J backend here:
+Include an ND4J backend in this dependency in your deeplearning4j pom.xml file:
 
      <dependency>
        <groupId>org.nd4j</groupId>
@@ -19,11 +19,11 @@ Include an ND4J backend here:
 
 These are the backends you can choose from:
 
-     //(Ensure cuda is properly setup in your LD_LIBRARY_PATH)
+     //Ensure that Cuda (for GPUs) is properly set up in your LD_LIBRARY_PATH
      
      nd4j-jcublas-${YOUR_CUDA_VERSION} 
      
-     //(Linux: Install Blas/gfortran. OSX is set up. Windows: set up the MINGW Blas libs on your path.)
+     //Linux: Install Blas/Gfortran. OSX: Already set up. Windows: Set up the MINGW Blas libs on your path.
      
      nd4j-jblas 
      
@@ -31,7 +31,7 @@ These are the backends you can choose from:
     
 Versions can be found on [Maven Central](http://search.maven.org).
 
-For core algorithms, you can simply use:
+For core algorithms, you can simply add this to your deeplearning4j pom.xml file:
 
      <dependency>
          <groupId>org.deeplearning4j</groupId>
@@ -57,7 +57,6 @@ For Scaleout (Hadoop/Spark):
           <version>${deeplearning4j.version}</version>
       </dependency>
 
-
 ### Spark
 
       <dependency>
@@ -69,7 +68,7 @@ For Scaleout (Hadoop/Spark):
 Installing From Source 
 ==============================
 
-YOU DON'T HAVE TO DO THIS IF YOU'RE JUST USING THE SOFTWARE FROM MAVEN CENTRAL OR THE DOWNLOADS.
+YOU DON'T HAVE TO DO THIS IF YOU'RE JUST USING THE SOFTWARE FROM MAVEN CENTRAL, OR THE DOWNLOADS.
 
 1. Download [Maven](http://maven.apache.org/download.cgi) and set it up in your path.
-2. Run setup.sh on Unix and setup.bat on Windows
+2. Run setup.sh on Unix and setup.bat on Windows. (These are in the root of the deeplearning4j [git repo](https://github.com/deeplearning4j/deeplearning4j). To get that, set up [Github](http://nd4j.org/getstarted.html#github) and do a *git clone*.)
