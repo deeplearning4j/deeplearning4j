@@ -8,13 +8,16 @@ Use from Maven Central (Must have Maven installed)
 =========================================
 
 Include an nd4j backend here:
+
+
  <dependency>
    <groupId>org.nd4j</groupId>
    <artifactId>nd4j-$BACKEND_OF_YOUR_CHOICE</artifactId>
    <version>${nd4j.version}</version>
  </dependency>
  
-THe possible backends right now are:
+
+The possible backends right now are:
 
     nd4j-jcublas-${YOUR_CUDA_VERSION} (Ensure cuda is properly setup in your LD_LIBRARY_PATH)
     nd4j-jblas (For linux, install blas/gfortran, osx is already setup,for windows, setup the mingw blas libraries on your path)
@@ -23,6 +26,9 @@ THe possible backends right now are:
 where version can be found from [Maven Central](http://search.maven.org)
 
 For core algorithms, you can get away with:
+
+
+
 
 <dependency>
     <groupId>org.deeplearning4j</groupId>
