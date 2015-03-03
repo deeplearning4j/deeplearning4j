@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.cli.api.schemes.test;
+package org.deeplearning4j.cli.schemes;
 
 import org.canova.api.records.reader.RecordReader;
 import org.canova.api.records.writer.RecordWriter;
@@ -45,56 +45,56 @@ import static org.junit.Assert.*;
  *  @author sonali
  */
 public abstract class BaseSchemeTest {
-    protected Scheme scheme;
+  protected Scheme scheme;
 
-    @Before
-    public void before() {
-        initScheme();
+  @Before
+  public void before() {
+    initScheme();
+  }
+
+  /**
+   * Initializes the appropriate scheme for testing
+   * @return scheme
+   */
+  public  Scheme getScheme() {
+    return scheme;
+  }
+
+  public abstract void initScheme();
+
+  @Test
+  public void testScheme() throws Exception {
+    Scheme scheme = getScheme();
+    RecordReader recordReader = scheme.createReader(new ClassPathResource("iris.txt").getURI());
+
+    assertTrue(recordReader.hasNext());
+    while (recordReader.hasNext()) {
+      Collection<Writable> record = recordReader.next();
+      assertEquals(1, record.size());
     }
 
-    /**
-     * Initializes the appropriate scheme for testing
-     * @return scheme
-     */
-    public  Scheme getScheme() {
-        return scheme;
+    recordReader = scheme.createReader(new ClassPathResource("iris.txt").getURI());
+
+    List<Collection<Writable>> records = new ArrayList<>();
+    int count = 0;
+    RecordWriter writer = scheme.createWriter(URI.create("test_out.txt"));
+
+    for (Collection<Writable> record : records) {
+      writer.write(record);
+      assertEquals(1, record.size());
     }
 
-    public abstract void initScheme();
+    recordReader = scheme.createReader(URI.create("test_out.txt"));
 
-    @Test
-    public void testScheme() throws Exception {
-        Scheme scheme = getScheme();
-        RecordReader recordReader = scheme.createReader(new ClassPathResource("iris.txt").getURI());
-
-        assertTrue(recordReader.hasNext());
-        while (recordReader.hasNext()) {
-            Collection<Writable> record = recordReader.next();
-            assertEquals(1, record.size());
-        }
-
-        recordReader = scheme.createReader(new ClassPathResource("iris.txt").getURI());
-
-        List<Collection<Writable>> records = new ArrayList<>();
-        int count = 0;
-        RecordWriter writer = scheme.createWriter(URI.create("test_out.txt"));
-
-        for (Collection<Writable> record : records) {
-            writer.write(record);
-            assertEquals(1, record.size());
-        }
-
-        recordReader = scheme.createReader(URI.create("test_out.txt"));
-
-        while (recordReader.hasNext()) {
-            Collection<Writable> record = recordReader.next();
-            records.add(record);
-            assertEquals(1, record.size());
-            count++;
-        }
-
-        assertEquals(1, count);
-        writer.close();
+    while (recordReader.hasNext()) {
+      Collection<Writable> record = recordReader.next();
+      records.add(record);
+      assertEquals(1, record.size());
+      count++;
     }
+
+    assertEquals(1, count);
+    writer.close();
+  }
 
 }
