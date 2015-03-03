@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.cli.files;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.io.FilenameUtils;
 import org.canova.api.exceptions.UnknownFormatException;
 import org.canova.api.records.reader.factory.RecordWriterFactory;
@@ -36,39 +37,41 @@ import java.net.URI;
  * @author sonali
  */
 public class FileRecordWriterFactory implements RecordWriterFactory {
-    /**
-     * Creates new RecordWriter instance based on the output file extension
-     * @param uri destination for saving model
-     * @return RecordWriter instance
-     * @throws Exception
-     */
+  /**
+   * Creates new RecordWriter instance based on the output file extension
+   *
+   * @param uri destination for saving model
+   * @return RecordWriter instance
+   * @throws Exception
+   */
 
-    @Override
-    public RecordWriter create(URI uri) throws Exception {
-        File out = new File(uri.toString());
-        String fileNameExtension = FilenameUtils.getExtension(uri.toString()).toLowerCase();
-        RecordWriter recordWriter = null;
+  @Override
+  public RecordWriter create(URI uri) throws Exception {
+    Preconditions.checkArgument(uri != null, "URI needs to be specified");
+    File out = new File(uri.toString());
+    String fileNameExtension = FilenameUtils.getExtension(uri.toString()).toLowerCase();
+    RecordWriter recordWriter;
 
-        switch (fileNameExtension) {
-            case "csv":
-                recordWriter  = new CSVRecordWriter(out);
-                break;
-            case "txt":
-                recordWriter = new FileRecordWriter(out, true);
-                break;
-            case "mat":
-                recordWriter = new MatlabRecordWriter(out);
-                break;
-            case "svmlight":
-                recordWriter = new SVMLightRecordWriter(out, true);
-                break;
-            default:
-                throw new UnknownFormatException("Unknown file format");
-        }
-
-
-        return recordWriter;
+    switch (fileNameExtension) {
+      case "csv":
+        recordWriter = new CSVRecordWriter(out);
+        break;
+      case "txt":
+        recordWriter = new FileRecordWriter(out, true);
+        break;
+      case "mat":
+        recordWriter = new MatlabRecordWriter(out);
+        break;
+      case "svmlight":
+        recordWriter = new SVMLightRecordWriter(out, true);
+        break;
+      default:
+        throw new UnknownFormatException("Unknown file format");
     }
+
+
+    return recordWriter;
+  }
 
 
 }
