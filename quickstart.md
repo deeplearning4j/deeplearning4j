@@ -4,6 +4,22 @@ layout: default
 ---
 
 
+Quick Start Guide
+=========================================
+
+### Assumptions
+
+This Quick Start guide assumes that you have the following already installed:
+
+1. Java
+2. Integrated Development Environment (IDE)
+3. Maven
+4. Canova
+5. Github
+ 
+If you need to install any of the above, please check the [Getting Started guide](http://deeplearning4j.org/gettingstarted.html).
+
+
 Installing From Maven Central 
 =========================================
 
@@ -17,7 +33,7 @@ Include an [ND4J](http://nd4j.org/) backend in this dependency in your deeplearn
        <version>${nd4j.version}</version>
      </dependency>
 
-These are the backends you can choose from:
+These are the [backends](http://nd4j.org/gpu_native_backends.html) you can choose from:
 
      //Ensure that Cuda (for GPUs) is properly set up in your LD_LIBRARY_PATH
      
