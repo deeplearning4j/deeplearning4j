@@ -43,7 +43,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 public class SoftMax extends BaseTransformOp {
     private Number sum;
     private Number max;
-    private IComplexNumber maxComplex,sumComplex;
+    private IComplexNumber sumComplex;
     private INDArray expXMinusMax;
     private IComplexNDArray complexExpMinusMax;
 
@@ -145,7 +145,7 @@ public class SoftMax extends BaseTransformOp {
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
         if(x instanceof IComplexNDArray) {
-            this.maxComplex = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResultComplex();
+            IComplexNumber maxComplex = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResultComplex();
             IComplexNDArray complexX = (IComplexNDArray) x;
             complexExpMinusMax = (IComplexNDArray) Transforms.exp(complexX.sub(maxComplex));
             this.sumComplex =  Nd4j.getExecutioner().execAndReturn(new Sum(expXMinusMax)).currentResultComplex();
