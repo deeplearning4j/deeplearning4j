@@ -112,7 +112,7 @@ Dl4J has vectorizers for different purposes.
                       DataSet data = v.vectorize();
 
 
-Vectorizers are in the [Vectorizer](..doc/org/deeplearning4j/word2vec/vectorizer/)
+Vectorizers are in the [Canova](https://github.com/deeplearning4j/Canova)
 package. Many will be added over time, but cover the basic media including text and images.
 
 
