@@ -49,7 +49,7 @@ public class FileRecordReaderFactory implements RecordReaderFactory {
 
   @Override
   public RecordReader create(URI uri) throws UnknownFormatException {
-    Preconditions.checkArgument(URI != null, "URI cannot be null");
+    Preconditions.checkArgument(uri != null, "URI cannot be null");
     File file = new File(uri.toString());
     InputSplit split = new FileSplit(file);
 
