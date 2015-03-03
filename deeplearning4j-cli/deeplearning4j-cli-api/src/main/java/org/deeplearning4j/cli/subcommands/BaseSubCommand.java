@@ -27,22 +27,21 @@ import org.slf4j.LoggerFactory;
  * @author sonali
  */
 public abstract class BaseSubCommand implements SubCommand {
-    protected String[] args;
-    private static Logger log = LoggerFactory.getLogger(BaseSubCommand.class);
+  private static final Logger log = LoggerFactory.getLogger(BaseSubCommand.class);
+  protected String[] args;
 
-    /**
-     *
-     * @param args arguments for command
-     */
-    public BaseSubCommand(String[] args) {
-        this.args = args;
-        CmdLineParser parser = new CmdLineParser(this);
-        try {
-            parser.parseArgument(args);
-        } catch (CmdLineException e) {
-            parser.printUsage(System.err);
-            log.error("Unable to parse args",e);
-        }
-
+  /**
+   * @param args arguments for command
+   */
+  public BaseSubCommand(String[] args) {
+    this.args = args;
+    CmdLineParser parser = new CmdLineParser(this);
+    try {
+      parser.parseArgument(args);
+    } catch (CmdLineException e) {
+      parser.printUsage(System.err);
+      log.error("Unable to parse args", e);
     }
+
+  }
 }

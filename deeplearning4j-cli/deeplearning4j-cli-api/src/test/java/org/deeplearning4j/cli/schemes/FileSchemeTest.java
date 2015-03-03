@@ -18,23 +18,7 @@
 
 package org.deeplearning4j.cli.schemes;
 
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.records.writer.RecordWriter;
-import org.canova.api.writable.Writable;
-import org.deeplearning4j.cli.api.schemes.Scheme;
-import org.deeplearning4j.cli.api.schemes.Schemes;
-import org.deeplearning4j.cli.api.schemes.test.BaseSchemeTest;
 import org.deeplearning4j.cli.files.FileScheme;
-import org.junit.Test;
-import org.springframework.core.io.ClassPathResource;
-
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @author sonali
