@@ -47,6 +47,7 @@ public class TrainMultiLayerConfigTest {
                 .list(4).preProcessor(0,new ConvolutionPostProcessor())
                 .hiddenLayerSizes(3, 2, 2).build();
         String json = conf.toJson();
+
         FileUtils.writeStringToFile(new File("model_multi.json"), json);
 
         MultiLayerConfiguration from = testModelFlag.value("model_multi.json");
