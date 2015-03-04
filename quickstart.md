@@ -17,8 +17,7 @@ This Quick Start guide assumes that you have the following already installed:
 4. Canova
 5. Github
  
-If you need to install any of the above, please check the [Getting Started guide](http://deeplearning4j.org/gettingstarted.html).
-
+If you need to install any of the above, please check the [Getting Started guide](http://nd4j.org/getstarted.html).
 
 Installing From Maven Central 
 =========================================
