@@ -24,6 +24,8 @@ Installing From Maven Central
 
 You must first have Maven installed. ([See details here](http://nd4j.org/getstarted.html#maven).)
 
+Please use the latest version of the examples, which you will find in Maven. We are currently on 0.0.3.3.x.
+
 Include an [ND4J](http://nd4j.org/) backend in this dependency in your deeplearning4j pom.xml file:
 
      <dependency>
