@@ -19,7 +19,6 @@ package org.deeplearning4j.clustering.algorithm.strategy;
 import org.deeplearning4j.clustering.algorithm.condition.ClusteringAlgorithmCondition;
 import org.deeplearning4j.clustering.algorithm.condition.ConvergenceCondition;
 import org.deeplearning4j.clustering.algorithm.condition.FixedIterationCountCondition;
-import org.nd4j.linalg.api.ops.Accumulation;
 
 public abstract class BaseClusteringStrategy implements ClusteringStrategy {
 
@@ -30,7 +29,7 @@ public abstract class BaseClusteringStrategy implements ClusteringStrategy {
 
 	protected String	distanceFunction;
 
-	protected boolean							allowEmptyClusters;
+	protected boolean allowEmptyClusters;
 
 	protected BaseClusteringStrategy(ClusteringStrategyType type, Integer initialClusterCount, String distanceFunction,
 			boolean allowEmptyClusters) {
