@@ -40,8 +40,7 @@ public class FileScheme extends BaseScheme {
     @Override
     public RecordReader createReader(URI uri) {
         try {
-            RecordReader reader = readerFactory.create(uri);
-            return reader;
+          return readerFactory.create(uri);
         } catch (UnknownFormatException e) {
             throw new RuntimeException(e);
         }
@@ -54,8 +53,7 @@ public class FileScheme extends BaseScheme {
     @Override
     public RecordWriter createWriter(URI uri) {
         try {
-            RecordWriter writer = recordWriterFactory.create(uri);
-            return writer;
+          return recordWriterFactory.create(uri);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
