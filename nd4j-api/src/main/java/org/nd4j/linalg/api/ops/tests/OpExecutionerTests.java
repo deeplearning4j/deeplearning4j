@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.Log;
+import org.nd4j.linalg.api.ops.impl.transforms.Pow;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
@@ -163,6 +164,16 @@ public abstract class OpExecutionerTests {
 
 
     }
+
+    @Test
+    public void testPow() {
+        INDArray oneThroughSix = Nd4j.linspace(1,6,6);
+        Pow pow = new Pow(oneThroughSix,2);
+        Nd4j.getExecutioner().exec(pow);
+        INDArray answer = Nd4j.create(new float[]{1,4,9,16,25,36});
+        assertEquals(answer,pow.z());
+    }
+
 
     @Test
     public void testDimensionMax() {

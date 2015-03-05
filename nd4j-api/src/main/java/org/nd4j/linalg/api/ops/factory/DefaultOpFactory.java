@@ -105,7 +105,7 @@ public class DefaultOpFactory implements OpFactory {
             case "log" : return new Log(x,y);
             case "maxout" : return new MaxOut(x,y);
             case "negative" : return new Negative(x,y);
-            case "pow" : return new Pow(x,y);
+            case "pow" : return new Pow(x,y,2);
             case "round" : return new Round(x,y);
             case "sigmoid" : return new Sigmoid(x,y);
             case "sign" : return new Sign(x,y);
@@ -135,7 +135,7 @@ public class DefaultOpFactory implements OpFactory {
             case "log" : return new Log(x);
             case "maxout" : return new MaxOut(x);
             case "negative" : return new Negative(x);
-            case "pow" : return new Pow(x);
+            case "pow" : return new Pow(x,2);
             case "round" : return new Round(x);
             case "sigmoid" : return new Sigmoid(x);
             case "sign" : return new Sign(x);
@@ -166,7 +166,7 @@ public class DefaultOpFactory implements OpFactory {
             case "log" : return new Log(x,z);
             case "maxout" : return new MaxOut(x,z);
             case "negative" : return new Negative(x,z);
-            case "pow" : return new Pow(x,z);
+            case "pow" : return new Pow(x,z,2);
             case "round" : return new Round(x,z);
             case "sigmoid" : return new Sigmoid(x,z);
             case "sign" : return new Sign(x,z);

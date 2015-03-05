@@ -396,7 +396,7 @@ public class Transforms {
     public static INDArray pow(INDArray ndArray, Number power, boolean dup) {
         int dType = Nd4j.dataType();
         Object[] extraArgs = dType == DataBuffer.DOUBLE ? new Object[]{new Double(power.doubleValue())} : new Object[]{new Float(power.floatValue())};
-        return exec(dup ? new Pow(ndArray,ndArray.dup()) : new Pow(ndArray));
+        return exec(dup ? new Pow(ndArray,ndArray.dup(),power.doubleValue()) : new Pow(ndArray,power.doubleValue()));
     }
 
     /**

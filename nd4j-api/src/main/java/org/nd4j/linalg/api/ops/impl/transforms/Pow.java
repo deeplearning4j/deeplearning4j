@@ -29,20 +29,32 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Pow extends BaseTransformOp {
-    public Pow(INDArray x, INDArray y, INDArray z, int n) {
-        super(x, y, z, n);
-    }
+    private double pow;
 
-    public Pow(INDArray x, INDArray z) {
+    public Pow(INDArray x, INDArray z, double pow) {
         super(x, z);
+        this.pow = pow;
+        init(x,null,z,x.length());
     }
 
-    public Pow(INDArray x, INDArray z, int n) {
+    public Pow(INDArray x, INDArray z, int n, double pow) {
         super(x, z, n);
+        this.pow = pow;
+        init(x,null,z,n);
+
     }
 
-    public Pow(INDArray x) {
+    public Pow(INDArray x, INDArray y, INDArray z, int n, double pow) {
+        super(x, y, z, n);
+        this.pow = pow;
+        init(x,y,z,n);
+
+    }
+
+    public Pow(INDArray x, double pow) {
         super(x);
+        this.pow = pow;
+        init(x,null,x,x.length());
     }
 
     @Override
@@ -52,65 +64,58 @@ public class Pow extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        double pow = pow(extraArgs);
         return ComplexUtil.pow(origin,pow);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        double pow = pow(extraArgs);
         return ComplexUtil.pow(origin,pow);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        double pow = pow(extraArgs);
         return ComplexUtil.pow(origin,pow);
     }
 
     @Override
     public float op(float origin, float other) {
-        double pow = pow(extraArgs);
         return (float) FastMath.pow(origin, pow);
     }
 
     @Override
     public double op(double origin, double other) {
-        double pow = pow(extraArgs);
         return  FastMath.pow(origin, pow);
     }
 
     @Override
     public double op(double origin) {
-        double pow = pow(extraArgs);
         return  FastMath.pow(origin, pow);
     }
 
     @Override
     public float op(float origin) {
-        double pow = pow(extraArgs);
         return (float) FastMath.pow(origin, pow);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        double pow = pow(extraArgs);
         return ComplexUtil.pow(origin,pow);
     }
 
-    private double pow(Object[] extraArgs) {
-        if(extraArgs == null || extraArgs.length < 1)
-            throw new IllegalArgumentException("Extra arguments must contain a power");
-        return Double.valueOf(extraArgs[0].toString());
-    }
+
     @Override
     public Op opForDimension(int index,int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
 
         if(y() != null)
-            return new Pow(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new Pow(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length(),pow);
         else
-            return new Pow(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new Pow(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length(),pow);
 
+    }
+
+    @Override
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        this.extraArgs = new Object[]{pow};
     }
 }
