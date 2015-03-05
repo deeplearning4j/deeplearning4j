@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.cli.files;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.io.FilenameUtils;
 import org.canova.api.exceptions.UnknownFormatException;
 import org.canova.api.records.reader.RecordReader;
@@ -38,47 +39,47 @@ import java.net.URI;
  * @author sonali
  */
 public class FileRecordReaderFactory implements RecordReaderFactory {
-    /**
-     * Creates new RecordReader instance based on the input file extension
-     * @param uri location of input data
-     * @return RecordReader instance
-     * @throws UnknownFormatException
-     */
+  /**
+   * Creates new RecordReader instance based on the input file extension
+   *
+   * @param uri location of input data
+   * @return RecordReader instance
+   * @throws UnknownFormatException
+   */
 
-    @Override
-    public RecordReader create(URI uri) throws UnknownFormatException {
-        File file = new File(uri.toString());
-        InputSplit split = new FileSplit(file);
+  @Override
+  public RecordReader create(URI uri) throws UnknownFormatException {
+    Preconditions.checkArgument(uri != null, "URI cannot be null");
+    File file = new File(uri.toString());
+    InputSplit split = new FileSplit(file);
 
-        String fileNameExtension = FilenameUtils.getExtension(uri.toString()).toLowerCase();
-        RecordReader ret = null;
-        switch (fileNameExtension) {
-            case "csv":
-                ret  = new CSVRecordReader();
-                break;
-            case "txt":
-                ret = new FileRecordReader();
-                break;
-            case "mat":
-                ret = new MatlabRecordReader();
-                break;
-            case "svmlight":
-                ret = new SVMLightRecordReader();
-                break;
-            default:
-                throw new UnknownFormatException("Unknown file format");
-        }
-
-        try {
-            ret.initialize(split);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return ret;
-
+    String fileNameExtension = FilenameUtils.getExtension(uri.toString()).toLowerCase();
+    RecordReader ret = null;
+    switch (fileNameExtension) {
+      case "csv":
+        ret = new CSVRecordReader();
+        break;
+      case "txt":
+        ret = new FileRecordReader();
+        break;
+      case "mat":
+        ret = new MatlabRecordReader();
+        break;
+      case "svmlight":
+        ret = new SVMLightRecordReader();
+        break;
+      default:
+        throw new UnknownFormatException("Unknown file format");
     }
 
+    try {
+      ret.initialize(split);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return ret;
 
+  }
 
 
 }

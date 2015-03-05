@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.cli;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.cli.api.flags.Input;
 import org.deeplearning4j.cli.api.flags.Model;
@@ -28,6 +29,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+
+import java.io.File;
 
 import static org.junit.Assert.assertEquals;
 
@@ -47,10 +50,10 @@ public class TrainConfigTest {
         NeuralNetConfiguration testConfig = testModelFlag.value(json);
         assertEquals(conf, testConfig);
 
-        //Use Input for creating a RecordReader for "iris.txt"
+        FileUtils.writeStringToFile(new File("model.json"), json);
 
         String[] cmd = {
-                "--input", "iris.txt", "--model", json, "--output", "test_output.txt"
+                "--input", "iris.txt", "--model", "model.json", "--output", "test_output.txt"
         };
 
         Train train = new Train(cmd);
