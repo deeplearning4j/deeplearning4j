@@ -193,7 +193,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>findbugs-maven-plugin</artifactId>
-				<version>2.5.2</version>
+				<version>3.0.0</version>
 				<configuration>
 					<!--
 						Enables analysis which takes more memory but finds more bugs.
@@ -226,7 +226,7 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>${jacoco.version}</version>
+				<version>0.7.5-SNAPSHOT</version>
 				<executions>
 					<execution>
 						<goals>
