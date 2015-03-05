@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -96,46 +95,6 @@ public abstract class BaseOp implements Op {
         return n;
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return op(origin,other,null);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return op(origin,other,null);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return op(origin,other,null);
-    }
-
-
-    @Override
-    public float op(float origin, float other) {
-        return op(origin,other,null);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return op(origin,other,null);
-    }
-
-    @Override
-    public double op(double origin) {
-        return op(origin,null);
-    }
-
-    @Override
-    public float op(float origin) {
-        return op(origin,null);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return op(origin, (Object[]) null);
-    }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {

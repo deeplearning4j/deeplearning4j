@@ -111,7 +111,7 @@ public class DefaultOpFactory implements OpFactory {
             case "sign" : return new Sign(x,y);
             case "sin" : return new Sin(x,y);
             case "sqrt" : return new Sqrt(x,y);
-            case "stabilize": return new Stabilize(x,y);
+            case "stabilize": return new Stabilize(x,y,1);
             case "tanh" : return new Tanh(x,y);
             case "softmax" : return new SoftMax(x,y);
             default: throw new IllegalArgumentException("Illegal name " + name);
@@ -141,7 +141,7 @@ public class DefaultOpFactory implements OpFactory {
             case "sign" : return new Sign(x);
             case "sin" : return new Sin(x);
             case "sqrt" : return new Sqrt(x);
-            case "stabilize": return new Stabilize(x);
+            case "stabilize": return new Stabilize(x,1);
             case "tanh" : return new Tanh(x);
             case "softmax" : return new SoftMax(x);
 
@@ -172,7 +172,7 @@ public class DefaultOpFactory implements OpFactory {
             case "sign" : return new Sign(x,z);
             case "sin" : return new Sin(x,z);
             case "sqrt" : return new Sqrt(x,z);
-            case "stabilize": return new Stabilize(x,z);
+            case "stabilize": return new Stabilize(x,z,1);
             case "tanh" : return new Tanh(x,z);
             case "softmax" : return new SoftMax(x,z);
 

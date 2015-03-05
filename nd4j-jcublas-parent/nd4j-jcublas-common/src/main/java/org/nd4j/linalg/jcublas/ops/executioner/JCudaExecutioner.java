@@ -52,62 +52,47 @@ public class JCudaExecutioner implements OpExecutioner {
 
     @Override
     public Op exec(Op op) {
-        return exec(op,op.extraArgs());
-    }
-
-    @Override
-    public Op exec(Op op, Object[] extraArgs) {
         if(op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
-            invoke(t,extraArgs);
+            invoke(t);
         }
         else if(op instanceof Accumulation) {
             Accumulation acc = (Accumulation) op;
-            invoke(acc,extraArgs);
+            invoke(acc);
         }
         else if(op instanceof ScalarOp) {
             ScalarOp sc = (ScalarOp) op;
-            invoke(sc,extraArgs);
+            invoke(sc);
         }
         return op;
     }
 
-    @Override
-    public INDArray execAndReturn(TransformOp op) {
-        return execAndReturn(op,op.extraArgs());
-    }
 
     @Override
-    public INDArray execAndReturn(TransformOp op, Object[] extraArgs) {
-        invoke(op,extraArgs);
+    public INDArray execAndReturn(TransformOp op) {
+        invoke(op);
         return op.z();
     }
 
-    @Override
-    public Accumulation execAndReturn(Accumulation op, Object[] extraArgs) {
-        return (Accumulation) exec(op,extraArgs);
-    }
+
 
     @Override
     public Accumulation execAndReturn(Accumulation op) {
-        return execAndReturn(op,op.extraArgs());
+        return (Accumulation) exec(op);
     }
+
+
 
     @Override
     public Op exec(Op op, int dimension) {
-        return exec(op,op.extraArgs(),dimension);
-    }
-
-    @Override
-    public Op exec(Op op, Object[] extraArgs, int dimension) {
         //only accumulate along a particular dimension
         if(op instanceof Accumulation) {
             Accumulation a = (Accumulation) op;
-            return exec(a,extraArgs);
+            return exec(a);
         }
         for(int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
             Op op2 = op.opForDimension(i,dimension);
-            exec(op2,extraArgs);
+            exec(op2);
             if(op instanceof TransformOp) {
                 TransformOp t = (TransformOp) op;
                 TransformOp t2 = (TransformOp) op2;
@@ -119,16 +104,13 @@ public class JCudaExecutioner implements OpExecutioner {
         return op;
     }
 
-    @Override
-    public INDArray execAndReturn(TransformOp op, int dimension) {
-        return execAndReturn(op,dimension,op.extraArgs());
-    }
+
 
     @Override
-    public INDArray execAndReturn(TransformOp op, int dimension, Object[] extraArgs) {
+    public INDArray execAndReturn(TransformOp op, int dimension) {
         for(int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
             Op op2 = op.opForDimension(i,dimension);
-            exec(op2,extraArgs);
+            exec(op2);
             if(op instanceof TransformOp) {
                 TransformOp t =  op;
                 TransformOp t2 = (TransformOp) op2;
@@ -141,14 +123,11 @@ public class JCudaExecutioner implements OpExecutioner {
     }
 
     @Override
-    public Accumulation execAndReturn(Accumulation op, int dimension, Object[] extraArgs) {
-        return (Accumulation) exec(op,extraArgs,dimension);
+    public Accumulation execAndReturn(Accumulation op, int dimension) {
+        return (Accumulation) exec(op,dimension);
     }
 
-    @Override
-    public Accumulation execAndReturn(Accumulation op, int dimension) {
-        return execAndReturn(op,dimension,op.extraArgs());
-    }
+
 
     private Pointer toArgs(Object[] extraArgs,String dataType) {
         if(dataType.equals("double")) {
@@ -165,7 +144,7 @@ public class JCudaExecutioner implements OpExecutioner {
     }
 
 
-    private void invoke(Accumulation op,Object[] extraArgs) {
+    private void invoke(Accumulation op) {
         JCudaBuffer xBuffer = (JCudaBuffer) op.x().data();
         Pointer xPointer = xBuffer.pointer().withByteOffset(xBuffer.elementSize() * op.x().offset());
         CUdeviceptr result = null;
@@ -202,7 +181,7 @@ public class JCudaExecutioner implements OpExecutioner {
                     Pointer.to(yPointer),
                     Pointer.to(new int[]{op.x().majorStride()}),
                     Pointer.to(new int[]{op.y().majorStride()}),
-                    toArgs(extraArgs, getType(op)),
+                    toArgs(op.extraArgs(), getType(op)),
                     Pointer.to(result)
             );
 
@@ -220,7 +199,7 @@ public class JCudaExecutioner implements OpExecutioner {
                     Pointer.to(new int[]{op.x().offset()}),
                     Pointer.to(xPointer),
                     Pointer.to(new int[]{op.x().majorStride()}),
-                    toArgs(extraArgs, getType(op)),
+                    toArgs(op.extraArgs(), getType(op)),
                     Pointer.to(result)
             );
 
@@ -290,7 +269,7 @@ public class JCudaExecutioner implements OpExecutioner {
 
 
 
-    private void invoke(ScalarOp op,Object[] extraArgs) {
+    private void invoke(ScalarOp op) {
         JCudaBuffer xBuffer = (JCudaBuffer) op.x().data();
         Pointer xPointer = xBuffer.pointer().withByteOffset(op.x().offset() * xBuffer.elementSize());
 
@@ -308,7 +287,7 @@ public class JCudaExecutioner implements OpExecutioner {
                     Pointer.to(yPointer),
                     Pointer.to(new int[]{op.x().majorStride()}),
                     Pointer.to(new int[]{op.y().majorStride()}),
-                    toArgs(extraArgs, getType(op)),
+                    toArgs(op.extraArgs(), getType(op)),
                     Pointer.to(zPointer)
             );
 
@@ -333,7 +312,7 @@ public class JCudaExecutioner implements OpExecutioner {
                     PointerUtil.getPointer(op),
                     Pointer.to(xPointer),
                     Pointer.to(new int[]{op.x().majorStride()}),
-                    toArgs(extraArgs, getType(op)),
+                    toArgs(op.extraArgs(), getType(op)),
                     Pointer.to(zPointer)
             );
 
@@ -353,7 +332,7 @@ public class JCudaExecutioner implements OpExecutioner {
     }
 
 
-    private void invoke(TransformOp op,Object[] extraArgs) {
+    private void invoke(TransformOp op) {
         JCudaBuffer xBuffer = (JCudaBuffer) op.x().data();
         Pointer xPointer = xBuffer.pointer().withByteOffset(xBuffer.elementSize() * op.x().offset());
 
@@ -380,7 +359,7 @@ public class JCudaExecutioner implements OpExecutioner {
             params[4] = Pointer.to(yPointer);
             params[5] = Pointer.to(new int[]{op.x().majorStride()});
             params[6] = Pointer.to(new int[]{op.y().majorStride()});
-            params[7] = toArgs(extraArgs,getType(op));
+            params[7] = toArgs(op.extraArgs(),getType(op));
             params[8] = Pointer.to(zPointer);
 
             Pointer kernelParameters = KernelFunctions.constructKernelParameters(params);
@@ -400,7 +379,7 @@ public class JCudaExecutioner implements OpExecutioner {
                     Pointer.to(new int[]{op.x().offset()}),
                     Pointer.to(xPointer),
                     Pointer.to(new int[]{op.x().majorStride()}),
-                    toArgs(extraArgs, getType(op)),
+                    toArgs(op.extraArgs(), getType(op)),
                     Pointer.to(zPointer)
             );
 

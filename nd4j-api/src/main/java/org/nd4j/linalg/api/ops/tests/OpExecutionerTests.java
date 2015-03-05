@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,6 +36,32 @@ import static org.junit.Assert.assertEquals;
  * Created by agibsonccc on 2/22/15.
  */
 public abstract class OpExecutionerTests {
+
+    @Test
+    public void testCosineSimilarity() {
+        INDArray vec1 = Nd4j.create(new float[]{1, 2, 3, 4});
+        INDArray vec2 = Nd4j.create(new float[]{1, 2, 3, 4});
+        double sim = Transforms.cosineSim(vec1, vec2);
+        assertEquals(1, sim, 1e-1);
+
+    }
+
+    @Test
+    public void testNormMax() {
+        INDArray arr = Nd4j.create(new float[]{1,2,3,4});
+        double normMax = Nd4j.getExecutioner().execAndReturn(new NormMax(arr)).currentResult().doubleValue();
+        assertEquals(10,normMax,1e-1);
+
+    }
+
+
+    @Test
+    public void testNorm2() {
+        INDArray arr = Nd4j.create(new float[]{1,2,3,4});
+        double norm2 = Nd4j.getExecutioner().execAndReturn(new Norm2(arr)).currentResult().doubleValue();
+        assertEquals(5.4772255750516612,norm2,1e-1);
+
+    }
 
     @Test
     public void testAdd() {

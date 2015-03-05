@@ -51,49 +51,49 @@ public class Pow extends BaseTransformOp {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, double other) {
         double pow = pow(extraArgs);
         return ComplexUtil.pow(origin,pow);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, float other) {
         double pow = pow(extraArgs);
         return ComplexUtil.pow(origin,pow);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
         double pow = pow(extraArgs);
         return ComplexUtil.pow(origin,pow);
     }
 
     @Override
-    public float op(float origin, float other, Object[] extraArgs) {
+    public float op(float origin, float other) {
         double pow = pow(extraArgs);
         return (float) FastMath.pow(origin, pow);
     }
 
     @Override
-    public double op(double origin, double other, Object[] extraArgs) {
+    public double op(double origin, double other) {
         double pow = pow(extraArgs);
         return  FastMath.pow(origin, pow);
     }
 
     @Override
-    public double op(double origin, Object[] extraArgs) {
+    public double op(double origin) {
         double pow = pow(extraArgs);
         return  FastMath.pow(origin, pow);
     }
 
     @Override
-    public float op(float origin, Object[] extraArgs) {
+    public float op(float origin) {
         double pow = pow(extraArgs);
         return (float) FastMath.pow(origin, pow);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin) {
         double pow = pow(extraArgs);
         return ComplexUtil.pow(origin,pow);
     }

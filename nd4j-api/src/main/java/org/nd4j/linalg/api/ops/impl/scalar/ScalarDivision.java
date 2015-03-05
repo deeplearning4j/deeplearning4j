@@ -48,48 +48,48 @@ public class ScalarDivision extends BaseScalarOp {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, double other) {
         if(complexNumber != null)
             return origin .div(complexNumber);
         return complexNumber.div(num);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, float other) {
         if(complexNumber != null)
             return origin .div(complexNumber);
         return complexNumber.div(num);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
         if(complexNumber != null)
             return origin.div(complexNumber);
         return complexNumber.div(num);
     }
 
     @Override
-    public float op(float origin, float other, Object[] extraArgs) {
+    public float op(float origin, float other) {
         return (origin / num.floatValue());
     }
 
     @Override
-    public double op(double origin, double other, Object[] extraArgs) {
+    public double op(double origin, double other) {
         return origin / num.doubleValue();
     }
 
     @Override
-    public double op(double origin, Object[] extraArgs) {
+    public double op(double origin) {
         return origin / num.doubleValue();
     }
 
     @Override
-    public float op(float origin, Object[] extraArgs) {
+    public float op(float origin) {
         return origin / num.floatValue();
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin) {
         if(complexNumber != null)
             return origin.div(complexNumber);
         return complexNumber.div(num);

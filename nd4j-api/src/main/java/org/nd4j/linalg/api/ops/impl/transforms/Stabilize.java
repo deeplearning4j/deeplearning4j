@@ -30,23 +30,27 @@ import org.nd4j.linalg.factory.Nd4j;
 public class Stabilize extends BaseTransformOp {
     double realMin = 1.1755e-38f;
     double cutOff = FastMath.log(realMin);
+    double k;
 
-    public Stabilize(INDArray x, INDArray z) {
+    public Stabilize(INDArray x, INDArray z, double k) {
         super(x, z);
+        this.k = k;
     }
 
-    public Stabilize(INDArray x, INDArray z, int n) {
+    public Stabilize(INDArray x, INDArray z, int n, double k) {
         super(x, z, n);
+        this.k = k;
     }
 
-    public Stabilize(INDArray x, INDArray y, INDArray z, int n) {
+    public Stabilize(INDArray x, INDArray y, INDArray z, int n, double k) {
         super(x, y, z, n);
+        this.k = k;
     }
 
-    public Stabilize(INDArray x) {
+    public Stabilize(INDArray x, double k) {
         super(x);
+        this.k = k;
     }
-
 
     @Override
     public String name() {
@@ -54,55 +58,63 @@ public class Stabilize extends BaseTransformOp {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
-        return stabilize(origin,k(extraArgs));
+    public IComplexNumber op(IComplexNumber origin, double other) {
+        return stabilize(origin);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
-        return stabilize(origin,k(extraArgs));
+    public IComplexNumber op(IComplexNumber origin, float other) {
+        return stabilize(origin);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
-        return stabilize(origin,k(extraArgs));
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
+        return stabilize(origin);
     }
 
     @Override
-    public float op(float origin, float other, Object[] extraArgs) {
-        return (float) stabilize(origin,k(extraArgs));
+    public float op(float origin, float other) {
+        return stabilize(origin);
     }
 
-    @Override
-    public double op(double origin, double other, Object[] extraArgs) {
-        return stabilize(origin,k(extraArgs));
-    }
-
-    @Override
-    public double op(double origin, Object[] extraArgs) {
-        return stabilize(origin,k(extraArgs));
-    }
-
-    @Override
-    public float op(float origin, Object[] extraArgs) {
-        return (float) stabilize(origin,k(extraArgs));
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
-        return stabilize(origin,k(extraArgs));
-    }
-
-    private double stabilize(double curr,double k) {
-
+    private float stabilize(float curr) {
         if (curr * k > -cutOff)
-            return -cutOff / k;
+            return (float) (-cutOff / k);
         else if (curr * k < cutOff)
-            return cutOff / k;
+            return (float) (cutOff / k);
         return curr;
     }
 
-    private IComplexNumber stabilize(IComplexNumber c,double k) {
+    private double stabilize(double curr) {
+        if (curr * k > -cutOff)
+            return (float) (-cutOff / k);
+        else if (curr * k < cutOff)
+            return (float) (cutOff / k);
+        return curr;
+    }
+
+    @Override
+    public double op(double origin, double other) {
+        return stabilize(origin);
+    }
+
+    @Override
+    public double op(double origin) {
+        return stabilize(origin);
+    }
+
+    @Override
+    public float op(float origin) {
+       return stabilize(origin);
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin) {
+        return stabilize(origin);
+    }
+
+
+    private IComplexNumber stabilize(IComplexNumber c) {
         double realMin = 1.1755e-38f;
         double cutOff = FastMath.log(realMin);
         double curr = c.realComponent().doubleValue();
@@ -114,19 +126,19 @@ public class Stabilize extends BaseTransformOp {
 
     }
 
-    private double k(Object[] extraArgs) {
-        if(extraArgs == null || extraArgs.length < 1)
-            throw new IllegalArgumentException("Please specify a k");
-        return Double.valueOf(extraArgs[0].toString());
+    @Override
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        this.extraArgs = new Object[]{k};
     }
 
     @Override
     public Op opForDimension(int index,int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
         if(y() != null)
-            return new Stabilize(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new Stabilize(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length(),k);
         else
-            return new Stabilize(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new Stabilize(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length(),k);
 
     }
 

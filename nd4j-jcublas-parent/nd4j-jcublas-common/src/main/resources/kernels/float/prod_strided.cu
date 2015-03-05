@@ -1,13 +1,10 @@
 #include <reduce.h>
 
 __device__ float update(float old,float opOutput,float *extraParams) {
-       return opOutput;
+       return opOutput * old;
  }
 
 
-__device__ float op(float d1,float d2,float *extraParams) {
-       return d1 * d2;
-}
 
 __device__ float op(float d1,float *extraParams) {
       return d1;

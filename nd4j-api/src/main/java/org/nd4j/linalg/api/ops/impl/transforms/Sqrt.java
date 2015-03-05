@@ -51,42 +51,42 @@ public class Sqrt extends BaseTransformOp {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, double other) {
         return ComplexUtil.sqrt(origin);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, float other) {
         return ComplexUtil.sqrt(origin);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
         return ComplexUtil.sqrt(origin);
     }
 
     @Override
-    public float op(float origin, float other, Object[] extraArgs) {
+    public float op(float origin, float other) {
         return (float) FastMath.sqrt(origin);
     }
 
     @Override
-    public double op(double origin, double other, Object[] extraArgs) {
+    public double op(double origin, double other) {
         return FastMath.sqrt(origin);
     }
 
     @Override
-    public double op(double origin, Object[] extraArgs) {
+    public double op(double origin) {
         return FastMath.sqrt(origin);
     }
 
     @Override
-    public float op(float origin, Object[] extraArgs) {
+    public float op(float origin) {
         return (float) FastMath.sqrt(origin);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin) {
         return ComplexUtil.sqrt(origin);
     }
     @Override

@@ -3,12 +3,6 @@ extern "C"
 
 #define SHARED_MEMORY_LENGTH  128
 
-/**
- An op on the device
- @param d1 the first operator
- @param d2 the second operator
-*/
-__device__ float op(float d1,float d2,float *extraParams);
 
 //an op for the kernel
 __device__ float op(float d1,float *extraParams);
@@ -38,7 +32,7 @@ __device__ void transform(int n, int xOffset,float *dx,int incx,float *extraPara
 
         float sum = result[0];
         for ( size_t i = start; i < n; i += totalThreads) {
-             sum = update(sum,op(sum,dx[i * incx],extraParams),extraParams);
+             sum = update(sum,op(dx[i * incx],extraParams),extraParams);
         }
 
         sPartials[tid] = sum;
@@ -54,7 +48,7 @@ __device__ void transform(int n, int xOffset,float *dx,int incx,float *extraPara
                 floorPow2 &= floorPow2 - 1;
             }
             if ( tid >= floorPow2 ) {
-                sPartials[tid - floorPow2] = update(sPartials[tid - floorPow2],op(sPartials[tid - floorPow2],sPartials[tid],extraParams),extraParams);
+                sPartials[tid - floorPow2] = update(sPartials[tid - floorPow2],sPartials[tid],extraParams);
             }
             __syncthreads();
         }
@@ -63,7 +57,7 @@ __device__ void transform(int n, int xOffset,float *dx,int incx,float *extraPara
                   activeThreads;
                   activeThreads >>= 1 ) {
             if ( tid < activeThreads ) {
-                sPartials[tid] = update(sPartials[tid],op(sPartials[tid],sPartials[tid + activeThreads],extraParams),extraParams);
+                sPartials[tid] = update(sPartials[tid],sPartials[tid + activeThreads],extraParams);
             }
             __syncthreads();
         }

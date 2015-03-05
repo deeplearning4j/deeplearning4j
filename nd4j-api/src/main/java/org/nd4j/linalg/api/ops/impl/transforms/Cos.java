@@ -21,7 +21,6 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
@@ -52,42 +51,42 @@ public class Cos extends BaseTransformOp {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, double other) {
         return ComplexUtil.cos(origin);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, float other) {
         return ComplexUtil.cos(origin);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
         return ComplexUtil.cos(origin);
     }
 
     @Override
-    public float op(float origin, float other, Object[] extraArgs) {
+    public float op(float origin, float other) {
         return (float) FastMath.cos(origin);
     }
 
     @Override
-    public double op(double origin, double other, Object[] extraArgs) {
+    public double op(double origin, double other) {
         return FastMath.cos(origin);
     }
 
     @Override
-    public double op(double origin, Object[] extraArgs) {
+    public double op(double origin) {
         return FastMath.cos(origin);
     }
 
     @Override
-    public float op(float origin, Object[] extraArgs) {
+    public float op(float origin) {
         return (float) FastMath.cos(origin);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin) {
         return ComplexUtil.cos(origin);
     }
 

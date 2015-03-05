@@ -67,7 +67,7 @@ public class SoftMax extends BaseTransformOp {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, double other) {
         IComplexNDArray arr = (IComplexNDArray) y;
         IComplexNumber ret = arr.getComplex(numProcessed);
         numProcessed++;
@@ -75,7 +75,7 @@ public class SoftMax extends BaseTransformOp {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, float other) {
         IComplexNDArray arr = (IComplexNDArray) y;
         IComplexNumber ret = arr.getComplex(numProcessed);
         numProcessed++;
@@ -83,7 +83,7 @@ public class SoftMax extends BaseTransformOp {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
         IComplexNDArray arr = (IComplexNDArray) y;
         IComplexNumber ret = arr.getComplex(numProcessed);
         numProcessed++;
@@ -91,35 +91,35 @@ public class SoftMax extends BaseTransformOp {
     }
 
     @Override
-    public float op(float origin, float other, Object[] extraArgs) {
+    public float op(float origin, float other) {
         float ret = other;
         numProcessed++;
         return ret;
     }
 
     @Override
-    public double op(double origin, double other, Object[] extraArgs) {
+    public double op(double origin, double other) {
         double ret = other;
         numProcessed++;
         return ret;
     }
 
     @Override
-    public double op(double origin, Object[] extraArgs) {
+    public double op(double origin) {
         double ret = y.getDouble(numProcessed);
         numProcessed++;
         return ret;
     }
 
     @Override
-    public float op(float origin, Object[] extraArgs) {
+    public float op(float origin) {
         float ret = (y.getFloat(numProcessed));
         numProcessed++;
         return ret;
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin) {
         IComplexNDArray arr = (IComplexNDArray) y;
         IComplexNumber ret = arr.getComplex(numProcessed);
         numProcessed++;

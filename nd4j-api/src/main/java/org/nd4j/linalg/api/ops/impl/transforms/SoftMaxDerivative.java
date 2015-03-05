@@ -44,52 +44,52 @@ public class SoftMaxDerivative extends SoftMax {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
-        IComplexNumber softmax =  super.op(origin, other, extraArgs);
+    public IComplexNumber op(IComplexNumber origin, double other) {
+        IComplexNumber softmax =  super.op(origin, other);
         return softmax.mul(Nd4j.createComplexNumber(1, 1).sub(softmax));
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
-        IComplexNumber softmax =  super.op(origin, other, extraArgs);
-        return softmax.mul(Nd4j.createComplexNumber(1, 1).sub(softmax));
-
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
-        IComplexNumber softmax =  super.op(origin, other, extraArgs);
+    public IComplexNumber op(IComplexNumber origin, float other) {
+        IComplexNumber softmax =  super.op(origin, other);
         return softmax.mul(Nd4j.createComplexNumber(1, 1).sub(softmax));
 
     }
 
     @Override
-    public float op(float origin, float other, Object[] extraArgs) {
-        float softmax = super.op(origin, other, extraArgs);
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
+        IComplexNumber softmax =  super.op(origin, other);
+        return softmax.mul(Nd4j.createComplexNumber(1, 1).sub(softmax));
+
+    }
+
+    @Override
+    public float op(float origin, float other) {
+        float softmax = super.op(origin, other);
         return softmax * (1 - softmax);
     }
 
     @Override
-    public double op(double origin, double other, Object[] extraArgs) {
-        double softmax =  super.op(origin, other, extraArgs);
+    public double op(double origin, double other) {
+        double softmax =  super.op(origin, other);
         return softmax * (1 - softmax);
     }
 
     @Override
-    public double op(double origin, Object[] extraArgs) {
-        double softmax = super.op(origin, extraArgs);
+    public double op(double origin) {
+        double softmax = super.op(origin);
         return softmax * (1 - softmax);
     }
 
     @Override
-    public float op(float origin, Object[] extraArgs) {
-        float softmax = super.op(origin, extraArgs);
+    public float op(float origin) {
+        float softmax = super.op(origin);
         return softmax * (1 - softmax);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
-        IComplexNumber softmax =  super.op(origin, extraArgs);
+    public IComplexNumber op(IComplexNumber origin) {
+        IComplexNumber softmax =  super.op(origin);
         return softmax.mul(Nd4j.createComplexNumber(1, 1).sub(softmax));
 
     }

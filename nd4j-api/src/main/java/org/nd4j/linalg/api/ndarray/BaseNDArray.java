@@ -756,7 +756,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray epsi(INDArray other) {
-        Nd4j.getExecutioner().exec(new Eps(this,other,this,length()));
+        Nd4j.getExecutioner().exec(new Eps(linearView(),other.linearView(),this,length()));
         return this;
     }
 
@@ -767,7 +767,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray lti(Number other) {
-        Nd4j.getExecutioner().exec(new Eps(this));
+        Nd4j.getExecutioner().exec(new Eps(linearView()));
         return this;
     }
 
@@ -778,7 +778,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray eqi(Number other) {
-        Nd4j.getExecutioner().exec(new EqualTo(this));
+        Nd4j.getExecutioner().exec(new EqualTo(linearView()));
         return this;
     }
 
@@ -789,7 +789,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray gti(Number other) {
-        Nd4j.getExecutioner().exec(new GreaterThan(this));
+        Nd4j.getExecutioner().exec(new GreaterThan(linearView()));
         return this;
     }
 
@@ -800,7 +800,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray lti(INDArray other) {
-        Nd4j.getExecutioner().exec(new LessThan(this));
+        Nd4j.getExecutioner().exec(new LessThan(linearView()));
         return this;
     }
 
@@ -811,7 +811,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray neqi(Number other) {
-        Nd4j.getExecutioner().exec(new NotEqualTo(this));
+        Nd4j.getExecutioner().exec(new NotEqualTo(linearView()));
         return this;
     }
 
@@ -822,7 +822,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray neqi(INDArray other) {
-        Nd4j.getExecutioner().exec(new NotEqualTo(this,other,this,length()));
+        Nd4j.getExecutioner().exec(new NotEqualTo(linearView(),other.linearView(),linearView(),length()));
         return this;
     }
 
@@ -833,8 +833,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray eqi(INDArray other) {
-        Nd4j.getExecutioner().exec(new EqualTo(this,other,this,length()));
-
+        Nd4j.getExecutioner().exec(new EqualTo(linearView(),other.linearView(),linearView(),length()));
         return this;
     }
 
@@ -845,7 +844,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray gti(INDArray other) {
-        Nd4j.getExecutioner().exec(new GreaterThan(this,other,this,length()));
+        Nd4j.getExecutioner().exec(new GreaterThan(linearView(),other.linearView(),linearView(),length()));
         return this;
     }
 
@@ -862,7 +861,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray negi() {
-        Nd4j.getExecutioner().exec(new Negative(this));
+        Nd4j.getExecutioner().exec(new Negative(linearView()));
         return this;
     }
 
@@ -875,7 +874,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray rdivi(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarReverseDivision(this,null,result,result.length(),n));
+        Nd4j.getExecutioner().exec(new ScalarReverseDivision(linearView(),null,result.linearView(),result.length(),n));
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
         return result;
@@ -891,7 +890,7 @@ public abstract class BaseNDArray implements INDArray {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(this,null,result,result.length(),n));
+        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(linearView(),null,result.linearView(),result.length(),n));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -907,7 +906,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray divi(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarDivision(this,null,result,result.length(),n));
+        Nd4j.getExecutioner().exec(new ScalarDivision(linearView(),null,result.linearView(),result.length(),n));
 
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
@@ -925,7 +924,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray muli(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarMultiplication(this,null,result,result.length(),n));
+        Nd4j.getExecutioner().exec(new ScalarMultiplication(linearView(),null,result.linearView(),result.length(),n));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -944,7 +943,7 @@ public abstract class BaseNDArray implements INDArray {
             n = Nd4j.EPS_THRESHOLD;
 
 
-        Nd4j.getExecutioner().exec(new ScalarSubtraction(this,null,result,result.length(),n));
+        Nd4j.getExecutioner().exec(new ScalarSubtraction(linearView(),null,result.linearView(),result.length(),n));
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
 
@@ -960,7 +959,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray addi(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarAdd(this,null,result,result.length(),n));
+        Nd4j.getExecutioner().exec(new ScalarAdd(linearView(),null,result.linearView(),result.length(),n));
         return this;
     }
 
@@ -2435,7 +2434,7 @@ public abstract class BaseNDArray implements INDArray {
             else
                 Nd4j.getBlasWrapper().axpy(1.0f, this, result);
         } else {
-            Nd4j.getExecutioner().exec(new AddOp(this,other,result));
+            Nd4j.getExecutioner().exec(new AddOp(linearView(),other.linearView(),result.linearView()));
         }
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)

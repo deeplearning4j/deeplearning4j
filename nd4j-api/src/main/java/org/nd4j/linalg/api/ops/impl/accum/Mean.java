@@ -48,7 +48,6 @@ public class Mean extends BaseAccumulation {
             currentResult = result;
         else
             currentResult = currentResult.doubleValue() + result.doubleValue();
-        numProcessed++;
         if(numProcessed() == n())
             currentResult = currentResult.doubleValue() / n();
 
@@ -61,7 +60,6 @@ public class Mean extends BaseAccumulation {
             currentComplexResult = result;
         else
             currentComplexResult.addi(result);
-        numProcessed++;
         if(numProcessed() == n())
             currentComplexResult.divi(n);
 

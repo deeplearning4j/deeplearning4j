@@ -7,7 +7,6 @@ __device__ float op(float d1,float *params);
 __device__ void transform(int n,int xOffset,int yOffset, float *dx, float *dy,int incx,int incy,float *params,float *result) {
 
     int totalThreads = gridDim.x * blockDim.x;
-    int ctaStart = blockDim.x * blockIdx.x;
     int tid = threadIdx.x;
     int i = blockIdx.x * blockDim.x + tid;
 

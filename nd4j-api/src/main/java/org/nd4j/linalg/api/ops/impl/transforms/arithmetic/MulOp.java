@@ -90,45 +90,7 @@ public class MulOp extends BaseTransformOp {
     public IComplexNumber op(IComplexNumber origin) {
         return origin;
     }
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
-        return op(origin,other);
-    }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
-        return op(origin,other);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
-        return op(origin,other);
-    }
-
-    @Override
-    public float op(float origin, float other, Object[] extraArgs) {
-        return op(origin,other);
-    }
-
-    @Override
-    public double op(double origin, double other, Object[] extraArgs) {
-        return op(origin,other);
-    }
-
-    @Override
-    public double op(double origin, Object[] extraArgs) {
-        return op(origin);
-    }
-
-    @Override
-    public float op(float origin, Object[] extraArgs) {
-        return op(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
-        return op(origin);
-    }
 
     @Override
     public Op opForDimension(int index,int dimension) {

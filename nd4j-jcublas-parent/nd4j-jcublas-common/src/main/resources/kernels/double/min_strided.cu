@@ -1,6 +1,6 @@
 #include <reduce.h>
 __device__ double update(double old,double opOutput,double *extraParams) {
-       return opOutput;
+       return min(old,opOutput);
  }
 
 
@@ -10,7 +10,7 @@ __device__ double update(double old,double opOutput,double *extraParams) {
  @param d2 the second operator
 */
 __device__ double op(double d1,double d2,double *extraParams) {
-      return min(d1,d2);
+      return d1;
 }
 
 __device__ double op(double d1,double *extraParams) {

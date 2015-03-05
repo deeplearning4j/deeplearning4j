@@ -1,6 +1,6 @@
 #include <reduce.h>
 __device__ float update(float old,float opOutput,float *extraParams) {
-       return opOutput;
+        return fminf(old,opOutput);
  }
 
 
@@ -10,7 +10,7 @@ __device__ float update(float old,float opOutput,float *extraParams) {
  @param d2 the second operator
 */
 __device__ float op(float d1,float d2,float *extraParams) {
-      return fminf(d1,d2);
+      return d1;
 }
 
 __device__ float op(float d1,float *extraParams) {
