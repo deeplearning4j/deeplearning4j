@@ -1,14 +1,8 @@
 package org.deeplearning4j.cli.api.flags;
 
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.records.reader.impl.LineRecordReader;
-import org.canova.api.records.writer.RecordWriter;
-import org.canova.api.split.FileSplit;
-import org.canova.api.split.InputSplit;
-import org.deeplearning4j.cli.subcommands.SubCommand;
-
 import java.net.URI;
-import java.util.Objects;
+import org.canova.api.records.reader.RecordReader;
+import org.canova.api.records.writer.RecordWriter;
 
 /**
  * Input flag for loading input data for the model
@@ -16,8 +10,6 @@ import java.util.Objects;
  * @author sonali
  */
 public abstract class Input extends BaseIOFlag {
-
-
 
     @Override
     public <E> E value(String value) throws Exception {
