@@ -27,8 +27,8 @@ public abstract class BaseScalarOp extends BaseOp implements  ScalarOp {
     protected Number num;
     protected IComplexNumber complexNumber;
 
-    public BaseScalarOp(INDArray x, INDArray y, int n,Number num) {
-        super(x, y, n);
+    public BaseScalarOp(INDArray x, INDArray y, INDArray z,int n,Number num) {
+        super(x, y, z,n);
         this.num = num;
     }
 
@@ -36,8 +36,8 @@ public abstract class BaseScalarOp extends BaseOp implements  ScalarOp {
         super(x);
         this.num = num;
     }
-    public BaseScalarOp(INDArray x, INDArray y, int n,IComplexNumber num) {
-        super(x, y, n);
+    public BaseScalarOp(INDArray x, INDArray y,INDArray z, int n,IComplexNumber num) {
+        super(x, y, z,n);
         this.complexNumber = num;
     }
 
@@ -47,8 +47,8 @@ public abstract class BaseScalarOp extends BaseOp implements  ScalarOp {
     }
 
     @Override
-    public double scalar() {
-        return num.doubleValue();
+    public Number scalar() {
+        return num;
     }
 
     @Override

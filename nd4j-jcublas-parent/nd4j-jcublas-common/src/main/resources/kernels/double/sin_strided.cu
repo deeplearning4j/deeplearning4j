@@ -1,9 +1,12 @@
+#include <transform.h>
+
+
+__device__ double op(double d1,double *params) {
+        return sinf(d1);
+}
+
 extern "C"
-#include <math.h>
-__global__ void exp_strided_double(int n,int idx,double *dy,int incy,double *result) {
-        for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
-                       if(i >= idx && i % incy == 0)
-                           result[i] =  sin(dy[i]);
-         }
+__global__ void sin_strided_double(int n,int idx,double *dy,int incy,double *params,double *result) {
+       transform(n,idx,dy,incy,params,result);
 
  }

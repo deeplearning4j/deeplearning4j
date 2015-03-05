@@ -21,7 +21,6 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
  *  Calculate the max over a vector
@@ -54,15 +53,6 @@ public class Max extends BaseAccumulation {
         numProcessed++;
     }
 
-    @Override
-    public Number zero() {
-        return 0.0;
-    }
-
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(zero(), zero());
-    }
 
     @Override
     public String name() {
@@ -70,15 +60,18 @@ public class Max extends BaseAccumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, int n) {
-        super.init(x, y, n);
+    public void init(INDArray x, INDArray y,INDArray z, int n) {
+        super.init(x, y, z,n);
         if(x instanceof IComplexNDArray) {
             IComplexNDArray complexX = (IComplexNDArray) x;
             currentComplexResult = complexX.getComplex(0);
         }
         else {
             currentResult = x.getDouble(0);
+            initial = x.getDouble(0);
         }
+
+
     }
 
     @Override

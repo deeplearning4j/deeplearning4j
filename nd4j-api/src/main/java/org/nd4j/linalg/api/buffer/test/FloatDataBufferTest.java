@@ -104,45 +104,7 @@ public abstract class FloatDataBufferTest {
 
     }
 
-    @Test
-    public void testBufferElementWiseOperations() {
-        DataBuffer buffer = Nd4j.ones(5).data();
-        buffer.addi(1.0);
-        float[] data = buffer.asFloat();
-        for(int i = 0; i < data.length; i++)
-              assertEquals(2.0,data[i],1e-1f);
-        buffer.subi(1.0);
-        data = buffer.asFloat();
-        for(int i = 0; i < data.length; i++)
-            assertEquals(1.0,data[i],1e-1f);
-        buffer.muli(1.0);
-        data = buffer.asFloat();
-        for(int i = 0; i < data.length; i++)
-            assertEquals(1.0,data[i],1e-1f);
 
-        buffer.divi(1.0);
-        data = buffer.asFloat();
-        for(int i = 0; i < data.length; i++)
-            assertEquals(1.0,data[i],1e-1f);
-
-
-        buffer.destroy();
-        buffer = Nd4j.ones(5).data();
-
-        DataBuffer buffer2 = Nd4j.linspace(1,5,5).data();
-        float[] data3 = buffer2.asFloat();
-        buffer.muli(buffer2);
-        data = buffer.asFloat();
-        for(int i = 0; i < data3.length; i++)
-            assertEquals(data[i],data3[i],1e-1f);
-
-
-
-        buffer.destroy();
-        buffer2.destroy();
-
-
-    }
 
 
 

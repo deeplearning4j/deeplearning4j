@@ -26,16 +26,16 @@ import org.nd4j.linalg.api.ops.Op;
  *  @author Adam Gibson
  */
 public class ScalarDivision extends BaseScalarOp {
-    public ScalarDivision(INDArray x, INDArray y, int n, Number num) {
-        super(x, y, n, num);
+    public ScalarDivision(INDArray x, INDArray y, INDArray z, int n, Number num) {
+        super(x, y, z, n, num);
     }
 
     public ScalarDivision(INDArray x, Number num) {
         super(x, num);
     }
 
-    public ScalarDivision(INDArray x, INDArray y, int n, IComplexNumber num) {
-        super(x, y, n, num);
+    public ScalarDivision(INDArray x, INDArray y, INDArray z, int n, IComplexNumber num) {
+        super(x, y, z, n, num);
     }
 
     public ScalarDivision(INDArray x, IComplexNumber num) {
@@ -44,7 +44,7 @@ public class ScalarDivision extends BaseScalarOp {
 
     @Override
     public String name() {
-        return "scalar_div";
+        return "div_scalar";
     }
 
     @Override

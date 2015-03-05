@@ -143,8 +143,8 @@ public class AddOp extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, int n) {
-        super.init(x, y, n);
+    public void init(INDArray x, INDArray y, INDArray z,int n) {
+        super.init(x, y, z,n);
         if(y == null)
             throw new IllegalArgumentException("No components to add");
     }

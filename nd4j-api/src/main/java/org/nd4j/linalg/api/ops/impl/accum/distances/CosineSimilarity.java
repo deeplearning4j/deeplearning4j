@@ -32,6 +32,10 @@ import org.nd4j.linalg.factory.Nd4j;
 public class CosineSimilarity extends BaseAccumulation {
     private Number constantNormalizedByNorm2;
 
+    public CosineSimilarity(INDArray x, INDArray y, INDArray z, int n) {
+        super(x, y, z, n);
+    }
+
     public CosineSimilarity(INDArray x, INDArray y, int n) {
         super(x, y, n);
     }
@@ -124,8 +128,8 @@ public class CosineSimilarity extends BaseAccumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, int n) {
-        super.init(x, y, n);
+    public void init(INDArray x, INDArray y, INDArray z,int n) {
+        super.init(x, y,z, n);
         this.constantNormalizedByNorm2 = Nd4j.getExecutioner().execAndReturn(new Norm2(x)).currentResult();
         this.extraArgs = new Object[]{this.constantNormalizedByNorm2};
 

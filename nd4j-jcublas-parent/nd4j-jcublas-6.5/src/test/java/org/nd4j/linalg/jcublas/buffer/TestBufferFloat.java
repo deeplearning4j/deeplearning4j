@@ -16,13 +16,8 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import jcuda.jcublas.JCublas;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.nd4j.linalg.api.buffer.test.FloatDataBufferTest;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 
-import java.io.IOException;
+import org.nd4j.linalg.api.buffer.test.FloatDataBufferTest;;
 
 /**
  * Created by agibsonccc on 2/14/15.

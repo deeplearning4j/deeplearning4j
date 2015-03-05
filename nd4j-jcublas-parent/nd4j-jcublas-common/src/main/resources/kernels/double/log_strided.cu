@@ -1,9 +1,10 @@
-extern "C"
-#include <math.h>
-__global__ void log_strided_double(int n,int idx,double *dy,int incy,double *result) {
-         for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
-                        if(i >= idx && i % incy == 0)
-                            result[i] =  log(dy[i]);
-          }
+#include <transform.h>
 
-  }
+__device__ double op(double d1,double *params) {
+        return log(d1);
+}
+extern "C"
+__global__ void log_strided_double(int n,int idx,double *dy,int incy,double *params,double *result) {
+       transform(n,idx,dy,incy,params,result);
+
+ }

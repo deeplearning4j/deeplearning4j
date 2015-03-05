@@ -22,20 +22,20 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
- *  Scalar subition
+ *  Scalar subtraction
  *  @author Adam Gibson
  */
 public class ScalarSubtraction extends BaseScalarOp {
-    public ScalarSubtraction(INDArray x, INDArray y, int n, Number num) {
-        super(x, y, n, num);
+    public ScalarSubtraction(INDArray x, INDArray y, INDArray z, int n, Number num) {
+        super(x, y, z, n, num);
     }
 
     public ScalarSubtraction(INDArray x, Number num) {
         super(x, num);
     }
 
-    public ScalarSubtraction(INDArray x, INDArray y, int n, IComplexNumber num) {
-        super(x, y, n, num);
+    public ScalarSubtraction(INDArray x, INDArray y, INDArray z, int n, IComplexNumber num) {
+        super(x, y, z, n, num);
     }
 
     public ScalarSubtraction(INDArray x, IComplexNumber num) {
@@ -44,7 +44,7 @@ public class ScalarSubtraction extends BaseScalarOp {
 
     @Override
     public String name() {
-        return "scalar_sub";
+        return "sub_scalar";
     }
 
     @Override

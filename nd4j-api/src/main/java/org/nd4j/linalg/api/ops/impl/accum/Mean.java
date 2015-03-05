@@ -20,13 +20,16 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Calculate the mean of the vector
  * @author Adam Gibson
  */
 public class Mean extends BaseAccumulation {
+    public Mean(INDArray x, INDArray y, INDArray z, int n) {
+        super(x, y, z, n);
+    }
+
     public Mean(INDArray x, INDArray y, int n) {
         super(x, y, n);
     }

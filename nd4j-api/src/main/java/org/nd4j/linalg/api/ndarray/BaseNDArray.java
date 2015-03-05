@@ -25,9 +25,9 @@ import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.dimensionfunctions.DimensionFunctions;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.transforms.Negative;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
@@ -37,7 +37,6 @@ import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.IterationResult;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.Shape;
 
@@ -757,7 +756,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray epsi(INDArray other) {
-       Nd4j.getExecutioner().exec(new Eps(this,other,this,length()));
+        Nd4j.getExecutioner().exec(new Eps(this,other,this,length()));
         return this;
     }
 
@@ -876,8 +875,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray rdivi(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-
-        data().rdivi(n,result.data());
+        Nd4j.getExecutioner().exec(new ScalarReverseDivision(this,null,result,result.length(),n));
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
         return result;
@@ -893,7 +891,7 @@ public abstract class BaseNDArray implements INDArray {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(this,n));
+        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(this,null,result,result.length(),n));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -909,7 +907,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray divi(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarDivision(this,n));
+        Nd4j.getExecutioner().exec(new ScalarDivision(this,null,result,result.length(),n));
 
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
@@ -927,7 +925,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray muli(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarMultiplication(this, n));
+        Nd4j.getExecutioner().exec(new ScalarMultiplication(this,null,result,result.length(),n));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -946,7 +944,7 @@ public abstract class BaseNDArray implements INDArray {
             n = Nd4j.EPS_THRESHOLD;
 
 
-        Nd4j.getExecutioner().exec(new ScalarSubtraction(this, n));
+        Nd4j.getExecutioner().exec(new ScalarSubtraction(this,null,result,result.length(),n));
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
 
@@ -962,7 +960,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray addi(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarAdd(this, n));
+        Nd4j.getExecutioner().exec(new ScalarAdd(this,null,result,result.length(),n));
         return this;
     }
 
@@ -2437,7 +2435,7 @@ public abstract class BaseNDArray implements INDArray {
             else
                 Nd4j.getBlasWrapper().axpy(1.0f, this, result);
         } else {
-            data().addi(other.data(),length(),other.offset(),offset(),other.majorStride(),majorStride());
+            Nd4j.getExecutioner().exec(new AddOp(this,other,result));
         }
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)

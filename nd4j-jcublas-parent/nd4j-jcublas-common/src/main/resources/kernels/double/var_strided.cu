@@ -1,92 +1,38 @@
+#include <reduce.h>
+
+
+__device__ double update(double old,double opOutput,double *extraParams) {
+       return opOutput;
+ }
+
+
+/**
+ An op on the device
+ @param d1 the first operator
+ @param d2 the second operator
+*/
+__device__ double op(double d1,double d2,double *extraParams) {
+      return op(d1,extraParams);
+}
+//an op for the kernel
+__device__ double op(double d1,double *extraParams) {
+       double mean = extraParams[0];
+       double bias = extraParams[1];
+       double curr = (d1 - mean);
+       return  powf(curr,2);
+
+}
+
+//post process result (for things like means etc)
+__device__ double postProcess(double reduction,int n,int xOffset,double *dx,int incx,double *extraParams,double *result) {
+             double mean = extraParams[0];
+             double bias = extraParams[1];
+             return  (reduction - (powf(bias,2) / n)) / (n - 1.0);
+}
+
 extern "C"
-#include <math.h>
-__global__ void var_strided_double(int n, int xOffset,double *dx,int incx,double mean,double bias,double *result) {
-                  extern __shared__ double sdata[];
-
-                 // perform first level of reduction,
-                 // reading from global memory, writing to shared memory
-                 unsigned int tid = threadIdx.x;
-                 unsigned int i = blockIdx.x * blockDim.x * 2 + threadIdx.x;
-                 unsigned int gridSize = blockDim.x * 2 * gridDim.x;
-
-                 double temp = 0;
-
-                 // we reduce multiple elements per thread.  The number is determined by the
-                 // number of active thread blocks (via gridDim).  More blocks will result
-                 // in a larger gridSize and therefore fewer elements per thread
-                 while (i < n) {
-                   if(i >= xOffset && i % incx == 0) {
-                    double curr = (dx[i] - mean);
-
-                    temp += pow(curr,2);
-                    // ensure we don't read out of bounds
-                    if (i + blockDim.x < n) {
-                            double curr = (dx[i + blockDim.x] - mean);
-                            temp += pow(curr,2);
-                        }
-
-                   }
-                    i += gridSize;
-                 }
-
-                 // each thread puts its local sum into shared memory
-                 sdata[tid] = temp;
-
-                 __syncthreads();
-
-
-                 // do reduction in shared mem
-                 if (blockDim.x >= 512) {
-                 if (tid < 256) {
-                      sdata[tid] = temp = temp + sdata[tid + 256];
-                     }
-                   __syncthreads();
-                 }
-
-                 if (blockDim.x >= 256) {
-                      if (tid < 128) {
-                        sdata[tid] = temp = temp + sdata[tid + 128];
-                      }
-                     __syncthreads();
-                 }
-
-                 if (blockDim.x >= 128) {
-                      if (tid <  64)  {
-                           sdata[tid] = temp = temp + sdata[tid +  64];
-                       }
-                       __syncthreads();
-                  }
-
-                 if (tid < 32) {
-                     // now that we are using warp-synchronous programming (below)
-                     // we need to declare our shared memory volatile so that the compiler
-                     // doesn't reorder stores to it and induce incorrect behavior.
-                     volatile double* smem = sdata;
-                     if (blockDim.x >=  64) {
-                         smem[tid] = temp = temp + smem[tid + 32];
-                      }
-                     if (blockDim.x >=  32) {
-                         smem[tid] = temp = temp + smem[tid + 16];
-                     }
-                     if (blockDim.x >=  16) {
-                         smem[tid] = temp = temp + smem[tid +  8];
-                      }
-                     if (blockDim.x >=   8) {
-                          smem[tid] = temp = temp + smem[tid +  4];
-                      }
-                     if (blockDim.x >=   4) {
-                         smem[tid] = temp = temp + smem[tid +  2];
-                      }
-                     if (blockDim.x >=   2) {
-                         smem[tid] = temp = temp + smem[tid +  1];
-                      }
-                 }
-
-                 // write result for this block to global mem
-                 //currentResult = (currentResult.doubleValue() - (FastMath.pow(otherAccum.get(0).doubleValue(),2.0) / n())) / (n() - 1.0);
-
-                 if (tid == 0)
-                     result[blockIdx.x] = (sdata[0] - (pow(bias,2) / n)) / (n - 1.0);
+__global__ void var_strided_double(int n, int xOffset,double *dx,int incx,double *extraParams,double *result) {
+              transform(n,xOffset,dx,incx,extraParams,result);
 
  }
 

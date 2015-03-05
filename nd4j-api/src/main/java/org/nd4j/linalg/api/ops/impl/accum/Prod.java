@@ -23,10 +23,14 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Sum the components
+ * Prod the components
  * @author Adam Gibson
  */
 public class Prod extends BaseAccumulation {
+    public Prod(INDArray x, INDArray y, INDArray z, int n) {
+        super(x, y, z, n);
+    }
+
     public Prod(INDArray x, INDArray y, int n) {
         super(x, y, n);
     }

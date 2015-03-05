@@ -30,6 +30,10 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class ManhattanDistance extends BaseAccumulation {
+    public ManhattanDistance(INDArray x, INDArray y, INDArray z, int n) {
+        super(x, y, z, n);
+    }
+
     public ManhattanDistance(INDArray x, INDArray y, int n) {
         super(x, y, n);
     }

@@ -21,13 +21,18 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
- *  Calculate the max over a vector
+ *  Calculate the min over a vector
  *  @author Adam Gibson
  */
 public class Min extends BaseAccumulation {
+
+
+    public Min(INDArray x, INDArray y, INDArray z, int n) {
+        super(x, y, z, n);
+    }
+
     public Min(INDArray x, INDArray y, int n) {
         super(x, y, n);
     }
@@ -54,15 +59,7 @@ public class Min extends BaseAccumulation {
         numProcessed++;
     }
 
-    @Override
-    public Number zero() {
-        return 0;
-    }
 
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(zero(), zero());
-    }
 
     @Override
     public String name() {
@@ -70,15 +67,22 @@ public class Min extends BaseAccumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, int n) {
-        super.init(x, y, n);
+    public void init(INDArray x, INDArray y, INDArray z,int n) {
+        super.init(x, y,z, n);
         if(x instanceof IComplexNDArray) {
             IComplexNDArray complexX = (IComplexNDArray) x;
             currentComplexResult = complexX.getComplex(0);
+            initialComplex = complexX.getComplex(0);
         }
         else {
             currentResult = x.getDouble(0);
+            initial = x.getDouble(0);
         }
+
+
+
+
+
     }
 
     @Override
@@ -91,4 +95,6 @@ public class Min extends BaseAccumulation {
             return new Min(x.vectorAlongDimension(index,dimension));
 
     }
+
+
 }

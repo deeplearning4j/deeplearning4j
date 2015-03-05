@@ -24,46 +24,20 @@ import org.nd4j.linalg.api.ops.impl.transforms.Ones;
  * @author Adam Gibson
  */
 public abstract class BaseTransformOp extends BaseOp implements TransformOp {
-    protected INDArray z;
-
-    /**
-     * Specify an alternative result array
-     * @param x the input
-     * @param z the output array
-     */
     public BaseTransformOp(INDArray x, INDArray z) {
-        this(x,z,x.length());
+        super(x, z);
     }
 
-    /**
-     * Specify an alternative output array
-     * @param x the input
-     * @param z the output
-     * @param n the number of elements to iterate on
-     */
     public BaseTransformOp(INDArray x, INDArray z, int n) {
-        this(x,null,z,n);
+        super(x, z, n);
     }
-
 
     public BaseTransformOp(INDArray x, INDArray y, INDArray z, int n) {
-        super(x,y,n);
-        this.z = z;
-        init(x,y,z,n);
+        super(x, y, z, n);
     }
 
-    /**
-     * An op for one ndarray
-     * @param x the ndarray
-     */
     public BaseTransformOp(INDArray x) {
-        this(x,null,x,x.length());
-    }
-
-
-    @Override
-    public INDArray z() {
-        return z;
+        super(x);
     }
 
     @Override
@@ -72,10 +46,4 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
     }
 
 
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
-        super.init(x,y,n);
-        //default is no-op
-    }
 }

@@ -17,7 +17,6 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
@@ -31,6 +30,10 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 public class Variance extends BaseAccumulation {
     private double mean,bias;
+
+    public Variance(INDArray x, INDArray y, INDArray z, int n) {
+        super(x, y, z, n);
+    }
 
     public Variance(INDArray x, INDArray y, int n) {
         super(x, y, n);
@@ -141,8 +144,8 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, int n) {
-        super.init(x, y, n);
+    public void init(INDArray x, INDArray y,INDArray z,int n) {
+        super.init(x, y, z,n);
         this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).currentResult().doubleValue();
         this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).currentResult().doubleValue();
         this.extraArgs = new Object[]{bias,mean};

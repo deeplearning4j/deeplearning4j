@@ -25,12 +25,13 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
+import org.nd4j.linalg.jcublas.util.PointerUtil;
 
 import static jcuda.driver.JCudaDriver.cuMemAlloc;
 
@@ -42,6 +43,13 @@ import static jcuda.driver.JCudaDriver.cuMemAlloc;
  * @author Adam Gibson
  */
 public class JCudaExecutioner implements OpExecutioner {
+    private Pointer dummyFloatPointer,dummyDoublePointer;
+
+    public JCudaExecutioner() {
+        dummyFloatPointer = Pointer.to(KernelFunctions.alloc(new float[]{1}));
+        dummyDoublePointer = Pointer.to(KernelFunctions.alloc(new double[]{1}));
+    }
+
     @Override
     public Op exec(Op op) {
         return exec(op,op.extraArgs());
@@ -56,6 +64,10 @@ public class JCudaExecutioner implements OpExecutioner {
         else if(op instanceof Accumulation) {
             Accumulation acc = (Accumulation) op;
             invoke(acc,extraArgs);
+        }
+        else if(op instanceof ScalarOp) {
+            ScalarOp sc = (ScalarOp) op;
+            invoke(sc,extraArgs);
         }
         return op;
     }
@@ -138,18 +150,30 @@ public class JCudaExecutioner implements OpExecutioner {
         return execAndReturn(op,dimension,op.extraArgs());
     }
 
+    private Pointer toArgs(Object[] extraArgs,String dataType) {
+        if(dataType.equals("double")) {
+            if(extraArgs == null || extraArgs.length < 1)
+                return dummyDoublePointer;
+            return Pointer.to(KernelFunctions.alloc(PointerUtil.toDoubles(extraArgs)));
+        }
+        else if(dataType.equals("float")) {
+            if(extraArgs == null || extraArgs.length < 1)
+                return dummyFloatPointer;
+            return Pointer.to(KernelFunctions.alloc(PointerUtil.toFloats(extraArgs)));
+        }
+        throw new IllegalArgumentException("Illegal datatype");
+    }
+
+
     private void invoke(Accumulation op,Object[] extraArgs) {
         JCudaBuffer xBuffer = (JCudaBuffer) op.x().data();
-        Pointer xPointer = xBuffer.pointer();
+        Pointer xPointer = xBuffer.pointer().withByteOffset(xBuffer.elementSize() * op.x().offset());
         CUdeviceptr result = null;
-        int maxThreads = 128;
-        int maxBlocks = 64;
-        int blocks = getNumBlocks(op.n(), maxBlocks, maxThreads);
-        int threads = getNumThreads(op.n(),maxBlocks,maxThreads);
 
         if(op.x().data().dataType() == DataBuffer.DOUBLE) {
-            double[] resultBuffer = new double[1024 * Sizeof.DOUBLE];
-            resultBuffer[0] = op.zero().doubleValue();
+            double[] resultBuffer = new double[1024];
+            for(int i = 0; i < resultBuffer.length; i++)
+                resultBuffer[i] = op.zero().doubleValue();
             result = new CUdeviceptr();
             cuMemAlloc(result, 1024 * Sizeof.DOUBLE);
             JCublas.cublasSetVector(1024, Sizeof.DOUBLE,Pointer.to(resultBuffer),1,result,1);
@@ -157,8 +181,9 @@ public class JCudaExecutioner implements OpExecutioner {
 
         }
         else {
-            float[] resultBuffer = new float[1024 * Sizeof.FLOAT];
-            resultBuffer[0] = op.zero().floatValue();
+            float[] resultBuffer = new float[1024];
+            for(int i = 0; i < resultBuffer.length; i++)
+                resultBuffer[i] = op.zero().floatValue();
             result = new CUdeviceptr();
             cuMemAlloc(result, 1024 * Sizeof.FLOAT);
             JCublas.cublasSetVector(1024, Sizeof.FLOAT,Pointer.to(resultBuffer),1,result,1);
@@ -166,90 +191,44 @@ public class JCudaExecutioner implements OpExecutioner {
 
         if(op.y() != null) {
             JCudaBuffer yBuffer = (JCudaBuffer) op.y().data();
-            Pointer yPointer = yBuffer.pointer();
+            Pointer yPointer = yBuffer.pointer().withByteOffset(op.y().offset() * yBuffer.elementSize());
 
-            if(extraArgs == null || extraArgs.length < 1) {
-                //int n,int xOffset,int yOffset, double *dx, double *dy,int incx,int incy,double *result
-                Pointer kernelParams = KernelFunctions.constructKernelParameters(
-                        Pointer.to(new int[]{op.n()}),
-                        Pointer.to(new int[]{op.x().offset()}),
-                        Pointer.to(new int[]{op.y().offset()}),
-                        Pointer.to(xPointer),
-                        Pointer.to(yPointer),
-                        Pointer.to(new int[]{op.x().majorStride()}),
-                        Pointer.to(new int[]{op.y().majorStride()}),
-                        Pointer.to(result)
-                );
+            //int n,int xOffset,int yOffset, double *dx, double *dy,int incx,int incy,double *result
+            Pointer kernelParams = KernelFunctions.constructKernelParameters(
+                    Pointer.to(new int[]{op.n()}),
+                    Pointer.to(new int[]{op.x().offset()}),
+                    Pointer.to(new int[]{op.y().offset()}),
+                    Pointer.to(xPointer),
+                    Pointer.to(yPointer),
+                    Pointer.to(new int[]{op.x().majorStride()}),
+                    Pointer.to(new int[]{op.y().majorStride()}),
+                    toArgs(extraArgs, getType(op)),
+                    Pointer.to(result)
+            );
 
-                invokeFunction(op, kernelParams,threads,blocks);
-                setResultForOp(op,result);
+            invokeFunction(op, kernelParams);
+            setResultForOp(op,result);
 
 
-            }
-            else {
-                /**
-                 * Construct pointer arguments in the following order:
-                 * n
-                 * offset,
-                 * pointer to buffer
-                 * increment,
-                 * extraArgs,
-                 * result
-                 */
-                Pointer[] results = new Pointer[5 + extraArgs.length];
-                results[0] = Pointer.to(new int[]{op.n()});
-                results[1] = Pointer.to(new int[]{op.x().offset()});
-                results[2] = Pointer.to(xPointer);
-                results[3] = Pointer.to(new int[]{op.x().majorStride()});
 
-                addPointers(4,results,extraArgs);
-                results[results.length - 1] = Pointer.to(result);
 
-                Pointer kernelParameters = KernelFunctions.constructKernelParameters(results);
-                invokeFunction(op, kernelParameters,threads,blocks);
-                setResultForOp(op,result);
-
-            }
         }
         else {
             //int n, int xOffset,double *dx,int incx,double result
-            if(extraArgs == null || extraArgs.length < 1) {
-                Pointer kernelParams = KernelFunctions.constructKernelParameters(
-                        Pointer.to(new int[]{op.n()}),
-                        Pointer.to(new int[]{op.x().offset()}),
-                        Pointer.to(xPointer),
-                        Pointer.to(new int[]{op.x().majorStride()}),
-                        Pointer.to(result)
-                );
+            Pointer kernelParams = KernelFunctions.constructKernelParameters(
+                    Pointer.to(new int[]{op.n()}),
+                    Pointer.to(new int[]{op.x().offset()}),
+                    Pointer.to(xPointer),
+                    Pointer.to(new int[]{op.x().majorStride()}),
+                    toArgs(extraArgs, getType(op)),
+                    Pointer.to(result)
+            );
 
-                invokeFunction(op,kernelParams,threads,blocks);
-                setResultForOp(op,result);
+            invokeFunction(op,kernelParams);
+            setResultForOp(op, result);
 
-            }
-            else {
-                /**
-                 * Construct pointer arguments in the following order:
-                 * n
-                 * offset,
-                 * pointer to buffer
-                 * increment,
-                 * extraArgs,
-                 * result
-                 */
-                Pointer[] results = new Pointer[5 + extraArgs.length];
-                results[0] = Pointer.to(new int[]{op.n()});
-                results[1] = Pointer.to(new int[]{op.x().offset()});
-                results[2] = Pointer.to(xPointer);
-                results[3] = Pointer.to(new int[]{op.x().majorStride()});
 
-                addPointers(4,results,extraArgs);
-                results[results.length - 1] = Pointer.to(result);
 
-                Pointer kernelParameters = KernelFunctions.constructKernelParameters(results);
-                invokeFunction(op,kernelParameters,threads,blocks);
-                setResultForOp(op,result);
-
-            }
         }
 
         if(result != null)
@@ -258,72 +237,20 @@ public class JCudaExecutioner implements OpExecutioner {
     }
 
 
-    /**
-     * Returns the power of 2 that is equal to or greater than x
-     *
-     * @param x The input
-     * @return The next power of 2
-     */
-    private static int nextPow2(int x)  {
-        --x;
-        x |= x >> 1;
-        x |= x >> 2;
-        x |= x >> 4;
-        x |= x >> 8;
-        x |= x >> 16;
-        return ++x;
-    }
 
-
-    /**
-     * Compute the number of blocks that should be used for the
-     * given input size and limits
-     *
-     * @param n The input size
-     * @param maxBlocks The maximum number of blocks
-     * @param maxThreads The maximum number of threads
-     * @return The number of blocks
-     */
-    private  int getNumBlocks(int n, int maxBlocks, int maxThreads)  {
-        int blocks = 0;
-        int threads = getNumThreads(n, maxBlocks, maxThreads);
-        blocks = (n + (threads * 2 - 1)) / (threads * 2);
-        blocks = Math.min(maxBlocks, blocks);
-        return blocks;
-    }
-
-    /**
-     * Compute the number of threads that should be used for the
-     * given input size and limits
-     *
-     * @param n The input size
-     * @param maxBlocks The maximum number of blocks
-     * @param maxThreads The maximum number of threads
-     * @return The number of threads
-     */
-    private  int getNumThreads(int n, int maxBlocks, int maxThreads) {
-        int threads = 0;
-        threads = (n < maxThreads * 2) ? nextPow2((n + 1)/ 2) : maxThreads;
-        return threads;
-    }
-
-
-    private void invokeFunction(Op op,Pointer kernelParams,int...extraParams) {
-        String functionName = op.name() + "_strided";
+    private void invokeFunction(Op op,Pointer kernelParams) {
+        String functionName = op instanceof TransformOp || op instanceof Accumulation ? op.name() + "_strided" : op.name();
         CUfunction func =  KernelFunctionLoader.getInstance().getFunction(functionName, op.x().data().dataType() == DataBuffer.DOUBLE ? "double" : "float");
         if(func == null)
             throw new IllegalArgumentException("Function " + functionName + " with data type " + (op.x().data().dataType() == DataBuffer.DOUBLE ? "double does not exist" : "float does not exist"));
-        if(KernelFunctions.isReduce(functionName)) {
-             //specify threads and blocks
-              KernelFunctions.invokeReduce(
-                    extraParams[0],extraParams[1],
-                    func, kernelParams);
-        }
-        else
-            KernelFunctions.invoke(
-                    op.n(),
-                   func
-                    , kernelParams);
+        int blocks = PointerUtil.getNumBlocks(op.n(), 128, 64);
+        int threads = PointerUtil.getNumThreads(op.n(),64);
+
+        KernelFunctions.invoke(
+               blocks,
+               threads,
+                func
+                , kernelParams);
 
 
     }
@@ -362,121 +289,58 @@ public class JCudaExecutioner implements OpExecutioner {
     }
 
 
-    private void invoke(TransformOp op,Object[] extraArgs) {
+
+    private void invoke(ScalarOp op,Object[] extraArgs) {
         JCudaBuffer xBuffer = (JCudaBuffer) op.x().data();
-        Pointer xPointer = xBuffer.pointer();
+        Pointer xPointer = xBuffer.pointer().withByteOffset(op.x().offset() * xBuffer.elementSize());
 
         JCudaBuffer zBuffer = (JCudaBuffer) op.z().data();
-
-        Pointer zPointer = zBuffer.pointer();
+        Pointer zPointer = zBuffer.pointer().withByteOffset(zBuffer.elementSize() * op.z().offset());
 
         if(op.y() != null) {
             JCudaBuffer yBuffer = (JCudaBuffer) op.y().data();
-            Pointer yPointer = yBuffer.pointer();
-            if(extraArgs == null || extraArgs.length < 1) {
-                //int n,int xOffset,int yOffset, double *dx, double *dy,int incx,int incy,double *result
-                Pointer kernelParams = KernelFunctions.constructKernelParameters(
-                        Pointer.to(new int[]{op.n()}),
-                        Pointer.to(new int[]{op.x().offset()}),
-                        Pointer.to(new int[]{op.y().offset()}),
-                        Pointer.to(xPointer),
-                        Pointer.to(yPointer),
-                        Pointer.to(new int[]{op.x().majorStride()}),
-                        Pointer.to(new int[]{op.y().majorStride()}),
-                        Pointer.to(zPointer)
-                );
+            Pointer yPointer = yBuffer.pointer().withByteOffset(yBuffer.elementSize() * op.y().offset());
+            Pointer kernelParams = KernelFunctions.constructKernelParameters(
+                    Pointer.to(new int[]{op.n()}),
+                    Pointer.to(new int[]{op.x().offset()}),
+                    Pointer.to(new int[]{op.y().offset()}),
+                    Pointer.to(xPointer),
+                    Pointer.to(yPointer),
+                    Pointer.to(new int[]{op.x().majorStride()}),
+                    Pointer.to(new int[]{op.y().majorStride()}),
+                    toArgs(extraArgs, getType(op)),
+                    Pointer.to(zPointer)
+            );
 
-                invokeFunction(op,kernelParams);
-
+            invokeFunction(op,kernelParams);
 
 
-            }
-            else {
-                /**
-                 * Construct pointer arguments in the following order:
-                 * n
-                 * offset,
-                 * pointer to buffer
-                 * increment,
-                 * extraArgs,
-                 * result
-                 */
-                Pointer[] results = new Pointer[5 + extraArgs.length];
-                results[0] = Pointer.to(new int[]{op.n()});
-                results[1] = Pointer.to(new int[]{op.x().offset()});
-                results[2] = Pointer.to(xPointer);
-                results[3] = Pointer.to(new int[]{op.x().majorStride()});
-
-                addPointers(4,results,extraArgs);
-                results[results.length - 1] = Pointer.to(zPointer);
-
-                Pointer kernelParameters = KernelFunctions.constructKernelParameters(results);
-                invokeFunction(op,kernelParameters);
 
 
-            }
+
 
 
 
         }
 
         else {
-            if(extraArgs == null || extraArgs.length < 1) {
-                //int n,int idx,double *dy,int incy,double *result
-                Pointer kernelParams = KernelFunctions.constructKernelParameters(
-                        Pointer.to(new int[]{op.n()}),
-                        Pointer.to(new int[]{op.x().offset()}),
-                        Pointer.to(xPointer),
-                        Pointer.to(new int[]{op.x().majorStride()}),
-                        Pointer.to(zPointer)
-                );
+            //int n,int idx,double *dy,int incy,double *result
+            //int n, int idx,double dx,double *dy,int incy,double *result
 
-                invokeFunction(op,kernelParams);
+            Pointer kernelParams = KernelFunctions.constructKernelParameters(
+                    Pointer.to(new int[]{op.n()}),
+                    Pointer.to(new int[]{op.x().offset()}),
+                    PointerUtil.getPointer(op),
+                    Pointer.to(xPointer),
+                    Pointer.to(new int[]{op.x().majorStride()}),
+                    toArgs(extraArgs, getType(op)),
+                    Pointer.to(zPointer)
+            );
 
-            }
-
-            else {
-                /**
-                 * Construct pointer arguments in the following order:
-                 * n
-                 * offset,
-                 * pointer to buffer
-                 * increment,
-                 * extraArgs,
-                 * result
-                 */
-                Pointer[] results = new Pointer[5 + extraArgs.length];
-                results[0] = Pointer.to(new int[]{op.n()});
-                results[1] = Pointer.to(new int[]{op.x().offset()});
-                results[2] = Pointer.to(xPointer);
-                results[3] = Pointer.to(new int[]{op.x().majorStride()});
-
-                addPointers(4,results,extraArgs);
-                results[results.length - 1] = Pointer.to(zPointer);
-
-                Pointer kernelParameters = KernelFunctions.constructKernelParameters(results);
-                invokeFunction(op,kernelParameters);
+            invokeFunction(op,kernelParams);
 
 
-            }
-        }
 
-    }
-
-
-    private void addPointers(int start,Pointer[] results,Object[] extraArgs) {
-        //start at the extra args slot and iterate over each argument
-        for(int i = start,count = 0; count < extraArgs.length; i++,count++) {
-            Object o = extraArgs[count];
-            if(o instanceof Integer) {
-                results[i] = Pointer.to(new int[]{Integer.valueOf(o.toString())});
-            }
-            else if(o instanceof Double) {
-                results[i] = Pointer.to(new double[]{Double.valueOf(o.toString())});
-            }
-            else if(o instanceof Float) {
-                results[i] = Pointer.to(new float[]{Float.valueOf(o.toString())});
-            }
         }
 
     }
@@ -484,6 +348,80 @@ public class JCudaExecutioner implements OpExecutioner {
 
 
 
+    private String getType(Op op) {
+        return op.x().data().dataType() == DataBuffer.DOUBLE ? "double" : "float";
+    }
+
+
+    private void invoke(TransformOp op,Object[] extraArgs) {
+        JCudaBuffer xBuffer = (JCudaBuffer) op.x().data();
+        Pointer xPointer = xBuffer.pointer().withByteOffset(xBuffer.elementSize() * op.x().offset());
+
+        JCudaBuffer zBuffer = (JCudaBuffer) op.z().data();
+        Pointer zPointer = zBuffer.pointer().withByteOffset(zBuffer.elementSize() * op.z().offset());
+
+        if(op.y() != null) {
+            JCudaBuffer yBuffer = (JCudaBuffer) op.y().data();
+            Pointer yPointer = yBuffer.pointer().withByteOffset(op.y().offset() * yBuffer.elementSize());
+            /**
+             * Construct pointer arguments in the following order:
+             * n
+             * offset,
+             * pointer to buffer
+             * increment,
+             * extraArgs,
+             * result
+             */
+            Pointer[] params = new Pointer[9];
+            params[0] = Pointer.to(new int[]{op.n()});
+            params[1] = Pointer.to(new int[]{op.x().offset()});
+            params[2] = Pointer.to(new int[]{op.y().offset()});
+            params[3] = Pointer.to(xPointer);
+            params[4] = Pointer.to(yPointer);
+            params[5] = Pointer.to(new int[]{op.x().majorStride()});
+            params[6] = Pointer.to(new int[]{op.y().majorStride()});
+            params[7] = toArgs(extraArgs,getType(op));
+            params[8] = Pointer.to(zPointer);
+
+            Pointer kernelParameters = KernelFunctions.constructKernelParameters(params);
+            invokeFunction(op,kernelParameters);
+
+
+        }
+
+
+
+
+
+        else {
+            //int n,int idx,double *dy,int incy,double *result
+            Pointer kernelParams = KernelFunctions.constructKernelParameters(
+                    Pointer.to(new int[]{op.n()}),
+                    Pointer.to(new int[]{op.x().offset()}),
+                    Pointer.to(xPointer),
+                    Pointer.to(new int[]{op.x().majorStride()}),
+                    toArgs(extraArgs, getType(op)),
+                    Pointer.to(zPointer)
+            );
+
+            invokeFunction(op,kernelParams);
+
+
+
+        }
+
+    }
+
+
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        if(dummyDoublePointer != null)
+            JCublas.cublasFree(dummyDoublePointer);
+        if(dummyFloatPointer != null)
+            JCublas.cublasFree(dummyFloatPointer);
+    }
 }
 
 

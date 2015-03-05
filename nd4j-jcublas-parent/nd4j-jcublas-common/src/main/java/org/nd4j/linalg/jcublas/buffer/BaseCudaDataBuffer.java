@@ -150,46 +150,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
 
     @Override
-    public void addi(Number n) {
-        addi(n, 1, 0);
-    }
-
-    @Override
-    public void subi(Number n) {
-        subi(n, 1, 0);
-    }
-
-    @Override
-    public void muli(Number n) {
-        muli(n, 1, 0);
-    }
-
-    @Override
-    public void divi(Number n) {
-        divi(n, 1, 0);
-    }
-
-    @Override
-    public void addi(DataBuffer buffer) {
-        addi(buffer, length(), 0, 0, 1, 1);
-    }
-
-    @Override
-    public void subi(DataBuffer buffer) {
-        subi(buffer, length(), 0, 0, 1, 1);
-    }
-
-    @Override
-    public void muli(DataBuffer buffer) {
-        muli(buffer, length(), 0, 0, 1, 1);
-    }
-
-    @Override
-    public void divi(DataBuffer buffer) {
-        divi(buffer, length(), 0, 0, 1, 1);
-    }
-
-    @Override
     public void assign(Number value) {
         assign(value, 0);
     }
@@ -428,80 +388,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         return result;
     }
 
-    /**
-     * Execute an operation on this buffer with a scalar
-     * @param dType the data type to operate on (float or double)
-     * @param dYIdx the index to
-     * @param scalar the scalar to operate with
-     * @param n the number of items to iterate on
-     * @param incy the increment for this buffer
-     * @param op the operation to execute
-     */
-    protected void execScalar(String dType,int dYIdx,Number scalar,int n,int incy,String op) {
-        execScalar(dType, dYIdx, scalar, n, incy, op,this);
-    }
-
-    /**
-     * Execute an operation on this buffer and the incoming buffer
-     * @param buffer the other buffer to execute on
-     * @param dType the dType(double or float)
-     * @param dxIdx the index to begin at for the other buffer
-     * @param dYIdx the index to begin at for this buffer
-     * @param n the length to iterate for
-     * @param incx the increment of the passed in buffer
-     * @param incy the increment of this buffer
-     * @param op the operation to execute
-     */
-    protected void exec2d(DataBuffer buffer,String dType,int dxIdx,int dYIdx,int n,int incx,int incy,String op) {
-        exec2d(buffer,dType,dxIdx,dYIdx,n,incx,incy,op,this);
-    }
-
-
-
-    @Override
-    public void rdivi(DataBuffer buffer) {
-        rdivi(buffer,length(),0,0,1,1);
-    }
-
-    @Override
-    public void rsubi(DataBuffer buffer) {
-        rsubi(buffer, length(), 0, 0, 1, 1);
-    }
-
-    @Override
-    public void addi(DataBuffer buffer, DataBuffer result) {
-        addi(buffer,length(),0,0,1,1,result);
-    }
-
-    @Override
-    public void subi(DataBuffer buffer, DataBuffer result) {
-        subi(buffer,length(),0,0,1,1,result);
-
-    }
-
-    @Override
-    public void muli(DataBuffer buffer, DataBuffer result) {
-        muli(buffer,length(),0,0,1,1,result);
-
-    }
-
-    @Override
-    public void divi(DataBuffer buffer, DataBuffer result) {
-        divi(buffer,length(), 0,0,1,1,result);
-
-    }
-
-    @Override
-    public void rdivi(DataBuffer buffer, DataBuffer result) {
-        rdivi(buffer,length(),0,0,1,1,result);
-
-    }
-
-    @Override
-    public void rsubi(DataBuffer buffer, DataBuffer result) {
-        rsubi(buffer,length(),0,0,1,1,result);
-
-    }
 
 
 
@@ -518,6 +404,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         Pointer scalarP = dType.equals("double") ? Pointer.to(new double[]{scalar.doubleValue()}) : Pointer.to(new float[]{scalar.floatValue()});
         Pointer twoP = Pointer.to(pointer());
         JCudaBuffer resultBuffer = (JCudaBuffer) result;
+        int blocks = KernelFunctions.numBlocks(n);
+        int threads = (int) Math.ceil((double) n / blocks);
 
 
         Pointer resultP = Pointer.to(resultBuffer.pointer());
@@ -532,130 +420,11 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 , Pointer.to(new int[]{incy}),resultP);
         //actually call the kernel
         KernelFunctions.invoke(
-                2,
+                blocks,threads,
                 KernelFunctionLoader.getInstance().getFunction(op,dType)
                 , kernelParameters);
     }
 
-
-    /**
-     * Invoke an element wise transformation such as (exp,floor,tanh,..)
-     * on a buffer
-     * @param function the function to invoke
-     * @param dType the data type to use
-     * @param n the number of elements
-     * @param offset the offset to start
-     * @param inc the increment along the buffer
-     * @param result the result buffer
-     */
-    protected void invokeElementWise(String function,String dType,int n,int offset,int inc,DataBuffer result) {
-         invokeElementWise(function,dType,n,offset,inc,null,result);
-    }
-
-    /**
-     * Invoke an element wise transformation such as (exp,floor,tanh,..)
-     * on a buffer
-     * @param function the function to invoke
-     * @param dType the data type to use
-     * @param n the number of elements
-     * @param offset the offset to start
-     * @param inc the increment along the buffer
-     * @param extraArgs the extra arguments (for say, pow(,2))
-     * @param result the result buffer
-     */
-    protected void invokeElementWise(String function,String dType,int n,int offset,int inc,Object[] extraArgs,DataBuffer result) {
-        JCudaBuffer resultBuffer = (JCudaBuffer) result;
-        Pointer p = Pointer.to(pointer());
-        Pointer resultP = Pointer.to(resultBuffer.pointer());
-        if(extraArgs == null || extraArgs.length < 1) {
-            Pointer kernelParameters = KernelFunctions.constructKernelParameters(
-                    //number of elements
-                    Pointer.to(new int[]{n}),
-                    Pointer.to(new int[]{offset})
-                    , p
-                    , Pointer.to(new int[]{inc})
-                    , resultP);
-
-
-            KernelFunctions.invoke(n,KernelFunctionLoader.getInstance().getFunction(function, dType),kernelParameters);
-        }
-
-        else {
-            /**
-             * Construct pointer arguments in the following order:
-             * n
-             * offset,
-             * pointer to buffer
-             * increment,
-             * extraArgs,
-             * result
-             */
-            Pointer[] results = new Pointer[5 + extraArgs.length];
-            results[0] = Pointer.to(new int[]{n});
-            results[1] = Pointer.to(new int[]{offset});
-            results[2] = p;
-            results[3] = Pointer.to(new int[]{inc});
-
-            //start at the extra args slot and iterate over each argument
-            for(int i = 4,count = 0; count < extraArgs.length; i++,count++) {
-                Object o = extraArgs[count];
-                if(o instanceof Integer) {
-                    results[i] = Pointer.to(new int[]{Integer.valueOf(o.toString())});
-                }
-                else if(o instanceof Double) {
-                    results[i] = Pointer.to(new double[]{Double.valueOf(o.toString())});
-                }
-                else if(o instanceof Float) {
-                    results[i] = Pointer.to(new float[]{Float.valueOf(o.toString())});
-                }
-            }
-
-            results[results.length - 1] = resultP;
-
-            Pointer kernelParameters = KernelFunctions.constructKernelParameters(results);
-
-
-            KernelFunctions.invoke(n,KernelFunctionLoader.getInstance().getFunction(function, dType),kernelParameters);
-
-        }
-
-    }
-
-
-
-
-    /**
-     * Execute an operation on this buffer and the incoming buffer
-     * @param buffer the other buffer to execute on
-     * @param dType the dType(double or float)
-     * @param dxIdx the index to begin at for the other buffer
-     * @param dYIdx the index to begin at for this buffer
-     * @param n the length to iterate for
-     * @param incx the increment of the passed in buffer
-     * @param incy the increment of this buffer
-     * @param op the operation to execute
-     */
-    protected void exec2d(DataBuffer buffer,String dType,int dxIdx,int dYIdx,int n,int incx,int incy,String op,DataBuffer result) {
-        JCudaBuffer b = (JCudaBuffer) buffer;
-        JCudaBuffer resultBuffer = (JCudaBuffer) result;
-        Pointer onesP = Pointer.to(b.pointer());
-        Pointer twoP = Pointer.to(pointer());
-        Pointer resultP = Pointer.to(resultBuffer.pointer());
-
-        Pointer kernelParameters = KernelFunctions.constructKernelParameters(
-                //number of elements
-                Pointer.to(new int[]{n}),
-                Pointer.to(new int[]{dxIdx}),
-                Pointer.to(new int[]{dYIdx})
-                , onesP
-                , twoP
-                , Pointer.to(new int[]{incx})
-                , Pointer.to(new int[]{incy}),resultP);
-        KernelFunctions.invoke(
-                2
-                ,KernelFunctionLoader.getInstance().getFunction(op,dType)
-                ,kernelParameters);
-    }
 
     @Override
     public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {

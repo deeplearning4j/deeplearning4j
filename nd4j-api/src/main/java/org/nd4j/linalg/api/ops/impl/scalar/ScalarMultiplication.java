@@ -26,16 +26,16 @@ import org.nd4j.linalg.api.ops.Op;
  *  @author Adam Gibson
  */
 public class ScalarMultiplication extends BaseScalarOp {
-    public ScalarMultiplication(INDArray x, INDArray y, int n, Number num) {
-        super(x, y, n, num);
+    public ScalarMultiplication(INDArray x, INDArray y, INDArray z, int n, Number num) {
+        super(x, y, z, n, num);
     }
 
     public ScalarMultiplication(INDArray x, Number num) {
         super(x, num);
     }
 
-    public ScalarMultiplication(INDArray x, INDArray y, int n, IComplexNumber num) {
-        super(x, y, n, num);
+    public ScalarMultiplication(INDArray x, INDArray y, INDArray z, int n, IComplexNumber num) {
+        super(x, y, z, n, num);
     }
 
     public ScalarMultiplication(INDArray x, IComplexNumber num) {
@@ -44,7 +44,7 @@ public class ScalarMultiplication extends BaseScalarOp {
 
     @Override
     public String name() {
-        return "scalar_mul";
+        return "mul_scalar";
     }
 
     @Override

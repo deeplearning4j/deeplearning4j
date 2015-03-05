@@ -35,19 +35,33 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected IComplexNumber currentComplexResult;
     protected List<Number> otherAccum;
     protected List<IComplexNumber> otherAccumComplex;
+    protected Number initial;
+    protected IComplexNumber initialComplex;
+
+    /**
+     * Initialize with the given
+     * input, pairwise transform, result, and number
+     * of elements
+     * @param x the input
+     * @param y the pairwise transform
+     * @param z the result
+     * @param n the number of elements
+     */
+    public BaseAccumulation(INDArray x, INDArray y, INDArray z, int n) {
+        super(x, y, z, n);
+        init();
+    }
 
     public BaseAccumulation(INDArray x, INDArray y, int n) {
-        super(x, y, n);
-        init();
+        this(x,y,x,n);
     }
 
     public BaseAccumulation(INDArray x) {
-        super(x);
-        init();
+        this(x,null,x,x.length());
     }
 
     public BaseAccumulation(INDArray x, INDArray y) {
-        this(x,y,x.length());
+        this(x,y,x,x.length());
     }
 
     private void init() {
@@ -55,13 +69,17 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         currentComplexResult = zeroComplex();
         otherAccum = new ArrayList<>();
         otherAccumComplex = new ArrayList<>();
-        init(x,y,x.length());
+        init(x,y,x,x.length());
     }
 
+    @Override
+    public Number zero() {
+        return initial;
+    }
 
     @Override
     public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(zero(),zero());
+        return initialComplex.dup();
     }
 
     @Override
@@ -141,7 +159,11 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, int n) {
-        //no-op
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        if(initial == null)
+            initial = 0.0;
+        if(initialComplex == null)
+            initialComplex = Nd4j.createComplexNumber(0.0,0.0);
     }
 }

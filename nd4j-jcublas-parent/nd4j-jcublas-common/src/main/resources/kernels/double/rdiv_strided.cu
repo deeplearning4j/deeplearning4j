@@ -1,9 +1,16 @@
+#include <pairwise_transform.h>
+
+
+__device__ double op(double d1,double d2,double *params) {
+      return d2 / d1;
+}
+__device__ double op(double d1,double *params) {
+         return d1;
+}
+
 extern "C"
-__global__ void rdiv_strided_double(int n,int xOffset,int yOffset, double *dx, double *dy,int incx,int incy,double *result) {
-        for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
-                          if(i >= xOffset && i >= yOffset &&  i % incx == 0 && i % incy == 0)
-                                result[i] = dx[i] - dy[i];
-             }
+__global__ void rdiv_strided_double(int n, int xOffset,int yOffset,double *dx, double *dy,int incx,int incy,double *params,double *result) {
+        transform(n,xOffset,yOffset,dx,dy,incx,incy,params,result);
 
  }
 

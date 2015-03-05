@@ -207,11 +207,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     private void apply(ScalarOp op,int c,Object[] extraArgs) {
         if(op.x() instanceof IComplexNDArray) {
-            IComplexNDArray ndArray = (IComplexNDArray) op.x();
+            IComplexNDArray ndArray = (IComplexNDArray) op.z();
             ndArray.putScalar(c,op.op(((IComplexNDArray) op.x()).getComplex(c)));
         }
         else
-            op.x().putScalar(c,op.op(op.x().getDouble(c)));
+            op.z().putScalar(c,op.op(op.x().getDouble(c)));
     }
     //apply a singular op to x and store the result
     private void apply(TransformOp op,int c,int x,Object[] extraArgs) {

@@ -16,19 +16,12 @@
 
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
-
 /**
  * Transform operation:
  * stores the result in an ndarray
  * @author Adam Gibson
  */
 public interface TransformOp extends Op {
-    /**
-     * The resulting ndarray
-     * @return the resulting ndarray
-     */
-    INDArray z();
 
     /**
      * The derivative operation for this op
@@ -37,13 +30,5 @@ public interface TransformOp extends Op {
      */
     TransformOp derivative();
 
-    /**
-     * Initialize the operation based on the parameters
-     * @param x the input
-     * @param y the pairwise transform ndarray
-     * @param z the resulting ndarray
-     * @param n the number of elements
-     */
-    void init(INDArray x,INDArray y,INDArray z,int n);
 
 }
