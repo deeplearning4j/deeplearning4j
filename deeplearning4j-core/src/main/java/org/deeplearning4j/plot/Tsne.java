@@ -25,22 +25,16 @@ import org.deeplearning4j.clustering.vptree.VpTreePointINDArray;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
-import static org.nd4j.linalg.factory.Nd4j.*;
-
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.indexing.functions.Zero;
 import org.nd4j.linalg.learning.AdaGrad;
-
-import static org.nd4j.linalg.ops.transforms.Transforms.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
-
 
 import java.io.*;
 import java.util.List;
@@ -48,8 +42,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static org.nd4j.linalg.factory.Nd4j.*;
+import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
-import static org.nd4j.linalg.ops.transforms.Transforms.max;
+
 
 /**
  * Tsne calculation
