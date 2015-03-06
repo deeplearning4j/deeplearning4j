@@ -18,6 +18,7 @@ package org.deeplearning4j.models.word2vec;
 
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.plot.Tsne;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -119,8 +120,10 @@ public class Word2VecTests {
                 .build();
 
         vec.lookupTable().plotVocab(calculation);
+        WordVectorSerializer.writeTsneFormat(vec,calculation.getY(),new File("test.csv"));
         double sim = vec.similarity("Adam","deeplearning4j");
         new File("cache.ser").delete();
+
 
 
     }
