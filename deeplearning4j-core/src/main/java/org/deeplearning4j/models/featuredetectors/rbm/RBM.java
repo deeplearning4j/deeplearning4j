@@ -249,7 +249,7 @@ public  class RBM extends BasePretrainNetwork {
             INDArray sample = normal(conf.getRng(), h1Mean,1);
             sample.muli(sqrtSigH1Mean);
             INDArray h1Sample = h1Mean.add(sample);
-            h1Sample = Transforms.max(h1Sample);
+            h1Sample = Transforms.max(h1Sample,1.0);
             //apply dropout
             applyDropOutIfNecessary(h1Sample);
 
@@ -361,7 +361,7 @@ public  class RBM extends BasePretrainNetwork {
 
 
         if(conf.getHiddenUnit() == HiddenUnit.RECTIFIED) {
-            preSig = max(preSig);
+            preSig = max(preSig,1.0);
             return preSig;
         }
 
