@@ -16,6 +16,20 @@
 
 package org.deeplearning4j.models.word2vec.iterator;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
+import org.deeplearning4j.datasets.iterator.DataSetFetcher;
+import org.deeplearning4j.models.word2vec.Word2Vec;
+import org.deeplearning4j.text.movingwindow.Window;
+import org.deeplearning4j.text.movingwindow.WindowConverter;
+import org.deeplearning4j.text.movingwindow.Windows;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.FeatureUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,22 +37,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.LineIterator;
-import org.deeplearning4j.datasets.iterator.DataSetFetcher;
-import org.deeplearning4j.models.word2vec.Word2Vec;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.FeatureUtil;
-import org.deeplearning4j.text.movingwindow.Window;
-import org.deeplearning4j.text.movingwindow.WindowConverter;
-import org.deeplearning4j.text.movingwindow.Windows;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-
-@SuppressWarnings("unchecked")
+/**
+ *
+ */
 public class Word2VecDataFetcher implements DataSetFetcher {
 
 	/**
