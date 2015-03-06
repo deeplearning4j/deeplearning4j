@@ -1,11 +1,21 @@
 package org.deeplearning4j.models.word2vec.iterator;
 
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.Word2Vec;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.dataset.DataSet;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -15,15 +25,37 @@ public class Word2VecIteratorTest {
     private Word2Vec vec;
 
     @Before
-    public void before() {
+    public void before() throws Exception {
         if(vec == null) {
+            ClassPathResource resource = new ClassPathResource("/labeled/");
+            File file = resource.getFile();
+            SentenceIterator iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
+            new File("cache.ser").delete();
+            InMemoryLookupCache cache = new InMemoryLookupCache();
+
+
+            TokenizerFactory t = new UimaTokenizerFactory();
+
+            WeightLookupTable table = new InMemoryLookupTable
+                    .Builder()
+                    .vectorLength(100).useAdaGrad(false).cache(cache)
+                    .lr(0.025f).build();
+
+            vec = new Word2Vec.Builder()
+                    .minWordFrequency(1).iterations(5)
+                    .layerSize(100).lookupTable(table)
+                    .stopWords(new ArrayList<String>())
+                    .vocabCache(cache)
+                    .windowSize(5).iterate(iter).tokenizerFactory(t).build();
+            vec.fit();
 
         }
     }
 
     @Test
     public void testLabeledExample() throws Exception {
-        Word2VecDataSetIterator iter = new Word2VecDataSetIterator(vec,new LabelAwareFileSentenceIterator(null,new File("")), Arrays.asList(""));
+        Word2VecDataSetIterator iter = new Word2VecDataSetIterator(vec,new LabelAwareFileSentenceIterator(null, new ClassPathResource("labeled/").getFile()), Arrays.asList("negative","positive","neutral"));
+        DataSet next = iter.next();
 
     }
 
