@@ -45,10 +45,7 @@ public class Word2VecDataSetIterator implements DataSetIterator {
     private LabelAwareSentenceIterator iter;
     private List<Window> cachedWindow;
     private List<String> labels;
-    private boolean homogenization = true;
-    private boolean addLabels = true;
-    private int batch = 10;
-    private DataSet curr;
+   private int batch = 10;
     private DataSetPreProcessor preProcessor;
 
     /**
@@ -66,8 +63,6 @@ public class Word2VecDataSetIterator implements DataSetIterator {
         this.labels = labels;
         this.batch = batch;
         cachedWindow = new CopyOnWriteArrayList<>();
-        this.addLabels = addLabels;
-        this.homogenization = homogenization;
 
         if(addLabels && homogenization)
             iter.setPreProcessor(new SentencePreProcessor() {
@@ -180,6 +175,8 @@ public class Word2VecDataSetIterator implements DataSetIterator {
 
         if(windows.isEmpty())
             return null;
+
+
 
         INDArray inputs = Nd4j.create(num, inputColumns());
         for(int i = 0; i < inputs.rows(); i++) {

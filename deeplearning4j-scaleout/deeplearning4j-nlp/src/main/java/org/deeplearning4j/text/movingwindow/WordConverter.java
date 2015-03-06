@@ -16,13 +16,13 @@
 
 package org.deeplearning4j.text.movingwindow;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
-import org.deeplearning4j.models.word2vec.Word2Vec;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class WordConverter {
@@ -41,7 +41,7 @@ public class WordConverter {
 		int rows = windows.size();
 		INDArray ret = Nd4j.create(rows,columns);
 		for(int i = 0; i < rows; i++) {
-			ret.putRow(i, Nd4j.create(WindowConverter.asExample(windows.get(i), vec)));
+			ret.putRow(i, WindowConverter.asExampleMatrix(windows.get(i),vec));
 		}
 		return ret;
 	}
