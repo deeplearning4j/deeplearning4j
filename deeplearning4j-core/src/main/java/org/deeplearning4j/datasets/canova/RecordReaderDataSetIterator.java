@@ -17,6 +17,8 @@
 package org.deeplearning4j.datasets.canova;
 
 import org.canova.api.io.WritableConverter;
+import org.canova.api.io.converters.SelfWritableConverter;
+import org.canova.api.io.converters.WritableConverterException;
 import org.canova.api.records.reader.RecordReader;
 import org.canova.api.writable.Writable;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
@@ -43,6 +45,26 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private int labelIndex = -1;
     private int numPossibleLabels = -1;
 
+
+
+    public RecordReaderDataSetIterator(RecordReader recordReader,int batchSize) {
+        this(recordReader,new SelfWritableConverter(),batchSize,-1,-1);
+    }
+
+
+    public RecordReaderDataSetIterator(RecordReader recordReader,int batchSize,int labelIndex,int numPossibleLabels) {
+        this(recordReader,new SelfWritableConverter(),batchSize,labelIndex,numPossibleLabels);
+    }
+
+    public RecordReaderDataSetIterator(RecordReader recordReader) {
+        this(recordReader,new SelfWritableConverter());
+    }
+
+
+    public RecordReaderDataSetIterator(RecordReader recordReader,int labelIndex,int numPossibleLabels) {
+        this(recordReader, new SelfWritableConverter(), 10,labelIndex,numPossibleLabels);
+    }
+
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,int labelIndex,int numPossibleLabels) {
         this.recordReader = recordReader;
         this.converter = converter;
@@ -65,6 +87,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     public DataSet next(int num) {
         List<DataSet> dataSets = new ArrayList<>();
         for(int i = 0; i < num; i++) {
+            if(!hasNext())
+                break;
             Collection<Writable> record = recordReader.next();
             List<Writable> currList;
             if(record instanceof List)
@@ -80,13 +104,21 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     if(numPossibleLabels < 1)
                         throw new IllegalStateException("Number of possible labels invalid, must be >= 1");
                     Writable current = currList.get(j);
+                    if(current.toString().isEmpty())
+                        continue;
                     if(converter != null)
-                        current = converter.convert(current);
+                        try {
+                            current = converter.convert(current);
+                        } catch (WritableConverterException e) {
+                            e.printStackTrace();
+                        }
                     label = FeatureUtil.toOutcomeVector(j,Integer.valueOf(current.toString()));
                 }
                 else {
                     Writable current = currList.get(j);
-                    featureVector.putScalar(count++,Double.valueOf(current.toString()));
+                    if(current.toString().isEmpty())
+                        continue;
+                    featureVector.putScalar(count++, Double.valueOf(current.toString()));
                 }
             }
 
@@ -102,7 +134,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             labels.add(data.getLabels());
         }
 
-        return new DataSet(Nd4j.hstack(inputs.toArray(new INDArray[0])),Nd4j.hstack(labels.toArray(new INDArray[0])));
+        return new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])),Nd4j.vstack(labels.toArray(new INDArray[0])));
     }
 
     @Override
