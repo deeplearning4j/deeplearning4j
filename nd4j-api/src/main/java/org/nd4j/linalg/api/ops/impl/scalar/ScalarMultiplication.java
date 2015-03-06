@@ -22,7 +22,7 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
- *  Scalar muliplication
+ *  Scalar multiplication
  *  @author Adam Gibson
  */
 public class ScalarMultiplication extends BaseScalarOp {
@@ -70,7 +70,7 @@ public class ScalarMultiplication extends BaseScalarOp {
 
     @Override
     public float op(float origin, float other) {
-        return (float) (origin * num.floatValue());
+        return (origin * num.floatValue());
     }
 
     @Override
@@ -85,7 +85,7 @@ public class ScalarMultiplication extends BaseScalarOp {
 
     @Override
     public float op(float origin) {
-        return (float) (origin * num.floatValue());
+        return (origin * num.floatValue());
     }
 
     @Override

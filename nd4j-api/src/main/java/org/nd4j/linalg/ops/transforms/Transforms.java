@@ -18,8 +18,10 @@ package org.nd4j.linalg.ops.transforms;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -329,6 +331,28 @@ public class Transforms {
         return exec(dup ? new Sign(toSign,toSign.dup()) : new Sign(toSign));
     }
 
+    /**
+     * Stabilize to be within a range of k
+     * @param ndArray tbe ndarray
+     * @param k
+     * @param dup
+     * @return
+     */
+    public static INDArray max(INDArray ndArray, double k, boolean dup) {
+        return exec(dup ? new ScalarMax(ndArray.dup(),k): new ScalarMax(ndArray,k));
+    }
+
+    /**
+     * Stabilize to be within a range of k
+     * @param ndArray tbe ndarray
+     * @param k
+     * @return
+     */
+    public static INDArray max(INDArray ndArray, double k) {
+        return max(ndArray,k,Nd4j.copyOnOps);
+    }
+
+
 
     /**
      * Stabilize to be within a range of k
@@ -385,7 +409,6 @@ public class Transforms {
     }
 
 
-
     /**
      * Pow function
      * @param ndArray
@@ -394,8 +417,6 @@ public class Transforms {
      * @return
      */
     public static INDArray pow(INDArray ndArray, Number power, boolean dup) {
-        int dType = Nd4j.dataType();
-        Object[] extraArgs = dType == DataBuffer.DOUBLE ? new Object[]{new Double(power.doubleValue())} : new Object[]{new Float(power.floatValue())};
         return exec(dup ? new Pow(ndArray,ndArray.dup(),power.doubleValue()) : new Pow(ndArray,power.doubleValue()));
     }
 
@@ -459,6 +480,16 @@ public class Transforms {
      */
     public static INDArray neg(INDArray ndArray, boolean dup) {
         return exec(dup ? new Negative(ndArray,ndArray.dup()) : new Negative(ndArray));
+    }
+
+    /**
+     * Apply the given elementwise op
+     *
+     * @param op the factory to create the op
+     * @return the new ndarray
+     */
+    private static INDArray exec(ScalarOp op) {
+        return Nd4j.getExecutioner().exec(op).z();
     }
 
     /**
