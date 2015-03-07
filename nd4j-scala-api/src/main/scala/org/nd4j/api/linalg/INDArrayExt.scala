@@ -17,7 +17,10 @@
 package org.nd4j.api.linalg
 
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.{ScalarGreaterThanOrEqual, ScalarLessThanOrEqual}
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.indexing.NDArrayIndex
+import org.nd4j.linalg.ops.transforms.Transforms
 
 
 /**
@@ -75,16 +78,21 @@ class INDArrayExt(a: INDArray) {
   def update(i: Array[Int], value: Float) = a.putScalar(i, value)
   def update(i: Array[Int], value: Int) = a.putScalar(i, value)
 
+
   def unary_-(): INDArray = a.neg()
 
-  def t: INDArray = a.transpose()
+  def T: INDArray = a.transpose()
 
   def ===(other: Number): INDArray = a.eq(other)
   def >(other: Number): INDArray = a.gt(other)
   def <(other: Number): INDArray = a.lt(other)
+  def <=(other: Number): INDArray = Nd4j.getExecutioner.exec(new ScalarLessThanOrEqual(a,other)).z()
+  def >=(other: Number): INDArray = Nd4j.getExecutioner.exec(new ScalarGreaterThanOrEqual(a,other)).z()
 
   def ===(other: INDArray): INDArray = a.eq(other)
   def >(other: INDArray): INDArray = a.gt(other)
   def <(other: INDArray): INDArray = a.lt(other)
+  def <=(other: INDArray): INDArray = Transforms.lessThanOrEqual(a,other)
+  def >=(other: INDArray): INDArray = Transforms.greaterThanOrEqual(a,other)
 
 }
