@@ -252,6 +252,8 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
     }
 
 
+
+
     /**
      * Creates an ndarray with the specified shape
      *

@@ -1,7 +1,8 @@
-package org.nd4j.linalg.api.rng;
+package org.nd4j.linalg.api.rng.distribution;
 
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
 import org.apache.commons.math3.exception.OutOfRangeException;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * A probability distribution
@@ -175,5 +176,14 @@ public interface Distribution {
      * if {@code sampleSize} is not positive
      */
     double[] sample(int sampleSize);
+
+    /**
+     * Sample the given shape
+     * @param shape the given shape
+     * @return an ndarray with random samples
+     * from this distribution
+     */
+    INDArray sample(int[] shape);
+
 
 }

@@ -1,5 +1,7 @@
 package org.nd4j.linalg.api.rng;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
+
 /**
  * Random generation based on commons math.
  * This is mean to be an independent.
@@ -126,6 +128,29 @@ public interface Random {
      *  generator's sequence
      */
     double nextGaussian();
+
+    /**
+     * Generate a gaussian number ndarray
+     * of the specified shape
+     * @param shape the shape to generate
+     * @return the generated gaussian numbers
+     */
+    INDArray nextGaussian(int[] shape);
+    /**
+     * Generate a gaussian number ndarray
+     * of the specified shape
+     * @param shape the shape to generate
+     * @return the generated gaussian numbers
+     */
+    INDArray nextDouble(int[] shape);
+    /**
+     * Generate a gaussian number ndarray
+     * of the specified shape
+     * @param shape the shape to generate
+     * @return the generated gaussian numbers
+     */
+    INDArray nextFloat(int[] shape);
+
 }
 
 
