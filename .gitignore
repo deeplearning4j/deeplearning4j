@@ -29,3 +29,5 @@ deeplearning4j-scaleout/deeplearning4j-aws/src/main/java/org/deeplearning4j/aws/
 *.log
 .project
 .classpath
+
+.DS_Store*
