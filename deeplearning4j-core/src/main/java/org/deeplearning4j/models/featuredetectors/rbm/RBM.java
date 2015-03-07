@@ -259,8 +259,7 @@ public  class RBM extends BasePretrainNetwork {
 
         else if(conf.getHiddenUnit() == HiddenUnit.GAUSSIAN) {
             INDArray h1Mean = propUp(v);
-            this.hiddenSigma = h1Mean.var(1);
-            INDArray h1Sample =  h1Mean.addi(normal(conf.getRng(),h1Mean,this.hiddenSigma));
+            INDArray h1Sample =  h1Mean.add(Nd4j.randn(h1Mean.rows(), h1Mean.columns(), conf.getRng()));
 
             //apply dropout
             applyDropOutIfNecessary(h1Sample);

@@ -16,35 +16,31 @@
 
 package org.deeplearning4j.models.featuredetectors.rbm;
 
-import static org.junit.Assert.*;
-
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.distributions.Distributions;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
-import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
+import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.Assert.assertEquals;
 
 
 /**
@@ -81,6 +77,29 @@ public class RBMTests {
 
 
     }
+
+
+
+    @Test
+    public void testIrisGaussianHidden() {
+        IrisDataFetcher fetcher = new IrisDataFetcher();
+        fetcher.fetch(150);
+        DataSet d = fetcher.next();
+        d.normalizeZeroMeanZeroUnitVariance();
+        RandomGenerator g = new MersenneTwister(123);
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.GAUSSIAN).learningRate(1e-1f)
+                .nIn(d.numInputs()).rng(g).
+                        nOut(3).build();
+
+
+        LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
+        RBM r = layerFactory.create(conf);
+        r.fit(d.getFeatureMatrix());
+
+    }
+
 
     @Test
     public void testIris() {
