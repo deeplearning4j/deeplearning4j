@@ -81,6 +81,10 @@ public class JCudaExecutioner implements OpExecutioner {
         return (Accumulation) exec(op);
     }
 
+    @Override
+    public INDArray execAndReturn(ScalarOp op) {
+        return exec(op).z();
+    }
 
 
     @Override
@@ -127,6 +131,10 @@ public class JCudaExecutioner implements OpExecutioner {
         return (Accumulation) exec(op,dimension);
     }
 
+    @Override
+    public INDArray execAndReturn(ScalarOp op, int dimension) {
+        return exec(op,dimension).z();
+    }
 
 
     private Pointer toArgs(Object[] extraArgs,String dataType) {

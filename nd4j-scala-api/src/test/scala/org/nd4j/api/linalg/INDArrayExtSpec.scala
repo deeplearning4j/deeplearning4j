@@ -44,7 +44,7 @@ class INDArrayExtSpec extends FlatSpec with Matchers {
   it should "use transpose abbreviation" in {
     val nd1 = Nd4j.create(Array[Double](1, 2, 3), Array(3, 1))
     nd1.shape should equal(Array(3, 1))
-    val nd1t = nd1.t
+    val nd1t = nd1.T
     nd1t.shape should equal(Array(3))
   }
 

@@ -37,7 +37,6 @@ import java.util.List;
  */
 public class ComplexNDArrayUtil {
 
-    private static Logger log = LoggerFactory.getLogger(ComplexNDArrayUtil.class);
 
     public static IComplexNDArray exp(IComplexNDArray toExp) {
         return expi(toExp.dup());
@@ -210,62 +209,6 @@ public class ComplexNDArrayUtil {
         System.arraycopy(nd.data().asDouble(), 0, ret.data().asDouble(), 0, nd.data().length());
         return ret;
 
-    }
-
-    private static boolean isRowOp(MatrixOp op) {
-        return
-                op == MatrixOp.ROW_MIN ||
-                        op == MatrixOp.ROW_MAX ||
-                        op == MatrixOp.ROW_SUM ||
-                        op == MatrixOp.ROW_MEAN;
-    }
-
-    private static boolean isColumnOp(MatrixOp op) {
-        return
-                op == MatrixOp.COLUMN_MIN ||
-                        op == MatrixOp.COLUMN_MAX ||
-                        op == MatrixOp.COLUMN_SUM ||
-                        op == MatrixOp.COLUMN_MEAN;
-    }
-
-
-    public static enum ScalarOp {
-        SUM,
-        MEAN,
-        PROD,
-        MAX,
-        MIN,
-        ARG_MAX,
-        ARG_MIN,
-        NORM_2,
-        NORM_1,
-        NORM_MAX
-    }
-
-
-    public static enum DimensionOp {
-        SUM,
-        MEAN,
-        PROD,
-        MAX,
-        MIN,
-        ARG_MIN,
-        NORM_2,
-        NORM_1,
-        NORM_MAX,
-        FFT
-    }
-
-
-    public static enum MatrixOp {
-        COLUMN_MIN,
-        COLUMN_MAX,
-        COLUMN_SUM,
-        COLUMN_MEAN,
-        ROW_MIN,
-        ROW_MAX,
-        ROW_SUM,
-        ROW_MEAN
     }
 
 

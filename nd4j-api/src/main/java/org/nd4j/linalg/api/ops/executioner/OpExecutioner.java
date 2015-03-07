@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.executioner;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 
 /**
@@ -51,7 +52,12 @@ public interface OpExecutioner {
      */
     Accumulation execAndReturn(Accumulation op);
 
-
+    /**
+     * Execute and return the result from an accumulation
+     * @param op the operation to execute
+     * @return the accumulated result
+     */
+    INDArray execAndReturn(ScalarOp op);
 
 
     /**
@@ -79,6 +85,12 @@ public interface OpExecutioner {
      */
     Accumulation execAndReturn(Accumulation op,int dimension);
 
+    /**
+     * Execute and return the result from an accumulation
+     * @param op the operation to execute
+     * @return the accumulated result
+     */
+    INDArray execAndReturn(ScalarOp op,int dimension);
 
 
 

@@ -43,8 +43,8 @@ public class Sampling {
      * with numbers between 0 and 1
      */
     public static INDArray normal(RandomGenerator rng, INDArray mean, INDArray sigma) {
-        INDArray iter = mean.reshape(new int[]{1, mean.length()}).dup();
-        INDArray sigmaLinear = sigma.ravel();
+        INDArray iter = mean.linearView();
+        INDArray sigmaLinear = sigma.linearView();
         for (int i = 0; i < iter.length(); i++) {
             RealDistribution reals = new NormalDistribution(rng, mean.getDouble(i), FastMath.sqrt(sigmaLinear.getDouble(i)), NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
             iter.putScalar(i, reals.sample());

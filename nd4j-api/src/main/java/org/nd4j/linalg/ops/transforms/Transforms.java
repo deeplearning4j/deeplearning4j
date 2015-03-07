@@ -23,6 +23,9 @@ import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -283,17 +286,29 @@ public class Transforms {
         return round(ndArray, Nd4j.copyOnOps);
     }
 
-
+    /**
+     * Sigmoid function
+     * @param ndArray
+     * @return
+     */
     public static INDArray sigmoid(INDArray ndArray) {
         return sigmoid(ndArray, Nd4j.copyOnOps);
     }
 
-
+    /**
+     * Sqrt function
+     * @param ndArray
+     * @return
+     */
     public static INDArray sqrt(INDArray ndArray) {
         return sqrt(ndArray, Nd4j.copyOnOps);
     }
 
-
+    /**
+     * Tanh function
+     * @param ndArray
+     * @return
+     */
     public static INDArray tanh(INDArray ndArray) {
         return tanh(ndArray, Nd4j.copyOnOps);
     }
@@ -303,9 +318,66 @@ public class Transforms {
         return log(ndArray, Nd4j.copyOnOps);
     }
 
+    public static INDArray eps(INDArray ndArray) {
+        return eps(ndArray, Nd4j.copyOnOps);
+    }
+
+    /**
+     * 1 if greater than or equal to 0 otherwise (at each element)
+     * @param first
+     * @param ndArray
+     * @return
+     */
+    public static INDArray greaterThanOrEqual(INDArray first,INDArray ndArray) {
+        return greaterThanOrEqual(first,ndArray, Nd4j.copyOnOps);
+    }
+
+    /**
+     * 1 if less than or equal to 0 otherwise (at each element)
+     * @param first
+     * @param ndArray
+     * @return
+     */
+    public static INDArray lessThanOrEqual(INDArray first,INDArray ndArray) {
+        return lessThanOrEqual(first,ndArray, Nd4j.copyOnOps);
+    }
 
 
 
+    /**
+     * Eps function
+     *
+     * @param ndArray
+     * @return
+     */
+    public static INDArray lessThanOrEqual(INDArray first,INDArray ndArray, boolean dup) {
+        return exec(dup ? new LessThanOrEqual(first.dup(),ndArray) :  new LessThanOrEqual(first,ndArray));
+
+    }
+
+
+    /**
+     * Eps function
+     *
+     * @param ndArray
+     * @return
+     */
+    public static INDArray greaterThanOrEqual(INDArray first,INDArray ndArray, boolean dup) {
+        return exec(dup ? new GreaterThanOrEqual(first.dup(),ndArray) :  new GreaterThanOrEqual(first,ndArray));
+
+    }
+
+
+    /**
+     * Eps function
+     *
+     * @param ndArray
+     * @return
+     */
+    public static INDArray eps(INDArray ndArray, boolean dup) {
+        return exec(dup ? new Eps(ndArray.dup()) :  new Eps(ndArray));
+
+    }
 
 
     /**
@@ -315,7 +387,7 @@ public class Transforms {
      * @return
      */
     public static INDArray floor(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Floor(ndArray) :  new Floor(ndArray));
+        return exec(dup ? new Floor(ndArray.dup()) :  new Floor(ndArray));
 
     }
 

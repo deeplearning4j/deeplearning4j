@@ -104,13 +104,13 @@ public class PointerUtil {
 
     public static Pointer getPointer(ScalarOp scalarOp) {
         if(scalarOp.scalar() != null) {
-            if(scalarOp.scalar() instanceof Float)
+            if(scalarOp.x().data().dataType() == DataBuffer.FLOAT)
                 return Pointer.to(new float[]{scalarOp.scalar().floatValue()});
-            else if(scalarOp.scalar() instanceof Double)
+            else if(scalarOp.x().data().dataType() == DataBuffer.DOUBLE)
                 return Pointer.to(new double[]{scalarOp.scalar().doubleValue()});
         }
 
-        return null;
+       throw new IllegalStateException("Unable to get pointer for scalar operation " + scalarOp);
     }
 
 
