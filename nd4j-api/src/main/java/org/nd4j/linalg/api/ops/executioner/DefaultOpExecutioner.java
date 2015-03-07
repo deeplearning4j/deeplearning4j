@@ -80,6 +80,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
+    public INDArray execAndReturn(ScalarOp op) {
+        return exec(op).z();
+    }
+
+    @Override
     public Op exec(Op op, int dimension) {
         //only accumulate along a particular dimension
         if(op instanceof Accumulation) {
@@ -123,6 +128,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public Accumulation execAndReturn(Accumulation op, int dimension) {
         return (Accumulation) exec(op,dimension);
+    }
+
+    @Override
+    public INDArray execAndReturn(ScalarOp op, int dimension) {
+        return exec(op,dimension).z();
     }
 
     private void apply(ScalarOp op,int c) {

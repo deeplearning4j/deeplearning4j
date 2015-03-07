@@ -22,6 +22,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.Log;
 import org.nd4j.linalg.api.ops.impl.transforms.Pow;
@@ -174,6 +176,18 @@ public abstract class OpExecutionerTests {
         assertEquals(answer,pow.z());
     }
 
+
+    @Test
+    public void testComparisonOps() {
+        INDArray linspace = Nd4j.linspace(1,6,6);
+        INDArray ones = Nd4j.ones(6);
+        INDArray zeros = Nd4j.zeros(6);
+        assertEquals(ones,Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace,0)));
+        assertEquals(zeros,Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace,7)));
+        assertEquals(zeros,Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace,0)));
+        assertEquals(ones,Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace,7)));
+
+    }
 
     @Test
     public void testDimensionMax() {
