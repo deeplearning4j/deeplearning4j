@@ -18,11 +18,9 @@ package org.deeplearning4j.nn.conf.serializers;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import org.apache.commons.math3.distribution.RealDistribution;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.util.Dl4jReflection;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
 
 import java.io.IOException;
 
@@ -32,9 +30,9 @@ import java.io.IOException;
  * dist : value \t properties
  * @author Adam Gibson
  */
-public class DistributionSerializer extends JsonSerializer<RealDistribution> {
+public class DistributionSerializer extends JsonSerializer<Distribution> {
     @Override
-    public void serialize(RealDistribution value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+    public void serialize(Distribution value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
         try {
             jgen.writeString(value.getClass().getName() + "\t" + Dl4jReflection.getFieldsAsProperties(value,null));
         } catch (Exception e) {

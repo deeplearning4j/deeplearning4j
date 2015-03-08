@@ -17,10 +17,8 @@
 package org.deeplearning4j.nn.weights;
 
 
-import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.MersenneTwister;
-import org.deeplearning4j.distributions.Distributions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 
 
@@ -55,11 +53,11 @@ public class WeightInitUtil {
   public static INDArray uniformBasedOnInAndOut(int[] shape, int nIn, int nOut) {
     double min = -4.0 * Math.sqrt(6.0 / (double) (nOut + nIn));
     double max = 4.0 * Math.sqrt(6.0 / (double) (nOut + nIn));
-    return Nd4j.rand(shape, Distributions.uniform(new MersenneTwister(123), min, max));
+    return Nd4j.rand(shape,Nd4j.getDistributions().createUniform(min,max));
   }
 
   public static INDArray initWeights(int[] shape, float min, float max) {
-    return Nd4j.rand(shape, min, max, new MersenneTwister(123));
+    return Nd4j.rand(shape, min, max, Nd4j.getRandom());
   }
 
 
@@ -72,7 +70,7 @@ public class WeightInitUtil {
    * distribution based on the initialization scheme
    */
   public static INDArray initWeights(int[] shape, WeightInit initScheme,
-                                     RealDistribution dist) {
+                                     Distribution dist) {
     INDArray ret;
     switch (initScheme) {
       case NORMALIZED:
@@ -80,7 +78,7 @@ public class WeightInitUtil {
         return ret.subi(0.5).divi(shape[0]);
       case UNIFORM:
         double a = 1 / shape[0];
-        return Nd4j.rand(shape, -a, a, new MersenneTwister(123));
+        return Nd4j.rand(shape, -a, a, Nd4j.getRandom());
 
       case VI:
         ret = Nd4j.rand(shape);
@@ -118,7 +116,7 @@ public class WeightInitUtil {
    * @return a matrix of the specified dimensions with the specified
    * distribution based on the initialization scheme
    */
-  public static INDArray initWeights(int nIn, int nOut, WeightInit initScheme, RealDistribution dist) {
+  public static INDArray initWeights(int nIn, int nOut, WeightInit initScheme, Distribution dist) {
     return initWeights(new int[]{nIn, nOut}, initScheme, dist);
   }
 

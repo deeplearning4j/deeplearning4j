@@ -20,7 +20,6 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.canova.api.conf.Configuration;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -29,6 +28,7 @@ import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.job.Job;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
@@ -41,8 +41,8 @@ public class MultiLayerWorkPerformerTests extends NeuralNetWorkPerformerTest {
         RandomGenerator gen = new MersenneTwister(123);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .momentum(9e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen, 1e-1))
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen).iterations(10)
+                .momentum(9e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Nd4j.getDistributions().createNormal(1e-1,1))
+                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).iterations(10)
                 .learningRate(1e-1f).nIn(4).nOut(3).list(2).hiddenLayerSizes(new int[]{3}) .override(new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {

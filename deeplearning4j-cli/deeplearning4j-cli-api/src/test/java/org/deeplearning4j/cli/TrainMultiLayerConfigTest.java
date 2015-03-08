@@ -19,16 +19,15 @@
 package org.deeplearning4j.cli;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.cli.api.flags.Model;
 import org.deeplearning4j.cli.subcommands.Train;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;
 
@@ -43,7 +42,7 @@ public class TrainMultiLayerConfigTest {
         Model testModelFlag = new Model();
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layerFactory(LayerFactories.getFactory(RBM.class)).dist(Distributions.normal(new MersenneTwister(123), 1e-1))
+                .layerFactory(LayerFactories.getFactory(RBM.class)).dist(Nd4j.getDistributions().createNormal(1e-1,0))
                 .list(4).preProcessor(0,new ConvolutionPostProcessor())
                 .hiddenLayerSizes(3, 2, 2).build();
         String json = conf.toJson();

@@ -42,7 +42,7 @@ public class RecursiveAutoEncoderTest {
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .corruptionLevel(0.3).weightInit(WeightInit.VI)
                 .iterations(100).iterationListener(new ScoreIterationListener(10))
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(new MersenneTwister(123))
+                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .learningRate(1e-1f).nIn(784).nOut(600).build();
 
         fetcher.fetch(10);

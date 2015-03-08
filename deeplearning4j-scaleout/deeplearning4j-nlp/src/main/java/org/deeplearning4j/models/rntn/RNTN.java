@@ -30,7 +30,6 @@ import org.deeplearning4j.models.featuredetectors.autoencoder.recursive.Tree;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
@@ -50,7 +49,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
-
+import org.nd4j.linalg.api.rng.Random;
 /**
  * Recursive Neural Tensor Network by Socher et. al
  *
@@ -72,7 +71,7 @@ public class RNTN implements Layer {
     private int numOuts = 3;
     //must be same size as word vectors
     private int numHidden = 25;
-    private RandomGenerator rng;
+    private Random rng;
     private boolean useDoubleTensors = true;
     private boolean combineClassification = true;
     private boolean simplifiedModel = true;
@@ -163,7 +162,7 @@ public class RNTN implements Layer {
 
 
     private RNTN(int numHidden,
-                 RandomGenerator rng,
+                 Random rng,
                  boolean useDoubleTensors,
                  boolean combineClassification,
                  boolean simplifiedModel,
@@ -209,7 +208,7 @@ public class RNTN implements Layer {
     private void init() {
 
         if(rng == null)
-            rng = new MersenneTwister(123);
+            rng = Nd4j.getRandom();
 
         MultiDimensionalSet<String, String> binaryProductions = MultiDimensionalSet.hashSet();
         if (simplifiedModel) {
@@ -1181,7 +1180,7 @@ public class RNTN implements Layer {
     public static class Builder {
         //must be same size as word vectors
         private int numHidden;
-        private RandomGenerator rng;
+        private Random rng;
         private boolean useINd4j;
         private boolean combineClassification = true;
         private boolean simplifiedModel = true;
@@ -1226,7 +1225,7 @@ public class RNTN implements Layer {
             return this;
         }
 
-        public Builder setRng(RandomGenerator rng) {
+        public Builder setRng(Random rng) {
             this.rng = rng;
             return this;
         }
@@ -1320,7 +1319,7 @@ public class RNTN implements Layer {
         }
 
         public RNTN build() {
-            RNTN rt =  new RNTN(   numHidden,
+            RNTN rt =  new RNTN(numHidden,
                     rng,
                     useINd4j,
                     combineClassification,

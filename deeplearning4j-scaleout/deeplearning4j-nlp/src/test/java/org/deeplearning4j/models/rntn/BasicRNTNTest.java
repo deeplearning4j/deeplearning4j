@@ -102,7 +102,6 @@ public class BasicRNTNTest {
                 .setAdagradResetFrequency(1)
                 .setCombineClassification(true).setFeatureVectors(vec)
                 .setRandomFeatureVectors(false)
-                .setRng(new MersenneTwister(123))
                 .setUseTensors(true).build();
         INDArray params = rntn.getParameters();
         INDArray gradient = rntn.getValueGradient();

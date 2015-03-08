@@ -19,16 +19,16 @@ package org.deeplearning4j.nn.conf.serializers;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import org.apache.commons.math3.random.RandomGenerator;
+import org.nd4j.linalg.api.rng.Random;
 
 import java.io.IOException;
 
 /**
  * Created by agibsonccc on 11/27/14.
  */
-public class RandomGeneratorSerializer extends JsonSerializer<RandomGenerator> {
+public class RandomGeneratorSerializer extends JsonSerializer<Random> {
     @Override
-    public void serialize(RandomGenerator value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+    public void serialize(Random value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
         jgen.writeString(value.getClass().getName());
     }
 }
