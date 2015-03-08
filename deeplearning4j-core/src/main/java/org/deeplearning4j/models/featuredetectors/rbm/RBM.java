@@ -34,7 +34,6 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 import static org.nd4j.linalg.ops.transforms.Transforms.max;
 
-import static org.nd4j.linalg.sampling.Sampling.*;
 
 /**
  * Restricted Boltzmann Machine.
@@ -246,7 +245,7 @@ public  class RBM extends BasePretrainNetwork {
 		 * Rectified linear part
 		 */
             INDArray sqrtSigH1Mean = sqrt(sigH1Mean);
-            INDArray sample = normal(conf.getRng(), h1Mean,1);
+            INDArray sample = Nd4j.getDistributions().createNormal(h1Mean,1).sample(h1Mean.shape());
             sample.muli(sqrtSigH1Mean);
             INDArray h1Sample = h1Mean.add(sample);
             h1Sample = Transforms.max(h1Sample,1.0);
@@ -275,7 +274,7 @@ public  class RBM extends BasePretrainNetwork {
 
         else if(conf.getHiddenUnit() == HiddenUnit.BINARY) {
             INDArray h1Mean = propUp(v);
-            INDArray h1Sample = binomial(h1Mean, 1, conf.getRng());
+            INDArray h1Sample = Nd4j.getDistributions().createBinomial(1,h1Mean).sample(h1Mean.shape());
             applyDropOutIfNecessary(h1Sample);
             return new Pair<>(h1Mean,h1Sample);
         }
@@ -317,7 +316,7 @@ public  class RBM extends BasePretrainNetwork {
         }
 
         else if(conf.getVisibleUnit() == VisibleUnit.LINEAR) {
-            INDArray v1Sample = normal(conf.getRng(),v1Mean,1);
+            INDArray v1Sample =  Nd4j.getDistributions().createNormal(v1Mean,1).sample(v1Mean.shape());
             return new Pair<>(v1Mean,v1Sample);
         }
 
@@ -327,7 +326,7 @@ public  class RBM extends BasePretrainNetwork {
         }
 
         else if(conf.getVisibleUnit() == VisibleUnit.BINARY) {
-            INDArray v1Sample = binomial(v1Mean, 1, conf.getRng());
+            INDArray v1Sample = Nd4j.getDistributions().createBinomial(1,v1Mean).sample(v1Mean.shape());
             return new Pair<>(v1Mean,v1Sample);
         }
 
@@ -398,12 +397,11 @@ public  class RBM extends BasePretrainNetwork {
             vMean.addiRowVector(vBias);
 
         if(conf.getVisibleUnit()  == VisibleUnit.GAUSSIAN) {
-            INDArray sample = normal(conf.getRng(), vMean, 1.0);
+            INDArray sample = Nd4j.getDistributions().createNormal(vMean,1).sample(vMean.shape());
             vMean.addi(sample);
             return vMean;
         }
         else if(conf.getVisibleUnit() == VisibleUnit.LINEAR) {
-            vMean = normal(conf.getRng(),vMean,1);
             return vMean;
         }
 

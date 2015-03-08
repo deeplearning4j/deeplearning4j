@@ -102,7 +102,7 @@ public abstract class BasePretrainNetwork extends BaseLayer {
         INDArray corrupted = Nd4j.zeros(x.shape());
         INDArray linear = corrupted.linearView();
         for(int i = 0; i < x.length(); i++)
-            linear.putScalar(i,binomial(conf.getRng(),1,1 - corruptionLevel));
+            linear.putScalar(i,Nd4j.getDistributions().createBinomial(1,1 - corruptionLevel).sample());
         corrupted.muli(x);
         return corrupted;
     }

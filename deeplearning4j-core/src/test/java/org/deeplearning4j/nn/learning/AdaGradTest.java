@@ -18,10 +18,9 @@ package org.deeplearning4j.nn.learning;
 
 import static org.junit.Assert.*;
 
-import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.MersenneTwister;
-import org.deeplearning4j.distributions.Distributions;
+
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.AdaGrad;
 import org.junit.Test;
@@ -59,7 +58,7 @@ public class AdaGradTest {
 		 */
 		AdaGrad grad = new AdaGrad(rows,cols,0.1);
 		INDArray W = Nd4j.zeros(rows, cols);
-		RealDistribution dist = Distributions.normal(new MersenneTwister(123),1);
+		Distribution dist = Nd4j.getDistributions().createNormal(1,1);
 		for(int i = 0; i < W.rows(); i++)
 			W.putRow(i,Nd4j.create(dist.sample(W.columns())));
 		

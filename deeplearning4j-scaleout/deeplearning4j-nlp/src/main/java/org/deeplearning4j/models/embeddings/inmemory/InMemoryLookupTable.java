@@ -30,6 +30,7 @@ import org.deeplearning4j.plot.dropwizard.RenderApplication;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
@@ -50,7 +51,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
     protected INDArray syn0,syn1;
     protected int vectorLength = 50;
-    protected transient RandomGenerator rng = new XorShift64StarRandomGenerator(123);
+    protected transient Random rng = Nd4j.getRandom();
     protected AtomicDouble lr = new AtomicDouble(1e-1);
     protected double[] expTable = new double[1000];
     protected static double MAX_EXP = 6;
@@ -64,7 +65,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
 
 
-    public InMemoryLookupTable(VocabCache vocab,int vectorLength,boolean useAdaGrad,double lr,RandomGenerator gen,double negative) {
+    public InMemoryLookupTable(VocabCache vocab,int vectorLength,boolean useAdaGrad,double lr,Random gen,double negative) {
         this.vocab = vocab;
         this.vectorLength = vectorLength;
         this.useAdaGrad = useAdaGrad;
@@ -86,7 +87,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
     @Override
     public void resetWeights(boolean reset) {
         if(this.rng == null)
-            this.rng = new MersenneTwister(seed);
+            this.rng = Nd4j.getRandom();
         if(syn0 == null || reset) {
             syn0 = Nd4j.rand(new int[]{vocab.numWords() + 1, vectorLength}, rng).subi(0.5).divi(vectorLength);
             INDArray randUnk = Nd4j.rand(1, vectorLength, rng).subi(0.5).divi(vectorLength);
@@ -388,7 +389,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
      */
     @Override
     public void resetWeights() {
-        this.rng = new MersenneTwister(seed);
+        this.rng = Nd4j.getRandom();
 
         syn0  = Nd4j.rand(new int[]{vocab.numWords() + 1,vectorLength},rng).subi(0.5).divi(vectorLength);
         INDArray randUnk = Nd4j.rand(1,vectorLength,rng).subi(0.5).divi(vectorLength);
@@ -560,7 +561,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
         protected int vectorLength = 100;
         protected boolean useAdaGrad = false;
         protected double lr = 0.025;
-        protected RandomGenerator gen = new XorShift64StarRandomGenerator(123);
+        protected Random gen = Nd4j.getRandom();
         protected long seed = 123;
         protected double negative = 0;
         protected VocabCache vocabCache;
@@ -595,7 +596,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
             return this;
         }
 
-        public Builder gen(RandomGenerator gen) {
+        public Builder gen(Random gen) {
             this.gen = gen;
             return this;
         }

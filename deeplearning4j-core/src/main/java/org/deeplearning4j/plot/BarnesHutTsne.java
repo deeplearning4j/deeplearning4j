@@ -379,7 +379,7 @@ public class BarnesHutTsne extends Tsne implements Model {
         else {
             //output
             if(y == null)
-                y = randn(x.rows(),numDimensions,new MersenneTwister(123)).muli(1e-3f);
+                y = randn(x.rows(),numDimensions,Nd4j.getRandom()).muli(1e-3f);
 
 
             computeGaussianPerplexity(x,perplexity);

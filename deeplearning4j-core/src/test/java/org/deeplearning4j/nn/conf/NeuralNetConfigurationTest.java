@@ -18,12 +18,12 @@ package org.deeplearning4j.nn.conf;
 
 import static org.junit.Assert.*;
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.deeplearning4j.distributions.Distributions;
+
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Created by agibsonccc on 11/27/14.
@@ -32,7 +32,7 @@ public class NeuralNetConfigurationTest {
     @Test
     public void testJson() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterationListener(new ScoreIterationListener(10))
-                .dist(Distributions.normal(new MersenneTwister(123), 1e-1))
+                .dist(Nd4j.getDistributions().createNormal(1,1))
                 .layerFactory(LayerFactories.getFactory(RBM.class))
                 .build();
         String json = conf.toJson();

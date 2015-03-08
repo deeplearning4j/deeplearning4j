@@ -19,11 +19,10 @@ package org.deeplearning4j.datasets.mnist.draw;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
 
-import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.sampling.Sampling;
+import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 
 
@@ -47,7 +46,7 @@ public class LoadAndDraw {
 			for(int i = 0; i < test.numExamples(); i++) {
 				INDArray draw1 = test.get(i).getFeatureMatrix().mul(255);
 				INDArray reconstructed2 = reconstructed.getRow(i);
-				INDArray draw2 = Sampling.binomial(reconstructed2, 1, new MersenneTwister(123)).mul(255);
+				INDArray draw2 = Nd4j.getDistributions().createBinomial(1,reconstructed2).sample(reconstructed2.shape()).mul(255);
 
 				DrawReconstruction d = new DrawReconstruction(draw1);
 				d.title = "REAL";

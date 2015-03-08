@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.models.featuredetectors.autoencoder;
 
-import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
@@ -57,7 +56,7 @@ public class AutoEncoderTest {
                                 }
                             }
                         })
-                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(new MersenneTwister(123))
+                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                         .learningRate(1e-1f).nIn(784).nOut(600).build();
 
                 fetcher.fetch(100);

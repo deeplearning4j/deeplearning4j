@@ -19,16 +19,14 @@
 package org.deeplearning4j.cli;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.math3.random.MersenneTwister;
-import org.deeplearning4j.cli.api.flags.Input;
 import org.deeplearning4j.cli.api.flags.Model;
 import org.deeplearning4j.cli.subcommands.Train;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 
@@ -43,7 +41,7 @@ public class TrainConfigTest {
         Model testModelFlag = new Model();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterationListener(new ScoreIterationListener(10))
-                .dist(Distributions.normal(new MersenneTwister(123), 1e-1))
+                .dist(Nd4j.getDistributions().createNormal(1e-1,1))
                 .layerFactory(LayerFactories.getFactory(RBM.class))
                 .build();
         String json = conf.toJson();

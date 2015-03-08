@@ -20,13 +20,12 @@ package org.deeplearning4j.models.glove;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.AdaGrad;
 
@@ -53,7 +52,7 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
     private double maxCount = 100;
 
 
-    public GloveWeightLookupTable(VocabCache vocab, int vectorLength, boolean useAdaGrad, double lr, RandomGenerator gen, double negative, double xMax,double maxCount) {
+    public GloveWeightLookupTable(VocabCache vocab, int vectorLength, boolean useAdaGrad, double lr, Random gen, double negative, double xMax,double maxCount) {
         super(vocab, vectorLength, useAdaGrad, lr, gen, negative);
         this.xMax = xMax;
         this.maxCount = maxCount;
@@ -62,7 +61,7 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
     @Override
     public void resetWeights(boolean reset) {
         if(rng == null)
-            this.rng = new MersenneTwister(seed);
+            this.rng = Nd4j.getRandom();
 
         //note the +2 which is the unk vocab word and the bias
         if(syn0 == null || syn0 != null && reset) {
@@ -341,7 +340,7 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
         }
 
         @Override
-        public Builder gen(RandomGenerator gen) {
+        public Builder gen(Random gen) {
             super.gen(gen);
             return this;
         }
