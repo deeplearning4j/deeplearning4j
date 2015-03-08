@@ -26,6 +26,15 @@ public interface DistributionFactory {
      */
     Distribution createBinomial(int n,double p);
 
+    /**
+     * Create  a normal distribution
+     * with the given mean and std
+     * @param mean the mean
+     * @param std the standard deviation
+     * @return the distribution with the given
+     * mean and standard deviation
+     */
+    Distribution createNormal(INDArray mean,double std);
 
     /**
      * Create  a normal distribution

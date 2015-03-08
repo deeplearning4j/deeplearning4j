@@ -22,6 +22,11 @@ public class DefaultDistributionFactory implements DistributionFactory {
     }
 
     @Override
+    public Distribution createNormal(INDArray mean, double std) {
+        return new NormalDistribution(mean,std);
+    }
+
+    @Override
     public Distribution createNormal(double mean, double std) {
         return new NormalDistribution(mean,std);
     }

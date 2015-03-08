@@ -994,6 +994,7 @@ public abstract class NDArrayTests {
         Nd4j.getDistributions().createNormal(1,5).sample();
         Nd4j.getDistributions().createBinomial(5,1.0).sample(new int[]{5,5});
         Nd4j.getDistributions().createBinomial(1,rand).sample(rand.shape());
+        Nd4j.getDistributions().createNormal(rand,1).sample(rand.shape());
     }
 
 

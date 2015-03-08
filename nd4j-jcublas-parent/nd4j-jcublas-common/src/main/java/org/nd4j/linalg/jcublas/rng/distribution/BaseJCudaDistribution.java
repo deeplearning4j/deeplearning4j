@@ -3,8 +3,11 @@ package org.nd4j.linalg.jcublas.rng.distribution;
 
 import jcuda.Pointer;
 import jcuda.driver.CUfunction;
+import jcuda.jcublas.JCublas;
 import jcuda.jcurand.JCurand;
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
@@ -61,8 +64,8 @@ public abstract class BaseJCudaDistribution implements Distribution {
                 threads,
                 func
                 , kernelParams);
-         //we don't need this buffer anymore this was purely for storing the output
-         randomNumbers.destroy();
+        //we don't need this buffer anymore this was purely for storing the output
+        randomNumbers.destroy();
     }
 
 
@@ -101,6 +104,9 @@ public abstract class BaseJCudaDistribution implements Distribution {
         return inverseCumulativeProbability(random.nextDouble());
     }
 
+
+
+
     protected void doSampleUniformDouble(Pointer out,double min,double max,int n) {
         JCurand.curandGenerateUniformDouble(random.generator(), out, n);
         String functionName = "uniform";
@@ -124,6 +130,40 @@ public abstract class BaseJCudaDistribution implements Distribution {
                 threads,
                 func
                 , kernelParams);
+    }
+
+    protected void doSampleNormal(Pointer out,INDArray means,float std) {
+        Pointer dummy = KernelFunctions.alloc(new float[2]);
+        for(int i = 0; i < means.length(); i++) {
+            JCurand.curandGenerateNormal(random.generator(),dummy,2,means.linearView().getFloat(i),std);
+            JCublas.cublasScopy(
+                    1
+                    ,
+                    dummy
+                    ,1
+                    ,out
+                    ,means.majorStride());
+        }
+
+        JCublas.cublasFree(dummy);
+
+
+    }
+
+    protected void doSampleNormalDouble(Pointer out,INDArray means,double std) {
+        Pointer dummy = KernelFunctions.alloc(new double[2]);
+        for(int i = 0; i < means.length(); i++) {
+            JCurand.curandGenerateNormalDouble(random.generator(), dummy, 2, means.linearView().getDouble(i), std);
+            JCublas.cublasDcopy(
+                    1
+                    ,
+                    dummy
+                    , 1
+                    , out
+                    , means.majorStride());
+        }
+
+        JCublas.cublasFree(dummy);
     }
 
     protected void doSampleUniform(Pointer out,float min,float max,int n) {

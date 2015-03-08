@@ -41,7 +41,10 @@ public class NormalDistribution extends BaseJCudaDistribution {
     /**
      * Mean of this distribution.
      */
-    private final double mean;
+    private  double mean;
+    //more than one mean
+    private INDArray means;
+
     /**
      * Standard deviation of this distribution.
      */
@@ -49,13 +52,20 @@ public class NormalDistribution extends BaseJCudaDistribution {
     /**
      * Inverse cumulative probability accuracy.
      */
-    private final double solverAbsoluteAccuracy;
+    private  double solverAbsoluteAccuracy;
     /**
      * Create a normal distribution with mean equal to zero and standard
      * deviation equal to one.
      */
     public NormalDistribution() {
         this(0, 1);
+    }
+
+
+    public NormalDistribution(JcudaRandom random, INDArray means, double standardDeviation) {
+        super(random);
+        this.means = means;
+        this.standardDeviation = standardDeviation;
     }
 
     /**
@@ -109,6 +119,17 @@ public class NormalDistribution extends BaseJCudaDistribution {
         this.mean = mean;
         standardDeviation = sd;
         solverAbsoluteAccuracy = inverseCumAccuracy;
+    }
+
+    /**
+     * Normal distribution with a matrix of means
+     * @param mean the means to use
+     * @param std the standard deviation
+     */
+    public NormalDistribution(INDArray mean, double std) {
+        super((JcudaRandom) Nd4j.getRandom());
+        this.means = mean;
+        this.standardDeviation = std;
     }
 
     @Override
@@ -218,10 +239,22 @@ public class NormalDistribution extends BaseJCudaDistribution {
     public INDArray sample(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) ret.data();
-        if(buffer.dataType() == DataBuffer.FLOAT)
-            doSampleNormal((float) mean,(float) standardDeviation,buffer.pointer(),buffer.length());
-        else if(buffer.dataType() == DataBuffer.DOUBLE)
-            doSampleNormal(mean,standardDeviation,buffer.pointer(),buffer.length());
+        if(means != null) {
+            if(buffer.dataType() != DataBuffer.DOUBLE)
+                doSampleNormal(buffer.pointer(),means,(float) standardDeviation);
+
+            else
+                doSampleNormalDouble(buffer.pointer(),means,standardDeviation);
+
+
+        }
+        else {
+            if(buffer.dataType() == DataBuffer.FLOAT)
+                doSampleNormal((float) mean,(float) standardDeviation,buffer.pointer(),buffer.length());
+            else if(buffer.dataType() == DataBuffer.DOUBLE)
+                doSampleNormal(mean,standardDeviation,buffer.pointer(),buffer.length());
+
+        }
 
         return ret;
     }
