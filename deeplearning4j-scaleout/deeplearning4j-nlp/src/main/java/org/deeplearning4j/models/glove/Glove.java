@@ -20,8 +20,6 @@ import akka.actor.ActorSystem;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.berkeley.Counter;
@@ -40,6 +38,7 @@ import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,14 +72,14 @@ public class Glove  extends WordVectorsImpl {
     private int iterations = 5;
     private static final Logger log = LoggerFactory.getLogger(Glove.class);
     private boolean symmetric = true;
-    private transient RandomGenerator gen;
+    private transient Random gen;
     private boolean shuffle = true;
     private transient Random shuffleRandom;
     private int numWorkers = Runtime.getRuntime().availableProcessors();
 
     private Glove(){}
 
-    public Glove(VocabCache cache, SentenceIterator sentenceIterator, TextVectorizer textVectorizer, TokenizerFactory tokenizerFactory, GloveWeightLookupTable lookupTable, int layerSize, double learningRate, double xMax, int windowSize, CoOccurrences coOccurrences, List<String> stopWords, boolean stem,int batchSize,int minWordFrequency,double maxCount,int iterations,boolean symmetric,RandomGenerator gen,boolean shuffle,long seed,int numWorkers) {
+    public Glove(VocabCache cache, SentenceIterator sentenceIterator, TextVectorizer textVectorizer, TokenizerFactory tokenizerFactory, GloveWeightLookupTable lookupTable, int layerSize, double learningRate, double xMax, int windowSize, CoOccurrences coOccurrences, List<String> stopWords, boolean stem,int batchSize,int minWordFrequency,double maxCount,int iterations,boolean symmetric,Random gen,boolean shuffle,long seed,int numWorkers) {
         this.numWorkers = numWorkers;
         this.gen = gen;
         this.vocab = cache;
@@ -101,7 +100,7 @@ public class Glove  extends WordVectorsImpl {
         this.maxCount = maxCount;
         this.iterations = iterations;
         this.symmetric = symmetric;
-        shuffleRandom = new Random(seed);
+        shuffleRandom = Nd4j.getRandom();
     }
 
     public void fit() {
@@ -138,7 +137,7 @@ public class Glove  extends WordVectorsImpl {
             lookupTable = new GloveWeightLookupTable.Builder()
                     .cache(textVectorizer.vocab()).lr(learningRate)
                     .vectorLength(layerSize).maxCount(maxCount)
-                    .gen(gen).build();
+                   .build();
         }
 
 
@@ -146,7 +145,7 @@ public class Glove  extends WordVectorsImpl {
             lookupTable().resetWeights();
         final List<Pair<String,String>> pairList = coOccurrences.coOccurrenceList();
         if(shuffle)
-            Collections.shuffle(pairList,shuffleRandom);
+            Collections.shuffle(pairList,new java.util.Random());
 
 
 
@@ -167,7 +166,7 @@ public class Glove  extends WordVectorsImpl {
     public void doIteration(final int i,List<Pair<String,String>> pairList, final Counter<Integer> errorPerIteration,final AtomicInteger processed,final AtomicInteger countUp) {
         log.info("Iteration " + i);
         if(shuffle)
-            Collections.shuffle(pairList,shuffleRandom);
+            Collections.shuffle(pairList,new java.util.Random());
         List<List<Pair<String,String>>> miniBatches = Lists.partition(pairList,batchSize);
         ActorSystem actor = ActorSystem.create();
         Parallelization.iterateInParallel(miniBatches,new Parallelization.RunnableWithParams<List<Pair<String, String>>>() {
@@ -360,7 +359,7 @@ public class Glove  extends WordVectorsImpl {
         private boolean shuffle = true;
         private long seed = 123;
         private int numWorkers = Runtime.getRuntime().availableProcessors();
-        private RandomGenerator gen = new MersenneTwister(seed);
+        private org.nd4j.linalg.api.rng.Random gen = Nd4j.getRandom();
 
 
         public Builder numWorkers(int numWorkers) {
@@ -377,7 +376,7 @@ public class Glove  extends WordVectorsImpl {
             this.shuffle = shuffle;
             return this;
         }
-        public Builder rng(RandomGenerator gen) {
+        public Builder rng(org.nd4j.linalg.api.rng.Random gen) {
             this.gen = gen;
             return this;
         }

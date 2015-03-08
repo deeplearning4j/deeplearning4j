@@ -51,7 +51,7 @@ public class OutputLayerTest {
                 .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .activationFunction("softmax")
                 .iterations(100).weightInit(WeightInit.ZERO).iterationListener(new ScoreIterationListener(10))
-                .rng(gen).regularization(true).l2(2e-4).momentum(0.9)
+                .regularization(true).l2(2e-4).momentum(0.9)
                 .learningRate(1e-1).nIn(4).nOut(3).build();
 
         LayerFactory layerFactory = new DefaultLayerFactory(OutputLayer.class);

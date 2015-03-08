@@ -300,7 +300,7 @@ public class Tsne implements Serializable {
         X.data().flush();
         //output
         if(y == null)
-            y = randn(X.rows(),nDims,new MersenneTwister(123)).muli(1e-3f);
+            y = randn(X.rows(),nDims,Nd4j.getRandom()).muli(1e-3f);
 
 
 

@@ -20,7 +20,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.nn.conf.OutputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.sampling.Sampling;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Binomial sampling pre processor
@@ -31,6 +31,6 @@ public class BinomialSamplingPreProcessor implements OutputPreProcessor {
 
     @Override
     public INDArray preProcess(INDArray output) {
-        return Sampling.binomial(output,1,rng);
+        return Nd4j.getDistributions().createBinomial(1,output).sample(output.shape());
     }
 }

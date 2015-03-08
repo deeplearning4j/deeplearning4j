@@ -21,7 +21,6 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -65,7 +64,7 @@ public class RBMTests {
                 .iterationListener(new ScoreIterationListener(1))
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).layerFactory(layerFactory)
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT).rng(rng)
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-3f)
                 .nIn(d.numInputs()).nOut(nOut).build();
 
@@ -90,7 +89,7 @@ public class RBMTests {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.GAUSSIAN).learningRate(1e-1f)
-                .nIn(d.numInputs()).rng(g).
+                .nIn(d.numInputs()).
                         nOut(3).build();
 
 
@@ -111,7 +110,7 @@ public class RBMTests {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).learningRate(1e-1f)
-                .nIn(d.numInputs()).rng(g).
+                .nIn(d.numInputs()).
                         nOut(3).build();
 
 
@@ -156,10 +155,10 @@ public class RBMTests {
         RandomGenerator gen = new MersenneTwister(123);
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(30).constrainGradientToUnitNorm(true).weightInit(WeightInit.DISTRIBUTION).dist(Distributions.normal(gen,1e-5))
+                .iterations(30).constrainGradientToUnitNorm(true).weightInit(WeightInit.DISTRIBUTION).dist(Nd4j.getDistributions().createNormal(1,1e-5))
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .iterationListener(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10),new ScoreIterationListener(5)))
-                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
+                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                         .learningRate(1e-1f).nIn(784).nOut(600).build();
 
         fetcher.fetch(10);
