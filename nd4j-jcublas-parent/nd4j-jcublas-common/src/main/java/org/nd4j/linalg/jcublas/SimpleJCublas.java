@@ -563,13 +563,22 @@ public class SimpleJCublas {
      * @param x
      * @return
      */
-    public static float nrm2(INDArray x) {
+    public static double nrm2(INDArray x) {
+        if(x.data().dataType() == DataBuffer.FLOAT) {
+            Pointer xCPointer = getPointer(x);
 
-        Pointer xCPointer = getPointer(x);
+
+            float normal2 = JCublas.cublasSnrm2(x.length(), xCPointer, 1);
+            return normal2;
+        }
+        else if(x.data().dataType() == DataBuffer.DOUBLE) {
+            Pointer xCPointer = getPointer(x);
+            double normal2 = JCublas.cublasDnrm2(x.length(), xCPointer, 1);
+            return normal2;
+        }
+        throw new IllegalStateException("Illegal data type on array ");
 
 
-        float normal2 = JCublas.cublasSnrm2(x.length(), xCPointer, 1);
-        return normal2;
     }
 
     /**
@@ -584,14 +593,24 @@ public class SimpleJCublas {
 
         Pointer xCPointer = getPointer(x);
 
+        if(x.data().dataType() == DataBuffer.FLOAT) {
+            int max = JCublas.cublasIsamax(
+                    x.length(),
+                    xCPointer,
+                    x.majorStride());
 
-        int max = JCublas.cublasIsamax(
-                x.length(),
-                xCPointer,
-                1);
+            return max - 1;
+        }
+        else if(x.data().dataType() == DataBuffer.DOUBLE) {
+            int max = JCublas.cublasIdamax(
+                    x.length(),
+                    xCPointer,
+                    x.majorStride());
 
-        return max - 1;
+            return max - 1;
+        }
 
+        throw new IllegalStateException("Illegal data type on array ");
     }
 
 
@@ -615,18 +634,18 @@ public class SimpleJCublas {
                     A.length(),
                     da,
                     xAPointer,
-                    1,
+                    A.majorStride(),
                     xBPointer,
-                    1);
+                    A.majorStride());
 
         } else {
             JCublas.cublasSaxpy(
                     A.length(),
                     da,
                     xAPointer,
-                    1,
+                    A.majorStride(),
                     xBPointer,
-                    1);
+                    B.majorStride());
 
 
         }
@@ -651,9 +670,9 @@ public class SimpleJCublas {
                 A.length(),
                 jcuda.cuComplex.cuCmplx(da.realComponent().floatValue(), da.imaginaryComponent().floatValue()),
                 aCPointer,
-                1,
+                A.majorStride(),
                 bCPointer,
-                1
+                B.majorStride()
         );
 
 
@@ -676,9 +695,9 @@ public class SimpleJCublas {
                 A.length(),
                 jcuda.cuDoubleComplex.cuCmplx(da.realComponent().floatValue(), da.imaginaryComponent().floatValue()),
                 aCPointer,
-                1,
+                A.majorStride(),
                 bCPointer,
-                1
+                B.majorStride()
         );
 
 
@@ -702,7 +721,7 @@ public class SimpleJCublas {
                 x.length(),
                 alpha,
                 xCPointer,
-                1);
+                x.majorStride());
 
         return x;
 
@@ -726,7 +745,7 @@ public class SimpleJCublas {
                 x.length(),
                 alpha,
                 xCPointer,
-                1);
+                x.majorStride());
 
         return x;
 
@@ -785,18 +804,18 @@ public class SimpleJCublas {
             float ret = JCublas.cublasSdot(
                     x.length(),
                     xCPointer,
-                    1
+                    x.majorStride()
                     , yCPointer,
-                    1);
+                    y.majorStride());
 
             return ret;
         } else {
             double ret = JCublas.cublasDdot(
                     x.length(),
                     xCPointer,
-                    1
+                    y.majorStride()
                     , yCPointer,
-                    1);
+                    y.majorStride());
 
             return ret;
         }
@@ -815,9 +834,9 @@ public class SimpleJCublas {
         jcuda.cuDoubleComplex dott = JCublas.cublasZdotc(
                 x.length(),
                 aCPointer,
-                1,
+                x.majorStride(),
                 bCPointer,
-                1);
+                y.majorStride());
 
         IComplexDouble ret = Nd4j.createDouble(dott.x, dott.y);
         return ret;
@@ -894,7 +913,7 @@ public class SimpleJCublas {
                 x.length(),
                 jcuda.cuComplex.cuCmplx(alpha.realComponent(), alpha.imaginaryComponent()),
                 xCPointer,
-                1
+                x.majorStride()
         );
 
 
@@ -918,7 +937,7 @@ public class SimpleJCublas {
                 x.length(),
                 jcuda.cuDoubleComplex.cuCmplx(alpha.realComponent(), alpha.imaginaryComponent()),
                 xCPointer,
-                1
+                x.majorStride()
         );
 
 
@@ -940,10 +959,10 @@ public class SimpleJCublas {
         Pointer yCPointer = getPointer(y);
         IComplexDouble ret = null;
         if (x.data().dataType() == DataBuffer.DOUBLE) {
-            jcuda.cuDoubleComplex dott = JCublas.cublasZdotu(x.length(), xCPointer, 1, yCPointer, 1);
+            jcuda.cuDoubleComplex dott = JCublas.cublasZdotu(x.length(), xCPointer, x.majorStride(), yCPointer, y.majorStride());
             ret = Nd4j.createDouble(dott.x, dott.y);
         } else {
-            jcuda.cuComplex dott = JCublas.cublasCdotu(x.length(), xCPointer, 1, yCPointer, 1);
+            jcuda.cuComplex dott = JCublas.cublasCdotu(x.length(), xCPointer, x.majorStride(), yCPointer, y.majorStride());
             ret = Nd4j.createDouble(dott.x, dott.y);
         }
 
@@ -1131,7 +1150,7 @@ public class SimpleJCublas {
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
 
-        JCublas.cublasSaxpy(x.length(), alpha, xCPointer, 1, yCPointer, 1);
+        JCublas.cublasSaxpy(x.length(), alpha, xCPointer, x.majorStride(), yCPointer, y.majorStride());
 
 
     }

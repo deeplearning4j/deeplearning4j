@@ -6,6 +6,7 @@ import org.apache.commons.math3.exception.OutOfRangeException;
 import org.apache.commons.math3.exception.util.LocalizedFormats;
 import org.apache.commons.math3.special.Beta;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.BaseDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -22,7 +23,9 @@ public class BinomialDistribution extends BaseDistribution {
        /** The number of trials. */
     private final int numberOfTrials;
     /** The probability of success. */
-    private final double probabilityOfSuccess;
+    private  double probabilityOfSuccess;
+
+    private INDArray p;
 
     /**
      * Create a binomial distribution with the given number of trials and
@@ -62,6 +65,12 @@ public class BinomialDistribution extends BaseDistribution {
 
         probabilityOfSuccess = p;
         numberOfTrials = trials;
+    }
+
+    public BinomialDistribution(int n, INDArray p) {
+        this.random = Nd4j.getRandom();
+        this.numberOfTrials = n;
+        this.p = p;
     }
 
     /**

@@ -988,6 +988,16 @@ public abstract class NDArrayTests {
     }
 
     @Test
+    public void testRand() {
+        INDArray rand = Nd4j.randn(5,5);
+        Nd4j.getDistributions().createUniform(1,5).sample(5);
+        Nd4j.getDistributions().createNormal(1,5).sample();
+        Nd4j.getDistributions().createBinomial(5,1.0).sample(new int[]{5,5});
+        Nd4j.getDistributions().createBinomial(1,rand).sample(rand.shape());
+    }
+
+
+    @Test
     public void testReshape() {
         INDArray arr = Nd4j.create(Nd4j.linspace(1, 24, 24).data(), new int[]{4, 3, 2});
         INDArray reshaped = arr.reshape(2, 3, 4);

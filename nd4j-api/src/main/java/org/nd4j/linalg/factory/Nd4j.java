@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.nd4j.linalg.api.rng.distribution.factory.DistributionFactory;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
 import org.nd4j.linalg.fft.DefaultFFTInstance;
@@ -69,6 +70,7 @@ public class Nd4j {
     public final static String OP_EXECUTIONER = "opexec";
     public final static String OP_FACTORY = "opfactory";
     public final static String RANDOM = "rng";
+    public final static String DISTRIBUTION = "dist";
 
 
     public static int dtype = DataBuffer.FLOAT;
@@ -90,12 +92,14 @@ public class Nd4j {
     protected static Class<? extends OpExecutioner> opExecutionerClazz;
     protected static Class<? extends OpFactory> opFactoryClazz;
     protected static Class<? extends  org.nd4j.linalg.api.rng.Random> randomClazz;
+    protected static Class<? extends DistributionFactory> distributionFactoryClazz;
     protected static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
     protected static NDArrayFactory INSTANCE;
     protected static FFTInstance FFT_INSTANCE;
     protected static ConvolutionInstance CONVOLUTION_INSTANCE;
     protected static OpExecutioner OP_EXECUTIONER_INSTANCE;
+    protected static DistributionFactory DISTRIBUTION_FACTORY;
     protected static OpFactory OP_FACTORY_INSTANCE;
     protected static org.nd4j.linalg.api.rng.Random random;
     protected static Properties props = new Properties();
@@ -105,6 +109,14 @@ public class Nd4j {
         nd4j.initContext();
     }
 
+    /**
+     * Get the primary distributions
+     * factory
+     * @return the primary distributions
+     */
+    public static DistributionFactory getDistributions() {
+        return DISTRIBUTION_FACTORY;
+    }
 
     public static void setNdArrayFactoryClazz(Class<? extends NDArrayFactory> clazz) {
         ndArrayFactoryClazz = clazz;
@@ -2830,6 +2842,8 @@ public class Nd4j {
 
             if (blasWrapperClazz == null)
                 blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS, props.get(BLAS_OPS).toString()));
+            if(distributionFactoryClazz == null)
+                distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(System.getProperty(DISTRIBUTION,props.get(DISTRIBUTION).toString()));
 
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             FFT_INSTANCE = fftInstanceClazz.newInstance();
@@ -2844,6 +2858,7 @@ public class Nd4j {
             ZERO = Nd4j.createFloat(0, 0);
             NEG_UNIT = Nd4j.createFloat(-1, 0);
             ENFORCE_NUMERICAL_STABILITY = Boolean.parseBoolean(System.getProperty(NUMERICAL_STABILITY, String.valueOf(false)));
+            DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

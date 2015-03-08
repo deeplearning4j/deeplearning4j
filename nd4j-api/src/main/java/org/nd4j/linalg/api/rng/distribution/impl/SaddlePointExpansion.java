@@ -43,13 +43,13 @@ import org.apache.commons.math3.util.MathUtils;
  * @since 2.1
  * @version $Id: SaddlePointExpansion.java 1416643 2012-12-03 19:37:14Z tn $
  */
-final class SaddlePointExpansion {
+public class SaddlePointExpansion {
 
     /** 1/2 * log(2 &#960;). */
-    private static final double HALF_LOG_2_PI = 0.5 * FastMath.log(MathUtils.TWO_PI);
+    private  static final double HALF_LOG_2_PI = 0.5 * FastMath.log(MathUtils.TWO_PI);
 
     /** exact Stirling expansion error for certain values. */
-    private static final double[] EXACT_STIRLING_ERRORS = { 0.0, /* 0.0 */
+    private  static final double[] EXACT_STIRLING_ERRORS = { 0.0, /* 0.0 */
             0.1534264097200273452913848, /* 0.5 */
             0.0810614667953272582196702, /* 1.0 */
             0.0548141210519176538961390, /* 1.5 */
@@ -104,7 +104,7 @@ final class SaddlePointExpansion {
      * @param z the value.
      * @return the Striling's series error.
      */
-    static double getStirlingError(double z) {
+    public static double getStirlingError(double z) {
         double ret;
         if (z < 15.0) {
             double z2 = 2.0 * z;
@@ -142,7 +142,7 @@ final class SaddlePointExpansion {
      * @param mu the average.
      * @return a part of the deviance.
      */
-    static double getDeviancePart(double x, double mu) {
+    public static double getDeviancePart(double x, double mu) {
         double ret;
         if (FastMath.abs(x - mu) < 0.1 * (x + mu)) {
             double d = x - mu;
@@ -175,7 +175,7 @@ final class SaddlePointExpansion {
      * @param q the probability of failure (1 - p).
      * @return log(p(x)).
      */
-    static double logBinomialProbability(int x, int n, double p, double q) {
+    public static double logBinomialProbability(int x, int n, double p, double q) {
         double ret;
         if (x == 0) {
             if (p < 0.1) {
