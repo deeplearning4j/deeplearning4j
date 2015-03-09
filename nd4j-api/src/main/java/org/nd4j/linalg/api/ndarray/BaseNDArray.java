@@ -26,6 +26,9 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.dimensionfunctions.DimensionFunctions;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarNotEquals;
 import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
@@ -778,7 +781,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray eqi(Number other) {
-        Nd4j.getExecutioner().exec(new EqualTo(linearView()));
+        Nd4j.getExecutioner().exec(new ScalarEquals(linearView(),other));
         return this;
     }
 
@@ -789,7 +792,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray gti(Number other) {
-        Nd4j.getExecutioner().exec(new GreaterThan(linearView()));
+        Nd4j.getExecutioner().exec(new ScalarGreaterThan(linearView(),other));
         return this;
     }
 
@@ -811,7 +814,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray neqi(Number other) {
-        Nd4j.getExecutioner().exec(new NotEqualTo(linearView()));
+        Nd4j.getExecutioner().exec(new ScalarNotEquals(linearView(),other));
         return this;
     }
 
