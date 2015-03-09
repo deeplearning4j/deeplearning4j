@@ -305,7 +305,7 @@
 					<version>2.18.1</version>
 					<configuration>
       					<testFailureIgnore>true</testFailureIgnore>							
-						<argLine>-Ddtype=float</argLine>
+						<argLine>${argLine} -Ddtype=float</argLine>
 					</configuration>
 				</plugin>
 				<plugin>
