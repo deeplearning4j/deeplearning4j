@@ -237,7 +237,35 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     }
 
+    private void writeObject(java.io.ObjectOutputStream stream)
+            throws java.io.IOException
+    {
+        stream.defaultWriteObject();
 
+        if (pointer() == null) {
+            stream.writeInt(0);
+        }
+        else {
+            float[] arr = this.asFloat();
 
+            stream.writeInt(arr.length);
+            for (int i = 0; i < arr.length; i ++) {
+                stream.writeFloat(arr[i]);
+            }
+        }
+    }
 
+    private void readObject(java.io.ObjectInputStream stream)
+            throws java.io.IOException, ClassNotFoundException
+    {
+        stream.defaultReadObject();
+
+        int n = stream.readInt();
+        float[] arr = new float[n];
+
+        for (int i = 0; i < n; i ++) {
+            arr[i] = stream.readFloat();
+        }
+        setData(arr);
+    }
 }
