@@ -483,8 +483,6 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public int majorStride() {
         //return ordering == NDArrayFactory.C ? stride[0] : stride[stride.length - 1];r
-        if(ordering == NDArrayFactory.C && stride.length > 1)
-            return stride[1];
         return stride[0];
     }
 
@@ -2572,7 +2570,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int linearIndex(int i) {
-        int realStride = majorStride();
+        int realStride = stride[0];
         int idx = offset + i * realStride;
 
         if (data != null && idx >= data.length())

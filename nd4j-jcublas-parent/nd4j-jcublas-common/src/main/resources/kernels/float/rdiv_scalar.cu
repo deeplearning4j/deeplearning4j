@@ -1,7 +1,7 @@
 #include <scalar.h>
 //scalar and current element
 __device__ float op(float d1,float d2,float *params) {
-   return d2 - d1;
+   return d1 / d2;
 }
 
 extern "C"

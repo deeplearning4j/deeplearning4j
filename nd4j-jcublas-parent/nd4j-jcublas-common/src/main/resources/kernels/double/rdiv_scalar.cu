@@ -1,7 +1,7 @@
 #include <scalar.h>
 //scalar and current element
 __device__ double op(double d1,double d2,double *params) {
-   return d2 - d1;
+   return d1 / d2;
 }
 
 extern "C"

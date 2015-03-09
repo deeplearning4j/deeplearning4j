@@ -16,13 +16,13 @@ __device__ double op(double d1,double d2,double *extraParams) {
 }
 
 __device__ double op(double d1,double *extraParams) {
-      return powf(d1,2);
+      return pow(d1,2);
 }
 
 
 
 __device__ double postProcess(double reduction,int n,int xOffset,double *dx,int incx,double *extraParams,double *result) {
-             return sqrtf(reduction);
+             return sqrt(reduction);
 }
 
 extern "C"

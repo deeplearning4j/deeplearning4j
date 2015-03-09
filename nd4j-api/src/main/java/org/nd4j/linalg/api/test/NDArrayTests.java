@@ -317,7 +317,7 @@ public abstract class NDArrayTests {
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         float assertion = 5.47722557505f;
         INDArray norm3 = n.norm2(Integer.MAX_VALUE);
-        assertEquals(assertion, n.norm2(Integer.MAX_VALUE).getFloat(0), 1e-1);
+        assertEquals(assertion,norm3.getFloat(0), 1e-1);
 
         INDArray row = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray row1 = row.getRow(1);
@@ -1112,8 +1112,8 @@ public abstract class NDArrayTests {
     @Test
     public void testMeans() {
         INDArray a = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        assertEquals(Nd4j.create(new float[]{2, 3}), a.mean(0));
         assertEquals(Nd4j.create(new float[]{1.5f, 3.5f}), a.mean(1));
+        assertEquals(Nd4j.create(new float[]{2, 3}), a.mean(0));
         assertEquals(2.5, a.mean(Integer.MAX_VALUE).getDouble(0), 1e-1);
 
     }
