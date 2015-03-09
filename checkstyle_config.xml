@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+          "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
+          "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
+
+<module name="Checker">
+
+  <metadata name="com.atlas-sw.eclipse" value="I like Sydney"/>
+
+  <property name="severity" value="error"/>
+
+  <property name="fileExtensions" value="java, properties, xml"/>
+
+  <module name="TreeWalker">
+    <property name="tabWidth" value="4"/>
+
+  	<module name="com.benandow.devops.checkstyle.JavadocApiCheck"/>
+	
+    <module name="AvoidStarImport"/>
+    <module name="ConstantName"/>
+    <module name="EmptyBlock"/>
+    <module name="EmptyForIteratorPad"/>
+    <module name="EqualsHashCode"/>
+    <module name="OneStatementPerLine"/>
+
+    <module name="IllegalImport"/>
+    <module name="IllegalInstantiation"/>
+    <module name="IllegalThrows"/>
+    <module name="InnerAssignment"/>
+
+ 
+    <module name="OuterTypeNumber"/>
+    <module name="MethodCount">
+      <property name="maxTotal" value="35"/>
+    </module>
+
+    <module name="LocalFinalVariableName"/>
+    <module name="LocalVariableName"/>
+    <module name="MemberName">
+      <property name="format" value="^[a-z][a-z0-9][a-zA-Z0-9]*$"/>
+    </module>
+    <module name="MethodLength"/>
+    <module name="MethodName"/>
+    <module name="MethodParamPad"/>
+    <module name="ModifierOrder"/>
+    <module name="NeedBraces"/>
+
+    <module name="PackageName"/>
+    <module name="ParameterName">
+      <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+    </module>
+    <module name="ParameterNumber">
+      <property name="max" value="9"/>
+      <property name="id" value="paramNum"/>
+    </module>
+    <module name="ParenPad"/>
+    <module name="TypecastParenPad"/>
+    <module name="RedundantImport"/>
+    <module name="RedundantModifier"/>
+    <module name="RightCurly">
+      <property name="option" value="alone"/>
+    </module>
+    <module name="SimplifyBooleanExpression"/>
+    <module name="SimplifyBooleanReturn"/>
+    <module name="StaticVariableName">
+      <property name="format" value="^s[A-Z][a-zA-Z0-9]*$"/>
+    </module>
+    <module name="TypeName"/>
+    <module name="UnusedImports"/>
+    <module name="UpperEll"/>
+    <module name="VisibilityModifier"/>
+    <module name="FinalClass"/>
+    <module name="MissingSwitchDefault"/>
+    <module name="MagicNumber"/>
+    <module name="Indentation">
+      <property name="basicOffset" value="4"/>
+      <property name="braceAdjustment" value="0"/>
+      <property name="caseIndent" value="4"/>
+    </module>
+    <module name="ArrayTrailingComma"/>
+    <module name="FinalLocalVariable"/>
+    <module name="EqualsAvoidNull"/>
+    <module name="ParameterAssignment"/>
+
+   
+    <module name="ExplicitInitialization"/>
+    <module name="AnnotationUseStyle"/>
+    <module name="MissingDeprecated"/>
+    <module name="MissingOverride">
+      <property name="javaFiveCompatibility" value="true"/>
+    </module>
+    <module name="PackageAnnotation"/>
+    <module name="SuppressWarnings"/>
+    <module name="OuterTypeFilename"/>
+    <module name="HideUtilityClassConstructor"/>
+  </module>
+</module>

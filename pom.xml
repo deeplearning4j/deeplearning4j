@@ -190,30 +190,18 @@
 				<artifactId>maven-source-plugin</artifactId>
 				<version>2.4</version>
 			</plugin>
-			<plugin>
+			<!--			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>findbugs-maven-plugin</artifactId>
 				<version>3.0.0</version>
 				<configuration>
-					<!--
-						Enables analysis which takes more memory but finds more bugs.
-						If you run out of memory, changes the value of the effort element
-						to 'Low'.
-					-->
 					<effort>Max</effort>
-					<!-- Build doesn't fail if problems are found -->
 					<failOnError>false</failOnError>
-					<!-- Reports all bugs (other values are medium and max) -->
 					<threshold>Low</threshold>
-					<!-- Produces XML report -->
 					<xmlOutput>true</xmlOutput>
-					<!-- Configures the directory in which the XML report is created -->
 					<findbugsXmlOutputDirectory>${project.build.directory}/findbugs</findbugsXmlOutputDirectory>
 				</configuration>
 				<executions>
-					<!--
-						Ensures that FindBugs inspects source code when project is compiled.
-					-->
 					<execution>
 						<id>analyze-compile</id>
 						<phase>compile</phase>
@@ -222,7 +210,7 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>
+		</plugin> -->
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
@@ -242,6 +230,32 @@
 					</execution>
 				</executions>
 			</plugin>
+
+      		<plugin>
+        		<groupId>org.apache.maven.plugins</groupId>
+        		<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>2.14</version>
+				<dependencies>
+          			<dependency>
+						<groupId>com.benandow.devops.checkstyle</groupId>
+            			<artifactId>devops-checkstyle-checks</artifactId>
+            			<version>1.0</version>
+          			</dependency>
+        		</dependencies>
+				<executions>
+        			<execution>
+        				<id>checkstyle</id>
+        				<phase>validate</phase>
+        				<goals>
+            				<goal>check</goal>
+        				</goals>
+						<configuration>
+							<configLocation>checkstyle_config.xml</configLocation>
+            				<failOnViolation>true</failOnViolation>
+        				</configuration>
+        			</execution>
+    			</executions>
+      		</plugin>
 		</plugins>
 
 		<pluginManagement>
