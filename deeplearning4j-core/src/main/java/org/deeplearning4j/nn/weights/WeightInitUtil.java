@@ -91,10 +91,7 @@ public class WeightInitUtil {
         return ret;
 
       case DISTRIBUTION:
-        ret = Nd4j.rand(shape);
-        for (int i = 0; i < ret.slices(); i++) {
-          ret.putSlice(i, Nd4j.create(dist.sample(ret.columns())));
-        }
+        ret = dist.sample(shape);
         return ret;
       case SIZE:
         return uniformBasedOnInAndOut(shape, shape[0], shape[1]);

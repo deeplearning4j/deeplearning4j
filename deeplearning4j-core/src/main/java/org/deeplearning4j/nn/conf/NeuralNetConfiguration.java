@@ -957,7 +957,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean constrainGradientToUnitNorm = false;
         private org.nd4j.linalg.api.rng.Random rng = Nd4j.getRandom();
         private long seed = 123;
-        private Distribution dist  = Nd4j.getDistributions().createNormal(1,0);
+        private Distribution dist  = Nd4j.getDistributions().createNormal(1e-3,1);
         private boolean adagrad = true;
         private LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private int nIn;
