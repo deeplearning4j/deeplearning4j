@@ -139,7 +139,7 @@ public class BinomialDistribution extends BaseJCudaDistribution {
         JCudaBuffer buffer = (JCudaBuffer) ret.data();
         if(ret.data().dataType() == DataBuffer.DOUBLE) {
             if(pNDArray != null) {
-
+                doBinomialDouble(pNDArray,buffer.pointer(),numberOfTrials,buffer.length());
             }
             else {
                 doBinomialDouble(probabilityOfSuccess,buffer.pointer(),numberOfTrials,buffer.length());
@@ -147,6 +147,7 @@ public class BinomialDistribution extends BaseJCudaDistribution {
         }
         else {
             if(pNDArray != null) {
+                doBinomial(pNDArray,buffer.pointer(),numberOfTrials,buffer.length());
 
             }
             else {

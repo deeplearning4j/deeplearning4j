@@ -39,6 +39,70 @@ public abstract class BaseJCudaDistribution implements Distribution {
 
 
 
+
+    protected void doBinomial(INDArray p,Pointer out,int n,int len) {
+        String functionName = "binomial";
+        CUfunction func =  KernelFunctionLoader.getInstance().getFunction(functionName, "float");
+        if(func == null)
+            throw new IllegalArgumentException("Function " + functionName + " with data type float does not exist");
+        int blocks = PointerUtil.getNumBlocks(len, 128, 64);
+        int threads = PointerUtil.getNumThreads(len,64);
+        JCudaBuffer randomNumbers = new CudaFloatDataBuffer(len * n);
+        JCudaBuffer probBuffer = (JCudaBuffer) p.data();
+
+        Pointer kernelParams = Pointer.to(
+                Pointer.to(new int[]{len})
+                ,Pointer.to(new int[]{n})
+                ,Pointer.to(probBuffer.pointer())
+                ,Pointer.to(randomNumbers.pointer())
+                ,Pointer.to(out)
+                ,random.generator()
+
+        );
+
+        //int len,int n,double *ps,double *result, curandState *s
+        KernelFunctions.invoke(
+                blocks,
+                threads,
+                func
+                , kernelParams);
+        //we don't need this buffer anymore this was purely for storing the output
+        randomNumbers.destroy();
+    }
+
+
+    protected void doBinomialDouble(INDArray p,Pointer out,int n,int len) {
+        String functionName = "binomial";
+        CUfunction func =  KernelFunctionLoader.getInstance().getFunction(functionName, "double");
+        if(func == null)
+            throw new IllegalArgumentException("Function " + functionName + " with data type double does not exist");
+        int blocks = PointerUtil.getNumBlocks(len, 128, 64);
+        int threads = PointerUtil.getNumThreads(len, 64);
+        JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(len);
+        JCudaBuffer probBuffer = (JCudaBuffer) p.data();
+
+        Pointer kernelParams = Pointer.to(
+                Pointer.to(new int[]{len})
+                ,Pointer.to(new int[]{n})
+                ,Pointer.to(probBuffer.pointer()),
+                Pointer.to(randomNumbers.pointer())
+                ,Pointer.to(out)
+                ,random.generator()
+
+        );
+
+
+        //int len,int n,double *ps,double *result, curandState *s
+        KernelFunctions.invoke(
+                blocks,
+                threads,
+                func
+                , kernelParams);
+        //we don't need this buffer anymore this was purely for storing the output
+        randomNumbers.destroy();
+
+    }
+
     protected void doBinomial(float p,Pointer out,int n,int len) {
         String functionName = "binomial_scalar";
         CUfunction func =  KernelFunctionLoader.getInstance().getFunction(functionName, "float");
