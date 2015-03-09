@@ -71,23 +71,20 @@ public abstract class BasePretrainNetwork extends BaseLayer {
 
     @Override
     public void setScore() {
-       if(this.input == null)
-           return;
+        if(this.input == null)
+            return;
 
-        if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY) {
-            INDArray output = transform(input);
-            while(!Shape.shapeEquals(input.shape(), output.shape()))
-                output = transform(input);
-            score = -LossFunctions.score(
-                    input,
-                    conf.getLossFunction(),
-                    output,
-                    conf.getL2(),
-                    conf.isUseRegularization());
-            //minimization target
-            if(conf.isMinimize())
-                score = -score;
-        }
+        INDArray output = transform(input);
+        score = -LossFunctions.score(
+                input,
+                conf.getLossFunction(),
+                output,
+                conf.getL2(),
+                conf.isUseRegularization());
+        //minimization target
+        if(conf.isMinimize())
+            score = -score;
+
 
     }
 
