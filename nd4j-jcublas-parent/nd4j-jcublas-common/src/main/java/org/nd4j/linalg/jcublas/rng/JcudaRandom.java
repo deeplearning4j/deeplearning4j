@@ -53,8 +53,8 @@ public class JcudaRandom implements Random {
 
     @Override
     public int nextInt() {
-        JCudaBuffer buffer = new CudaDoubleDataBuffer(1);
-        curandGenerate(generator,buffer.pointer(),1);
+        JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
+        curandGenerate(generator,buffer.pointer(),2);
         double[] data = buffer.asDouble();
         int ret = (int) data[0];
         buffer.destroy();
@@ -63,8 +63,8 @@ public class JcudaRandom implements Random {
 
     @Override
     public int nextInt(int n) {
-        JCudaBuffer buffer = new CudaDoubleDataBuffer(1);
-        curandGenerateUniformDouble(generator, buffer.pointer(), 1);
+        JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
+        curandGenerateUniformDouble(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
         int ret = (int) data[0];
         buffer.destroy();
@@ -73,8 +73,8 @@ public class JcudaRandom implements Random {
 
     @Override
     public long nextLong() {
-        JCudaBuffer buffer = new CudaDoubleDataBuffer(1);
-        curandGenerate(generator,buffer.pointer(),1);
+        JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
+        curandGenerate(generator,buffer.pointer(),2);
         double[] data = buffer.asDouble();
         long ret = (long) data[0];
         buffer.destroy();
@@ -88,8 +88,8 @@ public class JcudaRandom implements Random {
 
     @Override
     public float nextFloat() {
-        JCudaBuffer buffer = new CudaDoubleDataBuffer(1);
-        curandGenerate(generator,buffer.pointer(),1);
+        JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
+        curandGenerate(generator,buffer.pointer(),2);
         double[] data = buffer.asDouble();
         float ret = (float) data[0];
         buffer.destroy();
@@ -98,8 +98,8 @@ public class JcudaRandom implements Random {
 
     @Override
     public double nextDouble() {
-        JCudaBuffer buffer = new CudaDoubleDataBuffer(1);
-        curandGenerate(generator,buffer.pointer(),1);
+        JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
+        curandGenerate(generator,buffer.pointer(),2);
         double[] data = buffer.asDouble();
         buffer.destroy();
         return data[0];
@@ -107,8 +107,8 @@ public class JcudaRandom implements Random {
 
     @Override
     public double nextGaussian() {
-        JCudaBuffer buffer = new CudaDoubleDataBuffer(1);
-        curandGenerateUniformDouble(generator, buffer.pointer(), 1);
+        JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
+        curandGenerateUniformDouble(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
         buffer.destroy();
         return data[0];

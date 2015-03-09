@@ -4,6 +4,7 @@ import org.apache.commons.math3.exception.NotPositiveException;
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
 import org.apache.commons.math3.exception.OutOfRangeException;
 import org.apache.commons.math3.exception.util.LocalizedFormats;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.special.Beta;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -93,6 +94,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     /** {@inheritDoc} */
     public double probability(int x) {
+      
         double ret;
         if (x < 0 || x > numberOfTrials) {
             ret = 0.0;
@@ -106,6 +108,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     /** {@inheritDoc} */
     public double cumulativeProbability(int x) {
+      
         double ret;
         if (x < 0) {
             ret = 0.0;
@@ -125,7 +128,17 @@ public class BinomialDistribution extends BaseDistribution {
 
     @Override
     public double cumulativeProbability(double x) {
-        return 0;
+      
+        double ret;
+        if(x < 0) {
+            ret = 0.0D;
+        } else if(x >= this.numberOfTrials) {
+            ret = 1.0D;
+        } else {
+            ret = 1.0D - Beta.regularizedBeta(this.probabilityOfSuccess, x + 1.0D,(this.numberOfTrials - x));
+        }
+
+        return ret;
     }
 
     @Override
@@ -140,6 +153,7 @@ public class BinomialDistribution extends BaseDistribution {
      * {@code n * p}.
      */
     public double getNumericalMean() {
+      
         return numberOfTrials * probabilityOfSuccess;
     }
 
@@ -150,6 +164,7 @@ public class BinomialDistribution extends BaseDistribution {
      * {@code n * p * (1 - p)}.
      */
     public double getNumericalVariance() {
+      
         final double p = probabilityOfSuccess;
         return numberOfTrials * p * (1 - p);
     }
@@ -162,7 +177,9 @@ public class BinomialDistribution extends BaseDistribution {
      *
      * @return lower bound of the support (0 or the number of trials)
      */
+    @Override
     public double getSupportLowerBound() {
+      
         return probabilityOfSuccess < 1.0 ? 0 : numberOfTrials;
     }
 
@@ -174,7 +191,9 @@ public class BinomialDistribution extends BaseDistribution {
      *
      * @return upper bound of the support (number of trials or 0)
      */
+    @Override
     public double getSupportUpperBound() {
+      
         return probabilityOfSuccess > 0.0 ? numberOfTrials : 0;
     }
 
@@ -197,5 +216,21 @@ public class BinomialDistribution extends BaseDistribution {
      */
     public boolean isSupportConnected() {
         return true;
+    }
+
+
+    private void ensureConsistent(int i) {
+       probabilityOfSuccess = p.linearView().getDouble(i);
+    }
+
+    @Override
+    public INDArray sample(int[] shape) {
+        INDArray ret = Nd4j.create(shape);
+        INDArray linear = ret.linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(),numberOfTrials,p.linearView().getDouble(i));
+            ret.putScalar(i,binomialDistribution.sample());
+        }
+        return ret;
     }
 }

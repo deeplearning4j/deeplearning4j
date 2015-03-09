@@ -110,13 +110,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = create(shape);
-        INDArray linear = ret.linearView();
-        double r = max - min;
-        for (int i = 0; i < ret.length(); i++) {
-            linear.putScalar(i, r * rng.nextDouble() + min);
-        }
-        return ret;
+        return Nd4j.getDistributions().createUniform(min,max).sample(shape);
     }
 
     @Override
@@ -196,16 +190,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return create(new int[]{rows, columns}, ordering);
     }
 
-    private int assertAllSameType(DataBuffer[] data) {
-        int type = data[0].dataType();
-        int ret = data[0].length();
-        for (int i = 1; i < data.length; i++) {
-            assert data[i].dataType() == (type);
-            ret += data[i].length();
-        }
-
-        return ret;
-    }
 
     /**
      * Returns a vector with all of the elements in every nd array
@@ -289,7 +273,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray toFlattened(INDArray... matrices) {
         int length = 0;
-        for (INDArray m : matrices) length += m.length();
+        for (INDArray m : matrices)
+            length += m.length();
         INDArray ret = Nd4j.create(1, length);
         int linearIndex = 0;
         for (INDArray d : matrices) {
@@ -431,13 +416,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int[] shape, float min, float max, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = Nd4j.create(shape);
-        INDArray linear = ret.linearView();
-        float r = max - min;
-        for (int i = 0; i < ret.length(); i++) {
-            linear.putScalar(i, r * rng.nextFloat() + min);
-        }
-        return ret;
+        return Nd4j.getDistributions().createUniform(min,max).sample(shape);
     }
 
     /**
@@ -452,13 +431,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int rows, int columns, float min, float max, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = Nd4j.create(rows, columns);
-        INDArray linear = ret.linearView();
-        float r = max - min;
-        for (int i = 0; i < ret.length(); i++) {
-            linear.putScalar(i, r * rng.nextFloat() + min);
-        }
-        return ret;
+       return rand(new int[]{rows,columns},min,max,rng);
     }
 
     /**
@@ -620,10 +593,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int[] shape, org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = create(shape);
-        INDArray linear = ret.linearView();
-        for (int i = 0; i < ret.length(); i++)
-            linear.putScalar(i, r.nextDouble());
+        INDArray ret  = r.nextDouble(shape);
         return ret;
     }
 
@@ -661,11 +631,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray randn(int[] shape, org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = create(shape);
-        INDArray linear = ret.linearView();
-        for (int i = 0; i < ret.length(); i++)
-            linear.putScalar(i, r.nextGaussian());
-        return ret;
+        return r.nextGaussian(shape);
     }
 
     /**

@@ -9,7 +9,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * Apache commons based random number generation
  * @author Adam Gibson
  */
-public class DefaultRandom implements Random {
+public class DefaultRandom implements Random,RandomGenerator {
     protected RandomGenerator randomGenerator;
 
     /**

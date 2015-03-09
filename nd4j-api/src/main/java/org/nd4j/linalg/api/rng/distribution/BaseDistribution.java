@@ -23,6 +23,7 @@ public abstract class BaseDistribution implements Distribution {
     protected Random random;
     protected double solverAbsoluteAccuracy;
 
+
     public BaseDistribution(Random rng) {
         this.random = rng;
     }

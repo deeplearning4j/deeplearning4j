@@ -9,6 +9,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Adam Gibson
  */
 public interface Random {
+
+
+
+
     /**
      * Sets the seed of the underlying random number generator using an
      * <code>int</code> seed.

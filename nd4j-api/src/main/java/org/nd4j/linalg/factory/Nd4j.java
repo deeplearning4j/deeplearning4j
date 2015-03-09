@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
 import org.nd4j.linalg.api.rng.distribution.factory.DistributionFactory;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
@@ -2842,9 +2843,11 @@ public class Nd4j {
 
             if (blasWrapperClazz == null)
                 blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS, props.get(BLAS_OPS).toString()));
-            if(distributionFactoryClazz == null)
-                distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(System.getProperty(DISTRIBUTION,props.get(DISTRIBUTION).toString()));
+            if(distributionFactoryClazz == null) {
+                String clazzName = props.getProperty(DISTRIBUTION,DefaultDistributionFactory.class.getName());
+                distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
 
+            }
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             FFT_INSTANCE = fftInstanceClazz.newInstance();
             Constructor c2 = ndArrayFactoryClazz.getConstructor(int.class, char.class);
