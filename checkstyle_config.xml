@@ -5,8 +5,6 @@
 
 <module name="Checker">
 
-  <metadata name="com.atlas-sw.eclipse" value="I like Sydney"/>
-
   <property name="severity" value="error"/>
 
   <property name="fileExtensions" value="java"/>
