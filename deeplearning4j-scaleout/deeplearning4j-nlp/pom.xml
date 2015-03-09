@@ -37,7 +37,8 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.18.1</version>
                     <configuration>
-                        <argLine>-Xmx6g</argLine>
+							<argLine>-Xmx6g</argLine>
+          					<skipTests>true</skipTests>
                     </configuration>
                 </plugin>
             </plugins>
