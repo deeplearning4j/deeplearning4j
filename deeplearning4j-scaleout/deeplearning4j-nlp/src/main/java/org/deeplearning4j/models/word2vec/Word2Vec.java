@@ -207,6 +207,7 @@ public class Word2Vec extends WordVectorsImpl  {
 
             }
         },actorSystem);
+        actorSystem.shutdown();
     }
 
 
