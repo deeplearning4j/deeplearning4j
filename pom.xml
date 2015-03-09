@@ -33,6 +33,14 @@
 	</parent>
 
 
+	<repositories>
+  		<repository>
+			<id>devops-csc-repo</id>
+			<name>CSC791 Devops Repo</name>
+    		<url>file://${basedir}/</url>
+  		</repository>
+	</repositories>
+
 
 	<distributionManagement>
 		<snapshotRepository>
