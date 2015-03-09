@@ -7,8 +7,6 @@
 
   <property name="severity" value="error"/>
 
-  <property name="fileExtensions" value="java"/>
-
   <module name="TreeWalker">
     <property name="tabWidth" value="4"/>
 
