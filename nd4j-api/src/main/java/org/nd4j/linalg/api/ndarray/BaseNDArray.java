@@ -2570,7 +2570,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int linearIndex(int i) {
-        int realStride = stride[0];
+        int realStride = secondaryStride();
         int idx = offset + i * realStride;
 
         if (data != null && idx >= data.length())
@@ -2909,10 +2909,9 @@ public abstract class BaseNDArray implements INDArray {
             return Nd4j.create(data, new int[]{shape[0]}, offset);
         if (isMatrix()) {
             INDArray reverse = Nd4j.create(ArrayUtil.reverseCopy(shape));
-
             for (int i = 0; i < rows; i++) {
                 for (int j = 0; j < columns; j++) {
-                    reverse.putScalar(new int[]{j, i}, getDouble(i, j));
+                    reverse.putScalar(new int[]{j,i},getDouble(i,j));
                 }
             }
 

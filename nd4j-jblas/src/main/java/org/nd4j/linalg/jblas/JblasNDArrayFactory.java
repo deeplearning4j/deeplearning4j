@@ -201,7 +201,7 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(int[] shape, char ordering) {
-        return new NDArray(shape, Nd4j.getStrides(shape), 0, ordering);
+        return new NDArray(shape, Nd4j.getStrides(shape,ordering), 0, ordering);
     }
 
     @Override

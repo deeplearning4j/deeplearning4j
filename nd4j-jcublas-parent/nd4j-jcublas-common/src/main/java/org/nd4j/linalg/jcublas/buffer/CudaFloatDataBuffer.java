@@ -23,6 +23,7 @@ import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.util.ArrayUtil;
 
 /**
@@ -200,8 +201,9 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     @Override
     public void put(int i, float element) {
         float[] data = new float[]{element};
-        Pointer p = Pointer.to(data);
+        Pointer p = KernelFunctions.alloc(data);
         set(i, p);
+        JCublas.cublasFree(p);
     }
 
     @Override
