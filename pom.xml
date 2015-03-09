@@ -259,7 +259,7 @@
         				</goals>
 						<configuration>
 							<configLocation>checkstyle_config.xml</configLocation>
-            				<failOnViolation>true</failOnViolation>
+            				<failOnViolation>false</failOnViolation>
         				</configuration>
         			</execution>
     			</executions>
