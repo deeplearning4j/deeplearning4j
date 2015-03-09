@@ -44,7 +44,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     static {
         SimpleJCublas.init();
     }
-    protected Pointer pointer;
+    protected transient Pointer pointer;
     protected int length;
     protected int elementSize;
 

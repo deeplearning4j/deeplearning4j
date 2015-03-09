@@ -16,22 +16,23 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import jcuda.jcublas.JCublas;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.Assert;
+import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.test.DoubleDataBufferTest;
-import org.nd4j.linalg.api.buffer.test.FloatDataBufferTest;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Created by agibsonccc on 2/14/15.
  */
 public class TestBufferDouble extends DoubleDataBufferTest {
-
 
 
 
