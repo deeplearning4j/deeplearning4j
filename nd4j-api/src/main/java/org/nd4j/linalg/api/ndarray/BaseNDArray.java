@@ -472,7 +472,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public void resetLinearView() {
-        linearView = Nd4j.create(data, new int[]{length}, offset());
+        linearView = Nd4j.create(data, new int[]{length}, new int[]{1},offset());
     }
 
     @Override
@@ -483,6 +483,8 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public int majorStride() {
         //return ordering == NDArrayFactory.C ? stride[0] : stride[stride.length - 1];r
+        if(ordering == NDArrayFactory.C && stride.length > 1)
+            return stride[1];
         return stride[0];
     }
 
@@ -673,7 +675,8 @@ public abstract class BaseNDArray implements INDArray {
         for (int i = 0; i < shape.length; i++) {
             ix += indexes[i] * stride[i];
         }
-
+        if(ix >= data.length())
+            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
         data.put(ix, value);
         return this;
     }
@@ -684,7 +687,8 @@ public abstract class BaseNDArray implements INDArray {
         for (int i = 0; i < shape.length; i++) {
             ix += indexes[i] * stride[i];
         }
-
+        if(ix >= data.length())
+            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
         data.put(ix, value);
         return this;
     }
@@ -695,7 +699,8 @@ public abstract class BaseNDArray implements INDArray {
         for (int i = 0; i < shape.length; i++) {
             ix += indexes[i] * stride[i];
         }
-
+        if(ix >= data.length())
+            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
         data.put(ix, value);
         return this;
     }
@@ -1066,7 +1071,8 @@ public abstract class BaseNDArray implements INDArray {
         int ix = offset;
         for (int i = 0; i < indices.length; i++)
             ix += indices[i] * stride[i];
-
+        if(ix >= data.length())
+            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indices));
         data.put(ix, element.getDouble(0));
         return this;
 
@@ -1668,6 +1674,8 @@ public abstract class BaseNDArray implements INDArray {
         if (!isVector() && !isScalar())
             throw new IllegalArgumentException("Unable to do linear indexing with dimensions greater than 1");
         int idx = linearIndex(i);
+        if(idx >= data.length())
+            throw new IllegalArgumentException("Illegal indices " + i);
         return Nd4j.scalar(data.getDouble(idx));
     }
 
@@ -1874,6 +1882,8 @@ public abstract class BaseNDArray implements INDArray {
             throw new IllegalArgumentException("Unable to insert null element");
         assert element.isScalar() : "Unable to insert non scalar element";
         int idx = linearIndex(i);
+        if(idx >= data.length())
+            throw new IllegalArgumentException("Illegal indices " + i);
         data.put(idx, element.getDouble(0));
         return this;
     }
@@ -2562,7 +2572,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int linearIndex(int i) {
-        int realStride = stride[0];
+        int realStride = majorStride();
         int idx = offset + i * realStride;
 
         if (data != null && idx >= data.length())
@@ -2858,6 +2868,8 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public double getDouble(int i, int j) {
         int idx = index(i, j);
+        if(idx >= data.length())
+            throw new IllegalArgumentException("Invalid index " + i + " , " + j);
         return data.getDouble(idx);
     }
 
@@ -2866,12 +2878,16 @@ public abstract class BaseNDArray implements INDArray {
         int idx = linearIndex(i);
         if (idx < 0)
             throw new IllegalStateException("Illegal index " + i);
+        if(idx >= data.length())
+            throw new IllegalArgumentException("Invalid index " + i);
         return data.getFloat(idx);
     }
 
     @Override
     public float getFloat(int i, int j) {
         int idx = index(i, j);
+        if(idx >= data.length())
+            throw new IllegalArgumentException("Invalid index " + i + " , " + j);
         return data.getFloat(idx);
     }
 

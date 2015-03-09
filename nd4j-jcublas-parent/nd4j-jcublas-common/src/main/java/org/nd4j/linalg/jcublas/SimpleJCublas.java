@@ -76,7 +76,6 @@ public class SimpleJCublas {
     public static void init() {
         if (init)
             return;
-        String path = System.getProperty("java.library.path");
         JCublas.setLogLevel(LogLevel.LOG_DEBUG);
         JCublas.setExceptionsEnabled(true);
         try {

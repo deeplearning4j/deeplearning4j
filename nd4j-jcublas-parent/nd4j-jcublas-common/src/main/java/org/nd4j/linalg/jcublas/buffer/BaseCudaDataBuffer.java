@@ -217,14 +217,20 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param from  the element to get data from
      */
     protected void set(int index, int length, Pointer from, int inc) {
-        JCublas.cublasSetVector(
-                length,
-                elementSize(),
-                from,
-                inc,
-                pointer().withByteOffset(elementSize() * index)
-                , 1);
-
+        try {
+            int offset = elementSize() * index;
+            if(offset >= length() * elementSize())
+                throw new IllegalArgumentException("Illegal offset " + offset + " with index of " + index + " and length " + length());
+            JCublas.cublasSetVector(
+                    length,
+                    elementSize(),
+                    from,
+                    inc,
+                    pointer().withByteOffset(offset)
+                    , 1);
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
 
     }
 
@@ -391,44 +397,10 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
 
 
-    /**
-     * Execute an operation on this buffer with a scalar
-     * @param dType the data type to operate on (float or double)
-     * @param dYIdx the index to
-     * @param scalar the scalar to operate with
-     * @param n the number of items to iterate on
-     * @param incy the increment for this buffer
-     * @param op the operation to execute
-     */
-    protected void execScalar(String dType,int dYIdx,Number scalar,int n,int incy,String op,DataBuffer result) {
-        Pointer scalarP = dType.equals("double") ? Pointer.to(new double[]{scalar.doubleValue()}) : Pointer.to(new float[]{scalar.floatValue()});
-        Pointer twoP = Pointer.to(pointer());
-        JCudaBuffer resultBuffer = (JCudaBuffer) result;
-        int blocks = KernelFunctions.numBlocks(n);
-        int threads = (int) Math.ceil((double) n / blocks);
-
-
-        Pointer resultP = Pointer.to(resultBuffer.pointer());
-
-
-        Pointer kernelParameters = KernelFunctions.constructKernelParameters(
-                //number of elements
-                Pointer.to(new int[]{n}),
-                Pointer.to(new int[]{dYIdx})
-                , scalarP
-                , twoP
-                , Pointer.to(new int[]{incy}),resultP);
-        //actually call the kernel
-        KernelFunctions.invoke(
-                blocks,threads,
-                KernelFunctionLoader.getInstance().getFunction(op,dType)
-                , kernelParameters);
-    }
-
 
     @Override
     public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
-
+         throw new UnsupportedOperationException();
     }
 
     @Override

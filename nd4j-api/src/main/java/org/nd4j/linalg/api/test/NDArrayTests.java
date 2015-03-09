@@ -600,18 +600,36 @@ public abstract class NDArrayTests {
 
 
     @Test
-    public void testInplaceTranspose() {
-        INDArray test = Nd4j.linspace(1, 4, 4).reshape(2, 2).transposei();
-        double[][] result = new double[][]{
-                {1, 3}, {2, 4}
-        };
-        for (int i = 0; i < result.length; i++) {
-            for (int j = 0; j < result[i].length; j++) {
-                assertEquals(result[i][j], test.getDouble(i, j), 1e-1);
+    public void testInplaceTransposeC() {
+        Nd4j.factory().setOrder('c');
+        INDArray test = Nd4j.rand(34, 484);
+        INDArray transposei = test.transposei();
+
+        for (int i = 0; i < test.rows(); i++) {
+            for (int j = 0; j < test.columns(); j++) {
+                assertEquals(test.getDouble(i,j),transposei.getDouble(j,i), 1e-1);
             }
         }
 
     }
+
+
+    @Test
+    public void testInplaceTranspose() {
+        Nd4j.factory().setOrder('f');
+        INDArray test = Nd4j.rand(34, 484);
+        INDArray transposei = test.transposei();
+
+        for (int i = 0; i < test.rows(); i++) {
+            for (int j = 0; j < test.columns(); j++) {
+                assertEquals(test.getDouble(i,j),transposei.getDouble(j,i), 1e-1);
+            }
+        }
+
+    }
+
+
+
 
     @Test
     public void testTransposeMmul() {
