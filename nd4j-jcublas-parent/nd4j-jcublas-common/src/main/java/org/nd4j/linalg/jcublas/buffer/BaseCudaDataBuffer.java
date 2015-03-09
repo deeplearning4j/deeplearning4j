@@ -400,7 +400,39 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
-         throw new UnsupportedOperationException();
+         //throw new UnsupportedOperationException();
+        if(offsets.length != strides.length || strides.length != buffers.length)
+            throw new IllegalArgumentException("Unable to assign buffers, please specify equal lengths strides, offsets, and buffers");
+
+        int count = 0;
+        int[] elemCount = new int[buffers.length];
+        for(int i = 0; i < buffers.length; i++) {
+            elemCount[i] = 0;
+            for(int j = offsets[i]; j < buffers[i].length(); j += strides[i]) {
+                // put(count++,buffers[i].getDouble(j));
+                count ++;
+                elemCount[i] += 1;
+            }
+        }
+        if(count != n)
+            throw new IllegalArgumentException("Strides and offsets didn't match up to length " + n);
+
+        double[] arr = new double[count];
+        count = 0;
+        for(int i = 0; i < buffers.length; i++) {
+            double[] arrThisBuffer = buffers[i].getDoublesAt(offsets[i], strides[i], elemCount[i]);
+            for (int j = 0; j < elemCount[i]; j ++)
+            {
+                arr[count] = arrThisBuffer[j];
+                count ++;
+            }
+        }
+        if(count != n)
+            throw new IllegalArgumentException("Strides and offsets didn't match up to length " + n);
+
+        // from the code path, we are kind of sure that n == length()...
+        // it will throw an exception anyway
+        setData(arr);
     }
 
     @Override
