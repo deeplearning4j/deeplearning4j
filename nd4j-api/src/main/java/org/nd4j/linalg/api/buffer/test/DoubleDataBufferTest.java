@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.buffer.test;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 
@@ -101,6 +102,16 @@ public abstract class DoubleDataBufferTest {
         buffer.destroy();
 
 
+    }
+
+    @Test
+    public void testAssign() {
+        INDArray oneTwo = Nd4j.create(new float[]{1, 2});
+        INDArray threeFour = Nd4j.create(new float[]{3,4});
+        INDArray oneThroughFour = Nd4j.linspace(1,4,4);
+        INDArray test = Nd4j.create(4);
+        test.data().assign(oneTwo.data(),threeFour.data());
+        assertEquals(oneThroughFour,test);
     }
 
 

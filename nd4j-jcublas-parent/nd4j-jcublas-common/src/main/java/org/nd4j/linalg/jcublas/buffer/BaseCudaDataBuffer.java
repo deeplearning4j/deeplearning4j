@@ -164,14 +164,18 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param init   the initialized pointer
      */
     protected void get(int index, int inc, int length, Pointer init) {
-        JCublas.cublasGetVector(
-                length
-                , elementSize(),
-                pointer().withByteOffset(index * elementSize())
-                ,
-                inc,
-                init
-                , 1);
+        try {
+            JCublas.cublasGetVector(
+                    length
+                    , elementSize(),
+                    pointer().withByteOffset(index * elementSize())
+                    ,
+                    inc,
+                    init
+                    , 1);
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -221,13 +225,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             int offset = elementSize() * index;
             if(offset >= length() * elementSize())
                 throw new IllegalArgumentException("Illegal offset " + offset + " with index of " + index + " and length " + length());
-            JCublas.cublasSetVector(
-                    length,
-                    elementSize(),
-                    from,
-                    inc,
-                    pointer().withByteOffset(offset)
-                    , 1);
+            JCublas.cublasScopy(length,from,inc,pointer().withByteOffset(elementSize() * index),1);
+
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
@@ -304,20 +303,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
 
 
-    @Override
-    public double getDouble(int i) {
-        return 0;
-    }
 
-    @Override
-    public float getFloat(int i) {
-        return 0;
-    }
-
-    @Override
-    public Number getNumber(int i) {
-        return null;
-    }
 
 
 
@@ -400,39 +386,33 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
-         //throw new UnsupportedOperationException();
-        if(offsets.length != strides.length || strides.length != buffers.length)
-            throw new IllegalArgumentException("Unable to assign buffers, please specify equal lengths strides, offsets, and buffers");
-
         int count = 0;
-        int[] elemCount = new int[buffers.length];
         for(int i = 0; i < buffers.length; i++) {
-            elemCount[i] = 0;
-            for(int j = offsets[i]; j < buffers[i].length(); j += strides[i]) {
-                // put(count++,buffers[i].getDouble(j));
-                count ++;
-                elemCount[i] += 1;
-            }
-        }
-        if(count != n)
-            throw new IllegalArgumentException("Strides and offsets didn't match up to length " + n);
+            DataBuffer buffer = buffers[i];
+            if(buffer instanceof  JCudaBuffer) {
+                JCudaBuffer buff = (JCudaBuffer) buffer;
+                if(buff.dataType() == DataBuffer.DOUBLE) {
+                     JCublas.cublasDcopy(
+                             buff.length()
+                             ,buff.pointer().withByteOffset(buff.elementSize() * offsets[i])
+                             ,strides[i]
+                             ,pointer().withByteOffset(count * buff.elementSize())
+                             ,1);
+                    count += buff.length();
+                }
+                else {
+                    JCublas.cublasScopy(buff.length()
+                            ,buff.pointer().withByteOffset(buff.elementSize() * offsets[i])
+                            , strides[i]
+                            ,pointer().withByteOffset(count * buff.elementSize())
+                            , 1);
+                    count += buff.length();
 
-        double[] arr = new double[count];
-        count = 0;
-        for(int i = 0; i < buffers.length; i++) {
-            double[] arrThisBuffer = buffers[i].getDoublesAt(offsets[i], strides[i], elemCount[i]);
-            for (int j = 0; j < elemCount[i]; j ++)
-            {
-                arr[count] = arrThisBuffer[j];
-                count ++;
+                }
             }
+            else
+                throw new IllegalArgumentException("Only jcuda data buffers allowed");
         }
-        if(count != n)
-            throw new IllegalArgumentException("Strides and offsets didn't match up to length " + n);
-
-        // from the code path, we are kind of sure that n == length()...
-        // it will throw an exception anyway
-        setData(arr);
     }
 
     @Override

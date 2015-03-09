@@ -12,7 +12,6 @@ __device__ void transform(int n,int xOffset,int yOffset, float *dx, float *dy,in
 
     if (incy == 0) {
         if ((blockIdx.x == 0) && (tid == 0)) {
-            /* FIXME: This code is functionally correct, but inefficient */
             int ix = (incx < 0) ? ((1 - n) * incx) : 0;
             for (; i < n; i++) {
                 result[i] = op(dx[i * incx],params);

@@ -314,6 +314,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testNorm2() {
+        Nd4j.factory().setDType(DataBuffer.FLOAT);
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         float assertion = 5.47722557505f;
         INDArray norm3 = n.norm2(Integer.MAX_VALUE);
@@ -346,6 +347,8 @@ public abstract class NDArrayTests {
 
     @Test
     public void testCosineSim() {
+        Nd4j.factory().setDType(DataBuffer.DOUBLE);
+
         INDArray vec1 = Nd4j.create(new double[]{1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new double[]{1, 2, 3, 4});
         double sim = Transforms.cosineSim(vec1, vec2);
