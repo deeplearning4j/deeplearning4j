@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import jcublas.JCublas2;
 import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
@@ -29,8 +30,6 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -225,8 +224,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             int offset = elementSize() * index;
             if(offset >= length() * elementSize())
                 throw new IllegalArgumentException("Illegal offset " + offset + " with index of " + index + " and length " + length());
-            JCublas.cublasScopy(length,from,inc,pointer().withByteOffset(elementSize() * index),1);
-
+            JCublas.cublasScopy(length,from,inc,pointer(),1);
         }catch(Exception e) {
             throw new RuntimeException(e);
         }

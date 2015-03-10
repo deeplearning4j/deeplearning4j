@@ -25,7 +25,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-package jcuda.jcublas;
+package jcublas;
 
 /**
  * The type indicates whether CUBLAS routines which has an alternate 

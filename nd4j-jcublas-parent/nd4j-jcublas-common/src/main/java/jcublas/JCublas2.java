@@ -26,9 +26,13 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package jcuda.jcublas;
+package jcublas;
 
-import jcuda.*;
+import jcuda.CudaException;
+import jcuda.LibUtils;
+import jcuda.LogLevel;
+import jcuda.Pointer;
+import jcuda.jcublas.cublasStatus;
 import jcuda.runtime.cudaStream_t;
 
 /**
@@ -102,28 +106,28 @@ public class JCublas2
 
     /**
      * Enables or disables exceptions. By default, the methods of this class
-     * only return the {@link cublasStatus} from the native method. 
-     * If exceptions are enabled, a CudaException with a detailed error 
-     * message will be thrown if a method is about to return a result code 
+     * only return the {@link jcuda.jcublas.cublasStatus} from the native method.
+     * If exceptions are enabled, a CudaException with a detailed error
+     * message will be thrown if a method is about to return a result code
      * that is not cublasStatus.CUBLAS_STATUS_SUCCESS
-     * 
+     *
      * @param enabled Whether exceptions are enabled
      */
     public static void setExceptionsEnabled(boolean enabled)
     {
         exceptionsEnabled = enabled;
     }
-    
+
     /**
      * If the given result is different to cublasStatus.CUBLAS_STATUS_SUCCESS
-     * and exceptions have been enabled, this method will throw a 
+     * and exceptions have been enabled, this method will throw a
      * CudaException with an error message that corresponds to the
      * given result code. Otherwise, the given result is simply
      * returned.
-     * 
+     *
      * @param result The result to check
      * @return The result that was given as the parameter
-     * @throws CudaException If exceptions have been enabled and
+     * @throws jcuda.CudaException If exceptions have been enabled and
      * the given result code is not cublasStatus.CUBLAS_STATUS_SUCCESS
      */
     private static int checkResult(int result)

@@ -130,11 +130,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
                     , pointer()
                     , 1);
         }catch(Exception e) {
-            try {
-                JCuda.cudaMemcpy(pointer(), Pointer.to(data), elementSize() * length(), cudaMemcpyKind.cudaMemcpyHostToDevice);
-            }catch(Exception e1) {
-                throw new RuntimeException(e1);
-            }
+            throw new RuntimeException(e);
         }
 
     }

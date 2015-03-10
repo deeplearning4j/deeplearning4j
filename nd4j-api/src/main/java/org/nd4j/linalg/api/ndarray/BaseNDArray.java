@@ -2907,17 +2907,14 @@ public abstract class BaseNDArray implements INDArray {
             return Nd4j.create(data, new int[]{shape[0], 1}, offset);
         else if (isColumnVector())
             return Nd4j.create(data, new int[]{shape[0]}, offset);
-        if (isMatrix()) {
-            INDArray reverse = Nd4j.create(ArrayUtil.reverseCopy(shape));
-            for (int i = 0; i < rows; i++) {
-                for (int j = 0; j < columns; j++) {
-                    reverse.putScalar(new int[]{j,i},getDouble(i,j));
-                }
+        if(isMatrix()) {
+            INDArray ret = Nd4j.create(columns,rows);
+            for(int i = 0; i < ret.rows(); i++) {
+                ret.putRow(i,getColumn(i));
             }
 
-            return reverse;
+            return ret;
         }
-
         INDArray ret = permute(ArrayUtil.range(shape.length - 1, -1));
         return ret;
     }
@@ -3722,7 +3719,7 @@ public abstract class BaseNDArray implements INDArray {
         int[] newStride = doPermuteSwap(stride, rearrange);
 
         INDArray value = Nd4j.create(
-                data,
+                data(),
                 newShape,
                 newStride,
                 offset,

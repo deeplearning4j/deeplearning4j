@@ -25,28 +25,30 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-package jcuda.jcublas;
+package jcublas;
 
 /**
- * Indicates which part (lower or upper) of the dense matrix was
- * filled and consequently should be used by the function
+ * Indicates whether the scalar values are passed by
+ * reference on the host or device
+ * 
+ * @see JCublas2#cublasSetPointerMode(cublasHandle, int)
  */
-public class cublasFillMode
+public class cublasPointerMode
 {
     /**
-     * The lower part of the matrix is filled
+     * The scalars are passed by reference on the host
      */
-    public static final int CUBLAS_FILL_MODE_LOWER = 0;
+    public static final int CUBLAS_POINTER_MODE_HOST = 0;
 
     /**
-     * The upper part of the matrix is filled
+     * The scalars are passed by reference on the device
      */
-    public static final int CUBLAS_FILL_MODE_UPPER = 1;
+    public static final int CUBLAS_POINTER_MODE_DEVICE = 1;
 
     /**
      * Private constructor to prevent instantiation
      */
-    private cublasFillMode(){}
+    private cublasPointerMode(){}
 
     /**
      * Returns a string representation of the given constant
@@ -57,10 +59,10 @@ public class cublasFillMode
     {
         switch (n)
         {
-            case CUBLAS_FILL_MODE_LOWER: return "CUBLAS_FILL_MODE_LOWER";
-            case CUBLAS_FILL_MODE_UPPER: return "CUBLAS_FILL_MODE_UPPER";
+            case CUBLAS_POINTER_MODE_HOST: return "CUBLAS_POINTER_MODE_HOST";
+            case CUBLAS_POINTER_MODE_DEVICE: return "CUBLAS_POINTER_MODE_DEVICE";
         }
-        return "INVALID cublasFillMode: "+n;
+        return "INVALID cublasPointerMode: "+n;
     }
 }
 

@@ -21,7 +21,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class BinomialDistribution extends BaseDistribution {
-       /** The number of trials. */
+    /** The number of trials. */
     private final int numberOfTrials;
     /** The probability of success. */
     private  double probabilityOfSuccess;
@@ -94,7 +94,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     /** {@inheritDoc} */
     public double probability(int x) {
-      
+
         double ret;
         if (x < 0 || x > numberOfTrials) {
             ret = 0.0;
@@ -108,7 +108,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     /** {@inheritDoc} */
     public double cumulativeProbability(int x) {
-      
+
         double ret;
         if (x < 0) {
             ret = 0.0;
@@ -128,7 +128,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     @Override
     public double cumulativeProbability(double x) {
-      
+
         double ret;
         if(x < 0) {
             ret = 0.0D;
@@ -153,7 +153,7 @@ public class BinomialDistribution extends BaseDistribution {
      * {@code n * p}.
      */
     public double getNumericalMean() {
-      
+
         return numberOfTrials * probabilityOfSuccess;
     }
 
@@ -164,7 +164,7 @@ public class BinomialDistribution extends BaseDistribution {
      * {@code n * p * (1 - p)}.
      */
     public double getNumericalVariance() {
-      
+
         final double p = probabilityOfSuccess;
         return numberOfTrials * p * (1 - p);
     }
@@ -179,7 +179,7 @@ public class BinomialDistribution extends BaseDistribution {
      */
     @Override
     public double getSupportLowerBound() {
-      
+
         return probabilityOfSuccess < 1.0 ? 0 : numberOfTrials;
     }
 
@@ -193,7 +193,7 @@ public class BinomialDistribution extends BaseDistribution {
      */
     @Override
     public double getSupportUpperBound() {
-      
+
         return probabilityOfSuccess > 0.0 ? numberOfTrials : 0;
     }
 
@@ -220,17 +220,23 @@ public class BinomialDistribution extends BaseDistribution {
 
 
     private void ensureConsistent(int i) {
-       probabilityOfSuccess = p.linearView().getDouble(i);
+        probabilityOfSuccess = p.linearView().getDouble(i);
     }
 
     @Override
     public INDArray sample(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
-        for(int i = 0; i < linear.length(); i++) {
-            org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(),numberOfTrials,p.linearView().getDouble(i));
-            ret.putScalar(i,binomialDistribution.sample());
-        }
+        if(p != null)
+            for(int i = 0; i < linear.length(); i++) {
+                org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(),numberOfTrials,p.linearView().getDouble(i));
+                ret.putScalar(i,binomialDistribution.sample());
+            }
+        else
+            for(int i = 0; i < linear.length(); i++) {
+                org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(),numberOfTrials,probabilityOfSuccess);
+                ret.putScalar(i,binomialDistribution.sample());
+            }
         return ret;
     }
 }
