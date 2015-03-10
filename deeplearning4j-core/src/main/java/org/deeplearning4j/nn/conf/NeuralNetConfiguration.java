@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.conf.deserializers.*;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
@@ -161,7 +162,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.minimize = minimize;
         this.numLineSearchIterations = numLineSearchIterations;
         this.batchSize = batchSize;
-        this.layerFactory = layerFactory;
+        if (layerFactory == null) {
+            throw new IllegalStateException("No layer factory defined.");
+        } else {
+            this.layerFactory = layerFactory;
+        }
         this.listeners = listeners;
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
