@@ -114,11 +114,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         if (data.length != length)
             throw new IllegalArgumentException("Unable to set vector, must be of length " + length() + " but found length " + data.length);
 
-        if (pointer() != null) {
-            destroy();
-            pointer = null;
-        }
-
         if (pointer() == null)
             alloc();
         try {
@@ -154,13 +149,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     public float[] asFloat() {
         float[] ret = new float[length];
         Pointer p = Pointer.to(ret);
-        JCublas.cublasGetVector(
-                length,
-                elementSize(),
-                pointer(),
-                1,
-                p,
-                1);
+        JCublas.cublasGetVector(length,elementSize(),pointer(),1,p,1);
         return ret;
     }
 

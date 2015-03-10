@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.jcublas;
 
-import jcublas.JCublas2;
 import jcublas.cublasHandle;
 import jcuda.LogLevel;
 import jcuda.Pointer;
@@ -33,8 +32,6 @@ import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Simple abstraction for jcublas operations
@@ -629,7 +626,7 @@ public class SimpleJCublas {
      * And and scale by the given scalar da
      *
      * @param da
-     * @param A
+     * @param A 
      * @param B
      */
     public static void axpy(float da, INDArray A, INDArray B) {
@@ -639,27 +636,14 @@ public class SimpleJCublas {
         Pointer xAPointer = getPointer(A);
         Pointer xBPointer = getPointer(B);
 
+        JCublas.cublasSaxpy(
+                A.length(),
+                da,
+                xAPointer,
+                1,
+                xBPointer,
+                1);
 
-        if (A.ordering() == NDArrayFactory.C) {
-            JCublas.cublasSaxpy(
-                    A.length(),
-                    da,
-                    xAPointer,
-                    A.majorStride(),
-                    xBPointer,
-                    A.majorStride());
-
-        } else {
-            JCublas.cublasSaxpy(
-                    A.length(),
-                    da,
-                    xAPointer,
-                    A.majorStride(),
-                    xBPointer,
-                    B.majorStride());
-
-
-        }
 
 
     }
@@ -681,9 +665,9 @@ public class SimpleJCublas {
                 A.length(),
                 jcuda.cuComplex.cuCmplx(da.realComponent().floatValue(), da.imaginaryComponent().floatValue()),
                 aCPointer,
-                A.majorStride(),
+                1,
                 bCPointer,
-                B.majorStride()
+               1
         );
 
 
@@ -774,25 +758,12 @@ public class SimpleJCublas {
 
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
-        if (x.data().dataType() == DataBuffer.DOUBLE) {
-            JCublas.cublasDcopy(
-                    x.length(),
-                    xCPointer,
-                    x.secondaryStride(),
-                    yCPointer,
-                    y.secondaryStride());
-
-
-        } else {
-            JCublas.cublasScopy(
-                    x.length(),
-                    xCPointer,
-                    x.secondaryStride(),
-                    yCPointer,
-                    y.secondaryStride());
-
-
-        }
+        JCublas.cublasScopy(
+                x.length(),
+                xCPointer,
+                x.majorStride(),
+                yCPointer,
+                y.majorStride());
 
 
     }

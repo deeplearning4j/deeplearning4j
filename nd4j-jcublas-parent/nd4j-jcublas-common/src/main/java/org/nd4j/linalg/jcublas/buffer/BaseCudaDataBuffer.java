@@ -33,6 +33,8 @@ import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+
 /**
  * Base class for a data buffer
  *
@@ -135,13 +137,14 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected void copyTo(JCudaBuffer to) {
         if (to.dataType() != dataType())
             throw new IllegalArgumentException("Unable to copy buffer, mis matching data types.");
+        if(dataType() == DataBuffer.FLOAT) {
+            JCublas.cublasScopy(length(),pointer(),1,to.pointer(),1);
+        }
+        else if(dataType() == DataBuffer.DOUBLE) {
+            JCublas.cublasDcopy(length(), pointer(), 1, to.pointer(), 1);
 
-        JCuda.cudaMemcpy(
-                to.pointer()
-                , pointer()
-                , length() * elementSize()
-                , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
-
+        }
+        else throw new IllegalStateException("Illegal data type " + dataType());
 
     }
 
@@ -224,7 +227,13 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             int offset = elementSize() * index;
             if(offset >= length() * elementSize())
                 throw new IllegalArgumentException("Illegal offset " + offset + " with index of " + index + " and length " + length());
-            JCublas.cublasScopy(length,from,inc,pointer(),1);
+            JCublas.cublasSetVector(
+                    length
+                    ,elementSize()
+                    ,from
+                    ,inc
+                    ,pointer().withByteOffset(offset)
+                    ,1);
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
@@ -361,12 +370,21 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
         if (elementSize != that.elementSize) return false;
         if (length != that.length) return false;
-        for (int i = 0; i < length; i++) {
-            double element = getDouble(i);
-            double other = that.getDouble(i);
-            if (element != other)
+        if(dataType() != that.dataType()) return false;
+        if(dataType() == DataBuffer.DOUBLE) {
+            double[] data = asDouble();
+            double[] other = that.asDouble();
+            if(!Arrays.equals(data, other))
                 return false;
         }
+        else if(dataType() == DataBuffer.FLOAT) {
+            float[] data = asFloat();
+            float[] other = that.asFloat();
+            if(!Arrays.equals(data, other))
+                return false;
+
+        }
+
         return true;
     }
 
@@ -390,12 +408,12 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             if(buffer instanceof  JCudaBuffer) {
                 JCudaBuffer buff = (JCudaBuffer) buffer;
                 if(buff.dataType() == DataBuffer.DOUBLE) {
-                     JCublas.cublasDcopy(
-                             buff.length()
-                             ,buff.pointer().withByteOffset(buff.elementSize() * offsets[i])
-                             ,strides[i]
-                             ,pointer().withByteOffset(count * buff.elementSize())
-                             ,1);
+                    JCublas.cublasDcopy(
+                            buff.length()
+                            ,buff.pointer().withByteOffset(buff.elementSize() * offsets[i])
+                            ,strides[i]
+                            ,pointer().withByteOffset(count * buff.elementSize())
+                            ,1);
                     count += buff.length();
                 }
                 else {

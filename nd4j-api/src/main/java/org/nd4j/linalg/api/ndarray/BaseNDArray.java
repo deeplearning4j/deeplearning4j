@@ -1141,8 +1141,7 @@ public abstract class BaseNDArray implements INDArray {
                 view.putScalar(i, put.getDouble(i));
         else if (put.shape().length == 2)
             for (int i = 0; i < put.rows(); i++)
-                for (int j = 0; j < put.columns(); j++)
-                    view.put(i, j, put.getDouble(i, j));
+                    view.putRow(i,put.getRow(i));
 
         else {
 
@@ -3723,8 +3722,7 @@ public abstract class BaseNDArray implements INDArray {
                 newShape,
                 newStride,
                 offset,
-                ordering == NDArrayFactory.C
-                        ? NDArrayFactory.FORTRAN : NDArrayFactory.C);
+                ordering);
         return value;
 
     }
