@@ -250,19 +250,6 @@
             			<version>1.0</version>
           			</dependency>
         		</dependencies>
-				<executions>
-        			<execution>
-        				<id>checkstyle</id>
-        				<phase>validate</phase>
-        				<goals>
-            				<goal>check</goal>
-        				</goals>
-						<configuration>
-							<configLocation>checkstyle_config.xml</configLocation>
-            				<failOnViolation>false</failOnViolation>
-        				</configuration>
-        			</execution>
-    			</executions>
       		</plugin>
 		</plugins>
 
@@ -346,6 +333,20 @@
 
 		</pluginManagement>
 	</build>
+
+<reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>2.14</version>
+        <configuration>
+				<configLocation>checkstyle_config.xml</configLocation>
+   				<failOnViolation>false</failOnViolation>
+		</configuration>
+      </plugin>
+    </plugins>
+  </reporting>
 
 	<dependencyManagement>
 
