@@ -250,6 +250,19 @@
             			<version>1.0</version>
           			</dependency>
         		</dependencies>
+				<executions>
+        			<execution>
+        				<id>checkstyle</id>
+        				<phase>validate</phase>
+        				<goals>
+            				<goal>check</goal>
+        				</goals>
+						<configuration>
+							<configLocation>checkstyle_config.xml</configLocation>
+            				<failOnViolation>false</failOnViolation>
+        				</configuration>
+        			</execution>
+    			</executions>
       		</plugin>
 		</plugins>
 
