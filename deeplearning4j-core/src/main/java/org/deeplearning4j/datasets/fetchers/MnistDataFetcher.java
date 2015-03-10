@@ -42,8 +42,8 @@ public class MnistDataFetcher extends BaseDataFetcher {
     private static final long serialVersionUID = -3218754671561789818L;
     private transient MnistManager man;
     public final static int NUM_EXAMPLES = 60000;
-    private String tempRoot = System.getProperty("user.home");
-    private String rootMnist = tempRoot + File.separator + "MNIST" + File.separator;
+    private static final String TEMP_ROOT = System.getProperty("user.home");
+    private static final String MNIST_ROOT = TEMP_ROOT + File.separator + "MNIST" + File.separator;
     private boolean binarize = true;
 
 
@@ -53,14 +53,15 @@ public class MnistDataFetcher extends BaseDataFetcher {
      * @throws IOException
      */
     public MnistDataFetcher(boolean binarize) throws IOException {
-        if(!new File(rootMnist).exists())
+        if(!new File(MNIST_ROOT).exists()) {
             new MnistFetcher().downloadAndUntar();
+        }
         try {
-            man = new MnistManager(rootMnist + MnistFetcher.trainingFilesFilename_unzipped, rootMnist + MnistFetcher.trainingFileLabelsFilename_unzipped);
+            man = new MnistManager(MNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped, MNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped);
         }catch(Exception e) {
-            FileUtils.deleteDirectory(new File(rootMnist));
+            FileUtils.deleteDirectory(new File(MNIST_ROOT));
             new MnistFetcher().downloadAndUntar();
-            man = new MnistManager(rootMnist + MnistFetcher.trainingFilesFilename_unzipped, rootMnist + MnistFetcher.trainingFileLabelsFilename_unzipped);
+            man = new MnistManager(MNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped, MNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped);
 
         }
         numOutcomes = 10;
@@ -86,8 +87,9 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
     @Override
     public void fetch(int numExamples) {
-        if(!hasMore())
+        if(!hasMore()) {
             throw new IllegalStateException("Unable to getFromOrigin more; there are no more images");
+        }
 
 
 
@@ -95,11 +97,12 @@ public class MnistDataFetcher extends BaseDataFetcher {
         List<DataSet> toConvert = new ArrayList<>();
 
         for(int i = 0; i < numExamples; i++,cursor++) {
-            if(!hasMore())
+            if(!hasMore()) {
                 break;
+            }
             if(man == null) {
                 try {
-                    man = new MnistManager(rootMnist + MnistFetcher.trainingFilesFilename_unzipped,rootMnist + MnistFetcher.trainingFileLabelsFilename_unzipped);
+                    man = new MnistManager(MNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped,MNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -108,21 +111,24 @@ public class MnistDataFetcher extends BaseDataFetcher {
             //note data normalization
             try {
                 INDArray in = ArrayUtil.toNDArray(ArrayUtil.flatten(man.readImage()));
-                if(binarize)
+                if(binarize) {
                     for(int d = 0; d < in.length(); d++) {
                         if(binarize) {
                             if(in.getDouble(d) > 30) {
                                 in.putScalar(d,1);
                             }
-                            else
+                            else {
                                 in.putScalar(d,0);
+                            }
 
                         }
 
 
                     }
-                 else
-                      in.divi(255);
+                }
+                else {
+                    in.divi(255);
+                }
 
 
                 INDArray out = createOutputVector(man.readLabel());
@@ -133,8 +139,9 @@ public class MnistDataFetcher extends BaseDataFetcher {
                         break;
                     }
                 }
-                if(!found)
+                if(!found) {
                     throw new IllegalStateException("Found a matrix without an outcome");
+                }
 
                 toConvert.add(new DataSet(in,out));
             } catch (IOException e) {
