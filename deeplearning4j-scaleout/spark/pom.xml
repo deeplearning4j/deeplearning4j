@@ -33,7 +33,6 @@
 
 
 
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -42,7 +41,22 @@
         <spark.version>1.2.0</spark.version>
         <scala.binary.version>2.10</scala.binary.version>
     </properties>
-    <build>
+	<build>
+		<pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.18.1</version>
+                    <configuration>
+							<argLine>${argLine} -Xmx6g</argLine>
+							<skipTests>true</skipTests>
+      						<testFailureIgnore>true</testFailureIgnore>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+
         <plugins>
             <plugin>
                 <groupId>org.scala-tools</groupId>
