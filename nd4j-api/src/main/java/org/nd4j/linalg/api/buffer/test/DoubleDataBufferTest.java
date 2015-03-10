@@ -106,8 +106,8 @@ public abstract class DoubleDataBufferTest {
 
     @Test
     public void testAssign() {
-        INDArray oneTwo = Nd4j.create(new float[]{1, 2});
-        INDArray threeFour = Nd4j.create(new float[]{3,4});
+        INDArray oneTwo = Nd4j.create(new double[]{1, 2});
+        INDArray threeFour = Nd4j.create(new double[]{3,4});
         INDArray oneThroughFour = Nd4j.linspace(1,4,4);
         INDArray test = Nd4j.create(4);
         test.data().assign(oneTwo.data(),threeFour.data());

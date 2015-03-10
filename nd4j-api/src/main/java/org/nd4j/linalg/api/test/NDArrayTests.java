@@ -778,6 +778,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testTranspose() {
+        Nd4j.factory().setOrder('f');
         INDArray n = Nd4j.create(Nd4j.ones(100).data(), new int[]{5, 5, 4});
         INDArray transpose = n.transpose();
         assertEquals(n.length(), transpose.length());
@@ -1014,7 +1015,7 @@ public abstract class NDArrayTests {
         Nd4j.getDistributions().createUniform(1,5).sample(5);
         Nd4j.getDistributions().createNormal(1,5).sample();
         Nd4j.getDistributions().createBinomial(5,1.0).sample(new int[]{5,5});
-        Nd4j.getDistributions().createBinomial(1,rand).sample(rand.shape());
+        Nd4j.getDistributions().createBinomial(1,Nd4j.ones(5,5)).sample(rand.shape());
         Nd4j.getDistributions().createNormal(rand,1).sample(rand.shape());
     }
 
@@ -1189,6 +1190,23 @@ public abstract class NDArrayTests {
         assertEquals(rowVector.rows() * 2, concat.rows());
         assertEquals(rowVector.columns(), concat.columns());
 
+    }
+    @Test
+    public void testAddScalar() {
+        INDArray div = Nd4j.valueArrayOf(new int[]{4},4);
+        float[] value = div.data().asFloat();
+        div.toString();
+        INDArray rdiv = div.add(1);
+        INDArray answer = Nd4j.valueArrayOf(new int[]{4},5);
+        assertEquals(rdiv,answer);
+    }
+
+    @Test
+    public void testRdivScalar() {
+        INDArray div = Nd4j.valueArrayOf(2,4);
+        INDArray rdiv = div.rdiv(1);
+        INDArray answer = Nd4j.valueArrayOf(new int[]{4},0.25);
+        assertEquals(rdiv,answer);
     }
 
     @Test

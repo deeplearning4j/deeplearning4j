@@ -19,6 +19,7 @@ package org.nd4j.linalg.jblas;
 
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
@@ -119,7 +120,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
     @Test
     public void testAxpy() {
         Nd4j.factory().setOrder('f');
-
+        Nd4j.dtype = DataBuffer.FLOAT;
         INDArray row = Nd4j.create(new float[]{1, 2, 3});
         float alpha = 1f;
         INDArray matrix = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6}, new int[]{2, 3});

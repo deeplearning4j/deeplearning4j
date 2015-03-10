@@ -24,9 +24,12 @@ import org.nd4j.linalg.api.buffer.test.FloatDataBufferTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;;import java.io.*;
+import org.slf4j.LoggerFactory;
+import java.io.*;
+import static org.junit.Assert.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 /**
  * Created by agibsonccc on 2/14/15.
@@ -49,6 +52,15 @@ public class TestBufferFloat extends FloatDataBufferTest {
         ois.close();
         return arr;
     }
+
+    @Test
+    public void testAsFloat() {
+        float[] answer = new float[]{1,1,1,1};
+        DataBuffer buff = Nd4j.createBuffer(new float[]{1,1,1,1});
+        assertTrue(Arrays.equals(answer, buff.asFloat()));
+        buff.destroy();
+    }
+
 
 
     @Test

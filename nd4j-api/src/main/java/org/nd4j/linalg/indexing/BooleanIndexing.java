@@ -67,9 +67,10 @@ public class BooleanIndexing {
     /**
      * And over the whole ndarray given some condition
      *
-     * @param n
-     * @param cond
-     * @return
+     * @param n the ndarray to test
+     * @param cond the condition to test against
+     * @return true if all of the elements meet the specified
+     * condition false otherwise
      */
     public static boolean and(INDArray n, Condition cond) {
         boolean ret = true;
