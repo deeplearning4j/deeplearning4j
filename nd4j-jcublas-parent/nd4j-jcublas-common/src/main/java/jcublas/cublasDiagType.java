@@ -25,28 +25,29 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-package jcuda.jcublas;
+package jcublas;
 
 /**
- * Indicates whether the dense matrix is on the left or right side
- * in the matrix equation solved by a particular function.
+ * Indicates whether the main diagonal of the dense matrix is
+ * unity and consequently should not be touched or modified 
+ * by the function.
  */
-public class cublasSideMode
+public class cublasDiagType
 {
     /**
-     * The matrix is on the left side in the equation
+     * The matrix diagonal has non-unit elements
      */
-    public static final int CUBLAS_SIDE_LEFT = 0;
-
+    public static final int CUBLAS_DIAG_NON_UNIT = 0;
+    
     /**
-     * The matrix is on the right side in the equation
+     * The matrix diagonal has unit elements
      */
-    public static final int CUBLAS_SIDE_RIGHT = 1;
+    public static final int CUBLAS_DIAG_UNIT = 1;
 
     /**
      * Private constructor to prevent instantiation
      */
-    private cublasSideMode(){}
+    private cublasDiagType(){}
 
     /**
      * Returns a string representation of the given constant
@@ -57,10 +58,10 @@ public class cublasSideMode
     {
         switch (n)
         {
-            case CUBLAS_SIDE_LEFT: return "CUBLAS_SIDE_LEFT";
-            case CUBLAS_SIDE_RIGHT: return "CUBLAS_SIDE_RIGHT";
+            case CUBLAS_DIAG_NON_UNIT: return "CUBLAS_DIAG_NON_UNIT";
+            case CUBLAS_DIAG_UNIT: return "CUBLAS_DIAG_UNIT";
         }
-        return "INVALID cublasSideMode: "+n;
+        return "INVALID cublasDiagType: "+n;
     }
 }
 

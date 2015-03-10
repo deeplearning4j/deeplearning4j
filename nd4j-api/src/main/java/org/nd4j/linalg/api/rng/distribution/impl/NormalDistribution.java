@@ -315,9 +315,14 @@ public class NormalDistribution extends BaseDistribution {
     public INDArray sample(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
-        for(int i = 0; i < linear.length(); i++) {
-            ret.putScalar(i,standardDeviation * random.nextGaussian() + means.linearView().getDouble(i));
-        }
+        if(means != null)
+            for(int i = 0; i < linear.length(); i++) {
+                ret.putScalar(i,standardDeviation * random.nextGaussian() + means.linearView().getDouble(i));
+            }
+        else
+            for(int i = 0; i < linear.length(); i++) {
+                ret.putScalar(i,standardDeviation * random.nextGaussian() + mean);
+            }
         return ret;
     }
 }

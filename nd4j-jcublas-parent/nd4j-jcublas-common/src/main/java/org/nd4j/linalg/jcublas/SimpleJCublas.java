@@ -16,6 +16,8 @@
 
 package org.nd4j.linalg.jcublas;
 
+import jcublas.JCublas2;
+import jcublas.cublasHandle;
 import jcuda.LogLevel;
 import jcuda.Pointer;
 import jcuda.cuComplex;
@@ -35,16 +37,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Created by mjk on 8/20/14.
+ * Simple abstraction for jcublas operations
  *
  * @author mjk
  * @author Adam Gibson
  */
 public class SimpleJCublas {
-    public final static String CUDA_HOME = "CUDA_HOME";
-    public final static String JCUDA_HOME_PROP = "jcuda.home";
+
     private static boolean init = false;
-    private static Logger log = LoggerFactory.getLogger(SimpleJCublas.class);
+    private static  cublasHandle handle = new cublasHandle();
+
 
     static {
         init();
@@ -69,6 +71,13 @@ public class SimpleJCublas {
         return buffer.pointer().withByteOffset(buffer.elementSize() * array.offset());
     }
 
+    /**
+     * The cublas handle
+     * @return the handle used for cublas
+     */
+    public static cublasHandle handle() {
+        return handle;
+    }
 
     /**
      * Initialize jcublas only called once
@@ -78,6 +87,9 @@ public class SimpleJCublas {
             return;
         JCublas.setLogLevel(LogLevel.LOG_DEBUG);
         JCublas.setExceptionsEnabled(true);
+       /* Will re enable when link problem is found
+       cublasHandle handle = new cublasHandle();
+        JCublas2.cublasCreate(handle);*/
         try {
             KernelFunctionLoader.getInstance().load();
         } catch (Exception e) {

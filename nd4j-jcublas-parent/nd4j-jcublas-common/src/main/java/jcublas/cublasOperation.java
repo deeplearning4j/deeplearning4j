@@ -25,30 +25,33 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-package jcuda.jcublas;
+package jcublas;
 
 /**
- * Indicates whether the scalar values are passed by
- * reference on the host or device
- * 
- * @see JCublas2#cublasSetPointerMode(cublasHandle, int)
+ * Indicates which operation needs to be performed with the
+ * dense matrix.
  */
-public class cublasPointerMode
+public class cublasOperation
 {
     /**
-     * The scalars are passed by reference on the host
+     * The non-transpose operation is selected
      */
-    public static final int CUBLAS_POINTER_MODE_HOST = 0;
+    public static final int CUBLAS_OP_N = 0;
 
     /**
-     * The scalars are passed by reference on the device
+     * The transpose operation is selected
      */
-    public static final int CUBLAS_POINTER_MODE_DEVICE = 1;
+    public static final int CUBLAS_OP_T = 1;
+
+    /**
+     * The conjugate transpose operation is selected
+     */
+    public static final int CUBLAS_OP_C = 2;
 
     /**
      * Private constructor to prevent instantiation
      */
-    private cublasPointerMode(){}
+    private cublasOperation(){}
 
     /**
      * Returns a string representation of the given constant
@@ -59,10 +62,11 @@ public class cublasPointerMode
     {
         switch (n)
         {
-            case CUBLAS_POINTER_MODE_HOST: return "CUBLAS_POINTER_MODE_HOST";
-            case CUBLAS_POINTER_MODE_DEVICE: return "CUBLAS_POINTER_MODE_DEVICE";
+            case CUBLAS_OP_N: return "CUBLAS_OP_N";
+            case CUBLAS_OP_T: return "CUBLAS_OP_T";
+            case CUBLAS_OP_C: return "CUBLAS_OP_C";
         }
-        return "INVALID cublasPointerMode: "+n;
+        return "INVALID cublasOperation: "+n;
     }
 }
 

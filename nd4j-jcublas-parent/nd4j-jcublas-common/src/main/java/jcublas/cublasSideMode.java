@@ -25,33 +25,28 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-package jcuda.jcublas;
+package jcublas;
 
 /**
- * Indicates which operation needs to be performed with the
- * dense matrix.
+ * Indicates whether the dense matrix is on the left or right side
+ * in the matrix equation solved by a particular function.
  */
-public class cublasOperation
+public class cublasSideMode
 {
     /**
-     * The non-transpose operation is selected
+     * The matrix is on the left side in the equation
      */
-    public static final int CUBLAS_OP_N = 0;
+    public static final int CUBLAS_SIDE_LEFT = 0;
 
     /**
-     * The transpose operation is selected
+     * The matrix is on the right side in the equation
      */
-    public static final int CUBLAS_OP_T = 1;
-
-    /**
-     * The conjugate transpose operation is selected
-     */
-    public static final int CUBLAS_OP_C = 2;
+    public static final int CUBLAS_SIDE_RIGHT = 1;
 
     /**
      * Private constructor to prevent instantiation
      */
-    private cublasOperation(){}
+    private cublasSideMode(){}
 
     /**
      * Returns a string representation of the given constant
@@ -62,11 +57,10 @@ public class cublasOperation
     {
         switch (n)
         {
-            case CUBLAS_OP_N: return "CUBLAS_OP_N";
-            case CUBLAS_OP_T: return "CUBLAS_OP_T";
-            case CUBLAS_OP_C: return "CUBLAS_OP_C";
+            case CUBLAS_SIDE_LEFT: return "CUBLAS_SIDE_LEFT";
+            case CUBLAS_SIDE_RIGHT: return "CUBLAS_SIDE_RIGHT";
         }
-        return "INVALID cublasOperation: "+n;
+        return "INVALID cublasSideMode: "+n;
     }
 }
 

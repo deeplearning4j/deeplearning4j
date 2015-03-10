@@ -25,29 +25,28 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-package jcuda.jcublas;
+package jcublas;
 
 /**
- * Indicates whether the main diagonal of the dense matrix is
- * unity and consequently should not be touched or modified 
- * by the function.
+ * Indicates which part (lower or upper) of the dense matrix was
+ * filled and consequently should be used by the function
  */
-public class cublasDiagType
+public class cublasFillMode
 {
     /**
-     * The matrix diagonal has non-unit elements
+     * The lower part of the matrix is filled
      */
-    public static final int CUBLAS_DIAG_NON_UNIT = 0;
-    
+    public static final int CUBLAS_FILL_MODE_LOWER = 0;
+
     /**
-     * The matrix diagonal has unit elements
+     * The upper part of the matrix is filled
      */
-    public static final int CUBLAS_DIAG_UNIT = 1;
+    public static final int CUBLAS_FILL_MODE_UPPER = 1;
 
     /**
      * Private constructor to prevent instantiation
      */
-    private cublasDiagType(){}
+    private cublasFillMode(){}
 
     /**
      * Returns a string representation of the given constant
@@ -58,10 +57,10 @@ public class cublasDiagType
     {
         switch (n)
         {
-            case CUBLAS_DIAG_NON_UNIT: return "CUBLAS_DIAG_NON_UNIT";
-            case CUBLAS_DIAG_UNIT: return "CUBLAS_DIAG_UNIT";
+            case CUBLAS_FILL_MODE_LOWER: return "CUBLAS_FILL_MODE_LOWER";
+            case CUBLAS_FILL_MODE_UPPER: return "CUBLAS_FILL_MODE_UPPER";
         }
-        return "INVALID cublasDiagType: "+n;
+        return "INVALID cublasFillMode: "+n;
     }
 }
 
