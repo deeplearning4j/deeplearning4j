@@ -180,7 +180,6 @@ public class KernelFunctionLoader {
      * <p/>
      * This will allow you to bypass the compiler restrictions. Again, do so at your own risk.
      *
-     * @param cuFileName The name of the .CU file
      * @return The name of the PTX file
      * @throws java.io.IOException If an I/O error occurs
      */
@@ -190,12 +189,19 @@ public class KernelFunctionLoader {
         sb.append("nvcc");
         sb.append(" --include-path ");
         String tmpDir = System.getProperty("java.io.tmpdir");
+        StringBuffer dir = new StringBuffer();
         sb.append(tmpDir)
                 .append(File.separator)
                 .append("kernels")
+                .append(File.separator).append(dataType).append(File.separator)
+                .toString();
+        String kernelPath =  dir.append(tmpDir)
                 .append(File.separator)
-                .append(dataType).append(" ");
-        sb.append("-ptx");
+                .append("kernels")
+                .append(File.separator).append(dataType).append(File.separator)
+                .toString();
+
+        sb.append(" ").append(" -ptx ");
         log.info("Loading " + dataType + " cuda functions");
         if (f != null) {
             String[] split = f.split(",");
@@ -203,6 +209,10 @@ public class KernelFunctionLoader {
                 String loaded = extract("/kernels/" + dataType + "/" + s + ".cu", dataType.equals("float") ? DataBuffer.FLOAT : DataBuffer.DOUBLE);
                 sb.append(" " + loaded);
             }
+
+            sb.append(" --output-directory " + kernelPath);
+
+
 
             Process process = Runtime.getRuntime().exec(sb.toString());
 
@@ -230,7 +240,8 @@ public class KernelFunctionLoader {
             for(String module : split) {
                 CUmodule m = new CUmodule();
                 log.info("Loading " + module);
-                cuModuleLoad(m,module+ ".ptx");
+                String path = kernelPath + module+ ".ptx";
+                cuModuleLoad(m,path);
                 modules.put(key + "_" + dataType,m);
                 // Obtain a function pointer to the "add" function.
                 CUfunction function = new CUfunction();
@@ -243,7 +254,7 @@ public class KernelFunctionLoader {
 
                 functions.put(name,function);
                 //cleanup
-                File ptxFile = new File(module + ".ptx");
+                File ptxFile = new File(path);
                 if(!ptxFile.exists())
                     throw new IllegalStateException("No ptx file " + ptxFile.getAbsolutePath() + " found!");
                 ptxFile.delete();

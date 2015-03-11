@@ -6,18 +6,8 @@ __device__ double update(double old,double opOutput,double *extraParams) {
  }
 
 
-/**
- An op on the device
- @param d1 the first operator
- @param d2 the second operator
-*/
-__device__ double op(double d1,double d2,double *extraParams) {
-      return fabsf(d1);
-}
-
-
 __device__ double op(double d1,double *extraParams) {
-      return d1;
+      return abs(d1);
 }
 
 

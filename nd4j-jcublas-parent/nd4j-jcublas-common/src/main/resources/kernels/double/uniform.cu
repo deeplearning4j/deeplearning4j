@@ -8,3 +8,4 @@ __global__ void uniform_double(int n,double lower,double upper,double *result) {
               result[i] = u * upper + (1 - u) * lower;
           }
 }
+

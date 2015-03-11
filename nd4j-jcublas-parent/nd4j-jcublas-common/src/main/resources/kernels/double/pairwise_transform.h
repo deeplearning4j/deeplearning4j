@@ -7,13 +7,11 @@ __device__ double op(double d1,double *params);
 __device__ void transform(int n,int xOffset,int yOffset, double *dx, double *dy,int incx,int incy,double *params,double *result) {
 
     int totalThreads = gridDim.x * blockDim.x;
-    int ctaStart = blockDim.x * blockIdx.x;
     int tid = threadIdx.x;
     int i = blockIdx.x * blockDim.x + tid;
 
     if (incy == 0) {
         if ((blockIdx.x == 0) && (tid == 0)) {
-            /* FIXME: This code is functionally correct, but inefficient */
             int ix = (incx < 0) ? ((1 - n) * incx) : 0;
             for (; i < n; i++) {
                 result[i] = op(dx[i * incx],params);

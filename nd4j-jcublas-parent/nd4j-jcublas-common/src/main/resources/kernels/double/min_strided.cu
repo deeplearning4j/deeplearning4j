@@ -1,6 +1,6 @@
 #include <reduce.h>
 __device__ double update(double old,double opOutput,double *extraParams) {
-       return min(old,opOutput);
+        return min(old,opOutput);
  }
 
 

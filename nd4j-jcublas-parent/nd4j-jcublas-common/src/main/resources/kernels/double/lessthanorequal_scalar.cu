@@ -1,9 +1,7 @@
 #include <scalar.h>
 //scalar and current element
 __device__ double op(double d1,double d2,double *params) {
-       if(d2 <= d1) {
-         return 1;
-       }
+       if(d2 <= d1) {return 1;}
        return 0;
 
 }
