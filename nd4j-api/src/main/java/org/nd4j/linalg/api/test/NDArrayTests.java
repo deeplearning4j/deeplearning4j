@@ -313,8 +313,25 @@ public abstract class NDArrayTests {
     }
 
     @Test
+      public void testNorm2Double() {
+        Nd4j.dtype = DataBuffer.DOUBLE;
+        INDArray n = Nd4j.create(new double[]{1, 2, 3, 4});
+        double assertion = 5.47722557505;
+        INDArray norm3 = n.norm2(Integer.MAX_VALUE);
+        assertEquals(assertion,norm3.getDouble(0), 1e-1);
+
+        INDArray row = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
+        INDArray row1 = row.getRow(1);
+        double norm2 = row1.norm2(Integer.MAX_VALUE).getDouble(0);
+        double assertion2 = 5.0f;
+        assertEquals(assertion2, norm2, 1e-1);
+
+    }
+
+
+    @Test
     public void testNorm2() {
-        Nd4j.factory().setDType(DataBuffer.FLOAT);
+        Nd4j.dtype = DataBuffer.FLOAT;
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         float assertion = 5.47722557505f;
         INDArray norm3 = n.norm2(Integer.MAX_VALUE);
@@ -347,7 +364,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testCosineSim() {
-        Nd4j.factory().setDType(DataBuffer.DOUBLE);
+        Nd4j.dtype = DataBuffer.FLOAT;
 
         INDArray vec1 = Nd4j.create(new double[]{1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new double[]{1, 2, 3, 4});
@@ -1015,7 +1032,7 @@ public abstract class NDArrayTests {
         Nd4j.getDistributions().createUniform(1,5).sample(5);
         Nd4j.getDistributions().createNormal(1,5).sample();
         Nd4j.getDistributions().createBinomial(5,1.0).sample(new int[]{5,5});
-        Nd4j.getDistributions().createBinomial(1,Nd4j.ones(5,5)).sample(rand.shape());
+        Nd4j.getDistributions().createBinomial(1, Nd4j.ones(5, 5)).sample(rand.shape());
         Nd4j.getDistributions().createNormal(rand,1).sample(rand.shape());
     }
 

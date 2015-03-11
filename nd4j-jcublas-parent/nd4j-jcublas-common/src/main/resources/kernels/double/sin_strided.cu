@@ -2,7 +2,7 @@
 
 
 __device__ double op(double d1,double *params) {
-        return sinf(d1);
+        return sin(d1);
 }
 
 extern "C"

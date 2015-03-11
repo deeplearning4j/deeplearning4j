@@ -1,13 +1,10 @@
 #include <reduce.h>
 
 __device__ double update(double old,double opOutput,double *extraParams) {
-       return opOutput;
+       return opOutput * old;
  }
 
 
-__device__ double op(double d1,double d2,double *extraParams) {
-       return d1 * d2;
-}
 
 __device__ double op(double d1,double *extraParams) {
       return d1;

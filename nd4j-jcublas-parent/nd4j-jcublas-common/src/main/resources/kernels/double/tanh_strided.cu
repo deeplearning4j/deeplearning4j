@@ -2,7 +2,7 @@
 
 
 __device__ double op(double d1,double *params) {
-        return tanhf(d1);
+        return tanh(d1);
 }
 
 extern "C"

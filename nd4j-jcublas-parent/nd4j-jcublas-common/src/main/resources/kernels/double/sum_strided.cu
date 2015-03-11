@@ -2,18 +2,11 @@
 
 
 __device__ double update(double old,double opOutput,double *extraParams) {
-       return opOutput;
+       return opOutput + old;
  }
 
 
-/**
- An op on the device
- @param d1 the first operator
- @param d2 the second operator
-*/
-__device__ double op(double d1,double d2,double *extraParams) {
-      return d1 + d2;
-}
+
 
 
 __device__ double op(double d1,double *extraParams) {

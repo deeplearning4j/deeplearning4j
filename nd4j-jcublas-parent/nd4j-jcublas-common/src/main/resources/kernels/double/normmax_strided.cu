@@ -1,4 +1,4 @@
-#include <reduce.h>
+#include <reduce3.h>
 __device__ double update(double old,double opOutput,double *extraParams) {
        return opOutput + old;
  }
@@ -7,9 +7,6 @@ __device__ double op(double d1,double d2,double *extraParams) {
        return max(abs(d1),abs(d2));
 }
 
-__device__ double op(double d1,double *extraParams) {
-      return d1;
-}
 
 
 __device__ double postProcess(double reduction,int n,int xOffset,double *dx,int incx,double *extraParams,double *result) {

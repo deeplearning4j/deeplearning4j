@@ -626,7 +626,7 @@ public class SimpleJCublas {
      * And and scale by the given scalar da
      *
      * @param da
-     * @param A 
+     * @param A
      * @param B
      */
     public static void axpy(float da, INDArray A, INDArray B) {
@@ -667,7 +667,7 @@ public class SimpleJCublas {
                 aCPointer,
                 1,
                 bCPointer,
-               1
+                1
         );
 
 
@@ -758,12 +758,20 @@ public class SimpleJCublas {
 
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
-        JCublas.cublasScopy(
-                x.length(),
-                xCPointer,
-                x.majorStride(),
-                yCPointer,
-                y.majorStride());
+        if(x.data().dataType() == DataBuffer.FLOAT)
+            JCublas.cublasScopy(
+                    x.length(),
+                    xCPointer,
+                    x.majorStride(),
+                    yCPointer,
+                    y.majorStride());
+        else if(x.data().dataType() == DataBuffer.DOUBLE)
+            JCublas.cublasDcopy(
+                    x.length(),
+                    xCPointer,
+                    x.majorStride(),
+                    yCPointer,
+                    y.majorStride());
 
 
     }

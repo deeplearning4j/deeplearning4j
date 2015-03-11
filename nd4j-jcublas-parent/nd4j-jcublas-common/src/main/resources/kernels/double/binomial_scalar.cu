@@ -1,6 +1,6 @@
 #include <cuda_runtime.h>
 #include <curand.h>
-__device__ double doBinomial(int n, double p,double *randomNumbers, curandGenerator_t *s) {
+__device__ double doBinomial(int n, double p,double *randomNumbers, curandGenerator_t s) {
   int x = 0;
   int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -12,7 +12,7 @@ __device__ double doBinomial(int n, double p,double *randomNumbers, curandGenera
 }
 
 extern "C"
-__global__ void binomial_scalar_double(int len,int n,double ps,double *randomNumbers,double *result, curandGenerator_t *s) {
+__global__ void binomial_scalar_double(int len,int n,double ps,double *randomNumbers,double *result, curandGenerator_t s) {
           int tid = threadIdx.x + blockIdx.x * blockDim.x;
           for(int i = tid; i < len; i += blockDim.x*gridDim.x) {
               result[i] = doBinomial(n,ps,randomNumbers,s);
