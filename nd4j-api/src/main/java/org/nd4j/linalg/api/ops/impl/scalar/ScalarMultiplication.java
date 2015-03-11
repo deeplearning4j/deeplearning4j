@@ -22,20 +22,20 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
- *  Scalar muliplication
+ *  Scalar multiplication
  *  @author Adam Gibson
  */
 public class ScalarMultiplication extends BaseScalarOp {
-    public ScalarMultiplication(INDArray x, INDArray y, int n, Number num) {
-        super(x, y, n, num);
+    public ScalarMultiplication(INDArray x, INDArray y, INDArray z, int n, Number num) {
+        super(x, y, z, n, num);
     }
 
     public ScalarMultiplication(INDArray x, Number num) {
         super(x, num);
     }
 
-    public ScalarMultiplication(INDArray x, INDArray y, int n, IComplexNumber num) {
-        super(x, y, n, num);
+    public ScalarMultiplication(INDArray x, INDArray y, INDArray z, int n, IComplexNumber num) {
+        super(x, y, z, n, num);
     }
 
     public ScalarMultiplication(INDArray x, IComplexNumber num) {
@@ -44,52 +44,52 @@ public class ScalarMultiplication extends BaseScalarOp {
 
     @Override
     public String name() {
-        return "scalar_mul";
+        return "mul_scalar";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, double other) {
         if(complexNumber != null)
             return origin .mul(complexNumber);
         return complexNumber.mul(num);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, float other) {
         if(complexNumber != null)
             return origin .mul(complexNumber);
         return complexNumber.mul(num);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
         if(complexNumber != null)
             return origin .mul(complexNumber);
         return complexNumber.mul(num);
     }
 
     @Override
-    public float op(float origin, float other, Object[] extraArgs) {
-        return (float) (origin * num.floatValue());
+    public float op(float origin, float other) {
+        return (origin * num.floatValue());
     }
 
     @Override
-    public double op(double origin, double other, Object[] extraArgs) {
+    public double op(double origin, double other) {
         return origin * num.doubleValue();
     }
 
     @Override
-    public double op(double origin, Object[] extraArgs) {
+    public double op(double origin) {
         return origin * num.doubleValue();
     }
 
     @Override
-    public float op(float origin, Object[] extraArgs) {
-        return (float) (origin * num.floatValue());
+    public float op(float origin) {
+        return (origin * num.floatValue());
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin) {
         if(complexNumber != null)
             return origin .mul(complexNumber);
         return complexNumber.mul(num);

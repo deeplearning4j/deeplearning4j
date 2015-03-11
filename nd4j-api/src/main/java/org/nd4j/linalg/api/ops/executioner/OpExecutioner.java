@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.executioner;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 
 /**
@@ -35,14 +36,6 @@ public interface OpExecutioner {
      */
     Op exec(Op op);
 
-    /**
-     * Execute an op with extra arguments
-     * @param op the operation to execute
-     * @param extraArgs the extra arguments
-     */
-    Op exec(Op op, Object[] extraArgs);
-
-
 
     /**
      * Execute the operation
@@ -50,20 +43,6 @@ public interface OpExecutioner {
      */
     INDArray execAndReturn(TransformOp op);
 
-    /**
-     * Execute an op with extra arguments
-     * @param op the operation to execute
-     * @param extraArgs the extra arguments
-     */
-    INDArray execAndReturn(TransformOp op, Object[] extraArgs);
-
-    /**
-     * Execute and return the result from an accumulation
-     * @param op the operation to execute
-     * @param extraArgs the extra arguments to invoke with
-     * @return the accumulated result
-     */
-    Accumulation execAndReturn(Accumulation op,Object[] extraArgs);
 
 
     /**
@@ -73,7 +52,12 @@ public interface OpExecutioner {
      */
     Accumulation execAndReturn(Accumulation op);
 
-
+    /**
+     * Execute and return the result from an accumulation
+     * @param op the operation to execute
+     * @return the accumulated result
+     */
+    INDArray execAndReturn(ScalarOp op);
 
 
     /**
@@ -82,12 +66,6 @@ public interface OpExecutioner {
      */
     Op exec(Op op,int dimension);
 
-    /**
-     * Execute an op with extra arguments
-     * @param op the operation to execute
-     * @param extraArgs the extra arguments
-     */
-    Op exec(Op op, Object[] extraArgs,int dimension);
 
 
 
@@ -97,21 +75,7 @@ public interface OpExecutioner {
      */
     INDArray execAndReturn(TransformOp op,int dimension);
 
-    /**
-     * Execute an op with extra arguments
-     * @param op the operation to execute
-     * @param extraArgs the extra arguments
-     */
-    INDArray execAndReturn(TransformOp op,int dimension, Object[] extraArgs);
 
-    /**
-     * Execute and return the result from an accumulation
-     * along a dimension
-     * @param op the operation to execute
-     * @param extraArgs the extra arguments to invoke with
-     * @return the accumulated result
-     */
-    Accumulation execAndReturn(Accumulation op,int dimension,Object[] extraArgs);
 
 
     /**
@@ -121,6 +85,12 @@ public interface OpExecutioner {
      */
     Accumulation execAndReturn(Accumulation op,int dimension);
 
+    /**
+     * Execute and return the result from an accumulation
+     * @param op the operation to execute
+     * @return the accumulated result
+     */
+    INDArray execAndReturn(ScalarOp op,int dimension);
 
 
 

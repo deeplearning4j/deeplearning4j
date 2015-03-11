@@ -19,8 +19,7 @@ package org.nd4j.linalg.factory;
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
 import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.factory.DefaultDataBufferFactory;
@@ -33,6 +32,10 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
+import org.nd4j.linalg.api.rng.DefaultRandom;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
+import org.nd4j.linalg.api.rng.distribution.factory.DistributionFactory;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
 import org.nd4j.linalg.fft.DefaultFFTInstance;
@@ -67,11 +70,10 @@ public class Nd4j {
     public final static String COPY_OPS = "ndarray.copyops";
     public final static String OP_EXECUTIONER = "opexec";
     public final static String OP_FACTORY = "opfactory";
+    public final static String RANDOM = "rng";
+    public final static String DISTRIBUTION = "dist";
 
-    static {
-        Nd4j nd4j = new Nd4j();
-        nd4j.initContext();
-    }
+
     public static int dtype = DataBuffer.FLOAT;
     public static char ORDER = 'c';
     public static IComplexNumber UNIT;
@@ -90,18 +92,45 @@ public class Nd4j {
     protected static Class<? extends DataBufferFactory> dataBufferFactoryClazz;
     protected static Class<? extends OpExecutioner> opExecutionerClazz;
     protected static Class<? extends OpFactory> opFactoryClazz;
+    protected static Class<? extends  org.nd4j.linalg.api.rng.Random> randomClazz;
+    protected static Class<? extends DistributionFactory> distributionFactoryClazz;
     protected static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
     protected static NDArrayFactory INSTANCE;
     protected static FFTInstance FFT_INSTANCE;
     protected static ConvolutionInstance CONVOLUTION_INSTANCE;
     protected static OpExecutioner OP_EXECUTIONER_INSTANCE;
+    protected static DistributionFactory DISTRIBUTION_FACTORY;
     protected static OpFactory OP_FACTORY_INSTANCE;
+    protected static org.nd4j.linalg.api.rng.Random random;
     protected static Properties props = new Properties();
+
+    static {
+        Nd4j nd4j = new Nd4j();
+        nd4j.initContext();
+    }
+
+    /**
+     * Get the primary distributions
+     * factory
+     * @return the primary distributions
+     */
+    public static DistributionFactory getDistributions() {
+        return DISTRIBUTION_FACTORY;
+    }
 
     public static void setNdArrayFactoryClazz(Class<? extends NDArrayFactory> clazz) {
         ndArrayFactoryClazz = clazz;
     }
+
+    /**
+     * Get the current random generator
+     * @return the current random generator
+     */
+    public static org.nd4j.linalg.api.rng.Random getRandom() {
+        return random;
+    }
+
 
     /**
      * Get the convolution singleton
@@ -1118,7 +1147,7 @@ public class Nd4j {
      * @param rng   the rng to use
      * @return a drandom matrix of the specified shape and range
      */
-    public static INDArray rand(int[] shape, double min, double max, RandomGenerator rng) {
+    public static INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
         return INSTANCE.rand(shape, min, max, rng);
     }
 
@@ -1132,7 +1161,7 @@ public class Nd4j {
      * @param rng     the rng to use
      * @return a drandom matrix of the specified shape and range
      */
-    public static INDArray rand(int rows, int columns, double min, double max, RandomGenerator rng) {
+    public static INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
         return INSTANCE.rand(rows, columns, min, max, rng);
     }
 
@@ -1315,7 +1344,7 @@ public class Nd4j {
      * @param r       the random generator to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int rows, int columns, RandomGenerator r) {
+    public static INDArray rand(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
         return INSTANCE.rand(rows, columns, r);
     }
 
@@ -1351,7 +1380,7 @@ public class Nd4j {
      * @param r       the random generator to use
      * @return
      */
-    public static INDArray randn(int rows, int columns, RandomGenerator r) {
+    public static INDArray randn(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
         return INSTANCE.randn(rows, columns, r);
     }
 
@@ -1385,7 +1414,7 @@ public class Nd4j {
      * @param r     the random generator to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int[] shape, RealDistribution r) {
+    public static INDArray rand(int[] shape, Distribution r) {
         return INSTANCE.rand(shape, r);
     }
 
@@ -1396,7 +1425,7 @@ public class Nd4j {
      * @param r     the random generator to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int[] shape, RandomGenerator r) {
+    public static INDArray rand(int[] shape, org.nd4j.linalg.api.rng.Random r) {
         return INSTANCE.rand(shape, r);
     }
 
@@ -1429,7 +1458,7 @@ public class Nd4j {
      * @param r     the random generator to use
      * @return
      */
-    public static INDArray randn(int[] shape, RandomGenerator r) {
+    public static INDArray randn(int[] shape, org.nd4j.linalg.api.rng.Random r) {
         return INSTANCE.randn(shape, r);
     }
 
@@ -1451,7 +1480,8 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int[] shape, long seed) {
-        return randn(shape, new MersenneTwister(seed));
+        Nd4j.getRandom().setSeed(seed);
+        return randn(shape, Nd4j.getRandom());
     }
 
     /**
@@ -1461,7 +1491,7 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(float[] data, char order) {
-        return INSTANCE.create(data);
+        return INSTANCE.create(data,order);
     }
 
     /**
@@ -1471,7 +1501,7 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(double[] data, char order) {
-        return INSTANCE.create(data);
+        return INSTANCE.create(data,order);
     }
 
     /**
@@ -2803,13 +2833,21 @@ public class Nd4j {
                 String defaultName = props.getProperty(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
                 dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
             }
+            if(randomClazz == null) {
+                String rand = props.getProperty(RANDOM, DefaultRandom.class.getName());
+                randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
+            }
 
             if(opFactoryClazz == null)
                 opFactoryClazz = (Class<? extends OpFactory>) Class.forName(System.getProperty(OP_FACTORY,DefaultOpFactory.class.getName()));
 
             if (blasWrapperClazz == null)
                 blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS, props.get(BLAS_OPS).toString()));
+            if(distributionFactoryClazz == null) {
+                String clazzName = props.getProperty(DISTRIBUTION,DefaultDistributionFactory.class.getName());
+                distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
 
+            }
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             FFT_INSTANCE = fftInstanceClazz.newInstance();
             Constructor c2 = ndArrayFactoryClazz.getConstructor(int.class, char.class);
@@ -2818,13 +2856,17 @@ public class Nd4j {
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
             DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
             OP_FACTORY_INSTANCE = opFactoryClazz.newInstance();
+            random = randomClazz.newInstance();
             UNIT = Nd4j.createFloat(1, 0);
             ZERO = Nd4j.createFloat(0, 0);
             NEG_UNIT = Nd4j.createFloat(-1, 0);
             ENFORCE_NUMERICAL_STABILITY = Boolean.parseBoolean(System.getProperty(NUMERICAL_STABILITY, String.valueOf(false)));
+            DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
     }
+
+
 }

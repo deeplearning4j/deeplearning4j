@@ -52,7 +52,7 @@ public class HardTanhDerivative extends BaseTransformOp {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, double other) {
         if (origin.realComponent().doubleValue() < -1)
             origin.set(-1, origin.imaginaryComponent().doubleValue());
         else if (origin.realComponent().doubleValue() > 1)
@@ -63,7 +63,7 @@ public class HardTanhDerivative extends BaseTransformOp {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, float other) {
         if (origin.realComponent().doubleValue() < -1)
             origin.set(-1, origin.imaginaryComponent().doubleValue());
         else if (origin.realComponent().doubleValue() > 1)
@@ -74,7 +74,7 @@ public class HardTanhDerivative extends BaseTransformOp {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
         if (origin.realComponent().doubleValue() < -1)
             origin.set(-1, origin.imaginaryComponent().doubleValue());
         else if (origin.realComponent().doubleValue() > 1)
@@ -85,27 +85,27 @@ public class HardTanhDerivative extends BaseTransformOp {
     }
 
     @Override
-    public float op(float origin, float other, Object[] extraArgs) {
+    public float op(float origin, float other) {
         return hardTanh(origin);
     }
 
     @Override
-    public double op(double origin, double other, Object[] extraArgs) {
+    public double op(double origin, double other) {
         return hardTanh(origin);
     }
 
     @Override
-    public double op(double origin, Object[] extraArgs) {
+    public double op(double origin) {
         return hardTanh(origin);
     }
 
     @Override
-    public float op(float origin, Object[] extraArgs) {
+    public float op(float origin) {
        return hardTanh(origin);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin) {
         if (origin.realComponent().doubleValue() < -1)
             origin.set(-1, origin.imaginaryComponent().doubleValue());
         else if (origin.realComponent().doubleValue() > 1)

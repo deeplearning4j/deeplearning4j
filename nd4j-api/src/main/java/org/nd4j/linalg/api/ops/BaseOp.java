@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -27,23 +26,39 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public abstract class BaseOp implements Op {
 
-    protected INDArray x,y;
+    protected INDArray x,y,z;
     protected int n;
     protected int numProcessed;
     protected Object[] extraArgs;
+    /**
+     * Specify an alternative result array
+     * @param x the input
+     * @param z the output array
+     */
+    public BaseOp(INDArray x, INDArray z) {
+        this(x,z,x.length());
+    }
 
     /**
-     * Base operation constructor
-     * @param x the origin ndarray
-     * @param y the pairwise ndarray
-     * @param n the number of elements
+     * Specify an alternative output array
+     * @param x the input
+     * @param z the output
+     * @param n the number of elements to iterate on
      */
-    public BaseOp(INDArray x, INDArray y, int n) {
+    public BaseOp(INDArray x, INDArray z, int n) {
+        this(x,null,z,n);
+    }
+
+
+    public BaseOp(INDArray x, INDArray y, INDArray z, int n) {
         this.x = x;
         this.y = y;
+        this.z = z;
         this.n = n;
-        init(x,y,n);
+        init(x,y,z,n);
     }
+
+
 
     @Override
     public Object[] extraArgs() {
@@ -55,7 +70,7 @@ public abstract class BaseOp implements Op {
      * @param x the ndarray
      */
     public BaseOp(INDArray x) {
-        this(x,null,x.length());
+        this(x,null,x,x.length());
     }
 
 
@@ -70,55 +85,19 @@ public abstract class BaseOp implements Op {
     }
 
 
+    @Override
+    public INDArray z() {
+        return z;
+    }
 
     @Override
     public int n() {
         return n;
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return op(origin,other,null);
-    }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return op(origin,other,null);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return op(origin,other,null);
-    }
-
-
-    @Override
-    public float op(float origin, float other) {
-        return op(origin,other,null);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return op(origin,other,null);
-    }
-
-    @Override
-    public double op(double origin) {
-        return op(origin,null);
-    }
-
-    @Override
-    public float op(float origin) {
-        return op(origin,null);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return op(origin, (Object[]) null);
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
 
     }
 

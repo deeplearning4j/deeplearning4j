@@ -50,44 +50,44 @@ public class OneMinus extends BaseTransformOp {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, double other) {
         return Nd4j.createComplexNumber(1,1).subi(origin);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
-        return Nd4j.createComplexNumber(1,1).subi(origin);
-
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, float other) {
         return Nd4j.createComplexNumber(1,1).subi(origin);
 
     }
 
     @Override
-    public float op(float origin, float other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
+        return Nd4j.createComplexNumber(1,1).subi(origin);
+
+    }
+
+    @Override
+    public float op(float origin, float other) {
         return 1 - origin;
     }
 
     @Override
-    public double op(double origin, double other, Object[] extraArgs) {
+    public double op(double origin, double other) {
         return 1 - origin;
     }
 
     @Override
-    public double op(double origin, Object[] extraArgs) {
+    public double op(double origin) {
         return 1 - origin;
     }
 
     @Override
-    public float op(float origin, Object[] extraArgs) {
+    public float op(float origin) {
         return 1 - origin;
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin) {
         return Nd4j.createComplexNumber(1,1).subi(origin);
 
     }

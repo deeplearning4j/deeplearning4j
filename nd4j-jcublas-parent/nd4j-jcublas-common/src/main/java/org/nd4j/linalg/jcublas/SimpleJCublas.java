@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.jcublas;
 
+import jcublas.cublasHandle;
 import jcuda.LogLevel;
 import jcuda.Pointer;
 import jcuda.cuComplex;
@@ -31,20 +32,18 @@ import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Created by mjk on 8/20/14.
+ * Simple abstraction for jcublas operations
  *
  * @author mjk
  * @author Adam Gibson
  */
 public class SimpleJCublas {
-    public final static String CUDA_HOME = "CUDA_HOME";
-    public final static String JCUDA_HOME_PROP = "jcuda.home";
+
     private static boolean init = false;
-    private static Logger log = LoggerFactory.getLogger(SimpleJCublas.class);
+    private static  cublasHandle handle = new cublasHandle();
+
 
     static {
         init();
@@ -69,6 +68,13 @@ public class SimpleJCublas {
         return buffer.pointer().withByteOffset(buffer.elementSize() * array.offset());
     }
 
+    /**
+     * The cublas handle
+     * @return the handle used for cublas
+     */
+    public static cublasHandle handle() {
+        return handle;
+    }
 
     /**
      * Initialize jcublas only called once
@@ -76,9 +82,11 @@ public class SimpleJCublas {
     public static void init() {
         if (init)
             return;
-        String path = System.getProperty("java.library.path");
         JCublas.setLogLevel(LogLevel.LOG_DEBUG);
         JCublas.setExceptionsEnabled(true);
+       /* Will re enable when link problem is found
+       cublasHandle handle = new cublasHandle();
+        JCublas2.cublasCreate(handle);*/
         try {
             KernelFunctionLoader.getInstance().load();
         } catch (Exception e) {
@@ -563,13 +571,22 @@ public class SimpleJCublas {
      * @param x
      * @return
      */
-    public static float nrm2(INDArray x) {
+    public static double nrm2(INDArray x) {
+        if(x.data().dataType() == DataBuffer.FLOAT) {
+            Pointer xCPointer = getPointer(x);
 
-        Pointer xCPointer = getPointer(x);
+
+            float normal2 = JCublas.cublasSnrm2(x.length(), xCPointer, 1);
+            return normal2;
+        }
+        else if(x.data().dataType() == DataBuffer.DOUBLE) {
+            Pointer xCPointer = getPointer(x);
+            double normal2 = JCublas.cublasDnrm2(x.length(), xCPointer, 1);
+            return normal2;
+        }
+        throw new IllegalStateException("Illegal data type on array ");
 
 
-        float normal2 = JCublas.cublasSnrm2(x.length(), xCPointer, 1);
-        return normal2;
     }
 
     /**
@@ -584,14 +601,24 @@ public class SimpleJCublas {
 
         Pointer xCPointer = getPointer(x);
 
+        if(x.data().dataType() == DataBuffer.FLOAT) {
+            int max = JCublas.cublasIsamax(
+                    x.length(),
+                    xCPointer,
+                    x.majorStride());
 
-        int max = JCublas.cublasIsamax(
-                x.length(),
-                xCPointer,
-                1);
+            return max - 1;
+        }
+        else if(x.data().dataType() == DataBuffer.DOUBLE) {
+            int max = JCublas.cublasIdamax(
+                    x.length(),
+                    xCPointer,
+                    x.majorStride());
 
-        return max - 1;
+            return max - 1;
+        }
 
+        throw new IllegalStateException("Illegal data type on array ");
     }
 
 
@@ -609,27 +636,14 @@ public class SimpleJCublas {
         Pointer xAPointer = getPointer(A);
         Pointer xBPointer = getPointer(B);
 
+        JCublas.cublasSaxpy(
+                A.length(),
+                da,
+                xAPointer,
+                1,
+                xBPointer,
+                1);
 
-        if (A.ordering() == NDArrayFactory.C) {
-            JCublas.cublasSaxpy(
-                    A.length(),
-                    da,
-                    xAPointer,
-                    1,
-                    xBPointer,
-                    1);
-
-        } else {
-            JCublas.cublasSaxpy(
-                    A.length(),
-                    da,
-                    xAPointer,
-                    1,
-                    xBPointer,
-                    1);
-
-
-        }
 
 
     }
@@ -676,9 +690,9 @@ public class SimpleJCublas {
                 A.length(),
                 jcuda.cuDoubleComplex.cuCmplx(da.realComponent().floatValue(), da.imaginaryComponent().floatValue()),
                 aCPointer,
-                1,
+                A.majorStride(),
                 bCPointer,
-                1
+                B.majorStride()
         );
 
 
@@ -702,7 +716,7 @@ public class SimpleJCublas {
                 x.length(),
                 alpha,
                 xCPointer,
-                1);
+                x.majorStride());
 
         return x;
 
@@ -726,7 +740,7 @@ public class SimpleJCublas {
                 x.length(),
                 alpha,
                 xCPointer,
-                1);
+                x.majorStride());
 
         return x;
 
@@ -744,25 +758,20 @@ public class SimpleJCublas {
 
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
-        if (x.data().dataType() == DataBuffer.DOUBLE) {
-            JCublas.cublasDcopy(
-                    x.length(),
-                    xCPointer,
-                    x.secondaryStride(),
-                    yCPointer,
-                    y.secondaryStride());
-
-
-        } else {
+        if(x.data().dataType() == DataBuffer.FLOAT)
             JCublas.cublasScopy(
                     x.length(),
                     xCPointer,
-                    x.secondaryStride(),
+                    x.majorStride(),
                     yCPointer,
-                    y.secondaryStride());
-
-
-        }
+                    y.majorStride());
+        else if(x.data().dataType() == DataBuffer.DOUBLE)
+            JCublas.cublasDcopy(
+                    x.length(),
+                    xCPointer,
+                    x.majorStride(),
+                    yCPointer,
+                    y.majorStride());
 
 
     }
@@ -785,18 +794,18 @@ public class SimpleJCublas {
             float ret = JCublas.cublasSdot(
                     x.length(),
                     xCPointer,
-                    1
+                    x.majorStride()
                     , yCPointer,
-                    1);
+                    y.majorStride());
 
             return ret;
         } else {
             double ret = JCublas.cublasDdot(
                     x.length(),
                     xCPointer,
-                    1
+                    y.majorStride()
                     , yCPointer,
-                    1);
+                    y.majorStride());
 
             return ret;
         }
@@ -815,9 +824,9 @@ public class SimpleJCublas {
         jcuda.cuDoubleComplex dott = JCublas.cublasZdotc(
                 x.length(),
                 aCPointer,
-                1,
+                x.majorStride(),
                 bCPointer,
-                1);
+                y.majorStride());
 
         IComplexDouble ret = Nd4j.createDouble(dott.x, dott.y);
         return ret;
@@ -894,7 +903,7 @@ public class SimpleJCublas {
                 x.length(),
                 jcuda.cuComplex.cuCmplx(alpha.realComponent(), alpha.imaginaryComponent()),
                 xCPointer,
-                1
+                x.majorStride()
         );
 
 
@@ -918,7 +927,7 @@ public class SimpleJCublas {
                 x.length(),
                 jcuda.cuDoubleComplex.cuCmplx(alpha.realComponent(), alpha.imaginaryComponent()),
                 xCPointer,
-                1
+                x.majorStride()
         );
 
 
@@ -940,10 +949,10 @@ public class SimpleJCublas {
         Pointer yCPointer = getPointer(y);
         IComplexDouble ret = null;
         if (x.data().dataType() == DataBuffer.DOUBLE) {
-            jcuda.cuDoubleComplex dott = JCublas.cublasZdotu(x.length(), xCPointer, 1, yCPointer, 1);
+            jcuda.cuDoubleComplex dott = JCublas.cublasZdotu(x.length(), xCPointer, x.majorStride(), yCPointer, y.majorStride());
             ret = Nd4j.createDouble(dott.x, dott.y);
         } else {
-            jcuda.cuComplex dott = JCublas.cublasCdotu(x.length(), xCPointer, 1, yCPointer, 1);
+            jcuda.cuComplex dott = JCublas.cublasCdotu(x.length(), xCPointer, x.majorStride(), yCPointer, y.majorStride());
             ret = Nd4j.createDouble(dott.x, dott.y);
         }
 
@@ -1131,7 +1140,7 @@ public class SimpleJCublas {
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
 
-        JCublas.cublasSaxpy(x.length(), alpha, xCPointer, 1, yCPointer, 1);
+        JCublas.cublasSaxpy(x.length(), alpha, xCPointer, x.majorStride(), yCPointer, y.majorStride());
 
 
     }

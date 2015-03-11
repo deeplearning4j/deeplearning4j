@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import jcublas.JCublas2;
 import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
@@ -29,10 +30,10 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 /**
  * Base class for a data buffer
@@ -44,7 +45,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     static {
         SimpleJCublas.init();
     }
-    protected Pointer pointer;
+    protected transient Pointer pointer;
     protected int length;
     protected int elementSize;
 
@@ -136,58 +137,19 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected void copyTo(JCudaBuffer to) {
         if (to.dataType() != dataType())
             throw new IllegalArgumentException("Unable to copy buffer, mis matching data types.");
+        if(dataType() == DataBuffer.FLOAT) {
+            JCublas.cublasScopy(length(),pointer(),1,to.pointer(),1);
+        }
+        else if(dataType() == DataBuffer.DOUBLE) {
+            JCublas.cublasDcopy(length(), pointer(), 1, to.pointer(), 1);
 
-        JCuda.cudaMemcpy(
-                to.pointer()
-                , pointer()
-                , length() * elementSize()
-                , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
-
+        }
+        else throw new IllegalStateException("Illegal data type " + dataType());
 
     }
 
 
 
-
-    @Override
-    public void addi(Number n) {
-        addi(n, 1, 0);
-    }
-
-    @Override
-    public void subi(Number n) {
-        subi(n, 1, 0);
-    }
-
-    @Override
-    public void muli(Number n) {
-        muli(n, 1, 0);
-    }
-
-    @Override
-    public void divi(Number n) {
-        divi(n, 1, 0);
-    }
-
-    @Override
-    public void addi(DataBuffer buffer) {
-        addi(buffer, length(), 0, 0, 1, 1);
-    }
-
-    @Override
-    public void subi(DataBuffer buffer) {
-        subi(buffer, length(), 0, 0, 1, 1);
-    }
-
-    @Override
-    public void muli(DataBuffer buffer) {
-        muli(buffer, length(), 0, 0, 1, 1);
-    }
-
-    @Override
-    public void divi(DataBuffer buffer) {
-        divi(buffer, length(), 0, 0, 1, 1);
-    }
 
     @Override
     public void assign(Number value) {
@@ -204,14 +166,18 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param init   the initialized pointer
      */
     protected void get(int index, int inc, int length, Pointer init) {
-        JCublas.cublasGetVector(
-                length
-                , elementSize(),
-                pointer().withByteOffset(index * elementSize())
-                ,
-                inc,
-                init
-                , 1);
+        try {
+            JCublas.cublasGetVector(
+                    length
+                    , elementSize(),
+                    pointer().withByteOffset(index * elementSize())
+                    ,
+                    inc,
+                    init
+                    , 1);
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -257,14 +223,20 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param from  the element to get data from
      */
     protected void set(int index, int length, Pointer from, int inc) {
-        JCublas.cublasSetVector(
-                length,
-                elementSize(),
-                from,
-                inc,
-                pointer().withByteOffset(elementSize() * index)
-                , 1);
-
+        try {
+            int offset = elementSize() * index;
+            if(offset >= length() * elementSize())
+                throw new IllegalArgumentException("Illegal offset " + offset + " with index of " + index + " and length " + length());
+            JCublas.cublasSetVector(
+                    length
+                    ,elementSize()
+                    ,from
+                    ,inc
+                    ,pointer().withByteOffset(offset)
+                    ,1);
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
 
     }
 
@@ -338,20 +310,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
 
 
-    @Override
-    public double getDouble(int i) {
-        return 0;
-    }
 
-    @Override
-    public float getFloat(int i) {
-        return 0;
-    }
-
-    @Override
-    public Number getNumber(int i) {
-        return null;
-    }
 
 
 
@@ -411,12 +370,21 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
         if (elementSize != that.elementSize) return false;
         if (length != that.length) return false;
-        for (int i = 0; i < length; i++) {
-            double element = getDouble(i);
-            double other = that.getDouble(i);
-            if (element != other)
+        if(dataType() != that.dataType()) return false;
+        if(dataType() == DataBuffer.DOUBLE) {
+            double[] data = asDouble();
+            double[] other = that.asDouble();
+            if(!Arrays.equals(data, other))
                 return false;
         }
+        else if(dataType() == DataBuffer.FLOAT) {
+            float[] data = asFloat();
+            float[] other = that.asFloat();
+            if(!Arrays.equals(data, other))
+                return false;
+
+        }
+
         return true;
     }
 
@@ -428,238 +396,39 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         return result;
     }
 
-    /**
-     * Execute an operation on this buffer with a scalar
-     * @param dType the data type to operate on (float or double)
-     * @param dYIdx the index to
-     * @param scalar the scalar to operate with
-     * @param n the number of items to iterate on
-     * @param incy the increment for this buffer
-     * @param op the operation to execute
-     */
-    protected void execScalar(String dType,int dYIdx,Number scalar,int n,int incy,String op) {
-        execScalar(dType, dYIdx, scalar, n, incy, op,this);
-    }
-
-    /**
-     * Execute an operation on this buffer and the incoming buffer
-     * @param buffer the other buffer to execute on
-     * @param dType the dType(double or float)
-     * @param dxIdx the index to begin at for the other buffer
-     * @param dYIdx the index to begin at for this buffer
-     * @param n the length to iterate for
-     * @param incx the increment of the passed in buffer
-     * @param incy the increment of this buffer
-     * @param op the operation to execute
-     */
-    protected void exec2d(DataBuffer buffer,String dType,int dxIdx,int dYIdx,int n,int incx,int incy,String op) {
-        exec2d(buffer,dType,dxIdx,dYIdx,n,incx,incy,op,this);
-    }
 
 
 
-    @Override
-    public void rdivi(DataBuffer buffer) {
-        rdivi(buffer,length(),0,0,1,1);
-    }
-
-    @Override
-    public void rsubi(DataBuffer buffer) {
-        rsubi(buffer, length(), 0, 0, 1, 1);
-    }
-
-    @Override
-    public void addi(DataBuffer buffer, DataBuffer result) {
-        addi(buffer,length(),0,0,1,1,result);
-    }
-
-    @Override
-    public void subi(DataBuffer buffer, DataBuffer result) {
-        subi(buffer,length(),0,0,1,1,result);
-
-    }
-
-    @Override
-    public void muli(DataBuffer buffer, DataBuffer result) {
-        muli(buffer,length(),0,0,1,1,result);
-
-    }
-
-    @Override
-    public void divi(DataBuffer buffer, DataBuffer result) {
-        divi(buffer,length(), 0,0,1,1,result);
-
-    }
-
-    @Override
-    public void rdivi(DataBuffer buffer, DataBuffer result) {
-        rdivi(buffer,length(),0,0,1,1,result);
-
-    }
-
-    @Override
-    public void rsubi(DataBuffer buffer, DataBuffer result) {
-        rsubi(buffer,length(),0,0,1,1,result);
-
-    }
-
-
-
-    /**
-     * Execute an operation on this buffer with a scalar
-     * @param dType the data type to operate on (float or double)
-     * @param dYIdx the index to
-     * @param scalar the scalar to operate with
-     * @param n the number of items to iterate on
-     * @param incy the increment for this buffer
-     * @param op the operation to execute
-     */
-    protected void execScalar(String dType,int dYIdx,Number scalar,int n,int incy,String op,DataBuffer result) {
-        Pointer scalarP = dType.equals("double") ? Pointer.to(new double[]{scalar.doubleValue()}) : Pointer.to(new float[]{scalar.floatValue()});
-        Pointer twoP = Pointer.to(pointer());
-        JCudaBuffer resultBuffer = (JCudaBuffer) result;
-
-
-        Pointer resultP = Pointer.to(resultBuffer.pointer());
-
-
-        Pointer kernelParameters = KernelFunctions.constructKernelParameters(
-                //number of elements
-                Pointer.to(new int[]{n}),
-                Pointer.to(new int[]{dYIdx})
-                , scalarP
-                , twoP
-                , Pointer.to(new int[]{incy}),resultP);
-        //actually call the kernel
-        KernelFunctions.invoke(
-                2,
-                KernelFunctionLoader.getInstance().getFunction(op,dType)
-                , kernelParameters);
-    }
-
-
-    /**
-     * Invoke an element wise transformation such as (exp,floor,tanh,..)
-     * on a buffer
-     * @param function the function to invoke
-     * @param dType the data type to use
-     * @param n the number of elements
-     * @param offset the offset to start
-     * @param inc the increment along the buffer
-     * @param result the result buffer
-     */
-    protected void invokeElementWise(String function,String dType,int n,int offset,int inc,DataBuffer result) {
-         invokeElementWise(function,dType,n,offset,inc,null,result);
-    }
-
-    /**
-     * Invoke an element wise transformation such as (exp,floor,tanh,..)
-     * on a buffer
-     * @param function the function to invoke
-     * @param dType the data type to use
-     * @param n the number of elements
-     * @param offset the offset to start
-     * @param inc the increment along the buffer
-     * @param extraArgs the extra arguments (for say, pow(,2))
-     * @param result the result buffer
-     */
-    protected void invokeElementWise(String function,String dType,int n,int offset,int inc,Object[] extraArgs,DataBuffer result) {
-        JCudaBuffer resultBuffer = (JCudaBuffer) result;
-        Pointer p = Pointer.to(pointer());
-        Pointer resultP = Pointer.to(resultBuffer.pointer());
-        if(extraArgs == null || extraArgs.length < 1) {
-            Pointer kernelParameters = KernelFunctions.constructKernelParameters(
-                    //number of elements
-                    Pointer.to(new int[]{n}),
-                    Pointer.to(new int[]{offset})
-                    , p
-                    , Pointer.to(new int[]{inc})
-                    , resultP);
-
-
-            KernelFunctions.invoke(n,KernelFunctionLoader.getInstance().getFunction(function, dType),kernelParameters);
-        }
-
-        else {
-            /**
-             * Construct pointer arguments in the following order:
-             * n
-             * offset,
-             * pointer to buffer
-             * increment,
-             * extraArgs,
-             * result
-             */
-            Pointer[] results = new Pointer[5 + extraArgs.length];
-            results[0] = Pointer.to(new int[]{n});
-            results[1] = Pointer.to(new int[]{offset});
-            results[2] = p;
-            results[3] = Pointer.to(new int[]{inc});
-
-            //start at the extra args slot and iterate over each argument
-            for(int i = 4,count = 0; count < extraArgs.length; i++,count++) {
-                Object o = extraArgs[count];
-                if(o instanceof Integer) {
-                    results[i] = Pointer.to(new int[]{Integer.valueOf(o.toString())});
-                }
-                else if(o instanceof Double) {
-                    results[i] = Pointer.to(new double[]{Double.valueOf(o.toString())});
-                }
-                else if(o instanceof Float) {
-                    results[i] = Pointer.to(new float[]{Float.valueOf(o.toString())});
-                }
-            }
-
-            results[results.length - 1] = resultP;
-
-            Pointer kernelParameters = KernelFunctions.constructKernelParameters(results);
-
-
-            KernelFunctions.invoke(n,KernelFunctionLoader.getInstance().getFunction(function, dType),kernelParameters);
-
-        }
-
-    }
-
-
-
-
-    /**
-     * Execute an operation on this buffer and the incoming buffer
-     * @param buffer the other buffer to execute on
-     * @param dType the dType(double or float)
-     * @param dxIdx the index to begin at for the other buffer
-     * @param dYIdx the index to begin at for this buffer
-     * @param n the length to iterate for
-     * @param incx the increment of the passed in buffer
-     * @param incy the increment of this buffer
-     * @param op the operation to execute
-     */
-    protected void exec2d(DataBuffer buffer,String dType,int dxIdx,int dYIdx,int n,int incx,int incy,String op,DataBuffer result) {
-        JCudaBuffer b = (JCudaBuffer) buffer;
-        JCudaBuffer resultBuffer = (JCudaBuffer) result;
-        Pointer onesP = Pointer.to(b.pointer());
-        Pointer twoP = Pointer.to(pointer());
-        Pointer resultP = Pointer.to(resultBuffer.pointer());
-
-        Pointer kernelParameters = KernelFunctions.constructKernelParameters(
-                //number of elements
-                Pointer.to(new int[]{n}),
-                Pointer.to(new int[]{dxIdx}),
-                Pointer.to(new int[]{dYIdx})
-                , onesP
-                , twoP
-                , Pointer.to(new int[]{incx})
-                , Pointer.to(new int[]{incy}),resultP);
-        KernelFunctions.invoke(
-                2
-                ,KernelFunctionLoader.getInstance().getFunction(op,dType)
-                ,kernelParameters);
-    }
 
     @Override
     public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
+        int count = 0;
+        for(int i = 0; i < buffers.length; i++) {
+            DataBuffer buffer = buffers[i];
+            if(buffer instanceof  JCudaBuffer) {
+                JCudaBuffer buff = (JCudaBuffer) buffer;
+                if(buff.dataType() == DataBuffer.DOUBLE) {
+                    JCublas.cublasDcopy(
+                            buff.length()
+                            ,buff.pointer().withByteOffset(buff.elementSize() * offsets[i])
+                            ,strides[i]
+                            ,pointer().withByteOffset(count * buff.elementSize())
+                            ,1);
+                    count += buff.length();
+                }
+                else {
+                    JCublas.cublasScopy(buff.length()
+                            ,buff.pointer().withByteOffset(buff.elementSize() * offsets[i])
+                            , strides[i]
+                            ,pointer().withByteOffset(count * buff.elementSize())
+                            , 1);
+                    count += buff.length();
 
+                }
+            }
+            else
+                throw new IllegalArgumentException("Only jcuda data buffers allowed");
+        }
     }
 
     @Override

@@ -49,45 +49,45 @@ public class SigmoidDerivative extends BaseTransformOp {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, double other) {
         IComplexNumber oneMinus = Nd4j.createComplexNumber(1,1).subi(origin);
         return origin.muli(oneMinus);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, float other) {
         IComplexNumber oneMinus = Nd4j.createComplexNumber(1,1).subi(origin);
         return origin.muli(oneMinus);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
         IComplexNumber oneMinus = Nd4j.createComplexNumber(1,1).subi(origin);
         return origin.muli(oneMinus);
     }
 
     @Override
-    public float op(float origin, float other, Object[] extraArgs) {
+    public float op(float origin, float other) {
         return origin * (1 - origin);
     }
 
     @Override
-    public double op(double origin, double other, Object[] extraArgs) {
+    public double op(double origin, double other) {
         return origin * (1 - origin);
     }
 
     @Override
-    public double op(double origin, Object[] extraArgs) {
+    public double op(double origin) {
         return origin * (1 - origin);
     }
 
     @Override
-    public float op(float origin, Object[] extraArgs) {
+    public float op(float origin) {
         return origin * (1 - origin);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
+    public IComplexNumber op(IComplexNumber origin) {
         IComplexNumber oneMinus = Nd4j.createComplexNumber(1,1).subi(origin);
         return origin.muli(oneMinus);
     }

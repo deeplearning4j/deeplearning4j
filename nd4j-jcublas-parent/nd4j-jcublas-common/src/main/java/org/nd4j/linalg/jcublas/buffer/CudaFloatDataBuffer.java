@@ -23,6 +23,7 @@ import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.util.ArrayUtil;
 
 /**
@@ -113,11 +114,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         if (data.length != length)
             throw new IllegalArgumentException("Unable to set vector, must be of length " + length() + " but found length " + data.length);
 
-        if (pointer() != null) {
-            destroy();
-            pointer = null;
-        }
-
         if (pointer() == null)
             alloc();
         try {
@@ -129,11 +125,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
                     , pointer()
                     , 1);
         }catch(Exception e) {
-            try {
-                JCuda.cudaMemcpy(pointer(), Pointer.to(data), elementSize() * length(), cudaMemcpyKind.cudaMemcpyHostToDevice);
-            }catch(Exception e1) {
-                throw new RuntimeException(e1);
-            }
+            throw new RuntimeException(e);
         }
 
     }
@@ -157,13 +149,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     public float[] asFloat() {
         float[] ret = new float[length];
         Pointer p = Pointer.to(ret);
-        JCublas.cublasGetVector(
-                length,
-                elementSize(),
-                pointer(),
-                1,
-                p,
-                1);
+        JCublas.cublasGetVector(length,elementSize(),pointer(),1,p,1);
         return ret;
     }
 
@@ -200,8 +186,9 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     @Override
     public void put(int i, float element) {
         float[] data = new float[]{element};
-        Pointer p = Pointer.to(data);
+        Pointer p = KernelFunctions.alloc(data);
         set(i, p);
+        JCublas.cublasFree(p);
     }
 
     @Override
@@ -237,187 +224,35 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     }
 
+    private void writeObject(java.io.ObjectOutputStream stream)
+            throws java.io.IOException
+    {
+        stream.defaultWriteObject();
 
-    @Override
-    public void addi(Number n, int inc, int offset) {
-        execScalar("float",offset,n,length(),inc,"add_scalar");
+        if (pointer() == null) {
+            stream.writeInt(0);
+        }
+        else {
+            float[] arr = this.asFloat();
+
+            stream.writeInt(arr.length);
+            for (int i = 0; i < arr.length; i ++) {
+                stream.writeFloat(arr[i]);
+            }
+        }
     }
 
-    @Override
-    public void subi(Number n, int inc, int offset) {
-        execScalar("float",offset,n,length(),inc,"sub_scalar");
+    private void readObject(java.io.ObjectInputStream stream)
+            throws java.io.IOException, ClassNotFoundException
+    {
+        stream.defaultReadObject();
+
+        int n = stream.readInt();
+        float[] arr = new float[n];
+
+        for (int i = 0; i < n; i ++) {
+            arr[i] = stream.readFloat();
+        }
+        setData(arr);
     }
-
-    @Override
-    public void muli(Number n, int inc, int offset) {
-        execScalar("float",offset,n,length(),inc,"mul_scalar");
-    }
-
-    @Override
-    public void divi(Number n, int inc, int offset) {
-        execScalar("float",offset,n,length(),inc,"div_scalar");
-    }
-
-    @Override
-    public void addi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
-        JCudaBuffer b = (JCudaBuffer) buffer;
-        JCublas.cublasSaxpy(n, 1.0f, b.pointer(), incx, pointer(), incy);
-    }
-
-    @Override
-    public void subi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
-        JCudaBuffer b = (JCudaBuffer) buffer;
-        JCublas.cublasSaxpy(n, -1.0f, b.pointer().withByteOffset(offset * b.elementSize()), incx, pointer().withByteOffset(yOffset * elementSize()), incy);
-
-    }
-
-    @Override
-    public void muli(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
-        exec2d(buffer,"float",offset,yOffset,n,incx,incy,"mul_strided",this);
-    }
-
-    @Override
-    public void divi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
-        exec2d(buffer,"float",offset,yOffset,n,incx,incy,"div_strided",this);
-    }
-
-    @Override
-    public void rsubi(Number n) {
-        rsubi(n,1,0);
-    }
-
-    @Override
-    public void rdivi(Number n) {
-        rdivi(n,1,0);
-    }
-
-    @Override
-    public void rsubi(Number n, int inc, int offset) {
-        execScalar("double",offset,n,length(),inc,"rsub_scalar");
-    }
-
-    @Override
-    public void rdivi(Number n, int inc, int offset) {
-        execScalar("double",offset,n,length(),inc,"rdiv_scalar");
-    }
-
-
-    @Override
-    public void rdivi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
-        exec2d(buffer,"float",offset,yOffset,n,incx,incy,"rdiv_strided");
-    }
-
-    @Override
-    public void rsubi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy) {
-        exec2d(buffer,"float",offset,yOffset,n,incx,incy,"rsub_strided");
-
-    }
-    @Override
-    public void addi(Number n, DataBuffer result) {
-        execScalar("float",0,n,length(),1,"add_scalar",result);
-    }
-
-    @Override
-    public void subi(Number n, DataBuffer result) {
-        execScalar("float",0,n,length(),1,"sub_scalar",result);
-    }
-
-    @Override
-    public void rsubi(Number n, DataBuffer result) {
-        execScalar("float",0,n,length(),1,"rsub_scalar",result);
-    }
-
-    @Override
-    public void muli(Number n, DataBuffer result) {
-        execScalar("float",0,n,length(),1,"mul_scalar",result);
-    }
-
-    @Override
-    public void divi(Number n, DataBuffer result) {
-        execScalar("float",0,n,length(),1,"div_scalar",result);
-    }
-
-    @Override
-    public void rdivi(Number n, DataBuffer result) {
-        execScalar("float",0,n,length(),1,"rdiv_scalar",result);
-    }
-
-    @Override
-    public void addi(Number n, int inc, int offset, DataBuffer result) {
-        execScalar("float",offset,n,length(),inc,"add_scalar",result);
-    }
-
-    @Override
-    public void subi(Number n, int inc, int offset, DataBuffer result) {
-        execScalar("float",offset,n,length(),inc,"sub_scalar",result);
-
-    }
-
-    @Override
-    public void rsubi(Number n, int inc, int offset, DataBuffer result) {
-        execScalar("float",offset,n,length(),inc,"rsub_scalar",result);
-
-    }
-
-    @Override
-    public void muli(Number n, int inc, int offset, DataBuffer result) {
-        execScalar("float",offset,n,length(),inc,"mul_scalar",result);
-
-    }
-
-    @Override
-    public void divi(Number n, int inc, int offset, DataBuffer result) {
-        execScalar("float",offset,n,length(),inc,"div_scalar",result);
-
-    }
-
-    @Override
-    public void rdivi(Number n, int inc, int offset, DataBuffer result) {
-        execScalar("float",offset,n,length(),inc,"rdiv_scalar",result);
-
-    }
-
-    @Override
-    public void addi(DataBuffer buffer, DataBuffer result) {
-        exec2d(buffer,"float",0,0,length(),1,1,"add_strided",result);
-    }
-
-
-
-    @Override
-    public void addi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
-        exec2d(buffer,"float",offset,yOffset,n,incx,incy,"add_strided",result);
-    }
-
-    @Override
-    public void subi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
-        exec2d(buffer,"float",offset,yOffset,n,incx,incy,"sub_strided",result);
-
-    }
-
-    @Override
-    public void muli(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
-        exec2d(buffer,"float",offset,yOffset,n,incx,incy,"mul_strided",result);
-
-    }
-
-    @Override
-    public void divi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
-        exec2d(buffer,"float",offset,yOffset,n,incx,incy,"div_strided",result);
-
-    }
-
-    @Override
-    public void rdivi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
-        exec2d(buffer,"float",offset,yOffset,n,incx,incy,"rdiv_strided",result);
-
-    }
-
-    @Override
-    public void rsubi(DataBuffer buffer, int n, int offset, int yOffset, int incx, int incy, DataBuffer result) {
-        exec2d(buffer,"float",offset,yOffset,n,incx,incy,"rsub_strided",result);
-    }
-
-
-
 }

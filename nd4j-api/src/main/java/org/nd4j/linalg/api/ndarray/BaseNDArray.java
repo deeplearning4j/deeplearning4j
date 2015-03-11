@@ -25,9 +25,12 @@ import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.dimensionfunctions.DimensionFunctions;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarNotEquals;
 import org.nd4j.linalg.api.ops.impl.transforms.Negative;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
@@ -37,7 +40,6 @@ import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.IterationResult;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.Shape;
 
@@ -470,7 +472,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public void resetLinearView() {
-        linearView = Nd4j.create(data, new int[]{length}, offset());
+        linearView = Nd4j.create(data, new int[]{length}, new int[]{1},offset());
     }
 
     @Override
@@ -671,7 +673,8 @@ public abstract class BaseNDArray implements INDArray {
         for (int i = 0; i < shape.length; i++) {
             ix += indexes[i] * stride[i];
         }
-
+        if(ix >= data.length())
+            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
         data.put(ix, value);
         return this;
     }
@@ -682,7 +685,8 @@ public abstract class BaseNDArray implements INDArray {
         for (int i = 0; i < shape.length; i++) {
             ix += indexes[i] * stride[i];
         }
-
+        if(ix >= data.length())
+            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
         data.put(ix, value);
         return this;
     }
@@ -693,7 +697,8 @@ public abstract class BaseNDArray implements INDArray {
         for (int i = 0; i < shape.length; i++) {
             ix += indexes[i] * stride[i];
         }
-
+        if(ix >= data.length())
+            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
         data.put(ix, value);
         return this;
     }
@@ -757,7 +762,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray epsi(INDArray other) {
-       Nd4j.getExecutioner().exec(new Eps(this,other,this,length()));
+        Nd4j.getExecutioner().exec(new Eps(linearView(),other.linearView(),this,length()));
         return this;
     }
 
@@ -768,7 +773,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray lti(Number other) {
-        Nd4j.getExecutioner().exec(new Eps(this));
+        Nd4j.getExecutioner().exec(new Eps(linearView()));
         return this;
     }
 
@@ -779,7 +784,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray eqi(Number other) {
-        Nd4j.getExecutioner().exec(new EqualTo(this));
+        Nd4j.getExecutioner().exec(new ScalarEquals(linearView(),other));
         return this;
     }
 
@@ -790,7 +795,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray gti(Number other) {
-        Nd4j.getExecutioner().exec(new GreaterThan(this));
+        Nd4j.getExecutioner().exec(new ScalarGreaterThan(linearView(),other));
         return this;
     }
 
@@ -801,7 +806,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray lti(INDArray other) {
-        Nd4j.getExecutioner().exec(new LessThan(this));
+        Nd4j.getExecutioner().exec(new LessThan(linearView()));
         return this;
     }
 
@@ -812,7 +817,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray neqi(Number other) {
-        Nd4j.getExecutioner().exec(new NotEqualTo(this));
+        Nd4j.getExecutioner().exec(new ScalarNotEquals(linearView(),other));
         return this;
     }
 
@@ -823,7 +828,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray neqi(INDArray other) {
-        Nd4j.getExecutioner().exec(new NotEqualTo(this,other,this,length()));
+        Nd4j.getExecutioner().exec(new NotEqualTo(linearView(),other.linearView(),linearView(),length()));
         return this;
     }
 
@@ -834,8 +839,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray eqi(INDArray other) {
-        Nd4j.getExecutioner().exec(new EqualTo(this,other,this,length()));
-
+        Nd4j.getExecutioner().exec(new EqualTo(linearView(),other.linearView(),linearView(),length()));
         return this;
     }
 
@@ -846,7 +850,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray gti(INDArray other) {
-        Nd4j.getExecutioner().exec(new GreaterThan(this,other,this,length()));
+        Nd4j.getExecutioner().exec(new GreaterThan(linearView(),other.linearView(),linearView(),length()));
         return this;
     }
 
@@ -863,7 +867,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray negi() {
-        Nd4j.getExecutioner().exec(new Negative(this));
+        Nd4j.getExecutioner().exec(new Negative(linearView()));
         return this;
     }
 
@@ -876,8 +880,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray rdivi(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-
-        data().rdivi(n,result.data());
+        Nd4j.getExecutioner().exec(new ScalarReverseDivision(linearView(),null,result.linearView(),result.length(),n));
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
         return result;
@@ -893,7 +896,7 @@ public abstract class BaseNDArray implements INDArray {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(this,n));
+        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(linearView(),null,result.linearView(),result.length(),n));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -909,7 +912,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray divi(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarDivision(this,n));
+        Nd4j.getExecutioner().exec(new ScalarDivision(linearView(),null,result.linearView(),result.length(),n));
 
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
@@ -927,7 +930,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray muli(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarMultiplication(this, n));
+        Nd4j.getExecutioner().exec(new ScalarMultiplication(linearView(),null,result.linearView(),result.length(),n));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -946,7 +949,7 @@ public abstract class BaseNDArray implements INDArray {
             n = Nd4j.EPS_THRESHOLD;
 
 
-        Nd4j.getExecutioner().exec(new ScalarSubtraction(this, n));
+        Nd4j.getExecutioner().exec(new ScalarSubtraction(linearView(),null,result.linearView(),result.length(),n));
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
 
@@ -962,7 +965,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray addi(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarAdd(this, n));
+        Nd4j.getExecutioner().exec(new ScalarAdd(linearView(),null,result.linearView(),result.length(),n));
         return this;
     }
 
@@ -1066,7 +1069,8 @@ public abstract class BaseNDArray implements INDArray {
         int ix = offset;
         for (int i = 0; i < indices.length; i++)
             ix += indices[i] * stride[i];
-
+        if(ix >= data.length())
+            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indices));
         data.put(ix, element.getDouble(0));
         return this;
 
@@ -1137,8 +1141,7 @@ public abstract class BaseNDArray implements INDArray {
                 view.putScalar(i, put.getDouble(i));
         else if (put.shape().length == 2)
             for (int i = 0; i < put.rows(); i++)
-                for (int j = 0; j < put.columns(); j++)
-                    view.put(i, j, put.getDouble(i, j));
+                    view.putRow(i,put.getRow(i));
 
         else {
 
@@ -1668,6 +1671,8 @@ public abstract class BaseNDArray implements INDArray {
         if (!isVector() && !isScalar())
             throw new IllegalArgumentException("Unable to do linear indexing with dimensions greater than 1");
         int idx = linearIndex(i);
+        if(idx >= data.length())
+            throw new IllegalArgumentException("Illegal indices " + i);
         return Nd4j.scalar(data.getDouble(idx));
     }
 
@@ -1874,6 +1879,8 @@ public abstract class BaseNDArray implements INDArray {
             throw new IllegalArgumentException("Unable to insert null element");
         assert element.isScalar() : "Unable to insert non scalar element";
         int idx = linearIndex(i);
+        if(idx >= data.length())
+            throw new IllegalArgumentException("Illegal indices " + i);
         data.put(idx, element.getDouble(0));
         return this;
     }
@@ -2437,7 +2444,7 @@ public abstract class BaseNDArray implements INDArray {
             else
                 Nd4j.getBlasWrapper().axpy(1.0f, this, result);
         } else {
-            data().addi(other.data(),length(),other.offset(),offset(),other.majorStride(),majorStride());
+            Nd4j.getExecutioner().exec(new AddOp(linearView(),other.linearView(),result.linearView()));
         }
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
@@ -2562,7 +2569,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int linearIndex(int i) {
-        int realStride = stride[0];
+        int realStride = secondaryStride();
         int idx = offset + i * realStride;
 
         if (data != null && idx >= data.length())
@@ -2858,6 +2865,8 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public double getDouble(int i, int j) {
         int idx = index(i, j);
+        if(idx >= data.length())
+            throw new IllegalArgumentException("Invalid index " + i + " , " + j);
         return data.getDouble(idx);
     }
 
@@ -2866,12 +2875,16 @@ public abstract class BaseNDArray implements INDArray {
         int idx = linearIndex(i);
         if (idx < 0)
             throw new IllegalStateException("Illegal index " + i);
+        if(idx >= data.length())
+            throw new IllegalArgumentException("Invalid index " + i);
         return data.getFloat(idx);
     }
 
     @Override
     public float getFloat(int i, int j) {
         int idx = index(i, j);
+        if(idx >= data.length())
+            throw new IllegalArgumentException("Invalid index " + i + " , " + j);
         return data.getFloat(idx);
     }
 
@@ -2893,18 +2906,14 @@ public abstract class BaseNDArray implements INDArray {
             return Nd4j.create(data, new int[]{shape[0], 1}, offset);
         else if (isColumnVector())
             return Nd4j.create(data, new int[]{shape[0]}, offset);
-        if (isMatrix()) {
-            INDArray reverse = Nd4j.create(ArrayUtil.reverseCopy(shape));
-
-            for (int i = 0; i < rows; i++) {
-                for (int j = 0; j < columns; j++) {
-                    reverse.putScalar(new int[]{j, i}, getDouble(i, j));
-                }
+        if(isMatrix()) {
+            INDArray ret = Nd4j.create(columns,rows);
+            for(int i = 0; i < ret.rows(); i++) {
+                ret.putRow(i,getColumn(i));
             }
 
-            return reverse;
+            return ret;
         }
-
         INDArray ret = permute(ArrayUtil.range(shape.length - 1, -1));
         return ret;
     }
@@ -3709,12 +3718,11 @@ public abstract class BaseNDArray implements INDArray {
         int[] newStride = doPermuteSwap(stride, rearrange);
 
         INDArray value = Nd4j.create(
-                data,
+                data(),
                 newShape,
                 newStride,
                 offset,
-                ordering == NDArrayFactory.C
-                        ? NDArrayFactory.FORTRAN : NDArrayFactory.C);
+                ordering);
         return value;
 
     }

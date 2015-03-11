@@ -56,6 +56,7 @@ public abstract class BlasWrapperTests {
     @Test
     public void testIaMax() {
         INDArray test = Nd4j.create(new float[]{1, 2, 3, 4});
+        test.toString();
         int max = Nd4j.getBlasWrapper().iamax(test);
         assertEquals(3, max);
 

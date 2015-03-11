@@ -17,9 +17,6 @@
 package org.nd4j.linalg.factory;
 
 
-import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -27,6 +24,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -111,18 +109,12 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     @Override
-    public INDArray rand(int[] shape, double min, double max, RandomGenerator rng) {
-        INDArray ret = create(shape);
-        INDArray linear = ret.linearView();
-        double r = max - min;
-        for (int i = 0; i < ret.length(); i++) {
-            linear.putScalar(i, r * rng.nextDouble() + min);
-        }
-        return ret;
+    public INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
+        return Nd4j.getDistributions().createUniform(min,max).sample(shape);
     }
 
     @Override
-    public INDArray rand(int rows, int columns, double min, double max, RandomGenerator rng) {
+    public INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
         return rand(new int[]{rows, columns}, min, max, rng);
     }
 
@@ -198,16 +190,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return create(new int[]{rows, columns}, ordering);
     }
 
-    private int assertAllSameType(DataBuffer[] data) {
-        int type = data[0].dataType();
-        int ret = data[0].length();
-        for (int i = 1; i < data.length; i++) {
-            assert data[i].dataType() == (type);
-            ret += data[i].length();
-        }
-
-        return ret;
-    }
 
     /**
      * Returns a vector with all of the elements in every nd array
@@ -291,7 +273,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray toFlattened(INDArray... matrices) {
         int length = 0;
-        for (INDArray m : matrices) length += m.length();
+        for (INDArray m : matrices)
+            length += m.length();
         INDArray ret = Nd4j.create(1, length);
         int linearIndex = 0;
         for (INDArray d : matrices) {
@@ -432,14 +415,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return a random matrix of the specified shape and range
      */
     @Override
-    public INDArray rand(int[] shape, float min, float max, RandomGenerator rng) {
-        INDArray ret = Nd4j.create(shape);
-        INDArray linear = ret.linearView();
-        float r = max - min;
-        for (int i = 0; i < ret.length(); i++) {
-            linear.putScalar(i, r * rng.nextFloat() + min);
-        }
-        return ret;
+    public INDArray rand(int[] shape, float min, float max, org.nd4j.linalg.api.rng.Random rng) {
+        return Nd4j.getDistributions().createUniform(min,max).sample(shape);
     }
 
     /**
@@ -453,14 +430,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return a random matrix of the specified shape and range
      */
     @Override
-    public INDArray rand(int rows, int columns, float min, float max, RandomGenerator rng) {
-        INDArray ret = Nd4j.create(rows, columns);
-        INDArray linear = ret.linearView();
-        float r = max - min;
-        for (int i = 0; i < ret.length(); i++) {
-            linear.putScalar(i, r * rng.nextFloat() + min);
-        }
-        return ret;
+    public INDArray rand(int rows, int columns, float min, float max, org.nd4j.linalg.api.rng.Random rng) {
+       return rand(new int[]{rows,columns},min,max,rng);
     }
 
     /**
@@ -527,7 +498,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return the random ndarray with the specified shape
      */
     @Override
-    public INDArray rand(int rows, int columns, RandomGenerator r) {
+    public INDArray rand(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
         return rand(new int[]{rows, columns}, r);
     }
 
@@ -541,7 +512,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int rows, int columns, long seed) {
-        return rand(new int[]{rows, columns}, new MersenneTwister(seed));
+        Nd4j.getRandom().setSeed(seed);
+        return rand(new int[]{rows, columns}, Nd4j.getRandom());
     }
 
     /**
@@ -566,7 +538,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return
      */
     @Override
-    public INDArray randn(int rows, int columns, RandomGenerator r) {
+    public INDArray randn(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
         return randn(new int[]{rows, columns}, r);
     }
 
@@ -592,7 +564,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray randn(int rows, int columns, long seed) {
-        return randn(new int[]{rows, columns}, new MersenneTwister(seed));
+        Nd4j.getRandom().setSeed(seed);
+        return randn(new int[]{rows, columns}, Nd4j.getRandom());
     }
 
     /**
@@ -603,7 +576,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return the random ndarray with the specified shape
      */
     @Override
-    public INDArray rand(int[] shape, RealDistribution r) {
+    public INDArray rand(int[] shape, Distribution r) {
         INDArray ret = create(shape);
         INDArray linear = ret.linearView();
         for (int i = 0; i < ret.length(); i++)
@@ -619,11 +592,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return the random ndarray with the specified shape
      */
     @Override
-    public INDArray rand(int[] shape, RandomGenerator r) {
-        INDArray ret = create(shape);
-        INDArray linear = ret.linearView();
-        for (int i = 0; i < ret.length(); i++)
-            linear.putScalar(i, r.nextDouble());
+    public INDArray rand(int[] shape, org.nd4j.linalg.api.rng.Random r) {
+        INDArray ret  = r.nextDouble(shape);
         return ret;
     }
 
@@ -636,7 +606,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int[] shape, long seed) {
-        return rand(shape, new MersenneTwister(seed));
+        Nd4j.getRandom().setSeed(seed);
+        return rand(shape, Nd4j.getRandom());
     }
 
     /**
@@ -659,12 +630,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return
      */
     @Override
-    public INDArray randn(int[] shape, RandomGenerator r) {
-        INDArray ret = create(shape);
-        INDArray linear = ret.linearView();
-        for (int i = 0; i < ret.length(); i++)
-            linear.putScalar(i, r.nextGaussian());
-        return ret;
+    public INDArray randn(int[] shape, org.nd4j.linalg.api.rng.Random r) {
+        return r.nextGaussian(shape);
     }
 
     /**
@@ -687,7 +654,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray randn(int[] shape, long seed) {
-        return randn(shape, new MersenneTwister(seed));
+        Nd4j.getRandom().setSeed(seed);
+        return randn(shape,Nd4j.getRandom());
     }
 
     /**
@@ -1803,5 +1771,36 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return create(Nd4j.createBuffer(data), shape, offset);
     }
 
+    @Override
+    public INDArray create(float[] data, char order) {
+        return create(Nd4j.createBuffer(data),new int[]{data.length},ArrayUtil.calcStrides(new int[]{data.length}),order,0);
+    }
 
+    @Override
+    public INDArray create(float[] data, int[] shape, int[] stride, char order, int offset) {
+        return create(Nd4j.createBuffer(data),shape,stride,order,offset);
+    }
+
+
+
+    @Override
+    public INDArray create(double[] data, char order) {
+        return create(data,new int[]{data.length},ArrayUtil.calcStrides(new int[]{data.length}),order,0);
+    }
+
+    @Override
+    public INDArray create(double[] data, int[] shape, int[] stride, char order, int offset) {
+        return create(Nd4j.createBuffer(data),shape,stride,order,offset);
+
+    }
+
+    @Override
+    public INDArray create(DataBuffer buffer, int[] shape, int[] stride, char order, int offset) {
+       return create(buffer,shape,stride,offset,order);
+    }
+
+    @Override
+    public INDArray create(int[] data, int[] shape, int[] stride, char order, int offset) {
+        return create(Nd4j.createBuffer(data),shape,stride,order,offset);
+    }
 }

@@ -31,6 +31,10 @@ public class Bias extends BaseAccumulation {
 
     private double mean;
 
+    public Bias(INDArray x, INDArray y, INDArray z, int n) {
+        super(x, y, z, n);
+    }
+
     public Bias(INDArray x, INDArray y, int n) {
         super(x, y, n);
     }
@@ -86,8 +90,8 @@ public class Bias extends BaseAccumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, int n) {
-        super.init(x, y, n);
+    public void init(INDArray x, INDArray y,INDArray z, int n) {
+        super.init(x, y,z, n);
         this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).currentResult().doubleValue();
         this.extraArgs = new Object[]{mean};
 

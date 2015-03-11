@@ -79,45 +79,7 @@ public class TestOp extends BaseTransformOp {
         return origin;
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
-        return null;
-    }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
-        return null;
-    }
-
-    @Override
-    public float op(float origin, float other, Object[] extraArgs) {
-        return 0;
-    }
-
-    @Override
-    public double op(double origin, double other, Object[] extraArgs) {
-        return 0;
-    }
-
-    @Override
-    public double op(double origin, Object[] extraArgs) {
-        return 0;
-    }
-
-    @Override
-    public float op(float origin, Object[] extraArgs) {
-        return 0;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
-        return null;
-    }
 
     @Override
     public Op opForDimension(int index, int dimension) {

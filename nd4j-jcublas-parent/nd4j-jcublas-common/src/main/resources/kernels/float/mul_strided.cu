@@ -1,9 +1,13 @@
-extern "C"
-__global__ void mul_strided_float(int n,int xOffset,int yOffset, float *dx, float *dy,int incx,int incy,float *result) {
-        for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
-              if(i >= xOffset && i >= yOffset &&  i % incx == 0 && i % incy == 0)
-                    result[i] =  dx[i] * dy[i];
-         }
+#include <pairwise_transform.h>
+
+__device__ float op(float d1,float d2,float *params) {
+   return d1 * d2;
+}
+__device__ float op(float d1,float *params) {
+   return d1;
 }
 
-
+extern "C"
+__global__ void mul_strided_float(int n,int xOffset,int yOffset, float *dx, float *dy,int incx,int incy,float *params,float *result) {
+    transform(n,xOffset,yOffset,dx,dy,incx,incy,params,result);
+}

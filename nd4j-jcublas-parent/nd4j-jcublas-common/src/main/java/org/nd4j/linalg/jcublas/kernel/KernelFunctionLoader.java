@@ -19,17 +19,20 @@ package org.nd4j.linalg.jcublas.kernel;
 import jcuda.driver.*;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static jcuda.driver.JCudaDriver.*;
-import static jcuda.driver.JCudaDriver.cuCtxCreate;
 
 /**
  * Kernel function loader:
@@ -42,6 +45,9 @@ public class KernelFunctionLoader {
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
     public final static String REDUCE = NAME_SPACE + ".reducefunctions";
+    public final static String IMPORTS_FLOAT = NAME_SPACE + ".float.imports";
+    public final static String IMPORTS_DOUBLE = NAME_SPACE + ".double.imports";
+
     private Map<String,CUmodule> modules = new HashMap<>();
     private Map<String,CUfunction> functions = new HashMap<>();
     private static Map<Integer,CUcontext> devices = new ConcurrentHashMap<>();
@@ -50,6 +56,10 @@ public class KernelFunctionLoader {
 
     private KernelFunctionLoader() {}
 
+    /**
+     * Singleton pattern
+     * @return
+     */
     public static KernelFunctionLoader getInstance() {
         if(INSTANCE == null) {
             INSTANCE = new KernelFunctionLoader();
@@ -95,7 +105,11 @@ public class KernelFunctionLoader {
      * @param cUmodule the module to unload
      */
     public void unload(CUmodule cUmodule) {
-        JCudaDriver.cuModuleUnload(cUmodule);
+        try {
+            JCudaDriver.cuModuleUnload(cUmodule);
+        }catch(Exception e) {
+
+        }
     }
 
 
@@ -118,8 +132,13 @@ public class KernelFunctionLoader {
         props.load(res.getInputStream());
         log.info("Registering cuda functions...");
         initDevices();
+        //ensure imports for each file before compiling
+        ensureImports(props,"float");
+        ensureImports(props,"double");
+
         compileAndLoad(props,FLOAT,"float");
         compileAndLoad(props,DOUBLE,"double");
+
         init = true;
     }
 
@@ -161,14 +180,28 @@ public class KernelFunctionLoader {
      * <p/>
      * This will allow you to bypass the compiler restrictions. Again, do so at your own risk.
      *
-     * @param cuFileName The name of the .CU file
      * @return The name of the PTX file
      * @throws java.io.IOException If an I/O error occurs
      */
     private void compileAndLoad(Properties props,String key,String dataType) throws IOException {
         String f = props.getProperty(key);
         StringBuffer sb = new StringBuffer();
-        sb.append("nvcc -ptx");
+        sb.append("nvcc");
+        sb.append(" --include-path ");
+        String tmpDir = System.getProperty("java.io.tmpdir");
+        StringBuffer dir = new StringBuffer();
+        sb.append(tmpDir)
+                .append(File.separator)
+                .append("kernels")
+                .append(File.separator).append(dataType).append(File.separator)
+                .toString();
+        String kernelPath =  dir.append(tmpDir)
+                .append(File.separator)
+                .append("kernels")
+                .append(File.separator).append(dataType).append(File.separator)
+                .toString();
+
+        sb.append(" ").append(" -ptx ");
         log.info("Loading " + dataType + " cuda functions");
         if (f != null) {
             String[] split = f.split(",");
@@ -176,6 +209,10 @@ public class KernelFunctionLoader {
                 String loaded = extract("/kernels/" + dataType + "/" + s + ".cu", dataType.equals("float") ? DataBuffer.FLOAT : DataBuffer.DOUBLE);
                 sb.append(" " + loaded);
             }
+
+            sb.append(" --output-directory " + kernelPath);
+
+
 
             Process process = Runtime.getRuntime().exec(sb.toString());
 
@@ -203,7 +240,8 @@ public class KernelFunctionLoader {
             for(String module : split) {
                 CUmodule m = new CUmodule();
                 log.info("Loading " + module);
-                cuModuleLoad(m,module+ ".ptx");
+                String path = kernelPath + module+ ".ptx";
+                cuModuleLoad(m,path);
                 modules.put(key + "_" + dataType,m);
                 // Obtain a function pointer to the "add" function.
                 CUfunction function = new CUfunction();
@@ -216,7 +254,7 @@ public class KernelFunctionLoader {
 
                 functions.put(name,function);
                 //cleanup
-                File ptxFile = new File(module + ".ptx");
+                File ptxFile = new File(path);
                 if(!ptxFile.exists())
                     throw new IllegalStateException("No ptx file " + ptxFile.getAbsolutePath() + " found!");
                 ptxFile.delete();
@@ -248,10 +286,41 @@ public class KernelFunctionLoader {
         File dataDir = new File(tmpDir, path);
         if (!dataDir.exists())
             dataDir.mkdirs();
+
+
+        return loadFile(file);
+
+    }
+
+    private void ensureImports(Properties props,String dataType) throws IOException {
+        if(dataType.equals("float")) {
+            String[] imports = props.getProperty(IMPORTS_FLOAT).split(",");
+            for(String import1 : imports) {
+                String pathToLoadedFile = loadFile("/kernels/" + dataType + "/" + import1);
+            }
+        }
+        else {
+            String[] imports = props.getProperty(IMPORTS_DOUBLE).split(",");
+            for(String import1 : imports) {
+                String pathToLoadedFile = loadFile("/kernels/" + dataType + "/" + import1);
+            }
+        }
+
+    }
+
+
+    private String loadFile(String file) throws IOException {
         ClassPathResource resource = new ClassPathResource(file);
+        String tmpDir = System.getProperty("java.io.tmpdir");
+
         if (!resource.exists())
             throw new IllegalStateException("Unable to find file " + resource);
         File out = new File(tmpDir,file);
+        if(!out.getParentFile().exists())
+            out.getParentFile().mkdirs();
+        if(out.exists())
+            out.delete();
+        out.createNewFile();
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(out));
         IOUtils.copy(resource.getInputStream(), bos);
         bos.flush();
@@ -261,7 +330,6 @@ public class KernelFunctionLoader {
         return out.getAbsolutePath();
 
     }
-
 
 
 }

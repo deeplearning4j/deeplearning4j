@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.buffer.test;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 
@@ -104,44 +105,15 @@ public abstract class DoubleDataBufferTest {
     }
 
     @Test
-    public void testBufferElementWiseOperations() {
-        DataBuffer buffer = Nd4j.ones(5).data();
-        buffer.addi(1.0);
-        double[] data = buffer.asDouble();
-        for(int i = 0; i < data.length; i++)
-            assertEquals(2.0,data[i],1e-1f);
-        buffer.subi(1.0);
-        data = buffer.asDouble();
-        for(int i = 0; i < data.length; i++)
-            assertEquals(1.0,data[i],1e-1f);
-        buffer.muli(1.0);
-        data = buffer.asDouble();
-        for(int i = 0; i < data.length; i++)
-            assertEquals(1.0,data[i],1e-1f);
-
-        buffer.divi(1.0);
-        data = buffer.asDouble();
-        for(int i = 0; i < data.length; i++)
-            assertEquals(1.0,data[i],1e-1f);
-
-
-        buffer.destroy();
-        buffer = Nd4j.ones(5).data();
-
-        DataBuffer buffer2 = Nd4j.linspace(1,5,5).data();
-        double[] data3 = buffer2.asDouble();
-        buffer.muli(buffer2);
-        data = buffer.asDouble();
-        for(int i = 0; i < data3.length; i++)
-            assertEquals(data[i],data3[i],1e-1f);
-
-
-
-        buffer.destroy();
-        buffer2.destroy();
-
-
+    public void testAssign() {
+        INDArray oneTwo = Nd4j.create(new double[]{1, 2});
+        INDArray threeFour = Nd4j.create(new double[]{3,4});
+        INDArray oneThroughFour = Nd4j.linspace(1,4,4);
+        INDArray test = Nd4j.create(4);
+        test.data().assign(oneTwo.data(),threeFour.data());
+        assertEquals(oneThroughFour,test);
     }
+
 
 
 

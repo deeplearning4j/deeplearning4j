@@ -25,12 +25,17 @@ import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Cosine similarity
- * Note that you need to initialize a scaling constant equal to the norm2 of the
+ * Note that you need to initialize
+ * a scaling constant equal to the norm2 of the
  * vector
  * @author Adam Gibson
  */
 public class CosineSimilarity extends BaseAccumulation {
-    private Number constantNormalizedByNorm2;
+    private Number constantNormalizedByNorm2X,constantNormalizedByNorm2Y;
+
+    public CosineSimilarity(INDArray x, INDArray y, INDArray z, int n) {
+        super(x, y, z, n);
+    }
 
     public CosineSimilarity(INDArray x, INDArray y, int n) {
         super(x, y, n);
@@ -47,21 +52,18 @@ public class CosineSimilarity extends BaseAccumulation {
     @Override
     public void update(Number result) {
         currentResult = currentResult.doubleValue() + result.doubleValue();
+        if(numProcessed() == n()) {
+            currentResult = currentResult.doubleValue() / constantNormalizedByNorm2X.doubleValue() / constantNormalizedByNorm2Y.doubleValue();
+        }
+
     }
 
     @Override
     public void update(IComplexNumber result) {
         currentComplexResult.addi(result);
-    }
-
-    @Override
-    public Number zero() {
-        return 0.0;
-    }
-
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0, 0.0);
+        if(numProcessed() == n()) {
+            currentComplexResult.set(currentComplexResult.realComponent().doubleValue() / constantNormalizedByNorm2X.doubleValue() / constantNormalizedByNorm2Y.doubleValue(),0);
+        }
     }
 
     @Override
@@ -70,50 +72,38 @@ public class CosineSimilarity extends BaseAccumulation {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
-        return origin.mul(other * constantNormalizedByNorm2.floatValue());
+    public IComplexNumber op(IComplexNumber origin, double other) {
+        numProcessed++;
+        return origin.mul(other);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
-        return origin.mul(other * constantNormalizedByNorm2.floatValue());
+    public IComplexNumber op(IComplexNumber origin, float other) {
+        numProcessed++;
+        return origin.mul(other);
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
-        return origin.mul(other.mul(constantNormalizedByNorm2));
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
+        numProcessed++;
+        return origin.mul(other);
     }
 
     @Override
-    public float op(float origin, float other, Object[] extraArgs) {
-        return  (origin * other * constantNormalizedByNorm2.floatValue());
+    public float op(float origin, float other) {
+        numProcessed++;
+        return  (origin * other);
     }
 
     @Override
-    public double op(double origin, double other, Object[] extraArgs) {
-        return origin * other * constantNormalizedByNorm2.floatValue();
+    public double op(double origin, double other) {
+        numProcessed++;
+        return origin * other;
     }
 
-    @Override
-    public double op(double origin, Object[] extraArgs) {
-        return origin * constantNormalizedByNorm2.floatValue();
-    }
 
-    @Override
-    public float op(float origin, Object[] extraArgs) {
-        return (origin * constantNormalizedByNorm2.floatValue());
-    }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
-        initNormalizationConstant(extraArgs);
-        return origin.mul(constantNormalizedByNorm2);
-    }
 
-    private void initNormalizationConstant(Object[] extraArgs) {
-        if(constantNormalizedByNorm2.doubleValue() == Double.MIN_VALUE)
-            this.constantNormalizedByNorm2 = Double.valueOf(extraArgs[0].toString());
-    }
     @Override
     public Op opForDimension(int index,int dimension) {
         if(y() != null)
@@ -124,10 +114,13 @@ public class CosineSimilarity extends BaseAccumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, int n) {
-        super.init(x, y, n);
-        this.constantNormalizedByNorm2 = Nd4j.getExecutioner().execAndReturn(new Norm2(x)).currentResult();
-        this.extraArgs = new Object[]{this.constantNormalizedByNorm2};
+    public void init(INDArray x, INDArray y, INDArray z,int n) {
+        super.init(x, y,z, n);
+        this.constantNormalizedByNorm2X = Nd4j.getExecutioner().execAndReturn(new Norm2(x)).currentResult();
+        this.constantNormalizedByNorm2Y = Nd4j.getExecutioner().execAndReturn(new Norm2(y)).currentResult();
+        this.extraArgs = new Object[]{constantNormalizedByNorm2X,constantNormalizedByNorm2Y};
+        this.initial = 0.0;
+        this.initialComplex = Nd4j.createComplexNumber(0,0);
 
     }
 }

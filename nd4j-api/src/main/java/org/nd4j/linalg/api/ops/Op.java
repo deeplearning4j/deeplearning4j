@@ -58,6 +58,11 @@ public interface Op {
      */
     INDArray y();
 
+    /**
+     * The resulting ndarray
+     * @return the resulting ndarray
+     */
+    INDArray z();
 
 
     /**
@@ -127,68 +132,6 @@ public interface Op {
     IComplexNumber op(IComplexNumber origin);
 
 
-
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     * @param origin the origin number
-     * @param other the other number
-     * @return the transformed output
-     */
-    IComplexNumber op(IComplexNumber origin, double other,Object[] extraArgs);
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     * @param origin the origin number
-     * @param other the other number
-     * @return the transformed output
-     */
-    IComplexNumber op(IComplexNumber origin, float other,Object[] extraArgs);
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     * @param origin the origin number
-     * @param other the other number
-     * @return the transformed output
-     */
-    IComplexNumber op(IComplexNumber origin, IComplexNumber other,Object[] extraArgs);
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     * @param origin the origin number
-     * @param other the other number
-     * @return the transformed output
-     */
-    float op(float origin, float other, Object[] extraArgs);
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     * @param origin the origin number
-     * @param other the other number
-     * @return the transformed output
-     */
-    double op(double origin, double other,Object[] extraArgs);
-
-    /**
-     * Transform an individual element
-     * @param origin the origin element
-     * @return the new element
-     */
-    double op(double origin,Object[] extraArgs);
-
-    /**
-     * Transform an individual element
-     * @param origin the origin element
-     * @return the new element
-     */
-    float op(float origin,Object[] extraArgs);
-
-    /**
-     * Transform an individual element
-     * @param origin the origin element
-     * @return the new element
-     */
-    IComplexNumber op(IComplexNumber origin,Object[] extraArgs);
-
     /**
      * A copy of this operation for a particular dimension of the input
      * @param index the index of the op to iterate over
@@ -198,13 +141,15 @@ public interface Op {
     Op opForDimension(int index,int dimension);
 
 
+
     /**
      * Initialize the operation based on the parameters
      * @param x the input
      * @param y the pairwise transform ndarray
+     * @param z the resulting ndarray
      * @param n the number of elements
      */
-    void init(INDArray x,INDArray y,int n);
+    void init(INDArray x,INDArray y,INDArray z,int n);
 
     /**
      * Number processed

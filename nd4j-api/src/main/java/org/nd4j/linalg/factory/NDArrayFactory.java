@@ -16,14 +16,14 @@
 
 package org.nd4j.linalg.factory;
 
-import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.RandomGenerator;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -249,7 +249,7 @@ public interface NDArrayFactory {
      * @param rng   the rng to use
      * @return a drandom matrix of the specified shape and range
      */
-    INDArray rand(int[] shape, float min, float max, RandomGenerator rng);
+    INDArray rand(int[] shape, float min, float max, org.nd4j.linalg.api.rng.Random rng);
 
     /**
      * Generates a random matrix between min and max
@@ -261,7 +261,7 @@ public interface NDArrayFactory {
      * @param rng     the rng to use
      * @return a drandom matrix of the specified shape and range
      */
-    INDArray rand(int rows, int columns, float min, float max, RandomGenerator rng);
+    INDArray rand(int rows, int columns, float min, float max, org.nd4j.linalg.api.rng.Random rng);
 
     INDArray appendBias(INDArray... vectors);
 
@@ -329,7 +329,7 @@ public interface NDArrayFactory {
      * @param r       the random generator to use
      * @return the random ndarray with the specified shape
      */
-    INDArray rand(int rows, int columns, RandomGenerator r);
+    INDArray rand(int rows, int columns, org.nd4j.linalg.api.rng.Random r);
 
     /**
      * Create a random ndarray with the given shape using the given rng
@@ -359,7 +359,7 @@ public interface NDArrayFactory {
      * @param r       the random generator to use
      * @return
      */
-    INDArray randn(int rows, int columns, RandomGenerator r);
+    INDArray randn(int rows, int columns, org.nd4j.linalg.api.rng.Random r);
 
     /**
      * Random normal using the current time stamp
@@ -388,7 +388,7 @@ public interface NDArrayFactory {
      * @param r     the random generator to use
      * @return the random ndarray with the specified shape
      */
-    INDArray rand(int[] shape, RealDistribution r);
+    INDArray rand(int[] shape, Distribution r);
 
     /**
      * Create a random ndarray with the given shape using the given rng
@@ -397,7 +397,7 @@ public interface NDArrayFactory {
      * @param r     the random generator to use
      * @return the random ndarray with the specified shape
      */
-    INDArray rand(int[] shape, RandomGenerator r);
+    INDArray rand(int[] shape, org.nd4j.linalg.api.rng.Random r);
 
     /**
      * Create a random ndarray with the given shape using the given rng
@@ -424,7 +424,7 @@ public interface NDArrayFactory {
      * @param r     the random generator to use
      * @return
      */
-    INDArray randn(int[] shape, RandomGenerator r);
+    INDArray randn(int[] shape, org.nd4j.linalg.api.rng.Random r);
 
     /**
      * Random normal using the current time stamp
@@ -1193,7 +1193,13 @@ public interface NDArrayFactory {
      */
     IComplexNDArray createComplex(double[] data, int[] shape, int offset);
 
-
+    /**
+     *
+     * @param buffer
+     * @param shape
+     * @param offset
+     * @return
+     */
     IComplexNDArray createComplex(DataBuffer buffer, int[] shape, int offset);
 
     INDArray create(float[] data, int[] shape, int offset);
@@ -1224,7 +1230,7 @@ public interface NDArrayFactory {
 
     IComplexNDArray createComplex(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering);
 
-    INDArray rand(int rows, int columns, double min, double max, RandomGenerator rng);
+    INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng);
 
     IComplexNDArray createComplex(float[] data, Character order);
 
@@ -1240,13 +1246,24 @@ public interface NDArrayFactory {
 
     INDArray create(double[] data, int[] shape, int[] stride, int offset, char ordering);
 
-    INDArray rand(int[] shape, double min, double max, RandomGenerator rng);
+    INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng);
 
     IComplexNDArray createComplex(int[] ints, int[] ints1, int[] stride, int offset);
 
     INDArray create(int[] ints, int[] ints1, int[] stride, int offset);
+    INDArray create(int[] shape, int[] ints1, int[] stride, char order, int offset);
 
     INDArray create(int rows, int columns, char ordering);
 
     INDArray create(int[] shape, int dataType);
+
+    INDArray create(float[] data, char order);
+
+    INDArray create(float[] data, int[] shape, int[] stride, char order, int offset);
+
+    INDArray create(DataBuffer buffer, int[] shape, int[] stride, char order, int offset);
+
+    INDArray create(double[] data, char order);
+
+    INDArray create(double[] data, int[] ints, int[] ints1, char order, int offset);
 }

@@ -91,45 +91,6 @@ public class AddOp extends BaseTransformOp {
         return origin;
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other, Object[] extraArgs) {
-        return op(origin,other);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other, Object[] extraArgs) {
-        return op(origin,other);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other, Object[] extraArgs) {
-        return op(origin,other);
-    }
-
-    @Override
-    public float op(float origin, float other, Object[] extraArgs) {
-        return op(origin,other);
-    }
-
-    @Override
-    public double op(double origin, double other, Object[] extraArgs) {
-        return op(origin,other);
-    }
-
-    @Override
-    public double op(double origin, Object[] extraArgs) {
-        return op(origin);
-    }
-
-    @Override
-    public float op(float origin, Object[] extraArgs) {
-        return op(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, Object[] extraArgs) {
-        return op(origin);
-    }
 
     @Override
     public Op opForDimension(int index,int dimension) {
@@ -143,8 +104,8 @@ public class AddOp extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, int n) {
-        super.init(x, y, n);
+    public void init(INDArray x, INDArray y, INDArray z,int n) {
+        super.init(x, y, z,n);
         if(y == null)
             throw new IllegalArgumentException("No components to add");
     }
