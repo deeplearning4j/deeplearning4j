@@ -414,7 +414,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                             ,strides[i]
                             ,pointer().withByteOffset(count * buff.elementSize())
                             ,1);
-                    count += buff.length();
+                    count += (buff.length() - 1 - offsets[i]) / strides[i] + 1;
                 }
                 else {
                     JCublas.cublasScopy(buff.length()
@@ -422,8 +422,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                             , strides[i]
                             ,pointer().withByteOffset(count * buff.elementSize())
                             , 1);
-                    count += buff.length();
-
+                    count += (buff.length() - 1 - offsets[i]) / strides[i] + 1;
                 }
             }
             else
