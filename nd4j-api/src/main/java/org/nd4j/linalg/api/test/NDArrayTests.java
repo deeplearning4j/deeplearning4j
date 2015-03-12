@@ -313,7 +313,7 @@ public abstract class NDArrayTests {
     }
 
     @Test
-      public void testNorm2Double() {
+    public void testNorm2Double() {
         Nd4j.dtype = DataBuffer.DOUBLE;
         INDArray n = Nd4j.create(new double[]{1, 2, 3, 4});
         double assertion = 5.47722557505;
@@ -820,6 +820,15 @@ public abstract class NDArrayTests {
         Nd4j.factory().setOrder('c');
 
 
+    }
+
+
+    @Test
+    public void testAddMatrix() {
+        INDArray five = Nd4j.ones(5);
+        five.addi(five);
+        INDArray twos = Nd4j.valueArrayOf(5,2);
+        assertEquals(twos,five);
     }
 
     @Test
