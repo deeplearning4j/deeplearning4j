@@ -151,7 +151,7 @@ public abstract class OpExecutionerTests {
         opExecutioner.exec(mean);
         assertEquals(3.0,mean.currentResult().doubleValue(),1e-1);
 
-        Variance variance = new Variance(x.dup());
+        Variance variance = new Variance(x.dup(),true);
         opExecutioner.exec(variance);
         assertEquals(2.5,variance.currentResult().doubleValue(),1e-1);
 

@@ -19,7 +19,9 @@ package org.nd4j.linalg.jcublas.ops;
 import org.nd4j.linalg.api.ops.tests.OpExecutionerTests;
 
 /**
- * Created by agibsonccc on 2/25/15.
+ * Operation executioner tests for jcublas
+ *
+ * @author Adam Gibson
  */
 public class OpExecutionerTest extends OpExecutionerTests {
 }

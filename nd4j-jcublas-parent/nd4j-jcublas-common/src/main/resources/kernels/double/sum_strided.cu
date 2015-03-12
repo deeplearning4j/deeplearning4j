@@ -6,8 +6,9 @@ __device__ double update(double old,double opOutput,double *extraParams) {
  }
 
 
-
-
+__device__ double merge(double old,double opOutput,double *extraParams) {
+       return opOutput + old;
+ }
 
 __device__ double op(double d1,double *extraParams) {
       return d1;

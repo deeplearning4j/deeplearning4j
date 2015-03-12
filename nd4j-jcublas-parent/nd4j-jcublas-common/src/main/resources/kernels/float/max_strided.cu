@@ -1,5 +1,12 @@
 #include <reduce.h>
 
+
+
+__device__ float merge(float old,float opOutput,float *extraParams) {
+      return fmaxf(old,opOutput);
+ }
+
+
 __device__ float update(float old,float opOutput,float *extraParams) {
       return fmaxf(old,opOutput);
  }

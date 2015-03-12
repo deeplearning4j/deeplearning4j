@@ -9,7 +9,8 @@ __device__ float op(float d1,float *extraParams);
 
 //calculate an update of the reduce operation
 __device__ float update(float old,float opOutput,float *extraParams);
-
+//invoked when combinging two kernels
+__device__ float merge(float f1, float f2,float *extraParams);
 
 //post process result (for things like means etc)
 __device__ float postProcess(float reduction,int n,int xOffset,float *dx,int incx,float *extraParams,float *result);
@@ -48,7 +49,7 @@ __device__ void transform(int n, int xOffset,float *dx,int incx,float *extraPara
                 floorPow2 &= floorPow2 - 1;
             }
             if ( tid >= floorPow2 ) {
-                sPartials[tid - floorPow2] = update(sPartials[tid - floorPow2],sPartials[tid],extraParams);
+                sPartials[tid - floorPow2] = merge(sPartials[tid - floorPow2],sPartials[tid],extraParams);
             }
             __syncthreads();
         }
@@ -57,7 +58,7 @@ __device__ void transform(int n, int xOffset,float *dx,int incx,float *extraPara
                   activeThreads;
                   activeThreads >>= 1 ) {
             if ( tid < activeThreads ) {
-                sPartials[tid] = update(sPartials[tid],sPartials[tid + activeThreads],extraParams);
+                sPartials[tid] = merge(sPartials[tid],sPartials[tid + activeThreads],extraParams);
             }
             __syncthreads();
         }

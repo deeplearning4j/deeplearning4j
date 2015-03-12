@@ -6,8 +6,9 @@ __device__ float update(float old,float opOutput,float *extraParams) {
  }
 
 
-
-
+__device__ float merge(float old,float opOutput,float *extraParams) {
+       return opOutput + old;
+ }
 
 __device__ float op(float d1,float *extraParams) {
       return d1;
