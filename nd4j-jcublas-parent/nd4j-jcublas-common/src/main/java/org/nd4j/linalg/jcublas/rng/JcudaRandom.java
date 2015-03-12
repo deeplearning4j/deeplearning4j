@@ -107,8 +107,8 @@ public class JcudaRandom implements Random {
 
     @Override
     public double nextGaussian() {
-        JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
-        curandGenerateUniformDouble(generator, buffer.pointer(), 2);
+        JCudaBuffer buffer = new CudaDoubleDataBuffer(1);
+        curandGenerateUniformDouble(generator, buffer.pointer(), 1);
         double[] data = buffer.asDouble();
         buffer.destroy();
         return data[0];

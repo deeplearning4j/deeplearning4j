@@ -233,15 +233,15 @@ public abstract class BaseJCudaDistribution implements Distribution {
     protected void doSampleUniform(Pointer out,float min,float max,int n) {
         JCurand.curandGenerateUniform(random.generator(),out,n);
         String functionName = "uniform";
-        CUfunction func =  KernelFunctionLoader.getInstance().getFunction(functionName, "double");
+        CUfunction func =  KernelFunctionLoader.getInstance().getFunction(functionName, "float");
         if(func == null)
             throw new IllegalArgumentException("Function " + functionName + " with data type double does not exist");
         int blocks = PointerUtil.getNumBlocks(n, 128, 64);
         int threads = PointerUtil.getNumThreads(n,64);
         Pointer kernelParams = Pointer.to(
                 Pointer.to(new int[]{n})
-                ,Pointer.to(new double[]{min})
-                ,Pointer.to(new double[]{max})
+                ,Pointer.to(new float[]{min})
+                ,Pointer.to(new float[]{max})
                 ,Pointer.to(out)
                 ,Pointer.to(random.generator())
 

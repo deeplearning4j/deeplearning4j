@@ -577,10 +577,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int[] shape, Distribution r) {
-        INDArray ret = create(shape);
-        INDArray linear = ret.linearView();
-        for (int i = 0; i < ret.length(); i++)
-            linear.putScalar(i, r.sample());
+        INDArray ret = r.sample(shape);
         return ret;
     }
 

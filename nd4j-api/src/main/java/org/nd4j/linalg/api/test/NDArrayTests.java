@@ -822,6 +822,12 @@ public abstract class NDArrayTests {
 
     }
 
+    @Test
+    public void testCopyMatrix() {
+        INDArray twoByThree = Nd4j.linspace(1,784,784).reshape(28,28);
+        INDArray copy = Nd4j.create(784,784);
+        Nd4j.getBlasWrapper().copy(twoByThree,copy);
+    }
 
     @Test
     public void testAddMatrix() {
@@ -829,6 +835,9 @@ public abstract class NDArrayTests {
         five.addi(five);
         INDArray twos = Nd4j.valueArrayOf(5,2);
         assertEquals(twos,five);
+
+        INDArray twoByThree = Nd4j.linspace(1,6,6).reshape(2,3);
+        Nd4j.getBlasWrapper().axpy(1,twoByThree,twoByThree);
     }
 
     @Test
