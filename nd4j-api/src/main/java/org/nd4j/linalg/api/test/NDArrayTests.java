@@ -851,6 +851,53 @@ public abstract class NDArrayTests {
     }
 
     @Test
+    public void testColumnMean() {
+        INDArray twoByThree = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray columnMean = twoByThree.mean(0);
+        INDArray assertion = Nd4j.create(new float[]{2,3});
+        assertEquals(assertion,columnMean);
+    }
+
+    @Test
+    public void testColumnStd() {
+        INDArray twoByThree = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray columnStd = twoByThree.std(0);
+        INDArray assertion = Nd4j.create(new float[]{1f,1f});
+        assertEquals(assertion,columnStd);
+
+    }
+
+    @Test
+    public void testColumnVariance() {
+        INDArray twoByThree = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray columnVar = twoByThree.var(0);
+        INDArray assertion = Nd4j.create(new float[]{2f,2f});
+        assertEquals(assertion,columnVar);
+
+    }
+
+
+    @Test
+    public void testRowMean() {
+        INDArray twoByThree = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray rowMean = twoByThree.mean(1);
+        INDArray assertion = Nd4j.create(new float[]{1.5f,3.5f});
+        assertEquals(assertion,rowMean);
+
+
+    }
+
+    @Test
+    public void testRowStd() {
+        INDArray twoByThree = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray rowStd = twoByThree.std(1);
+        INDArray assertion = Nd4j.create(new float[]{0.5f,0.5f});
+        assertEquals(assertion,rowStd);
+
+    }
+
+
+    @Test
     public void testPermute() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 20, 20).data(), new int[]{5, 4});
         INDArray transpose = n.transpose();

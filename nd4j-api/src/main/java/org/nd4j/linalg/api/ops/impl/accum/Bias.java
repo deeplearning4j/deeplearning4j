@@ -75,7 +75,6 @@ public class Bias extends BaseAccumulation {
     public void update(IComplexNumber result) {
         IComplexNumber dev = result.sub(mean);
         currentComplexResult.addi(dev);
-        otherAccumComplex().get(0).addi(dev);
         numProcessed++;
     }
 

@@ -2,7 +2,9 @@
 
 
 __device__ float update(float old,float opOutput,float *extraParams) {
-       return opOutput + old;
+            float mean = extraParams[1];
+            float curr = (opOutput - mean);
+            return old +  powf(curr,2);
  }
 
 __device__ float op(float d1,float d2,float *extraParams) {
@@ -15,7 +17,7 @@ __device__ float op(float d1,float *extraParams) {
 
 
 __device__ float postProcess(float reduction,int n,int xOffset,float *dx,int incx,float *extraParams,float *result) {
-                  return reduction;
+           return sqrtf(reduction);
 }
 
 
