@@ -186,9 +186,8 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     @Override
     public void put(int i, float element) {
         float[] data = new float[]{element};
-        Pointer p = KernelFunctions.alloc(data);
+        Pointer p = Pointer.to(data);
         set(i, p);
-        JCublas.cublasFree(p);
     }
 
     @Override
