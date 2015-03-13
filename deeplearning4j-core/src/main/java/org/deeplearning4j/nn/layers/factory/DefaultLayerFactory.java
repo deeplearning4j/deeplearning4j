@@ -58,8 +58,7 @@ public class DefaultLayerFactory implements LayerFactory {
     protected Layer getInstance(NeuralNetConfiguration conf) {
         try {
             Constructor<?> constructor = layerClazz.getConstructor(NeuralNetConfiguration.class);
-            Layer ret = (Layer) constructor.newInstance(conf);
-            return ret;
+            return (Layer) constructor.newInstance(conf);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -91,9 +90,7 @@ public class DefaultLayerFactory implements LayerFactory {
 
         DefaultLayerFactory that = (DefaultLayerFactory) o;
 
-        if (layerClazz != null ? !layerClazz.equals(that.layerClazz) : that.layerClazz != null) return false;
-
-        return true;
+        return !(layerClazz != null ? !layerClazz.equals(that.layerClazz) : that.layerClazz != null);
     }
 
     @Override
