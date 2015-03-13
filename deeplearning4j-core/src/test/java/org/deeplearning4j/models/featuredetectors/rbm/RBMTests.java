@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import static org.junit.Assert.assertEquals;
 
 
+
 /**
  * Created by agibsonccc on 8/27/14.
  */
@@ -56,7 +57,6 @@ public class RBMTests {
         d.normalizeZeroMeanZeroUnitVariance();
 
         int nOut = 600;
-        RandomGenerator rng = new MersenneTwister(123);
         LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -66,18 +66,13 @@ public class RBMTests {
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-3f)
-                .nIn(d.numInputs()).nOut(nOut).build();
+                .nIn(d.numInputs()).nOut(nOut).layerFactory(layerFactory).build();
 
         RBM rbm = layerFactory.create(conf);
 
         rbm.fit(d.getFeatureMatrix());
 
-
-
-
     }
-
-
 
     @Test
     public void testIrisGaussianHidden() {
@@ -85,15 +80,12 @@ public class RBMTests {
         fetcher.fetch(150);
         DataSet d = fetcher.next();
         d.normalizeZeroMeanZeroUnitVariance();
-        RandomGenerator g = new MersenneTwister(123);
 
+      LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.GAUSSIAN).learningRate(1e-1f)
-                .nIn(d.numInputs()).
-                        nOut(3).build();
+                .nIn(d.numInputs()).nOut(3).layerFactory(layerFactory).build();
 
-
-        LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
         RBM r = layerFactory.create(conf);
         r.fit(d.getFeatureMatrix());
 
@@ -106,21 +98,16 @@ public class RBMTests {
         fetcher.fetch(150);
         DataSet d = fetcher.next();
         d.normalizeZeroMeanZeroUnitVariance();
-        RandomGenerator g = new MersenneTwister(123);
-
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).learningRate(1e-1f)
-                .nIn(d.numInputs()).
-                        nOut(3).build();
-
 
         LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).learningRate(1e-1f)
+                .nIn(d.numInputs()).nOut(3).layerFactory(layerFactory).build();
+
         RBM r = layerFactory.create(conf);
         r.fit(d.getFeatureMatrix());
 
     }
-
-
 
     @Test
     public void testBasic() {
@@ -135,18 +122,16 @@ public class RBMTests {
                         {0,0,1,1,1,0}
                 };
 
-
         INDArray input = Nd4j.create(data);
         LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .learningRate(1e-1f).nIn(6).nOut(4).build();
+                .learningRate(1e-1f).nIn(6).nOut(4).layerFactory(layerFactory).build();
         RBM rbm = layerFactory.create(conf);
         rbm.fit(input);
 
-
-
+        assertEquals(24, rbm.gradient().getGradientFor("W").length());
     }
 
     @Test
@@ -154,47 +139,41 @@ public class RBMTests {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         RandomGenerator gen = new MersenneTwister(123);
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
+        LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
+
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(30).constrainGradientToUnitNorm(true).weightInit(WeightInit.DISTRIBUTION).dist(Nd4j.getDistributions().createNormal(1,1e-5))
+                .iterations(30).constrainGradientToUnitNorm(true).weightInit(WeightInit.DISTRIBUTION).dist(Nd4j.getDistributions().createNormal(1, 1e-5))
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
-                .iterationListener(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10),new ScoreIterationListener(5)))
+                .iterationListener(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10), new ScoreIterationListener(5)))
                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                        .learningRate(1e-1f).nIn(784).nOut(600).build();
+                        .learningRate(1e-1f).nIn(784).nOut(600)
+            .layerFactory(layerFactory).build();
 
         fetcher.fetch(10);
         DataSet d2 = fetcher.next();
+        System.out.println(conf.getDist().sample(new int[]{conf.getnIn(), conf.getnOut()}));
 
         INDArray input = d2.getFeatureMatrix();
 
-        LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
         RBM rbm = layerFactory.create(conf);
 
         rbm.fit(input);
 
-
-
-
-
-
     }
-
 
     @Test
     public void testSetGetParams() {
+      LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .learningRate(1e-1f).nIn(6).nOut(4).build();
-        LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
+                .learningRate(1e-1f).nIn(6).nOut(4).layerFactory(layerFactory).build();
+
         RBM rbm = layerFactory.create(conf);
         INDArray rand2 = Nd4j.rand(new int[]{1, rbm.numParams()});
         rbm.setParams(rand2);
         INDArray getParams = rbm.params();
         assertEquals(rand2,getParams);
     }
-
-
-
-
 
     @Test
     public void testCg() {
@@ -209,20 +188,17 @@ public class RBMTests {
                         {0,0,1,1,1,0}
                 };
 
-
+      LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
         INDArray input = Nd4j.create(data);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .learningRate(1e-1f).nIn(6).nOut(4).build();
-        LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
+                .learningRate(1e-1f).nIn(6).nOut(4).layerFactory(layerFactory).build();
         RBM rbm = layerFactory.create(conf);
         rbm.setInput(input);
         double value = rbm.score();
         rbm.contrastiveDivergence();
         value = rbm.score();
-
-
 
     }
 
@@ -242,14 +218,14 @@ public class RBMTests {
 
         INDArray input = Nd4j.create(data);
 
+      LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .learningRate(1e-1f).nIn(6).nOut(4).build();
-        LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
+                .learningRate(1e-1f).nIn(6).nOut(4).layerFactory(layerFactory).build();
+
         RBM rbm = layerFactory.create(conf);
         rbm.setInput(input);
         double value = rbm.score();
-
 
         Gradient grad2 = rbm.gradient();
         rbm.fit(input);
