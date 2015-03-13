@@ -3,6 +3,9 @@ __device__ double update(double old,double opOutput,double *extraParams) {
         return min(old,opOutput);
  }
 
+__device__ double merge(double old,double opOutput,double *extraParams) {
+        return min(old,opOutput);
+ }
 
 /**
  An op on the device

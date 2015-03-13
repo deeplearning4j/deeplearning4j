@@ -1,5 +1,8 @@
 #include <reduce3.h>
 
+__device__ double merge(double old,double opOutput,double *extraParams) {
+       return old + opOutput;
+ }
 
 __device__ double update(double old,double opOutput,double *extraParams) {
        return old + opOutput;

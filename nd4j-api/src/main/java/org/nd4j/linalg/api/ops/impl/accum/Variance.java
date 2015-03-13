@@ -41,7 +41,7 @@ public class Variance extends BaseAccumulation {
     }
 
     public Variance(INDArray x) {
-        super(x);
+        this(x,null,x,x.length(),true);
     }
 
     public Variance(INDArray x, INDArray y) {
@@ -51,21 +51,25 @@ public class Variance extends BaseAccumulation {
     public Variance(INDArray x, INDArray y, INDArray z, int n, boolean biasCorrected) {
         super(x, y, z, n);
         this.biasCorrected = biasCorrected;
+        init(x,y,z,n);
     }
 
     public Variance(INDArray x, INDArray y, int n, boolean biasCorrected) {
         super(x, y, n);
         this.biasCorrected = biasCorrected;
+        init(x,y,z,n);
     }
 
     public Variance(INDArray x, boolean biasCorrected) {
         super(x);
         this.biasCorrected = biasCorrected;
+        init(x,y,z,n);
     }
 
     public Variance(INDArray x, INDArray y, boolean biasCorrected) {
         super(x, y);
         this.biasCorrected = biasCorrected;
+        init(x,y,x,x.length());
     }
 
     @Override
