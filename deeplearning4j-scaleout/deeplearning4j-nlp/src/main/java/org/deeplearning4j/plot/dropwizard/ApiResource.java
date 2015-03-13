@@ -20,13 +20,17 @@ import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
+
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.io.File;
 import java.io.Serializable;
 import java.util.List;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -66,7 +70,13 @@ public class ApiResource extends Application<ApiConfiguration> implements Serial
      */
     @Override
     public void initialize(Bootstrap<ApiConfiguration> bootstrap) {
-        bootstrap.addBundle(new ViewBundle());
+        bootstrap.addBundle(new ViewBundle<ApiConfiguration>(){
+            @Override
+            public ImmutableMap<String, ImmutableMap<String, String>> getViewConfiguration(
+                ApiConfiguration arg0) {
+                return ImmutableMap.of();
+            }
+        });
 
     }
 
