@@ -21,9 +21,12 @@ import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
+
 import org.apache.commons.compress.utils.IOUtils;
 import org.slf4j.Logger;
 import org.springframework.core.io.ClassPathResource;
+
+import com.google.common.collect.ImmutableMap;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -39,7 +42,13 @@ public class RenderApplication extends Application<ApiConfiguration> {
 
     @Override
     public void initialize(Bootstrap<ApiConfiguration> apiConfigurationBootstrap) {
-        apiConfigurationBootstrap.addBundle(new ViewBundle());
+        apiConfigurationBootstrap.addBundle(new ViewBundle<ApiConfiguration>(){
+            @Override
+            public ImmutableMap<String, ImmutableMap<String, String>> getViewConfiguration(
+                ApiConfiguration arg0) {
+                return ImmutableMap.of();
+            }
+        });
         apiConfigurationBootstrap.addBundle(new AssetsBundle());
 
     }
