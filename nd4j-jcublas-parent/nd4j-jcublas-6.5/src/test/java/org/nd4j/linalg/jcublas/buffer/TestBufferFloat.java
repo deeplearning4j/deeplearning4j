@@ -140,4 +140,11 @@ public class TestBufferFloat extends FloatDataBufferTest {
         INDArray arrDest = Nd4j.toFlattened(arr1, arr2);
         Assert.assertArrayEquals(arrDest.data().asFloat(), new float[] {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}, 1e-5f);
     }
+
+    @Test
+    public void testTranspose() {
+        INDArray arr = Nd4j.create(new float[] {1,2,3,4,5,6,7,8,9,10}, new int[]{2, 5});
+        INDArray arr2 = arr.transpose();
+        Assert.assertArrayEquals(arr2.data().asFloat(), new float[] {1, 3, 5, 7, 9, 2, 4, 6, 8, 10}, 1e-5f);
+    }
 }
