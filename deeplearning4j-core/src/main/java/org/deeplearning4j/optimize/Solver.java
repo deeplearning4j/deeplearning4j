@@ -16,13 +16,16 @@
 
 package org.deeplearning4j.optimize;
 
+import java.util.Collection;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.solvers.*;
-import java.util.Collection;
+import org.deeplearning4j.optimize.solvers.ConjugateGradient;
+import org.deeplearning4j.optimize.solvers.GradientAscent;
+import org.deeplearning4j.optimize.solvers.IterationGradientDescent;
+import org.deeplearning4j.optimize.solvers.LBFGS;
+import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
 
 /**
  * Generic purpose solver
@@ -43,8 +46,7 @@ public class Solver {
     }
 
     public ConvexOptimizer getOptimizer() {
-        OptimizationAlgorithm algo = conf.getOptimizationAlgo();
-        switch(algo) {
+        switch(conf.getOptimizationAlgo()) {
             case LBFGS:
                 return new LBFGS(conf,conf.getStepFunction(),listeners,model);
             case GRADIENT_DESCENT:
@@ -55,9 +57,10 @@ public class Solver {
                 return new ConjugateGradient(conf,conf.getStepFunction(),listeners,model);
             case ITERATION_GRADIENT_DESCENT:
                 return new IterationGradientDescent(conf,conf.getStepFunction(),listeners,model);
+            default:
+                throw new IllegalStateException("No optimizer found");
         }
 
-        throw new IllegalStateException("No optimizer found");
     }
 
     public static class Builder {

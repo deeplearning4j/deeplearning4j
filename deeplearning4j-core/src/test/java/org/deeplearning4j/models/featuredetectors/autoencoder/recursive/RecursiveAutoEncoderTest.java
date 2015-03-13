@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.models.featuredetectors.autoencoder.recursive;
 
-import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -37,19 +36,20 @@ public class RecursiveAutoEncoderTest {
     @Test
     public void testRecursiveAutoEncoder() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
+        LayerFactory layerFactory = LayerFactories.getFactory(RecursiveAutoEncoder.class);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .corruptionLevel(0.3).weightInit(WeightInit.VI)
                 .iterations(100).iterationListener(new ScoreIterationListener(10))
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .learningRate(1e-1f).nIn(784).nOut(600).build();
+                .learningRate(1e-1f).nIn(784).nOut(600).layerFactory(layerFactory).build();
 
         fetcher.fetch(10);
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        LayerFactory layerFactory = LayerFactories.getFactory(RecursiveAutoEncoder.class);
+
         RecursiveAutoEncoder da = layerFactory.create(conf);
         da.setParams(da.params());
         da.fit(input);
