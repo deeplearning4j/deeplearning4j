@@ -1,4 +1,4 @@
-#include <pairwise_transform.h>
+#include "pairwise_transform.h"
 
 __device__ double op(double d1,double d2,double *params) {
    return d1 + d2;

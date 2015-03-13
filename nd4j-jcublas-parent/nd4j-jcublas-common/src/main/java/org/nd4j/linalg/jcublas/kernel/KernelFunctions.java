@@ -42,15 +42,11 @@ import static jcuda.driver.JCudaDriver.*;
  */
 public class KernelFunctions {
 
-
-    private static Logger log = LoggerFactory.getLogger(KernelFunctions.class);
     private static Set<String> reduceFunctions = new ConcurrentSkipListSet<>();
     public final static String NAME_SPACE = "org.nd4j.linalg.jcublas";
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
     public final static String REDUCE = NAME_SPACE + ".reducefunctions";
-    public final static int NUM_THREADS = 512;
-    public final static int NUM_BLOCKS = 128;
 
 
     private KernelFunctions() {}
@@ -66,7 +62,8 @@ public class KernelFunctions {
 
     /**
      * Called at initialization in the static context.
-     * Registers cuda functions based on the cudafunctions.properties in the classpath
+     * Registers cuda functions based on
+     * the cudafunctions.properties in the classpath
      * @throws IOException
      */
     public static void register() throws Exception {
@@ -100,14 +97,6 @@ public class KernelFunctions {
 
 
 
-    /**
-     * Returns min(numElements,NUM_BLOCKS)
-     * @param numElements the number of elements
-     * @return the number of blocks
-     */
-    public static int numBlocks(int numElements) {
-        return Math.min(numElements % 2 == 0 ? numElements : numElements + 1,NUM_BLOCKS);
-    }
 
     /**
      * Invoke a function with the given number of parameters

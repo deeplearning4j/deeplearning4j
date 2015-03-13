@@ -1,8 +1,10 @@
-#include <reduce.h>
+#include "reduce.h"
 
 
 __device__ float update(float old,float opOutput,float *extraParams) {
-            float mean = extraParams[1];
+            //due to standard deviation inheriting from variance
+            //the args here are: zero value, bias, mean
+            float mean = extraParams[2];
             float curr = (opOutput - mean);
             return old +  powf(curr,2);
  }

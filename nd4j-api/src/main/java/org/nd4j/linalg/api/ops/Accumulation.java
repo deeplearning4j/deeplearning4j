@@ -27,6 +27,22 @@ import java.util.List;
  * y -> the pairwise ndarray
  * n -> the number of times to accumulate
  *
+ *
+ * Of note here in the extra arguments.
+ *
+ * An accumulation (or reduction in some terminology)
+ * has a concept of a starting value.
+ *
+ * The starting value is the initialization of the solution
+ * to the operation.
+ *
+ * An accumulation should always have the extraArgs()
+ * contain the zero value as the first value.
+ *
+ * This allows the architecture to generalize to different backends
+ * and gives the implementer of a backend a way of hooking in to
+ * passing parameters to different engines.
+ *
  * @author Adam Gibson
  */
 public interface Accumulation extends Op {

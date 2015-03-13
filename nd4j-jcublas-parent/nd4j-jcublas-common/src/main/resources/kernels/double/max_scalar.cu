@@ -1,4 +1,4 @@
-#include <scalar.h>
+#include "scalar.h"
 
 __device__ double op(double d1,double d2,double *params) {
     if(d1 > d2)

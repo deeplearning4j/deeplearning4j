@@ -5,7 +5,7 @@ __device__ double doBinomial(int n, double p, double *randomNumbers,curandGenera
   int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
   for(int i = tid; i < n; i++) {
-    if(randomNumbers[i] < p )
+    if(randomNumbers[i]< p )
       x++;
   }
   return x;

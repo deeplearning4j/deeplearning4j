@@ -1,4 +1,4 @@
-#include <reduce3.h>
+#include "reduce3.h"
 __device__ double update(double old,double opOutput,double *extraParams) {
        return opOutput + old;
  }
@@ -6,7 +6,7 @@ __device__ double merge(double old,double opOutput,double *extraParams) {
        return opOutput + old;
  }
 __device__ double op(double d1,double d2,double *extraParams) {
-       return fmaxf(fabsf(d1),fabsf(d2));
+       return max(abs(d1),abs(d2));
 }
 
 
