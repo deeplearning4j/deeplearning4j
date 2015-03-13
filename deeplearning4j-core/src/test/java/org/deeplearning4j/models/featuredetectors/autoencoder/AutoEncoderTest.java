@@ -39,6 +39,7 @@ public class AutoEncoderTest {
         public void testAutoEncoder() throws Exception {
 
                 MnistDataFetcher fetcher = new MnistDataFetcher(true);
+                LayerFactory layerFactory = LayerFactories.getFactory(AutoEncoder.class);
                 NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
                         .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
                         .corruptionLevel(0.6)
@@ -51,19 +52,19 @@ public class AutoEncoderTest {
                                     plotter.renderFilter(l.getParam(PretrainParamInitializer.WEIGHT_KEY));
 
                                     INDArray gradient = l.gradient().gradient();
-                                    GradientAdjustment.updateGradientAccordingToParams(l.conf(),0,l.getOptimizer().getAdaGrad(),gradient,l.params(),l.batchSize());
+                                    GradientAdjustment.updateGradientAccordingToParams(l.conf(),
+                                        0,l.getOptimizer().getAdaGrad(),gradient,l.params(),l.batchSize());
 
                                 }
                             }
                         })
                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                        .learningRate(1e-1f).nIn(784).nOut(600).build();
+                        .learningRate(1e-1f).nIn(784).nOut(600).layerFactory(layerFactory).build();
 
                 fetcher.fetch(100);
                 DataSet d2 = fetcher.next();
 
                 INDArray input = d2.getFeatureMatrix();
-                LayerFactory layerFactory = LayerFactories.getFactory(AutoEncoder.class);
                 AutoEncoder da = layerFactory.create(conf);
                 assertEquals(da.params(),da.params());
                 assertEquals(471784,da.params().length());
