@@ -163,7 +163,7 @@ public class Windows {
         String window2 = StringUtils.join(onlyTokens);
         int begin = wholeSentence.indexOf(window2);
         int end =   begin + window2.length();
-        return new Window(window,begin,end);
+        return new Window(window, windowSize, begin,end);
 
     }
 
