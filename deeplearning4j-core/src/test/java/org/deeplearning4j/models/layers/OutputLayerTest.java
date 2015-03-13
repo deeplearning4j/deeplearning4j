@@ -16,23 +16,21 @@
 
 package org.deeplearning4j.models.layers;
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.layers.OutputLayer;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.layers.OutputLayer;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,16 +43,14 @@ public class OutputLayerTest {
 
     @Test
     public void testIris() {
-        RandomGenerator gen = new MersenneTwister(123);
-
+        LayerFactory layerFactory = LayerFactories.getFactory(OutputLayer.class);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .activationFunction("softmax")
                 .iterations(100).weightInit(WeightInit.ZERO).iterationListener(new ScoreIterationListener(10))
                 .regularization(true).l2(2e-4).momentum(0.9)
-                .learningRate(1e-1).nIn(4).nOut(3).build();
+                .learningRate(1e-1).nIn(4).nOut(3).layerFactory(layerFactory).build();
 
-        LayerFactory layerFactory = new DefaultLayerFactory(OutputLayer.class);
         OutputLayer l = layerFactory.create(conf);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
