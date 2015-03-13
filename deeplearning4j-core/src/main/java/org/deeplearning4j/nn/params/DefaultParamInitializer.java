@@ -41,7 +41,6 @@ public class DefaultParamInitializer implements ParamInitializer {
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
 
-
     }
 
     @Override
@@ -57,12 +56,11 @@ public class DefaultParamInitializer implements ParamInitializer {
 
 
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf) {
-        INDArray W = WeightInitUtil.initWeights(
+        return WeightInitUtil.initWeights(
                 conf.getnIn(),
                 conf.getnOut(),
                 conf.getWeightInit(),
                 conf.getDist());
-        return W;
     }
 
 
