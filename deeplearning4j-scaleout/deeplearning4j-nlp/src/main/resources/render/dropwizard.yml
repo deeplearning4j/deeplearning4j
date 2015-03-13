@@ -6,7 +6,7 @@ server:
       port: 8080
       acceptorThreads: 5
       selectorThreads: 3
-  maxThreads : 10
+  maxThreads : 30
   minThreads : 2
   adminMinThreads: 3
   adminMaxThreads: 10
