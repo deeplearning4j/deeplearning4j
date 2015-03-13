@@ -59,13 +59,11 @@ public class ConvolutionDownSampleLayerTest {
         DataSet d = data.next();
 
         d.setFeatures(d.getFeatureMatrix().reshape(2,1,28,28));
-
+        LayerFactory layerFactory = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
         NeuralNetConfiguration n = new NeuralNetConfiguration.Builder()
-                .filterSize(new int[]{2, 1, 2, 2})
-              .build();
+                .filterSize(2, 1, 2, 2).layerFactory(layerFactory).build();
 
-        LayerFactory l = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
-        ConvolutionDownSampleLayer c = l.create(n);
+        ConvolutionDownSampleLayer c = layerFactory.create(n);
 
         if(switched) {
             Nd4j.dtype = DataBuffer.FLOAT;
