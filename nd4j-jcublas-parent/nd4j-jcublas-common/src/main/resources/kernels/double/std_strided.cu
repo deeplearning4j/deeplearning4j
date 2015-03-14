@@ -1,38 +1,35 @@
 #include "reduce.h"
 
 
+__device__ double merge(double f1,double f2,double *extraParams) {
+   return f1 + f2;
+}
+
 __device__ double update(double old,double opOutput,double *extraParams) {
-            //due to standard deviation inheriting from variance
-            //the args here are: zero value, bias, mean
-            double mean = extraParams[2];
-            double curr = (opOutput - mean);
-            return old +  pow(curr,2);
+       double mean = extraParams[2];
+       double curr = pow(opOutput - mean,2.0);
+       return old + curr;
  }
 
-__device__ double op(double d1,double d2,double *extraParams) {
-       return d1 + d2;
-}
 
-
-__device__ double merge(double d1,double d2,double *extraParams) {
-       return d1 + d2;
-}
-
-
-
+//an op for the kernel
 __device__ double op(double d1,double *extraParams) {
       return d1;
+
 }
 
-
+//post process result (for things like means etc)
 __device__ double postProcess(double reduction,int n,int xOffset,double *dx,int incx,double *extraParams,double *result) {
-           return sqrt(reduction);
-}
+             double bias = extraParams[1];
+            double ret =  (reduction - (pow(bias,2.0) / n)) / (double) (n - 1.0);
+            return sqrt(ret);
 
+}
 
 extern "C"
 __global__ void std_strided_double(int n, int xOffset,double *dx,int incx,double *extraParams,double *result) {
-             transform(n,xOffset,dx,incx,extraParams,result);
-}
+              transform(n,xOffset,dx,incx,extraParams,result);
+
+ }
 
 

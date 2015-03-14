@@ -108,7 +108,7 @@ public class KernelFunctions {
     public static void invoke(int blocks,int threadsPerBlock, CUfunction function, Pointer kernelParameters) {
         // Call the kernel function.
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
-        int sharedMemSize = 256;
+        int sharedMemSize = 512;
 
         cuLaunchKernel(function,
                 blocks, 1, 1,      // Grid dimension

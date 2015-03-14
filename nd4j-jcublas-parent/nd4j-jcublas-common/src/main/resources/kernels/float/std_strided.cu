@@ -10,7 +10,7 @@ __device__ float update(float old,float opOutput,float *extraParams) {
  }
 
 __device__ float op(float d1,float d2,float *extraParams) {
-       return d1 + d2;
+       return d1;
 }
 
 

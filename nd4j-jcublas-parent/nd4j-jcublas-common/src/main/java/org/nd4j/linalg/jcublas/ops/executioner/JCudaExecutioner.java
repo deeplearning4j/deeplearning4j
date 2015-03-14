@@ -237,8 +237,8 @@ public class JCudaExecutioner implements OpExecutioner {
         CUfunction func =  KernelFunctionLoader.getInstance().getFunction(functionName, op.x().data().dataType() == DataBuffer.DOUBLE ? "double" : "float");
         if(func == null)
             throw new IllegalArgumentException("Function " + functionName + " with data type " + (op.x().data().dataType() == DataBuffer.DOUBLE ? "double does not exist" : "float does not exist"));
-        int blocks = PointerUtil.getNumBlocks(op.n(), 128, 64);
-        int threads = PointerUtil.getNumThreads(op.n(),64);
+        int blocks = PointerUtil.getNumBlocks(op.n(), 512, 128);
+        int threads = PointerUtil.getNumThreads(op.n(),512);
 
         KernelFunctions.invoke(
                blocks,
