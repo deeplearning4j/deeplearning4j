@@ -244,7 +244,7 @@ public class JCudaExecutioner implements OpExecutioner {
                blocks,
                threads,
                 func
-                , kernelParams);
+                , kernelParams,getType(op));
 
 
     }

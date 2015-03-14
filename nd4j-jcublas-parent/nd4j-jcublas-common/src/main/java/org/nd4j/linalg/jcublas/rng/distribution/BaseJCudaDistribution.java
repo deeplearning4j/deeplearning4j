@@ -65,7 +65,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
                 blocks,
                 threads,
                 func
-                , kernelParams);
+                , kernelParams,"float");
         //we don't need this buffer anymore this was purely for storing the output
         randomNumbers.destroy();
     }
@@ -97,7 +97,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
                 blocks,
                 threads,
                 func
-                , kernelParams);
+                , kernelParams,"double");
         //we don't need this buffer anymore this was purely for storing the output
         randomNumbers.destroy();
 
@@ -127,7 +127,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
                 blocks,
                 threads,
                 func
-                , kernelParams);
+                , kernelParams,"float");
         //we don't need this buffer anymore this was purely for storing the output
         randomNumbers.destroy();
     }
@@ -157,7 +157,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
                 blocks,
                 threads,
                 func
-                , kernelParams);
+                , kernelParams,"double");
         //we don't need this buffer anymore this was purely for storing the output
         randomNumbers.destroy();
 
@@ -193,7 +193,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
                 blocks,
                 threads,
                 func
-                , kernelParams);
+                , kernelParams,"double");
     }
 
     protected void doSampleNormal(Pointer out,INDArray means,float std) {
@@ -252,7 +252,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
                 blocks,
                 threads,
                 func
-                , kernelParams);
+                , kernelParams,"float");
 
     }
 

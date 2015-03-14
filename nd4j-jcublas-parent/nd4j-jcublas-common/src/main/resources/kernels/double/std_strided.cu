@@ -21,8 +21,7 @@ __device__ double op(double d1,double *extraParams) {
 //post process result (for things like means etc)
 __device__ double postProcess(double reduction,int n,int xOffset,double *dx,int incx,double *extraParams,double *result) {
              double bias = extraParams[1];
-            double ret =  (reduction - (pow(bias,2.0) / n)) / (double) (n - 1.0);
-            return sqrt(ret);
+            return  sqrt((reduction - (pow(bias,2.0) / n)) / (double) (n - 1.0));
 
 }
 

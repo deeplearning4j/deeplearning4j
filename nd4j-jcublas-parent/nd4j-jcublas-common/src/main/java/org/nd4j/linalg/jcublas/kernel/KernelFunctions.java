@@ -104,11 +104,12 @@ public class KernelFunctions {
      * to the number of elements now
      * @param function   the function to invoke
      * @param kernelParameters the parameters
+     * @param dataType the data type ot use
      */
-    public static void invoke(int blocks,int threadsPerBlock, CUfunction function, Pointer kernelParameters) {
+    public static void invoke(int blocks,int threadsPerBlock, CUfunction function, Pointer kernelParameters,String dataType) {
         // Call the kernel function.
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
-        int sharedMemSize = 512;
+        int sharedMemSize = 256 * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
 
         cuLaunchKernel(function,
                 blocks, 1, 1,      // Grid dimension
