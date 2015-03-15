@@ -72,8 +72,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public  double score() {
         LinAlgExceptions.assertRows(input,labels);
         INDArray output  = output(input);
-        BooleanIndexing.applyWhere(output, Conditions.isNan(),new Value(Nd4j.EPS_THRESHOLD));
-        assert !Nd4j.hasInvalidNumber(output) : "Invalid number on output!";
         if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
             return  LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
 
@@ -86,8 +84,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public void setScore() {
         LinAlgExceptions.assertRows(input,labels);
         INDArray output  = output(input);
-        BooleanIndexing.applyWhere(output, Conditions.isNan(),new Value(Nd4j.EPS_THRESHOLD));
-        assert !Nd4j.hasInvalidNumber(output) : "Invalid number on output!";
         if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
             score = LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
 
