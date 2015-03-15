@@ -212,7 +212,8 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
             // check for convergence
             //convergence on delta x
-            if ((alam < alamin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters, x,x.dup(),x.length())).sum(Integer.MAX_VALUE).getDouble(0) == 0) {
+            //if all of the parameters are < 1e-12
+            if ((alam < alamin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters, x,x.dup(),x.length())).sum(Integer.MAX_VALUE).getDouble(0) == x.length()) {
                 function.setParams(oldParameters);
                 function.setScore();
                 f = function.score();

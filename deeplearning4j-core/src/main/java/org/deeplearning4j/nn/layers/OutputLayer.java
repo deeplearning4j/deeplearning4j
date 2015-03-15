@@ -84,10 +84,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public void setScore() {
         LinAlgExceptions.assertRows(input,labels);
         INDArray output  = output(input);
-        if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-            score = LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
-
-        score =  -LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
+        score =  LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
 
     }
 
@@ -296,11 +293,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public void setParams(INDArray params) {
         INDArray wParams = params.get(NDArrayIndex.interval(0, conf.getnIn() * conf.getnOut()));
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray wLinear = W.linearView();
-        for(int i = 0; i < wParams.length(); i++) {
-            wLinear.putScalar(i,wParams.getDouble(i));
-        }
-
+        W.assign(wParams);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
         bias.assign(params.get(NDArrayIndex.interval(conf.getnIn() * conf.getnOut(), params.length())).dup());
     }
@@ -334,8 +327,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public  INDArray output(INDArray x) {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
-
-        this.input = x;
         INDArray preOutput = preOutput(x);
         INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preOutput), 1);
         applyDropOutIfNecessary(ret);
