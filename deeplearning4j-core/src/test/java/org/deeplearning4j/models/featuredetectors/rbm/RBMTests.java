@@ -218,7 +218,7 @@ public class RBMTests {
 
         INDArray input = Nd4j.create(data);
 
-      LayerFactory layerFactory = new DefaultLayerFactory(RBM.class);
+      LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-1f).nIn(6).nOut(4).layerFactory(layerFactory).build();

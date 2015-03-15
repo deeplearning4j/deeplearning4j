@@ -59,16 +59,6 @@ public abstract class BasePretrainNetwork extends BaseLayer {
     }
 
 
-    /**
-     * Applies sparsity to the passed in hbias gradient
-     * @param hBiasGradient the hbias gradient to apply to
-     */
-    protected void applySparsity(INDArray hBiasGradient) {
-        INDArray change = hBiasGradient.mul(conf.getSparsity()).mul(-conf.getLr() * conf.getSparsity());
-        hBiasGradient.addi(change);
-    }
-
-
     @Override
     public void setScore() {
         if(this.input == null)
@@ -96,10 +86,7 @@ public abstract class BasePretrainNetwork extends BaseLayer {
      * @return the binomial sampled corrupted input
      */
     public INDArray getCorruptedInput(INDArray x, double corruptionLevel) {
-        INDArray corrupted = Nd4j.zeros(x.shape());
-        INDArray linear = corrupted.linearView();
-        for(int i = 0; i < x.length(); i++)
-            linear.putScalar(i,Nd4j.getDistributions().createBinomial(1,1 - corruptionLevel).sample());
+        INDArray corrupted = Nd4j.getDistributions().createBinomial(1,1 - corruptionLevel).sample(x.shape());
         corrupted.muli(x);
         return corrupted;
     }
