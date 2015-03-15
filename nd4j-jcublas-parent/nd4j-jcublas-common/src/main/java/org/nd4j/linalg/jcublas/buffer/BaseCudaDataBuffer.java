@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import jcublas.JCublas2;
 import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
@@ -30,10 +29,12 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 import java.util.Arrays;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Base class for a data buffer
@@ -41,13 +42,22 @@ import java.util.Arrays;
  * @author Adam Gibson
  */
 public abstract class BaseCudaDataBuffer implements JCudaBuffer {
-    private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
-    static {
-        SimpleJCublas.init();
-    }
+
     protected transient Pointer pointer;
     protected int length;
     protected int elementSize;
+    private static ScheduledExecutorService scheduledExecutorService;
+    static {
+        SimpleJCublas.init();
+        scheduledExecutorService = Executors.newScheduledThreadPool(1);
+        scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                System.runFinalization();
+            }
+        },1,1, TimeUnit.SECONDS);
+        System.runFinalization();
+    }
 
 
     /**
@@ -137,13 +147,9 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected void copyTo(JCudaBuffer to) {
         if (to.dataType() != dataType())
             throw new IllegalArgumentException("Unable to copy buffer, mis matching data types.");
-        if(dataType() == DataBuffer.FLOAT) {
-            JCublas.cublasScopy(length(),pointer(),1,to.pointer(),1);
-        }
-        else if(dataType() == DataBuffer.DOUBLE) {
-            JCublas.cublasDcopy(length(), pointer(), 1, to.pointer(), 1);
+        JCuda.cudaMemcpy(to.pointer(),pointer(),length(), cudaMemcpyKind.cudaMemcpyDeviceToDevice);
 
-        }
+
         else throw new IllegalStateException("Illegal data type " + dataType());
 
     }

@@ -2,11 +2,13 @@ package org.nd4j.linalg.jcublas.rng.distribution;
 
 
 import jcuda.Pointer;
+import jcuda.Sizeof;
 import jcuda.driver.CUfunction;
 import jcuda.jcublas.JCublas;
 import jcuda.jcurand.JCurand;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaMemcpyKind;
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
@@ -108,8 +110,8 @@ public abstract class BaseJCudaDistribution implements Distribution {
         CUfunction func =  KernelFunctionLoader.getInstance().getFunction(functionName, "float");
         if(func == null)
             throw new IllegalArgumentException("Function " + functionName + " with data type float does not exist");
-        int blocks = PointerUtil.getNumBlocks(len, 128, 64);
-        int threads = PointerUtil.getNumThreads(len,64);
+        int blocks = PointerUtil.getNumBlocks(len, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
+        int threads = PointerUtil.getNumThreads(len,KernelFunctions.THREADS);
         JCudaBuffer randomNumbers = new CudaFloatDataBuffer(len * n);
 
         Pointer kernelParams = Pointer.to(
@@ -138,8 +140,8 @@ public abstract class BaseJCudaDistribution implements Distribution {
         CUfunction func =  KernelFunctionLoader.getInstance().getFunction(functionName, "double");
         if(func == null)
             throw new IllegalArgumentException("Function " + functionName + " with data type double does not exist");
-        int blocks = PointerUtil.getNumBlocks(len, 128, 64);
-        int threads = PointerUtil.getNumThreads(len,64);
+        int blocks = PointerUtil.getNumBlocks(len, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
+        int threads = PointerUtil.getNumThreads(len,KernelFunctions.THREADS);
         JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(len);
 
         Pointer kernelParams = Pointer.to(
@@ -197,37 +199,39 @@ public abstract class BaseJCudaDistribution implements Distribution {
     }
 
     protected void doSampleNormal(Pointer out,INDArray means,float std) {
-        Pointer dummy = KernelFunctions.alloc(new float[2]);
+        float[] means2 = means.data().asFloat();
         for(int i = 0; i < means.length(); i++) {
-            JCurand.curandGenerateNormal(random.generator(),dummy,2,means.linearView().getFloat(i),std);
-            JCublas.cublasScopy(
-                    1
-                    ,
-                    dummy
-                    ,1
-                    ,out
-                    ,means.majorStride());
-        }
+            Pointer dummy = KernelFunctions.alloc(new float[2]);
 
-        JCublas.cublasFree(dummy);
+            JCurand.curandGenerateNormal(
+                    random.generator()
+                    ,dummy
+                    ,2
+                    ,means2[i]
+                    ,std);
+            JCuda.cudaMemcpy(out.withByteOffset(Sizeof.FLOAT * i),dummy,1, cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+            JCublas.cublasFree(dummy);
+
+        }
 
 
     }
 
     protected void doSampleNormalDouble(Pointer out,INDArray means,double std) {
-        Pointer dummy = KernelFunctions.alloc(new double[2]);
+        double[] means2 = means.data().asDouble();
         for(int i = 0; i < means.length(); i++) {
-            JCurand.curandGenerateNormalDouble(random.generator(), dummy, 2, means.linearView().getDouble(i), std);
-            JCublas.cublasDcopy(
-                    1
-                    ,
-                    dummy
-                    , 1
-                    , out
-                    , means.majorStride());
+            Pointer dummy = KernelFunctions.alloc(new double[2]);
+
+            JCurand.curandGenerateNormalDouble(
+                    random.generator()
+                    ,dummy
+                    ,2
+                    ,means2[i]
+                    ,std);
+            JCuda.cudaMemcpy(out.withByteOffset(Sizeof.FLOAT * i), dummy, 1, cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+            JCublas.cublasFree(dummy);
         }
 
-        JCublas.cublasFree(dummy);
     }
 
     protected void doSampleUniform(Pointer out,float min,float max,int n) {
@@ -236,8 +240,8 @@ public abstract class BaseJCudaDistribution implements Distribution {
         CUfunction func =  KernelFunctionLoader.getInstance().getFunction(functionName, "float");
         if(func == null)
             throw new IllegalArgumentException("Function " + functionName + " with data type double does not exist");
-        int blocks = PointerUtil.getNumBlocks(n, 128, 64);
-        int threads = PointerUtil.getNumThreads(n,64);
+        int blocks = PointerUtil.getNumBlocks(n, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
+        int threads = PointerUtil.getNumThreads(n,KernelFunctions.THREADS);
         Pointer kernelParams = Pointer.to(
                 Pointer.to(new int[]{n})
                 ,Pointer.to(new float[]{min})

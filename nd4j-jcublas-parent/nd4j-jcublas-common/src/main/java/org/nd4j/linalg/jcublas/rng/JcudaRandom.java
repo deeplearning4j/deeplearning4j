@@ -19,6 +19,9 @@ import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 public class JcudaRandom implements Random {
     private curandGenerator generator = new curandGenerator();
 
+    /**
+     * Initialize the random generator on the gpu
+     */
     public JcudaRandom() {
         curandCreateGenerator(generator, CURAND_RNG_PSEUDO_DEFAULT);
         curandSetPseudoRandomGeneratorSeed(generator, 1234);
@@ -29,6 +32,8 @@ public class JcudaRandom implements Random {
     public curandGenerator generator() {
         return generator;
     }
+
+
 
 
     @Override

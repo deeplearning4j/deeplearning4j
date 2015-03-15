@@ -121,7 +121,6 @@ public class KernelFunctions {
         // Call the kernel function.
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
         int sharedMemSize = SHARED_MEM * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
-
         cuLaunchKernel(function,
                 blocks, 1, 1,      // Grid dimension
                 threadsPerBlock, 1, 1,      // Block dimension

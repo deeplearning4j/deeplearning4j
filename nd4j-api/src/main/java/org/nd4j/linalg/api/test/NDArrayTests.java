@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -878,6 +879,13 @@ public abstract class NDArrayTests {
         INDArray assertion = Nd4j.create(new float[]{173.78147196982766f, 173.78147196982766f, 173.78147196982766f, 173.78147196982766f});
         assertEquals(assertion,columnStd);
 
+    }
+
+    @Test
+    public void testEps() {
+        INDArray ones = Nd4j.ones(5);
+        double sum = Nd4j.getExecutioner().exec(new Eps(ones,ones,ones,ones.length())).z().sum(Integer.MAX_VALUE).getDouble(0);
+        assertEquals(5,sum,1e-1);
     }
 
 
