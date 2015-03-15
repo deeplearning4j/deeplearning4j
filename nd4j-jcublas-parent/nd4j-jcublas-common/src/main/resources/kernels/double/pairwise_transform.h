@@ -29,15 +29,15 @@ __device__ void transform(int n,int xOffset,int yOffset, double *dx, double *dy,
         } else {
             /* equal, positive, non-unit increments. */
             for (; i < n; i += totalThreads) {
-                result[i * incx] = op(dx[i * incx],dy[i * incx],params);
+                result[i * incx] = op(dx[i * incx],dy[i * incy],params);
             }
         }
     } else {
         /* unequal or nonpositive increments */
-        int ix = ((incx < 0) ? ((1 - n) * incx) : 0);
-        int iy = ((incy < 0) ? ((1 - n) * incy) : 0);
+        int ix = 0;
+        int iy = 0;
         for (; i < n; i += totalThreads) {
-            result[iy + i * incy] = op(dx[ix + i * incx],dy[iy + i * incy],params);
+            result[i * incy] = op(dx[i * incx],dy[i * incy],params);
         }
     }
 }

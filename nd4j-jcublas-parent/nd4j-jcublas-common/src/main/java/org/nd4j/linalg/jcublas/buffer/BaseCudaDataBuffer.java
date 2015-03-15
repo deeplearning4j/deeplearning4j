@@ -147,8 +147,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected void copyTo(JCudaBuffer to) {
         if (to.dataType() != dataType())
             throw new IllegalArgumentException("Unable to copy buffer, mis matching data types.");
-        JCuda.cudaMemcpy(to.pointer(),pointer(),length(), cudaMemcpyKind.cudaMemcpyDeviceToDevice);
-        
+        JCuda.cudaMemcpy(to.pointer(),pointer(),length() * elementSize(), cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+
     }
 
 
