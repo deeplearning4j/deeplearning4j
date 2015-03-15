@@ -257,12 +257,13 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void binarize(double cutoff) {
+        INDArray linear = getFeatureMatrix().linearView();
         for (int i = 0; i < getFeatures().length(); i++) {
-            double curr = (double) getFeatures().getScalar(i).element();
+            double curr = linear.getDouble(i);
             if (curr > cutoff)
-                getFeatures().put(i, Nd4j.scalar(1));
+                getFeatures().putScalar(i, 1);
             else
-                getFeatures().put(i, Nd4j.scalar(0));
+                getFeatures().putScalar(i, 0);
         }
     }
 
