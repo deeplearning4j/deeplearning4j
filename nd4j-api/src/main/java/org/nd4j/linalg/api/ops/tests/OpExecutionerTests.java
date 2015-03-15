@@ -264,6 +264,17 @@ public abstract class OpExecutionerTests {
     }
 
 
+    @Test
+    public void testDimensionSoftMax() {
+        INDArray linspace = Nd4j.linspace(1,6,6).reshape(2,3);
+        SoftMax max = new SoftMax(linspace);
+        Nd4j.getExecutioner().exec(max,1);
+        assertEquals(linspace.getRow(0).sum(Integer.MAX_VALUE).getDouble(0),1.0,1e-1);
+
+    }
+
+
+
 
 
 }
