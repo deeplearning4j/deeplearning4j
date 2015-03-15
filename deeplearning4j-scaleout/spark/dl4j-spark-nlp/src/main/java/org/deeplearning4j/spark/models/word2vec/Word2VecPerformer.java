@@ -77,10 +77,6 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
         setup(sc.getConf());
     }
 
-
-
-
-
     public void setup(SparkConf conf) {
         useAdaGrad = conf.getBoolean(ADAGRAD, false);
         negative = conf.getDouble(NEGATIVE, 5);
@@ -92,9 +88,6 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
         iterations = conf.getInt(ITERATIONS,5);
 
         initExpTable();
-
-
-
 
         if(negative > 0) {
             try {
@@ -116,14 +109,14 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
      * @param sentence the list of vocab words to train on
      */
     public void trainSentence(final List<VocabWord> sentence,double alpha) {
-        if(sentence == null || sentence.isEmpty())
-            return;
-        for(int i = 0; i < sentence.size(); i++) {
-            if(sentence.get(i).getWord().endsWith("STOP"))
-                continue;
+      if (sentence != null && !sentence.isEmpty()) {
+        for (int i = 0; i < sentence.size(); i++) {
+          if (!sentence.get(i).getWord().endsWith("STOP")) {
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
-            skipGram(i, sentence, (int) nextRandom.get() % window,alpha);
+            skipGram(i, sentence, (int) nextRandom.get() % window, alpha);
+          }
         }
+      }
 
     }
 
@@ -135,24 +128,19 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
      */
     public void skipGram(int i,List<VocabWord> sentence, int b,double alpha) {
 
-        final VocabWord word = sentence.get(i);
-        if(word == null || sentence.isEmpty())
-            return;
-
-        int end =  window * 2 + 1 - b;
-        for(int a = b; a < end; a++) {
-            if(a != window) {
-                int c = i - window + a;
-                if(c >= 0 && c < sentence.size()) {
-                    VocabWord lastWord = sentence.get(c);
-                    iterateSample(word, lastWord,alpha);
-                }
+      final VocabWord word = sentence.get(i);
+      if (word != null && !sentence.isEmpty()) {
+        int end = window * 2 + 1 - b;
+        for (int a = b; a < end; a++) {
+          if (a != window) {
+            int c = i - window + a;
+            if (c >= 0 && c < sentence.size()) {
+              VocabWord lastWord = sentence.get(c);
+              iterateSample(word, lastWord, alpha);
             }
+          }
         }
-
-
-
-
+      }
     }
 
 
@@ -174,44 +162,34 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
         //error for current word and context
         INDArray neu1e = Nd4j.create(weights.getVectorLength());
 
-
-
-
-
-
         for(int i = 0; i < w1.getCodeLength(); i++) {
             int code = w1.getCodes().get(i);
             int point = w1.getPoints().get(i);
 
-
-
             INDArray syn1 = weights.getSyn1().slice(point);
-
 
             double dot = Nd4j.getBlasWrapper().dot(l1,syn1);
 
-            if(dot < -MAX_EXP || dot >= MAX_EXP)
-                continue;
-
+          if (dot >= -MAX_EXP && dot < MAX_EXP) {
 
             int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
-            if(idx >= expTable.length)
-                continue;
+            if (idx >= expTable.length)
+              continue;
 
             //score
-            double f =  expTable[idx];
+            double f = expTable[idx];
             //gradient
-            double g = (1 - code - f) * (useAdaGrad ?  w1.getGradient(i, alpha) : alpha);
+            double g = (1 - code - f) * (useAdaGrad ? w1.getGradient(i, alpha) : alpha);
 
 
-            if(neu1e.data().dataType() == DataBuffer.DOUBLE) {
-                Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
-                Nd4j.getBlasWrapper().axpy(g, l1, syn1);
+            if (neu1e.data().dataType() == DataBuffer.DOUBLE) {
+              Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
+              Nd4j.getBlasWrapper().axpy(g, l1, syn1);
+            } else {
+              Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
+              Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
             }
-            else {
-                Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
-                Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
-            }
+          }
 
 
         }
@@ -242,7 +220,7 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
                 if (f > MAX_EXP)
                     g = useAdaGrad ? w1.getGradient(target, (label - 1)) : (label - 1) *  alpha;
                 else if (f < -MAX_EXP)
-                    g = (label - 0) * (useAdaGrad ?  w1.getGradient(target, alpha) : alpha);
+                    g = label * (useAdaGrad ?  w1.getGradient(target, alpha) : alpha);
                 else
                     g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
                 if(syn1Neg.data().dataType() == DataBuffer.DOUBLE)
@@ -257,26 +235,13 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
             }
         }
 
-
-
-
         if(neu1e.data().dataType() == DataBuffer.DOUBLE)
             Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
 
         else
             Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
 
-
-
-
-
-
-
-
     }
-
-
-
 
     private void initExpTable() {
         for (int i = 0; i < expTable.length; i++) {
