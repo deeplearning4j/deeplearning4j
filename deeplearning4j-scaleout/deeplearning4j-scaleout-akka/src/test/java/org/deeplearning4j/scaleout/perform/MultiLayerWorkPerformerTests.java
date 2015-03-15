@@ -16,15 +16,16 @@
 
 package org.deeplearning4j.scaleout.perform;
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.canova.api.conf.Configuration;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
-import org.deeplearning4j.nn.conf.override.ConfOverride;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.deeplearning4j.nn.api.LayerFactory;
+import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
+import org.deeplearning4j.nn.conf.override.ConfOverride;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.scaleout.job.Job;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
@@ -38,12 +39,12 @@ public class MultiLayerWorkPerformerTests extends NeuralNetWorkPerformerTest {
 
     @Test
     public void testDbn() {
-        RandomGenerator gen = new MersenneTwister(123);
-
+        LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(9e-1f).weightInit(WeightInit.DISTRIBUTION).dist(Nd4j.getDistributions().createNormal(1e-1,1))
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).iterations(10)
-                .learningRate(1e-1f).nIn(4).nOut(3).list(2).hiddenLayerSizes(new int[]{3}) .override(new ConfOverride() {
+                .learningRate(1e-1f).nIn(4).nOut(3).layerFactory(layerFactory)
+                .list(2).hiddenLayerSizes(new int[]{3}).override(new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
 
