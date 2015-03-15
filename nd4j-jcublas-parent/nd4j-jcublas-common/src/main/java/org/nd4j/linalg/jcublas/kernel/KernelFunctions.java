@@ -47,6 +47,13 @@ public class KernelFunctions {
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
     public final static String REDUCE = NAME_SPACE + ".reducefunctions";
+    public final static String SHARED_MEM_KEY = NAME_SPACE + ".sharedmem";
+    public final static String THREADS_KEY = NAME_SPACE + ".threads";
+    public final static String BLOCKS_KEY = NAME_SPACE + ".blocks";
+
+    public  static int SHARED_MEM = 512;
+    public  static int THREADS = 128;
+    public  static int BLOCKS = 512;
 
 
     private KernelFunctions() {}
@@ -77,6 +84,10 @@ public class KernelFunctions {
         String reduceFunctionsList = props.getProperty(REDUCE);
         for(String function : reduceFunctionsList.split(","))
             reduceFunctions.add(function);
+
+        SHARED_MEM = Integer.parseInt(props.getProperty(SHARED_MEM_KEY,"512"));
+        THREADS = Integer.parseInt(props.getProperty(THREADS_KEY,"128"));
+        BLOCKS = Integer.parseInt(props.getProperty(BLOCKS_KEY,"64"));
 
     }
 
@@ -109,7 +120,7 @@ public class KernelFunctions {
     public static void invoke(int blocks,int threadsPerBlock, CUfunction function, Pointer kernelParameters,String dataType) {
         // Call the kernel function.
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
-        int sharedMemSize = 256 * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
+        int sharedMemSize = SHARED_MEM * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
 
         cuLaunchKernel(function,
                 blocks, 1, 1,      // Grid dimension
