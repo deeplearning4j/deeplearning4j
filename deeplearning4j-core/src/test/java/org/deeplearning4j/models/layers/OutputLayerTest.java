@@ -26,6 +26,8 @@ import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -45,10 +47,9 @@ public class OutputLayerTest {
     public void testIris() {
         LayerFactory layerFactory = LayerFactories.getFactory(OutputLayer.class);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
                 .activationFunction("softmax")
-                .iterations(100).weightInit(WeightInit.ZERO).iterationListener(new ScoreIterationListener(10))
-                .regularization(true).l2(2e-4).momentum(0.9)
+                .iterations(100).weightInit(WeightInit.ZERO).iterationListener(new ScoreIterationListener(1))
                 .learningRate(1e-1).nIn(4).nOut(3).layerFactory(layerFactory).build();
 
         OutputLayer l = layerFactory.create(conf);
