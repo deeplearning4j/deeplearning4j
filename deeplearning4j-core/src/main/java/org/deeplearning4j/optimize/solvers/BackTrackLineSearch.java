@@ -25,6 +25,8 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -155,7 +157,6 @@ public class BackTrackLineSearch implements LineOptimizer  {
                     +	g.norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+ FastMath.max(Float.NEGATIVE_INFINITY,abs(g).max(Integer.MAX_VALUE).getDouble(0)));
         }
 
-        BooleanIndexing.applyWhere(g, new Or(Conditions.isNan(),Conditions.isInfinite()),new Value(Nd4j.EPS_THRESHOLD));
         double sum = line.norm2(Integer.MAX_VALUE).getDouble(0);
         if(sum > stpmax) {
             logger.warn("attempted step too big. scaling: sum= " + sum +
@@ -178,14 +179,13 @@ public class BackTrackLineSearch implements LineOptimizer  {
         //  the largest step size that triggers this threshold is
         //  precomputed and saved in alamin
         INDArray maxOldParams = abs(oldParameters);
-        BooleanIndexing.applyWhere(maxOldParams, Conditions.lessThan(1.0),new Value(1.0));
+        Nd4j.getExecutioner().exec(new ScalarSetValue(maxOldParams,1));
 
 
 
         INDArray testMatrix = abs(line).divi(maxOldParams);
         test = testMatrix.max(Integer.MAX_VALUE).getDouble(0);
-        //no longer needed
-        testMatrix = null;
+        testMatrix.data().destroy();
 
         alamin = relTolx / test;
 
@@ -212,7 +212,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
             // check for convergence
             //convergence on delta x
-            if ((alam < alamin) || smallAbsDiff (oldParameters, x)) {
+            if ((alam < alamin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters, x,x.dup(),x.length())).sum(Integer.MAX_VALUE).getDouble(0) == 0) {
                 function.setParams(oldParameters);
                 function.setScore();
                 f = function.score();
@@ -291,17 +291,6 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
 
 
-    // returns true iff we've converged based on absolute x difference
-    private boolean smallAbsDiff (INDArray x, INDArray xold) {
-
-        for (int i = 0; i < x.length(); i++) {
-            double comp = Math.abs ( x.getDouble(i) -  xold.getDouble(i));
-            if ( comp > absTolx)
-                return false;
-
-        }
-        return true;
-    }
 
 }
 
