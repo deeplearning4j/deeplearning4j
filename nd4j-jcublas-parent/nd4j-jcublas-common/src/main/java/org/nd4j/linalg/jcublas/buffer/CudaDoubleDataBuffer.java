@@ -19,6 +19,8 @@ package org.nd4j.linalg.jcublas.buffer;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -139,13 +141,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
             alloc();
 
 
-        JCublas.cublasSetVector(
-                length()
-                , elementSize()
-                , Pointer.to(data)
-                , 1
-                , pointer()
-                , 1);
+        JCuda.cudaMemcpy(pointer(), Pointer.to(data), data.length * elementSize(), cudaMemcpyKind.cudaMemcpyHostToDevice);
+
 
 
     }

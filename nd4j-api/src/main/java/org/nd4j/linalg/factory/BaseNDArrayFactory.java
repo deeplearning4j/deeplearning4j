@@ -628,7 +628,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray randn(int[] shape, org.nd4j.linalg.api.rng.Random r) {
-        return r.nextGaussian(shape);
+        return Nd4j.getDistributions().createNormal(0,1).sample(shape);
     }
 
     /**
