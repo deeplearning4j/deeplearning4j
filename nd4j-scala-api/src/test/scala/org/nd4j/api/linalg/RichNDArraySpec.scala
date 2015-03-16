@@ -36,8 +36,8 @@ class RichNDArraySpec extends FlatSpec with Matchers {
 
     // -- 3D array
     val nd3 = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2))
-    nd3(0, 0, 0) === 1
-    nd3(1, 1, 1) === 8
+    nd3(0, 0, 0) should be(1)
+    nd3(1, 1, 1) should be (8)
 
   }
 
