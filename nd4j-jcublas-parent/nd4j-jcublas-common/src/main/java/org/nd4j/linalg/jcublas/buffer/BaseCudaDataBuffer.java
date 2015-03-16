@@ -55,8 +55,20 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             public void run() {
                 System.runFinalization();
             }
-        },1,1, TimeUnit.SECONDS);
-        System.runFinalization();
+        }, 1, 1, TimeUnit.SECONDS);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                scheduledExecutorService.shutdown();
+                try {
+                    scheduledExecutorService.awaitTermination(1, TimeUnit.MINUTES);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }));
     }
 
 

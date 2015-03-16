@@ -156,7 +156,8 @@ public class SoftMax extends BaseTransformOp {
         }
         else {
             this.max = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResult();
-            this.y = Transforms.exp(x.sub(max));
+            INDArray xMinusMax = x.sub(max);
+            this.y = Transforms.exp(xMinusMax);
             this.sum = Nd4j.getExecutioner().execAndReturn(new Sum(this.y)).currentResult();
             this.y.divi(sum);
             this.extraArgs = new Object[] {max,sum};

@@ -948,8 +948,7 @@ public abstract class BaseNDArray implements INDArray {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-
-        Nd4j.getExecutioner().exec(new ScalarSubtraction(linearView(),null,result.linearView(),result.length(),n));
+        Nd4j.getExecutioner().exec(new ScalarSubtraction(this,null,result,result.length(),n));
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
 

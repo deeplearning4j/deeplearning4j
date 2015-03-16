@@ -11,7 +11,7 @@ __device__ void transform(int n, int idx,float dx,float *dy,int incy,float *para
 	int i = blockIdx.x * blockDim.x + tid;
 
 	for (; i < n; i += totalThreads) {
-		result[i] = op(dx,dy[i],params);
+		result[i * incy] = op(dx,dy[i * incy],params);
 	}
 
 }
