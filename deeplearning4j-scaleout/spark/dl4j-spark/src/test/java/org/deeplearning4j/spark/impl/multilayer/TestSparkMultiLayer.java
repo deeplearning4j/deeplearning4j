@@ -63,8 +63,9 @@ public class TestSparkMultiLayer extends BaseSparkTest {
     @Test
     public void testIris() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-            .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class)).visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+            .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .activationFunction("tanh").list(2).hiddenLayerSizes(3)
                 .override(new ConfOverride() {
