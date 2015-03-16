@@ -242,7 +242,7 @@ public final class VpTreeNode<T extends VpTreePoint<T>> {
         node.leftRadius = medianDistance;
 
         node.left = buildTreeNode(points.subList(0, leftPoints.size()));
-        node.right = buildTreeNode(points.subList(leftPoints.size(), points.size()));
+        node.right = buildTreeNode(points.subList(leftPoints.size() + 1, points.size()));
 
         return node;
     }
