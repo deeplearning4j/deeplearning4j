@@ -25,7 +25,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
- * Variance
+ * Variance with bias correction.
+ * Bias can either be divided by n or adjusted with:
+ *  (currentResult - (pow(bias, 2.0) / n())) / (n() - 1.0);
  * @author Adam Gibson
  */
 public class Variance extends BaseAccumulation {
@@ -37,7 +39,7 @@ public class Variance extends BaseAccumulation {
     }
 
     public Variance(INDArray x, INDArray y, int n) {
-        super(x, y, n);
+        this(x,y,x,n);
     }
 
     public Variance(INDArray x) {
@@ -125,6 +127,6 @@ public class Variance extends BaseAccumulation {
         if(biasCorrected)
             this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).currentResult().doubleValue();
         this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).currentResult().doubleValue();
-        this.extraArgs = new Object[]{bias,mean};
+        this.extraArgs = new Object[]{zero(),bias,mean};
     }
 }

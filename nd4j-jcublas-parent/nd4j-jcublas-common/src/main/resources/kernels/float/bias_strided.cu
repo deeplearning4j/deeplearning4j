@@ -1,4 +1,4 @@
-#include <reduce.h>
+#include "reduce.h"
 
 __device__ float merge(float old,float opOutput,float *extraParams) {
        return opOutput + old;
@@ -19,7 +19,7 @@ __device__ float op(float d1,float d2,float *extraParams) {
 }
 //an op for the kernel
 __device__ float op(float d1,float *extraParams) {
-       float mean = extraParams[0];
+       float mean = extraParams[1];
        float curr = (d1 - mean);
        return  curr;
 

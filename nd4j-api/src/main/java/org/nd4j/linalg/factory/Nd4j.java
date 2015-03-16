@@ -127,7 +127,7 @@ public class Nd4j {
      * Get the current random generator
      * @return the current random generator
      */
-    public static org.nd4j.linalg.api.rng.Random getRandom() {
+    public static  org.nd4j.linalg.api.rng.Random getRandom() {
         return random;
     }
 
@@ -1709,6 +1709,33 @@ public class Nd4j {
      */
     public static INDArray ones(int rows, int columns) {
         return INSTANCE.ones(rows, columns);
+    }
+
+    /**
+     * Empty like
+     * @param arr the array to create the ones like
+     * @return ones in the shape of the given array
+     */
+    public static INDArray zerosLike(INDArray arr) {
+        return create(arr.shape());
+    }
+
+    /**
+     * Empty like
+     * @param arr the array to create the ones like
+     * @return ones in the shape of the given array
+     */
+    public static INDArray emptyLike(INDArray arr) {
+        return create(arr.shape());
+    }
+
+    /**
+     * Ones like
+     * @param arr the array to create the ones like
+     * @return ones in the shape of the given array
+     */
+    public static INDArray onesLike(INDArray arr) {
+        return ones(arr.shape());
     }
 
     /**

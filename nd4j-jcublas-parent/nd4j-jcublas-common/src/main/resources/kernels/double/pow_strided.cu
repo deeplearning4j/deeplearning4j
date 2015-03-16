@@ -1,8 +1,8 @@
-#include <transform.h>
+#include "transform.h"
 
 
 __device__ double op(double d1,double *params) {
-        return pow(d1,params[0]);
+        return powf(d1,params[0]);
 }
 
 extern "C"

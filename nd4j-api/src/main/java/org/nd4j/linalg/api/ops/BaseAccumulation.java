@@ -175,5 +175,6 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             initial = 0.0;
         if(initialComplex == null)
             initialComplex = Nd4j.createComplexNumber(0.0,0.0);
+        this.extraArgs = new Object[]{zero()};
     }
 }

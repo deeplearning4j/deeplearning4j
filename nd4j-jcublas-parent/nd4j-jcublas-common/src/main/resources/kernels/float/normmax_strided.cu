@@ -1,4 +1,4 @@
-#include <reduce3.h>
+#include "reduce3.h"
 __device__ float update(float old,float opOutput,float *extraParams) {
        return opOutput + old;
  }

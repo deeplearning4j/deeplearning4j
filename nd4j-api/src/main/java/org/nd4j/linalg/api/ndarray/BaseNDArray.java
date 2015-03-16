@@ -948,8 +948,7 @@ public abstract class BaseNDArray implements INDArray {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-
-        Nd4j.getExecutioner().exec(new ScalarSubtraction(linearView(),null,result.linearView(),result.length(),n));
+        Nd4j.getExecutioner().exec(new ScalarSubtraction(this,null,result,result.length(),n));
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
 
@@ -3258,7 +3257,13 @@ public abstract class BaseNDArray implements INDArray {
                 return ret;
             }
 
-        } else if (isColumnVector() && c == 0)
+        }
+
+        else if(isRowVector()) {
+            return Nd4j.scalar(getDouble(c));
+        }
+
+        else if (isColumnVector() && c == 0)
             return this;
 
 
@@ -3377,7 +3382,12 @@ public abstract class BaseNDArray implements INDArray {
                 );
 
                 return ret;
-            } else {
+            }
+
+            else if(isColumnVector()) {
+                return Nd4j.scalar(getDouble(r));
+            }
+            else {
                 INDArray ret = Nd4j.create(
                         data,
                         new int[]{shape[1]},

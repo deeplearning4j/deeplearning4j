@@ -1,4 +1,4 @@
-#include <reduce.h>
+#include "reduce.h"
 
 
 __device__ float merge(float f1,float f2,float *extraParams) {
@@ -6,7 +6,7 @@ __device__ float merge(float f1,float f2,float *extraParams) {
 }
 
 __device__ float update(float old,float opOutput,float *extraParams) {
-       float mean = extraParams[1];
+       float mean = extraParams[2];
        float curr = powf(opOutput - mean,2.0);
        return old + curr;
  }
@@ -20,7 +20,7 @@ __device__ float op(float d1,float *extraParams) {
 
 //post process result (for things like means etc)
 __device__ float postProcess(float reduction,int n,int xOffset,float *dx,int incx,float *extraParams,float *result) {
-             float bias = extraParams[0];
+             float bias = extraParams[1];
             return  (reduction - (powf(bias,2.0) / n)) / (float) (n - 1.0);
 
 }

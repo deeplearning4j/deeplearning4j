@@ -1,4 +1,4 @@
-#include <reduce.h>
+#include "reduce.h"
 
 __device__ double merge(double old,double opOutput,double *extraParams) {
        return opOutput + old;
@@ -10,7 +10,7 @@ __device__ double update(double old,double opOutput,double *extraParams) {
 
 
 __device__ double op(double d1,double *extraParams) {
-      return powf(d1,2);
+      return pow(d1,2);
 }
 
 

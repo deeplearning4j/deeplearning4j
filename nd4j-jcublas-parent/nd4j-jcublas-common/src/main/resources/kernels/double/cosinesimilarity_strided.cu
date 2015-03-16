@@ -1,4 +1,4 @@
-#include <reduce3.h>
+#include "reduce3.h"
 
 
 __device__ double update(double old,double opOutput,double *extraParams) {

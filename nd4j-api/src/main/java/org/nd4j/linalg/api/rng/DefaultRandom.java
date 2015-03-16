@@ -1,7 +1,6 @@
 package org.nd4j.linalg.api.rng;
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -21,7 +20,7 @@ public class DefaultRandom implements Random,RandomGenerator {
     }
 
     public DefaultRandom(long seed) {
-        this.randomGenerator = new MersenneTwister(seed);
+        this.randomGenerator = new org.apache.commons.math3.random.SynchronizedRandomGenerator(new MersenneTwister(seed));
     }
 
 
@@ -31,57 +30,57 @@ public class DefaultRandom implements Random,RandomGenerator {
 
     @Override
     public void setSeed(int seed) {
-       randomGenerator.setSeed(seed);
+       getRandomGenerator().setSeed(seed);
     }
 
     @Override
     public void setSeed(int[] seed) {
-        randomGenerator.setSeed(seed);
+        getRandomGenerator().setSeed(seed);
     }
 
     @Override
     public void setSeed(long seed) {
-       randomGenerator.setSeed(seed);
+       getRandomGenerator().setSeed(seed);
     }
 
     @Override
     public void nextBytes(byte[] bytes) {
-      randomGenerator.nextBytes(bytes);
+      getRandomGenerator().nextBytes(bytes);
     }
 
     @Override
     public int nextInt() {
-        return randomGenerator.nextInt();
+        return getRandomGenerator().nextInt();
     }
 
     @Override
     public int nextInt(int n) {
-        return randomGenerator.nextInt(n);
+        return getRandomGenerator().nextInt(n);
     }
 
     @Override
     public long nextLong() {
-        return randomGenerator.nextLong();
+        return getRandomGenerator().nextLong();
     }
 
     @Override
     public boolean nextBoolean() {
-        return randomGenerator.nextBoolean();
+        return getRandomGenerator().nextBoolean();
     }
 
     @Override
     public float nextFloat() {
-        return randomGenerator.nextFloat();
+        return getRandomGenerator().nextFloat();
     }
 
     @Override
     public double nextDouble() {
-        return randomGenerator.nextDouble();
+        return getRandomGenerator().nextDouble();
     }
 
     @Override
     public double nextGaussian() {
-        return randomGenerator.nextGaussian();
+        return getRandomGenerator().nextGaussian();
     }
 
     @Override
@@ -113,4 +112,10 @@ public class DefaultRandom implements Random,RandomGenerator {
         }
         return ret;
     }
+
+
+    public synchronized RandomGenerator getRandomGenerator() {
+        return randomGenerator;
+    }
+
 }

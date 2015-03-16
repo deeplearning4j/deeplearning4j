@@ -1,4 +1,4 @@
-#include <reduce.h>
+#include "reduce.h"
 
 __device__ float merge(float old,float opOutput,float *extraParams) {
        return opOutput + old;
