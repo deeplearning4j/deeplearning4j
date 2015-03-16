@@ -32,7 +32,10 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.List;
 
 /**
- * Created by mjk on 8/21/14.
+ * Jcublas ndarray factory. Handles creation of
+ * jcublas ndarrays.
+ *
+ * @author mjk
  */
 public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 

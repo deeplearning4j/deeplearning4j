@@ -46,31 +46,10 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected transient Pointer pointer;
     protected int length;
     protected int elementSize;
-    private static ScheduledExecutorService scheduledExecutorService;
+    protected boolean freed = false;
     static {
         SimpleJCublas.init();
-        scheduledExecutorService = Executors.newScheduledThreadPool(1);
-        scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                System.runFinalization();
-            }
-        }, 1, 1, TimeUnit.SECONDS);
-
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                scheduledExecutorService.shutdown();
-                try {
-                    scheduledExecutorService.awaitTermination(1, TimeUnit.MINUTES);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        }));
     }
-
 
     /**
      * Base constructor
@@ -117,10 +96,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         pointer = new Pointer();
         //allocate memory for the pointer
         try {
-            JCuda.cudaMalloc(pointer(),
-                    length() * elementSize()
-            );
-
+            JCuda.cudaMalloc(pointer(), elementSize() * length());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -284,8 +260,14 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void destroy() {
-        JCublas.cublasFree(pointer);
-
+        try {
+            if(!freed) {
+                JCuda.cudaFree(pointer);
+                freed = true;
+            }
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

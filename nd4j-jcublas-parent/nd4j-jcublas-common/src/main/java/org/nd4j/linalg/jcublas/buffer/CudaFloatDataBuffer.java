@@ -116,18 +116,8 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
         if (pointer() == null)
             alloc();
-        try {
-            JCublas.cublasSetVector(
-                    length(),
-                    elementSize()
-                    , Pointer.to(data)
-                    , 1
-                    , pointer()
-                    , 1);
-        }catch(Exception e) {
-            throw new RuntimeException(e);
-        }
 
+        JCuda.cudaMemcpy(pointer(),Pointer.to(data),data.length * elementSize(),cudaMemcpyKind.cudaMemcpyHostToDevice);
     }
 
     @Override
