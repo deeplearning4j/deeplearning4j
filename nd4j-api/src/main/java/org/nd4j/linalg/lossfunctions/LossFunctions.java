@@ -53,11 +53,11 @@ public class LossFunctions {
                 INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
                 INDArray xEntOneMinusLogOneMinusZ2 = log(z).rsubi(1);
                 ret = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).mean(Integer.MAX_VALUE).getDouble(0);
-                break;
+                return ret;
             case MCXENT:
                 INDArray columnSums = labels.mul(log(z));
                 ret = columnSums.mean(1).mean(Integer.MAX_VALUE).getDouble(0);
-                break;
+                return ret;
             case XENT:
                 INDArray xEntLogZ = log(z);
                 INDArray xEntOneMinusLabelsOut = labels.rsub(1);
@@ -68,7 +68,7 @@ public class LossFunctions {
                 INDArray rmseXentDiff = labels.sub(z);
                 INDArray squaredrmseXentDiff = pow(rmseXentDiff, 2.0);
                 INDArray sqrt = sqrt(squaredrmseXentDiff);
-                ret = sqrt.sum(1).sum(Integer.MAX_VALUE).getDouble(0);
+                ret = sqrt.sum(1).mean(Integer.MAX_VALUE).getDouble(0);
                 break;
             case MSE:
                 INDArray mseDelta = labels.sub(z);

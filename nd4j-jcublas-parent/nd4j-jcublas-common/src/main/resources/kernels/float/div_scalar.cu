@@ -1,4 +1,4 @@
-#include <scalar.h>
+#include "scalar.h"
 
 __device__ float op(float d1,float d2,float *params) {
    return d2 / d1;

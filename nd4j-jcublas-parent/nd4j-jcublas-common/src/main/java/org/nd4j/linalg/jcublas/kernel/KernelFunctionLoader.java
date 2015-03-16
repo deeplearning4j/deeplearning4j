@@ -36,7 +36,7 @@ import static jcuda.driver.JCudaDriver.*;
 
 /**
  * Kernel function loader:
- * @author Adam GIbson
+ * @author Adam Gibson
  */
 public class KernelFunctionLoader {
 
@@ -44,7 +44,6 @@ public class KernelFunctionLoader {
     public final static String NAME_SPACE = "org.nd4j.linalg.jcublas";
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
-    public final static String REDUCE = NAME_SPACE + ".reducefunctions";
     public final static String IMPORTS_FLOAT = NAME_SPACE + ".float.imports";
     public final static String IMPORTS_DOUBLE = NAME_SPACE + ".double.imports";
 
@@ -296,13 +295,13 @@ public class KernelFunctionLoader {
         if(dataType.equals("float")) {
             String[] imports = props.getProperty(IMPORTS_FLOAT).split(",");
             for(String import1 : imports) {
-                String pathToLoadedFile = loadFile("/kernels/" + dataType + "/" + import1);
+               loadFile("/kernels/" + dataType + "/" + import1);
             }
         }
         else {
             String[] imports = props.getProperty(IMPORTS_DOUBLE).split(",");
             for(String import1 : imports) {
-                String pathToLoadedFile = loadFile("/kernels/" + dataType + "/" + import1);
+                 loadFile("/kernels/" + dataType + "/" + import1);
             }
         }
 

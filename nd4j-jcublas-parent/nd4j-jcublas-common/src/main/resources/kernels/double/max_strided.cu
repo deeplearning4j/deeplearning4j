@@ -1,7 +1,14 @@
-#include <reduce.h>
+#include "reduce.h"
+
+
+
+__device__ double merge(double old,double opOutput,double *extraParams) {
+      return max(old,opOutput);
+ }
+
 
 __device__ double update(double old,double opOutput,double *extraParams) {
-      return fmaxf(old,opOutput);
+      return max(old,opOutput);
  }
 
 

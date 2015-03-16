@@ -19,6 +19,9 @@ import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 public class JcudaRandom implements Random {
     private curandGenerator generator = new curandGenerator();
 
+    /**
+     * Initialize the random generator on the gpu
+     */
     public JcudaRandom() {
         curandCreateGenerator(generator, CURAND_RNG_PSEUDO_DEFAULT);
         curandSetPseudoRandomGeneratorSeed(generator, 1234);
@@ -29,6 +32,8 @@ public class JcudaRandom implements Random {
     public curandGenerator generator() {
         return generator;
     }
+
+
 
 
     @Override
@@ -107,8 +112,8 @@ public class JcudaRandom implements Random {
 
     @Override
     public double nextGaussian() {
-        JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
-        curandGenerateUniformDouble(generator, buffer.pointer(), 2);
+        JCudaBuffer buffer = new CudaDoubleDataBuffer(1);
+        curandGenerateUniformDouble(generator, buffer.pointer(), 1);
         double[] data = buffer.asDouble();
         buffer.destroy();
         return data[0];

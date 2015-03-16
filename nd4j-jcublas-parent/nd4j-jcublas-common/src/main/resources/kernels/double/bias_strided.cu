@@ -1,5 +1,8 @@
-#include <reduce.h>
+#include "reduce.h"
 
+__device__ double merge(double old,double opOutput,double *extraParams) {
+       return opOutput + old;
+ }
 
 __device__ double update(double old,double opOutput,double *extraParams) {
        return opOutput + old;
@@ -16,7 +19,7 @@ __device__ double op(double d1,double d2,double *extraParams) {
 }
 //an op for the kernel
 __device__ double op(double d1,double *extraParams) {
-       double mean = extraParams[0];
+       double mean = extraParams[1];
        double curr = (d1 - mean);
        return  curr;
 

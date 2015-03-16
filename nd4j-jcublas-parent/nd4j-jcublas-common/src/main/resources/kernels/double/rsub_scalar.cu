@@ -1,4 +1,4 @@
-#include <scalar.h>
+#include "scalar.h"
 //scalar and current element
 __device__ double op(double d1,double d2,double *params) {
    return d1 - d2;

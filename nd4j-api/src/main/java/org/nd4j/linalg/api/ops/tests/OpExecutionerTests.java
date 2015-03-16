@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.tests;
 
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
@@ -142,6 +143,24 @@ public abstract class OpExecutionerTests {
 
 
 
+
+    @Test
+    public void testDescriptiveStatsDouble() {
+        Nd4j.dtype = DataBuffer.DOUBLE;
+        OpExecutioner opExecutioner = Nd4j.getExecutioner();
+        INDArray x = Nd4j.linspace(1,5,5);
+
+        Mean mean = new Mean(x);
+        opExecutioner.exec(mean);
+        assertEquals(3.0,mean.currentResult().doubleValue(),1e-1);
+
+        Variance variance = new Variance(x.dup(),true);
+        opExecutioner.exec(variance);
+        assertEquals(2.5,variance.currentResult().doubleValue(),1e-1);
+
+    }
+
+
     @Test
     public void testDescriptiveStats() {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
@@ -151,9 +170,9 @@ public abstract class OpExecutionerTests {
         opExecutioner.exec(mean);
         assertEquals(3.0,mean.currentResult().doubleValue(),1e-1);
 
-        Variance variance = new Variance(x.dup());
+        Variance variance = new Variance(x.dup(),true);
         opExecutioner.exec(variance);
-
+        assertEquals(2.5,variance.currentResult().doubleValue(),1e-1);
 
     }
 
@@ -243,6 +262,17 @@ public abstract class OpExecutionerTests {
         opExecutioner.exec(softMax);
         assertEquals(1.0,softMax.z().sum(Integer.MAX_VALUE).getDouble(0),1e-1);
     }
+
+
+    @Test
+    public void testDimensionSoftMax() {
+        INDArray linspace = Nd4j.linspace(1,6,6).reshape(2,3);
+        SoftMax max = new SoftMax(linspace);
+        Nd4j.getExecutioner().exec(max,1);
+        assertEquals(linspace.getRow(0).sum(Integer.MAX_VALUE).getDouble(0),1.0,1e-1);
+
+    }
+
 
 
 

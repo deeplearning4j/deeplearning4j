@@ -32,56 +32,56 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray swap(INDArray x, INDArray y) {
-        SimpleJCublas.swap(x.linearView(), y.linearView());
+        SimpleJCublas.swap(x, y);
         return y;
     }
 
     @Override
     public INDArray scal(double alpha, INDArray x) {
-        return SimpleJCublas.scal(alpha, x.linearView());
+        return SimpleJCublas.scal(alpha, x);
 
     }
 
     @Override
     public INDArray scal(float alpha, INDArray x) {
-        SimpleJCublas.scal(alpha, x.linearView());
+        SimpleJCublas.scal(alpha, x);
         return x;
     }
 
 
     @Override
     public IComplexNDArray scal(IComplexFloat alpha, IComplexNDArray x) {
-        return SimpleJCublas.scal(alpha, x.linearView());
+        return SimpleJCublas.scal(alpha, x);
 
     }
 
     @Override
     public IComplexNDArray scal(IComplexDouble alpha, IComplexNDArray x) {
-        return SimpleJCublas.scal(alpha, x.linearView());
+        return SimpleJCublas.scal(alpha, x);
 
     }
 
     @Override
     public INDArray copy(INDArray x, INDArray y) {
-        SimpleJCublas.copy(x.linearView(), y.linearView());
+        SimpleJCublas.copy(x, y);
         return y;
     }
 
     @Override
     public IComplexNDArray copy(IComplexNDArray x, IComplexNDArray y) {
-        SimpleJCublas.copy(x.linearView(), y.linearView());
+        SimpleJCublas.copy(x, y);
         return y;
     }
 
     @Override
     public INDArray axpy(double da, INDArray dx, INDArray dy) {
-        SimpleJCublas.axpy(da, dx.linearView(), dy.linearView());
+        SimpleJCublas.axpy(da, dx, dy);
         return dy;
     }
 
     @Override
     public INDArray axpy(float da, INDArray dx, INDArray dy) {
-        SimpleJCublas.axpy(da, dx.linearView(), dy.linearView());
+        SimpleJCublas.axpy(da, dx, dy);
         return dy;
     }
 
@@ -89,10 +89,10 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public IComplexNDArray axpy(IComplexNumber da, IComplexNDArray dx, IComplexNDArray dy) {
         if (da instanceof IComplexDouble) {
-            SimpleJCublas.axpy((IComplexDouble) da, dx.linearView(), dy.linearView());
+            SimpleJCublas.axpy((IComplexDouble) da, dx, dy);
 
         } else
-            SimpleJCublas.axpy((IComplexFloat) da, dx.linearView(), dy.linearView());
+            SimpleJCublas.axpy((IComplexFloat) da, dx, dy);
 
         return dy;
     }

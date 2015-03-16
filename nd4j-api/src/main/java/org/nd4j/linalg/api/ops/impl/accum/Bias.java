@@ -36,7 +36,7 @@ public class Bias extends BaseAccumulation {
     }
 
     public Bias(INDArray x, INDArray y, int n) {
-        super(x, y, n);
+        this(x,y,x,n);
     }
 
     public Bias(INDArray x) {
@@ -75,7 +75,6 @@ public class Bias extends BaseAccumulation {
     public void update(IComplexNumber result) {
         IComplexNumber dev = result.sub(mean);
         currentComplexResult.addi(dev);
-        otherAccumComplex().get(0).addi(dev);
         numProcessed++;
     }
 
@@ -93,7 +92,7 @@ public class Bias extends BaseAccumulation {
     public void init(INDArray x, INDArray y,INDArray z, int n) {
         super.init(x, y,z, n);
         this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).currentResult().doubleValue();
-        this.extraArgs = new Object[]{mean};
+        this.extraArgs = new Object[]{zero(),mean};
 
     }
 

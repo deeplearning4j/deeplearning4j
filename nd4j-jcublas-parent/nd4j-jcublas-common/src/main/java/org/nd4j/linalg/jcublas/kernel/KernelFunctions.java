@@ -42,15 +42,18 @@ import static jcuda.driver.JCudaDriver.*;
  */
 public class KernelFunctions {
 
-
-    private static Logger log = LoggerFactory.getLogger(KernelFunctions.class);
     private static Set<String> reduceFunctions = new ConcurrentSkipListSet<>();
     public final static String NAME_SPACE = "org.nd4j.linalg.jcublas";
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
     public final static String REDUCE = NAME_SPACE + ".reducefunctions";
-    public final static int NUM_THREADS = 512;
-    public final static int NUM_BLOCKS = 128;
+    public final static String SHARED_MEM_KEY = NAME_SPACE + ".sharedmem";
+    public final static String THREADS_KEY = NAME_SPACE + ".threads";
+    public final static String BLOCKS_KEY = NAME_SPACE + ".blocks";
+
+    public  static int SHARED_MEM = 512;
+    public  static int THREADS = 128;
+    public  static int BLOCKS = 512;
 
 
     private KernelFunctions() {}
@@ -66,7 +69,8 @@ public class KernelFunctions {
 
     /**
      * Called at initialization in the static context.
-     * Registers cuda functions based on the cudafunctions.properties in the classpath
+     * Registers cuda functions based on
+     * the cudafunctions.properties in the classpath
      * @throws IOException
      */
     public static void register() throws Exception {
@@ -80,6 +84,10 @@ public class KernelFunctions {
         String reduceFunctionsList = props.getProperty(REDUCE);
         for(String function : reduceFunctionsList.split(","))
             reduceFunctions.add(function);
+
+        SHARED_MEM = Integer.parseInt(props.getProperty(SHARED_MEM_KEY,"512"));
+        THREADS = Integer.parseInt(props.getProperty(THREADS_KEY,"128"));
+        BLOCKS = Integer.parseInt(props.getProperty(BLOCKS_KEY,"64"));
 
     }
 
@@ -100,14 +108,6 @@ public class KernelFunctions {
 
 
 
-    /**
-     * Returns min(numElements,NUM_BLOCKS)
-     * @param numElements the number of elements
-     * @return the number of blocks
-     */
-    public static int numBlocks(int numElements) {
-        return Math.min(numElements % 2 == 0 ? numElements : numElements + 1,NUM_BLOCKS);
-    }
 
     /**
      * Invoke a function with the given number of parameters
@@ -115,12 +115,12 @@ public class KernelFunctions {
      * to the number of elements now
      * @param function   the function to invoke
      * @param kernelParameters the parameters
+     * @param dataType the data type ot use
      */
-    public static void invoke(int blocks,int threadsPerBlock, CUfunction function, Pointer kernelParameters) {
+    public static void invoke(int blocks,int threadsPerBlock, CUfunction function, Pointer kernelParameters,String dataType) {
         // Call the kernel function.
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
-        int sharedMemSize = 256;
-
+        int sharedMemSize = SHARED_MEM * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
         cuLaunchKernel(function,
                 blocks, 1, 1,      // Grid dimension
                 threadsPerBlock, 1, 1,      // Block dimension

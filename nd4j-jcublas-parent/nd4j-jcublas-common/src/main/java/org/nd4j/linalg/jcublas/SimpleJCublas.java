@@ -22,13 +22,15 @@ import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.factory.DataTypeValidation;
-import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
@@ -427,10 +429,13 @@ public class SimpleJCublas {
 
 
     /**
-     * Calculate the 2 norm of the ndarray
+     * Calculate the 2 norm of the ndarray.
+     * Note that this is a standin for
+     * no complex ndarray. It will treat this as a normal ndarray
+     * with a stride of 2.
      *
-     * @param A
-     * @return
+     * @param A the ndarray to calculate the norm2 of
+     * @return the ndarray to calculate the norm2 of
      */
     public static double nrm2(IComplexNDArray A) {
 
@@ -459,25 +464,18 @@ public class SimpleJCublas {
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
 
-        if (x.data().dataType() == DataBuffer.FLOAT) {
-            JCublas.cublasScopy(
-                    x.length(),
-                    xCPointer,
-                    1,
-                    yCPointer,
-                    1);
+
+        JCudaBuffer buff = (JCudaBuffer) x.data();
+        if(x.majorStride() == 2 && y.majorStride() == 2)
+            JCuda.cudaMemcpy(
+                    yCPointer
+                    , xCPointer
+                    , x.length() * buff.elementSize() * 2
+                    , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+        else
+            Nd4j.getExecutioner().exec(new CopyOp(x,y,y,x.length()));
 
 
-        } else {
-            JCublas.cublasDcopy(
-                    x.length(),
-                    xCPointer,
-                    1,
-                    yCPointer,
-                    1);
-
-
-        }
 
 
     }
@@ -486,8 +484,8 @@ public class SimpleJCublas {
     /**
      * Return the index of the max in the given ndarray
      *
-     * @param x the ndarray to ge tthe max for
-     * @return
+     * @param x the ndarray to ge the max for
+     * @return the max index of the given ndarray
      */
     public static int iamax(IComplexNDArray x) {
 
@@ -625,9 +623,9 @@ public class SimpleJCublas {
     /**
      * And and scale by the given scalar da
      *
-     * @param da
-     * @param A
-     * @param B
+     * @param da alpha
+     * @param A the element to add
+     * @param B the matrix to add to
      */
     public static void axpy(float da, INDArray A, INDArray B) {
 
@@ -640,9 +638,9 @@ public class SimpleJCublas {
                 A.length(),
                 da,
                 xAPointer,
-                1,
+                A.majorStride(),
                 xBPointer,
-                1);
+                B.majorStride());
 
 
 
@@ -749,39 +747,31 @@ public class SimpleJCublas {
     /**
      * Copy x to y
      *
-     * @param x
-     * @param y
+     * @param x the src
+     * @param y the destination
      */
     public static void copy(INDArray x, INDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-
-
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
-        if(x.data().dataType() == DataBuffer.FLOAT)
-            JCublas.cublasScopy(
-                    x.length(),
-                    xCPointer,
-                    x.majorStride(),
-                    yCPointer,
-                    y.majorStride());
-        else if(x.data().dataType() == DataBuffer.DOUBLE)
-            JCublas.cublasDcopy(
-                    x.length(),
-                    xCPointer,
-                    x.majorStride(),
-                    yCPointer,
-                    y.majorStride());
-
+        JCudaBuffer buffer = (JCudaBuffer) x.data();
+        if(x.majorStride() == 1 && y.majorStride() == 1)
+            JCuda.cudaMemcpy(
+                    yCPointer
+                    , xCPointer
+                    , x.length() * buffer.elementSize()
+                    , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+        else
+            Nd4j.getExecutioner().exec(new CopyOp(x,y,y,x.length()));
 
     }
 
     /**
      * Dot product between 2 ndarrays
      *
-     * @param x
-     * @param y
-     * @return
+     * @param x the first ndarray
+     * @param y the second ndarray
+     * @return the dot product between the two ndarrays
      */
     public static double dot(INDArray x, INDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
@@ -1121,7 +1111,7 @@ public class SimpleJCublas {
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
 
-        JCublas.cublasDaxpy(x.length(), alpha, xCPointer, 1, yCPointer, 1);
+        JCublas.cublasDaxpy(x.length(), alpha, xCPointer, x.majorStride(), yCPointer, y.majorStride());
 
 
     }

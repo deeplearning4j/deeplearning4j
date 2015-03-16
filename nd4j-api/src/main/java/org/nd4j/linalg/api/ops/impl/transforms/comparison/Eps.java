@@ -71,12 +71,12 @@ public class Eps extends BaseTransformOp {
 
     @Override
     public float op(float origin, float other) {
-        return origin == other ? 1.0f : 0.0f;
+        return Math.abs(origin - other) < Nd4j.EPS_THRESHOLD ? 1.0f : 0.0f;
     }
 
     @Override
     public double op(double origin, double other) {
-        return origin == other ? 1.0 : 0.0;
+        return Math.abs(origin - other) < Nd4j.EPS_THRESHOLD ? 1.0 : 0.0;
     }
 
     @Override
