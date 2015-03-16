@@ -209,7 +209,11 @@ public abstract class BaseJCudaDistribution implements Distribution {
                     ,2
                     ,means2[i]
                     ,std);
-            JCuda.cudaMemcpy(out.withByteOffset(Sizeof.FLOAT * i),dummy,1, cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+            JCuda.cudaMemcpy(
+                    out.withByteOffset(Sizeof.FLOAT * i)
+                    ,dummy
+                    , Sizeof.FLOAT
+                    , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
             JCublas.cublasFree(dummy);
 
         }
@@ -228,7 +232,10 @@ public abstract class BaseJCudaDistribution implements Distribution {
                     ,2
                     ,means2[i]
                     ,std);
-            JCuda.cudaMemcpy(out.withByteOffset(Sizeof.FLOAT * i), dummy, 1, cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+            JCuda.cudaMemcpy(
+                    out.withByteOffset(Sizeof.DOUBLE * i)
+                    , dummy, Sizeof.DOUBLE
+                    , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
             JCublas.cublasFree(dummy);
         }
 
