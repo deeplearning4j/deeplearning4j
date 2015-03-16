@@ -197,11 +197,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         if (!layerWiseConfigurations.isPretrain())
             return;
         /* During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
-        if (this.getInput() == null || this.getLayers() == null) {
-            setInput(input);
-            initializeLayers(input);
-        } else
-            setInput(input);
+
+        setInput(input);
 
         INDArray layerInput = null;
 
