@@ -53,11 +53,11 @@ public class LossFunctions {
                 INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
                 INDArray xEntOneMinusLogOneMinusZ2 = log(z).rsubi(1);
                 ret = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).mean(Integer.MAX_VALUE).getDouble(0);
-                return ret;
+                break;
             case MCXENT:
                 INDArray columnSums = labels.mul(log(z));
                 ret = columnSums.mean(1).mean(Integer.MAX_VALUE).getDouble(0);
-                return ret;
+                break;
             case XENT:
                 INDArray xEntLogZ = log(z);
                 INDArray xEntOneMinusLabelsOut = labels.rsub(1);

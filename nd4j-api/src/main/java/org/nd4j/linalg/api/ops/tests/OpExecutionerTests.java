@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ops.exception.IllegalOpException;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.Exp;
@@ -49,6 +50,14 @@ public abstract class OpExecutionerTests {
         double sim = Transforms.cosineSim(vec1, vec2);
         assertEquals(1, sim, 1e-1);
 
+    }
+
+    @Test
+    public void testScalarMaxOp() {
+        INDArray scalarMax = Nd4j.linspace(1,6,6).negi();
+        INDArray postMax = Nd4j.ones(6);
+        Nd4j.getExecutioner().exec(new ScalarMax(scalarMax,1));
+        assertEquals(scalarMax,postMax);
     }
 
     @Test

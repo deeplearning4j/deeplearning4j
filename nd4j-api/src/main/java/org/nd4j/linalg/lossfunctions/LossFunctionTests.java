@@ -43,7 +43,7 @@ public abstract class LossFunctionTests {
         INDArray in = Nd4j.create(new double[][]{{1, 2}, {3, 4}});
         INDArray out = Nd4j.create(new double[][]{{5, 6}, {7, 8}});
         double diff = LossFunctions.score(in, LossFunctions.LossFunction.RMSE_XENT, out, 0, false);
-        assertEquals(8, diff, 1e-1);
+        assertEquals(4, diff, 1e-1);
     }
 
     @Test

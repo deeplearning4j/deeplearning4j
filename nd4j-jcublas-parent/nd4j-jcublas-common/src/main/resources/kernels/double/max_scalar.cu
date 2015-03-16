@@ -1,9 +1,9 @@
 #include "scalar.h"
 
 __device__ double op(double d1,double d2,double *params) {
-    if(d1 > d2)
-      return 1;
-   return 0;
+    if(d1 < d2)
+      return d2;
+   return d1;
 }
 
 extern "C"
