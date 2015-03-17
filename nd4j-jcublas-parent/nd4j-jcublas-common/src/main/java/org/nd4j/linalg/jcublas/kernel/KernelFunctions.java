@@ -21,8 +21,8 @@ import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUfunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaMemcpyKind;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
@@ -30,7 +30,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import static jcuda.driver.JCudaDriver.*;
+import static jcuda.driver.JCudaDriver.cuCtxSynchronize;
+import static jcuda.driver.JCudaDriver.cuLaunchKernel;
 
 /**
  * Kernel functions.
@@ -144,10 +145,10 @@ public class KernelFunctions {
     public static Pointer alloc(double[] data) {
         // Allocate the device input data, and copy the
         // host input data to the device
+
         CUdeviceptr deviceInputA = new CUdeviceptr();
-        cuMemAlloc(deviceInputA, data.length * Sizeof.DOUBLE);
-        cuMemcpyHtoD(deviceInputA, Pointer.to(data),
-                data.length * Sizeof.DOUBLE);
+        JCuda.cudaMalloc(deviceInputA, Sizeof.DOUBLE * data.length);
+        JCuda.cudaMemcpy(deviceInputA,Pointer.to(data), Sizeof.DOUBLE * data.length, cudaMemcpyKind.cudaMemcpyHostToDevice);
         return deviceInputA;
     }
 
@@ -161,9 +162,9 @@ public class KernelFunctions {
         // Allocate the device input data, and copy the
         // host input data to the device
         CUdeviceptr deviceInputA = new CUdeviceptr();
-        cuMemAlloc(deviceInputA, data.length * Sizeof.FLOAT);
-        cuMemcpyHtoD(deviceInputA, Pointer.to(data),
-                data.length * Sizeof.FLOAT);
+        JCuda.cudaMalloc(deviceInputA, Sizeof.FLOAT * data.length);
+        JCuda.cudaMemcpy(deviceInputA, Pointer.to(data), Sizeof.FLOAT * data.length, cudaMemcpyKind.cudaMemcpyHostToDevice);
+
         return deviceInputA;
     }
 
