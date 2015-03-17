@@ -52,9 +52,13 @@ public class GradientAdjustment {
              AdaGrad adaGradForVariable = adaGrad.get(variable);
              if(adaGradForVariable == null) {
                  adaGradForVariable = new AdaGrad(model.getParam(variable).shape());
-                 adaGrad.put(variable,adaGradForVariable);
-                 updateGradientAccordingToParams(conf,iteration,adaGradForVariable,gradient.getGradientFor(variable),model.getParam(variable),batchSize);
+                 adaGrad.put(variable, adaGradForVariable);
              }
+             else
+                  adaGradForVariable = adaGrad.get(variable);
+
+             updateGradientAccordingToParams(conf,iteration,adaGradForVariable,gradient.getGradientFor(variable),model.getParam(variable),batchSize);
+
 
          }
     }
