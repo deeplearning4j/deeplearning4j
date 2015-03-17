@@ -211,26 +211,6 @@ public  class RBM extends BasePretrainNetwork {
     }
 
 
-
-    /**
-     * Free energy for an RBM
-     * Lower energy models have higher probability
-     * of activations
-     * @param visibleSample the sample to test on
-     * @return the free energy for this sample
-     */
-    public double freeEnergy(INDArray visibleSample) {
-        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
-        INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
-        INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
-
-        INDArray wxB = visibleSample.mmul(W).addRowVector(hBias);
-        double vBiasTerm = Nd4j.getBlasWrapper().dot(visibleSample, vBias);
-        double hBiasTerm = log(exp(wxB).add(1)).sum(Integer.MAX_VALUE).getDouble(0);
-        return -hBiasTerm - vBiasTerm;
-    }
-
-
     /**
      * Binomial sampling of the hidden values given visible
      * @param v the visible values
@@ -251,7 +231,7 @@ public  class RBM extends BasePretrainNetwork {
           INDArray sample = Nd4j.getDistributions().createNormal(h1Mean, 1).sample(h1Mean.shape());
           sample.muli(sqrtSigH1Mean);
           h1Sample = h1Mean.add(sample);
-          h1Sample = Transforms.max(h1Sample, 1.0);
+          h1Sample = max(h1Sample, 0.0);
           //apply dropout
           applyDropOutIfNecessary(h1Sample);
           break;
@@ -354,7 +334,7 @@ public  class RBM extends BasePretrainNetwork {
 
         switch (conf.getHiddenUnit()) {
           case RECTIFIED:
-            preSig = max(preSig, 1.0);
+            preSig = max(preSig, 0.0);
             return preSig;
           case GAUSSIAN:
             INDArray add = preSig.add(Nd4j.randn(preSig.rows(), preSig.columns(), conf.getRng()));
