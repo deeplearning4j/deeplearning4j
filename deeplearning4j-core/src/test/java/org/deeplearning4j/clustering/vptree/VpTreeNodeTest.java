@@ -84,7 +84,7 @@ public class VpTreeNodeTest {
 
         nearbyPoints = node.findNearbyPoints(new VpTreePointINDArray(create(10.1, 10.5)), 0.6);
         Assert.assertTrue(nearbyPoints.contains(new VpTreePointINDArray(create(10, 10))));
-        Assert.assertEquals(3, nearbyPoints.size());
+        Assert.assertEquals(15, nearbyPoints.size());
     }
 
     @Test

@@ -252,11 +252,12 @@ public abstract class BaseLayer implements Layer {
             this.dropoutMask = Nd4j.rand(input.rows(), input.columns()).gt(conf.getDropOut());
         }
 
-        else
+        else if(this.dropoutMask != null)
             this.dropoutMask = Nd4j.ones(input.rows(), conf.getnOut());
 
         //actually apply drop out
-        input.muli(dropoutMask);
+        if(conf.getDropOut() > 0)
+            input.linearView().muli(dropoutMask);
 
     }
 
