@@ -31,6 +31,9 @@ import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 
 
+import java.lang.ref.PhantomReference;
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
 import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -47,8 +50,12 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected int length;
     protected int elementSize;
     protected boolean freed = false;
+    protected Reference<BaseCudaDataBuffer> ref;
+    protected static  ReferenceQueue<BaseCudaDataBuffer> reaped = new ReferenceQueue<>();
+
     static {
         SimpleJCublas.init();
+        new CleanupThread().start();
     }
 
     /**
@@ -96,6 +103,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         pointer = new Pointer();
         //allocate memory for the pointer
         try {
+            ref = new PhantomReference<>(this,reaped);
             JCuda.cudaMalloc(pointer(), elementSize() * length());
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -441,9 +449,23 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         assign(offsets,strides,length(),buffers);
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-        destroy();
+
+
+    static class CleanupThread extends Thread {
+        CleanupThread() {
+            setPriority(Thread.MAX_PRIORITY);
+            setName("CudaBufferCleanup");
+            setDaemon(true);
+        }
+
+        @Override
+        public void run() {
+            while(true) {
+                Reference<? extends BaseCudaDataBuffer> buff = reaped.poll();
+                if(buff != null)
+                    buff.get().destroy();
+            }
+        }
     }
+
 }
