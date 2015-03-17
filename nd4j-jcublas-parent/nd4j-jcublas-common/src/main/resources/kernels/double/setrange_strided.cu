@@ -4,14 +4,14 @@
 __device__ double op(double d1,double *params) {
        double min = params[0];
        double max = params[1];
-       if(origin >= min && origin <= max)
+       if(d1 >= min && d1 <= max)
                 return d1;
         if(min == 0 && max == 1) {
-               double val = 1 / (1 + expf(-origin));
+               double val = 1 / (1 + expf(-d1));
                return (floorf(val * (max - min)) + min);
          }
        
-         double ret =  (floorf(origin * (max - min)) + min);
+         double ret =  (floorf(d1 * (max - min)) + min);
          return ret;
      
 }

@@ -27,7 +27,7 @@ import java.util.List;
 
 /**
  * A base class for assisting with creation of matrices
- * with the data applyTransformToDestination fetcher
+ * with the data transform fetcher
  * @author Adam Gibson
  *
  */
@@ -56,7 +56,7 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 	/**
 	 * Creates an output label matrix
 	 * @param outcomeLabel the outcome label to use
-	 * @return a binary vector where 1 is applyTransformToDestination to the
+	 * @return a binary vector where 1 is transform to the
 	 * index specified by outcomeLabel
 	 */
 	protected INDArray createOutputVector(int outcomeLabel) {
@@ -68,7 +68,7 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 	}
 	
 	/**
-	 * Initializes this data applyTransformToDestination fetcher from the passed in datasets
+	 * Initializes this data transform fetcher from the passed in datasets
 	 * @param examples the examples to use
 	 */
 	protected void initializeCurrFromList(List<DataSet> examples) {
