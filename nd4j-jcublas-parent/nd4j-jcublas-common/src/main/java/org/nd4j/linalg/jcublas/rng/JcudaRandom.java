@@ -7,6 +7,7 @@ import static jcuda.jcurand.curandRngType.CURAND_RNG_PSEUDO_DEFAULT;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.SetRange;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
@@ -112,8 +113,8 @@ public class JcudaRandom implements Random {
 
     @Override
     public double nextGaussian() {
-        JCudaBuffer buffer = new CudaDoubleDataBuffer(1);
-        curandGenerateUniformDouble(generator, buffer.pointer(), 1);
+        JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
+        curandGenerateUniformDouble(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
         buffer.destroy();
         return data[0];
@@ -155,6 +156,38 @@ public class JcudaRandom implements Random {
             curandGenerateUniformDouble(generator, buffer.pointer(), create.length());
         else
             throw new IllegalStateException("Illegal data type discovered");
+        return create;
+    }
+
+    @Override
+    public INDArray nextInt(int[] shape) {
+        INDArray create = Nd4j.create(shape);
+        JCudaBuffer buffer = (JCudaBuffer) create.data();
+        if(buffer.dataType() == DataBuffer.FLOAT)
+            curandGenerateUniform(generator, buffer.pointer(), create.length());
+        else if(buffer.dataType() == DataBuffer.DOUBLE)
+            curandGenerateUniformDouble(generator, buffer.pointer(), create.length());
+        else
+            throw new IllegalStateException("Illegal data type discovered");
+
+        Nd4j.getExecutioner().exec(new SetRange(create,0,1));
+
+        return create;
+    }
+
+    @Override
+    public INDArray nextInt(int n, int[] shape) {
+        INDArray create = Nd4j.create(shape);
+        JCudaBuffer buffer = (JCudaBuffer) create.data();
+        if(buffer.dataType() == DataBuffer.FLOAT)
+            curandGenerateUniform(generator, buffer.pointer(), create.length());
+        else if(buffer.dataType() == DataBuffer.DOUBLE)
+            curandGenerateUniformDouble(generator, buffer.pointer(), create.length());
+        else
+            throw new IllegalStateException("Illegal data type discovered");
+
+        Nd4j.getExecutioner().exec(new SetRange(create,0,n));
+
         return create;
     }
 

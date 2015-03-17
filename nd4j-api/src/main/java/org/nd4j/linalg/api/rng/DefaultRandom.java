@@ -113,6 +113,26 @@ public class DefaultRandom implements Random,RandomGenerator {
         return ret;
     }
 
+    @Override
+    public INDArray nextInt(int[] shape) {
+        INDArray ret = Nd4j.create(shape);
+        INDArray linear = ret.linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            ret.putScalar(i,nextInt());
+        }
+        return ret;
+    }
+
+    @Override
+    public INDArray nextInt(int n, int[] shape) {
+        INDArray ret = Nd4j.create(shape);
+        INDArray linear = ret.linearView();
+        for(int i = 0; i < linear.length(); i++) {
+            ret.putScalar(i,nextInt(n));
+        }
+        return ret;
+    }
+
 
     public synchronized RandomGenerator getRandomGenerator() {
         return randomGenerator;
