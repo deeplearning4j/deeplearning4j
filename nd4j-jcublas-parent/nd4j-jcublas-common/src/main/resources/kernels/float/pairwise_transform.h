@@ -14,8 +14,7 @@ __device__ void transform(int n,int xOffset,int yOffset, float *dx, float *dy,in
         if ((blockIdx.x == 0) && (tid == 0)) {
             int ix = (incx < 0) ? ((1 - n) * incx) : 0;
             for (; i < n; i++) {
-                result[i] = op(dx[i * incx],params);
-                ix += incx;
+                result[i * incx] = op(dx[i * incx],params);
             }
 
         }
@@ -29,13 +28,11 @@ __device__ void transform(int n,int xOffset,int yOffset, float *dx, float *dy,in
         } else {
             /* equal, positive, non-unit increments. */
             for (; i < n; i += totalThreads) {
-                result[i * incx] = op(dx[i * incx],dy[i * incy],params);
+                result[i * incy] = op(dx[i * incx],dy[i * incy],params);
             }
         }
     } else {
         /* unequal or nonpositive increments */
-        int ix = 0;
-        int iy = 0;
         for (; i < n; i += totalThreads) {
             result[i * incy] = op(dx[i * incx],dy[i * incy],params);
         }
