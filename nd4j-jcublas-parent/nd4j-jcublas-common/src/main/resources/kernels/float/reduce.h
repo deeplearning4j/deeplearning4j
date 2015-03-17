@@ -36,8 +36,11 @@ __device__ void transform(int n, int xOffset,float *dx,int incx,float *extraPara
 	float sum = extraParams[0];
 
     for ( int i = start; i < n; i += totalThreads) {
-		float curr = dx[i * incx];
-		sum = update(sum,op(curr,extraParams),extraParams);
+          float curr = dx[i * incx];
+		  sum = update(sum,op(curr,extraParams),extraParams);
+
+
+
 	}
 
 	sPartials[tid] = sum;

@@ -155,6 +155,46 @@ public interface Random {
      */
     INDArray nextFloat(int[] shape);
 
+    /**
+     * Generate a random set of integers
+     * of the specified shape. Note that
+     * these integers will not actually be integers
+     * but floats that happen to be whole numbers.
+     * The reason for this is due to ints
+     * having the same space usage as floats.
+     * This also plays nice with blas.
+     *
+     * If the data type is set to double,
+     * then these will be whole doubles.
+     *
+     * @param shape the shape to generate
+     * @return the ndarray with
+     * the shape of only integers.
+     *
+     */
+    INDArray nextInt(int[] shape);
+
+
+    /**
+     * Generate a random set of integers
+     * of the specified shape. Note that
+     * these integers will not actually be integers
+     * but floats that happen to be whole numbers.
+     * The reason for this is due to ints
+     * having the same space usage as floats.
+     * This also plays nice with blas.
+     *
+     * If the data type is set to double,
+     * then these will be whole doubles.
+     *
+     * @param shape the shape to generate
+     * @param n the max number to generate tro
+     * @return the ndarray with
+     * the shape of only integers.
+     *
+     */
+    INDArray nextInt(int n,int[] shape);
+
 }
 
 

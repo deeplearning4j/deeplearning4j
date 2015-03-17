@@ -27,16 +27,14 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
-import org.nd4j.linalg.api.ops.impl.transforms.Exp;
-import org.nd4j.linalg.api.ops.impl.transforms.Log;
-import org.nd4j.linalg.api.ops.impl.transforms.Pow;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by agibsonccc on 2/22/15.
@@ -58,6 +56,25 @@ public abstract class OpExecutionerTests {
         INDArray postMax = Nd4j.ones(6);
         Nd4j.getExecutioner().exec(new ScalarMax(scalarMax,1));
         assertEquals(scalarMax,postMax);
+    }
+
+    @Test
+    public void testSetRange() {
+        INDArray linspace = Nd4j.linspace(1,4,4);
+        Nd4j.getExecutioner().exec(new SetRange(linspace,0,1));
+        for(int i = 0; i < linspace.length(); i++) {
+            double val = linspace.getDouble(i);
+            assertTrue(val >= 0 && val <= 1);
+        }
+
+        INDArray linspace2 = Nd4j.linspace(1,4,4);
+        Nd4j.getExecutioner().exec(new SetRange(linspace2,2,4));
+        for(int i = 0; i < linspace2.length(); i++) {
+            double val = linspace2.getDouble(i);
+            assertTrue(val >= 2 && val <= 4);
+        }
+
+
     }
 
     @Test
