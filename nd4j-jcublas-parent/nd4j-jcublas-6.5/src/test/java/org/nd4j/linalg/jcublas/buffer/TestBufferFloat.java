@@ -122,4 +122,29 @@ public class TestBufferFloat extends FloatDataBufferTest {
             Assert.fail("Exception thrown during test: " + ex.toString());
         }
     }
+
+    @Test
+    public void testBufferAssign() {
+        CudaFloatDataBuffer bufDest = new CudaFloatDataBuffer(10);
+        CudaFloatDataBuffer buff1 = new CudaFloatDataBuffer(new float[]{1,2,3,4,5,6,7,8,9,10});
+        CudaFloatDataBuffer buff2 = new CudaFloatDataBuffer(new float[]{11,12,13,14,15});
+        bufDest.assign(new int[] {1, 0}, new int[] {2, 1}, buff1, buff2);
+        float[] arrDest = bufDest.asFloat();
+        Assert.assertArrayEquals(arrDest, new float[] {2, 4, 6, 8, 10, 11, 12, 13, 14, 15}, 1e-5f);
+    }
+
+    @Test
+    public void testFlatten() {
+        INDArray arr1 = Nd4j.create(new float[] {1,2,3,4,5,6,7,8,9,10}, new int[]{2, 5});
+        INDArray arr2 = Nd4j.create(new float[] {11,12,13,14,15}, new int[] {5, 1});
+        INDArray arrDest = Nd4j.toFlattened(arr1, arr2);
+        Assert.assertArrayEquals(arrDest.data().asFloat(), new float[] {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}, 1e-5f);
+    }
+
+    @Test
+    public void testTranspose() {
+        INDArray arr = Nd4j.create(new float[] {1,2,3,4,5,6,7,8,9,10}, new int[]{2, 5});
+        INDArray arr2 = arr.transpose();
+        Assert.assertArrayEquals(arr2.data().asFloat(), new float[] {1, 3, 5, 7, 9, 2, 4, 6, 8, 10}, 1e-5f);
+    }
 }
