@@ -35,6 +35,8 @@ import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -50,12 +52,9 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected int length;
     protected int elementSize;
     protected boolean freed = false;
-    protected Reference<BaseCudaDataBuffer> ref;
-    protected static  ReferenceQueue<BaseCudaDataBuffer> reaped = new ReferenceQueue<>();
-
+    protected Collection<String> referencing = new CopyOnWriteArraySet<>();
     static {
         SimpleJCublas.init();
-        new CleanupThread().start();
     }
 
     /**
@@ -69,6 +68,21 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         this.elementSize = elementSize;
         if (pointer() == null)
             alloc();
+    }
+
+    @Override
+    public void removeReferencing(String id) {
+        referencing.remove(id);
+    }
+
+    @Override
+    public Collection<String> references() {
+        return referencing;
+    }
+
+    @Override
+    public void addReferencing(String id) {
+        referencing.add(id);
     }
 
     @Override
@@ -103,7 +117,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         pointer = new Pointer();
         //allocate memory for the pointer
         try {
-            ref = new PhantomReference<>(this,reaped);
             JCuda.cudaMalloc(pointer(), elementSize() * length());
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -165,18 +178,25 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param init   the initialized pointer
      */
     protected void get(int index, int inc, int length, Pointer init) {
-        try {
-            JCublas.cublasGetVector(
-                    length
-                    , elementSize(),
-                    pointer().withByteOffset(index * elementSize())
-                    ,
-                    inc,
-                    init
-                    , 1);
-        }catch(Exception e) {
-            throw new RuntimeException(e);
-        }
+       //cuda memcpy is a little more stable
+        if(inc == 1) {
+           JCuda.cudaMemcpy(init,pointer().withByteOffset(elementSize() * index),length * elementSize(),cudaMemcpyKind.cudaMemcpyDeviceToHost);
+       }
+        else {
+           try {
+               JCublas.cublasGetVector(
+                       length
+                       , elementSize(),
+                       pointer().withByteOffset(index * elementSize())
+                       ,
+                       inc,
+                       init
+                       , 1);
+           }catch(Exception e) {
+               throw new RuntimeException(e);
+           }
+       }
+
     }
 
     /**
@@ -449,23 +469,5 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         assign(offsets,strides,length(),buffers);
     }
 
-
-
-    static class CleanupThread extends Thread {
-        CleanupThread() {
-            setPriority(Thread.MAX_PRIORITY);
-            setName("CudaBufferCleanup");
-            setDaemon(true);
-        }
-
-        @Override
-        public void run() {
-            while(true) {
-                Reference<? extends BaseCudaDataBuffer> buff = reaped.poll();
-                if(buff != null)
-                    buff.get().destroy();
-            }
-        }
-    }
 
 }

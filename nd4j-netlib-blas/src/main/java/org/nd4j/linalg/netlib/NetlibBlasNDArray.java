@@ -274,7 +274,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
         this.data = Nd4j.createBuffer(data);
         this.stride = stride;
         this.offset = offset;
-        initShape(shape);
+        init(shape);
     }
 
     public NetlibBlasNDArray(float[][] floats) {

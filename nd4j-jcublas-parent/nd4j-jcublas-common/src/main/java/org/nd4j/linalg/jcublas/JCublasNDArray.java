@@ -284,7 +284,7 @@ public class JCublasNDArray extends BaseNDArray {
         this.data = Nd4j.createBuffer(data);
         this.stride = stride;
         this.offset = offset;
-        initShape(shape);
+        init(shape);
     }
 
     public JCublasNDArray(float[][] floats) {

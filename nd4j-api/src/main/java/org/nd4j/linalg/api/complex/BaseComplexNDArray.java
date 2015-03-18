@@ -28,7 +28,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.ComplexIterationResult;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.Shape;
 
@@ -177,7 +176,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         this.ordering = ordering;
         this.data = Nd4j.createBuffer(ArrayUtil.prod(shape) * 2);
         this.stride = stride;
-        initShape(shape);
+        init(shape);
 
         int count = 0;
         for (int i = 0; i < list.size(); i++) {
@@ -205,7 +204,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         this.stride = stride;
         this.offset = offset;
         this.ordering = order;
-        initShape(shape);
+        init(shape);
     }
 
     public BaseComplexNDArray(DataBuffer data) {
@@ -217,7 +216,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         this.stride = stride;
         this.offset = offset;
         this.ordering = Nd4j.order();
-        initShape(shape);
+        init(shape);
 
     }
 
@@ -277,7 +276,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     public BaseComplexNDArray(IComplexNumber[] newData, int[] shape) {
         super(new float[ArrayUtil.prod(shape) * 2]);
-        initShape(shape);
+        init(shape);
         for (int i = 0; i < length; i++)
             put(i, newData[i].asDouble());
 
@@ -293,7 +292,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public BaseComplexNDArray(IComplexNumber[] newData, int[] shape, int[] stride) {
         super(new float[ArrayUtil.prod(shape) * 2]);
         this.stride = stride;
-        initShape(shape);
+        init(shape);
         for (int i = 0; i < length; i++)
             put(i, newData[i].asDouble());
 
@@ -310,7 +309,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public BaseComplexNDArray(IComplexNumber[] newData, int[] shape, char ordering) {
         super(new float[ArrayUtil.prod(shape) * 2]);
         this.ordering = ordering;
-        initShape(shape);
+        init(shape);
         for (int i = 0; i < length; i++)
             put(i, newData[i]);
 
@@ -1747,7 +1746,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
     @Override
-    protected void initShape(int[] shape) {
+    protected void init(int[] shape) {
         this.shape = shape;
 
         if (this.shape.length == 1) {

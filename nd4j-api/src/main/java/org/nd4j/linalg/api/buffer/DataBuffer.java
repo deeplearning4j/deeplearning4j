@@ -21,6 +21,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 
 import java.io.Serializable;
+import java.util.Collection;
 
 /**
  * A data buffer is an interface
@@ -35,6 +36,24 @@ public interface DataBuffer extends Serializable {
     public final static int FLOAT = 1;
     public final static int INT = 2;
 
+
+    /**
+     * Remove the referenced id if it exists
+     * @param id the id to remove
+     */
+    void removeReferencing(String id);
+
+    /**
+     * The referencers pointing to this buffer
+     * @return the references pointing to this buffer
+     */
+    Collection<String> references();
+
+    /**
+     * Add a referencing element to this buffer
+     * @param id the id to reference
+     */
+    void addReferencing(String id);
 
     /**
      * Assign the given elements to the given indices

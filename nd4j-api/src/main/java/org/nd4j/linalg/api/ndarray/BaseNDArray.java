@@ -43,6 +43,8 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.Shape;
 
+import java.lang.ref.WeakReference;
+import java.lang.ref.ReferenceQueue;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -78,7 +80,8 @@ public abstract class BaseNDArray implements INDArray {
     protected int rows, columns;
     protected int length;
     protected INDArray linearView;
-
+    protected String id = UUID.randomUUID().toString();
+    protected WeakReference<INDArray> ref;
 
     public BaseNDArray() {
     }
@@ -86,7 +89,7 @@ public abstract class BaseNDArray implements INDArray {
 
     public BaseNDArray(DataBuffer buffer) {
         this.data = buffer;
-        initShape(new int[]{1, buffer.length()});
+        init(new int[]{1, buffer.length()});
     }
 
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
@@ -96,12 +99,12 @@ public abstract class BaseNDArray implements INDArray {
         this.stride = stride;
         this.offset = offset;
         this.ordering = ordering;
-        initShape(shape);
+        init(shape);
 
     }
 
     public BaseNDArray(double[][] data) {
-        this(data.length, data[0].length);
+        this(Nd4j.createBuffer(ArrayUtil.flatten(data)), new int[]{data.length,data[0].length});
 
         for (int r = 0; r < rows; r++) {
             assert (data[r].length == columns);
@@ -126,7 +129,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     public BaseNDArray(int[] shape, DataBuffer buffer) {
         this.data = buffer;
-        initShape(shape);
+        init(shape);
     }
 
     /**
@@ -195,7 +198,8 @@ public abstract class BaseNDArray implements INDArray {
      */
     public BaseNDArray(int newRows, int newColumns, char ordering) {
         this.ordering = ordering;
-        initShape(new int[]{newRows, newColumns});
+        this.data = Nd4j.createBuffer(newRows * newColumns);
+        init(new int[]{newRows, newColumns});
     }
 
 
@@ -232,7 +236,7 @@ public abstract class BaseNDArray implements INDArray {
         this.ordering = ordering;
         this.data = ret;
 
-        initShape(shape);
+        init(shape);
 
         for (int i = 0; i < slices(); i++) {
             putSlice(i, slices.get(i));
@@ -251,7 +255,6 @@ public abstract class BaseNDArray implements INDArray {
         this.offset = offset;
         this.stride = stride;
         this.ordering = ordering;
-        initShape(shape);
 
         if (data != null && data.length > 0) {
             this.data = Nd4j.createBuffer(data);
@@ -261,6 +264,9 @@ public abstract class BaseNDArray implements INDArray {
 
         }
 
+        init(shape);
+
+
 
     }
 
@@ -269,7 +275,7 @@ public abstract class BaseNDArray implements INDArray {
         this.stride = stride;
         this.offset = offset;
         this.ordering = Nd4j.order();
-        initShape(shape);
+        init(shape);
 
     }
 
@@ -447,6 +453,11 @@ public abstract class BaseNDArray implements INDArray {
             ix += indexes[i] * stride[i];
         }
         return ix;
+    }
+
+    @Override
+    public String id() {
+        return id;
     }
 
     @Override
@@ -948,7 +959,7 @@ public abstract class BaseNDArray implements INDArray {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-        Nd4j.getExecutioner().exec(new ScalarSubtraction(this,null,result,result.length(),n));
+        Nd4j.getExecutioner().exec(new ScalarSubtraction(linearView(),null,result.linearView(),result.length(),n));
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
 
@@ -1609,7 +1620,7 @@ public abstract class BaseNDArray implements INDArray {
         this.stride = stride;
     }
 
-    protected void initShape(int[] shape) {
+    protected void init(int[] shape) {
         this.shape = shape;
 
         if (this.shape.length == 1) {
@@ -1662,7 +1673,19 @@ public abstract class BaseNDArray implements INDArray {
                 this.stride = ArrayUtil.calcStrides(this.shape);
         }
 
+        //add the reference for clean up later (clean up the buffer when this becomes a weak reference)
+        data().addReferencing(id());
+        ref = new WeakReference<>((INDArray) this,Nd4j.refQueue());
 
+
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        data().removeReferencing(id());
+        if(data.references().isEmpty())
+            data().destroy();
     }
 
     @Override

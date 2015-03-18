@@ -25,10 +25,13 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
- * Base class for a data buffer handling basic byte operations among other things.
+ * Base class for a data buffer
+ * handling basic byte operations among other things.
  *
  * @author Adam Gibson
  */
@@ -40,6 +43,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     //memory mapped file
     protected String path;
     protected RandomAccessFile memoryMappedBuffer;
+    protected Collection<String> referencing = new CopyOnWriteArraySet<>();
 
     /**
      * Instantiate a buffer with the given length
@@ -47,6 +51,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     protected BaseDataBuffer(int length) {
         this.length = length;
+    }
+
+    @Override
+    public void removeReferencing(String id) {
+        referencing.remove(id);
+    }
+
+    @Override
+    public Collection<String> references() {
+        return referencing;
+    }
+
+    @Override
+    public void addReferencing(String id) {
+        referencing.add(id);
     }
 
     public static byte[] toByteArray(double value) {

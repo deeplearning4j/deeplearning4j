@@ -20,6 +20,7 @@ import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
 import org.apache.commons.math3.distribution.RealDistribution;
 
+import org.nd4j.linalg.api.buffer.BufferReaper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.factory.DefaultDataBufferFactory;
@@ -48,7 +49,9 @@ import org.nd4j.linalg.util.Shape;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
+import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Constructor;
+import java.sql.Ref;
 import java.util.*;
 
 /**
@@ -104,10 +107,19 @@ public class Nd4j {
     protected static OpFactory OP_FACTORY_INSTANCE;
     protected static org.nd4j.linalg.api.rng.Random random;
     protected static Properties props = new Properties();
-
+    protected static ReferenceQueue<INDArray> referenceQueue = new ReferenceQueue<>();
     static {
         Nd4j nd4j = new Nd4j();
         nd4j.initContext();
+    }
+
+    /**
+     * The reference queue used for cleaning up
+     * ndarrays
+     * @return the reference queue for cleaning up ndarrays
+     */
+    public static ReferenceQueue<INDArray> refQueue() {
+        return referenceQueue;
     }
 
     /**
@@ -2889,6 +2901,8 @@ public class Nd4j {
             NEG_UNIT = Nd4j.createFloat(-1, 0);
             ENFORCE_NUMERICAL_STABILITY = Boolean.parseBoolean(System.getProperty(NUMERICAL_STABILITY, String.valueOf(false)));
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
+            //start the buffer reaper
+            new BufferReaper(refQueue()).start();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

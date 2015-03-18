@@ -34,6 +34,13 @@ public interface INDArray extends Serializable {
 
 
     /**
+     * Reference to the ndarray
+     *
+     * @return the id for this ndarray
+     */
+    String id();
+
+    /**
      * Resets the linear view
      */
     void resetLinearView();

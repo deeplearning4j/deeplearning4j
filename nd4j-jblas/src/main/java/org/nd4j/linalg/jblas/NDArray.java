@@ -270,7 +270,7 @@ public class NDArray extends BaseNDArray {
         this.data = Nd4j.createBuffer(data);
         this.stride = stride;
         this.offset = offset;
-        initShape(shape);
+        init(shape);
     }
 
     public NDArray(float[][] floats) {
@@ -320,7 +320,7 @@ public class NDArray extends BaseNDArray {
 
     public NDArray(int[] shape, DataBuffer buffer) {
         this.data = buffer;
-        initShape(shape);
+        init(shape);
     }
 
 

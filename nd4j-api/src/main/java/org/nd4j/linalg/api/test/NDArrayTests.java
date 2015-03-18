@@ -79,6 +79,13 @@ public abstract class NDArrayTests {
 
     }
 
+    @Test
+    public void testTheReaper() {
+        INDArray create = Nd4j.create(5);
+        log.info("Testing creation");
+    }
+
+
 
     @Test
     public void testSubiRowVector() {
