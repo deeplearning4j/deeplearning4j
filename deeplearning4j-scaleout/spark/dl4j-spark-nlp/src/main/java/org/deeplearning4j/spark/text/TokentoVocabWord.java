@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * on a given vo
  */
 public class TokentoVocabWord implements Function<Pair<List<String>,Long>,Pair<List<VocabWord>,AtomicLong>> {
-    private Broadcast<VocabCache> vocab;
+    private  Broadcast<VocabCache> vocab;
 
     public TokentoVocabWord(Broadcast<VocabCache> vocab) {
         this.vocab = vocab;
@@ -41,7 +41,7 @@ public class TokentoVocabWord implements Function<Pair<List<String>,Long>,Pair<L
     public Pair<List<VocabWord>,AtomicLong> call(Pair<List<String>,Long> v1) throws Exception {
         List<VocabWord> ret = new ArrayList<>();
         for(String s : v1.getFirst())
-        ret.add(vocab.getValue().wordFor(s));
+            ret.add(vocab.getValue().wordFor(s));
         return new Pair<>(ret,new AtomicLong(0));
     }
 }
