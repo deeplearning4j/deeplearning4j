@@ -21,6 +21,8 @@ import jcuda.Sizeof;
 import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUfunction;
 import jcuda.jcublas.JCublas;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
@@ -162,15 +164,15 @@ public class JCudaExecutioner implements OpExecutioner {
     private void invoke(Accumulation op) {
         JCudaBuffer xBuffer = (JCudaBuffer) op.x().data();
         Pointer xPointer = xBuffer.pointer().withByteOffset(xBuffer.elementSize() * op.x().offset());
-        CUdeviceptr result;
+        Pointer result;
 
         if(op.x().data().dataType() == DataBuffer.DOUBLE) {
             double[] resultBuffer = new double[2];
             for(int i = 0; i < resultBuffer.length; i++)
                 resultBuffer[i] = op.zero().doubleValue();
-            result = new CUdeviceptr();
-            cuMemAlloc(result, 2 * Sizeof.DOUBLE);
-            JCublas.cublasSetVector(2, Sizeof.DOUBLE,Pointer.to(resultBuffer),1,result,1);
+            result = new Pointer();
+            JCuda.cudaMalloc(result, 2 * Sizeof.DOUBLE);
+            JCuda.cudaMemcpy(result, Pointer.to(resultBuffer), 2 * Sizeof.DOUBLE, cudaMemcpyKind.cudaMemcpyHostToDevice);
 
 
         }
@@ -178,9 +180,9 @@ public class JCudaExecutioner implements OpExecutioner {
             float[] resultBuffer = new float[2];
             for(int i = 0; i < resultBuffer.length; i++)
                 resultBuffer[i] = op.zero().floatValue();
-            result = new CUdeviceptr();
-            cuMemAlloc(result, 2 * Sizeof.FLOAT);
-            JCublas.cublasSetVector(2, Sizeof.FLOAT,Pointer.to(resultBuffer),1,result,1);
+            result = new Pointer();
+            JCuda.cudaMalloc(result, 2 * Sizeof.FLOAT);
+            JCuda.cudaMemcpy(result, Pointer.to(resultBuffer), 2 * Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyHostToDevice);
         }
 
         if(op.y() != null) {
@@ -225,9 +227,13 @@ public class JCudaExecutioner implements OpExecutioner {
 
         }
 
-        if(result != null)
-            JCublas.cublasFree(result);
+        if(result != null) {
+            try {
+                JCuda.cudaFree(result);
+            }catch(Exception e) {
 
+            }
+        }
     }
 
 
@@ -258,26 +264,13 @@ public class JCudaExecutioner implements OpExecutioner {
         if(buff.dataType() == DataBuffer.DOUBLE) {
             double[] data = new double[1];
             Pointer get = Pointer.to(data);
-            JCublas.cublasGetVector(
-                    1
-                    ,buff.elementSize(),
-                    resultPointer
-                    ,1
-                    ,get
-                    ,1
-            );
+            JCuda.cudaMemcpy(get,resultPointer, Sizeof.DOUBLE, cudaMemcpyKind.cudaMemcpyDeviceToHost);
             acc.setCurrentResult(data[0]);
         }
         else {
             float[] data = new float[1];
-            Pointer p = Pointer.to(data);
-            JCublas.cublasGetVector(
-                    1,
-                    buff.elementSize(),
-                    resultPointer,
-                    1,
-                    p,
-                    1);
+            Pointer get = Pointer.to(data);
+            JCuda.cudaMemcpy(get, resultPointer, Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyDeviceToHost);
             acc.setCurrentResult(data[0]);
         }
     }

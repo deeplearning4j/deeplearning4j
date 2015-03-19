@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -151,29 +150,17 @@ public class SoftMax extends BaseTransformOp {
             this.maxComplex = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResultComplex();
             IComplexNDArray complexX = (IComplexNDArray) x;
             this.y = Transforms.exp(complexX.sub(maxComplex));
-            if (this.y.shape().length < 2) {
-                this.sumComplex = Nd4j.getExecutioner().execAndReturn(new Sum(y)).currentResultComplex();
-                this.y.divi(sumComplex);
-            }
-            else {
-                throw new NotImplementedException("Softmax operator is not implemeted on Complex 2D array");
-            }
+            this.sumComplex =  Nd4j.getExecutioner().execAndReturn(new Sum(y)).currentResultComplex();
+            this.y.divi(sumComplex);
             this.extraArgs = new Object[] {maxComplex,sumComplex};
         }
         else {
             this.max = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResult();
             INDArray xMinusMax = x.sub(max);
             this.y = Transforms.exp(xMinusMax);
-            if (this.y.shape().length < 2) {
-                this.sum = Nd4j.getExecutioner().execAndReturn(new Sum(this.y)).currentResult();
-                this.y.divi(sum);
-                this.extraArgs = new Object[] {max,sum};
-            }
-            else {
-                INDArray aSum = this.y.sum(1).repmat(new int[]{this.y.shape()[1], 1}).transpose();
-                this.y.divi(aSum);
-                this.extraArgs = new Object[] {max, aSum};
-            }
+            this.sum = Nd4j.getExecutioner().execAndReturn(new Sum(this.y)).currentResult();
+            this.y.divi(sum);
+            this.extraArgs = new Object[] {max,sum};
         }
 
 

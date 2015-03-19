@@ -170,7 +170,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
 
     /**
-     * Get element with the specified index
+     * Get element witrh the specified index
      *
      * @param index  the index of the element to get
      * @param inc    the increment step when getting data
