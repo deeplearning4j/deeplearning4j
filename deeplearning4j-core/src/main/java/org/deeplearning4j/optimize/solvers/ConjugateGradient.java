@@ -91,11 +91,7 @@ public class ConjugateGradient extends BaseOptimizer {
             h = g;
 
         g.assign(xi);
-        h.assign(h.mul(gam).addi(xi));
-
-
-        BooleanIndexing.applyWhere(h, new Or(Conditions.isNan(),Conditions.isInfinite()), new Value(Nd4j.EPS_THRESHOLD));
-
+        h.muli(gam).addi(xi);
         // gdruck
         // Mallet line search algorithms stop search whenever
         // a step is found that increases the value significantly.
