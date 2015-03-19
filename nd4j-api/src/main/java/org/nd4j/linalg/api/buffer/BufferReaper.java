@@ -4,6 +4,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Buffer reaper for handling freeing of resources
@@ -78,6 +79,7 @@ public class BufferReaper extends Thread {
     public void run() {
         while(true) {
             Reference<INDArray> ref = (Reference<INDArray>) queue.poll();
+
             if(ref != null) {
                 INDArray reffed = ref.get();
                 //remove the reference since this will be gced

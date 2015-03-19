@@ -81,7 +81,7 @@ public abstract class BaseNDArray implements INDArray {
     protected int length;
     protected INDArray linearView;
     protected String id = UUID.randomUUID().toString();
-    protected WeakReference<INDArray> ref;
+    protected transient WeakReference<INDArray> ref;
 
     public BaseNDArray() {
     }

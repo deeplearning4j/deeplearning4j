@@ -23,8 +23,6 @@ import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUfunction;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
@@ -53,7 +51,6 @@ public class KernelFunctions {
     public final static String SHARED_MEM_KEY = NAME_SPACE + ".sharedmem";
     public final static String THREADS_KEY = NAME_SPACE + ".threads";
     public final static String BLOCKS_KEY = NAME_SPACE + ".blocks";
-    private static Logger log = LoggerFactory.getLogger(KernelFunctions.class);
     public  static int SHARED_MEM = 512;
     public  static int THREADS = 128;
     public  static int BLOCKS = 512;
@@ -123,7 +120,8 @@ public class KernelFunctions {
     public static void invoke(int blocks,int threadsPerBlock, CUfunction function, Pointer kernelParameters,String dataType) {
         // Call the kernel function.
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
-        int sharedMemSize = SHARED_MEM * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
+        int sharedMemSize = threadsPerBlock * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
+        sharedMemSize *= 2;
 
         cuLaunchKernel(function,
                 blocks, 1, 1,      // Grid dimension

@@ -18,7 +18,6 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import jcuda.Pointer;
 import jcuda.Sizeof;
-import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUfunction;
 import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
@@ -35,7 +34,6 @@ import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 
-import static jcuda.driver.JCudaDriver.cuMemAlloc;
 
 /**
  * JCuda executioner.
