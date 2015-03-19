@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class Word2Vec {
 
-    private Broadcast<VocabCache> vocabCacheBroadcast;
+    private transient Broadcast<VocabCache> vocabCacheBroadcast;
     private String tokenizerFactoryClazz = DefaultTokenizerFactory.class.getName();
 
 

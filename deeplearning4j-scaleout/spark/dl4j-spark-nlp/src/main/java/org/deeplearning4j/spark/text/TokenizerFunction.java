@@ -28,15 +28,11 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class TokenizerFunction implements Function<String,Pair<List<String>,Long>> {
-    private Class<? extends TokenizerFactory> tokenizerFactoryClazz;
-    private TokenizerFactory tokenizerFactory;
+    private  String tokenizerFactoryClazz;
+    private transient TokenizerFactory tokenizerFactory;
 
     public TokenizerFunction(String clazz) {
-        try {
-            tokenizerFactoryClazz = (Class<? extends TokenizerFactory>) Class.forName(clazz);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        tokenizerFactoryClazz = clazz;
 
     }
 
@@ -53,8 +49,9 @@ public class TokenizerFunction implements Function<String,Pair<List<String>,Long
     }
     private TokenizerFactory getTokenizerFactory() {
         try {
-            tokenizerFactory = tokenizerFactoryClazz.newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
+            Class<? extends TokenizerFactory> clazz = (Class<? extends TokenizerFactory>) Class.forName(tokenizerFactoryClazz);
+            tokenizerFactory = clazz.newInstance();
+        } catch (Exception e) {
             e.printStackTrace();
         }
       return tokenizerFactory;

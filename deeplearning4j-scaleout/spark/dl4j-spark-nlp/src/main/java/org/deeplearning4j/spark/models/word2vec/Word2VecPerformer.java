@@ -66,7 +66,7 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
     private int iterations = 5;
     private static final Logger log = LoggerFactory.getLogger(Word2VecPerformer.class);
     private int lastChecked = 0;
-    private Broadcast<AtomicLong> wordCount;
+    private  Broadcast<AtomicLong> wordCount;
     private InMemoryLookupTable weights;
     private double[] expTable = new double[1000];
 
@@ -89,7 +89,7 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
 
         initExpTable();
 
-        if(negative > 0) {
+        if(negative > 0 && conf.get(TABLE) != null) {
             try {
                 ByteArrayInputStream bis = new ByteArrayInputStream(conf.get(TABLE).getBytes());
                 DataInputStream dis = new DataInputStream(bis);
