@@ -91,6 +91,10 @@ public class Point implements INDArray {
 	public void setArray(INDArray array) {
 		this.array = array;
 	}
+	
+	public String id() {
+		return getId();
+	}
 
 	public void resetLinearView() {
 		array.resetLinearView();
