@@ -89,7 +89,7 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
 
         initExpTable();
 
-        if(negative > 0 && conf.get(TABLE) != null) {
+        if(negative > 0 && conf.contains(TABLE)) {
             try {
                 ByteArrayInputStream bis = new ByteArrayInputStream(conf.get(TABLE).getBytes());
                 DataInputStream dis = new DataInputStream(bis);
