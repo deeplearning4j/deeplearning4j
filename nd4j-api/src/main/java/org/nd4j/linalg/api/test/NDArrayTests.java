@@ -714,7 +714,8 @@ public abstract class NDArrayTests {
     public void testSum2() {
         INDArray test = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray sum = test.sum(1);
-        log.info("Sum" + sum);
+        INDArray assertion = Nd4j.create(new float[]{3,7});
+        assertEquals(assertion,sum);
     }
 
 
