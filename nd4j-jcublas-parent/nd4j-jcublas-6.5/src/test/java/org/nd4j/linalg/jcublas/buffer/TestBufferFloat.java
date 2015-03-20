@@ -64,66 +64,6 @@ public class TestBufferFloat extends FloatDataBufferTest {
 
 
     @Test
-    public void testSerializationFloat() {
-        Path p, p2;
-        try {
-            p = Files.createTempFile("ndarray", "ser");
-            p2 = Files.createTempFile("ndarray.empty", "ser");
-        }
-        catch (IOException ex) {
-            log.error("Couldn't create temporary file. Skip testSerializationFloat");
-            return;
-        }
-
-        float[] arrData = new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
-        float[] arrData2 = new float[] {2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 12.0f};
-        float eps = 1e-6f;
-
-        try {
-            Nd4j.dtype = DataBuffer.FLOAT;
-
-            INDArray arr = Nd4j.create(arrData, new int[] {2, 3});
-            INDArray arrEmpty = Nd4j.create(new float[0], new int[] {0});
-
-            arr.muli(2.0f);
-
-            Assert.assertArrayEquals(arr.data().asFloat(), arrData2, eps);
-            Assert.assertEquals(arrEmpty.data(), null);
-            Assert.assertArrayEquals(arrEmpty.shape(), new int[] {0});
-
-            write(arr, p.toString());
-            write(arrEmpty, p2.toString());
-        }
-        catch (Exception ex)
-        {
-            Assert.fail("Exception thrown during test: " + ex.toString());
-        }
-
-        try
-        {
-            INDArray arr = read(p.toString());
-            INDArray arrEmpty = read(p2.toString());
-
-            Assert.assertArrayEquals(arr.shape(), new int[]{2, 3});
-            Assert.assertArrayEquals(arr.data().asFloat(), arrData2, eps);
-
-            arr.divi(2.0f);
-            Assert.assertArrayEquals(arr.data().asFloat(), arrData, eps);
-
-            Assert.assertEquals(arrEmpty.data(), null);
-            Assert.assertArrayEquals(arrEmpty.shape(), new int[] {0});
-
-            // Clean up the file
-            Files.delete(p);
-            Files.delete(p2);
-        }
-        catch (Exception ex)
-        {
-            Assert.fail("Exception thrown during test: " + ex.toString());
-        }
-    }
-
-    @Test
     public void testBufferAssign() {
         CudaFloatDataBuffer bufDest = new CudaFloatDataBuffer(10);
         CudaFloatDataBuffer buff1 = new CudaFloatDataBuffer(new float[]{1,2,3,4,5,6,7,8,9,10});
@@ -141,10 +81,5 @@ public class TestBufferFloat extends FloatDataBufferTest {
         Assert.assertArrayEquals(arrDest.data().asFloat(), new float[] {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}, 1e-5f);
     }
 
-    @Test
-    public void testTranspose() {
-        INDArray arr = Nd4j.create(new float[] {1,2,3,4,5,6,7,8,9,10}, new int[]{2, 5});
-        INDArray arr2 = arr.transpose();
-        Assert.assertArrayEquals(arr2.data().asFloat(), new float[] {1, 3, 5, 7, 9, 2, 4, 6, 8, 10}, 1e-5f);
-    }
+
 }

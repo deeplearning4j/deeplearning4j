@@ -34,7 +34,7 @@ __device__ void transform(int n,int xOffset,int yOffset, double *dx, double *dy,
     } else {
         /* unequal or nonpositive increments */
         for (; i < n; i += totalThreads) {
-            result[i * incy] = op(dx[i * incx],dy[i * incy],params);
+            result[i] = op(dx[i * incx],dy[i * incy],params);
         }
     }
 }

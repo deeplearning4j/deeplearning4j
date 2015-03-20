@@ -19,24 +19,28 @@ public class SetRange extends BaseTransformOp {
         super(x, z);
         this.min = min;
         this.max = max;
+        init(x,y,z,n);
     }
 
     public SetRange(INDArray x, INDArray z, int n, double min, double max) {
         super(x, z, n);
         this.min = min;
         this.max = max;
+        init(x,y,z,n);
     }
 
     public SetRange(INDArray x, INDArray y, INDArray z, int n, double min, double max) {
         super(x, y, z, n);
         this.min = min;
         this.max = max;
+        init(x,y,z,n);
     }
 
     public SetRange(INDArray x, double min, double max) {
         super(x);
         this.min = min;
         this.max = max;
+        init(x,y,z,n);
     }
 
     @Override
