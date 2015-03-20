@@ -16,10 +16,12 @@
 
 package org.deeplearning4j.optimize.api;
 
+import java.io.Serializable;
+
 /**
  * Created by agibsonccc on 12/24/14.
  */
-public interface TerminationCondition {
+public interface TerminationCondition extends Serializable {
 
     /**
      * Whether to terminate based on the given metadata
