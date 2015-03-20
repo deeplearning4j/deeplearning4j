@@ -22,13 +22,14 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaGrad;
 
+import java.io.Serializable;
 import java.util.Map;
 
 /**
  * Convex optimizer.
  * @author Adam Gibson
  */
-public interface ConvexOptimizer {
+public interface ConvexOptimizer extends Serializable {
     /**
      * The score for the optimizer so far
      * @return the score for this optimizer so far
@@ -110,5 +111,5 @@ public interface ConvexOptimizer {
      * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
      * @param gradient the gradient to modify
      */
-     void updateGradientAccordingToParams(INDArray gradient, INDArray params, int batchSize);
+    void updateGradientAccordingToParams(INDArray gradient, INDArray params, int batchSize);
 }
