@@ -406,7 +406,6 @@ public class SimpleJCublas {
         Pointer cBPointer = getPointer(B);
         Pointer cCPointer = getPointer(C);
 
-        try {
             JCublas.cublasSgemm(
                     'n', //trans
                     'n',
@@ -421,9 +420,6 @@ public class SimpleJCublas {
                     beta,  // beta
                     cCPointer, // y
                     C.rows()); // incy
-        }catch(Exception e) {
-            throw new RuntimeException("Error getting matrix multiply" + JCuda.cudaGetErrorString(JCuda.cudaGetLastError()),e);
-        }
 
         return C;
 

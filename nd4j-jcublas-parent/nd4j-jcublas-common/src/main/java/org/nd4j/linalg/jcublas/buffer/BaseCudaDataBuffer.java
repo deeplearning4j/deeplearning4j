@@ -40,6 +40,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Base class for a data buffer
@@ -51,7 +52,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected transient Pointer pointer;
     protected int length;
     protected int elementSize;
-    protected boolean freed = false;
+    protected AtomicBoolean freed = new AtomicBoolean(false);
     protected Collection<String> referencing = new CopyOnWriteArraySet<>();
     static {
         SimpleJCublas.init();
@@ -87,6 +88,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void put(int i, IComplexNumber result) {
+        ensureNotFreed();
         if(dataType() == DataBuffer.FLOAT) {
             JCublas.cublasSetVector(
                     length(),
@@ -126,6 +128,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void set(Pointer pointer) {
+        ensureNotFreed();
+
         if (dataType() == DOUBLE) {
             JCublas.cublasDcopy(
                     length(),
@@ -154,6 +158,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param to the buffer to copy data to
      */
     protected void copyTo(JCudaBuffer to) {
+        ensureNotFreed();
+
         if (to.dataType() != dataType())
             throw new IllegalArgumentException("Unable to copy buffer, mis matching data types.");
         JCuda.cudaMemcpy(to.pointer(),pointer(),length() * elementSize(), cudaMemcpyKind.cudaMemcpyDeviceToDevice);
@@ -178,24 +184,23 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param init   the initialized pointer
      */
     protected void get(int index, int inc, int length, Pointer init) {
-       //cuda memcpy is a little more stable
+        ensureNotFreed();
+
+        //cuda memcpy is a little more stable
         if(inc == 1) {
-           JCuda.cudaMemcpy(init,pointer().withByteOffset(elementSize() * index),length * elementSize(),cudaMemcpyKind.cudaMemcpyDeviceToHost);
-       }
+            JCuda.cudaMemcpy(init,pointer().withByteOffset(elementSize() * index),length * elementSize(),cudaMemcpyKind.cudaMemcpyDeviceToHost);
+        }
         else {
-           try {
-               JCublas.cublasGetVector(
-                       length
-                       , elementSize(),
-                       pointer().withByteOffset(index * elementSize())
-                       ,
-                       inc,
-                       init
-                       , 1);
-           }catch(Exception e) {
-               throw new RuntimeException(e);
-           }
-       }
+                JCublas.cublasGetVector(
+                        length
+                        , elementSize(),
+                        pointer().withByteOffset(index * elementSize())
+                        ,
+                        inc,
+                        init
+                        , 1);
+
+        }
 
     }
 
@@ -232,6 +237,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public IComplexNumber getComplex(int i) {
+        ensureNotFreed();
         return dataType() == DataBuffer.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
     }
 
@@ -242,20 +248,17 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param from  the element to get data from
      */
     protected void set(int index, int length, Pointer from, int inc) {
-        try {
-            int offset = elementSize() * index;
-            if(offset >= length() * elementSize())
-                throw new IllegalArgumentException("Illegal offset " + offset + " with index of " + index + " and length " + length());
-            JCublas.cublasSetVector(
-                    length
-                    ,elementSize()
-                    ,from
-                    ,inc
-                    ,pointer().withByteOffset(offset)
-                    ,1);
-        }catch(Exception e) {
-            throw new RuntimeException(e);
-        }
+        ensureNotFreed();
+        int offset = elementSize() * index;
+        if(offset >= length() * elementSize())
+            throw new IllegalArgumentException("Illegal offset " + offset + " with index of " + index + " and length " + length());
+        JCublas.cublasSetVector(
+                length
+                ,elementSize()
+                ,from
+                ,inc
+                ,pointer().withByteOffset(offset)
+                ,1);
 
     }
 
@@ -266,11 +269,13 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param from  the element to get data from
      */
     protected void set(int index, int length, Pointer from) {
+        ensureNotFreed();
         set(index, length, from, 1);
     }
 
     @Override
     public void assign(DataBuffer data) {
+        ensureNotFreed();
         JCudaBuffer buf = (JCudaBuffer) data;
         set(0, buf.pointer());
     }
@@ -282,16 +287,19 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param from  the element to get data from
      */
     protected void set(int index, Pointer from) {
+        ensureNotFreed();
         set(index, 1, from);
     }
 
 
     @Override
-    public void destroy() {
+    public synchronized void destroy() {
+        ensureNotFreed();
+
         try {
-            if(!freed) {
+            if(!freed.get()) {
                 JCuda.cudaFree(pointer);
-                freed = true;
+                freed.set(true);
             }
         }catch(Exception e) {
             throw new RuntimeException(e);
@@ -361,11 +369,13 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public int getInt(int ix) {
+        ensureNotFreed();
         return 0;
     }
 
     @Override
     public DataBuffer dup() {
+        ensureNotFreed();
         throw new UnsupportedOperationException();
     }
 
@@ -427,6 +437,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
+        ensureNotFreed();
+
         int count = 0;
         for(int i = 0; i < buffers.length; i++) {
             DataBuffer buffer = buffers[i];
@@ -457,6 +469,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void assign(DataBuffer... buffers) {
+        ensureNotFreed();
+
         int[] offsets = new int[buffers.length];
         int[] strides = new int[buffers.length];
         for(int i = 0; i < strides.length; i++)
@@ -466,7 +480,13 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void assign(int[] offsets, int[] strides, DataBuffer... buffers) {
+        ensureNotFreed();
         assign(offsets,strides,length(),buffers);
+    }
+
+    protected void ensureNotFreed() {
+        if(freed.get())
+            throw new IllegalStateException("Unable to do operation, buffer already freed");
     }
 
 

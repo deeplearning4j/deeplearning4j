@@ -38,9 +38,6 @@ __device__ void transform(int n, int xOffset,double *dx,int incx,double *extraPa
     for ( int i = start; i < n; i += totalThreads) {
              double curr = dx[i * incx];
 		     sum = update(sum,op(curr,extraParams),extraParams);
-
-
-
 	}
 
 	sPartials[tid] = sum;
@@ -61,7 +58,7 @@ __device__ void transform(int n, int xOffset,double *dx,int incx,double *extraPa
 		__syncthreads();
 	}
 
-	for ( int activeThreads = floorPow2>>1;	activeThreads;	activeThreads >>= 1 ) {
+	for ( int activeThreads = floorPow2 >> 1;	activeThreads;	activeThreads >>= 1 ) {
 		if ( tid < activeThreads ) {
 			sPartials[tid] = merge(sPartials[tid],sPartials[tid + activeThreads],extraParams);
 		}

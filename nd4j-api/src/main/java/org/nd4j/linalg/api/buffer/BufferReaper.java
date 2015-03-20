@@ -5,6 +5,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Buffer reaper for handling freeing of resources
@@ -28,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class BufferReaper extends Thread {
     private ReferenceQueue<INDArray> queue;
-
+    private AtomicLong ranFinals;
     public BufferReaper(ReferenceQueue<INDArray> queue) {
         init(queue);
     }
@@ -73,22 +74,37 @@ public class BufferReaper extends Thread {
         setPriority(Thread.MAX_PRIORITY);
         setName("BufferCleanup");
         setDaemon(true);
+        ranFinals = new AtomicLong(-1);
+    }
+
+
+    private void runFinalize() {
+        long curr = System.currentTimeMillis();
+        long old = ranFinals.get();
+        if(old < 0)
+            ranFinals.set(curr);
+        else {
+            long delta = Math.abs(curr - old);
+            long seconds = TimeUnit.MILLISECONDS.toSeconds(delta);
+            if(seconds >= 60) {
+                System.gc();
+                System.runFinalization();
+                ranFinals.set(System.currentTimeMillis());
+            }
+        }
     }
 
     @Override
     public void run() {
+
         while(true) {
             Reference<INDArray> ref = (Reference<INDArray>) queue.poll();
-
+            runFinalize();
             if(ref != null) {
                 INDArray reffed = ref.get();
                 //remove the reference since this will be gced
                 reffed.data().removeReferencing(reffed.id());
-                //we can gc this buffer early if it's not being used
-                if(reffed.data().references().isEmpty()) {
-                    reffed.data().destroy();
-                    System.out.println("Reaper reaping ");
-                }
+
             }
 
         }

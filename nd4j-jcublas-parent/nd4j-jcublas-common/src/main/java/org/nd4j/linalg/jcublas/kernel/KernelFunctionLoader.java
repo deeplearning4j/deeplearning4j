@@ -122,7 +122,7 @@ public class KernelFunctionLoader {
         if(init)
             return;
         StringBuffer sb = new StringBuffer();
-        sb.append("nvcc -ptx");
+        sb.append("nvcc -g -G -ptx");
 
         ClassPathResource res = new ClassPathResource("/cudafunctions.properties");
         if (!res.exists())
@@ -185,7 +185,7 @@ public class KernelFunctionLoader {
     private void compileAndLoad(Properties props,String key,String dataType) throws IOException {
         String f = props.getProperty(key);
         StringBuffer sb = new StringBuffer();
-        sb.append("nvcc");
+        sb.append("nvcc -g -G ");
         sb.append(" --include-path ");
         String tmpDir = System.getProperty("java.io.tmpdir");
         StringBuffer dir = new StringBuffer();

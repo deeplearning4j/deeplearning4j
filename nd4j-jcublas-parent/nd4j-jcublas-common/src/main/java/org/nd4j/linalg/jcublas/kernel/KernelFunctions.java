@@ -19,7 +19,6 @@ package org.nd4j.linalg.jcublas.kernel;
 
 import jcuda.Pointer;
 import jcuda.Sizeof;
-import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUfunction;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
@@ -111,8 +110,8 @@ public class KernelFunctions {
 
     /**
      * Invoke a function with the given number of parameters
-     * The block size is 256 and the grid size is set with respect
-     * to the number of elements now
+     * @param blocks the number of blocks to launch the kernel
+     * @param threadsPerBlock the number of threads per block
      * @param function   the function to invoke
      * @param kernelParameters the parameters
      * @param dataType the data type ot use
@@ -121,7 +120,6 @@ public class KernelFunctions {
         // Call the kernel function.
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
         int sharedMemSize = threadsPerBlock * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
-        sharedMemSize *= 2;
 
         cuLaunchKernel(function,
                 blocks, 1, 1,      // Grid dimension
@@ -131,6 +129,8 @@ public class KernelFunctions {
         );
 
         cuCtxSynchronize();
+
+
 
 
     }
@@ -147,7 +147,7 @@ public class KernelFunctions {
         // Allocate the device input data, and copy the
         // host input data to the device
 
-        CUdeviceptr deviceInputA = new CUdeviceptr();
+        Pointer deviceInputA = new Pointer();
         JCuda.cudaMalloc(deviceInputA, Sizeof.DOUBLE * data.length);
         JCuda.cudaMemcpy(deviceInputA,Pointer.to(data), Sizeof.DOUBLE * data.length, cudaMemcpyKind.cudaMemcpyHostToDevice);
         return deviceInputA;
@@ -162,7 +162,7 @@ public class KernelFunctions {
     public static Pointer alloc(float[] data) {
         // Allocate the device input data, and copy the
         // host input data to the device
-        CUdeviceptr deviceInputA = new CUdeviceptr();
+        Pointer deviceInputA = new Pointer();
         JCuda.cudaMalloc(deviceInputA, Sizeof.FLOAT * data.length);
         JCuda.cudaMemcpy(deviceInputA, Pointer.to(data), Sizeof.FLOAT * data.length, cudaMemcpyKind.cudaMemcpyHostToDevice);
 

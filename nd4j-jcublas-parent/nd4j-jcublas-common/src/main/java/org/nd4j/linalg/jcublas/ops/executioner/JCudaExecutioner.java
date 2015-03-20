@@ -163,24 +163,24 @@ public class JCudaExecutioner implements OpExecutioner {
         JCudaBuffer xBuffer = (JCudaBuffer) op.x().data();
         Pointer xPointer = xBuffer.pointer().withByteOffset(xBuffer.elementSize() * op.x().offset());
         Pointer result;
-
+        int resultLength = 1000;
         if(op.x().data().dataType() == DataBuffer.DOUBLE) {
-            double[] resultBuffer = new double[2];
+            double[] resultBuffer = new double[resultLength];
             for(int i = 0; i < resultBuffer.length; i++)
                 resultBuffer[i] = op.zero().doubleValue();
             result = new Pointer();
-            JCuda.cudaMalloc(result, 2 * Sizeof.DOUBLE);
-            JCuda.cudaMemcpy(result, Pointer.to(resultBuffer), 2 * Sizeof.DOUBLE, cudaMemcpyKind.cudaMemcpyHostToDevice);
+            JCuda.cudaMalloc(result, resultLength * Sizeof.DOUBLE);
+            JCuda.cudaMemcpy(result, Pointer.to(resultBuffer), resultLength * Sizeof.DOUBLE, cudaMemcpyKind.cudaMemcpyHostToDevice);
 
 
         }
         else {
-            float[] resultBuffer = new float[2];
+            float[] resultBuffer = new float[resultLength];
             for(int i = 0; i < resultBuffer.length; i++)
                 resultBuffer[i] = op.zero().floatValue();
             result = new Pointer();
-            JCuda.cudaMalloc(result, 2 * Sizeof.FLOAT);
-            JCuda.cudaMemcpy(result, Pointer.to(resultBuffer), 2 * Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyHostToDevice);
+            JCuda.cudaMalloc(result, resultLength * Sizeof.FLOAT);
+            JCuda.cudaMemcpy(result, Pointer.to(resultBuffer), resultLength * Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyHostToDevice);
         }
 
         if(op.y() != null) {

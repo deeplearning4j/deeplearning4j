@@ -55,6 +55,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
+        ensureNotFreed();
+
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
@@ -98,6 +100,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public double[] getDoublesAt(int offset, int inc, int length) {
+        ensureNotFreed();
+
         if (offset + length > length())
             length -= offset;
 
@@ -109,11 +113,15 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public float[] getFloatsAt(int offset, int inc, int length) {
+        ensureNotFreed();
+
         return ArrayUtil.toFloats(getDoublesAt(offset, 1, length));
     }
 
     @Override
     public void assign(Number value, int offset) {
+        ensureNotFreed();
+
         int arrLength = length - offset;
         double[] data = new double[arrLength];
         for (int i = 0; i < data.length; i++)
@@ -133,6 +141,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void setData(double[] data) {
+
+        ensureNotFreed();
 
         if (data.length != length)
             throw new IllegalArgumentException("Unable to set vector, must be of length " + length() + " but found length " + data.length);
@@ -164,6 +174,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public double[] asDouble() {
+        ensureNotFreed();
+
         double[] ret = new double[length];
         Pointer p = Pointer.to(ret);
         JCublas.cublasGetVector(
@@ -184,6 +196,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public double getDouble(int i) {
+        ensureNotFreed();
+
         double[] d = new double[1];
         Pointer p = Pointer.to(d);
         get(i, p);
@@ -208,6 +222,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void put(int i, double element) {
+        ensureNotFreed();
+
         double[] d = new double[]{element};
         Pointer p = Pointer.to(d);
         set(i, p);
@@ -227,6 +243,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public DataBuffer dup() {
+        ensureNotFreed();
+
         CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(length());
         copyTo(buffer);
         return buffer;

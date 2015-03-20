@@ -49,6 +49,8 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
+        ensureNotFreed();
+
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
@@ -64,6 +66,8 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void assign(int[] indices, double[] data, boolean contiguous, int inc) {
+        ensureNotFreed();
+
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
@@ -85,6 +89,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public float[] getFloatsAt(int offset, int inc, int length) {
+        ensureNotFreed();
         if (offset + length > length())
             length -= offset;
         float[] ret = new float[length];
@@ -137,6 +142,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public float[] asFloat() {
+        ensureNotFreed();
         float[] ret = new float[length];
         Pointer p = Pointer.to(ret);
         JCublas.cublasGetVector(length,elementSize(),pointer(),1,p,1);
@@ -161,6 +167,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public float getFloat(int i) {
+        ensureNotFreed();
         float[] data = new float[1];
         Pointer p = Pointer.to(data);
         get(i, p);
@@ -175,6 +182,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void put(int i, float element) {
+        ensureNotFreed();
         float[] data = new float[]{element};
         Pointer p = Pointer.to(data);
         set(i, p);
@@ -210,6 +218,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void put(int i, IComplexNumber result) {
+        ensureNotFreed();
 
     }
 
