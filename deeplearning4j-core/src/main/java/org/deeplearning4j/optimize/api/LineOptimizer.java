@@ -19,12 +19,14 @@ package org.deeplearning4j.optimize.api;
 import org.deeplearning4j.exception.InvalidStepException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.io.Serializable;
+
 /**
  * Line optimizer interface adapted from mallet
  * @author Adam Gibson
  *
  */
-public interface LineOptimizer {
+public interface LineOptimizer extends Serializable {
     /**
      * Line optimizer
      * @param initialStep the initial step size
