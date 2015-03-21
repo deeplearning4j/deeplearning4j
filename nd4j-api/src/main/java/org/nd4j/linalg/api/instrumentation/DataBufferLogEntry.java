@@ -8,7 +8,7 @@ import java.util.Collection;
 
 /**
  * Data buffer log entry. Used for tracking buffer statistics
- * 
+ *
  * @author Adam Gibson
  */
 public class DataBufferLogEntry implements Serializable {
@@ -16,13 +16,24 @@ public class DataBufferLogEntry implements Serializable {
     protected Collection<String> references;
     protected String dataType;
     protected StackTraceElement[] stackTraceElements;
+    protected long timestamp;
+    protected String status = "created";
 
-    public DataBufferLogEntry(DataBuffer buffer) {
+    public DataBufferLogEntry() {
+    }
+    public DataBufferLogEntry(DataBuffer buffer,String status) {
         this.length = buffer.length();
         this.dataType = buffer.dataType() == DataBuffer.DOUBLE ? "double" : "float";
         this.stackTraceElements = Thread.currentThread().getStackTrace();
         this.references = buffer.references();
+        timestamp = System.currentTimeMillis();
+        this.status = status;
     }
+    public DataBufferLogEntry(DataBuffer buffer) {
+        this(buffer,"created");
+    }
+
+
 
     @Override
     public String toString() {
@@ -34,6 +45,14 @@ public class DataBufferLogEntry implements Serializable {
                 '}';
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -42,10 +61,11 @@ public class DataBufferLogEntry implements Serializable {
         DataBufferLogEntry that = (DataBufferLogEntry) o;
 
         if (length != that.length) return false;
+        if (timestamp != that.timestamp) return false;
         if (dataType != null ? !dataType.equals(that.dataType) : that.dataType != null) return false;
-        if (references != null ? !references.equals(that.references) : that.references != null)
-            return false;
+        if (references != null ? !references.equals(that.references) : that.references != null) return false;
         if (!Arrays.equals(stackTraceElements, that.stackTraceElements)) return false;
+        if (status != null ? !status.equals(that.status) : that.status != null) return false;
 
         return true;
     }
@@ -56,7 +76,17 @@ public class DataBufferLogEntry implements Serializable {
         result = 31 * result + (references != null ? references.hashCode() : 0);
         result = 31 * result + (dataType != null ? dataType.hashCode() : 0);
         result = 31 * result + (stackTraceElements != null ? Arrays.hashCode(stackTraceElements) : 0);
+        result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
+        result = 31 * result + (status != null ? status.hashCode() : 0);
         return result;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 
     public long getLength() {

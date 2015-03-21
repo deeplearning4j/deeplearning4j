@@ -18,8 +18,7 @@ public class LogEntry extends DataBufferLogEntry {
     private String ndArrayType;
 
     public LogEntry() {}
-
-    public LogEntry(INDArray toLog,StackTraceElement[] stackTraceElements) {
+    public LogEntry(INDArray toLog,StackTraceElement[] stackTraceElements,String status) {
         this.id = toLog.id();
         this.shape = toLog.shape();
         this.stride = toLog.stride();
@@ -27,12 +26,18 @@ public class LogEntry extends DataBufferLogEntry {
         this.length = toLog.length();
         this.references = toLog.data().references();
         this.dataType = toLog.data().dataType() == DataBuffer.DOUBLE ? "double" : "float";
+        this.timestamp = System.currentTimeMillis();
         this.stackTraceElements = stackTraceElements;
+        this.status  = status;
+    }
+
+    public LogEntry(INDArray toLog,StackTraceElement[] stackTraceElements) {
+        this(toLog,stackTraceElements,"created");
     }
 
 
     public LogEntry(INDArray toLog) {
-       this(toLog,Thread.currentThread().getStackTrace());
+        this(toLog,Thread.currentThread().getStackTrace());
     }
 
     @Override
