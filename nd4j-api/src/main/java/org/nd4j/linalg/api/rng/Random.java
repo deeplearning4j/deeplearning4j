@@ -188,7 +188,7 @@ public interface Random {
      * then these will be whole doubles.
      *
      * @param shape the shape to generate
-     * @param n the max number to generate tro
+     * @param n the max number to generate trod a
      * @return the ndarray with
      * the shape of only integers.
      *

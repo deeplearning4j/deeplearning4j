@@ -1,0 +1,149 @@
+package org.nd4j.linalg.api.instrumentation;
+
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Arrays;
+import java.util.Collection;
+
+/**
+ * Log entry for statistics about ndarrays
+ * @author Adam Gibson
+ */
+public class LogEntry extends DataBufferLogEntry {
+
+    private String id;
+    private int[] shape;
+    private int[] stride;
+    private String ndArrayType;
+
+    public LogEntry() {}
+
+    public LogEntry(INDArray toLog,StackTraceElement[] stackTraceElements) {
+        this.id = toLog.id();
+        this.shape = toLog.shape();
+        this.stride = toLog.stride();
+        this.ndArrayType = toLog.getClass().getName();
+        this.length = toLog.length();
+        this.references = toLog.data().references();
+        this.dataType = toLog.data().dataType() == DataBuffer.DOUBLE ? "double" : "float";
+        this.stackTraceElements = stackTraceElements;
+    }
+
+
+    public LogEntry(INDArray toLog) {
+       this(toLog,Thread.currentThread().getStackTrace());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof LogEntry)) return false;
+
+        LogEntry logEntry = (LogEntry) o;
+
+        if (length != logEntry.length) return false;
+        if (dataType != null ? !dataType.equals(logEntry.dataType) : logEntry.dataType != null) return false;
+        if (id != null ? !id.equals(logEntry.id) : logEntry.id != null) return false;
+        if (ndArrayType != null ? !ndArrayType.equals(logEntry.ndArrayType) : logEntry.ndArrayType != null)
+            return false;
+        if (references != null ? !references.equals(logEntry.references) : logEntry.references != null)
+            return false;
+        if (!Arrays.equals(shape, logEntry.shape)) return false;
+        if (!Arrays.equals(stackTraceElements, logEntry.stackTraceElements)) return false;
+        if (!Arrays.equals(stride, logEntry.stride)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id != null ? id.hashCode() : 0;
+        result = 31 * result + (shape != null ? Arrays.hashCode(shape) : 0);
+        result = 31 * result + (stride != null ? Arrays.hashCode(stride) : 0);
+        result = 31 * result + (int) (length ^ (length >>> 32));
+        result = 31 * result + (ndArrayType != null ? ndArrayType.hashCode() : 0);
+        result = 31 * result + (references != null ? references.hashCode() : 0);
+        result = 31 * result + (dataType != null ? dataType.hashCode() : 0);
+        result = 31 * result + (stackTraceElements != null ? Arrays.hashCode(stackTraceElements) : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "LogEntry{" +
+                "id='" + id + '\'' +
+                ", shape=" + Arrays.toString(shape) +
+                ", stride=" + Arrays.toString(stride) +
+                ", length=" + length +
+                ", ndArrayType='" + ndArrayType + '\'' +
+                ", references=" + references +
+                ", dataType='" + dataType + '\'' +
+                ", stackTraceElements=" + Arrays.toString(stackTraceElements) +
+                '}';
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public int[] getShape() {
+        return shape;
+    }
+
+    public void setShape(int[] shape) {
+        this.shape = shape;
+    }
+
+    public int[] getStride() {
+        return stride;
+    }
+
+    public void setStride(int[] stride) {
+        this.stride = stride;
+    }
+
+    public long getLength() {
+        return length;
+    }
+
+    public void setLength(long length) {
+        this.length = length;
+    }
+
+    public String getNdArrayType() {
+        return ndArrayType;
+    }
+
+    public void setNdArrayType(String ndArrayType) {
+        this.ndArrayType = ndArrayType;
+    }
+
+    public Collection<String> getReferences() {
+        return references;
+    }
+
+    public void setReferences(Collection<String> numReferences) {
+        this.references = numReferences;
+    }
+
+    public String getDataType() {
+        return dataType;
+    }
+
+    public void setDataType(String dataType) {
+        this.dataType = dataType;
+    }
+
+    public StackTraceElement[] getStackTraceElements() {
+        return stackTraceElements;
+    }
+
+    public void setStackTraceElements(StackTraceElement[] stackTraceElements) {
+        this.stackTraceElements = stackTraceElements;
+    }
+}
