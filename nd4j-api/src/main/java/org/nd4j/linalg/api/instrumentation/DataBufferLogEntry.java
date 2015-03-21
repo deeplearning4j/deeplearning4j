@@ -29,6 +29,7 @@ public class DataBufferLogEntry implements Serializable {
         timestamp = System.currentTimeMillis();
         this.status = status;
     }
+
     public DataBufferLogEntry(DataBuffer buffer) {
         this(buffer,"created");
     }

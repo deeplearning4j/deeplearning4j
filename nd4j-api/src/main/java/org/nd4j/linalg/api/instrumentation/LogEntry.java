@@ -18,6 +18,21 @@ public class LogEntry extends DataBufferLogEntry {
     private String ndArrayType;
 
     public LogEntry() {}
+
+    public LogEntry(INDArray toLog,String status) {
+        this.id = toLog.id();
+        this.shape = toLog.shape();
+        this.stride = toLog.stride();
+        this.ndArrayType = toLog.getClass().getName();
+        this.length = toLog.length();
+        this.references = toLog.data().references();
+        this.dataType = toLog.data().dataType() == DataBuffer.DOUBLE ? "double" : "float";
+        this.timestamp = System.currentTimeMillis();
+        this.stackTraceElements = Thread.currentThread().getStackTrace();
+        this.status  = status;
+    }
+
+
     public LogEntry(INDArray toLog,StackTraceElement[] stackTraceElements,String status) {
         this.id = toLog.id();
         this.shape = toLog.shape();

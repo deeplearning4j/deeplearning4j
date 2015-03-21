@@ -14,6 +14,19 @@ public interface Instrumentation {
     /**
      * Log the given ndarray
      * @param toLog the ndarray to log
+     * @param status the status
+     */
+    void log(INDArray toLog,String status);
+
+    /**
+     * Data buffer to log
+     * @param buffer the buffer to log
+     * @param status the status
+     */
+    void log(DataBuffer buffer,String status);
+    /**
+     * Log the given ndarray
+     * @param toLog the ndarray to log
      */
     void log(INDArray toLog);
 
