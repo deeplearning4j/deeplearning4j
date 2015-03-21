@@ -42,6 +42,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
      * Initialize with the given
      * input, pairwise transform, result, and number
      * of elements
+     *
      * @param x the input
      * @param y the pairwise transform
      * @param z the result
@@ -53,15 +54,15 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     public BaseAccumulation(INDArray x, INDArray y, int n) {
-        this(x,y,x,n);
+        this(x, y, x, n);
     }
 
     public BaseAccumulation(INDArray x) {
-        this(x,null,x,x.length());
+        this(x, null, x, x.length());
     }
 
     public BaseAccumulation(INDArray x, INDArray y) {
-        this(x,y,x,x.length());
+        this(x, y, x, x.length());
     }
 
     private void init() {
@@ -69,7 +70,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         currentComplexResult = zeroComplex();
         otherAccum = new ArrayList<>();
         otherAccumComplex = new ArrayList<>();
-        init(x,y,x,x.length());
+        init(x, y, x, x.length());
     }
 
     @Override
@@ -121,7 +122,6 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
 
-
     @Override
     public Number zero() {
         return initial;
@@ -171,10 +171,10 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
-        if(initial == null)
+        if (initial == null)
             initial = 0.0;
-        if(initialComplex == null)
-            initialComplex = Nd4j.createComplexNumber(0.0,0.0);
+        if (initialComplex == null)
+            initialComplex = Nd4j.createComplexNumber(0.0, 0.0);
         this.extraArgs = new Object[]{zero()};
     }
 }

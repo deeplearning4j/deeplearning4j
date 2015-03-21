@@ -21,6 +21,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Ones;
 
 /**
  * A base op for basic getters and setters
+ *
  * @author Adam Gibson
  */
 public abstract class BaseTransformOp extends BaseOp implements TransformOp {
@@ -42,7 +43,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
     @Override
     public TransformOp derivative() {
-        return new Ones(x,y,z,n);
+        return new Ones(x, y, z, n);
     }
 
 

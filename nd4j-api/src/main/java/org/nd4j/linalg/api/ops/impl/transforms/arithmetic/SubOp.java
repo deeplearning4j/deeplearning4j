@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ops.Op;
 
 /**
  * Subtraction operation
+ *
  * @author Adam Gibson
  */
 public class SubOp extends BaseTransformOp {
@@ -89,22 +90,22 @@ public class SubOp extends BaseTransformOp {
 
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
 
-        if(y() != null)
-            return new SubOp(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new SubOp(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new SubOp(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new SubOp(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z,int n) {
-        super.init(x, y,z, n);
-        if(y == null)
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        if (y == null)
             throw new IllegalArgumentException("No components to subtract");
     }
 }

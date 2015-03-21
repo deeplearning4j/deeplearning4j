@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ops.Op;
 
 /**
  * Identity function
+ *
  * @author Adam Gibson
  */
 public class Identity extends BaseTransformOp {
@@ -89,13 +90,13 @@ public class Identity extends BaseTransformOp {
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new Identity(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new Identity(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Identity(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new Identity(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 }

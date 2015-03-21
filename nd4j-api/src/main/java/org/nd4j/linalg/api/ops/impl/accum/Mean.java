@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ops.Op;
 
 /**
  * Calculate the mean of the vector
+ *
  * @author Adam Gibson
  */
 public class Mean extends BaseAccumulation {
@@ -44,11 +45,11 @@ public class Mean extends BaseAccumulation {
 
     @Override
     public void update(Number result) {
-        if(Double.isInfinite(currentResult.doubleValue()))
+        if (Double.isInfinite(currentResult.doubleValue()))
             currentResult = result;
         else
             currentResult = currentResult.doubleValue() + result.doubleValue();
-        if(numProcessed() == n())
+        if (numProcessed() == n())
             currentResult = currentResult.doubleValue() / n();
 
 
@@ -56,11 +57,11 @@ public class Mean extends BaseAccumulation {
 
     @Override
     public void update(IComplexNumber result) {
-        if(currentComplexResult.realComponent().doubleValue() == Double.NEGATIVE_INFINITY)
+        if (currentComplexResult.realComponent().doubleValue() == Double.NEGATIVE_INFINITY)
             currentComplexResult = result;
         else
             currentComplexResult.addi(result);
-        if(numProcessed() == n())
+        if (numProcessed() == n())
             currentComplexResult.divi(n);
 
     }
@@ -75,15 +76,16 @@ public class Mean extends BaseAccumulation {
     public String name() {
         return "mean";
     }
+
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
 
-        if(y() != null)
-            return new Mean(xAlongDimension,y.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new Mean(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Mean(x.vectorAlongDimension(index,dimension));
+            return new Mean(x.vectorAlongDimension(index, dimension));
 
     }
 }

@@ -1194,7 +1194,6 @@ public interface NDArrayFactory {
     IComplexNDArray createComplex(double[] data, int[] shape, int offset);
 
     /**
-     *
      * @param buffer
      * @param shape
      * @param offset
@@ -1251,6 +1250,7 @@ public interface NDArrayFactory {
     IComplexNDArray createComplex(int[] ints, int[] ints1, int[] stride, int offset);
 
     INDArray create(int[] ints, int[] ints1, int[] stride, int offset);
+
     INDArray create(int[] shape, int[] ints1, int[] stride, char order, int offset);
 
     INDArray create(int rows, int columns, char ordering);

@@ -51,18 +51,18 @@ public class OneMinus extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return Nd4j.createComplexNumber(1,1).subi(origin);
+        return Nd4j.createComplexNumber(1, 1).subi(origin);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return Nd4j.createComplexNumber(1,1).subi(origin);
+        return Nd4j.createComplexNumber(1, 1).subi(origin);
 
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return Nd4j.createComplexNumber(1,1).subi(origin);
+        return Nd4j.createComplexNumber(1, 1).subi(origin);
 
     }
 
@@ -88,18 +88,18 @@ public class OneMinus extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return Nd4j.createComplexNumber(1,1).subi(origin);
+        return Nd4j.createComplexNumber(1, 1).subi(origin);
 
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new OneMinus(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new OneMinus(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new OneMinus(xAlongDimension,z.vectorAlongDimension(index,dimension),x.length());
+            return new OneMinus(xAlongDimension, z.vectorAlongDimension(index, dimension), x.length());
 
     }
 }

@@ -86,7 +86,6 @@ public abstract class NDArrayTests {
     }
 
 
-
     @Test
     public void testSubiRowVector() {
         INDArray oneThroughFour = Nd4j.linspace(1, 4, 4).reshape(2, 2);
@@ -329,7 +328,7 @@ public abstract class NDArrayTests {
         INDArray n = Nd4j.create(new double[]{1, 2, 3, 4});
         double assertion = 5.47722557505;
         INDArray norm3 = n.norm2(Integer.MAX_VALUE);
-        assertEquals(assertion,norm3.getDouble(0), 1e-1);
+        assertEquals(assertion, norm3.getDouble(0), 1e-1);
 
         INDArray row = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray row1 = row.getRow(1);
@@ -346,7 +345,7 @@ public abstract class NDArrayTests {
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         float assertion = 5.47722557505f;
         INDArray norm3 = n.norm2(Integer.MAX_VALUE);
-        assertEquals(assertion,norm3.getFloat(0), 1e-1);
+        assertEquals(assertion, norm3.getFloat(0), 1e-1);
 
         INDArray row = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray row1 = row.getRow(1);
@@ -638,7 +637,7 @@ public abstract class NDArrayTests {
 
         for (int i = 0; i < test.rows(); i++) {
             for (int j = 0; j < test.columns(); j++) {
-                assertEquals(test.getDouble(i,j),transposei.getDouble(j,i), 1e-1);
+                assertEquals(test.getDouble(i, j), transposei.getDouble(j, i), 1e-1);
             }
         }
 
@@ -653,13 +652,11 @@ public abstract class NDArrayTests {
 
         for (int i = 0; i < test.rows(); i++) {
             for (int j = 0; j < test.columns(); j++) {
-                assertEquals(test.getDouble(i,j),transposei.getDouble(j,i), 1e-1);
+                assertEquals(test.getDouble(i, j), transposei.getDouble(j, i), 1e-1);
             }
         }
 
     }
-
-
 
 
     @Test
@@ -714,8 +711,8 @@ public abstract class NDArrayTests {
     public void testSum2() {
         INDArray test = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray sum = test.sum(1);
-        INDArray assertion = Nd4j.create(new float[]{3,7});
-        assertEquals(assertion,sum);
+        INDArray assertion = Nd4j.create(new float[]{3, 7});
+        assertEquals(assertion, sum);
     }
 
 
@@ -836,20 +833,20 @@ public abstract class NDArrayTests {
 
     @Test
     public void testCopyMatrix() {
-        INDArray twoByThree = Nd4j.linspace(1,784,784).reshape(28,28);
-        INDArray copy = Nd4j.create(784,784);
-        Nd4j.getBlasWrapper().copy(twoByThree,copy);
+        INDArray twoByThree = Nd4j.linspace(1, 784, 784).reshape(28, 28);
+        INDArray copy = Nd4j.create(784, 784);
+        Nd4j.getBlasWrapper().copy(twoByThree, copy);
     }
 
     @Test
     public void testAddMatrix() {
         INDArray five = Nd4j.ones(5);
         five.addi(five);
-        INDArray twos = Nd4j.valueArrayOf(5,2);
-        assertEquals(twos,five);
+        INDArray twos = Nd4j.valueArrayOf(5, 2);
+        assertEquals(twos, five);
 
-        INDArray twoByThree = Nd4j.linspace(1,6,6).reshape(2,3);
-        Nd4j.getBlasWrapper().axpy(1,twoByThree,twoByThree);
+        INDArray twoByThree = Nd4j.linspace(1, 6, 6).reshape(2, 3);
+        Nd4j.getBlasWrapper().axpy(1, twoByThree, twoByThree);
     }
 
     @Test
@@ -864,36 +861,36 @@ public abstract class NDArrayTests {
 
     @Test
     public void testColumnMean() {
-        INDArray twoByThree = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray columnMean = twoByThree.mean(0);
-        INDArray assertion = Nd4j.create(new float[]{2,3});
-        assertEquals(assertion,columnMean);
+        INDArray assertion = Nd4j.create(new float[]{2, 3});
+        assertEquals(assertion, columnMean);
     }
 
 
     @Test
     public void testColumnVar() {
-        INDArray twoByThree = Nd4j.linspace(1,600,600).reshape(150,4);
+        INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
         INDArray columnStd = twoByThree.var(0);
         INDArray assertion = Nd4j.create(new float[]{30200f, 30200f, 30200f, 30200f});
-        assertEquals(assertion,columnStd);
+        assertEquals(assertion, columnStd);
 
     }
 
     @Test
     public void testColumnStd() {
-        INDArray twoByThree = Nd4j.linspace(1,600,600).reshape(150,4);
+        INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
         INDArray columnStd = twoByThree.std(0);
         INDArray assertion = Nd4j.create(new float[]{173.78147196982766f, 173.78147196982766f, 173.78147196982766f, 173.78147196982766f});
-        assertEquals(assertion,columnStd);
+        assertEquals(assertion, columnStd);
 
     }
 
     @Test
     public void testEps() {
         INDArray ones = Nd4j.ones(5);
-        double sum = Nd4j.getExecutioner().exec(new Eps(ones,ones,ones,ones.length())).z().sum(Integer.MAX_VALUE).getDouble(0);
-        assertEquals(5,sum,1e-1);
+        double sum = Nd4j.getExecutioner().exec(new Eps(ones, ones, ones, ones.length())).z().sum(Integer.MAX_VALUE).getDouble(0);
+        assertEquals(5, sum, 1e-1);
     }
 
 
@@ -901,9 +898,10 @@ public abstract class NDArrayTests {
     public void testLogDouble() {
         Nd4j.dtype = DataBuffer.DOUBLE;
         INDArray log = Transforms.log(Nd4j.linspace(1, 6, 6));
-        INDArray assertion = Nd4j.create(new double[]{0 ,  0.69314718,  1.09861229,  1.38629436,  1.60943791,1.79175947});
-        assertEquals(assertion,log);
+        INDArray assertion = Nd4j.create(new double[]{0, 0.69314718, 1.09861229, 1.38629436, 1.60943791, 1.79175947});
+        assertEquals(assertion, log);
     }
+
     @Test
     public void testIrisStatsDouble() throws IOException {
         Nd4j.dtype = DataBuffer.DOUBLE;
@@ -917,9 +915,9 @@ public abstract class NDArrayTests {
         INDArray sum = data.sum(0);
         INDArray test = data.mean(0);
         INDArray testStd = data.std(0);
-        assertEquals(sum,testSum);
-        assertEquals(mean,test);
-        assertEquals(std,testStd);
+        assertEquals(sum, testSum);
+        assertEquals(mean, test);
+        assertEquals(std, testStd);
 
     }
 
@@ -927,8 +925,8 @@ public abstract class NDArrayTests {
     public void testSmallSum() {
         INDArray base = Nd4j.create(new double[]{5.843333333333335, 3.0540000000000007});
         base.addi(1e-12);
-        INDArray assertion = Nd4j.create(new double[]{5.84333433,  3.054001});
-        assertEquals(assertion,base);
+        INDArray assertion = Nd4j.create(new double[]{5.84333433, 3.054001});
+        assertEquals(assertion, base);
 
     }
 
@@ -937,65 +935,66 @@ public abstract class NDArrayTests {
         Nd4j.dtype = DataBuffer.FLOAT;
         ClassPathResource res = new ClassPathResource("/iris.txt");
         File file = res.getFile();
-        INDArray data = Nd4j.readTxt(file.getAbsolutePath(),"\t");
+        INDArray data = Nd4j.readTxt(file.getAbsolutePath(), "\t");
         INDArray sum = data.sum(0);
         INDArray mean = Nd4j.create(new double[]{5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672});
         INDArray std = Nd4j.create(new double[]{0.8280661279778629, 0.4335943113621737, 1.7644204199522617, 0.7631607417008414});
 
         INDArray testSum = Nd4j.create(new double[]{876.4999990463257, 458.1000003814697, 563.7999982833862, 179.7999987155199});
-        assertEquals(testSum,sum);
+        assertEquals(testSum, sum);
 
         INDArray testMean = data.mean(0);
-        assertEquals(mean,testMean);
+        assertEquals(mean, testMean);
 
         INDArray testStd = data.std(0);
-        assertEquals(std,testStd);
+        assertEquals(std, testStd);
     }
 
     @Test
     public void testColumnVariance() {
-        INDArray twoByThree = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray columnVar = twoByThree.var(0);
-        INDArray assertion = Nd4j.create(new float[]{2f,2f});
-        assertEquals(assertion,columnVar);
+        INDArray assertion = Nd4j.create(new float[]{2f, 2f});
+        assertEquals(assertion, columnVar);
 
     }
+
     @Test
     public void testColumnSumDouble() {
         Nd4j.dtype = DataBuffer.DOUBLE;
-        INDArray twoByThree = Nd4j.linspace(1,600,600).reshape(150,4);
+        INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
         INDArray columnVar = twoByThree.sum(0);
         INDArray assertion = Nd4j.create(new float[]{44850.0f, 45000.0f, 45150.0f, 45300.0f});
-        assertEquals(assertion,columnVar);
+        assertEquals(assertion, columnVar);
 
     }
 
 
     @Test
     public void testColumnSum() {
-        INDArray twoByThree = Nd4j.linspace(1,600,600).reshape(150,4);
+        INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
         INDArray columnVar = twoByThree.sum(0);
         INDArray assertion = Nd4j.create(new float[]{44850.0f, 45000.0f, 45150.0f, 45300.0f});
-        assertEquals(assertion,columnVar);
+        assertEquals(assertion, columnVar);
 
     }
 
     @Test
     public void testRowMean() {
-        INDArray twoByThree = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray rowMean = twoByThree.mean(1);
-        INDArray assertion = Nd4j.create(new float[]{1.5f,3.5f});
-        assertEquals(assertion,rowMean);
+        INDArray assertion = Nd4j.create(new float[]{1.5f, 3.5f});
+        assertEquals(assertion, rowMean);
 
 
     }
 
     @Test
     public void testRowStd() {
-        INDArray twoByThree = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray rowStd = twoByThree.std(1);
         INDArray assertion = Nd4j.create(new float[]{0.7071067811865476f, 0.7071067811865476f});
-        assertEquals(assertion,rowStd);
+        assertEquals(assertion, rowStd);
 
     }
 
@@ -1196,12 +1195,12 @@ public abstract class NDArrayTests {
 
     @Test
     public void testRand() {
-        INDArray rand = Nd4j.randn(5,5);
-        Nd4j.getDistributions().createUniform(1,5).sample(5);
-        Nd4j.getDistributions().createNormal(1,5).sample();
-        Nd4j.getDistributions().createBinomial(5,1.0).sample(new int[]{5,5});
+        INDArray rand = Nd4j.randn(5, 5);
+        Nd4j.getDistributions().createUniform(1, 5).sample(5);
+        Nd4j.getDistributions().createNormal(1, 5).sample();
+        Nd4j.getDistributions().createBinomial(5, 1.0).sample(new int[]{5, 5});
         Nd4j.getDistributions().createBinomial(1, Nd4j.ones(5, 5)).sample(rand.shape());
-        Nd4j.getDistributions().createNormal(rand,1).sample(rand.shape());
+        Nd4j.getDistributions().createNormal(rand, 1).sample(rand.shape());
     }
 
 
@@ -1244,8 +1243,6 @@ public abstract class NDArrayTests {
         assertEquals(25, Nd4j.getBlasWrapper().dot(row, row), 1e-1);
 
     }
-
-
 
 
     @Test
@@ -1376,22 +1373,23 @@ public abstract class NDArrayTests {
         assertEquals(rowVector.columns(), concat.columns());
 
     }
+
     @Test
     public void testAddScalar() {
-        INDArray div = Nd4j.valueArrayOf(new int[]{4},4);
+        INDArray div = Nd4j.valueArrayOf(new int[]{4}, 4);
         float[] value = div.data().asFloat();
         div.toString();
         INDArray rdiv = div.add(1);
-        INDArray answer = Nd4j.valueArrayOf(new int[]{4},5);
-        assertEquals(rdiv,answer);
+        INDArray answer = Nd4j.valueArrayOf(new int[]{4}, 5);
+        assertEquals(rdiv, answer);
     }
 
     @Test
     public void testRdivScalar() {
-        INDArray div = Nd4j.valueArrayOf(2,4);
+        INDArray div = Nd4j.valueArrayOf(2, 4);
         INDArray rdiv = div.rdiv(1);
-        INDArray answer = Nd4j.valueArrayOf(new int[]{4},0.25);
-        assertEquals(rdiv,answer);
+        INDArray answer = Nd4j.valueArrayOf(new int[]{4}, 0.25);
+        assertEquals(rdiv, answer);
     }
 
     @Test

@@ -56,12 +56,12 @@ public class Ones extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return Nd4j.createComplexNumber(1,1);
+        return Nd4j.createComplexNumber(1, 1);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return Nd4j.createComplexNumber(1,1);
+        return Nd4j.createComplexNumber(1, 1);
     }
 
     @Override
@@ -86,16 +86,17 @@ public class Ones extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return Nd4j.createComplexNumber(1,1);
+        return Nd4j.createComplexNumber(1, 1);
     }
-    @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
 
-        if(y() != null)
-            return new Ones(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+    @Override
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Ones(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Ones(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new Ones(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 }

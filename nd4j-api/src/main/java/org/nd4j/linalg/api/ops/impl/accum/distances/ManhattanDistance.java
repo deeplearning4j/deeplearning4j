@@ -53,7 +53,7 @@ public class ManhattanDistance extends BaseAccumulation {
 
     @Override
     public void update(IComplexNumber result) {
-         currentComplexResult.addi(ComplexUtil.pow(result, 2));
+        currentComplexResult.addi(ComplexUtil.pow(result, 2));
     }
 
     @Override
@@ -113,11 +113,11 @@ public class ManhattanDistance extends BaseAccumulation {
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        if(y() != null)
-            return new ManhattanDistance(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),x.length());
+    public Op opForDimension(int index, int dimension) {
+        if (y() != null)
+            return new ManhattanDistance(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), x.length());
         else
-            return new ManhattanDistance(x.vectorAlongDimension(index,dimension));
+            return new ManhattanDistance(x.vectorAlongDimension(index, dimension));
 
     }
 }

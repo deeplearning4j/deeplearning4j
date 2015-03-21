@@ -26,6 +26,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * Sum of absolute values
+ *
  * @author Adam Gibson
  */
 public class Norm2 extends BaseAccumulation {
@@ -48,14 +49,14 @@ public class Norm2 extends BaseAccumulation {
     @Override
     public void update(Number result) {
         currentResult = currentResult.doubleValue() + FastMath.pow(result.doubleValue(), 2);
-        if(numProcessed == n)
+        if (numProcessed == n)
             currentResult = FastMath.sqrt(currentResult.doubleValue());
     }
 
     @Override
     public void update(IComplexNumber result) {
-        currentComplexResult.addi(ComplexUtil.pow(result,2));
-        if(numProcessed == n)
+        currentComplexResult.addi(ComplexUtil.pow(result, 2));
+        if (numProcessed == n)
             currentComplexResult.set(ComplexUtil.sqrt(currentComplexResult));
     }
 
@@ -66,7 +67,7 @@ public class Norm2 extends BaseAccumulation {
 
     @Override
     public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0,0.0);
+        return Nd4j.createComplexNumber(0.0, 0.0);
     }
 
     @Override
@@ -75,13 +76,13 @@ public class Norm2 extends BaseAccumulation {
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new Norm2(xAlongDimension,y.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new Norm2(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Norm2(x.vectorAlongDimension(index,dimension));
+            return new Norm2(x.vectorAlongDimension(index, dimension));
 
     }
 

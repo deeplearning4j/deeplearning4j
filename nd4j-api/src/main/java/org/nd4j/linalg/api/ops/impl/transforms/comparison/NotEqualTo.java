@@ -25,6 +25,7 @@ import org.nd4j.linalg.factory.Nd4j;
 /**
  * Not equal to function:
  * Bit mask over whether 2 elements are not equal or not
+ *
  * @author Adam Gibson
  */
 public class NotEqualTo extends BaseTransformOp {
@@ -51,21 +52,21 @@ public class NotEqualTo extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        if(origin.isReal())
-            return origin.realComponent().doubleValue() != other ? Nd4j.createComplexNumber(1.0,0.0) : Nd4j.createComplexNumber(0.0,0.0);
-        return Nd4j.createComplexNumber(0.0,0.0);
+        if (origin.isReal())
+            return origin.realComponent().doubleValue() != other ? Nd4j.createComplexNumber(1.0, 0.0) : Nd4j.createComplexNumber(0.0, 0.0);
+        return Nd4j.createComplexNumber(0.0, 0.0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        if(origin.isReal())
-            return origin.realComponent().doubleValue() != other ? Nd4j.createComplexNumber(1.0,0.0) : Nd4j.createComplexNumber(0.0,0.0);
-        return Nd4j.createComplexNumber(0.0,0.0);
+        if (origin.isReal())
+            return origin.realComponent().doubleValue() != other ? Nd4j.createComplexNumber(1.0, 0.0) : Nd4j.createComplexNumber(0.0, 0.0);
+        return Nd4j.createComplexNumber(0.0, 0.0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return !origin.equals(other) ? Nd4j.createComplexNumber(1.0,0.0) : Nd4j.createComplexNumber(0.0,0.0);
+        return !origin.equals(other) ? Nd4j.createComplexNumber(1.0, 0.0) : Nd4j.createComplexNumber(0.0, 0.0);
     }
 
     @Override
@@ -93,14 +94,15 @@ public class NotEqualTo extends BaseTransformOp {
     public IComplexNumber op(IComplexNumber origin) {
         return op(origin);
     }
-    @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
 
-        if(y() != null)
-            return new NotEqualTo(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+    @Override
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new NotEqualTo(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new NotEqualTo(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new NotEqualTo(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 }

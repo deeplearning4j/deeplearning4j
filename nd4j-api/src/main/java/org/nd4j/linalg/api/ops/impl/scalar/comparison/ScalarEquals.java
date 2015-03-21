@@ -8,6 +8,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Return a binary (0 or 1) when greater than a number
+ *
  * @author Adam Gibson
  */
 public class ScalarEquals extends BaseScalarOp {
@@ -35,17 +36,17 @@ public class ScalarEquals extends BaseScalarOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return origin.absoluteValue().doubleValue() == num.doubleValue() ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0);
+        return origin.absoluteValue().doubleValue() == num.doubleValue() ? Nd4j.createComplexNumber(1, 0) : Nd4j.createComplexNumber(0, 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return origin.absoluteValue().doubleValue() == num.doubleValue() ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0);
+        return origin.absoluteValue().doubleValue() == num.doubleValue() ? Nd4j.createComplexNumber(1, 0) : Nd4j.createComplexNumber(0, 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return origin.absoluteValue().doubleValue() == num.doubleValue() ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0);
+        return origin.absoluteValue().doubleValue() == num.doubleValue() ? Nd4j.createComplexNumber(1, 0) : Nd4j.createComplexNumber(0, 0);
     }
 
     @Override
@@ -72,15 +73,15 @@ public class ScalarEquals extends BaseScalarOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return origin.absoluteValue().doubleValue() == num.doubleValue() ? Nd4j.createComplexNumber(1,0) : Nd4j.createComplexNumber(0,0);
+        return origin.absoluteValue().doubleValue() == num.doubleValue() ? Nd4j.createComplexNumber(1, 0) : Nd4j.createComplexNumber(0, 0);
 
     }
 
     @Override
     public Op opForDimension(int index, int dimension) {
-        if(num != null)
-            return new ScalarEquals(x.vectorAlongDimension(index,dimension),num);
+        if (num != null)
+            return new ScalarEquals(x.vectorAlongDimension(index, dimension), num);
         else
-            return new ScalarEquals(x.vectorAlongDimension(index, dimension),complexNumber);
+            return new ScalarEquals(x.vectorAlongDimension(index, dimension), complexNumber);
     }
 }

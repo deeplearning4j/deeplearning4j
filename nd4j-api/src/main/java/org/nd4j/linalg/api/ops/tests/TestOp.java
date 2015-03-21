@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ops.Op;
 
 /**
  * Test operation
+ *
  * @author Adam Gibson
  */
 public class TestOp extends BaseTransformOp {
@@ -78,7 +79,6 @@ public class TestOp extends BaseTransformOp {
     public IComplexNumber op(IComplexNumber origin) {
         return origin;
     }
-
 
 
     @Override

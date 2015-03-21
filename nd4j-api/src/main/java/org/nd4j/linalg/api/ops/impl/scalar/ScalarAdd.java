@@ -22,8 +22,9 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
- *  Scalar addition
- *  @author Adam Gibson
+ * Scalar addition
+ *
+ * @author Adam Gibson
  */
 public class ScalarAdd extends BaseScalarOp {
     public ScalarAdd(INDArray x, INDArray y, INDArray z, int n, Number num) {
@@ -49,22 +50,22 @@ public class ScalarAdd extends BaseScalarOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        if(complexNumber != null)
-            return origin .add(complexNumber);
+        if (complexNumber != null)
+            return origin.add(complexNumber);
         return complexNumber.add(num);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        if(complexNumber != null)
-            return origin .add(complexNumber);
+        if (complexNumber != null)
+            return origin.add(complexNumber);
         return complexNumber.add(num);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        if(complexNumber != null)
-            return origin .add(complexNumber);
+        if (complexNumber != null)
+            return origin.add(complexNumber);
         return complexNumber.add(num);
     }
 
@@ -90,16 +91,16 @@ public class ScalarAdd extends BaseScalarOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        if(complexNumber != null)
-            return origin .add(complexNumber);
+        if (complexNumber != null)
+            return origin.add(complexNumber);
         return complexNumber.add(num);
     }
 
     @Override
     public Op opForDimension(int index, int dimension) {
-        if(num != null)
-        return new ScalarAdd(x.vectorAlongDimension(index,dimension),num);
+        if (num != null)
+            return new ScalarAdd(x.vectorAlongDimension(index, dimension), num);
         else
-            return new ScalarAdd(x.vectorAlongDimension(index, dimension),complexNumber);
+            return new ScalarAdd(x.vectorAlongDimension(index, dimension), complexNumber);
     }
 }

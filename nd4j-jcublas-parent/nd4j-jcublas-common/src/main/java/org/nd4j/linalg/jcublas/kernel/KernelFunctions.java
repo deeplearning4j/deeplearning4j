@@ -42,7 +42,6 @@ import static jcuda.driver.JCudaDriver.cuLaunchKernel;
  */
 public class KernelFunctions {
 
-    private static Set<String> reduceFunctions = new ConcurrentSkipListSet<>();
     public final static String NAME_SPACE = "org.nd4j.linalg.jcublas";
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
@@ -50,12 +49,14 @@ public class KernelFunctions {
     public final static String SHARED_MEM_KEY = NAME_SPACE + ".sharedmem";
     public final static String THREADS_KEY = NAME_SPACE + ".threads";
     public final static String BLOCKS_KEY = NAME_SPACE + ".blocks";
-    public  static int SHARED_MEM = 512;
-    public  static int THREADS = 128;
-    public  static int BLOCKS = 512;
+    public static int SHARED_MEM = 512;
+    public static int THREADS = 128;
+    public static int BLOCKS = 512;
+    private static Set<String> reduceFunctions = new ConcurrentSkipListSet<>();
 
 
-    private KernelFunctions() {}
+    private KernelFunctions() {
+    }
 
 
     static {
@@ -70,6 +71,7 @@ public class KernelFunctions {
      * Called at initialization in the static context.
      * Registers cuda functions based on
      * the cudafunctions.properties in the classpath
+     *
      * @throws IOException
      */
     public static void register() throws Exception {
@@ -81,16 +83,14 @@ public class KernelFunctions {
         KernelFunctionLoader.getInstance().load();
 
         String reduceFunctionsList = props.getProperty(REDUCE);
-        for(String function : reduceFunctionsList.split(","))
+        for (String function : reduceFunctionsList.split(","))
             reduceFunctions.add(function);
 
-        SHARED_MEM = Integer.parseInt(props.getProperty(SHARED_MEM_KEY,"512"));
-        THREADS = Integer.parseInt(props.getProperty(THREADS_KEY,"128"));
-        BLOCKS = Integer.parseInt(props.getProperty(BLOCKS_KEY,"64"));
+        SHARED_MEM = Integer.parseInt(props.getProperty(SHARED_MEM_KEY, "512"));
+        THREADS = Integer.parseInt(props.getProperty(THREADS_KEY, "128"));
+        BLOCKS = Integer.parseInt(props.getProperty(BLOCKS_KEY, "64"));
 
     }
-
-
 
 
     /**
@@ -98,25 +98,25 @@ public class KernelFunctions {
      * Think of it as follows. If I have a standard linear operator
      * such as 2 vectors with 1 output vector, this would be 3 pointers
      * such that the first 2 are the inputs and the third one is the outputs
+     *
      * @param pointers the pointers to create parameters from
      * @return the pointer to the pointers
      */
-    public static Pointer constructKernelParameters(Pointer...pointers) {
+    public static Pointer constructKernelParameters(Pointer... pointers) {
         return Pointer.to(pointers);
     }
 
 
-
-
     /**
      * Invoke a function with the given number of parameters
-     * @param blocks the number of blocks to launch the kernel
-     * @param threadsPerBlock the number of threads per block
-     * @param function   the function to invoke
+     *
+     * @param blocks           the number of blocks to launch the kernel
+     * @param threadsPerBlock  the number of threads per block
+     * @param function         the function to invoke
      * @param kernelParameters the parameters
-     * @param dataType the data type ot use
+     * @param dataType         the data type ot use
      */
-    public static void invoke(int blocks,int threadsPerBlock, CUfunction function, Pointer kernelParameters,String dataType) {
+    public static void invoke(int blocks, int threadsPerBlock, CUfunction function, Pointer kernelParameters, String dataType) {
         // Call the kernel function.
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
         int sharedMemSize = threadsPerBlock * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
@@ -131,10 +131,7 @@ public class KernelFunctions {
         cuCtxSynchronize();
 
 
-
-
     }
-
 
 
     /**
@@ -149,7 +146,7 @@ public class KernelFunctions {
 
         Pointer deviceInputA = new Pointer();
         JCuda.cudaMalloc(deviceInputA, Sizeof.DOUBLE * data.length);
-        JCuda.cudaMemcpy(deviceInputA,Pointer.to(data), Sizeof.DOUBLE * data.length, cudaMemcpyKind.cudaMemcpyHostToDevice);
+        JCuda.cudaMemcpy(deviceInputA, Pointer.to(data), Sizeof.DOUBLE * data.length, cudaMemcpyKind.cudaMemcpyHostToDevice);
         return deviceInputA;
     }
 

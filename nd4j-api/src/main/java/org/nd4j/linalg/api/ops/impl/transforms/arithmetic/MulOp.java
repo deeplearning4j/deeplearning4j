@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ops.Op;
 
 /**
  * Multiplication operation
+ *
  * @author Adam Gibson
  */
 public class MulOp extends BaseTransformOp {
@@ -43,7 +44,7 @@ public class MulOp extends BaseTransformOp {
     }
 
     public MulOp(INDArray x, INDArray xDup, INDArray x1) {
-        super(x, xDup, x1,x.length());
+        super(x, xDup, x1, x.length());
     }
 
     @Override
@@ -93,21 +94,21 @@ public class MulOp extends BaseTransformOp {
 
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new MulOp(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new MulOp(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new MulOp(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new MulOp(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 
 
     @Override
-    public void init(INDArray x, INDArray y,INDArray z, int n) {
-        super.init(x, y, z,n);
-        if(y == null)
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        if (y == null)
             throw new IllegalArgumentException("No components to multiply");
     }
 }

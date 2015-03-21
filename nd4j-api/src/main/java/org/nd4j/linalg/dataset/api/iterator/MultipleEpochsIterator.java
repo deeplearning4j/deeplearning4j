@@ -25,14 +25,14 @@ import org.slf4j.LoggerFactory;
  * A dataset iterator for doing multiple passes over a dataset
  */
 public class MultipleEpochsIterator implements DataSetIterator {
+    private static final Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
     private int numPasses;
     private int batch = 0;
     private DataSetIterator iter;
     private int passes = 0;
-    private static final Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
     private DataSetPreProcessor preProcessor;
 
-    public MultipleEpochsIterator(int numPasses,DataSetIterator iter) {
+    public MultipleEpochsIterator(int numPasses, DataSetIterator iter) {
         this.numPasses = numPasses;
         this.iter = iter;
     }
@@ -46,8 +46,8 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public DataSet next(int num) {
-        if(!iter.hasNext()) {
-            if(passes < numPasses) {
+        if (!iter.hasNext()) {
+            if (passes < numPasses) {
                 passes++;
                 batch = 0;
                 log.info("Epoch " + passes + " batch " + batch);
@@ -58,7 +58,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
         batch++;
 
         DataSet next = iter.next(num);
-        if(preProcessor != null)
+        if (preProcessor != null)
             preProcessor.preProcess(next);
         return next;
     }
@@ -162,8 +162,8 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public DataSet next() {
-        if(!iter.hasNext()) {
-            if(passes < numPasses) {
+        if (!iter.hasNext()) {
+            if (passes < numPasses) {
                 passes++;
                 batch = 0;
                 log.info("Epoch " + passes + " batch " + batch);
@@ -174,12 +174,10 @@ public class MultipleEpochsIterator implements DataSetIterator {
         batch++;
 
         DataSet next = iter.next();
-        if(preProcessor != null)
+        if (preProcessor != null)
             preProcessor.preProcess(next);
         return next;
     }
-
-
 
 
     /**
@@ -199,6 +197,6 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public void remove() {
-           iter.remove();
+        iter.remove();
     }
 }

@@ -112,12 +112,12 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
 
     @Override
     public IComplexNumber rsubi(IComplexNumber c) {
-        return rsubi(c,this);
+        return rsubi(c, this);
     }
 
     @Override
     public IComplexNumber set(IComplexNumber set) {
-        return (IComplexNumber) set(set.realComponent().doubleValue(),set.imaginaryComponent().doubleValue());
+        return (IComplexNumber) set(set.realComponent().doubleValue(), set.imaginaryComponent().doubleValue());
     }
 
     @Override
@@ -186,7 +186,7 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
 
     @Override
     public IComplexNumber copy(IComplexNumber other) {
-         return other.set(this);
+        return other.set(this);
 
     }
 
@@ -324,12 +324,12 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
 
     @Override
     public IComplexNumber rsubi(Number a, IComplexNumber result) {
-        return result.set(a.doubleValue() - realComponent().doubleValue(),imaginaryComponent());
+        return result.set(a.doubleValue() - realComponent().doubleValue(), imaginaryComponent());
     }
 
     @Override
     public IComplexNumber rsubi(Number a) {
-        return rsubi(a,this);
+        return rsubi(a, this);
     }
 
     @Override
@@ -450,22 +450,22 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
 
     @Override
     public IComplexNumber rdivi(IComplexNumber c) {
-        return rdivi(c,this);
+        return rdivi(c, this);
     }
 
     @Override
     public IComplexNumber rdivi(Number v, IComplexNumber result) {
-        return result.set(v.doubleValue() / real(),imaginaryComponent());
+        return result.set(v.doubleValue() / real(), imaginaryComponent());
     }
 
     @Override
     public IComplexNumber rdivi(Number v) {
-        return rdivi(v,this);
+        return rdivi(v, this);
     }
 
     @Override
     public IComplexNumber rdiv(Number v) {
-        return dup().rdivi(v,this);
+        return dup().rdivi(v, this);
     }
 
     @Override

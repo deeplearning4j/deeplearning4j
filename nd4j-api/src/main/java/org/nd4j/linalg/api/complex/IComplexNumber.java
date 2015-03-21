@@ -27,6 +27,7 @@ public interface IComplexNumber {
 
     /**
      * Set the real and imaginary components
+     *
      * @param real the real numbers
      * @param imag the imaginary components
      * @return the imaginary components
@@ -35,17 +36,21 @@ public interface IComplexNumber {
 
     /**
      * The real component of this number
+     *
      * @return the real component of this number
      */
     public Number realComponent();
+
     /**
      * The imaginary component of this number
+     *
      * @return the real component of this number
      */
     public Number imaginaryComponent();
 
     /**
      * Clone
+     *
      * @return
      */
     public IComplexNumber dup();
@@ -183,12 +188,14 @@ public interface IComplexNumber {
 
     /**
      * The negation of this complex number
+     *
      * @return
      */
     public IComplexNumber neg();
 
     /**
      * The inplace negation of this number
+     *
      * @return
      */
     public IComplexNumber negi();
@@ -196,18 +203,23 @@ public interface IComplexNumber {
     /**
      * The inplace conjugate of this
      * number
+     *
      * @return
      */
     public IComplexNumber conji();
+
     /**
      * The  conjugate of this
      * number
+     *
      * @return
      */
     public IComplexNumber conj();
+
     /**
      * The  sqrt of this
      * number
+     *
      * @return
      */
     public IComplexNumber sqrt();
@@ -220,6 +232,7 @@ public interface IComplexNumber {
     /**
      * Whether this number is
      * wholly zero or not
+     *
      * @return true if the number is wholly
      * zero false otherwise
      */
@@ -228,12 +241,15 @@ public interface IComplexNumber {
     /**
      * Returns whether the number
      * only has a real component (0 for imaginary)
+     *
      * @return true if the number has only a real component or not
      */
     public boolean isReal();
+
     /**
      * Returns whether the number
      * only has a imaginary component (0 for real)
+     *
      * @return true if the number has only a real component or not
      */
     public boolean isImag();
@@ -286,6 +302,7 @@ public interface IComplexNumber {
 
     /**
      * Reverse subtract a number
+     *
      * @param c the complex number to reverse subtract
      * @return the reverse subtracted number
      */
@@ -293,6 +310,7 @@ public interface IComplexNumber {
 
     /**
      * Set a complex number's components to be this ones
+     *
      * @param set the complex number to set
      * @return a reference to this
      */
@@ -300,7 +318,8 @@ public interface IComplexNumber {
 
     /**
      * Reverse subtraction
-     * @param a the number to subtract
+     *
+     * @param a      the number to subtract
      * @param result the result to set
      * @return the result
      */

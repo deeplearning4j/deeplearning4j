@@ -21,7 +21,6 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 
-
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -47,25 +46,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     /**
      * Instantiate a buffer with the given length
+     *
      * @param length the length of the buffer
      */
     protected BaseDataBuffer(int length) {
         this.length = length;
-    }
-
-    @Override
-    public void removeReferencing(String id) {
-        referencing.remove(id);
-    }
-
-    @Override
-    public Collection<String> references() {
-        return referencing;
-    }
-
-    @Override
-    public void addReferencing(String id) {
-        referencing.add(id);
     }
 
     public static byte[] toByteArray(double value) {
@@ -96,6 +81,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     public static float toFloat(byte[] bytes) {
         return ByteBuffer.wrap(bytes).getFloat();
+    }
+
+    @Override
+    public void removeReferencing(String id) {
+        referencing.remove(id);
+    }
+
+    @Override
+    public Collection<String> references() {
+        return referencing;
+    }
+
+    @Override
+    public void addReferencing(String id) {
+        referencing.add(id);
     }
 
     @Override
@@ -131,6 +131,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
 
+    @Override
+    public void destroy() {
+        if (Nd4j.shouldInstrument)
+            Nd4j.getInstrumentation().log(this, "destroyed");
+    }
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous) {
@@ -151,7 +156,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void assign(Number value) {
         assign(value, 0);
     }
-
 
 
     @Override
@@ -205,38 +209,37 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
 
-
     @Override
     public void put(int i, IComplexNumber result) {
-        put(i,result.realComponent().doubleValue());
-        put(i + 1,result.imaginaryComponent().doubleValue());
+        put(i, result.realComponent().doubleValue());
+        put(i + 1, result.imaginaryComponent().doubleValue());
     }
 
 
     @Override
     public void assign(int[] offsets, int[] strides, DataBuffer... buffers) {
-        assign(offsets,strides,length(),buffers);
+        assign(offsets, strides, length(), buffers);
     }
 
     @Override
     public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
-        if(offsets.length != strides.length || strides.length != buffers.length)
+        if (offsets.length != strides.length || strides.length != buffers.length)
             throw new IllegalArgumentException("Unable to assign buffers, please specify equal lengths strides, offsets, and buffers");
         int length = 0;
-        for(int i = 0; i < buffers.length;i++)
+        for (int i = 0; i < buffers.length; i++)
             length += buffers[i].length();
 
-        if(length != n)
+        if (length != n)
             throw new IllegalArgumentException("Buffers must fill up specified length " + n);
 
         int count = 0;
-        for(int i = 0; i < buffers.length; i++) {
-            for(int j = offsets[i]; j < buffers[i].length(); j += strides[i]) {
-                put(count++,buffers[i].getDouble(j));
+        for (int i = 0; i < buffers.length; i++) {
+            for (int j = offsets[i]; j < buffers[i].length(); j += strides[i]) {
+                put(count++, buffers[i].getDouble(j));
             }
         }
 
-        if(count != n)
+        if (count != n)
             throw new IllegalArgumentException("Strides and offsets didn't match up to length " + n);
 
     }
@@ -245,9 +248,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void assign(DataBuffer... buffers) {
         int[] offsets = new int[buffers.length];
         int[] strides = new int[buffers.length];
-        for(int i = 0; i < strides.length; i++)
+        for (int i = 0; i < strides.length; i++)
             strides[i] = 1;
-        assign(offsets,strides,buffers);
+        assign(offsets, strides, buffers);
     }
 
 

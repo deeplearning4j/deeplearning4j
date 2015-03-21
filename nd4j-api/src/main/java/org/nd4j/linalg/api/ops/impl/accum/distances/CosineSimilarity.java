@@ -28,10 +28,11 @@ import org.nd4j.linalg.factory.Nd4j;
  * Note that you need to initialize
  * a scaling constant equal to the norm2 of the
  * vector
+ *
  * @author Adam Gibson
  */
 public class CosineSimilarity extends BaseAccumulation {
-    private Number constantNormalizedByNorm2X,constantNormalizedByNorm2Y;
+    private Number constantNormalizedByNorm2X, constantNormalizedByNorm2Y;
 
     public CosineSimilarity(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
@@ -52,7 +53,7 @@ public class CosineSimilarity extends BaseAccumulation {
     @Override
     public void update(Number result) {
         currentResult = currentResult.doubleValue() + result.doubleValue();
-        if(numProcessed() == n()) {
+        if (numProcessed() == n()) {
             currentResult = currentResult.doubleValue() / constantNormalizedByNorm2X.doubleValue() / constantNormalizedByNorm2Y.doubleValue();
         }
 
@@ -61,8 +62,8 @@ public class CosineSimilarity extends BaseAccumulation {
     @Override
     public void update(IComplexNumber result) {
         currentComplexResult.addi(result);
-        if(numProcessed() == n()) {
-            currentComplexResult.set(currentComplexResult.realComponent().doubleValue() / constantNormalizedByNorm2X.doubleValue() / constantNormalizedByNorm2Y.doubleValue(),0);
+        if (numProcessed() == n()) {
+            currentComplexResult.set(currentComplexResult.realComponent().doubleValue() / constantNormalizedByNorm2X.doubleValue() / constantNormalizedByNorm2Y.doubleValue(), 0);
         }
     }
 
@@ -92,7 +93,7 @@ public class CosineSimilarity extends BaseAccumulation {
     @Override
     public float op(float origin, float other) {
         numProcessed++;
-        return  (origin * other);
+        return (origin * other);
     }
 
     @Override
@@ -102,25 +103,23 @@ public class CosineSimilarity extends BaseAccumulation {
     }
 
 
-
-
     @Override
-    public Op opForDimension(int index,int dimension) {
-        if(y() != null)
-            return new CosineSimilarity(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),x.length());
+    public Op opForDimension(int index, int dimension) {
+        if (y() != null)
+            return new CosineSimilarity(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), x.length());
         else
-            return new CosineSimilarity(x.vectorAlongDimension(index,dimension));
+            return new CosineSimilarity(x.vectorAlongDimension(index, dimension));
 
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z,int n) {
-        super.init(x, y,z, n);
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
         this.constantNormalizedByNorm2X = Nd4j.getExecutioner().execAndReturn(new Norm2(x)).currentResult();
         this.constantNormalizedByNorm2Y = Nd4j.getExecutioner().execAndReturn(new Norm2(y)).currentResult();
-        this.extraArgs = new Object[]{constantNormalizedByNorm2X,constantNormalizedByNorm2Y};
+        this.extraArgs = new Object[]{constantNormalizedByNorm2X, constantNormalizedByNorm2Y};
         this.initial = 0.0;
-        this.initialComplex = Nd4j.createComplexNumber(0,0);
+        this.initialComplex = Nd4j.createComplexNumber(0, 0);
 
     }
 }

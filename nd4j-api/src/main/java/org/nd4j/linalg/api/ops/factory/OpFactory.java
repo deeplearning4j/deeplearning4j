@@ -25,66 +25,61 @@ import org.nd4j.linalg.api.ops.TransformOp;
  *
  * @author Adam Gibson
  */
-public interface OpFactory  {
+public interface OpFactory {
 
     /**
      * Accumulation operation
+     *
      * @param name the name of the function to create
-     * @param x the input to the function
+     * @param x    the input to the function
      * @return the operation
      */
-    Accumulation createAccum(String name,INDArray x);
+    Accumulation createAccum(String name, INDArray x);
 
     /**
      * Accumulation operation
+     *
      * @param name the name of the function
-     * @param x the input
-     * @param y the pairwise transformation
-     * @param z the output
+     * @param x    the input
+     * @param y    the pairwise transformation
+     * @param z    the output
      * @return the operation
      */
-    Accumulation createAccum(String name,INDArray x,INDArray y,INDArray z);
+    Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z);
 
     /**
-     *
      * @param name
      * @param x
      * @param y
      * @return
      */
-    Accumulation createAccum(String name,INDArray x,INDArray y);
+    Accumulation createAccum(String name, INDArray x, INDArray y);
 
     /**
-     *
      * @param name
      * @param x
      * @param y
      * @return
      */
-    TransformOp createTransform(String name,INDArray x,INDArray y);
+    TransformOp createTransform(String name, INDArray x, INDArray y);
 
 
     /**
-     *
      * @param name
      * @param x
      * @return
      */
-    TransformOp createTransform(String name,INDArray x);
+    TransformOp createTransform(String name, INDArray x);
 
 
     /**
-     *
      * @param name
      * @param x
      * @param y
      * @param z
      * @return
      */
-    TransformOp createTransform(String name,INDArray x,INDArray y,INDArray z);
-
-
-
+    TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z);
 
 
 }

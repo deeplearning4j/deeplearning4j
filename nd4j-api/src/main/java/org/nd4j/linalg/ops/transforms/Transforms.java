@@ -34,6 +34,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Functional interface for the different op classes
+ *
  * @author Adam Gibson
  */
 public class Transforms {
@@ -157,7 +158,7 @@ public class Transforms {
      * @return
      */
     public static double cosineSim(INDArray d1, INDArray d2) {
-      return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(d1,d2,d1.length())).currentResult().doubleValue();
+        return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(d1, d2, d1.length())).currentResult().doubleValue();
     }
 
     /**
@@ -201,13 +202,13 @@ public class Transforms {
 
     /**
      * Returns the negative of an ndarray
+     *
      * @param ndArray the ndarray to take the negative of
      * @return the negative of the ndarray
      */
     public static INDArray neg(INDArray ndArray) {
         return neg(ndArray, Nd4j.copyOnOps);
     }
-
 
 
     /**
@@ -231,9 +232,8 @@ public class Transforms {
     public static INDArray sign(INDArray toSign) {
         return sign(toSign, Nd4j.copyOnOps);
     }
-    
 
-    
+
     public static INDArray stabilize(INDArray ndArray, double k) {
         return stabilize(ndArray, k, Nd4j.copyOnOps);
     }
@@ -241,6 +241,7 @@ public class Transforms {
 
     /**
      * Abs funciton
+     *
      * @param ndArray
      * @return
      */
@@ -265,11 +266,11 @@ public class Transforms {
     }
 
 
-
     /**
      * Pow function
+     *
      * @param ndArray the ndarray to raise hte power of
-     * @param power the power to raise by
+     * @param power   the power to raise by
      * @return the ndarray raised to this power
      */
     public static INDArray pow(INDArray ndArray, Number power) {
@@ -279,6 +280,7 @@ public class Transforms {
 
     /**
      * Rounding function
+     *
      * @param ndArray
      * @return
      */
@@ -288,6 +290,7 @@ public class Transforms {
 
     /**
      * Sigmoid function
+     *
      * @param ndArray
      * @return
      */
@@ -297,6 +300,7 @@ public class Transforms {
 
     /**
      * Sqrt function
+     *
      * @param ndArray
      * @return
      */
@@ -306,6 +310,7 @@ public class Transforms {
 
     /**
      * Tanh function
+     *
      * @param ndArray
      * @return
      */
@@ -324,35 +329,24 @@ public class Transforms {
 
     /**
      * 1 if greater than or equal to 0 otherwise (at each element)
+     *
      * @param first
      * @param ndArray
      * @return
      */
-    public static INDArray greaterThanOrEqual(INDArray first,INDArray ndArray) {
-        return greaterThanOrEqual(first,ndArray, Nd4j.copyOnOps);
+    public static INDArray greaterThanOrEqual(INDArray first, INDArray ndArray) {
+        return greaterThanOrEqual(first, ndArray, Nd4j.copyOnOps);
     }
 
     /**
      * 1 if less than or equal to 0 otherwise (at each element)
+     *
      * @param first
      * @param ndArray
      * @return
      */
-    public static INDArray lessThanOrEqual(INDArray first,INDArray ndArray) {
-        return lessThanOrEqual(first,ndArray, Nd4j.copyOnOps);
-    }
-
-
-
-    /**
-     * Eps function
-     *
-     * @param ndArray
-     * @return
-     */
-    public static INDArray lessThanOrEqual(INDArray first,INDArray ndArray, boolean dup) {
-        return exec(dup ? new LessThanOrEqual(first.dup(),ndArray) :  new LessThanOrEqual(first,ndArray));
-
+    public static INDArray lessThanOrEqual(INDArray first, INDArray ndArray) {
+        return lessThanOrEqual(first, ndArray, Nd4j.copyOnOps);
     }
 
 
@@ -362,8 +356,20 @@ public class Transforms {
      * @param ndArray
      * @return
      */
-    public static INDArray greaterThanOrEqual(INDArray first,INDArray ndArray, boolean dup) {
-        return exec(dup ? new GreaterThanOrEqual(first.dup(),ndArray) :  new GreaterThanOrEqual(first,ndArray));
+    public static INDArray lessThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
+        return exec(dup ? new LessThanOrEqual(first.dup(), ndArray) : new LessThanOrEqual(first, ndArray));
+
+    }
+
+
+    /**
+     * Eps function
+     *
+     * @param ndArray
+     * @return
+     */
+    public static INDArray greaterThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
+        return exec(dup ? new GreaterThanOrEqual(first.dup(), ndArray) : new GreaterThanOrEqual(first, ndArray));
 
     }
 
@@ -375,7 +381,7 @@ public class Transforms {
      * @return
      */
     public static INDArray eps(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Eps(ndArray.dup()) :  new Eps(ndArray));
+        return exec(dup ? new Eps(ndArray.dup()) : new Eps(ndArray));
 
     }
 
@@ -387,10 +393,9 @@ public class Transforms {
      * @return
      */
     public static INDArray floor(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Floor(ndArray.dup()) :  new Floor(ndArray));
+        return exec(dup ? new Floor(ndArray.dup()) : new Floor(ndArray));
 
     }
-
 
 
     /**
@@ -400,158 +405,171 @@ public class Transforms {
      * @return
      */
     public static INDArray sign(INDArray toSign, boolean dup) {
-        return exec(dup ? new Sign(toSign,toSign.dup()) : new Sign(toSign));
+        return exec(dup ? new Sign(toSign, toSign.dup()) : new Sign(toSign));
     }
 
     /**
      * Stabilize to be within a range of k
+     *
      * @param ndArray tbe ndarray
      * @param k
      * @param dup
      * @return
      */
     public static INDArray max(INDArray ndArray, double k, boolean dup) {
-        return exec(dup ? new ScalarMax(ndArray.dup(),k): new ScalarMax(ndArray,k));
+        return exec(dup ? new ScalarMax(ndArray.dup(), k) : new ScalarMax(ndArray, k));
     }
 
     /**
      * Stabilize to be within a range of k
+     *
      * @param ndArray tbe ndarray
      * @param k
      * @return
      */
     public static INDArray max(INDArray ndArray, double k) {
-        return max(ndArray,k,Nd4j.copyOnOps);
+        return max(ndArray, k, Nd4j.copyOnOps);
     }
-
 
 
     /**
      * Stabilize to be within a range of k
+     *
      * @param ndArray tbe ndarray
      * @param k
      * @param dup
      * @return
      */
     public static INDArray stabilize(INDArray ndArray, double k, boolean dup) {
-        return exec(dup ? new Stabilize(ndArray,ndArray.dup(),k): new Stabilize(ndArray,k));
+        return exec(dup ? new Stabilize(ndArray, ndArray.dup(), k) : new Stabilize(ndArray, k));
     }
 
 
     /**
      * Abs function
+     *
      * @param ndArray
      * @param dup
      * @return
      */
     public static INDArray abs(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Abs(ndArray,ndArray.dup()) : new Abs(ndArray));
+        return exec(dup ? new Abs(ndArray, ndArray.dup()) : new Abs(ndArray));
 
     }
 
     /**
      * Exp function
+     *
      * @param ndArray
      * @param dup
      * @return
      */
     public static INDArray exp(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Exp(ndArray,ndArray.dup()) :  new Exp(ndArray));
+        return exec(dup ? new Exp(ndArray, ndArray.dup()) : new Exp(ndArray));
     }
 
 
     /**
      * Hard tanh
+     *
      * @param ndArray the input
-     * @param dup whether to duplicate the ndarray and return it as the result
+     * @param dup     whether to duplicate the ndarray and return it as the result
      * @return the output
      */
     public static INDArray hardTanh(INDArray ndArray, boolean dup) {
-        return exec(dup ? new HardTanh(ndArray,ndArray.dup()) : new HardTanh(ndArray));
+        return exec(dup ? new HardTanh(ndArray, ndArray.dup()) : new HardTanh(ndArray));
     }
 
     /**
      * Identity function
+     *
      * @param ndArray
      * @param dup
      * @return
      */
     public static INDArray identity(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Identity(ndArray,ndArray.dup()) : new Identity(ndArray));
+        return exec(dup ? new Identity(ndArray, ndArray.dup()) : new Identity(ndArray));
     }
 
 
     /**
      * Pow function
+     *
      * @param ndArray
      * @param power
      * @param dup
      * @return
      */
     public static INDArray pow(INDArray ndArray, Number power, boolean dup) {
-        return exec(dup ? new Pow(ndArray,ndArray.dup(),power.doubleValue()) : new Pow(ndArray,power.doubleValue()));
+        return exec(dup ? new Pow(ndArray, ndArray.dup(), power.doubleValue()) : new Pow(ndArray, power.doubleValue()));
     }
 
     /**
      * Rounding function
+     *
      * @param ndArray the ndarray
      * @param dup
      * @return
      */
     public static INDArray round(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Round(ndArray,ndArray.dup()) : new Round(ndArray));
+        return exec(dup ? new Round(ndArray, ndArray.dup()) : new Round(ndArray));
     }
 
 
     /**
      * Sigmoid function
+     *
      * @param ndArray
      * @param dup
      * @return
      */
     public static INDArray sigmoid(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Sigmoid(ndArray,ndArray.dup()) : new Sigmoid(ndArray));
+        return exec(dup ? new Sigmoid(ndArray, ndArray.dup()) : new Sigmoid(ndArray));
     }
 
     /**
      * Sqrt function
+     *
      * @param ndArray
      * @param dup
      * @return
      */
     public static INDArray sqrt(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Sqrt(ndArray,ndArray.dup()) :  new Sqrt(ndArray));
+        return exec(dup ? new Sqrt(ndArray, ndArray.dup()) : new Sqrt(ndArray));
     }
 
     /**
      * Tanh function
+     *
      * @param ndArray
      * @param dup
      * @return
      */
     public static INDArray tanh(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Tanh(ndArray,ndArray.dup()) : new Tanh(ndArray));
+        return exec(dup ? new Tanh(ndArray, ndArray.dup()) : new Tanh(ndArray));
     }
 
     /**
      * Log function
+     *
      * @param ndArray
      * @param dup
      * @return
      */
     public static INDArray log(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Log(ndArray,ndArray.dup()) : new Log(ndArray));
+        return exec(dup ? new Log(ndArray, ndArray.dup()) : new Log(ndArray));
     }
 
 
     /**
      * Negative
+     *
      * @param ndArray
      * @param dup
      * @return
      */
     public static INDArray neg(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Negative(ndArray,ndArray.dup()) : new Negative(ndArray));
+        return exec(dup ? new Negative(ndArray, ndArray.dup()) : new Negative(ndArray));
     }
 
     /**

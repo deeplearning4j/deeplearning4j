@@ -42,7 +42,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 public class SoftMax extends BaseTransformOp {
     private Number sum;
     private Number max;
-    private IComplexNumber maxComplex,sumComplex;
+    private IComplexNumber maxComplex, sumComplex;
 
 
     public SoftMax(INDArray x, INDArray z) {
@@ -128,39 +128,37 @@ public class SoftMax extends BaseTransformOp {
 
     @Override
     public TransformOp derivative() {
-        return new SoftMaxDerivative(x,y,z,n);
+        return new SoftMaxDerivative(x, y, z, n);
     }
 
 
-
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
-        if(y() != null)
-            return new SoftMax(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
+        if (y() != null)
+            return new SoftMax(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new SoftMax(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new SoftMax(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
-        if(x instanceof IComplexNDArray) {
+        if (x instanceof IComplexNDArray) {
             this.maxComplex = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResultComplex();
             IComplexNDArray complexX = (IComplexNDArray) x;
             this.y = Transforms.exp(complexX.sub(maxComplex));
-            this.sumComplex =  Nd4j.getExecutioner().execAndReturn(new Sum(y)).currentResultComplex();
+            this.sumComplex = Nd4j.getExecutioner().execAndReturn(new Sum(y)).currentResultComplex();
             this.y.divi(sumComplex);
-            this.extraArgs = new Object[] {maxComplex,sumComplex};
-        }
-        else {
+            this.extraArgs = new Object[]{maxComplex, sumComplex};
+        } else {
             this.max = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResult();
             INDArray xMinusMax = x.sub(max);
             this.y = Transforms.exp(xMinusMax);
             this.sum = Nd4j.getExecutioner().execAndReturn(new Sum(this.y)).currentResult();
             this.y.divi(sum);
-            this.extraArgs = new Object[] {max,sum};
+            this.extraArgs = new Object[]{max, sum};
         }
 
 

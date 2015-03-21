@@ -129,13 +129,16 @@ public interface INDArray extends Serializable {
 
     /**
      * Insert a scalar float at the specified index
+     *
      * @param i
      * @param value
      * @return
      */
     INDArray putScalar(int i, float value);
+
     /**
      * Insert a scalar int at the specified index
+     *
      * @param i
      * @param value
      * @return

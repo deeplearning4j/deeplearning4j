@@ -11,31 +11,32 @@ import org.nd4j.linalg.jcublas.rng.distribution.UniformDistribution;
 
 /**
  * JCuda distribution factory
+ *
  * @author Adam Gibson
  */
 public class JCudaDistributionFactory implements DistributionFactory {
     @Override
     public Distribution createBinomial(int n, INDArray p) {
-        return new BinomialDistribution((JcudaRandom) Nd4j.getRandom(),p,n);
+        return new BinomialDistribution((JcudaRandom) Nd4j.getRandom(), p, n);
     }
 
     @Override
     public Distribution createBinomial(int n, double p) {
-        return new BinomialDistribution((JcudaRandom) Nd4j.getRandom(),n,p);
+        return new BinomialDistribution((JcudaRandom) Nd4j.getRandom(), n, p);
     }
 
     @Override
     public Distribution createNormal(INDArray mean, double std) {
-        return new NormalDistribution(mean,std);
+        return new NormalDistribution(mean, std);
     }
 
     @Override
     public Distribution createNormal(double mean, double std) {
-        return new NormalDistribution(mean,std);
+        return new NormalDistribution(mean, std);
     }
 
     @Override
     public Distribution createUniform(double min, double max) {
-        return new UniformDistribution((JcudaRandom) Nd4j.getRandom(),min,max);
+        return new UniformDistribution((JcudaRandom) Nd4j.getRandom(), min, max);
     }
 }

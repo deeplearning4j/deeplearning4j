@@ -52,7 +52,7 @@ public class EuclideanDistance extends BaseAccumulation {
 
     @Override
     public void update(IComplexNumber result) {
-         currentComplexResult.addi(result);
+        currentComplexResult.addi(result);
     }
 
     @Override
@@ -110,12 +110,13 @@ public class EuclideanDistance extends BaseAccumulation {
     public IComplexNumber op(IComplexNumber origin) {
         return origin;
     }
+
     @Override
-    public Op opForDimension(int index,int dimension) {
-        if(y() != null)
-            return new EuclideanDistance(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),x.length());
+    public Op opForDimension(int index, int dimension) {
+        if (y() != null)
+            return new EuclideanDistance(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), x.length());
         else
-            return new EuclideanDistance(x.vectorAlongDimension(index,dimension));
+            return new EuclideanDistance(x.vectorAlongDimension(index, dimension));
 
     }
 }

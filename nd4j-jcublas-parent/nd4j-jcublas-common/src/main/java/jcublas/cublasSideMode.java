@@ -31,8 +31,7 @@ package jcublas;
  * Indicates whether the dense matrix is on the left or right side
  * in the matrix equation solved by a particular function.
  */
-public class cublasSideMode
-{
+public class cublasSideMode {
     /**
      * The matrix is on the left side in the equation
      */
@@ -46,21 +45,22 @@ public class cublasSideMode
     /**
      * Private constructor to prevent instantiation
      */
-    private cublasSideMode(){}
+    private cublasSideMode() {
+    }
 
     /**
      * Returns a string representation of the given constant
      *
      * @return A string representation of the given constant
      */
-    public static String stringFor(int n)
-    {
-        switch (n)
-        {
-            case CUBLAS_SIDE_LEFT: return "CUBLAS_SIDE_LEFT";
-            case CUBLAS_SIDE_RIGHT: return "CUBLAS_SIDE_RIGHT";
+    public static String stringFor(int n) {
+        switch (n) {
+            case CUBLAS_SIDE_LEFT:
+                return "CUBLAS_SIDE_LEFT";
+            case CUBLAS_SIDE_RIGHT:
+                return "CUBLAS_SIDE_RIGHT";
         }
-        return "INVALID cublasSideMode: "+n;
+        return "INVALID cublasSideMode: " + n;
     }
 }
 

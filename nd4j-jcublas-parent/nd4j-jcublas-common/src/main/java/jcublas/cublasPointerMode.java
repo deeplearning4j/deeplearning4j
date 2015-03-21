@@ -30,11 +30,10 @@ package jcublas;
 /**
  * Indicates whether the scalar values are passed by
  * reference on the host or device
- * 
+ *
  * @see JCublas2#cublasSetPointerMode(cublasHandle, int)
  */
-public class cublasPointerMode
-{
+public class cublasPointerMode {
     /**
      * The scalars are passed by reference on the host
      */
@@ -48,21 +47,22 @@ public class cublasPointerMode
     /**
      * Private constructor to prevent instantiation
      */
-    private cublasPointerMode(){}
+    private cublasPointerMode() {
+    }
 
     /**
      * Returns a string representation of the given constant
      *
      * @return A string representation of the given constant
      */
-    public static String stringFor(int n)
-    {
-        switch (n)
-        {
-            case CUBLAS_POINTER_MODE_HOST: return "CUBLAS_POINTER_MODE_HOST";
-            case CUBLAS_POINTER_MODE_DEVICE: return "CUBLAS_POINTER_MODE_DEVICE";
+    public static String stringFor(int n) {
+        switch (n) {
+            case CUBLAS_POINTER_MODE_HOST:
+                return "CUBLAS_POINTER_MODE_HOST";
+            case CUBLAS_POINTER_MODE_DEVICE:
+                return "CUBLAS_POINTER_MODE_DEVICE";
         }
-        return "INVALID cublasPointerMode: "+n;
+        return "INVALID cublasPointerMode: " + n;
     }
 }
 

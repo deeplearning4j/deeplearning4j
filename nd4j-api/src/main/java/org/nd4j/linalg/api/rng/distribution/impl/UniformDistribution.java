@@ -9,13 +9,13 @@ import org.nd4j.linalg.factory.Nd4j;
 /**
  * Base distribution derived from apache commons math
  * http://commons.apache.org/proper/commons-math/
- *
+ * <p/>
  * (specifically the {@link org.apache.commons.math3.distribution.UniformIntegerDistribution}
  *
  * @author Adam Gibson
  */
 public class UniformDistribution extends BaseDistribution {
-    private double upper,lower;
+    private double upper, lower;
 
     /**
      * Create a uniform real distribution using the given lower and upper
@@ -31,20 +31,18 @@ public class UniformDistribution extends BaseDistribution {
     }
 
 
-
-
     /**
      * Creates a uniform distribution.
      *
-     * @param rng Random number generator.
+     * @param rng   Random number generator.
      * @param lower Lower bound of this distribution (inclusive).
      * @param upper Upper bound of this distribution (exclusive).
      * @throws NumberIsTooLargeException if {@code lower >= upper}.
      * @since 3.1
      */
     public UniformDistribution(org.nd4j.linalg.api.rng.Random rng,
-                                   double lower,
-                                   double upper)
+                               double lower,
+                               double upper)
             throws NumberIsTooLargeException {
         super(rng);
         if (lower >= upper) {
@@ -57,7 +55,9 @@ public class UniformDistribution extends BaseDistribution {
         this.upper = upper;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public double density(double x) {
         if (x < lower || x > upper) {
             return 0.0;
@@ -65,8 +65,10 @@ public class UniformDistribution extends BaseDistribution {
         return 1 / (upper - lower);
     }
 
-    /** {@inheritDoc} */
-    public double cumulativeProbability(double x)  {
+    /**
+     * {@inheritDoc}
+     */
+    public double cumulativeProbability(double x) {
         if (x <= lower) {
             return 0;
         }
@@ -92,7 +94,7 @@ public class UniformDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     *
+     * <p/>
      * For lower bound {@code lower} and upper bound {@code upper}, the mean is
      * {@code 0.5 * (lower + upper)}.
      */
@@ -102,7 +104,7 @@ public class UniformDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     *
+     * <p/>
      * For lower bound {@code lower} and upper bound {@code upper}, the
      * variance is {@code (upper - lower)^2 / 12}.
      */
@@ -113,7 +115,7 @@ public class UniformDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     *
+     * <p/>
      * The lower bound of the support is equal to the lower bound parameter
      * of the distribution.
      *
@@ -125,7 +127,7 @@ public class UniformDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     *
+     * <p/>
      * The upper bound of the support is equal to the upper bound parameter
      * of the distribution.
      *
@@ -135,19 +137,23 @@ public class UniformDistribution extends BaseDistribution {
         return upper;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public boolean isSupportLowerBoundInclusive() {
         return true;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public boolean isSupportUpperBoundInclusive() {
         return true;
     }
 
     /**
      * {@inheritDoc}
-     *
+     * <p/>
      * The support of this distribution is connected.
      *
      * @return {@code true}
@@ -156,9 +162,11 @@ public class UniformDistribution extends BaseDistribution {
         return true;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public double sample()  {
+    public double sample() {
         final double u = random.nextDouble();
         return u * upper + (1 - u) * lower;
     }

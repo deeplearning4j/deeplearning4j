@@ -31,8 +31,7 @@ package jcublas;
  * Indicates which operation needs to be performed with the
  * dense matrix.
  */
-public class cublasOperation
-{
+public class cublasOperation {
     /**
      * The non-transpose operation is selected
      */
@@ -51,22 +50,24 @@ public class cublasOperation
     /**
      * Private constructor to prevent instantiation
      */
-    private cublasOperation(){}
+    private cublasOperation() {
+    }
 
     /**
      * Returns a string representation of the given constant
      *
      * @return A string representation of the given constant
      */
-    public static String stringFor(int n)
-    {
-        switch (n)
-        {
-            case CUBLAS_OP_N: return "CUBLAS_OP_N";
-            case CUBLAS_OP_T: return "CUBLAS_OP_T";
-            case CUBLAS_OP_C: return "CUBLAS_OP_C";
+    public static String stringFor(int n) {
+        switch (n) {
+            case CUBLAS_OP_N:
+                return "CUBLAS_OP_N";
+            case CUBLAS_OP_T:
+                return "CUBLAS_OP_T";
+            case CUBLAS_OP_C:
+                return "CUBLAS_OP_C";
         }
-        return "INVALID cublasOperation: "+n;
+        return "INVALID cublasOperation: " + n;
     }
 }
 

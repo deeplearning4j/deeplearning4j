@@ -39,20 +39,20 @@ public class NormalDistribution extends BaseJCudaDistribution {
      */
     private static final double SQRT2 = FastMath.sqrt(2.0);
     /**
-     * Mean of this distribution.
-     */
-    private  double mean;
-    //more than one mean
-    private INDArray means;
-
-    /**
      * Standard deviation of this distribution.
      */
     private final double standardDeviation;
     /**
+     * Mean of this distribution.
+     */
+    private double mean;
+    //more than one mean
+    private INDArray means;
+    /**
      * Inverse cumulative probability accuracy.
      */
-    private  double solverAbsoluteAccuracy;
+    private double solverAbsoluteAccuracy;
+
     /**
      * Create a normal distribution with mean equal to zero and standard
      * deviation equal to one.
@@ -123,8 +123,9 @@ public class NormalDistribution extends BaseJCudaDistribution {
 
     /**
      * Normal distribution with a matrix of means
+     *
      * @param mean the means to use
-     * @param std the standard deviation
+     * @param std  the standard deviation
      */
     public NormalDistribution(INDArray mean, double std) {
         super((JcudaRandom) Nd4j.getRandom());
@@ -143,6 +144,7 @@ public class NormalDistribution extends BaseJCudaDistribution {
         final double x1 = x0 / standardDeviation;
         return FastMath.exp(-0.5 * x1 * x1) / (standardDeviation * SQRT2PI);
     }
+
     /**
      * {@inheritDoc}
      */
@@ -159,7 +161,6 @@ public class NormalDistribution extends BaseJCudaDistribution {
         final double v1 = (x1 - mean) / denom;
         return 0.5 * Erf.erf(v0, v1);
     }
-
 
 
     @Override
@@ -229,7 +230,7 @@ public class NormalDistribution extends BaseJCudaDistribution {
     @Override
     public double[] sample(int sampleSize) {
         CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(sampleSize);
-        doSampleNormal(mean,standardDeviation,buffer.pointer(),sampleSize);
+        doSampleNormal(mean, standardDeviation, buffer.pointer(), sampleSize);
         double[] buffer2 = buffer.asDouble();
         buffer.destroy();
         return buffer2;
@@ -239,20 +240,19 @@ public class NormalDistribution extends BaseJCudaDistribution {
     public INDArray sample(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) ret.data();
-        if(means != null) {
-            if(buffer.dataType() != DataBuffer.DOUBLE)
-                doSampleNormal(buffer.pointer(),means,(float) standardDeviation);
+        if (means != null) {
+            if (buffer.dataType() != DataBuffer.DOUBLE)
+                doSampleNormal(buffer.pointer(), means, (float) standardDeviation);
 
             else
-                doSampleNormalDouble(buffer.pointer(),means,standardDeviation);
+                doSampleNormalDouble(buffer.pointer(), means, standardDeviation);
 
 
-        }
-        else {
-            if(buffer.dataType() == DataBuffer.FLOAT)
-                doSampleNormal((float) mean,(float) standardDeviation,buffer.pointer(),buffer.length());
-            else if(buffer.dataType() == DataBuffer.DOUBLE)
-                doSampleNormal(mean,standardDeviation,buffer.pointer(),buffer.length());
+        } else {
+            if (buffer.dataType() == DataBuffer.FLOAT)
+                doSampleNormal((float) mean, (float) standardDeviation, buffer.pointer(), buffer.length());
+            else if (buffer.dataType() == DataBuffer.DOUBLE)
+                doSampleNormal(mean, standardDeviation, buffer.pointer(), buffer.length());
 
         }
 

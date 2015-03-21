@@ -19,10 +19,14 @@ import org.nd4j.linalg.jcublas.rng.JcudaRandom;
  */
 public class BinomialDistribution extends BaseJCudaDistribution {
 
-    /** The number of trials. */
+    /**
+     * The number of trials.
+     */
     private final int numberOfTrials;
-    /** The probability of success. */
-    private  double probabilityOfSuccess;
+    /**
+     * The probability of success.
+     */
+    private double probabilityOfSuccess;
     private INDArray pNDArray;
 
     public BinomialDistribution(JcudaRandom random, INDArray pNDArray, int numberOfTrials) {
@@ -115,18 +119,13 @@ public class BinomialDistribution extends BaseJCudaDistribution {
     }
 
 
-
-
-
-
     @Override
     public double[] sample(int sampleSize) {
         CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(sampleSize);
-        if(pNDArray != null) {
+        if (pNDArray != null) {
 
-        }
-        else {
-            doBinomialDouble(probabilityOfSuccess,buffer.pointer(),numberOfTrials,buffer.length());
+        } else {
+            doBinomialDouble(probabilityOfSuccess, buffer.pointer(), numberOfTrials, buffer.length());
         }
         double[] buffer2 = buffer.asDouble();
         buffer.destroy();
@@ -137,20 +136,17 @@ public class BinomialDistribution extends BaseJCudaDistribution {
     public INDArray sample(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) ret.data();
-        if(ret.data().dataType() == DataBuffer.DOUBLE) {
-            if(pNDArray != null) {
-                doBinomialDouble(pNDArray,buffer.pointer(),numberOfTrials,buffer.length());
+        if (ret.data().dataType() == DataBuffer.DOUBLE) {
+            if (pNDArray != null) {
+                doBinomialDouble(pNDArray, buffer.pointer(), numberOfTrials, buffer.length());
+            } else {
+                doBinomialDouble(probabilityOfSuccess, buffer.pointer(), numberOfTrials, buffer.length());
             }
-            else {
-                doBinomialDouble(probabilityOfSuccess,buffer.pointer(),numberOfTrials,buffer.length());
-            }
-        }
-        else {
-            if(pNDArray != null) {
-                doBinomial(pNDArray,buffer.pointer(),numberOfTrials,buffer.length());
+        } else {
+            if (pNDArray != null) {
+                doBinomial(pNDArray, buffer.pointer(), numberOfTrials, buffer.length());
 
-            }
-            else {
+            } else {
                 doBinomial((float) probabilityOfSuccess, buffer.pointer(), numberOfTrials, buffer.length());
 
             }

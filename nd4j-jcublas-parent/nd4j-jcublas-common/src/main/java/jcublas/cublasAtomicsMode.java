@@ -28,14 +28,13 @@
 package jcublas;
 
 /**
- * The type indicates whether CUBLAS routines which has an alternate 
- * implementation using atomics can be used. The atomics mode can 
- * be set and queried using and routines, respectively. 
- *  
+ * The type indicates whether CUBLAS routines which has an alternate
+ * implementation using atomics can be used. The atomics mode can
+ * be set and queried using and routines, respectively.
+ *
  * @see JCublas2#cublasSetAtomicsMode(cublasHandle, int)
  */
-public class cublasAtomicsMode
-{
+public class cublasAtomicsMode {
     /**
      * Atomics are not allowed
      */
@@ -49,21 +48,22 @@ public class cublasAtomicsMode
     /**
      * Private constructor to prevent instantiation
      */
-    private cublasAtomicsMode(){}
+    private cublasAtomicsMode() {
+    }
 
     /**
      * Returns a string representation of the given constant
      *
      * @return A string representation of the given constant
      */
-    public static String stringFor(int n)
-    {
-        switch (n)
-        {
-            case CUBLAS_ATOMICS_NOT_ALLOWED: return "CUBLAS_ATOMICS_NOT_ALLOWED";
-            case CUBLAS_ATOMICS_ALLOWED: return "CUBLAS_ATOMICS_ALLOWED";
+    public static String stringFor(int n) {
+        switch (n) {
+            case CUBLAS_ATOMICS_NOT_ALLOWED:
+                return "CUBLAS_ATOMICS_NOT_ALLOWED";
+            case CUBLAS_ATOMICS_ALLOWED:
+                return "CUBLAS_ATOMICS_ALLOWED";
         }
-        return "INVALID cublasAtomicsMode: "+n;
+        return "INVALID cublasAtomicsMode: " + n;
     }
 }
 

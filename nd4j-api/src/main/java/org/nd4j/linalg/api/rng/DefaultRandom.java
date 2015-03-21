@@ -1,14 +1,16 @@
 package org.nd4j.linalg.api.rng;
 
-import org.apache.commons.math3.random.*;
+import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Apache commons based random number generation
+ *
  * @author Adam Gibson
  */
-public class DefaultRandom implements Random,RandomGenerator {
+public class DefaultRandom implements Random, RandomGenerator {
     protected RandomGenerator randomGenerator;
 
     /**
@@ -16,7 +18,7 @@ public class DefaultRandom implements Random,RandomGenerator {
      * seed
      */
     public DefaultRandom() {
-       this(System.currentTimeMillis());
+        this(System.currentTimeMillis());
     }
 
     public DefaultRandom(long seed) {
@@ -30,7 +32,7 @@ public class DefaultRandom implements Random,RandomGenerator {
 
     @Override
     public void setSeed(int seed) {
-       getRandomGenerator().setSeed(seed);
+        getRandomGenerator().setSeed(seed);
     }
 
     @Override
@@ -40,12 +42,12 @@ public class DefaultRandom implements Random,RandomGenerator {
 
     @Override
     public void setSeed(long seed) {
-       getRandomGenerator().setSeed(seed);
+        getRandomGenerator().setSeed(seed);
     }
 
     @Override
     public void nextBytes(byte[] bytes) {
-      getRandomGenerator().nextBytes(bytes);
+        getRandomGenerator().nextBytes(bytes);
     }
 
     @Override
@@ -87,8 +89,8 @@ public class DefaultRandom implements Random,RandomGenerator {
     public INDArray nextGaussian(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
-        for(int i = 0; i < linear.length(); i++) {
-            ret.putScalar(i,nextGaussian());
+        for (int i = 0; i < linear.length(); i++) {
+            ret.putScalar(i, nextGaussian());
         }
         return ret;
     }
@@ -97,8 +99,8 @@ public class DefaultRandom implements Random,RandomGenerator {
     public INDArray nextDouble(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
-        for(int i = 0; i < linear.length(); i++) {
-            ret.putScalar(i,nextDouble());
+        for (int i = 0; i < linear.length(); i++) {
+            ret.putScalar(i, nextDouble());
         }
         return ret;
     }
@@ -107,8 +109,8 @@ public class DefaultRandom implements Random,RandomGenerator {
     public INDArray nextFloat(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
-        for(int i = 0; i < linear.length(); i++) {
-            ret.putScalar(i,nextFloat());
+        for (int i = 0; i < linear.length(); i++) {
+            ret.putScalar(i, nextFloat());
         }
         return ret;
     }
@@ -117,8 +119,8 @@ public class DefaultRandom implements Random,RandomGenerator {
     public INDArray nextInt(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
-        for(int i = 0; i < linear.length(); i++) {
-            ret.putScalar(i,nextInt());
+        for (int i = 0; i < linear.length(); i++) {
+            ret.putScalar(i, nextInt());
         }
         return ret;
     }
@@ -127,8 +129,8 @@ public class DefaultRandom implements Random,RandomGenerator {
     public INDArray nextInt(int n, int[] shape) {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
-        for(int i = 0; i < linear.length(); i++) {
-            ret.putScalar(i,nextInt(n));
+        for (int i = 0; i < linear.length(); i++) {
+            ret.putScalar(i, nextInt(n));
         }
         return ret;
     }

@@ -26,6 +26,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * Hard tanh elementwise function
+ *
  * @author Adam Gibson
  */
 public class HardTanhDerivative extends BaseTransformOp {
@@ -101,7 +102,7 @@ public class HardTanhDerivative extends BaseTransformOp {
 
     @Override
     public float op(float origin) {
-       return hardTanh(origin);
+        return hardTanh(origin);
     }
 
     @Override
@@ -116,7 +117,6 @@ public class HardTanhDerivative extends BaseTransformOp {
     }
 
 
-
     private float hardTanh(float num) {
         return (float) hardTanh((double) num);
     }
@@ -127,13 +127,13 @@ public class HardTanhDerivative extends BaseTransformOp {
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new HardTanhDerivative(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new HardTanhDerivative(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new HardTanhDerivative(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new HardTanhDerivative(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 

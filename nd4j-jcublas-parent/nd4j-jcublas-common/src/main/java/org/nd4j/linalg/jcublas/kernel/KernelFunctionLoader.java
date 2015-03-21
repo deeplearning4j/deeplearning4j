@@ -36,31 +36,33 @@ import static jcuda.driver.JCudaDriver.*;
 
 /**
  * Kernel function loader:
+ *
  * @author Adam Gibson
  */
 public class KernelFunctionLoader {
 
-    private static Logger log = LoggerFactory.getLogger(KernelFunctionLoader.class);
     public final static String NAME_SPACE = "org.nd4j.linalg.jcublas";
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
     public final static String IMPORTS_FLOAT = NAME_SPACE + ".float.imports";
     public final static String IMPORTS_DOUBLE = NAME_SPACE + ".double.imports";
-
-    private Map<String,CUmodule> modules = new HashMap<>();
-    private Map<String,CUfunction> functions = new HashMap<>();
-    private static Map<Integer,CUcontext> devices = new ConcurrentHashMap<>();
+    private static Logger log = LoggerFactory.getLogger(KernelFunctionLoader.class);
+    private static Map<Integer, CUcontext> devices = new ConcurrentHashMap<>();
     private static KernelFunctionLoader INSTANCE;
+    private Map<String, CUmodule> modules = new HashMap<>();
+    private Map<String, CUfunction> functions = new HashMap<>();
     private boolean init = false;
 
-    private KernelFunctionLoader() {}
+    private KernelFunctionLoader() {
+    }
 
     /**
      * Singleton pattern
+     *
      * @return
      */
     public static KernelFunctionLoader getInstance() {
-        if(INSTANCE == null) {
+        if (INSTANCE == null) {
             INSTANCE = new KernelFunctionLoader();
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
@@ -71,22 +73,30 @@ public class KernelFunctionLoader {
         }
         return INSTANCE;
     }
+
+    private static String dataFolder(int type) {
+        return "/kernels/" + (type == DataBuffer.FLOAT ? "float" : "double");
+    }
+
     /**
      * Get the given cuda module
+     *
      * @param function the function name
      * @param dataType the data type for
      * @return the cuda module if it exists or null
      */
-    public CUfunction getFunction(String function,String dataType) {
+    public CUfunction getFunction(String function, String dataType) {
         return functions.get(function + "_" + dataType);
     }
+
     /**
      * Get the given cuda module
+     *
      * @param function the function name
      * @param dataType the data type for
      * @return the cuda module if it exists or null
      */
-    public CUmodule getModule(String function,String dataType) {
+    public CUmodule getModule(String function, String dataType) {
         return modules.get(function + "_" + dataType);
     }
 
@@ -94,32 +104,33 @@ public class KernelFunctionLoader {
      * Clean up all the modules
      */
     public void unload() {
-        for(CUmodule module : modules.values())
+        for (CUmodule module : modules.values())
             unload(module);
         init = false;
     }
 
     /**
      * Unload a module
+     *
      * @param cUmodule the module to unload
      */
     public void unload(CUmodule cUmodule) {
         try {
             JCudaDriver.cuModuleUnload(cUmodule);
-        }catch(Exception e) {
+        } catch (Exception e) {
 
         }
     }
 
-
     /**
      * Load the appropriate functions from the class
      * path in to one module
+     *
      * @return the module associated with this
      * @throws Exception
      */
     public void load() throws Exception {
-        if(init)
+        if (init)
             return;
         StringBuffer sb = new StringBuffer();
         sb.append("nvcc -g -G -ptx");
@@ -132,17 +143,17 @@ public class KernelFunctionLoader {
         log.info("Registering cuda functions...");
         initDevices();
         //ensure imports for each file before compiling
-        ensureImports(props,"float");
-        ensureImports(props,"double");
+        ensureImports(props, "float");
+        ensureImports(props, "double");
 
-        compileAndLoad(props,FLOAT,"float");
-        compileAndLoad(props,DOUBLE,"double");
+        compileAndLoad(props, FLOAT, "float");
+        compileAndLoad(props, DOUBLE, "double");
 
         init = true;
     }
 
-    public  void initDevices() {
-        if(devices.containsKey(0))
+    public void initDevices() {
+        if (devices.containsKey(0))
             return;
         // Initialize the driver and create a context for the first device.
         cuInit(0);
@@ -152,7 +163,7 @@ public class KernelFunctionLoader {
         cuCtxCreate(context, 0, device);
         // Enable exceptions and omit all subsequent error checks
         JCudaDriver.setExceptionsEnabled(true);
-        devices.put(0,context);
+        devices.put(0, context);
     }
 
     /**
@@ -182,7 +193,7 @@ public class KernelFunctionLoader {
      * @return The name of the PTX file
      * @throws java.io.IOException If an I/O error occurs
      */
-    private void compileAndLoad(Properties props,String key,String dataType) throws IOException {
+    private void compileAndLoad(Properties props, String key, String dataType) throws IOException {
         String f = props.getProperty(key);
         StringBuffer sb = new StringBuffer();
         sb.append("nvcc -g -G ");
@@ -194,7 +205,7 @@ public class KernelFunctionLoader {
                 .append("kernels")
                 .append(File.separator).append(dataType).append(File.separator)
                 .toString();
-        String kernelPath =  dir.append(tmpDir)
+        String kernelPath = dir.append(tmpDir)
                 .append(File.separator)
                 .append("kernels")
                 .append(File.separator).append(dataType).append(File.separator)
@@ -210,7 +221,6 @@ public class KernelFunctionLoader {
             }
 
             sb.append(" --output-directory " + kernelPath);
-
 
 
             Process process = Runtime.getRuntime().exec(sb.toString());
@@ -236,25 +246,25 @@ public class KernelFunctionLoader {
                         "Could not create .ptx file: " + errorMessage);
             }
 
-            for(String module : split) {
+            for (String module : split) {
                 CUmodule m = new CUmodule();
                 log.info("Loading " + module);
-                String path = kernelPath + module+ ".ptx";
-                cuModuleLoad(m,path);
-                modules.put(key + "_" + dataType,m);
+                String path = kernelPath + module + ".ptx";
+                cuModuleLoad(m, path);
+                modules.put(key + "_" + dataType, m);
                 // Obtain a function pointer to the "add" function.
                 CUfunction function = new CUfunction();
                 String name = module + "_" + dataType;
                 try {
                     cuModuleGetFunction(function, m, name);
-                }catch(Exception e) {
+                } catch (Exception e) {
                     throw new RuntimeException("Function " + name + " not found!");
                 }
 
-                functions.put(name,function);
+                functions.put(name, function);
                 //cleanup
                 File ptxFile = new File(path);
-                if(!ptxFile.exists())
+                if (!ptxFile.exists())
                     throw new IllegalStateException("No ptx file " + ptxFile.getAbsolutePath() + " found!");
                 ptxFile.delete();
             }
@@ -262,18 +272,13 @@ public class KernelFunctionLoader {
         }
     }
 
-
-
-    private static String dataFolder(int type) {
-        return "/kernels/" + (type == DataBuffer.FLOAT ? "float" : "double");
-    }
-
     //extract the source file
 
     /**
      * Extract the resource ot the specified
      * absolute path
-     * @param file the file
+     *
+     * @param file     the file
      * @param dataType the data type to extract for
      * @return
      * @throws IOException
@@ -291,17 +296,16 @@ public class KernelFunctionLoader {
 
     }
 
-    private void ensureImports(Properties props,String dataType) throws IOException {
-        if(dataType.equals("float")) {
+    private void ensureImports(Properties props, String dataType) throws IOException {
+        if (dataType.equals("float")) {
             String[] imports = props.getProperty(IMPORTS_FLOAT).split(",");
-            for(String import1 : imports) {
-               loadFile("/kernels/" + dataType + "/" + import1);
+            for (String import1 : imports) {
+                loadFile("/kernels/" + dataType + "/" + import1);
             }
-        }
-        else {
+        } else {
             String[] imports = props.getProperty(IMPORTS_DOUBLE).split(",");
-            for(String import1 : imports) {
-                 loadFile("/kernels/" + dataType + "/" + import1);
+            for (String import1 : imports) {
+                loadFile("/kernels/" + dataType + "/" + import1);
             }
         }
 
@@ -314,10 +318,10 @@ public class KernelFunctionLoader {
 
         if (!resource.exists())
             throw new IllegalStateException("Unable to find file " + resource);
-        File out = new File(tmpDir,file);
-        if(!out.getParentFile().exists())
+        File out = new File(tmpDir, file);
+        if (!out.getParentFile().exists())
             out.getParentFile().mkdirs();
-        if(out.exists())
+        if (out.exists())
             out.delete();
         out.createNewFile();
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(out));

@@ -25,6 +25,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Sum of absolute values
+ *
  * @author Adam Gibson
  */
 public class Norm1 extends BaseAccumulation {
@@ -63,21 +64,22 @@ public class Norm1 extends BaseAccumulation {
 
     @Override
     public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0,0.0);
+        return Nd4j.createComplexNumber(0.0, 0.0);
     }
 
     @Override
     public String name() {
         return "norm1";
     }
-    @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
 
-        if(y() != null)
-            return new Norm1(xAlongDimension,y.vectorAlongDimension(index,dimension),xAlongDimension.length());
+    @Override
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Norm1(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Norm1(x.vectorAlongDimension(index,dimension));
+            return new Norm1(x.vectorAlongDimension(index, dimension));
 
     }
 }

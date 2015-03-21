@@ -26,86 +26,92 @@ import java.util.Iterator;
 /**
  * A DataSetIterator handles
  * traversing through a dataset and preparing
- * 
+ * <p/>
  * data for a neural network.
- * 
+ * <p/>
  * Typical usage of an iterator is akin to:
- * 
+ * <p/>
  * DataSetIterator iter = ..;
- * 
+ * <p/>
  * while(iter.hasNext()) {
- *     DataSet d = iter.next();
- *     //iterate network...
+ * DataSet d = iter.next();
+ * //iterate network...
  * }
- * 
- * 
+ * <p/>
+ * <p/>
  * For custom numbers of examples/batch sizes you can call:
- * 
+ * <p/>
  * iter.next(num)
- * 
+ * <p/>
  * where num is the number of examples to fetch
- * 
- * 
- * @author Adam Gibson
  *
+ * @author Adam Gibson
  */
-public interface DataSetIterator extends Iterator<DataSet>,Serializable {
+public interface DataSetIterator extends Iterator<DataSet>, Serializable {
 
-	/**
-	 * Like the standard next method but allows a 
-	 * customizable number of examples returned
-	 * @param num the number of examples
-	 * @return the next data applyTransformToDestination
-	 */
-	DataSet next(int num);
+    /**
+     * Like the standard next method but allows a
+     * customizable number of examples returned
+     *
+     * @param num the number of examples
+     * @return the next data applyTransformToDestination
+     */
+    DataSet next(int num);
 
     /**
      * Total examples in the iterator
+     *
      * @return
      */
-	int totalExamples();
+    int totalExamples();
 
     /**
      * Input columns for the dataset
+     *
      * @return
      */
-	int inputColumns();
+    int inputColumns();
 
     /**
      * The number of labels for the dataset
+     *
      * @return
      */
-	int totalOutcomes();
+    int totalOutcomes();
 
     /**
      * Resets the iterator back to the beginning
      */
-	void reset();
+    void reset();
 
     /**
      * Batch size
+     *
      * @return
      */
-	int batch();
+    int batch();
 
     /**
      * The current cursor if applicable
+     *
      * @return
      */
-	int cursor();
+    int cursor();
 
     /**
      * Total number of examples in the dataset
+     *
      * @return
      */
-	int numExamples();
+    int numExamples();
 
 
     /**
      * Set a pre processor
+     *
      * @param preProcessor a pre processor to set
      */
     void setPreProcessor(DataSetPreProcessor preProcessor);
 
-	
+
 }

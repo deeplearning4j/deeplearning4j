@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ops.Op;
 
 /**
  * Sum the components
+ *
  * @author Adam Gibson
  */
 public class Sum extends BaseAccumulation {
@@ -58,14 +59,15 @@ public class Sum extends BaseAccumulation {
     public String name() {
         return "sum";
     }
-    @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
 
-        if(y() != null)
-            return new Sum(xAlongDimension,y.vectorAlongDimension(index,dimension),xAlongDimension.length());
+    @Override
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Sum(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Sum(x.vectorAlongDimension(index,dimension));
+            return new Sum(x.vectorAlongDimension(index, dimension));
 
     }
 }

@@ -24,6 +24,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Sigmoid derivative
+ *
  * @author Adam Gibson
  */
 public class SigmoidDerivative extends BaseTransformOp {
@@ -50,19 +51,19 @@ public class SigmoidDerivative extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        IComplexNumber oneMinus = Nd4j.createComplexNumber(1,1).subi(origin);
+        IComplexNumber oneMinus = Nd4j.createComplexNumber(1, 1).subi(origin);
         return origin.muli(oneMinus);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        IComplexNumber oneMinus = Nd4j.createComplexNumber(1,1).subi(origin);
+        IComplexNumber oneMinus = Nd4j.createComplexNumber(1, 1).subi(origin);
         return origin.muli(oneMinus);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        IComplexNumber oneMinus = Nd4j.createComplexNumber(1,1).subi(origin);
+        IComplexNumber oneMinus = Nd4j.createComplexNumber(1, 1).subi(origin);
         return origin.muli(oneMinus);
     }
 
@@ -88,18 +89,18 @@ public class SigmoidDerivative extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        IComplexNumber oneMinus = Nd4j.createComplexNumber(1,1).subi(origin);
+        IComplexNumber oneMinus = Nd4j.createComplexNumber(1, 1).subi(origin);
         return origin.muli(oneMinus);
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new SigmoidDerivative(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new SigmoidDerivative(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new SigmoidDerivative(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new SigmoidDerivative(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 }

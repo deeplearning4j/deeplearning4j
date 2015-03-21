@@ -25,6 +25,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * Floor elementwise function
+ *
  * @author Adam Gibson
  */
 public class Floor extends BaseTransformOp {
@@ -90,13 +91,13 @@ public class Floor extends BaseTransformOp {
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new Floor(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new Floor(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Floor(xAlongDimension,z.vectorAlongDimension(index,dimension),x.length());
+            return new Floor(xAlongDimension, z.vectorAlongDimension(index, dimension), x.length());
 
     }
 }

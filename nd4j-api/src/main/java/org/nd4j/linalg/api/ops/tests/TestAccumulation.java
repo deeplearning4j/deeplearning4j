@@ -41,7 +41,7 @@ public class TestAccumulation extends BaseAccumulation {
 
     @Override
     public void update(IComplexNumber result) {
-       this.currentComplexResult.addi(result);
+        this.currentComplexResult.addi(result);
     }
 
     @Override
@@ -51,7 +51,7 @@ public class TestAccumulation extends BaseAccumulation {
 
     @Override
     public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0,0);
+        return Nd4j.createComplexNumber(0, 0);
     }
 
     @Override

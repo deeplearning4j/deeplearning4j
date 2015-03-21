@@ -27,11 +27,12 @@ import org.nd4j.linalg.util.ComplexUtil;
 /**
  * Variance with bias correction.
  * Bias can either be divided by n or adjusted with:
- *  (currentResult - (pow(bias, 2.0) / n())) / (n() - 1.0);
+ * (currentResult - (pow(bias, 2.0) / n())) / (n() - 1.0);
+ *
  * @author Adam Gibson
  */
 public class Variance extends BaseAccumulation {
-    private double mean,bias;
+    private double mean, bias;
     private boolean biasCorrected = true;
 
     public Variance(INDArray x, INDArray y, INDArray z, int n) {
@@ -39,11 +40,11 @@ public class Variance extends BaseAccumulation {
     }
 
     public Variance(INDArray x, INDArray y, int n) {
-        this(x,y,x,n);
+        this(x, y, x, n);
     }
 
     public Variance(INDArray x) {
-        this(x,null,x,x.length(),true);
+        this(x, null, x, x.length(), true);
     }
 
     public Variance(INDArray x, INDArray y) {
@@ -53,25 +54,25 @@ public class Variance extends BaseAccumulation {
     public Variance(INDArray x, INDArray y, INDArray z, int n, boolean biasCorrected) {
         super(x, y, z, n);
         this.biasCorrected = biasCorrected;
-        init(x,y,z,n);
+        init(x, y, z, n);
     }
 
     public Variance(INDArray x, INDArray y, int n, boolean biasCorrected) {
         super(x, y, n);
         this.biasCorrected = biasCorrected;
-        init(x,y,z,n);
+        init(x, y, z, n);
     }
 
     public Variance(INDArray x, boolean biasCorrected) {
         super(x);
         this.biasCorrected = biasCorrected;
-        init(x,y,z,n);
+        init(x, y, z, n);
     }
 
     public Variance(INDArray x, INDArray y, boolean biasCorrected) {
         super(x, y);
         this.biasCorrected = biasCorrected;
-        init(x,y,x,x.length());
+        init(x, y, x, x.length());
     }
 
     @Override
@@ -79,8 +80,8 @@ public class Variance extends BaseAccumulation {
         double dev = result.doubleValue() - mean;
         currentResult = currentResult().doubleValue() + FastMath.pow(dev, 2);
 
-        if(numProcessed() == n()) {
-            if(biasCorrected)
+        if (numProcessed() == n()) {
+            if (biasCorrected)
                 currentResult = (currentResult.doubleValue() - (FastMath.pow(bias, 2.0) / n())) / (n() - 1.0);
             else
                 currentResult = currentResult().doubleValue() / (double) n;
@@ -94,8 +95,8 @@ public class Variance extends BaseAccumulation {
         IComplexNumber dev = result.sub(mean);
         currentComplexResult.addi(ComplexUtil.pow(dev, 2));
 
-        if(numProcessed() == n()) {
-            if(biasCorrected)
+        if (numProcessed() == n()) {
+            if (biasCorrected)
                 currentComplexResult = (currentComplexResult.sub(ComplexUtil.pow(Nd4j.createComplexNumber(bias, 0), 2.0).div(Nd4j.createComplexNumber(n(), 0))).div(Nd4j.createComplexNumber(n() - 1.0, 0.0)));
             else currentComplexResult.divi(n - 1);
         }
@@ -110,23 +111,23 @@ public class Variance extends BaseAccumulation {
 
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
 
-        if(y() != null)
-            return new Variance(xAlongDimension,y.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new Variance(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Variance(x.vectorAlongDimension(index,dimension));
+            return new Variance(x.vectorAlongDimension(index, dimension));
 
     }
 
     @Override
-    public void init(INDArray x, INDArray y,INDArray z,int n) {
-        super.init(x, y, z,n);
-        if(biasCorrected)
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        if (biasCorrected)
             this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).currentResult().doubleValue();
         this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).currentResult().doubleValue();
-        this.extraArgs = new Object[]{zero(),bias,mean};
+        this.extraArgs = new Object[]{zero(), bias, mean};
     }
 }

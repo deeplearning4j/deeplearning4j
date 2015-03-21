@@ -39,18 +39,21 @@ public interface DataBuffer extends Serializable {
 
     /**
      * Remove the referenced id if it exists
+     *
      * @param id the id to remove
      */
     void removeReferencing(String id);
 
     /**
      * The referencers pointing to this buffer
+     *
      * @return the references pointing to this buffer
      */
     Collection<String> references();
 
     /**
      * Add a referencing element to this buffer
+     *
      * @param id the id to reference
      */
     void addReferencing(String id);
@@ -267,7 +270,6 @@ public interface DataBuffer extends Serializable {
     void put(int i, int element);
 
 
-
     /**
      * Get the complex float
      *
@@ -291,8 +293,6 @@ public interface DataBuffer extends Serializable {
      * @return the complex number to get
      */
     IComplexNumber getComplex(int i);
-
-
 
 
     /**
@@ -331,8 +331,6 @@ public interface DataBuffer extends Serializable {
     void put(int i, IComplexNumber result);
 
 
-
-
     /**
      * Assign the contents of this buffer
      * to this buffer
@@ -342,30 +340,32 @@ public interface DataBuffer extends Serializable {
     void assign(DataBuffer data);
 
 
-
     /**
      * Assign the given buffers to this buffer
      * based on the given offsets and strides.
      * Note that the offsets and strides must be of equal
      * length to the number of buffers
+     *
      * @param offsets the offsets to use
      * @param strides the strides to use
-     * @param n the number of elements to operate on
+     * @param n       the number of elements to operate on
      * @param buffers the buffers to assign data from
      */
     void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers);
 
     /**
      * Assign the given data buffers to this buffer
+     *
      * @param buffers the buffers to assign
      */
-    void assign(DataBuffer...buffers);
+    void assign(DataBuffer... buffers);
 
     /**
      * Assign the given buffers to this buffer
      * based on the given offsets and strides.
      * Note that the offsets and strides must be of equal
      * length to the number of buffers
+     *
      * @param offsets the offsets to use
      * @param strides the strides to use
      * @param buffers the buffers to assign data from

@@ -32,25 +32,22 @@ import jcuda.NativePointerObject;
 /**
  * Java port of a cublasHandle
  */
-public class cublasHandle extends NativePointerObject
-{
+public class cublasHandle extends NativePointerObject {
     /**
      * Creates a new, uninitialized cublasHandle
      */
-    public cublasHandle()
-    {
+    public cublasHandle() {
     }
 
-     /**
+    /**
      * Returns a String representation of this object.
      *
      * @return A String representation of this object.
      */
     @Override
-    public String toString()
-    {
-        return "cublasHandle["+
-            "nativePointer=0x"+Long.toHexString(getNativePointer())+"]";
+    public String toString() {
+        return "cublasHandle[" +
+                "nativePointer=0x" + Long.toHexString(getNativePointer()) + "]";
     }
 }
 

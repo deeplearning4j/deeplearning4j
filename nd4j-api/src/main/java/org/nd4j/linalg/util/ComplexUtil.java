@@ -27,7 +27,8 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class ComplexUtil {
-    private ComplexUtil() {}
+    private ComplexUtil() {
+    }
 
     /**
      * Return the  sin value of the given complex number
@@ -36,9 +37,10 @@ public class ComplexUtil {
      * @return the absolute value of this complex number
      */
     public static IComplexNumber atan(IComplexNumber num) {
-        Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).atan();
+        Complex c = new Complex(num.realComponent().doubleValue(), num.imaginaryComponent().doubleValue()).atan();
         return Nd4j.createDouble(c.getReal(), c.getImaginary());
     }
+
     /**
      * Return the  sin value of the given complex number
      *
@@ -46,9 +48,10 @@ public class ComplexUtil {
      * @return the absolute value of this complex number
      */
     public static IComplexNumber acos(IComplexNumber num) {
-        Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).acos();
+        Complex c = new Complex(num.realComponent().doubleValue(), num.imaginaryComponent().doubleValue()).acos();
         return Nd4j.createDouble(c.getReal(), c.getImaginary());
     }
+
     /**
      * Return the  sin value of the given complex number
      *
@@ -56,9 +59,10 @@ public class ComplexUtil {
      * @return the absolute value of this complex number
      */
     public static IComplexNumber asin(IComplexNumber num) {
-        Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).asin();
+        Complex c = new Complex(num.realComponent().doubleValue(), num.imaginaryComponent().doubleValue()).asin();
         return Nd4j.createDouble(c.getReal(), c.getImaginary());
     }
+
     /**
      * Return the  sin value of the given complex number
      *
@@ -66,7 +70,7 @@ public class ComplexUtil {
      * @return the absolute value of this complex number
      */
     public static IComplexNumber sin(IComplexNumber num) {
-        Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).sin();
+        Complex c = new Complex(num.realComponent().doubleValue(), num.imaginaryComponent().doubleValue()).sin();
         return Nd4j.createDouble(c.getReal(), c.getImaginary());
     }
 
@@ -174,6 +178,7 @@ public class ComplexUtil {
         return Nd4j.createDouble(c.getReal(), c.getImaginary());
 
     }
+
     /**
      * Return the cos of a complex number
      *
@@ -184,6 +189,7 @@ public class ComplexUtil {
         Complex c = new Complex(num.realComponent().doubleValue(), num.imaginaryComponent().doubleValue()).cos();
         return Nd4j.createDouble(c.getReal(), c.getImaginary());
     }
+
     /**
      * Return the tanh of a complex number
      *
@@ -192,10 +198,11 @@ public class ComplexUtil {
      */
     public static IComplexNumber hardTanh(IComplexNumber num) {
         Complex c = new Complex(num.realComponent().doubleValue(), num.imaginaryComponent().doubleValue()).tanh();
-        if(c.getReal() < -1.0)
-            c = new Complex(-1.0,c.getImaginary());
+        if (c.getReal() < -1.0)
+            c = new Complex(-1.0, c.getImaginary());
         return Nd4j.createDouble(c.getReal(), c.getImaginary());
     }
+
     /**
      * Return the tanh of a complex number
      *

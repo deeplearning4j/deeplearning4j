@@ -17,84 +17,84 @@
 package org.nd4j.linalg.dataset.api.iterator;
 
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.iterator.fetcher.DataSetFetcher;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.iterator.fetcher.DataSetFetcher;
 
 /**
  * Baseline implementation includes
  * control over the data fetcher and some basic
  * getters for metadata
- * @author Adam Gibson
  *
+ * @author Adam Gibson
  */
 public class BaseDatasetIterator implements DataSetIterator {
 
 
-	private static final long serialVersionUID = -116636792426198949L;
-	protected int batch,numExamples;
-	protected DataSetFetcher fetcher;
-	protected DataSetPreProcessor preProcessor;
-	
-	
-	public BaseDatasetIterator(int batch,int numExamples,DataSetFetcher fetcher) {
-		this.batch = batch;
-		if(numExamples < 0)
-			numExamples = fetcher.totalExamples();
-		
-		this.numExamples = numExamples;
-		this.fetcher = fetcher;
-	}
+    private static final long serialVersionUID = -116636792426198949L;
+    protected int batch, numExamples;
+    protected DataSetFetcher fetcher;
+    protected DataSetPreProcessor preProcessor;
 
-	@Override
-	public boolean hasNext() {
-		return fetcher.hasMore() && fetcher.cursor() < numExamples;
-	}
 
-	@Override
-	public DataSet next() {
-		fetcher.fetch(batch);
-		return fetcher.next();
-	}
+    public BaseDatasetIterator(int batch, int numExamples, DataSetFetcher fetcher) {
+        this.batch = batch;
+        if (numExamples < 0)
+            numExamples = fetcher.totalExamples();
 
-	@Override
-	public void remove() {
-		throw new UnsupportedOperationException();
-	}
+        this.numExamples = numExamples;
+        this.fetcher = fetcher;
+    }
 
-	@Override
-	public int totalExamples() {
-		return fetcher.totalExamples();
-	}
+    @Override
+    public boolean hasNext() {
+        return fetcher.hasMore() && fetcher.cursor() < numExamples;
+    }
 
-	@Override
-	public int inputColumns() {
-		return fetcher.inputColumns();
-	}
+    @Override
+    public DataSet next() {
+        fetcher.fetch(batch);
+        return fetcher.next();
+    }
 
-	@Override
-	public int totalOutcomes() {
-		return fetcher.totalOutcomes();
-	}
+    @Override
+    public void remove() {
+        throw new UnsupportedOperationException();
+    }
 
-	@Override
-	public void reset() {
-		fetcher.reset();
-	}
+    @Override
+    public int totalExamples() {
+        return fetcher.totalExamples();
+    }
 
-	@Override
-	public int batch() {
-		return batch;
-	}
+    @Override
+    public int inputColumns() {
+        return fetcher.inputColumns();
+    }
 
-	@Override
-	public int cursor() {
-		return fetcher.cursor();
-	}
+    @Override
+    public int totalOutcomes() {
+        return fetcher.totalOutcomes();
+    }
 
-	@Override
-	public int numExamples() {
-		return numExamples;
-	}
+    @Override
+    public void reset() {
+        fetcher.reset();
+    }
+
+    @Override
+    public int batch() {
+        return batch;
+    }
+
+    @Override
+    public int cursor() {
+        return fetcher.cursor();
+    }
+
+    @Override
+    public int numExamples() {
+        return numExamples;
+    }
 
     /**
      * Set a pre processor
@@ -107,16 +107,13 @@ public class BaseDatasetIterator implements DataSetIterator {
     }
 
     @Override
-	public DataSet next(int num) {
-		fetcher.fetch(num);
-		DataSet next =  fetcher.next();
-        if(preProcessor != null)
+    public DataSet next(int num) {
+        fetcher.fetch(num);
+        DataSet next = fetcher.next();
+        if (preProcessor != null)
             preProcessor.preProcess(next);
         return next;
-	}
-	
-	
+    }
 
-	
 
 }

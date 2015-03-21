@@ -7,14 +7,14 @@ import org.apache.commons.math3.exception.util.LocalizedFormats;
 import org.apache.commons.math3.special.Erf;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.BaseDistribution;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.api.rng.distribution.BaseDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Base distribution derived from apache commons math
  * http://commons.apache.org/proper/commons-math/
- *
+ * <p/>
  * (specifically the {@link org.apache.commons.math3.distribution.NormalDistribution}
  *
  * @author Adam Gibson
@@ -39,20 +39,18 @@ public class NormalDistribution extends BaseDistribution {
      */
     private static final double SQRT2 = FastMath.sqrt(2.0);
     /**
-     * Mean of this distribution.
-     */
-    private  double mean;
-
-    private INDArray means;
-
-    /**
      * Standard deviation of this distribution.
      */
     private final double standardDeviation;
     /**
+     * Mean of this distribution.
+     */
+    private double mean;
+    private INDArray means;
+    /**
      * Inverse cumulative probability accuracy.
      */
-    private  double solverAbsoluteAccuracy;
+    private double solverAbsoluteAccuracy;
 
     public NormalDistribution(Random rng, double standardDeviation, INDArray means) {
         super(rng);
@@ -154,7 +152,7 @@ public class NormalDistribution extends BaseDistribution {
      * {@inheritDoc}
      */
     public double density(double x) {
-        if(means != null)
+        if (means != null)
             throw new IllegalStateException("Unable to sample from more than one mean");
         final double x0 = x - mean;
         final double x1 = x0 / standardDeviation;
@@ -169,7 +167,7 @@ public class NormalDistribution extends BaseDistribution {
      * {@code Double.MIN_VALUE} of 0 or 1.
      */
     public double cumulativeProbability(double x) {
-        if(means != null)
+        if (means != null)
             throw new IllegalStateException("Unable to sample from more than one mean");
         final double dev = x - mean;
         if (FastMath.abs(dev) > 40 * standardDeviation) {
@@ -188,7 +186,7 @@ public class NormalDistribution extends BaseDistribution {
         if (p < 0.0 || p > 1.0) {
             throw new OutOfRangeException(p, 0, 1);
         }
-        if(means != null)
+        if (means != null)
             throw new IllegalStateException("Unable to sample from more than one mean");
 
         return mean + standardDeviation * SQRT2 * Erf.erfInv(2 * p - 1);
@@ -306,7 +304,7 @@ public class NormalDistribution extends BaseDistribution {
      */
     @Override
     public double sample() {
-        if(means != null)
+        if (means != null)
             throw new IllegalStateException("Unable to sample from more than one mean");
         return standardDeviation * random.nextGaussian() + mean;
     }
@@ -315,13 +313,13 @@ public class NormalDistribution extends BaseDistribution {
     public INDArray sample(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
-        if(means != null)
-            for(int i = 0; i < linear.length(); i++) {
-                ret.putScalar(i,standardDeviation * random.nextGaussian() + means.linearView().getDouble(i));
+        if (means != null)
+            for (int i = 0; i < linear.length(); i++) {
+                ret.putScalar(i, standardDeviation * random.nextGaussian() + means.linearView().getDouble(i));
             }
         else
-            for(int i = 0; i < linear.length(); i++) {
-                ret.putScalar(i,standardDeviation * random.nextGaussian() + mean);
+            for (int i = 0; i < linear.length(); i++) {
+                ret.putScalar(i, standardDeviation * random.nextGaussian() + mean);
             }
         return ret;
     }

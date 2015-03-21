@@ -331,7 +331,7 @@ public class MathUtils {
     public static double[] weightsFor(List<Double> vector) {
         /* split coordinate system */
         List<double[]> coords = coordSplit(vector);
-		/* x vals */
+        /* x vals */
         double[] x = coords.get(0);
 		/* y vals */
         double[] y = coords.get(1);

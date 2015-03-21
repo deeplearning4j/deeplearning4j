@@ -40,16 +40,20 @@ import org.apache.commons.math3.util.MathUtils;
  * </ol>
  * </p>
  *
- * @since 2.1
  * @version $Id: SaddlePointExpansion.java 1416643 2012-12-03 19:37:14Z tn $
+ * @since 2.1
  */
 public class SaddlePointExpansion {
 
-    /** 1/2 * log(2 &#960;). */
-    private  static final double HALF_LOG_2_PI = 0.5 * FastMath.log(MathUtils.TWO_PI);
+    /**
+     * 1/2 * log(2 &#960;).
+     */
+    private static final double HALF_LOG_2_PI = 0.5 * FastMath.log(MathUtils.TWO_PI);
 
-    /** exact Stirling expansion error for certain values. */
-    private  static final double[] EXACT_STIRLING_ERRORS = { 0.0, /* 0.0 */
+    /**
+     * exact Stirling expansion error for certain values.
+     */
+    private static final double[] EXACT_STIRLING_ERRORS = {0.0, /* 0.0 */
             0.1534264097200273452913848, /* 0.5 */
             0.0810614667953272582196702, /* 1.0 */
             0.0548141210519176538961390, /* 1.5 */
@@ -138,7 +142,7 @@ public class SaddlePointExpansion {
      * </ol>
      * </p>
      *
-     * @param x the x value.
+     * @param x  the x value.
      * @param mu the average.
      * @return a part of the deviance.
      */

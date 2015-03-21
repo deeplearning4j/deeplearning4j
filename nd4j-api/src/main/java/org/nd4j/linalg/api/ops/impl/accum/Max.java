@@ -23,8 +23,9 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
- *  Calculate the max over a vector
- *  @author Adam Gibson
+ * Calculate the max over a vector
+ *
+ * @author Adam Gibson
  */
 public class Max extends BaseAccumulation {
     public Max(INDArray x, INDArray y, int n) {
@@ -41,14 +42,14 @@ public class Max extends BaseAccumulation {
 
     @Override
     public void update(Number result) {
-        if(result.doubleValue() > currentResult().doubleValue())
+        if (result.doubleValue() > currentResult().doubleValue())
             this.currentResult = result;
         numProcessed++;
     }
 
     @Override
     public void update(IComplexNumber result) {
-        if(result.absoluteValue().doubleValue() > currentResultComplex().absoluteValue().doubleValue())
+        if (result.absoluteValue().doubleValue() > currentResultComplex().absoluteValue().doubleValue())
             this.currentComplexResult = result;
         numProcessed++;
     }
@@ -60,13 +61,12 @@ public class Max extends BaseAccumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y,INDArray z, int n) {
-        super.init(x, y, z,n);
-        if(x instanceof IComplexNDArray) {
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        if (x instanceof IComplexNDArray) {
             IComplexNDArray complexX = (IComplexNDArray) x;
             currentComplexResult = complexX.getComplex(0);
-        }
-        else {
+        } else {
             currentResult = x.getDouble(0);
             initial = x.getDouble(0);
         }
@@ -75,13 +75,13 @@ public class Max extends BaseAccumulation {
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new Max(xAlongDimension,y.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new Max(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Max(x.vectorAlongDimension(index,dimension));
+            return new Max(x.vectorAlongDimension(index, dimension));
 
     }
 }

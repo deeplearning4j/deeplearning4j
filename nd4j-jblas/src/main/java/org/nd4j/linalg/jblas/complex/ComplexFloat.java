@@ -111,12 +111,12 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
 
     @Override
     public IComplexNumber rsubi(IComplexNumber c) {
-        return rsubi(c,this);
+        return rsubi(c, this);
     }
 
     @Override
     public IComplexNumber set(IComplexNumber set) {
-        return set(set.realComponent(),set.imaginaryComponent());
+        return set(set.realComponent(), set.imaginaryComponent());
     }
 
     @Override
@@ -185,7 +185,7 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
 
     @Override
     public IComplexNumber copy(IComplexNumber other) {
-           return other.set(this);
+        return other.set(this);
     }
 
     /**
@@ -323,17 +323,17 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
 
     @Override
     public IComplexNumber rsubi(Number a, IComplexNumber result) {
-        return result.set(a.doubleValue() - realComponent().doubleValue(),imag());
+        return result.set(a.doubleValue() - realComponent().doubleValue(), imag());
     }
 
     @Override
     public IComplexNumber rsubi(Number a) {
-        return rsubi(a,this);
+        return rsubi(a, this);
     }
 
     @Override
     public IComplexNumber rsub(Number r) {
-        return dup().rsubi(r,this);
+        return dup().rsubi(r, this);
     }
 
     /**
@@ -449,17 +449,17 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
 
     @Override
     public IComplexNumber rdivi(IComplexNumber c) {
-        return rdivi(c,this);
+        return rdivi(c, this);
     }
 
     @Override
     public IComplexNumber rdivi(Number v, IComplexNumber result) {
-        return result.set(v.floatValue() / real(),imag());
+        return result.set(v.floatValue() / real(), imag());
     }
 
     @Override
     public IComplexNumber rdivi(Number v) {
-        return rdivi(v,this);
+        return rdivi(v, this);
     }
 
     @Override

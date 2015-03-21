@@ -25,6 +25,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * Cosine elementwise function
+ *
  * @author Adam Gibson
  */
 public class Cos extends BaseTransformOp {
@@ -91,16 +92,15 @@ public class Cos extends BaseTransformOp {
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new Cos(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new Cos(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Cos(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new Cos(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
-
 
 
 }

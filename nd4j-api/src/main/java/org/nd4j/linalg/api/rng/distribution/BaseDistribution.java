@@ -14,7 +14,7 @@ import org.nd4j.linalg.factory.Nd4j;
 /**
  * Base distribution derived from apache commons math
  * http://commons.apache.org/proper/commons-math/
- *
+ * <p/>
  * (specifically the {@link org.apache.commons.math3.distribution.AbstractRealDistribution}
  *
  * @author Adam Gibson
@@ -43,10 +43,9 @@ public abstract class BaseDistribution implements Distribution {
      * takes a value between {@code x0} and {@code x1}, excluding the lower
      * and including the upper endpoint.
      * @throws org.apache.commons.math3.exception.NumberIsTooLargeException if {@code x0 > x1}.
-     *
-     * The default implementation uses the identity
-     * {@code P(x0 < X <= x1) = P(X <= x1) - P(X <= x0)}
-     *
+     *                                                                      <p/>
+     *                                                                      The default implementation uses the identity
+     *                                                                      {@code P(x0 < X <= x1) = P(X <= x1) - P(X <= x0)}
      * @since 3.1
      */
 
@@ -61,7 +60,7 @@ public abstract class BaseDistribution implements Distribution {
 
     /**
      * {@inheritDoc}
-     *
+     * <p/>
      * The default implementation returns
      * <ul>
      * <li>{@link #getSupportLowerBound()} for {@code p = 0},</li>
@@ -185,7 +184,9 @@ public abstract class BaseDistribution implements Distribution {
         return solverAbsoluteAccuracy;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void reseedRandomGenerator(long seed) {
         random.setSeed(seed);
@@ -193,7 +194,7 @@ public abstract class BaseDistribution implements Distribution {
 
     /**
      * {@inheritDoc}
-     *
+     * <p/>
      * The default implementation uses the
      * <a href="http://en.wikipedia.org/wiki/Inverse_transform_sampling">
      * inversion method.
@@ -206,7 +207,7 @@ public abstract class BaseDistribution implements Distribution {
 
     /**
      * {@inheritDoc}
-     *
+     * <p/>
      * The default implementation generates the sample by calling
      * {@link #sample()} in a loop.
      */
@@ -238,8 +239,8 @@ public abstract class BaseDistribution implements Distribution {
     public INDArray sample(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
-        for(int i = 0; i < linear.length(); i++) {
-            ret.putScalar(i,sample());
+        for (int i = 0; i < linear.length(); i++) {
+            ret.putScalar(i, sample());
         }
         return ret;
     }

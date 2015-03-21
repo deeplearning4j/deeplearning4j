@@ -74,20 +74,20 @@ public class ScalarSetValue extends BaseScalarOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-      return setValueIfLess(origin);
+        return setValueIfLess(origin);
     }
 
     private IComplexNumber setValueIfLess(IComplexNumber num) {
-        if(num.realComponent().doubleValue() < this.num.doubleValue())
-            return num.set(this.num.doubleValue(),0.0);
+        if (num.realComponent().doubleValue() < this.num.doubleValue())
+            return num.set(this.num.doubleValue(), 0.0);
         return num;
     }
 
     @Override
     public Op opForDimension(int index, int dimension) {
-        if(num != null)
-            return new ScalarSetValue(x.vectorAlongDimension(index,dimension),num);
+        if (num != null)
+            return new ScalarSetValue(x.vectorAlongDimension(index, dimension), num);
         else
-            return new ScalarSetValue(x.vectorAlongDimension(index, dimension),complexNumber);
+            return new ScalarSetValue(x.vectorAlongDimension(index, dimension), complexNumber);
     }
 }

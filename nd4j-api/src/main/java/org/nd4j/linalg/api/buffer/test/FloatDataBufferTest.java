@@ -23,7 +23,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -32,7 +31,7 @@ import static org.junit.Assert.assertEquals;
  */
 public abstract class FloatDataBufferTest {
 
-     @Before
+    @Before
     public void before() {
         Nd4j.dtype = DataBuffer.FLOAT;
     }
@@ -67,8 +66,6 @@ public abstract class FloatDataBufferTest {
         assertArrayEquals(d1, result, 1e-1f);
         d.destroy();
     }
-
-
 
 
     @Test
@@ -106,15 +103,14 @@ public abstract class FloatDataBufferTest {
     }
 
 
-
     @Test
     public void testAssign() {
         INDArray oneTwo = Nd4j.create(new double[]{1, 2});
-        INDArray threeFour = Nd4j.create(new double[]{3,4});
-        INDArray oneThroughFour = Nd4j.linspace(1,4,4);
+        INDArray threeFour = Nd4j.create(new double[]{3, 4});
+        INDArray oneThroughFour = Nd4j.linspace(1, 4, 4);
         INDArray test = Nd4j.create(4);
-        test.data().assign(oneTwo.data(),threeFour.data());
-        assertEquals(oneThroughFour,test);
+        test.data().assign(oneTwo.data(), threeFour.data());
+        assertEquals(oneThroughFour, test);
     }
 
 

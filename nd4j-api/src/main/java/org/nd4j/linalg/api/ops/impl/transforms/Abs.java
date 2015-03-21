@@ -25,6 +25,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * Abs elementwise function
+ *
  * @author Adam Gibson
  */
 public class Abs extends BaseTransformOp {
@@ -67,7 +68,7 @@ public class Abs extends BaseTransformOp {
 
     @Override
     public float op(float origin, float other) {
-        return  FastMath.abs(origin);
+        return FastMath.abs(origin);
     }
 
     @Override
@@ -91,13 +92,13 @@ public class Abs extends BaseTransformOp {
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new Abs(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new Abs(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Abs(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new Abs(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 }

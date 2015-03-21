@@ -20,7 +20,6 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.core.io.ClassPathResource;
-import static org.junit.Assume.*;
 
 import java.util.Properties;
 

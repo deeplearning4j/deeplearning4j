@@ -29,16 +29,15 @@ package jcublas;
 
 /**
  * Indicates whether the main diagonal of the dense matrix is
- * unity and consequently should not be touched or modified 
+ * unity and consequently should not be touched or modified
  * by the function.
  */
-public class cublasDiagType
-{
+public class cublasDiagType {
     /**
      * The matrix diagonal has non-unit elements
      */
     public static final int CUBLAS_DIAG_NON_UNIT = 0;
-    
+
     /**
      * The matrix diagonal has unit elements
      */
@@ -47,21 +46,22 @@ public class cublasDiagType
     /**
      * Private constructor to prevent instantiation
      */
-    private cublasDiagType(){}
+    private cublasDiagType() {
+    }
 
     /**
      * Returns a string representation of the given constant
      *
      * @return A string representation of the given constant
      */
-    public static String stringFor(int n)
-    {
-        switch (n)
-        {
-            case CUBLAS_DIAG_NON_UNIT: return "CUBLAS_DIAG_NON_UNIT";
-            case CUBLAS_DIAG_UNIT: return "CUBLAS_DIAG_UNIT";
+    public static String stringFor(int n) {
+        switch (n) {
+            case CUBLAS_DIAG_NON_UNIT:
+                return "CUBLAS_DIAG_NON_UNIT";
+            case CUBLAS_DIAG_UNIT:
+                return "CUBLAS_DIAG_UNIT";
         }
-        return "INVALID cublasDiagType: "+n;
+        return "INVALID cublasDiagType: " + n;
     }
 }
 

@@ -24,6 +24,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * Standard deviation (sqrt of variance)
+ *
  * @author Adam Gibson
  */
 public class StandardDeviation extends Variance {
@@ -42,7 +43,7 @@ public class StandardDeviation extends Variance {
     @Override
     public void update(Number result) {
         super.update(result);
-        if(n() == numProcessed()) {
+        if (n() == numProcessed()) {
             currentResult = FastMath.sqrt(currentResult.doubleValue());
         }
     }
@@ -50,8 +51,8 @@ public class StandardDeviation extends Variance {
     @Override
     public void update(IComplexNumber result) {
         super.update(result);
-        if(n() == numProcessed())
-           currentComplexResult = ComplexUtil.sqrt(currentComplexResult);
+        if (n() == numProcessed())
+            currentComplexResult = ComplexUtil.sqrt(currentComplexResult);
 
     }
 
@@ -61,13 +62,13 @@ public class StandardDeviation extends Variance {
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new StandardDeviation(xAlongDimension,y.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new StandardDeviation(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new StandardDeviation(x.vectorAlongDimension(index,dimension));
+            return new StandardDeviation(x.vectorAlongDimension(index, dimension));
 
     }
 }

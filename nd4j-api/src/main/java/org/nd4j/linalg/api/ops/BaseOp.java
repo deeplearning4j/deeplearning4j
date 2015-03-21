@@ -26,27 +26,30 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public abstract class BaseOp implements Op {
 
-    protected INDArray x,y,z;
+    protected INDArray x, y, z;
     protected int n;
     protected int numProcessed;
     protected Object[] extraArgs;
+
     /**
      * Specify an alternative result array
+     *
      * @param x the input
      * @param z the output array
      */
     public BaseOp(INDArray x, INDArray z) {
-        this(x,z,x.length());
+        this(x, z, x.length());
     }
 
     /**
      * Specify an alternative output array
+     *
      * @param x the input
      * @param z the output
      * @param n the number of elements to iterate on
      */
     public BaseOp(INDArray x, INDArray z, int n) {
-        this(x,null,z,n);
+        this(x, null, z, n);
     }
 
 
@@ -55,24 +58,23 @@ public abstract class BaseOp implements Op {
         this.y = y;
         this.z = z;
         this.n = n;
-        init(x,y,z,n);
+        init(x, y, z, n);
     }
 
 
+    /**
+     * An op for one ndarray
+     *
+     * @param x the ndarray
+     */
+    public BaseOp(INDArray x) {
+        this(x, null, x, x.length());
+    }
 
     @Override
     public Object[] extraArgs() {
         return extraArgs;
     }
-
-    /**
-     * An op for one ndarray
-     * @param x the ndarray
-     */
-    public BaseOp(INDArray x) {
-        this(x,null,x,x.length());
-    }
-
 
     @Override
     public INDArray x() {

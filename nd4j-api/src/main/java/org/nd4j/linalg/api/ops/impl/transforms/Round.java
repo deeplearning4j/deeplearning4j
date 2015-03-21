@@ -25,6 +25,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * Rounding function
+ *
  * @author Adam Gibson
  */
 public class Round extends BaseTransformOp {
@@ -86,19 +87,19 @@ public class Round extends BaseTransformOp {
     }
 
 
-
     @Override
     public IComplexNumber op(IComplexNumber origin) {
         return op(origin);
     }
-    @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
 
-        if(y() != null)
-            return new Round(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+    @Override
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Round(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Round(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new Round(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 }

@@ -25,6 +25,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * Arc Tangent elementwise function
+ *
  * @author Adam Gibson
  */
 public class ATan extends BaseTransformOp {
@@ -89,14 +90,15 @@ public class ATan extends BaseTransformOp {
     public IComplexNumber op(IComplexNumber origin) {
         return ComplexUtil.atan(origin);
     }
-    @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
 
-        if(y() != null)
-            return new ATan(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+    @Override
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new ATan(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new ATan(xAlongDimension,z.vectorAlongDimension(index,dimension),x.length());
+            return new ATan(xAlongDimension, z.vectorAlongDimension(index, dimension), x.length());
 
     }
 }

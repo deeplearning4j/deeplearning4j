@@ -34,27 +34,27 @@ public class Pow extends BaseTransformOp {
     public Pow(INDArray x, INDArray z, double pow) {
         super(x, z);
         this.pow = pow;
-        init(x,null,z,x.length());
+        init(x, null, z, x.length());
     }
 
     public Pow(INDArray x, INDArray z, int n, double pow) {
         super(x, z, n);
         this.pow = pow;
-        init(x,null,z,n);
+        init(x, null, z, n);
 
     }
 
     public Pow(INDArray x, INDArray y, INDArray z, int n, double pow) {
         super(x, y, z, n);
         this.pow = pow;
-        init(x,y,z,n);
+        init(x, y, z, n);
 
     }
 
     public Pow(INDArray x, double pow) {
         super(x);
         this.pow = pow;
-        init(x,null,x,x.length());
+        init(x, null, x, x.length());
     }
 
     @Override
@@ -64,17 +64,17 @@ public class Pow extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return ComplexUtil.pow(origin,pow);
+        return ComplexUtil.pow(origin, pow);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return ComplexUtil.pow(origin,pow);
+        return ComplexUtil.pow(origin, pow);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return ComplexUtil.pow(origin,pow);
+        return ComplexUtil.pow(origin, pow);
     }
 
     @Override
@@ -84,12 +84,12 @@ public class Pow extends BaseTransformOp {
 
     @Override
     public double op(double origin, double other) {
-        return  FastMath.pow(origin, pow);
+        return FastMath.pow(origin, pow);
     }
 
     @Override
     public double op(double origin) {
-        return  FastMath.pow(origin, pow);
+        return FastMath.pow(origin, pow);
     }
 
     @Override
@@ -99,18 +99,18 @@ public class Pow extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return ComplexUtil.pow(origin,pow);
+        return ComplexUtil.pow(origin, pow);
     }
 
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new Pow(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length(),pow);
+        if (y() != null)
+            return new Pow(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(), pow);
         else
-            return new Pow(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length(),pow);
+            return new Pow(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(), pow);
 
     }
 

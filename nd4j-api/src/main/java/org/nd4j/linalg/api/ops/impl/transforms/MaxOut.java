@@ -30,7 +30,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class MaxOut extends BaseTransformOp {
 
-    private IComplexNumber maxComplex = Nd4j.createComplexNumber(Double.NaN,Double.NaN);
+    private IComplexNumber maxComplex = Nd4j.createComplexNumber(Double.NaN, Double.NaN);
     private Number max = Double.NaN;
 
     public MaxOut(INDArray x, INDArray z) {
@@ -75,13 +75,13 @@ public class MaxOut extends BaseTransformOp {
     @Override
     public float op(float origin, float other) {
         setMax(extraArgs);
-        return  max.floatValue();
+        return max.floatValue();
     }
 
     @Override
     public double op(double origin, double other) {
         setMax(extraArgs);
-        return  max.doubleValue();
+        return max.doubleValue();
     }
 
     @Override
@@ -103,23 +103,23 @@ public class MaxOut extends BaseTransformOp {
     }
 
     private void setMax(Object[] extraArgs) {
-        if(extraArgs.length < 1)
+        if (extraArgs.length < 1)
             throw new IllegalArgumentException("Please specify a max value");
-        if(Double.isNaN(max.doubleValue()) && extraArgs[0] instanceof Number) {
+        if (Double.isNaN(max.doubleValue()) && extraArgs[0] instanceof Number) {
             max = Double.valueOf(extraArgs[0].toString());
-        }
-        else if(Double.isNaN(maxComplex.realComponent().doubleValue()) && extraArgs[0] instanceof IComplexNumber) {
+        } else if (Double.isNaN(maxComplex.realComponent().doubleValue()) && extraArgs[0] instanceof IComplexNumber) {
             maxComplex = (IComplexNumber) extraArgs[0];
         }
     }
-    @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
 
-        if(y() != null)
-            return new MaxOut(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+    @Override
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new MaxOut(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new MaxOut(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new MaxOut(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 

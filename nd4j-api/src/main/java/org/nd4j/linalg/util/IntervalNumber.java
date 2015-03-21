@@ -41,6 +41,7 @@ public class IntervalNumber implements AbstractNumber {
     public IntervalNumber(double l, double r) {
         this(new BigDecimal(l), new BigDecimal(r));
     }
+
     public IntervalNumber(String l, String r) {
         this(new BigDecimal(l), new BigDecimal(r));
     }

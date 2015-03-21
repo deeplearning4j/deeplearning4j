@@ -25,12 +25,14 @@ public interface ScalarOp extends Op {
 
     /**
      * The normal scalar
+     *
      * @return the scalar
      */
     Number scalar();
 
     /**
      * The complex sscalar
+     *
      * @return
      */
     IComplexNumber complexScalar();

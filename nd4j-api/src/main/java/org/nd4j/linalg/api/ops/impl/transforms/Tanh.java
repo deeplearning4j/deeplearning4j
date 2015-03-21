@@ -26,6 +26,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * Tanh elementwise function
+ *
  * @author Adam Gibson
  */
 public class Tanh extends BaseTransformOp {
@@ -92,16 +93,16 @@ public class Tanh extends BaseTransformOp {
 
     @Override
     public TransformOp derivative() {
-        return new OneMinus(x,y,z,n);
+        return new OneMinus(x, y, z, n);
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
-        if(y() != null)
-            return new Tanh(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
+        if (y() != null)
+            return new Tanh(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Tanh(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new Tanh(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 }

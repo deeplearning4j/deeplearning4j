@@ -527,14 +527,15 @@ public interface IComplexNDArray extends INDArray {
 
     /**
      * Get the imaginary component at the specified index
+     *
      * @param i
      * @return
      */
     double getImag(int i);
 
     /**
-     *
      * Get the real component at the specified index
+     *
      * @param i
      * @return
      */
@@ -581,6 +582,7 @@ public interface IComplexNDArray extends INDArray {
 
     /**
      * Put a scalar ndarray at the specified index
+     *
      * @param i
      * @param element
      * @return

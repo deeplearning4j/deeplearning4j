@@ -25,6 +25,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * Ceiling elementwise function
+ *
  * @author Adam Gibson
  */
 public class Ceil extends BaseTransformOp {
@@ -89,14 +90,15 @@ public class Ceil extends BaseTransformOp {
     public IComplexNumber op(IComplexNumber origin) {
         return ComplexUtil.ceil(origin);
     }
-    @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
 
-        if(y() != null)
-            return new Ceil(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+    @Override
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Ceil(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Ceil(xAlongDimension,z.vectorAlongDimension(index,dimension));
+            return new Ceil(xAlongDimension, z.vectorAlongDimension(index, dimension));
 
     }
 }

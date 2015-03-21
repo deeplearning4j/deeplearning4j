@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ops.Op;
 
 /**
  * Division operation
+ *
  * @author Adam Gibson
  */
 public class DivOp extends BaseTransformOp {
@@ -88,21 +89,21 @@ public class DivOp extends BaseTransformOp {
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new DivOp(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new DivOp(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new DivOp(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new DivOp(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 
 
     @Override
-    public void init(INDArray x, INDArray y,INDArray z, int n) {
-        super.init(x, y, z,n);
-        if(y == null)
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        if (y == null)
             throw new IllegalArgumentException("No components to divide");
     }
 }

@@ -1446,7 +1446,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
 
-
     /**
      * Inserts the element at the specified index
      *
@@ -1465,11 +1464,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         data.put(idx + 1, n.imaginaryComponent().doubleValue());
         return this;
     }
-
-
-
-
-
 
 
     /**

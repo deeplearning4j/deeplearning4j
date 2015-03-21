@@ -25,6 +25,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Stabilization function, forces values to be within a range
+ *
  * @author Adam Gibson
  */
 public class Stabilize extends BaseTransformOp {
@@ -105,7 +106,7 @@ public class Stabilize extends BaseTransformOp {
 
     @Override
     public float op(float origin) {
-       return stabilize(origin);
+        return stabilize(origin);
     }
 
     @Override
@@ -133,12 +134,12 @@ public class Stabilize extends BaseTransformOp {
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
-        if(y() != null)
-            return new Stabilize(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length(),k);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
+        if (y() != null)
+            return new Stabilize(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(), k);
         else
-            return new Stabilize(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length(),k);
+            return new Stabilize(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(), k);
 
     }
 

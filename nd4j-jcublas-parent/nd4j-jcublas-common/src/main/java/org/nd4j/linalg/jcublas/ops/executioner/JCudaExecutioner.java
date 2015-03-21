@@ -37,13 +37,13 @@ import org.nd4j.linalg.jcublas.util.PointerUtil;
 
 /**
  * JCuda executioner.
- *
+ * <p/>
  * Runs ops directly on the gpu
  *
  * @author Adam Gibson
  */
 public class JCudaExecutioner implements OpExecutioner {
-    private Pointer dummyFloatPointer,dummyDoublePointer;
+    private Pointer dummyFloatPointer, dummyDoublePointer;
 
     public JCudaExecutioner() {
         dummyFloatPointer = Pointer.to(KernelFunctions.alloc(new float[]{1}));
@@ -52,15 +52,13 @@ public class JCudaExecutioner implements OpExecutioner {
 
     @Override
     public Op exec(Op op) {
-        if(op instanceof TransformOp) {
+        if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
             invoke(t);
-        }
-        else if(op instanceof Accumulation) {
+        } else if (op instanceof Accumulation) {
             Accumulation acc = (Accumulation) op;
             invoke(acc);
-        }
-        else if(op instanceof ScalarOp) {
+        } else if (op instanceof ScalarOp) {
             ScalarOp sc = (ScalarOp) op;
             invoke(sc);
         }
@@ -73,7 +71,6 @@ public class JCudaExecutioner implements OpExecutioner {
         invoke(op);
         return op.z();
     }
-
 
 
     @Override
@@ -90,17 +87,17 @@ public class JCudaExecutioner implements OpExecutioner {
     @Override
     public Op exec(Op op, int dimension) {
         //only accumulate along a particular dimension
-        if(op instanceof Accumulation) {
+        if (op instanceof Accumulation) {
             Accumulation a = (Accumulation) op;
             return exec(a);
         }
-        for(int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
-            Op op2 = op.opForDimension(i,dimension);
+        for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+            Op op2 = op.opForDimension(i, dimension);
             exec(op2);
-            if(op instanceof TransformOp) {
+            if (op instanceof TransformOp) {
                 TransformOp t = (TransformOp) op;
                 TransformOp t2 = (TransformOp) op2;
-                t.z().vectorAlongDimension(i,dimension).assign(t2.z());
+                t.z().vectorAlongDimension(i, dimension).assign(t2.z());
             }
 
 
@@ -109,16 +106,15 @@ public class JCudaExecutioner implements OpExecutioner {
     }
 
 
-
     @Override
     public INDArray execAndReturn(TransformOp op, int dimension) {
-        for(int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
-            Op op2 = op.opForDimension(i,dimension);
+        for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+            Op op2 = op.opForDimension(i, dimension);
             exec(op2);
-            if(op instanceof TransformOp) {
-                TransformOp t =  op;
+            if (op instanceof TransformOp) {
+                TransformOp t = op;
                 TransformOp t2 = (TransformOp) op2;
-                t.z().vectorAlongDimension(i,dimension).assign(t2.z());
+                t.z().vectorAlongDimension(i, dimension).assign(t2.z());
             }
 
 
@@ -128,30 +124,30 @@ public class JCudaExecutioner implements OpExecutioner {
 
     @Override
     public Accumulation execAndReturn(Accumulation op, int dimension) {
-        return (Accumulation) exec(op,dimension);
+        return (Accumulation) exec(op, dimension);
     }
 
     @Override
     public INDArray execAndReturn(ScalarOp op, int dimension) {
-        return exec(op,dimension).z();
+        return exec(op, dimension).z();
     }
 
     /**
      * Converts the given parameters
      * in to extra arguments to
      * pass to the kernel
+     *
      * @param extraArgs the extra arguments
-     * @param dataType the data type
+     * @param dataType  the data type
      * @return
      */
-    private Pointer toArgs(Object[] extraArgs,String dataType) {
-        if(dataType.equals("double")) {
-            if(extraArgs == null || extraArgs.length < 1)
+    private Pointer toArgs(Object[] extraArgs, String dataType) {
+        if (dataType.equals("double")) {
+            if (extraArgs == null || extraArgs.length < 1)
                 return dummyDoublePointer;
             return Pointer.to(KernelFunctions.alloc(PointerUtil.toDoubles(extraArgs)));
-        }
-        else if(dataType.equals("float")) {
-            if(extraArgs == null || extraArgs.length < 1)
+        } else if (dataType.equals("float")) {
+            if (extraArgs == null || extraArgs.length < 1)
                 return dummyFloatPointer;
             return Pointer.to(KernelFunctions.alloc(PointerUtil.toFloats(extraArgs)));
         }
@@ -164,26 +160,25 @@ public class JCudaExecutioner implements OpExecutioner {
         Pointer xPointer = xBuffer.pointer().withByteOffset(xBuffer.elementSize() * op.x().offset());
         Pointer result;
         int resultLength = 1000;
-        if(op.x().data().dataType() == DataBuffer.DOUBLE) {
+        if (op.x().data().dataType() == DataBuffer.DOUBLE) {
             double[] resultBuffer = new double[resultLength];
-            for(int i = 0; i < resultBuffer.length; i++)
+            for (int i = 0; i < resultBuffer.length; i++)
                 resultBuffer[i] = op.zero().doubleValue();
             result = new Pointer();
             JCuda.cudaMalloc(result, resultLength * Sizeof.DOUBLE);
             JCuda.cudaMemcpy(result, Pointer.to(resultBuffer), resultLength * Sizeof.DOUBLE, cudaMemcpyKind.cudaMemcpyHostToDevice);
 
 
-        }
-        else {
+        } else {
             float[] resultBuffer = new float[resultLength];
-            for(int i = 0; i < resultBuffer.length; i++)
+            for (int i = 0; i < resultBuffer.length; i++)
                 resultBuffer[i] = op.zero().floatValue();
             result = new Pointer();
             JCuda.cudaMalloc(result, resultLength * Sizeof.FLOAT);
             JCuda.cudaMemcpy(result, Pointer.to(resultBuffer), resultLength * Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyHostToDevice);
         }
 
-        if(op.y() != null) {
+        if (op.y() != null) {
             JCudaBuffer yBuffer = (JCudaBuffer) op.y().data();
             Pointer yPointer = yBuffer.pointer().withByteOffset(op.y().offset() * yBuffer.elementSize());
 
@@ -201,13 +196,10 @@ public class JCudaExecutioner implements OpExecutioner {
             );
 
             invokeFunction(op, kernelParams);
-            setResultForOp(op,result);
+            setResultForOp(op, result);
 
 
-
-
-        }
-        else {
+        } else {
             //int n, int xOffset,double *dx,int incx,double result
             Pointer kernelParams = KernelFunctions.constructKernelParameters(
                     Pointer.to(new int[]{op.n()}),
@@ -218,61 +210,55 @@ public class JCudaExecutioner implements OpExecutioner {
                     Pointer.to(result)
             );
 
-            invokeFunction(op,kernelParams);
+            invokeFunction(op, kernelParams);
             setResultForOp(op, result);
-
 
 
         }
 
-        if(result != null) {
+        if (result != null) {
             try {
                 JCuda.cudaFree(result);
-            }catch(Exception e) {
+            } catch (Exception e) {
 
             }
         }
     }
 
 
-
-    private void invokeFunction(Op op,Pointer kernelParams) {
+    private void invokeFunction(Op op, Pointer kernelParams) {
         String functionName = op instanceof TransformOp || op instanceof Accumulation ? op.name() + "_strided" : op.name();
-        CUfunction func =  KernelFunctionLoader.getInstance().getFunction(functionName, op.x().data().dataType() == DataBuffer.DOUBLE ? "double" : "float");
-        if(func == null)
+        CUfunction func = KernelFunctionLoader.getInstance().getFunction(functionName, op.x().data().dataType() == DataBuffer.DOUBLE ? "double" : "float");
+        if (func == null)
             throw new IllegalArgumentException("Function " + functionName + " with data type " + (op.x().data().dataType() == DataBuffer.DOUBLE ? "double does not exist" : "float does not exist"));
         int blocks = PointerUtil.getNumBlocks(op.n(), KernelFunctions.BLOCKS, KernelFunctions.THREADS);
-        int threads = PointerUtil.getNumThreads(op.n(),KernelFunctions.THREADS);
+        int threads = PointerUtil.getNumThreads(op.n(), KernelFunctions.THREADS);
 
         KernelFunctions.invoke(
-               blocks,
-               threads,
+                blocks,
+                threads,
                 func
-                , kernelParams,getType(op));
+                , kernelParams, getType(op));
 
 
     }
 
 
-
-
-    private void setResultForOp(Accumulation acc,Pointer resultPointer) {
+    private void setResultForOp(Accumulation acc, Pointer resultPointer) {
         JCudaBuffer buff = (JCudaBuffer) acc.x().data();
 
-        if(buff.dataType() == DataBuffer.DOUBLE) {
+        if (buff.dataType() == DataBuffer.DOUBLE) {
             double[] data = new double[1];
             Pointer get = Pointer.to(data);
-            JCuda.cudaMemcpy(get,resultPointer, Sizeof.DOUBLE, cudaMemcpyKind.cudaMemcpyDeviceToHost);
+            JCuda.cudaMemcpy(get, resultPointer, Sizeof.DOUBLE, cudaMemcpyKind.cudaMemcpyDeviceToHost);
             acc.setCurrentResult(data[0]);
-        }
-        else {
+        } else {
             float[] data = new float[1];
             Pointer get = Pointer.to(data);
             JCuda.cudaMemcpy(get, resultPointer, Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyDeviceToHost);
             acc.setCurrentResult(data[0]);
         }
     }
-
 
 
     private void invoke(ScalarOp op) {
@@ -282,7 +268,7 @@ public class JCudaExecutioner implements OpExecutioner {
         JCudaBuffer zBuffer = (JCudaBuffer) op.z().data();
         Pointer zPointer = zBuffer.pointer().withByteOffset(zBuffer.elementSize() * op.z().offset());
 
-        if(op.y() != null) {
+        if (op.y() != null) {
             JCudaBuffer yBuffer = (JCudaBuffer) op.y().data();
             Pointer yPointer = yBuffer.pointer().withByteOffset(yBuffer.elementSize() * op.y().offset());
             Pointer kernelParams = KernelFunctions.constructKernelParameters(
@@ -297,18 +283,10 @@ public class JCudaExecutioner implements OpExecutioner {
                     Pointer.to(zPointer)
             );
 
-            invokeFunction(op,kernelParams);
+            invokeFunction(op, kernelParams);
 
 
-
-
-
-
-
-
-        }
-
-        else {
+        } else {
             //int n,int idx,double *dy,int incy,double *result
             //int n, int idx,double dx,double *dy,int incy,double *result
 
@@ -322,15 +300,12 @@ public class JCudaExecutioner implements OpExecutioner {
                     Pointer.to(zPointer)
             );
 
-            invokeFunction(op,kernelParams);
-
+            invokeFunction(op, kernelParams);
 
 
         }
 
     }
-
-
 
 
     private String getType(Op op) {
@@ -345,7 +320,7 @@ public class JCudaExecutioner implements OpExecutioner {
         JCudaBuffer zBuffer = (JCudaBuffer) op.z().data();
         Pointer zPointer = zBuffer.pointer().withByteOffset(zBuffer.elementSize() * op.z().offset());
 
-        if(op.y() != null) {
+        if (op.y() != null) {
             JCudaBuffer yBuffer = (JCudaBuffer) op.y().data();
             Pointer yPointer = yBuffer.pointer().withByteOffset(op.y().offset() * yBuffer.elementSize());
             /**
@@ -365,20 +340,14 @@ public class JCudaExecutioner implements OpExecutioner {
             params[4] = Pointer.to(yPointer);
             params[5] = Pointer.to(new int[]{op.x().majorStride()});
             params[6] = Pointer.to(new int[]{op.y().majorStride()});
-            params[7] = toArgs(op.extraArgs(),getType(op));
+            params[7] = toArgs(op.extraArgs(), getType(op));
             params[8] = Pointer.to(zPointer);
 
             Pointer kernelParameters = KernelFunctions.constructKernelParameters(params);
-            invokeFunction(op,kernelParameters);
+            invokeFunction(op, kernelParameters);
 
 
-        }
-
-
-
-
-
-        else {
+        } else {
             //int n,int idx,double *dy,int incy,double *result
             Pointer kernelParams = KernelFunctions.constructKernelParameters(
                     Pointer.to(new int[]{op.n()}),
@@ -389,8 +358,7 @@ public class JCudaExecutioner implements OpExecutioner {
                     Pointer.to(zPointer)
             );
 
-            invokeFunction(op,kernelParams);
-
+            invokeFunction(op, kernelParams);
 
 
         }
@@ -398,13 +366,12 @@ public class JCudaExecutioner implements OpExecutioner {
     }
 
 
-
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        if(dummyDoublePointer != null)
+        if (dummyDoublePointer != null)
             JCublas.cublasFree(dummyDoublePointer);
-        if(dummyFloatPointer != null)
+        if (dummyFloatPointer != null)
             JCublas.cublasFree(dummyFloatPointer);
     }
 }

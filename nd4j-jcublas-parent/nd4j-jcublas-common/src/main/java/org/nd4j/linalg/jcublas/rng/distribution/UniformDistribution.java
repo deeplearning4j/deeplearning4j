@@ -16,7 +16,7 @@ import org.nd4j.linalg.jcublas.rng.JcudaRandom;
  * @author Adam Gibson
  */
 public class UniformDistribution extends BaseJCudaDistribution {
-    private double upper,lower;
+    private double upper, lower;
 
     public UniformDistribution(JcudaRandom random, double upper, double lower) {
         super(random);
@@ -95,9 +95,11 @@ public class UniformDistribution extends BaseJCudaDistribution {
     }
 
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public double sample()  {
+    public double sample() {
         final double u = random.nextDouble();
         return u * upper + (1 - u) * lower;
     }
@@ -105,7 +107,7 @@ public class UniformDistribution extends BaseJCudaDistribution {
     @Override
     public double[] sample(int sampleSize) {
         CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(sampleSize);
-        doSampleUniformDouble(buffer.pointer(),lower,upper,buffer.length());
+        doSampleUniformDouble(buffer.pointer(), lower, upper, buffer.length());
         double[] buffer2 = buffer.asDouble();
         buffer.destroy();
         return buffer2;
@@ -115,10 +117,10 @@ public class UniformDistribution extends BaseJCudaDistribution {
     public INDArray sample(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) ret.data();
-        if(buffer.dataType() == DataBuffer.FLOAT)
-            doSampleUniform(buffer.pointer(),(float) lower,(float) upper,buffer.length());
-        else if(buffer.dataType() == DataBuffer.DOUBLE)
-            doSampleUniformDouble(buffer.pointer(), lower,upper,buffer.length());
+        if (buffer.dataType() == DataBuffer.FLOAT)
+            doSampleUniform(buffer.pointer(), (float) lower, (float) upper, buffer.length());
+        else if (buffer.dataType() == DataBuffer.DOUBLE)
+            doSampleUniformDouble(buffer.pointer(), lower, upper, buffer.length());
 
         return ret;
     }

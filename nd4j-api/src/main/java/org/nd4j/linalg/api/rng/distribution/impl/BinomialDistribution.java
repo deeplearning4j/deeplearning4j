@@ -15,16 +15,20 @@ import org.nd4j.linalg.factory.Nd4j;
 /**
  * Base distribution derived from apache commons math
  * http://commons.apache.org/proper/commons-math/
- *
+ * <p/>
  * (specifically the {@link org.apache.commons.math3.distribution.BinomialDistribution}
  *
  * @author Adam Gibson
  */
 public class BinomialDistribution extends BaseDistribution {
-    /** The number of trials. */
+    /**
+     * The number of trials.
+     */
     private final int numberOfTrials;
-    /** The probability of success. */
-    private  double probabilityOfSuccess;
+    /**
+     * The probability of success.
+     */
+    private double probabilityOfSuccess;
 
     private INDArray p;
 
@@ -33,9 +37,9 @@ public class BinomialDistribution extends BaseDistribution {
      * probability of success.
      *
      * @param trials Number of trials.
-     * @param p Probability of success.
+     * @param p      Probability of success.
      * @throws org.apache.commons.math3.exception.NotPositiveException if {@code trials < 0}.
-     * @throws org.apache.commons.math3.exception.OutOfRangeException if {@code p < 0} or {@code p > 1}.
+     * @throws org.apache.commons.math3.exception.OutOfRangeException  if {@code p < 0} or {@code p > 1}.
      */
     public BinomialDistribution(int trials, double p) {
         this(Nd4j.getRandom(), trials, p);
@@ -44,11 +48,11 @@ public class BinomialDistribution extends BaseDistribution {
     /**
      * Creates a binomial distribution.
      *
-     * @param rng Random number generator.
+     * @param rng    Random number generator.
      * @param trials Number of trials.
-     * @param p Probability of success.
+     * @param p      Probability of success.
      * @throws org.apache.commons.math3.exception.NotPositiveException if {@code trials < 0}.
-     * @throws org.apache.commons.math3.exception.OutOfRangeException if {@code p < 0} or {@code p > 1}.
+     * @throws org.apache.commons.math3.exception.OutOfRangeException  if {@code p < 0} or {@code p > 1}.
      * @since 3.1
      */
     public BinomialDistribution(Random rng,
@@ -92,7 +96,9 @@ public class BinomialDistribution extends BaseDistribution {
         return probabilityOfSuccess;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public double probability(int x) {
 
         double ret;
@@ -106,7 +112,9 @@ public class BinomialDistribution extends BaseDistribution {
         return ret;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public double cumulativeProbability(int x) {
 
         double ret;
@@ -130,12 +138,12 @@ public class BinomialDistribution extends BaseDistribution {
     public double cumulativeProbability(double x) {
 
         double ret;
-        if(x < 0) {
+        if (x < 0) {
             ret = 0.0D;
-        } else if(x >= this.numberOfTrials) {
+        } else if (x >= this.numberOfTrials) {
             ret = 1.0D;
         } else {
-            ret = 1.0D - Beta.regularizedBeta(this.probabilityOfSuccess, x + 1.0D,(this.numberOfTrials - x));
+            ret = 1.0D - Beta.regularizedBeta(this.probabilityOfSuccess, x + 1.0D, (this.numberOfTrials - x));
         }
 
         return ret;
@@ -148,7 +156,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     *
+     * <p/>
      * For {@code n} trials and probability parameter {@code p}, the mean is
      * {@code n * p}.
      */
@@ -159,7 +167,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     *
+     * <p/>
      * For {@code n} trials and probability parameter {@code p}, the variance is
      * {@code n * p * (1 - p)}.
      */
@@ -171,7 +179,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     *
+     * <p/>
      * The lower bound of the support is always 0 except for the probability
      * parameter {@code p = 1}.
      *
@@ -185,7 +193,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     *
+     * <p/>
      * The upper bound of the support is the number of trials except for the
      * probability parameter {@code p = 0}.
      *
@@ -209,7 +217,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     *
+     * <p/>
      * The support of this distribution is connected.
      *
      * @return {@code true}
@@ -227,15 +235,15 @@ public class BinomialDistribution extends BaseDistribution {
     public INDArray sample(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
-        if(p != null)
-            for(int i = 0; i < linear.length(); i++) {
-                org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(),numberOfTrials,p.linearView().getDouble(i));
-                ret.putScalar(i,binomialDistribution.sample());
+        if (p != null)
+            for (int i = 0; i < linear.length(); i++) {
+                org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(), numberOfTrials, p.linearView().getDouble(i));
+                ret.putScalar(i, binomialDistribution.sample());
             }
         else
-            for(int i = 0; i < linear.length(); i++) {
-                org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(),numberOfTrials,probabilityOfSuccess);
-                ret.putScalar(i,binomialDistribution.sample());
+            for (int i = 0; i < linear.length(); i++) {
+                org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(), numberOfTrials, probabilityOfSuccess);
+                ret.putScalar(i, binomialDistribution.sample());
             }
         return ret;
     }

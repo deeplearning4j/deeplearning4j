@@ -26,6 +26,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * The max absolute value
+ *
  * @author Adam Gibson
  */
 public class NormMax extends BaseAccumulation {
@@ -48,14 +49,14 @@ public class NormMax extends BaseAccumulation {
     @Override
     public void update(Number result) {
         double abs = FastMath.abs(result.doubleValue());
-        currentResult = abs  > currentResult.doubleValue() ? abs : currentResult();
+        currentResult = abs > currentResult.doubleValue() ? abs : currentResult();
         numProcessed++;
     }
 
     @Override
     public void update(IComplexNumber result) {
         IComplexNumber abs = ComplexUtil.abs(result);
-        if(abs.absoluteValue().doubleValue() > currentComplexResult.absoluteValue().doubleValue())
+        if (abs.absoluteValue().doubleValue() > currentComplexResult.absoluteValue().doubleValue())
             currentComplexResult = abs;
         numProcessed++;
     }
@@ -67,7 +68,7 @@ public class NormMax extends BaseAccumulation {
 
     @Override
     public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0,0.0);
+        return Nd4j.createComplexNumber(0.0, 0.0);
     }
 
     @Override
@@ -76,13 +77,13 @@ public class NormMax extends BaseAccumulation {
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new NormMax(xAlongDimension,y.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new NormMax(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new NormMax(x.vectorAlongDimension(index,dimension));
+            return new NormMax(x.vectorAlongDimension(index, dimension));
 
     }
 }

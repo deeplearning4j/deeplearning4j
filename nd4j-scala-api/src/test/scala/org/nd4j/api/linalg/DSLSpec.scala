@@ -17,12 +17,11 @@
 package org.nd4j.api.linalg
 
 import org.junit.runner.RunWith
+import org.nd4j.api.linalg.DSL._
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.{Matchers, FlatSpec}
-
-import DSL._
+import org.scalatest.{FlatSpec, Matchers}
 
 @RunWith(classOf[JUnitRunner])
 class DSLSpec extends FlatSpec with Matchers {
@@ -44,7 +43,7 @@ class DSLSpec extends FlatSpec with Matchers {
 
     // Verify that we are working with regular old INDArray objects
     nd2 match {
-      case i: INDArray =>  // do nothing
+      case i: INDArray => // do nothing
       case _ => fail("Expect our object to be an INDArray")
     }
 

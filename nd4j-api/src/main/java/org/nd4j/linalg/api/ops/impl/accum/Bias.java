@@ -36,7 +36,7 @@ public class Bias extends BaseAccumulation {
     }
 
     public Bias(INDArray x, INDArray y, int n) {
-        this(x,y,x,n);
+        this(x, y, x, n);
     }
 
     public Bias(INDArray x) {
@@ -54,13 +54,13 @@ public class Bias extends BaseAccumulation {
 
     @Override
     public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
 
-        if(y() != null)
-            return new Bias(xAlongDimension,y.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new Bias(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Bias(x.vectorAlongDimension(index,dimension));
+            return new Bias(x.vectorAlongDimension(index, dimension));
     }
 
     @Override
@@ -89,10 +89,10 @@ public class Bias extends BaseAccumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y,INDArray z, int n) {
-        super.init(x, y,z, n);
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
         this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).currentResult().doubleValue();
-        this.extraArgs = new Object[]{zero(),mean};
+        this.extraArgs = new Object[]{zero(), mean};
 
     }
 

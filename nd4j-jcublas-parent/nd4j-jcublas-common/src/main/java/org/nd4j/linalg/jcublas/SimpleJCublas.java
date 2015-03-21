@@ -44,7 +44,7 @@ import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 public class SimpleJCublas {
 
     private static boolean init = false;
-    private static  cublasHandle handle = new cublasHandle();
+    private static cublasHandle handle = new cublasHandle();
 
 
     static {
@@ -72,6 +72,7 @@ public class SimpleJCublas {
 
     /**
      * The cublas handle
+     *
      * @return the handle used for cublas
      */
     public static cublasHandle handle() {
@@ -406,20 +407,20 @@ public class SimpleJCublas {
         Pointer cBPointer = getPointer(B);
         Pointer cCPointer = getPointer(C);
 
-            JCublas.cublasSgemm(
-                    'n', //trans
-                    'n',
-                    C.rows(),  // m
-                    C.columns(), // n
-                    A.columns(), //k,
-                    alpha,
-                    cAPointer, // A
-                    A.rows(),  // lda
-                    cBPointer, // x
-                    B.rows(), // ldb
-                    beta,  // beta
-                    cCPointer, // y
-                    C.rows()); // incy
+        JCublas.cublasSgemm(
+                'n', //trans
+                'n',
+                C.rows(),  // m
+                C.columns(), // n
+                A.columns(), //k,
+                alpha,
+                cAPointer, // A
+                A.rows(),  // lda
+                cBPointer, // x
+                B.rows(), // ldb
+                beta,  // beta
+                cCPointer, // y
+                C.rows()); // incy
 
         return C;
 
@@ -464,16 +465,14 @@ public class SimpleJCublas {
 
 
         JCudaBuffer buff = (JCudaBuffer) x.data();
-        if(x.majorStride() == 2 && y.majorStride() == 2)
+        if (x.majorStride() == 2 && y.majorStride() == 2)
             JCuda.cudaMemcpy(
                     yCPointer
                     , xCPointer
                     , x.length() * buff.elementSize() * 2
                     , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
         else
-            Nd4j.getExecutioner().exec(new CopyOp(x,y,y,x.length()));
-
-
+            Nd4j.getExecutioner().exec(new CopyOp(x, y, y, x.length()));
 
 
     }
@@ -568,14 +567,13 @@ public class SimpleJCublas {
      * @return
      */
     public static double nrm2(INDArray x) {
-        if(x.data().dataType() == DataBuffer.FLOAT) {
+        if (x.data().dataType() == DataBuffer.FLOAT) {
             Pointer xCPointer = getPointer(x);
 
 
             float normal2 = JCublas.cublasSnrm2(x.length(), xCPointer, 1);
             return normal2;
-        }
-        else if(x.data().dataType() == DataBuffer.DOUBLE) {
+        } else if (x.data().dataType() == DataBuffer.DOUBLE) {
             Pointer xCPointer = getPointer(x);
             double normal2 = JCublas.cublasDnrm2(x.length(), xCPointer, 1);
             return normal2;
@@ -597,15 +595,14 @@ public class SimpleJCublas {
 
         Pointer xCPointer = getPointer(x);
 
-        if(x.data().dataType() == DataBuffer.FLOAT) {
+        if (x.data().dataType() == DataBuffer.FLOAT) {
             int max = JCublas.cublasIsamax(
                     x.length(),
                     xCPointer,
                     x.majorStride());
 
             return max - 1;
-        }
-        else if(x.data().dataType() == DataBuffer.DOUBLE) {
+        } else if (x.data().dataType() == DataBuffer.DOUBLE) {
             int max = JCublas.cublasIdamax(
                     x.length(),
                     xCPointer,
@@ -622,8 +619,8 @@ public class SimpleJCublas {
      * And and scale by the given scalar da
      *
      * @param da alpha
-     * @param A the element to add
-     * @param B the matrix to add to
+     * @param A  the element to add
+     * @param B  the matrix to add to
      */
     public static void axpy(float da, INDArray A, INDArray B) {
 
@@ -639,7 +636,6 @@ public class SimpleJCublas {
                 A.majorStride(),
                 xBPointer,
                 B.majorStride());
-
 
 
     }
@@ -753,14 +749,14 @@ public class SimpleJCublas {
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
         JCudaBuffer buffer = (JCudaBuffer) x.data();
-        if(x.majorStride() == 1 && y.majorStride() == 1)
+        if (x.majorStride() == 1 && y.majorStride() == 1)
             JCuda.cudaMemcpy(
                     yCPointer
                     , xCPointer
                     , x.length() * buffer.elementSize()
                     , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
         else
-            Nd4j.getExecutioner().exec(new CopyOp(x,y,y,x.length()));
+            Nd4j.getExecutioner().exec(new CopyOp(x, y, y, x.length()));
 
     }
 

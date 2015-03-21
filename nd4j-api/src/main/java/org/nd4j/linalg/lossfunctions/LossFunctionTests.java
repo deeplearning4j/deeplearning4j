@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import static org.junit.Assert.assertEquals;
 
 /**
- *
  * Testing loss function
  *
  * @author Adam Gibson
@@ -33,9 +32,6 @@ import static org.junit.Assert.assertEquals;
 public abstract class LossFunctionTests {
 
     private static Logger log = LoggerFactory.getLogger(LossFunctionTests.class);
-
-
-
 
 
     @Test

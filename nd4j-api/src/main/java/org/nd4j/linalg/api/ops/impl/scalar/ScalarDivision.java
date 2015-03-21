@@ -22,8 +22,9 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
- *  Scalar division
- *  @author Adam Gibson
+ * Scalar division
+ *
+ * @author Adam Gibson
  */
 public class ScalarDivision extends BaseScalarOp {
     public ScalarDivision(INDArray x, INDArray y, INDArray z, int n, Number num) {
@@ -49,21 +50,21 @@ public class ScalarDivision extends BaseScalarOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        if(complexNumber != null)
-            return origin .div(complexNumber);
+        if (complexNumber != null)
+            return origin.div(complexNumber);
         return complexNumber.div(num);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        if(complexNumber != null)
-            return origin .div(complexNumber);
+        if (complexNumber != null)
+            return origin.div(complexNumber);
         return complexNumber.div(num);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        if(complexNumber != null)
+        if (complexNumber != null)
             return origin.div(complexNumber);
         return complexNumber.div(num);
     }
@@ -90,16 +91,16 @@ public class ScalarDivision extends BaseScalarOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        if(complexNumber != null)
+        if (complexNumber != null)
             return origin.div(complexNumber);
         return complexNumber.div(num);
     }
 
     @Override
     public Op opForDimension(int index, int dimension) {
-        if(num != null)
-            return new ScalarDivision(x.vectorAlongDimension(index,dimension),num);
+        if (num != null)
+            return new ScalarDivision(x.vectorAlongDimension(index, dimension), num);
         else
-            return new ScalarDivision(x.vectorAlongDimension(index, dimension),complexNumber);
+            return new ScalarDivision(x.vectorAlongDimension(index, dimension), complexNumber);
     }
 }

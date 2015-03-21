@@ -22,8 +22,9 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
- *  Scalar multiplication
- *  @author Adam Gibson
+ * Scalar multiplication
+ *
+ * @author Adam Gibson
  */
 public class ScalarMultiplication extends BaseScalarOp {
     public ScalarMultiplication(INDArray x, INDArray y, INDArray z, int n, Number num) {
@@ -49,22 +50,22 @@ public class ScalarMultiplication extends BaseScalarOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        if(complexNumber != null)
-            return origin .mul(complexNumber);
+        if (complexNumber != null)
+            return origin.mul(complexNumber);
         return complexNumber.mul(num);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        if(complexNumber != null)
-            return origin .mul(complexNumber);
+        if (complexNumber != null)
+            return origin.mul(complexNumber);
         return complexNumber.mul(num);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        if(complexNumber != null)
-            return origin .mul(complexNumber);
+        if (complexNumber != null)
+            return origin.mul(complexNumber);
         return complexNumber.mul(num);
     }
 
@@ -90,16 +91,16 @@ public class ScalarMultiplication extends BaseScalarOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        if(complexNumber != null)
-            return origin .mul(complexNumber);
+        if (complexNumber != null)
+            return origin.mul(complexNumber);
         return complexNumber.mul(num);
     }
 
     @Override
     public Op opForDimension(int index, int dimension) {
-        if(num != null)
-            return new ScalarMultiplication(x.vectorAlongDimension(index,dimension),num);
+        if (num != null)
+            return new ScalarMultiplication(x.vectorAlongDimension(index, dimension), num);
         else
-            return new ScalarMultiplication(x.vectorAlongDimension(index, dimension),complexNumber);
+            return new ScalarMultiplication(x.vectorAlongDimension(index, dimension), complexNumber);
     }
 }

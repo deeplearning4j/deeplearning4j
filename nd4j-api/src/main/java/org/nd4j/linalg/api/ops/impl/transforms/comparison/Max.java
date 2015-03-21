@@ -25,6 +25,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Max function
+ *
  * @author Adam Gibson
  */
 public class Max extends BaseTransformOp {
@@ -52,13 +53,13 @@ public class Max extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
         double val = origin.absoluteValue().doubleValue();
-        return val < other ? origin : Nd4j.createComplexNumber(other,0.0);
+        return val < other ? origin : Nd4j.createComplexNumber(other, 0.0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
         float val = origin.absoluteValue().floatValue();
-        return val < other ? origin : Nd4j.createComplexNumber(other,0.0);
+        return val < other ? origin : Nd4j.createComplexNumber(other, 0.0);
 
     }
 
@@ -93,18 +94,14 @@ public class Max extends BaseTransformOp {
     }
 
 
-
-
-
-
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new Max(xAlongDimension,y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new Max(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new  Max(xAlongDimension,z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new Max(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 }

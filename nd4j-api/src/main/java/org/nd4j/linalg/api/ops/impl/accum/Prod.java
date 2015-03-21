@@ -24,6 +24,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Prod the components
+ *
  * @author Adam Gibson
  */
 public class Prod extends BaseAccumulation {
@@ -51,7 +52,7 @@ public class Prod extends BaseAccumulation {
 
     @Override
     public void update(IComplexNumber result) {
-         currentComplexResult.muli(result);
+        currentComplexResult.muli(result);
         numProcessed++;
     }
 
@@ -62,21 +63,22 @@ public class Prod extends BaseAccumulation {
 
     @Override
     public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(1.0,0.0);
+        return Nd4j.createComplexNumber(1.0, 0.0);
     }
 
     @Override
     public String name() {
         return "prod";
     }
-    @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
 
-        if(y() != null)
-            return new Prod(xAlongDimension,y.vectorAlongDimension(index,dimension),xAlongDimension.length());
+    @Override
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Prod(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Prod(x.vectorAlongDimension(index,dimension));
+            return new Prod(x.vectorAlongDimension(index, dimension));
 
     }
 

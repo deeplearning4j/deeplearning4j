@@ -26,6 +26,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Sigmoid function
+ *
  * @author Adam Gibson
  */
 public class Sigmoid extends BaseTransformOp {
@@ -105,7 +106,7 @@ public class Sigmoid extends BaseTransformOp {
 
     @Override
     public TransformOp derivative() {
-        return new SigmoidDerivative(x,y,z,n);
+        return new SigmoidDerivative(x, y, z, n);
     }
 
     private IComplexNumber sigmoid(IComplexNumber number) {
@@ -116,13 +117,13 @@ public class Sigmoid extends BaseTransformOp {
     }
 
     @Override
-    public Op opForDimension(int index,int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index,dimension);
+    public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if(y() != null)
-            return new Sigmoid(x.vectorAlongDimension(index,dimension),y.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+        if (y() != null)
+            return new Sigmoid(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Sigmoid(x.vectorAlongDimension(index,dimension),z.vectorAlongDimension(index,dimension),xAlongDimension.length());
+            return new Sigmoid(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 

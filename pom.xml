@@ -124,7 +124,8 @@
         <module>nd4j-jdbc</module>
         <module>nd4j-netlib-blas</module>
         <module>nd4j-jcublas-parent</module>
-          <module>nd4j-scala-api</module>
+        <module>nd4j-scala-api</module>
+        <module>nd4j-instrumentation</module>
     </modules>
 
     <properties>

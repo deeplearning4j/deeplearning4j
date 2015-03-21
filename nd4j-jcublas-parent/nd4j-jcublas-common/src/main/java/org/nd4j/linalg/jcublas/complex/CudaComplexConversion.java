@@ -31,34 +31,38 @@ public class CudaComplexConversion {
 
     /**
      * Create a complex doube from a cuda complex double
+     *
      * @param cuDoubleComplex the double to create from
      * @return the created double
      */
     public static IComplexDouble toCuDouble(cuDoubleComplex cuDoubleComplex) {
-        return Nd4j.createDouble(cuDoubleComplex.x,cuDoubleComplex.y);
+        return Nd4j.createDouble(cuDoubleComplex.x, cuDoubleComplex.y);
     }
 
     /**
      * Create a complex float from a cuda float
+     *
      * @param cuComplex the cuda float to convert
      * @return the create float
      */
     public static IComplexFloat toCuFloat(cuComplex cuComplex) {
-        return Nd4j.createFloat(cuComplex.x,cuComplex.y);
+        return Nd4j.createFloat(cuComplex.x, cuComplex.y);
     }
 
     /**
      * Convert a complex float to a cuda complex float
+     *
      * @param float1 the float to convert
      * @return
      */
     public static cuComplex toComplex(IComplexFloat float1) {
-        return cuComplex.cuCmplx(float1.realComponent().floatValue(),float1.imaginaryComponent().floatValue());
+        return cuComplex.cuCmplx(float1.realComponent().floatValue(), float1.imaginaryComponent().floatValue());
     }
 
 
     /**
      * Convert a complex double to a cuda complex double
+     *
      * @param num the number to convert
      * @return the cuda complex double
      */

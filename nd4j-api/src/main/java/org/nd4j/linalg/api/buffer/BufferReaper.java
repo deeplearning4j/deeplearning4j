@@ -14,12 +14,12 @@ import java.util.concurrent.atomic.AtomicLong;
  * The solution is as follows:
  * Given an ndarrays's id, pass the id
  * as a referencing item to the buffer.
- *
+ * <p/>
  * The buffer knows what items are referencing it
  * without directly holding a reference to the object itself.
- *
+ * <p/>
  * The major reason we need to do this is because of how reference counting works.
- *
+ * <p/>
  * When we do reference counting, we don't want the garbage collector to be
  * tricked in to thinking that the object is still being used when in reality its a circular reference.
  * This id mechanism allows tracking while still allowing the GC to properly mark items
@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class BufferReaper extends Thread {
     private ReferenceQueue<INDArray> queue;
     private AtomicLong ranFinals;
+
     public BufferReaper(ReferenceQueue<INDArray> queue) {
         init(queue);
     }
@@ -81,12 +82,12 @@ public class BufferReaper extends Thread {
     private void runFinalize() {
         long curr = System.currentTimeMillis();
         long old = ranFinals.get();
-        if(old < 0)
+        if (old < 0)
             ranFinals.set(curr);
         else {
             long delta = Math.abs(curr - old);
             long seconds = TimeUnit.MILLISECONDS.toSeconds(delta);
-            if(seconds >= 60) {
+            if (seconds >= 60) {
                 System.gc();
                 System.runFinalization();
                 ranFinals.set(System.currentTimeMillis());
@@ -97,10 +98,10 @@ public class BufferReaper extends Thread {
     @Override
     public void run() {
 
-        while(true) {
+        while (true) {
             Reference<INDArray> ref = (Reference<INDArray>) queue.poll();
             runFinalize();
-            if(ref != null) {
+            if (ref != null) {
                 INDArray reffed = ref.get();
                 //remove the reference since this will be gced
                 reffed.data().removeReferencing(reffed.id());

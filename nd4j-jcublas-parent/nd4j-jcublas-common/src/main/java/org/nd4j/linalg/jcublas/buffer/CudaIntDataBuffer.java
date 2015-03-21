@@ -155,7 +155,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         return null;
     }
 
-     @Override
+    @Override
     public void put(int i, float element) {
 
     }
@@ -169,7 +169,6 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     public void put(int i, int element) {
 
     }
-
 
 
     @Override
@@ -189,32 +188,29 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
 
 
     private void writeObject(java.io.ObjectOutputStream stream)
-            throws java.io.IOException
-    {
+            throws java.io.IOException {
         stream.defaultWriteObject();
 
         if (pointer() == null) {
             stream.writeInt(0);
-        }
-        else {
+        } else {
             int[] arr = this.asInt();
 
             stream.writeInt(arr.length);
-            for (int i = 0; i < arr.length; i ++) {
+            for (int i = 0; i < arr.length; i++) {
                 stream.writeInt(arr[i]);
             }
         }
     }
 
     private void readObject(java.io.ObjectInputStream stream)
-            throws java.io.IOException, ClassNotFoundException
-    {
+            throws java.io.IOException, ClassNotFoundException {
         stream.defaultReadObject();
 
         int n = stream.readInt();
         int[] arr = new int[n];
 
-        for (int i = 0; i < n; i ++) {
+        for (int i = 0; i < n; i++) {
             arr[i] = stream.readInt();
         }
         setData(arr);

@@ -21,7 +21,8 @@ public class DataBufferLogEntry implements Serializable {
 
     public DataBufferLogEntry() {
     }
-    public DataBufferLogEntry(DataBuffer buffer,String status) {
+
+    public DataBufferLogEntry(DataBuffer buffer, String status) {
         this.length = buffer.length();
         this.dataType = buffer.dataType() == DataBuffer.DOUBLE ? "double" : "float";
         this.stackTraceElements = Thread.currentThread().getStackTrace();
@@ -31,9 +32,8 @@ public class DataBufferLogEntry implements Serializable {
     }
 
     public DataBufferLogEntry(DataBuffer buffer) {
-        this(buffer,"created");
+        this(buffer, "created");
     }
-
 
 
     @Override

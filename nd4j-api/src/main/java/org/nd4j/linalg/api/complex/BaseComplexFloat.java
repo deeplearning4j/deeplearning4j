@@ -112,12 +112,12 @@ public abstract class BaseComplexFloat implements IComplexFloat {
 
     @Override
     public IComplexNumber rsubi(IComplexNumber c) {
-        return rsubi(c,this);
+        return rsubi(c, this);
     }
 
     @Override
     public IComplexNumber set(IComplexNumber set) {
-        return set(realComponent().floatValue(),realComponent().floatValue());
+        return set(realComponent().floatValue(), realComponent().floatValue());
     }
 
     @Override
@@ -132,12 +132,12 @@ public abstract class BaseComplexFloat implements IComplexFloat {
 
     @Override
     public IComplexNumber rsubi(Number a, IComplexNumber result) {
-        return result.set(a.doubleValue() - realComponent().doubleValue(),imaginaryComponent());
+        return result.set(a.doubleValue() - realComponent().doubleValue(), imaginaryComponent());
     }
 
     @Override
     public IComplexNumber rsubi(Number a) {
-        return rsubi(a,this);
+        return rsubi(a, this);
     }
 
     @Override
@@ -157,7 +157,7 @@ public abstract class BaseComplexFloat implements IComplexFloat {
 
     @Override
     public IComplexNumber rdivi(IComplexNumber c) {
-        return rdivi(c,this);
+        return rdivi(c, this);
     }
 
     @Override
@@ -167,7 +167,7 @@ public abstract class BaseComplexFloat implements IComplexFloat {
 
     @Override
     public IComplexNumber rdivi(Number v) {
-        return rdivi(v,this);
+        return rdivi(v, this);
     }
 
     @Override

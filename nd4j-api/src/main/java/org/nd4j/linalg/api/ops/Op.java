@@ -30,36 +30,39 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * y, is a pairwise op
  * over n elements in the ndarray
  * stored in result z
- *
+ * <p/>
  * This is followed from the standard template for a BLAS operation
  * such that given a linear buffer, a function defines 3 buffers (x,y,z)
  * and the associated strides and offsets (handled by the ndarrays in this case)
  *
  * @author Adam Gibson
- *
  */
 public interface Op {
 
     /**
      * The name of this operation
+     *
      * @return the name of this operation
      */
     String name();
 
     /**
      * The origin ndarray
+     *
      * @return the origin ndarray
      */
     INDArray x();
 
     /**
      * The pairwise op ndarray
+     *
      * @return the pairwise op ndarray
      */
     INDArray y();
 
     /**
      * The resulting ndarray
+     *
      * @return the resulting ndarray
      */
     INDArray z();
@@ -67,51 +70,59 @@ public interface Op {
 
     /**
      * The number of elements to do a op over
+     *
      * @return the op
      */
     int n();
 
     /**
      * Pairwise op (applicable with an individual element in y)
+     *
      * @param origin the origin number
-     * @param other the other number
+     * @param other  the other number
      * @return the transformed output
      */
     IComplexNumber op(IComplexNumber origin, double other);
+
     /**
      * Pairwise op (applicable with an individual element in y)
+     *
      * @param origin the origin number
-     * @param other the other number
+     * @param other  the other number
      * @return the transformed output
      */
     IComplexNumber op(IComplexNumber origin, float other);
 
     /**
      * Pairwise op (applicable with an individual element in y)
+     *
      * @param origin the origin number
-     * @param other the other number
+     * @param other  the other number
      * @return the transformed output
      */
     IComplexNumber op(IComplexNumber origin, IComplexNumber other);
 
     /**
      * Pairwise op (applicable with an individual element in y)
+     *
      * @param origin the origin number
-     * @param other the other number
+     * @param other  the other number
      * @return the transformed output
      */
     float op(float origin, float other);
 
     /**
      * Pairwise op (applicable with an individual element in y)
+     *
      * @param origin the origin number
-     * @param other the other number
+     * @param other  the other number
      * @return the transformed output
      */
     double op(double origin, double other);
 
     /**
      * Transform an individual element
+     *
      * @param origin the origin element
      * @return the new element
      */
@@ -119,6 +130,7 @@ public interface Op {
 
     /**
      * Transform an individual element
+     *
      * @param origin the origin element
      * @return the new element
      */
@@ -126,6 +138,7 @@ public interface Op {
 
     /**
      * Transform an individual element
+     *
      * @param origin the origin element
      * @return the new element
      */
@@ -134,31 +147,34 @@ public interface Op {
 
     /**
      * A copy of this operation for a particular dimension of the input
-     * @param index the index of the op to iterate over
+     *
+     * @param index     the index of the op to iterate over
      * @param dimension the dimension to ge the input for
      * @return the operation for that dimension
      */
-    Op opForDimension(int index,int dimension);
-
+    Op opForDimension(int index, int dimension);
 
 
     /**
      * Initialize the operation based on the parameters
+     *
      * @param x the input
      * @param y the pairwise transform ndarray
      * @param z the resulting ndarray
      * @param n the number of elements
      */
-    void init(INDArray x,INDArray y,INDArray z,int n);
+    void init(INDArray x, INDArray y, INDArray z, int n);
 
     /**
      * Number processed
+     *
      * @return the number of elements accumulated
      */
     int numProcessed();
 
     /**
      * Extra arguments
+     *
      * @return the extra arguments
      */
     Object[] extraArgs();
