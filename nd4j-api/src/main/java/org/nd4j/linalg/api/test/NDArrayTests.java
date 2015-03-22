@@ -905,6 +905,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testAddMatrix() {
+        Nd4j.dtype = DataBuffer.FLOAT;
         INDArray five = Nd4j.ones(5);
         five.addi(five);
         INDArray twos = Nd4j.valueArrayOf(5, 2);
@@ -913,6 +914,19 @@ public abstract class NDArrayTests {
         INDArray twoByThree = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         Nd4j.getBlasWrapper().axpy(1, twoByThree, twoByThree);
     }
+
+
+    @Test
+    public void testDimensionWiseWithVector() {
+        INDArray ret = Nd4j.linspace(1,2,2).reshape(1,2);
+        assertTrue(ret.sum(0).isRowVector());
+        assertTrue(ret.sum(1).isScalar());
+        INDArray retColumn = Nd4j.linspace(1,2,2).reshape(2,1);
+        assertTrue(retColumn.sum(1).isRowVector());
+        assertTrue(retColumn.sum(0).isScalar());
+
+    }
+
 
     @Test
     public void testPutSlice() {

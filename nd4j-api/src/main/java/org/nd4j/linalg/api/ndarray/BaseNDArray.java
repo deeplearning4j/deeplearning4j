@@ -3189,13 +3189,32 @@ public abstract class BaseNDArray implements INDArray {
             , int[] newShape
             , int dimension
             , boolean modify) {
-        if (dimension == Integer.MAX_VALUE || isVector())
+        if (dimension == Integer.MAX_VALUE || dimension >= shape().length)
             return baseCase.apply(this.linearView());
-
-        else {
-            iterateOverDimension(dimension, sliceOp, modify);
-            return arr.reshape(newShape);
+        else if(isRowVector()) {
+            //same shape
+            if(dimension == 0) {
+                //no reduction
+                return this;
+            }
+            else if(dimension == 1) {
+                return baseCase.apply(this.linearView());
+            }
         }
+        else if(isColumnVector()) {
+            if(dimension == 0) {
+                return baseCase.apply(this.linearView());
+
+            }
+            //row vector
+            else if(dimension == 1) {
+                return reshape(ArrayUtil.reverseCopy(shape()));
+
+            }
+        }
+
+        iterateOverDimension(dimension, sliceOp, modify);
+        return arr.reshape(newShape);
     }
 
 
