@@ -930,6 +930,19 @@ public abstract class NDArrayTests {
     @Test
     public void testCreationWithOrder() {
         INDArray ret = Nd4j.create(new float[]{1,1,1,1},new int[]{1,4},'f');
+        INDArray ret2 = Nd4j.create(new double[]{1,1,1,1},new int[]{1,4},'f');
+        Nd4j.dtype = DataBuffer.DOUBLE;
+        ret = Nd4j.create(new float[]{1,1,1,1},new int[]{1,4},'f');
+        ret2 = Nd4j.create(new double[]{1,1,1,1},new int[]{1,4},'f');
+        INDArray  b0 = Nd4j.arange(0, 12).reshape(3, 4);
+        INDArray b4 =
+                Nd4j.create(
+                        b0.data().asDouble(),
+                        new int[]{3,4},
+        'f');
+        Nd4j.dtype = DataBuffer.FLOAT;
+
+
     }
 
 
