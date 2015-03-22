@@ -1053,9 +1053,9 @@ public class Nd4j {
         dataOutputStream.writeUTF("real");
 
         if (dataType() == DataBuffer.DOUBLE)
-            ArrayUtil.write(arr.data().asFloat(), dataOutputStream);
-        else
             ArrayUtil.write(arr.data().asDouble(), dataOutputStream);
+        else
+            ArrayUtil.write(arr.data().asFloat(), dataOutputStream);
 
     }
 
