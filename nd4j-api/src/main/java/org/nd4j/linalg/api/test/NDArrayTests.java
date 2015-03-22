@@ -927,6 +927,11 @@ public abstract class NDArrayTests {
 
     }
 
+    @Test
+    public void testCreationWithOrder() {
+        INDArray ret = Nd4j.create(new float[]{1,1,1,1},new int[]{1,4},'f');
+    }
+
 
     @Test
     public void testPutSlice() {

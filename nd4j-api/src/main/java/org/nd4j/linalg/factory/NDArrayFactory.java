@@ -1203,6 +1203,9 @@ public interface NDArrayFactory {
 
     INDArray create(float[] data, int[] shape, int offset);
 
+    INDArray create(float[] data, int[] shape, char ordering);
+
+
     IComplexNDArray createComplex(float[] data, int[] shape, int offset, char ordering);
 
     IComplexNDArray createComplex(float[] data, int[] shape, int offset);

@@ -904,6 +904,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return base;
     }
 
+    @Override
+    public INDArray create(float[] data, int[] shape, char ordering) {
+        return create(Nd4j.createBuffer(data),shape,Nd4j.getStrides(shape),0,ordering);
+    }
+
     /**
      * concatenate ndarrays along a dimension
      *
