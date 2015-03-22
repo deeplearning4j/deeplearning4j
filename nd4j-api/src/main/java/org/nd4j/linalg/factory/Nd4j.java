@@ -1030,12 +1030,15 @@ public class Nd4j {
             return create(data, shape, stride, 0);
         }
 
-        double[] data = ArrayUtil.readDouble(ArrayUtil.prod(shape), dis);
-        return create(data, shape, stride, 0);
+        else {
+            float[] data = ArrayUtil.readFloat(ArrayUtil.prod(shape), dis);
+            return create(data, shape, stride, 0);
+        }
+
     }
 
     /**
-     * Write an ndarray to the specified outputs tream
+     * Write an ndarray to the specified outputstream
      *
      * @param arr              the array to write
      * @param dataOutputStream the data output stream to write to
