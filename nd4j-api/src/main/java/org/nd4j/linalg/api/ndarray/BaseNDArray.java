@@ -433,6 +433,17 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     /**
+     * Constructor for stride and offset
+     * @param buffer
+     * @param shape
+     * @param offset
+     * @param ordering
+     */
+    public BaseNDArray(DataBuffer buffer, int[] shape, int offset, char ordering) {
+        this(buffer,shape,Nd4j.getStrides(shape,ordering),offset,ordering);
+    }
+
+    /**
      * Mainly an internal method (public  for testing)
      * for given an offset and stride, and index,
      * calculating the beginning index of a query given indices

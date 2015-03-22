@@ -940,6 +940,7 @@ public abstract class NDArrayTests {
                         b0.data().asDouble(),
                         new int[]{3,4},
         'f');
+        b4.toString();
         Nd4j.dtype = DataBuffer.FLOAT;
 
 
