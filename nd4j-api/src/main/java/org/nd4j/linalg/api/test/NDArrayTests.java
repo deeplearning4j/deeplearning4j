@@ -139,6 +139,30 @@ public abstract class NDArrayTests {
 
     }
 
+    @Test
+    public void testBroadCasting() {
+        INDArray first = Nd4j.arange(0,3).reshape(3,1);
+        INDArray ret = first.broadcast(3,4);
+        INDArray testRet = Nd4j.create(new double[][]{
+                {0,0,0,0},
+                {1,1,1,1},
+                {2,2,2,2}
+        });
+        assertEquals(testRet,ret);
+        INDArray r = Nd4j.arange(0,4).reshape(1,4);
+        INDArray r2 = r.broadcast(4,4);
+        INDArray testR2 = Nd4j.create(new double[][]{
+                {0, 1, 2, 3},
+                {0, 1, 2, 3},
+                {0, 1, 2, 3},
+                {0, 1, 2, 3}
+        });
+        assertEquals(testR2,r2);
+
+    }
+
+
+
 
     @Test
     public void testSort() {

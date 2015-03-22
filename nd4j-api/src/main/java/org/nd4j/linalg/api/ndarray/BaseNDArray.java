@@ -3595,6 +3595,14 @@ public abstract class BaseNDArray implements INDArray {
             return ret;
         }
 
+        else if(isRowVector()) {
+            INDArray ret = Nd4j.create(shape);
+            for(int i = 0; i < ret.rows(); i++)
+                ret.putRow(i,this.dup());
+            return ret;
+        }
+
+
 
         int[] retShape = new int[shape.length];
 
