@@ -33,8 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -76,6 +75,36 @@ public abstract class NDArrayTests {
         INDArray a = n.slice(2);
         assertEquals(true, Arrays.equals(new int[]{3, 3}, a.shape()));
         n.data().destroy();
+
+    }
+
+    @Test
+    public void testReadWrite() throws Exception {
+        Nd4j.dtype = DataBuffer.FLOAT;
+        INDArray write = Nd4j.linspace(1,4,4);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        Nd4j.write(write,dos);
+
+        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+        DataInputStream dis = new DataInputStream(bis);
+        INDArray read = Nd4j.read(dis);
+        assertEquals(write,read);
+
+    }
+
+    @Test
+    public void testReadWriteDouble() throws Exception {
+        Nd4j.dtype = DataBuffer.DOUBLE;
+        INDArray write = Nd4j.linspace(1,4,4);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        Nd4j.write(write,dos);
+
+        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+        DataInputStream dis = new DataInputStream(bis);
+        INDArray read = Nd4j.read(dis);
+        assertEquals(write,read);
 
     }
 
