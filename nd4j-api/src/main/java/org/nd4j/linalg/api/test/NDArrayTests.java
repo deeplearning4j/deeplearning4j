@@ -94,6 +94,18 @@ public abstract class NDArrayTests {
     }
 
     @Test
+    public void testConcatScalars() {
+        INDArray first = Nd4j.arange(0,1).reshape(1,1);
+        INDArray second = Nd4j.arange(0,1).reshape(1,1);
+        INDArray firstRet = Nd4j.concat(0,first,second);
+        assertTrue(firstRet.isColumnVector());
+        INDArray secondRet = Nd4j.concat(1,first,second);
+        assertTrue(secondRet.isRowVector());
+
+
+    }
+
+    @Test
     public void testReadWriteDouble() throws Exception {
         Nd4j.dtype = DataBuffer.DOUBLE;
         INDArray write = Nd4j.linspace(1,4,4);

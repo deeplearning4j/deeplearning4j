@@ -88,12 +88,21 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     //input arrays must have same number of dimensions
     protected static void validateConcat(int dimension, INDArray... arrs) {
-        int dims = arrs[0].shape().length;
-        int[] shape = ArrayUtil.removeIndex(arrs[0].shape(), dimension);
-        for (int i = 1; i < arrs.length; i++) {
-            assert Arrays.equals(shape, ArrayUtil.removeIndex(arrs[i].shape(), dimension));
-            assert arrs[i].shape().length == dims;
+        if(arrs[0].isScalar()) {
+            for(int i = 1; i < arrs.length; i++)
+                if(!arrs[i].isScalar())
+                    throw new IllegalArgumentException("All arrays must have same dimensions");
         }
+        else {
+            int dims = arrs[0].shape().length;
+            int[] shape = ArrayUtil.removeIndex(arrs[0].shape(), dimension);
+            for (int i = 1; i < arrs.length; i++) {
+                assert Arrays.equals(shape, ArrayUtil.removeIndex(arrs[i].shape(), dimension));
+                assert arrs[i].shape().length == dims;
+            }
+        }
+
+
     }
 
     /**
@@ -906,30 +915,43 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray concat(int dimension, INDArray... toConcat) {
         if (toConcat.length == 1)
             return toConcat[0];
+
         validateConcat(dimension, toConcat);
-        int sumAlongDim = 0;
-        for (int i = 0; i < toConcat.length; i++)
-            sumAlongDim += toConcat[i].shape()[dimension];
 
-
-        int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
-
-        outputShape[dimension] = sumAlongDim;
-
-
-        INDArray ret = Nd4j.create(outputShape);
-        INDArray linear = ret.linearView();
-        int count = 0;
-        for (int i = 0; i < toConcat.length; i++) {
-            INDArray flattened = toConcat[i].linearView();
-
-            for (int j = 0; j < flattened.length(); j++) {
-                linear.putScalar(count++, flattened.getFloat(j));
+        if(toConcat[0].isScalar()) {
+            int[] outputShape = dimension == 0 ? new int[]{toConcat.length,1} : new int[]{toConcat.length};
+            INDArray ret = Nd4j.create(outputShape);
+            for(int i = 0; i < ret.length(); i++) {
+                ret.putScalar(i,toConcat[i].getDouble(0));
             }
+            return ret;
         }
 
+        else {
+            int sumAlongDim = 0;
+            for (int i = 0; i < toConcat.length; i++)
+                sumAlongDim += toConcat[i].shape()[dimension];
 
-        return ret;
+
+            int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
+
+            outputShape[dimension] = sumAlongDim;
+
+
+            INDArray ret = Nd4j.create(outputShape);
+            INDArray linear = ret.linearView();
+            int count = 0;
+            for (int i = 0; i < toConcat.length; i++) {
+                INDArray flattened = toConcat[i].linearView();
+
+                for (int j = 0; j < flattened.length(); j++) {
+                    linear.putScalar(count++, flattened.getFloat(j));
+                }
+            }
+
+
+            return ret;
+        }
     }
 
     /**
