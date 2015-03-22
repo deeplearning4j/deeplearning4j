@@ -22,10 +22,9 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.RandomAccessFile;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -42,8 +41,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
     //memory mapped file
     protected String path;
     protected RandomAccessFile memoryMappedBuffer;
-    protected Collection<String> referencing = new CopyOnWriteArraySet<>();
-
+    protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
+    protected WeakReference<DataBuffer> ref;
     /**
      * Instantiate a buffer with the given length
      *
@@ -51,6 +50,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     protected BaseDataBuffer(int length) {
         this.length = length;
+        ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
     }
 
     public static byte[] toByteArray(double value) {

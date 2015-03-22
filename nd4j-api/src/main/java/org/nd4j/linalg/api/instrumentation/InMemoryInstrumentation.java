@@ -6,6 +6,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Collects log entries in memory
@@ -13,39 +15,64 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Adam Gibson
  */
 public class InMemoryInstrumentation implements Instrumentation {
-    private List<LogEntry> entries = new CopyOnWriteArrayList<>();
-    private List<DataBufferLogEntry> dataBufferLogEntries = new CopyOnWriteArrayList<>();
-
+    private List<LogEntry> entries  = Collections.synchronizedList(new ArrayList<LogEntry>());
+    private List<DataBufferLogEntry> dataBufferLogEntries = Collections.synchronizedList(new ArrayList<DataBufferLogEntry>());
+    private ExecutorService executorService = Executors.newFixedThreadPool(8);
     private Map<String, Collection<LogEntry>> logEntries = new ConcurrentHashMap<>();
 
     @Override
-    public void log(INDArray toLog, String status) {
-        LogEntry entry = new LogEntry(toLog, status);
-        entries.add(entry);
-        Collection<LogEntry> logEntries = this.logEntries.get(toLog.id());
+    public void log(final INDArray toLog, final String status) {
+        executorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                LogEntry entry = new LogEntry(toLog, status);
+                entries.add(entry);
+                Collection<LogEntry> logEntries = InMemoryInstrumentation.this.logEntries.get(toLog.id());
 
-        if (logEntries == null) {
-            logEntries = new CopyOnWriteArrayList<>();
-            this.logEntries.put(toLog.id(), logEntries);
-        }
+                if (logEntries == null) {
+                    logEntries = new CopyOnWriteArrayList<>();
+                    InMemoryInstrumentation.this.logEntries.put(toLog.id(), logEntries);
+                }
 
-        logEntries.add(entry);
+                logEntries.add(entry);
+            }
+        });
+
+
 
     }
 
     @Override
-    public void log(DataBuffer buffer, String status) {
-        dataBufferLogEntries.add(new DataBufferLogEntry(buffer, status));
+    public void log(final DataBuffer buffer, final String status) {
+        executorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                dataBufferLogEntries.add(new DataBufferLogEntry(buffer, status));
+
+            }
+        });
     }
 
     @Override
-    public void log(INDArray toLog) {
-        entries.add(new LogEntry(toLog));
+    public void log(final INDArray toLog) {
+        executorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                entries.add(new LogEntry(toLog));
+
+            }
+        });
     }
 
     @Override
-    public void log(DataBuffer buffer) {
-        dataBufferLogEntries.add(new DataBufferLogEntry(buffer));
+    public void log(final DataBuffer buffer) {
+        executorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                dataBufferLogEntries.add(new DataBufferLogEntry(buffer));
+
+            }
+        });
     }
 
     @Override

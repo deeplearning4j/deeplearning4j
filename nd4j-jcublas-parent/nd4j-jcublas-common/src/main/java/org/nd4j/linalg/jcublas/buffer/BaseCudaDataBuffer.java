@@ -26,10 +26,12 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 
+import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -47,6 +49,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected int elementSize;
     protected AtomicBoolean freed = new AtomicBoolean(false);
     protected Collection<String> referencing = new CopyOnWriteArraySet<>();
+    protected transient WeakReference<DataBuffer> ref;
 
     static {
         SimpleJCublas.init();
@@ -110,6 +113,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public void alloc() {
         pointer = new Pointer();
+        ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         //allocate memory for the pointer
         try {
             JCuda.cudaMalloc(pointer(), elementSize() * length());
@@ -287,12 +291,14 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         ensureNotFreed();
 
         try {
-            if (!freed.get()) {
+            if(!freed.get()) {
                 if (Nd4j.shouldInstrument)
-                    Nd4j.getInstrumentation().log(this, "destroyed");
+                    Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
                 JCuda.cudaFree(pointer);
                 freed.set(true);
             }
+
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

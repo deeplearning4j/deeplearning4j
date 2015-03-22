@@ -21,6 +21,18 @@ import java.util.Collection;
 public class InstrumentationResource {
 
     @GET
+    @Path("/numalive")
+    public Response getNumAlive() {
+        Collection<LogEntry> alive = Nd4j.getInstrumentation().getStillAlive();
+        return Response.ok(alive.size()).build();
+    }
+    @GET
+    @Path("/numdead")
+    public Response getNumDead() {
+        Collection<LogEntry> alive = Nd4j.getInstrumentation().getDestroyed();
+        return Response.ok(alive.size()).build();
+    }
+    @GET
     @Path("/alive")
     public Response getAlive() {
         Collection<LogEntry> alive = Nd4j.getInstrumentation().getStillAlive();
@@ -33,6 +45,7 @@ public class InstrumentationResource {
         Boolean alive = Nd4j.getInstrumentation().isDestroyed(id);
         return Response.ok(alive).build();
     }
+
 
 
     @GET

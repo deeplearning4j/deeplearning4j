@@ -29,53 +29,88 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class BufferReaper extends Thread {
     private ReferenceQueue<INDArray> queue;
+    private ReferenceQueue<DataBuffer> buffer;
+
     private AtomicLong ranFinals;
 
-    public BufferReaper(ReferenceQueue<INDArray> queue) {
-        init(queue);
-    }
-
-    public BufferReaper(Runnable target, ReferenceQueue<INDArray> queue) {
-        super(target);
-        init(queue);
-    }
-
-    public BufferReaper(ThreadGroup group, Runnable target, ReferenceQueue<INDArray> queue) {
-        super(group, target);
-        init(queue);
-    }
-
-    public BufferReaper(String name, ReferenceQueue<INDArray> queue) {
-        super(name);
-        init(queue);
-    }
-
-    public BufferReaper(ThreadGroup group, String name, ReferenceQueue<INDArray> queue) {
-        super(group, name);
-        init(queue);
-    }
-
-    public BufferReaper(Runnable target, String name, ReferenceQueue<INDArray> queue) {
-        super(target, name);
-        init(queue);
-    }
-
-    public BufferReaper(ThreadGroup group, Runnable target, String name, ReferenceQueue<INDArray> queue) {
-        super(group, target, name);
-        init(queue);
-    }
-
-    public BufferReaper(ThreadGroup group, Runnable target, String name, long stackSize, ReferenceQueue<INDArray> queue) {
-        super(group, target, name, stackSize);
-        init(queue);
-    }
-
-    private void init(ReferenceQueue<INDArray> queue) {
+    public BufferReaper(ReferenceQueue<INDArray> queue, ReferenceQueue<DataBuffer> buffer) {
         this.queue = queue;
+        this.buffer = buffer;
+        init(queue,buffer);
+
+    }
+
+    public BufferReaper(Runnable target, ReferenceQueue<INDArray> queue, ReferenceQueue<DataBuffer> buffer) {
+        super(target);
+        this.queue = queue;
+        this.buffer = buffer;
+        init(queue,buffer);
+
+    }
+
+    public BufferReaper(ThreadGroup group, Runnable target, ReferenceQueue<INDArray> queue, ReferenceQueue<DataBuffer> buffer) {
+        super(group, target);
+        this.queue = queue;
+        this.buffer = buffer;
+        init(queue,buffer);
+
+    }
+
+    public BufferReaper(String name, ReferenceQueue<INDArray> queue, ReferenceQueue<DataBuffer> buffer) {
+        super(name);
+        this.queue = queue;
+        this.buffer = buffer;
+        init(queue,buffer);
+
+    }
+
+    public BufferReaper(ThreadGroup group, String name, ReferenceQueue<INDArray> queue, ReferenceQueue<DataBuffer> buffer) {
+        super(group, name);
+        this.queue = queue;
+        this.buffer = buffer;
+        init(queue,buffer);
+
+    }
+
+    public BufferReaper(Runnable target, String name, ReferenceQueue<INDArray> queue, ReferenceQueue<DataBuffer> buffer) {
+        super(target, name);
+        this.queue = queue;
+        this.buffer = buffer;
+        init(queue,buffer);
+
+    }
+
+    public BufferReaper(ThreadGroup group, Runnable target, String name, ReferenceQueue<INDArray> queue, ReferenceQueue<DataBuffer> buffer) {
+        super(group, target, name);
+        this.queue = queue;
+        this.buffer = buffer;
+        init(queue,buffer);
+
+    }
+
+    public BufferReaper(ThreadGroup group, Runnable target, String name, long stackSize, ReferenceQueue<INDArray> queue, ReferenceQueue<DataBuffer> buffer) {
+        super(group, target, name, stackSize);
+        this.queue = queue;
+        this.buffer = buffer;
+        init(queue,buffer);
+    }
+
+    private void init(ReferenceQueue<INDArray> queue,ReferenceQueue<DataBuffer> buffer) {
+        this.queue = queue;
+        this.buffer =  buffer;
         setPriority(Thread.MAX_PRIORITY);
         setName("BufferCleanup");
         setDaemon(true);
         ranFinals = new AtomicLong(-1);
+    }
+
+    /**
+     * Frees data used by the given ndarrays
+     * @param arrs the arrays to free
+     */
+    public static  void destroy(INDArray...arrs) {
+        for(INDArray arr : arrs)
+            arr.data().destroy();
     }
 
 
@@ -87,7 +122,7 @@ public class BufferReaper extends Thread {
         else {
             long delta = Math.abs(curr - old);
             long seconds = TimeUnit.MILLISECONDS.toSeconds(delta);
-            if (seconds >= 60) {
+            if (seconds >= 10) {
                 System.gc();
                 System.runFinalization();
                 ranFinals.set(System.currentTimeMillis());
@@ -97,16 +132,26 @@ public class BufferReaper extends Thread {
 
     @Override
     public void run() {
-
         while (true) {
-            Reference<INDArray> ref = (Reference<INDArray>) queue.poll();
+            Reference<INDArray> ref = null;
+            ref = (Reference<INDArray>) queue.poll();
+            Reference<DataBuffer> dataRef = (Reference<DataBuffer>) buffer.poll();
+
             runFinalize();
-            if (ref != null) {
+            while (ref != null) {
                 INDArray reffed = ref.get();
                 //remove the reference since this will be gced
                 reffed.data().removeReferencing(reffed.id());
-
+                if(reffed.data().references().isEmpty())
+                    reffed.data().destroy();
+                ref = (Reference<INDArray>) queue.poll();
             }
+
+            while(dataRef != null) {
+                dataRef.get().destroy();
+                dataRef = (Reference<DataBuffer>) buffer.poll();
+            }
+
 
         }
     }

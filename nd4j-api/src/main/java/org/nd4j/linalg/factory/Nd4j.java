@@ -113,6 +113,7 @@ public class Nd4j {
     protected static Instrumentation instrumentation;
     protected static Properties props = new Properties();
     protected static ReferenceQueue<INDArray> referenceQueue = new ReferenceQueue<>();
+    protected static ReferenceQueue<DataBuffer> bufferQueue = new ReferenceQueue<>();
 
     static {
         Nd4j nd4j = new Nd4j();
@@ -128,6 +129,16 @@ public class Nd4j {
     public static ReferenceQueue<INDArray> refQueue() {
         return referenceQueue;
     }
+    /**
+     * The reference queue used for cleaning up
+     * databuffers
+     *
+     * @return the reference queue for cleaning up databuffers
+     */
+    public static ReferenceQueue<DataBuffer> bufferRefQueue() {
+        return bufferQueue;
+    }
+
 
 
     /**
@@ -3208,7 +3219,7 @@ public class Nd4j {
             ENFORCE_NUMERICAL_STABILITY = Boolean.parseBoolean(System.getProperty(NUMERICAL_STABILITY, String.valueOf(false)));
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
             //start the buffer reaper
-            new BufferReaper(refQueue()).start();
+            new BufferReaper(refQueue(),bufferRefQueue()).start();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
