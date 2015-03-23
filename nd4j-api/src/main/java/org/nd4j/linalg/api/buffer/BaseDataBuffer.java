@@ -40,9 +40,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected int length;
     //memory mapped file
     protected String path;
-    protected RandomAccessFile memoryMappedBuffer;
+    protected transient RandomAccessFile memoryMappedBuffer;
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
-    protected WeakReference<DataBuffer> ref;
+    protected transient WeakReference<DataBuffer> ref;
     protected boolean isPersist = false;
 
     @Override
