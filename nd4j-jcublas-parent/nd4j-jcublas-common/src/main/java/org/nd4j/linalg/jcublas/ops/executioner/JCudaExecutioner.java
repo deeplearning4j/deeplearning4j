@@ -29,6 +29,8 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
@@ -43,11 +45,11 @@ import org.nd4j.linalg.jcublas.util.PointerUtil;
  * @author Adam Gibson
  */
 public class JCudaExecutioner implements OpExecutioner {
-    private Pointer dummyFloatPointer, dummyDoublePointer;
+    private JCudaBuffer dummyFloatPointer, dummyDoublePointer;
 
     public JCudaExecutioner() {
-        dummyFloatPointer = Pointer.to(KernelFunctions.alloc(new float[]{1}));
-        dummyDoublePointer = Pointer.to(KernelFunctions.alloc(new double[]{1}));
+        dummyFloatPointer = KernelFunctions.alloc(new float[]{1});
+        dummyDoublePointer =KernelFunctions.alloc(new double[]{1});
     }
 
     @Override
@@ -65,6 +67,14 @@ public class JCudaExecutioner implements OpExecutioner {
         return op;
     }
 
+
+    private Pointer dummyDoublePointer() {
+        return Pointer.to(dummyDoublePointer.pointer());
+    }
+
+    private Pointer dummyFloatPointer() {
+        return Pointer.to(dummyFloatPointer.pointer());
+    }
 
     @Override
     public INDArray execAndReturn(TransformOp op) {
@@ -144,12 +154,12 @@ public class JCudaExecutioner implements OpExecutioner {
     private Pointer toArgs(Object[] extraArgs, String dataType) {
         if (dataType.equals("double")) {
             if (extraArgs == null || extraArgs.length < 1)
-                return dummyDoublePointer;
-            return Pointer.to(KernelFunctions.alloc(PointerUtil.toDoubles(extraArgs)));
+                return dummyDoublePointer();
+            return Pointer.to(KernelFunctions.alloc(PointerUtil.toDoubles(extraArgs)).pointer());
         } else if (dataType.equals("float")) {
             if (extraArgs == null || extraArgs.length < 1)
-                return dummyFloatPointer;
-            return Pointer.to(KernelFunctions.alloc(PointerUtil.toFloats(extraArgs)));
+                return dummyFloatPointer();
+            return Pointer.to(KernelFunctions.alloc(PointerUtil.toFloats(extraArgs)).pointer());
         }
         throw new IllegalArgumentException("Illegal datatype");
     }
@@ -158,24 +168,20 @@ public class JCudaExecutioner implements OpExecutioner {
     private void invoke(Accumulation op) {
         JCudaBuffer xBuffer = (JCudaBuffer) op.x().data();
         Pointer xPointer = xBuffer.pointer().withByteOffset(xBuffer.elementSize() * op.x().offset());
-        Pointer result;
+        JCudaBuffer result;
         int resultLength = 1000;
         if (op.x().data().dataType() == DataBuffer.DOUBLE) {
             double[] resultBuffer = new double[resultLength];
             for (int i = 0; i < resultBuffer.length; i++)
                 resultBuffer[i] = op.zero().doubleValue();
-            result = new Pointer();
-            JCuda.cudaMalloc(result, resultLength * Sizeof.DOUBLE);
-            JCuda.cudaMemcpy(result, Pointer.to(resultBuffer), resultLength * Sizeof.DOUBLE, cudaMemcpyKind.cudaMemcpyHostToDevice);
+            result = new CudaDoubleDataBuffer(resultBuffer);
 
 
         } else {
             float[] resultBuffer = new float[resultLength];
             for (int i = 0; i < resultBuffer.length; i++)
                 resultBuffer[i] = op.zero().floatValue();
-            result = new Pointer();
-            JCuda.cudaMalloc(result, resultLength * Sizeof.FLOAT);
-            JCuda.cudaMemcpy(result, Pointer.to(resultBuffer), resultLength * Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyHostToDevice);
+            result = new CudaFloatDataBuffer(resultBuffer);
         }
 
         if (op.y() != null) {
@@ -192,11 +198,11 @@ public class JCudaExecutioner implements OpExecutioner {
                     Pointer.to(new int[]{op.x().majorStride()}),
                     Pointer.to(new int[]{op.y().majorStride()}),
                     toArgs(op.extraArgs(), getType(op)),
-                    Pointer.to(result)
+                    Pointer.to(result.pointer())
             );
 
             invokeFunction(op, kernelParams);
-            setResultForOp(op, result);
+            setResultForOp(op, result.pointer());
 
 
         } else {
@@ -207,22 +213,16 @@ public class JCudaExecutioner implements OpExecutioner {
                     Pointer.to(xPointer),
                     Pointer.to(new int[]{op.x().majorStride()}),
                     toArgs(op.extraArgs(), getType(op)),
-                    Pointer.to(result)
+                    Pointer.to(result.pointer())
             );
 
             invokeFunction(op, kernelParams);
-            setResultForOp(op, result);
+            setResultForOp(op, result.pointer());
 
 
         }
 
-        if (result != null) {
-            try {
-                JCuda.cudaFree(result);
-            } catch (Exception e) {
-
-            }
-        }
+        result.destroy();
     }
 
 
@@ -366,14 +366,6 @@ public class JCudaExecutioner implements OpExecutioner {
     }
 
 
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-        if (dummyDoublePointer != null)
-            JCublas.cublasFree(dummyDoublePointer);
-        if (dummyFloatPointer != null)
-            JCublas.cublasFree(dummyFloatPointer);
-    }
 }
 
 

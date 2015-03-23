@@ -1,9 +1,12 @@
 package org.nd4j.linalg.api.buffer;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -30,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class BufferReaper extends Thread {
     private ReferenceQueue<INDArray> queue;
     private ReferenceQueue<DataBuffer> buffer;
-
+    private ExecutorService purge = Executors.newFixedThreadPool(8);
     private AtomicLong ranFinals;
 
     public BufferReaper(ReferenceQueue<INDArray> queue, ReferenceQueue<DataBuffer> buffer) {
@@ -122,37 +125,25 @@ public class BufferReaper extends Thread {
         else {
             long delta = Math.abs(curr - old);
             long seconds = TimeUnit.MILLISECONDS.toSeconds(delta);
-            if (seconds >= 10) {
+            if (seconds >= 1) {
                 System.gc();
                 System.runFinalization();
                 ranFinals.set(System.currentTimeMillis());
+
             }
         }
+
+        Reference<INDArray> queue2 = (Reference<INDArray>) queue.poll();
+        while(queue2 != null) {
+            queue2.get().cleanup();
+            queue2 = (Reference<INDArray>) queue.poll();
+        }
+
     }
 
     @Override
     public void run() {
-        while (true) {
-            Reference<INDArray> ref = null;
-            ref = (Reference<INDArray>) queue.poll();
-            Reference<DataBuffer> dataRef = (Reference<DataBuffer>) buffer.poll();
-
+        while (true)
             runFinalize();
-            while (ref != null) {
-                INDArray reffed = ref.get();
-                //remove the reference since this will be gced
-                reffed.data().removeReferencing(reffed.id());
-                if(reffed.data().references().isEmpty())
-                    reffed.data().destroy();
-                ref = (Reference<INDArray>) queue.poll();
-            }
-
-            while(dataRef != null) {
-                dataRef.get().destroy();
-                dataRef = (Reference<DataBuffer>) buffer.poll();
-            }
-
-
-        }
     }
 }

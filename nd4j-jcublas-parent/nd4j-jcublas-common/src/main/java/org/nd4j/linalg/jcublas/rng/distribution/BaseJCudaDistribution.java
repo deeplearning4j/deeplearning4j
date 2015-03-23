@@ -198,20 +198,20 @@ public abstract class BaseJCudaDistribution implements Distribution {
     protected void doSampleNormal(Pointer out, INDArray means, float std) {
         float[] means2 = means.data().asFloat();
         for (int i = 0; i < means.length(); i++) {
-            Pointer dummy = KernelFunctions.alloc(new float[2]);
+            JCudaBuffer dummy = KernelFunctions.alloc(new float[2]);
 
             JCurand.curandGenerateNormal(
                     random.generator()
-                    , dummy
+                    , dummy.pointer()
                     , 2
                     , means2[i]
                     , std);
             JCuda.cudaMemcpy(
                     out.withByteOffset(Sizeof.FLOAT * i)
-                    , dummy
+                    , dummy.pointer()
                     , Sizeof.FLOAT
                     , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
-            JCublas.cublasFree(dummy);
+            dummy.destroy();
 
         }
 
@@ -221,19 +221,19 @@ public abstract class BaseJCudaDistribution implements Distribution {
     protected void doSampleNormalDouble(Pointer out, INDArray means, double std) {
         double[] means2 = means.data().asDouble();
         for (int i = 0; i < means.length(); i++) {
-            Pointer dummy = KernelFunctions.alloc(new double[2]);
+            JCudaBuffer dummy = KernelFunctions.alloc(new double[2]);
 
             JCurand.curandGenerateNormalDouble(
                     random.generator()
-                    , dummy
+                    , dummy.pointer()
                     , 2
                     , means2[i]
                     , std);
             JCuda.cudaMemcpy(
                     out.withByteOffset(Sizeof.DOUBLE * i)
-                    , dummy, Sizeof.DOUBLE
+                    , dummy.pointer(), Sizeof.DOUBLE
                     , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
-            JCublas.cublasFree(dummy);
+            dummy.destroy();
         }
 
     }

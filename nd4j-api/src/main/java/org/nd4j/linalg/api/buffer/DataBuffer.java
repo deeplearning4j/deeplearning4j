@@ -36,6 +36,19 @@ public interface DataBuffer extends Serializable {
     public final static int FLOAT = 1;
     public final static int INT = 2;
 
+    /**
+     * Mark this buffer as persistent
+     */
+    void persist();
+
+    /**
+     * Whether the buffer should be persistent.
+     * This is mainly for the
+     * aggressive garbage collection strategy.
+     * @return whether the buffer should be persistent or not (default false)
+     */
+    boolean isPersist();
+
 
     /**
      * Remove the referenced id if it exists

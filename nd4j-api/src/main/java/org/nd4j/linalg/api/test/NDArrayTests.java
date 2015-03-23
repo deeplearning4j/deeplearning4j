@@ -925,6 +925,17 @@ public abstract class NDArrayTests {
         assertTrue(retColumn.sum(1).isRowVector());
         assertTrue(retColumn.sum(0).isScalar());
 
+        INDArray m2 = Nd4j.rand(1, 2);
+        Nd4j.sum(m2, 0);
+
+
+        Nd4j.sum(m2, 1);
+
+        INDArray m3 = Nd4j.rand(2, 1);
+
+        Nd4j.sum(m3, 0);
+        Nd4j.sum(m3, 1).toString();
+
     }
 
     @Test

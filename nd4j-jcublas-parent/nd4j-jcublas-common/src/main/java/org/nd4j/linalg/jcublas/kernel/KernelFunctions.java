@@ -22,6 +22,9 @@ import jcuda.Sizeof;
 import jcuda.driver.CUfunction;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
+import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
@@ -140,14 +143,11 @@ public class KernelFunctions {
      * @param data the data for the pointer
      * @return the pointer
      */
-    public static Pointer alloc(double[] data) {
+    public static JCudaBuffer alloc(double[] data) {
         // Allocate the device input data, and copy the
         // host input data to the device
-
-        Pointer deviceInputA = new Pointer();
-        JCuda.cudaMalloc(deviceInputA, Sizeof.DOUBLE * data.length);
-        JCuda.cudaMemcpy(deviceInputA, Pointer.to(data), Sizeof.DOUBLE * data.length, cudaMemcpyKind.cudaMemcpyHostToDevice);
-        return deviceInputA;
+        JCudaBuffer doubleBuffer = new CudaDoubleDataBuffer(data);
+        return doubleBuffer;
     }
 
     /**
@@ -156,14 +156,14 @@ public class KernelFunctions {
      * @param data the data for the pointer
      * @return the pointer
      */
-    public static Pointer alloc(float[] data) {
+    public static JCudaBuffer alloc(float[] data) {
         // Allocate the device input data, and copy the
         // host input data to the device
         Pointer deviceInputA = new Pointer();
         JCuda.cudaMalloc(deviceInputA, Sizeof.FLOAT * data.length);
         JCuda.cudaMemcpy(deviceInputA, Pointer.to(data), Sizeof.FLOAT * data.length, cudaMemcpyKind.cudaMemcpyHostToDevice);
-
-        return deviceInputA;
+        JCudaBuffer floatBuffer = new CudaFloatDataBuffer(data);
+        return floatBuffer;
     }
 
 }

@@ -43,6 +43,18 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected RandomAccessFile memoryMappedBuffer;
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
     protected WeakReference<DataBuffer> ref;
+    protected boolean isPersist = false;
+
+    @Override
+    public void persist() {
+       isPersist = true;
+    }
+
+    @Override
+    public boolean isPersist() {
+        return isPersist;
+    }
+
     /**
      * Instantiate a buffer with the given length
      *

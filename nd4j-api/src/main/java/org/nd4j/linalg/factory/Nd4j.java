@@ -33,6 +33,8 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
+import org.nd4j.linalg.api.resources.ResourceManager;
+import org.nd4j.linalg.api.resources.WeakReferenceResourceManager;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
@@ -75,6 +77,7 @@ public class Nd4j {
     public final static String RANDOM = "rng";
     public final static String DISTRIBUTION = "dist";
     public final static String INSTRUMENTATION = "instrumentation";
+    public final static String RESOURCE_MANAGER = "resourcemanager";
 
 
     public static int dtype = DataBuffer.FLOAT;
@@ -100,6 +103,7 @@ public class Nd4j {
     protected static Class<? extends org.nd4j.linalg.api.rng.Random> randomClazz;
     protected static Class<? extends DistributionFactory> distributionFactoryClazz;
     protected static Class<? extends Instrumentation> instrumentationClazz;
+    protected static Class<? extends ResourceManager> resourceManagerClazz;
 
     protected static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
@@ -111,6 +115,8 @@ public class Nd4j {
     protected static OpFactory OP_FACTORY_INSTANCE;
     protected static org.nd4j.linalg.api.rng.Random random;
     protected static Instrumentation instrumentation;
+    protected static ResourceManager resourceManager;
+
     protected static Properties props = new Properties();
     protected static ReferenceQueue<INDArray> referenceQueue = new ReferenceQueue<>();
     protected static ReferenceQueue<DataBuffer> bufferQueue = new ReferenceQueue<>();
@@ -173,6 +179,14 @@ public class Nd4j {
         return random;
     }
 
+    /**
+     * Get the resource manager
+     * @return the resource manager
+     *
+     */
+    public static ResourceManager getResourceManager() {
+        return resourceManager;
+    }
 
     /**
      * Get the convolution singleton
@@ -282,12 +296,14 @@ public class Nd4j {
     private static void logCreationIfNecessary(DataBuffer log) {
         if (shouldInstrument)
             Nd4j.getInstrumentation().log(log);
+
     }
 
 
     private static void logCreationIfNecessary(INDArray log) {
         if (shouldInstrument)
             Nd4j.getInstrumentation().log(log);
+        Nd4j.getResourceManager().register(log);
     }
 
     /**
@@ -3187,6 +3203,10 @@ public class Nd4j {
                 String defaultName = props.getProperty(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
                 dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
             }
+            if(resourceManagerClazz == null) {
+                resourceManagerClazz = (Class<? extends ResourceManager>) Class.forName(props.getProperty(RESOURCE_MANAGER, WeakReferenceResourceManager.class.getName()));
+            }
+
             if (randomClazz == null) {
                 String rand = props.getProperty(RANDOM, DefaultRandom.class.getName());
                 randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
@@ -3206,6 +3226,7 @@ public class Nd4j {
 
             }
 
+            resourceManager = resourceManagerClazz.newInstance();
             instrumentation = instrumentationClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             FFT_INSTANCE = fftInstanceClazz.newInstance();

@@ -115,7 +115,6 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     @Override
     public float[] getFloatsAt(int offset, int inc, int length) {
         ensureNotFreed();
-
         return ArrayUtil.toFloats(getDoublesAt(offset, 1, length));
     }
 
@@ -152,7 +151,11 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
             alloc();
 
 
-        JCuda.cudaMemcpy(pointer(), Pointer.to(data), data.length * elementSize(), cudaMemcpyKind.cudaMemcpyHostToDevice);
+        JCuda.cudaMemcpy(
+                pointer(),
+                Pointer.to(data)
+                , data.length * elementSize()
+                , cudaMemcpyKind.cudaMemcpyHostToDevice);
 
 
     }
@@ -223,7 +226,6 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     @Override
     public void put(int i, double element) {
         ensureNotFreed();
-
         double[] d = new double[]{element};
         Pointer p = Pointer.to(d);
         set(i, p);

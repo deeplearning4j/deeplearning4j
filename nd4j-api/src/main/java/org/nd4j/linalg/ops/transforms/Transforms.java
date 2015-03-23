@@ -579,6 +579,8 @@ public class Transforms {
      * @return the new ndarray
      */
     private static INDArray exec(ScalarOp op) {
+        if(op.x().isCleanedUp())
+            throw new IllegalStateException("NDArray already freed");
         return Nd4j.getExecutioner().exec(op).z();
     }
 
@@ -589,6 +591,8 @@ public class Transforms {
      * @return the new ndarray
      */
     private static INDArray exec(TransformOp op) {
+        if(op.x().isCleanedUp())
+            throw new IllegalStateException("NDArray already freed");
         return Nd4j.getExecutioner().execAndReturn(op);
     }
 

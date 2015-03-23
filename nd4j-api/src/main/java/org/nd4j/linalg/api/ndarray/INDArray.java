@@ -34,6 +34,17 @@ public interface INDArray extends Serializable {
 
 
     /**
+     * Returns true if the ndarray has already been freed
+     * @return
+     */
+    boolean isCleanedUp();
+
+    /**
+     * Cleanup resources
+     */
+    void cleanup();
+
+    /**
      * Reference to the ndarray
      *
      * @return the id for this ndarray

@@ -34,7 +34,8 @@ import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -48,11 +49,22 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected int length;
     protected int elementSize;
     protected AtomicBoolean freed = new AtomicBoolean(false);
-    protected Collection<String> referencing = new CopyOnWriteArraySet<>();
+    protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
     protected transient WeakReference<DataBuffer> ref;
+    protected boolean isPersist = false;
 
     static {
         SimpleJCublas.init();
+    }
+
+    @Override
+    public void persist() {
+       isPersist = true;
+    }
+
+    @Override
+    public boolean isPersist() {
+        return isPersist;
     }
 
     /**
@@ -107,6 +119,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public Pointer pointer() {
+        ensureNotFreed();
         return pointer;
     }
 
@@ -163,6 +176,11 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     }
 
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        JCuda.cudaFree(pointer());
+    }
 
     @Override
     public void assign(Number value) {
@@ -171,7 +189,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
 
     /**
-     * Get element witrh the specified index
+     * Get element with the specified index
      *
      * @param index  the index of the element to get
      * @param inc    the increment step when getting data
@@ -287,9 +305,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
 
     @Override
-    public synchronized void destroy() {
-        ensureNotFreed();
-
+    public  void destroy() {
         try {
             if(!freed.get()) {
                 if (Nd4j.shouldInstrument)
@@ -365,11 +381,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         return 0;
     }
 
-    @Override
-    public DataBuffer dup() {
-        ensureNotFreed();
-        throw new UnsupportedOperationException();
-    }
+
 
     @Override
     public void flush() {
