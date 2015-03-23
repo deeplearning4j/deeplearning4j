@@ -189,5 +189,9 @@ public interface Model {
      */
     void setParam(String key,INDArray val);
 
+    /**
+     * Clear input
+     */
+    void clear();
 
 }

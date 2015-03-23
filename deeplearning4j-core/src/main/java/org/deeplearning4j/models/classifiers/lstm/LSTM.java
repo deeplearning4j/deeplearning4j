@@ -240,8 +240,8 @@ public class LSTM extends BaseLayer {
     }
 
 
-
-    private void clear() {
+    @Override
+    public  void clear() {
         u = null;
         hIn = null;
         hOut = null;

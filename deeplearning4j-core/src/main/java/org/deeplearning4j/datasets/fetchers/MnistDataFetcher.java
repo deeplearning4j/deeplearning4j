@@ -160,6 +160,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
     @Override
     public void reset() {
         cursor = 1;
+        curr = null;
     }
 
     @Override

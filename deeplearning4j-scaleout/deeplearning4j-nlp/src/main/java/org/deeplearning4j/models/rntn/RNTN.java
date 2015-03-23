@@ -1093,6 +1093,11 @@ public class RNTN implements Layer {
     }
 
     @Override
+    public void clear() {
+
+    }
+
+    @Override
     public INDArray activationMean() {
         return null;
     }
@@ -1102,20 +1107,6 @@ public class RNTN implements Layer {
         return null;
     }
 
-    @Override
-    public void setConfiguration(NeuralNetConfiguration conf) {
-
-    }
-
-    @Override
-    public INDArray getInput() {
-        return null;
-    }
-
-    @Override
-    public void setInput(INDArray input) {
-
-    }
 
     @Override
     public INDArray preOutput(INDArray x) {

@@ -28,10 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.indexing.conditions.Or;
-import org.nd4j.linalg.indexing.functions.Value;
 import org.deeplearning4j.optimize.api.LineOptimizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -185,7 +181,6 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
         INDArray testMatrix = abs(line).divi(maxOldParams);
         test = testMatrix.max(Integer.MAX_VALUE).getDouble(0);
-        testMatrix.data().destroy();
 
         alamin = relTolx / test;
 
@@ -213,7 +208,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
             // check for convergence
             //convergence on delta x
             //if all of the parameters are < 1e-12
-            if ((alam < alamin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters, x,x.dup(),x.length())).sum(Integer.MAX_VALUE).getDouble(0) == x.length()) {
+            if ((alam < alamin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters.linearView(), x.linearView(),x.linearView().dup(),x.length())).sum(Integer.MAX_VALUE).getDouble(0) == x.length()) {
                 function.setParams(oldParameters);
                 function.setScore();
                 f = function.score();

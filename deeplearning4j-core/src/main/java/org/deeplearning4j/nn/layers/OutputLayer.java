@@ -267,6 +267,14 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     }
 
+    @Override
+    public void clear() {
+        super.clear();
+        if(labels != null) {
+            labels.data().destroy();
+            labels = null;
+        }
+    }
 
     /**
      * Transform the data based on the model's output.

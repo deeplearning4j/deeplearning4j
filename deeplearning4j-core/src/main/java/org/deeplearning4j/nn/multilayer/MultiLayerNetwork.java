@@ -47,7 +47,8 @@ import java.util.*;
 
 
 /**
- * A base class for a multi layer neural network with a logistic output layer
+ * A base class for a multi
+ * layer neural network with a logistic output layer
  * and multiple hidden neuralNets.
  *
  * @author Adam Gibson
@@ -198,18 +199,16 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             return;
         /* During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
 
-        setInput(input);
 
         INDArray layerInput = null;
 
         for (int i = 0; i < getnLayers() - 1; i++) {
             if (i == 0)
-                layerInput = getInput();
+                layerInput = input;
             else
                 layerInput = activationFromPrevLayer(i - 1, layerInput);
             log.info("Training on layer " + (i + 1) + " with " + layerInput.slices() + " examples");
             getLayers()[i].fit(layerInput);
-
 
         }
     }
@@ -283,14 +282,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     }
 
 
-    public NeuralNetConfiguration getDefaultConfiguration() {
-        return defaultConfiguration;
-    }
-
-    public void setDefaultConfiguration(NeuralNetConfiguration defaultConfiguration) {
-        this.defaultConfiguration = defaultConfiguration;
-    }
-
     public MultiLayerConfiguration getLayerWiseConfigurations() {
         return layerWiseConfigurations;
     }
@@ -315,22 +306,25 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                     throw new IllegalArgumentException("All hidden layer sizes must be >= 1");
 
 
-        this.input = input.dup();
-        if (!initCalled) {
-            init();
-            //log.info("Initializing neuralNets with input of dims " + input.slices() + " x " + input.columns());
+        this.input = input;
 
-        }
+        if (!initCalled)
+            init();
+
+
 
 
     }
 
+    /**
+     * Initialize
+     */
     public void init() {
         if (layerWiseConfigurations == null || layers == null)
             intializeConfigurations();
 
 
-        INDArray layerInput = input;
+        INDArray layerInput = input();
         int inputSize;
         if (getnLayers() < 1)
             throw new IllegalStateException("Unable to createComplex network neuralNets; number specified is less than 1");
@@ -340,7 +334,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             //
             this.layers = new Layer[hiddenLayerSizes.length + 1];
             // construct multi-layer
-            for (int i = 0; i < this.getnLayers(); i++) {
+            for (int i = 0; i < getnLayers(); i++) {
 
                 if (i == 0)
                     inputSize = layerWiseConfigurations.getConf(0).getnIn();
@@ -453,8 +447,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      */
     public List<INDArray> feedForward() {
         INDArray currInput = this.input;
-        if (this.input.isMatrix() && this.input.columns() != defaultConfiguration.getnIn())
-            throw new IllegalStateException("Illegal input length");
 
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
@@ -1039,6 +1031,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      * @param iter fine tune based on the labels
      */
     public void finetune(DataSetIterator iter) {
+        log.info("Finetune phase ");
         iter.reset();
 
         while (iter.hasNext()) {
@@ -1080,12 +1073,19 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             log.warn("Output layer not instance of output layer returning.");
             return;
         }
+
+        log.info("Finetune phase");
+
         OutputLayer o = (OutputLayer) getOutputLayer();
         if (getOutputLayer().conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
-            feedForward();
-            o.fit(getOutputLayer().getInput(), labels);
-        } else {
-            feedForward();
+            List<INDArray> activations = feedForward();
+            o.fit(activations.get(activations.size() - 2), labels);
+            activations.clear();
+        }
+
+        else {
+            List<INDArray> activations = feedForward();
+            activations.clear();
             o.setLabels(labels);
             StochasticHessianFree hessianFree = new StochasticHessianFree(getOutputLayer().conf(),
                     getOutputLayer().conf().getStepFunction(), getOutputLayer().conf().getListeners(), this);
@@ -1131,11 +1131,18 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
+        setInput(examples);
+
         if (!layerWiseConfigurations.isBackward()) {
             pretrain(examples);
             finetune(labels);
-        } else {
-            setInput(examples);
+            clear();
+            examples.data().destroy();
+            labels.data().destroy();
+
+        }
+
+        else {
             feedForward();
             //start at the output layer
             INDArray propagate = layers[layers.length - 1].activate();
@@ -1245,8 +1252,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         this.defaultConfiguration = network.defaultConfiguration;
         this.input = network.input;
         this.labels = network.labels;this.layers = ArrayUtils.clone(network.layers);
-
-
     }
 
 
@@ -1309,7 +1314,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      */
     @Override
     public double score() {
-        if (getOutputLayer().getInput() == null)
+        if (getOutputLayer().input() == null)
             feedForward();
         return getOutputLayer().score();
     }
@@ -1322,6 +1327,18 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     @Override
     public void accumulateScore(double accum) {
 
+    }
+
+
+    /**
+     * Clear the inputs
+     */
+    public void clear() {
+        for(Layer layer : layers) {
+            layer.clear();
+        }
+
+        input = null;
     }
 
     /**
@@ -1379,8 +1396,10 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     public void setInput(INDArray input) {
         if (input != null && this.layers == null)
             this.initializeLayers(input);
-        this.input = input;
-
+        else {
+            clear();
+            this.input = input;
+        }
     }
 
     private void initMask() {
@@ -1388,14 +1407,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     }
 
 
-    /**
-     * Get the input layer
-     *
-     * @return
-     */
-    public Layer getInputLayer() {
-        return getLayers()[0];
-    }
 
     /**
      * Get the output layer
@@ -1442,8 +1453,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             String derivative = getLayers()[i].conf().getActivationFunction();
             //R[i] * W[i] + acts[i] * (vW[i] + vB[i]) .* f'([acts[i + 1])
             R.add(R.get(i).mmul(W.get(i)).addi(acts.get(i)
-                    .mmul(vWvB.get(i).getFirst().addRowVector(vWvB.get(i).getSecond())))
-                    .muli((Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(derivative,acts.get(i + 1)).derivative()))));
+                    .mmul(vWvB.get(i).getFirst().addiRowVector(vWvB.get(i).getSecond())))
+                    .muli((Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(derivative, acts.get(i + 1)).derivative()))));
         }
 
         return R;
@@ -1543,48 +1554,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         this.mask = mask;
     }
 
-    public static class ParamRange implements Serializable {
-        private int wStart, wEnd, biasStart, biasEnd;
 
-        private ParamRange(int wStart, int wEnd, int biasStart, int biasEnd) {
-            this.wStart = wStart;
-            this.wEnd = wEnd;
-            this.biasStart = biasStart;
-            this.biasEnd = biasEnd;
-        }
-
-        public int getwStart() {
-            return wStart;
-        }
-
-        public void setwStart(int wStart) {
-            this.wStart = wStart;
-        }
-
-        public int getwEnd() {
-            return wEnd;
-        }
-
-        public void setwEnd(int wEnd) {
-            this.wEnd = wEnd;
-        }
-
-        public int getBiasStart() {
-            return biasStart;
-        }
-
-        public void setBiasStart(int biasStart) {
-            this.biasStart = biasStart;
-        }
-
-        public int getBiasEnd() {
-            return biasEnd;
-        }
-
-        public void setBiasEnd(int biasEnd) {
-            this.biasEnd = biasEnd;
-        }
-    }
 
 
 }
