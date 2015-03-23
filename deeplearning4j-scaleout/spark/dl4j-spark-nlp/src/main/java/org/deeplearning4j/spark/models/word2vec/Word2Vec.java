@@ -29,7 +29,9 @@ import org.deeplearning4j.spark.text.TextPipeline;
 import org.deeplearning4j.spark.text.TokenizerFunction;
 import org.deeplearning4j.spark.text.TokentoVocabWord;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.util.SerializationUtils;
 
+import java.io.File;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -39,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class Word2Vec {
 
-    private transient Broadcast<VocabCache> vocabCacheBroadcast;
+    private  Broadcast<VocabCache> vocabCacheBroadcast;
     private String tokenizerFactoryClazz = DefaultTokenizerFactory.class.getName();
 
 
@@ -65,9 +67,8 @@ public class Word2Vec {
         huffman.build();
 
         Word2VecPerformer performer = new Word2VecPerformer(
-                sc,sc.broadcast(new AtomicLong(vocabAndNumWords.getSecond())),lookupTable
+                sc.getConf(),sc.broadcast(new AtomicLong(vocabAndNumWords.getSecond())),lookupTable
         );
-
         rdd.map(new TokenizerFunction(tokenizerFactoryClazz))
                 .map(new TokentoVocabWord(vocabCacheBroadcast)).foreach(performer);
 
