@@ -195,9 +195,8 @@ public class RBMTests {
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-1f).nIn(6).nOut(4).layerFactory(layerFactory).build();
         RBM rbm = layerFactory.create(conf);
-        rbm.setInput(input);
         double value = rbm.score();
-        rbm.contrastiveDivergence();
+        rbm.fit(input);
         value = rbm.score();
 
     }
@@ -224,11 +223,11 @@ public class RBMTests {
                 .learningRate(1e-1f).nIn(6).nOut(4).layerFactory(layerFactory).build();
 
         RBM rbm = layerFactory.create(conf);
-        rbm.setInput(input);
+
+        rbm.fit(input);
         double value = rbm.score();
 
         Gradient grad2 = rbm.gradient();
-        rbm.fit(input);
 
     }
 

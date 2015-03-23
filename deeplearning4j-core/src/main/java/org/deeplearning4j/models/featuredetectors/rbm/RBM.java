@@ -119,7 +119,7 @@ public  class RBM extends BasePretrainNetwork {
 
 
         //POSITIVE PHASE
-        Pair<INDArray,INDArray> probHidden = sampleHiddenGivenVisible(getInput());
+        Pair<INDArray,INDArray> probHidden = sampleHiddenGivenVisible(input());
 
 		/*
 		 * Start the gibbs sampling.
@@ -168,7 +168,7 @@ public  class RBM extends BasePretrainNetwork {
 		/*
 		 * Update gradient parameters
 		 */
-        INDArray wGradient = getInput().transposei().mmul(probHidden.getSecond()).subi(
+        INDArray wGradient = input().transposei().mmul(probHidden.getSecond()).subi(
                 nvSamples.transposei().mmul(nhMeans)
         );
 

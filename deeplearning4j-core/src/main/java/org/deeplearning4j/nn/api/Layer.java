@@ -43,12 +43,7 @@ public interface Layer extends Serializable,Cloneable,Model {
 
     INDArray activationMean();
 
-    NeuralNetConfiguration conf();
-    void setConfiguration(NeuralNetConfiguration conf);
 
-    INDArray getInput();
-
-    void setInput(INDArray input);
 
 
     INDArray preOutput(INDArray x);
