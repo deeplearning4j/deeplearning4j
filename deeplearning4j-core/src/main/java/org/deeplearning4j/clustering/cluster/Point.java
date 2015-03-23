@@ -23,6 +23,7 @@ import java.util.UUID;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -36,6 +37,7 @@ public class Point implements INDArray {
 	private String				id					= UUID.randomUUID().toString();
 	private String				label;
 	private INDArray			array;
+	private boolean				cleanedUp			= false;
 
 	public Point(INDArray array) {
 		super();
@@ -62,7 +64,7 @@ public class Point implements INDArray {
 	
 
 	public static List<Point> toPoints(List<INDArray> vectors) {
-		List<Point> points = new ArrayList<Point>();
+		List<Point> points = new ArrayList<>();
 		for (INDArray vector : vectors)
 			points.add(new Point(vector));
 		return points;
@@ -91,7 +93,17 @@ public class Point implements INDArray {
 	public void setArray(INDArray array) {
 		this.array = array;
 	}
-	
+
+	public boolean isCleanedUp() {
+		return cleanedUp;
+	}
+
+	public  void cleanup() {
+		cleanedUp = true;
+		if (Nd4j.shouldInstrument)
+			Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
+	}
+
 	public String id() {
 		return getId();
 	}
