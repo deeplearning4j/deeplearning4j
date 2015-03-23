@@ -36,6 +36,7 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
         super.init(params, conf);
         params.put(VISIBLE_BIAS_KEY, Nd4j.zeros(conf.getnIn()));
         conf.addVariable(VISIBLE_BIAS_KEY);
+        params.get(VISIBLE_BIAS_KEY).data().persist();
     }
 
 

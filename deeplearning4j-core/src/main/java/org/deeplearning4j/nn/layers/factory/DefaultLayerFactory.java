@@ -50,7 +50,7 @@ public class DefaultLayerFactory implements LayerFactory {
         Layer ret = getInstance(conf);
         Map<String,INDArray> params = getParams(conf);
         ret.setParamTable(params);
-        ret.setConfiguration(conf);
+        ret.setConf(conf);
         return ret;
     }
 

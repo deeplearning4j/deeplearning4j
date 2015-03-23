@@ -51,16 +51,20 @@ public class DefaultParamInitializer implements ParamInitializer {
 
 
     protected INDArray createBias(NeuralNetConfiguration conf) {
-        return Nd4j.zeros(conf.getnOut());
+        INDArray ret =  Nd4j.zeros(conf.getnOut());
+        ret.data().persist();
+        return ret;
     }
 
 
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf) {
-        return WeightInitUtil.initWeights(
+        INDArray ret =  WeightInitUtil.initWeights(
                 conf.getnIn(),
                 conf.getnOut(),
                 conf.getWeightInit(),
                 conf.getDist());
+        ret.data().persist();
+        return ret;
     }
 
 

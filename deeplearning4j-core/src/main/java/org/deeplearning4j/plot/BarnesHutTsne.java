@@ -20,7 +20,6 @@ package org.deeplearning4j.plot;
 import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
@@ -224,6 +223,11 @@ public class BarnesHutTsne extends Tsne implements Model {
     @Override
     public void setParam(String key, INDArray val) {
 
+    }
+
+    @Override
+    public void clear() {
+        this.p = null;
     }
 
     /* compute the gradient given the current solution, the probabilities and the constant */

@@ -77,7 +77,7 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 		
 		if(examples.isEmpty())
 			log.warn("Warning: empty dataset from the fetcher");
-		
+		curr = null;
 		INDArray inputs = createInputMatrix(examples.size());
 		INDArray labels = createOutputMatrix(examples.size());
 		for(int i = 0; i < examples.size(); i++) {
@@ -85,6 +85,7 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 			labels.putRow(i,examples.get(i).getLabels());
 		}
 		curr = new DataSet(inputs,labels);
+        examples.clear();
 
 	}
 	

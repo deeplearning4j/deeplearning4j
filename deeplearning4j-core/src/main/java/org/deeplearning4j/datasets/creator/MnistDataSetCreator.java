@@ -16,9 +16,7 @@
 
 package org.deeplearning4j.datasets.creator;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.nd4j.linalg.dataset.DataSet;

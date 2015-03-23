@@ -234,7 +234,7 @@ public class NeuralNetPlotter implements Serializable {
 
     public void plotActivations(Layer network) {
         try {
-            if(network.getInput() == null)
+            if(network.input() == null)
                 throw new IllegalStateException("Unable to plot; missing input");
 
             INDArray hbiasMean = network.activationMean();

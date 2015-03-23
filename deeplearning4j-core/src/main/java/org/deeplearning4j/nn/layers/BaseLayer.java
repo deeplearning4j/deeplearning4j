@@ -182,7 +182,7 @@ public abstract class BaseLayer implements Layer {
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
 
 
-        INDArray ret = getInput().mmul(W);
+        INDArray ret = input().mmul(W);
         if(conf.isConcatBiases())
             ret = Nd4j.hstack(ret,b);
         else
@@ -203,9 +203,9 @@ public abstract class BaseLayer implements Layer {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         if(conf.getActivationFunction().equals("softmax"))
-            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), getInput().mmul(W).addiRowVector(b)));
+            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
         else
-            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), getInput().mmul(W).addiRowVector(b)));
+            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
 
     }
 
@@ -220,7 +220,7 @@ public abstract class BaseLayer implements Layer {
     public INDArray activationMean() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        return getInput().mmul(W).addiRowVector(b);
+        return input().mmul(W).addiRowVector(b);
     }
 
     @Override
@@ -228,24 +228,15 @@ public abstract class BaseLayer implements Layer {
         return conf;
     }
 
-    @Override
-    public void setConfiguration(NeuralNetConfiguration conf) {
-        this.conf = conf;
-    }
-
+ 
 
     @Override
-    public INDArray getInput() {
-        return input;
+    public void clear() {
+        if(input != null) {
+            input.data().destroy();
+            input = null;
+        }
     }
-
-    @Override
-    public void setInput(INDArray input) {
-        this.input = input;
-    }
-
-
-
 
     protected void applyDropOutIfNecessary(INDArray input) {
         if(conf.getDropOut() > 0) {
