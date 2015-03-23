@@ -64,17 +64,17 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
     private double minAlpha = 1e-2;
     private int totalWords = 1;
     private int iterations = 5;
-    private static final Logger log = LoggerFactory.getLogger(Word2VecPerformer.class);
+    private static transient final Logger log = LoggerFactory.getLogger(Word2VecPerformer.class);
     private int lastChecked = 0;
     private  Broadcast<AtomicLong> wordCount;
     private InMemoryLookupTable weights;
     private double[] expTable = new double[1000];
 
 
-    public Word2VecPerformer(JavaSparkContext sc,Broadcast<AtomicLong> wordCount,InMemoryLookupTable weights) {
+    public Word2VecPerformer(SparkConf sc,Broadcast<AtomicLong> wordCount,InMemoryLookupTable weights) {
         this.weights = weights;
         this.wordCount = wordCount;
-        setup(sc.getConf());
+        setup(sc);
     }
 
     public void setup(SparkConf conf) {
