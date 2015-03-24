@@ -69,6 +69,7 @@ public class Word2Vec {
         Word2VecPerformer performer = new Word2VecPerformer(
                 sc.getConf(),sc.broadcast(new AtomicLong(vocabAndNumWords.getSecond())),lookupTable
         );
+
         rdd.map(new TokenizerFunction(tokenizerFactoryClazz))
                 .map(new TokentoVocabWord(vocabCacheBroadcast)).foreach(performer);
 
