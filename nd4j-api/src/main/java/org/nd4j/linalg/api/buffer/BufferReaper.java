@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class BufferReaper extends Thread {
     private ReferenceQueue<INDArray> queue;
     private ReferenceQueue<DataBuffer> buffer;
-    private ExecutorService purge = Executors.newFixedThreadPool(8);
     private AtomicLong ranFinals;
 
     public BufferReaper(ReferenceQueue<INDArray> queue, ReferenceQueue<DataBuffer> buffer) {
@@ -101,7 +100,6 @@ public class BufferReaper extends Thread {
     private void init(ReferenceQueue<INDArray> queue,ReferenceQueue<DataBuffer> buffer) {
         this.queue = queue;
         this.buffer =  buffer;
-        setPriority(Thread.MAX_PRIORITY);
         setName("BufferCleanup");
         setDaemon(true);
         ranFinals = new AtomicLong(-1);
@@ -125,25 +123,33 @@ public class BufferReaper extends Thread {
         else {
             long delta = Math.abs(curr - old);
             long seconds = TimeUnit.MILLISECONDS.toSeconds(delta);
-            if (seconds >= 1) {
+            if (seconds >= 30) {
                 System.gc();
                 System.runFinalization();
                 ranFinals.set(System.currentTimeMillis());
 
             }
         }
-
-        Reference<INDArray> queue2 = (Reference<INDArray>) queue.poll();
-        while(queue2 != null) {
-            queue2.get().cleanup();
-            queue2 = (Reference<INDArray>) queue.poll();
-        }
-
     }
 
     @Override
     public void run() {
-        while (true)
+
+        while (true) {
+            Reference<INDArray> queue2 = (Reference<INDArray>) queue.poll();
+            while(queue2 != null) {
+                queue2.get().cleanup();
+                queue2 = (Reference<INDArray>) queue.poll();
+            }
+
+            Reference<DataBuffer> bufferQueue = (Reference<DataBuffer>) buffer.poll();
+            while(bufferQueue != null) {
+                bufferQueue.get().destroy();
+                bufferQueue = (Reference<DataBuffer>) buffer.poll();
+            }
+
             runFinalize();
+            Nd4j.getResourceManager().purge();
+        }
     }
 }

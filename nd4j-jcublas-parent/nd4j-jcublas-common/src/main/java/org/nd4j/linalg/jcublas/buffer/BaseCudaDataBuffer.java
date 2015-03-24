@@ -127,6 +127,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public void alloc() {
         pointer = new Pointer();
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
+        Nd4j.getResourceManager().incrementCurrentAllocatedMemory(elementSize() * length());
         //allocate memory for the pointer
         try {
             JCuda.cudaMalloc(pointer(), elementSize() * length());
@@ -314,7 +315,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 freed.set(true);
             }
 
-
+             Nd4j.getResourceManager().decrementCurrentAllocatedMemory(elementSize() * length());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

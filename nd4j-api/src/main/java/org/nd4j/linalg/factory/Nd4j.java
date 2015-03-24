@@ -34,7 +34,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.resources.ResourceManager;
-import org.nd4j.linalg.api.resources.WeakReferenceResourceManager;
+import org.nd4j.linalg.api.resources.DefaultResourceManager;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
@@ -3204,7 +3204,7 @@ public class Nd4j {
                 dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
             }
             if(resourceManagerClazz == null) {
-                resourceManagerClazz = (Class<? extends ResourceManager>) Class.forName(props.getProperty(RESOURCE_MANAGER, WeakReferenceResourceManager.class.getName()));
+                resourceManagerClazz = (Class<? extends ResourceManager>) Class.forName(props.getProperty(RESOURCE_MANAGER, DefaultResourceManager.class.getName()));
             }
 
             if (randomClazz == null) {

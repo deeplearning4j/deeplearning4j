@@ -50,6 +50,11 @@ public class FloatBuffer extends BaseDataBuffer {
 
 
     @Override
+    public int elementSize() {
+        return 4;
+    }
+
+    @Override
     public void assign(Number value, int offset) {
         for (int i = offset; i < length(); i++) {
             buffer[i] = value.floatValue();
