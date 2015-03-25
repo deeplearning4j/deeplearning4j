@@ -676,16 +676,13 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public DataSet sample(int numSamples, org.nd4j.linalg.api.rng.Random rng, boolean withReplacement) {
-        if (numSamples >= numExamples())
-            return this;
-        else {
             INDArray examples = Nd4j.create(numSamples, getFeatures().columns());
             INDArray outcomes = Nd4j.create(numSamples, numOutcomes());
             Set<Integer> added = new HashSet<>();
             for (int i = 0; i < numSamples; i++) {
                 int picked = rng.nextInt(numExamples());
                 if (!withReplacement)
-                    while (added.contains(picked)) 
+                    while (added.contains(picked))
                         picked = rng.nextInt(numExamples());
 
 
@@ -694,7 +691,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
             }
             return new DataSet(examples, outcomes);
-        }
+
     }
 
     @Override
