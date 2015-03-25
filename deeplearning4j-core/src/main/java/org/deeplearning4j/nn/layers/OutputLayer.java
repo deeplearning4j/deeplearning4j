@@ -18,7 +18,6 @@ package org.deeplearning4j.nn.layers;
 
 import java.io.Serializable;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Classifier;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -28,6 +27,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
