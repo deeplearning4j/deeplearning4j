@@ -3313,7 +3313,8 @@ public abstract class BaseNDArray implements INDArray {
             }
             //row vector
             else if(dimension == 1) {
-                return reshape(ArrayUtil.reverseCopy(shape()));
+                //make a row vector
+                return baseCase.apply(this).transpose();
 
             }
         }
