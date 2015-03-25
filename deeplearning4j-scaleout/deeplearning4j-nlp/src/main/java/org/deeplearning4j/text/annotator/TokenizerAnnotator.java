@@ -60,7 +60,7 @@ public class TokenizerAnnotator extends Tokenizer {
 	public static AnalysisEngineDescription getDescription()
 		      throws ResourceInitializationException {
 		    String modelPath = String.format("/models/%s-token.bin", "en");
-		    return createPrimitiveDescription(
+		    return createEngineDescription(
                     ConcurrentTokenizer.class,
                     opennlp.uima.util.UimaUtil.MODEL_PARAMETER,
                     ExternalResourceFactory.createExternalResourceDescription(
