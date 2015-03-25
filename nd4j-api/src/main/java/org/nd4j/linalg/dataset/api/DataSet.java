@@ -19,6 +19,7 @@ package org.nd4j.linalg.dataset.api;
 import com.google.common.base.Function;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
@@ -115,11 +116,11 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
 
     org.nd4j.linalg.dataset.DataSet sample(int numSamples);
 
-    org.nd4j.linalg.dataset.DataSet sample(int numSamples, RandomGenerator rng);
+    org.nd4j.linalg.dataset.DataSet sample(int numSamples, Random rng);
 
     org.nd4j.linalg.dataset.DataSet sample(int numSamples, boolean withReplacement);
 
-    org.nd4j.linalg.dataset.DataSet sample(int numSamples, RandomGenerator rng, boolean withReplacement);
+    org.nd4j.linalg.dataset.DataSet sample(int numSamples, Random rng, boolean withReplacement);
 
     void roundToTheNearest(int roundTo);
 
