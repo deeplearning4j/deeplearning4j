@@ -41,11 +41,20 @@ public interface Layer extends Serializable,Cloneable,Model {
     void merge(Layer layer,int batchSize);
 
 
+    /**
+     * Calculate the mean representation
+     * for the activation for this layer
+     * @return the activation mean for this layer
+     */
     INDArray activationMean();
 
 
-
-
+    /**
+     * Raw activations
+     * @param x the input to transform
+     * @return the raw activation
+     * for this layer
+     */
     INDArray preOutput(INDArray x);
 
     /**
