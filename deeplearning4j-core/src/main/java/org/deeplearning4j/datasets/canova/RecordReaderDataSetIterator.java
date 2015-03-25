@@ -177,9 +177,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+    public void setPreProcessor(org.nd4j.linalg.dataset.api.DataSetPreProcessor preProcessor) {
 
     }
+
+
 
     @Override
     public boolean hasNext() {
