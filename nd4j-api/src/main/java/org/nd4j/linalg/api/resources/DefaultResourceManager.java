@@ -3,6 +3,8 @@ package org.nd4j.linalg.api.resources;
 import com.google.common.collect.MapMaker;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
@@ -15,7 +17,7 @@ import java.util.*;
  */
 public class DefaultResourceManager implements ResourceManager {
     private Map<String,DataBuffer> entries = new MapMaker().weakValues().concurrencyLevel(8).makeMap();
-    private Map<String,Long> created = Collections.synchronizedMap(new HashMap<String, Long>());
+    private static Logger log = LoggerFactory.getLogger(DefaultResourceManager.class);
 
     public DefaultResourceManager() {
         ClassPathResource r = new ClassPathResource(NATIVE_PROPERTIES);
@@ -45,7 +47,7 @@ public class DefaultResourceManager implements ResourceManager {
 
     @Override
     public void decrementCurrentAllocatedMemory(long decrement) {
-        currentAllocated.set(currentAllocated.get() - decrement);
+        currentAllocated.getAndAdd(-decrement);
     }
 
     @Override
@@ -69,25 +71,37 @@ public class DefaultResourceManager implements ResourceManager {
     }
 
     @Override
+    public void remove(String id) {
+        entries.remove(id);
+    }
+
+    @Override
     public void register(INDArray arr) {
         entries.put(arr.id(),arr.data());
-        created.put(arr.id(),System.currentTimeMillis());
-
     }
 
     @Override
     public void purge() {
+        if(currentAllocated() > maxAllocated())
+            throw new IllegalStateException("Illegal current allocated: " + currentAllocated() + " is greater than max " + maxAllocated());
        double ratio = Double.valueOf(currentAllocated()) / Double.valueOf(maxAllocated());
         if(ratio >= memoryRatio.get()) {
+            log.trace("Amount of memory " + currentAllocated() + " out of " + maxAllocated());
+            System.gc();
+
             for(String s : entries.keySet()) {
-                if(!entries.get(s).isPersist() && entries.get(s).references().isEmpty())
-                    entries.get(s).destroy();
+                try {
+                    if (!entries.get(s).isPersist() && entries.get(s).references().isEmpty())
+                        entries.get(s).destroy();
+                }catch(Exception e) {
+
+                }
             }
 
             System.runFinalization();
+            log.trace("Amount after " + currentAllocated() + " out of " + maxAllocated());
 
         }
-
     }
 
     @Override

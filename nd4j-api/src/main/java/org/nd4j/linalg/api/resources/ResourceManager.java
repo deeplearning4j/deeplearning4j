@@ -70,6 +70,13 @@ public interface ResourceManager {
      */
     long currentAllocated();
 
+
+    /**
+     * Remove the ndarray as a reference
+     * @param id the ndarray to remove
+     */
+    void remove(String id);
+
     /**
      * Register the ndarray with the resource manager
      * @param arr the array to register

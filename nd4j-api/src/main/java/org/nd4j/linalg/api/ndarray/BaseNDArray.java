@@ -1857,6 +1857,8 @@ public abstract class BaseNDArray implements INDArray {
         cleanedUp = true;
         if (Nd4j.shouldInstrument)
             Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
+        Nd4j.getResourceManager().remove(id());
+        data().removeReferencing(id());
 
 
     }

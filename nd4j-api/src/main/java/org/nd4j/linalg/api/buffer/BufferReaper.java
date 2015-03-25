@@ -115,22 +115,7 @@ public class BufferReaper extends Thread {
     }
 
 
-    private void runFinalize() {
-        long curr = System.currentTimeMillis();
-        long old = ranFinals.get();
-        if (old < 0)
-            ranFinals.set(curr);
-        else {
-            long delta = Math.abs(curr - old);
-            long seconds = TimeUnit.MILLISECONDS.toSeconds(delta);
-            if (seconds >= 30) {
-                System.gc();
-                System.runFinalization();
-                ranFinals.set(System.currentTimeMillis());
 
-            }
-        }
-    }
 
     @Override
     public void run() {
@@ -148,7 +133,6 @@ public class BufferReaper extends Thread {
                 bufferQueue = (Reference<DataBuffer>) buffer.poll();
             }
 
-            runFinalize();
             Nd4j.getResourceManager().purge();
         }
     }
