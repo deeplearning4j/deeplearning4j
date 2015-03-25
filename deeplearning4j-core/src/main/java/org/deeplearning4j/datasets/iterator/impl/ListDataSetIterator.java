@@ -108,15 +108,12 @@ public class ListDataSetIterator implements DataSetIterator {
 		return list.size();
 	}
 
-    /**
-     * Set a pre processor
-     *
-     * @param preProcessor a pre processor to set
-     */
     @Override
-    public void setPreProcessor(DataSetPreProcessor preProcessor) {
-       this.preProcessor = preProcessor;
+    public void setPreProcessor(org.nd4j.linalg.dataset.api.DataSetPreProcessor preProcessor) {
+        this.preProcessor = (DataSetPreProcessor) preProcessor;
     }
+
+
 
     @Override
 	public DataSet next(int num) {
