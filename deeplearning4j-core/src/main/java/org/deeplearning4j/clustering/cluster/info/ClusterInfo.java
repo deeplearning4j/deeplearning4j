@@ -28,13 +28,11 @@ import java.util.TreeSet;
 
 public class ClusterInfo {
 
-	private double				averagePointDistanceFromCenter;
-	private double				maxPointDistanceFromCenter;
-	private double				pointDistanceFromCenterVariance;
-	private double				totalPointDistanceFromCenter;
-	private Map<String, Double>	pointDistancesFromCenter	= new HashMap<String, Double>();
-
-	private boolean				threadSafe;
+	private double averagePointDistanceFromCenter;
+	private double maxPointDistanceFromCenter;
+	private double pointDistanceFromCenterVariance;
+	private double totalPointDistanceFromCenter;
+	private Map<String, Double>	pointDistancesFromCenter = new HashMap<>();
 
 	public ClusterInfo() {
 		this(false);
@@ -42,13 +40,13 @@ public class ClusterInfo {
 
 	public ClusterInfo(boolean threadSafe) {
 		super();
-		this.threadSafe = threadSafe;
-		if (threadSafe)
+		if (threadSafe) {
 			pointDistancesFromCenter = Collections.synchronizedMap(pointDistancesFromCenter);
+		}
 	}
 
 	public Set<Map.Entry<String, Double>> getSortedPointDistancesFromCenter() {
-		SortedSet<Map.Entry<String, Double>> sortedEntries = new TreeSet<Map.Entry<String, Double>>(new Comparator<Map.Entry<String, Double>>() {
+		SortedSet<Map.Entry<String, Double>> sortedEntries = new TreeSet<>(new Comparator<Map.Entry<String, Double>>() {
 			@Override
 			public int compare(Map.Entry<String, Double> e1, Map.Entry<String, Double> e2) {
 				int res = e1.getValue().compareTo(e2.getValue());
@@ -60,7 +58,7 @@ public class ClusterInfo {
 	}
 
 	public Set<Map.Entry<String, Double>> getReverseSortedPointDistancesFromCenter() {
-		SortedSet<Map.Entry<String, Double>> sortedEntries = new TreeSet<Map.Entry<String, Double>>(new Comparator<Map.Entry<String, Double>>() {
+		SortedSet<Map.Entry<String, Double>> sortedEntries = new TreeSet<>(new Comparator<Map.Entry<String, Double>>() {
 			@Override
 			public int compare(Map.Entry<String, Double> e1, Map.Entry<String, Double> e2) {
 				int res = e1.getValue().compareTo(e2.getValue());
@@ -73,7 +71,7 @@ public class ClusterInfo {
 
 	public List<String> getPointsFartherFromCenterThan(double maxDistance) {
 		Set<Map.Entry<String, Double>> sorted = getReverseSortedPointDistancesFromCenter();
-		List<String> ids = new ArrayList<String>();
+		List<String> ids = new ArrayList<>();
 		for (Map.Entry<String, Double> entry : sorted) {
 			if (entry.getValue() < maxDistance)
 				break;
