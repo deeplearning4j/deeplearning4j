@@ -23,7 +23,7 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
  * A wrapper for a dataset to sample from.
  * This will randomly sample from the given dataset.
  *
- * @author Adam GIbson
+ * @author Adam Gibson
  */
 public class SamplingDataSetIterator implements DataSetIterator {
 
@@ -35,7 +35,23 @@ public class SamplingDataSetIterator implements DataSetIterator {
     private int batchSize;
     private int totalNumberSamples;
     private int numTimesSampled;
+    private boolean replace = false;
     private DataSetPreProcessor preProcessor;
+
+    /**
+     * @param sampleFrom         the dataset to sample from
+     * @param batchSize          the batch size to sample
+     * @param totalNumberSamples the sample size
+     */
+    public SamplingDataSetIterator(DataSet sampleFrom, int batchSize,
+                                   int totalNumberSamples,boolean replace) {
+        super();
+        this.sampleFrom = sampleFrom;
+        this.batchSize = batchSize;
+        this.totalNumberSamples = totalNumberSamples;
+        this.replace = replace;
+    }
+
 
     /**
      * @param sampleFrom         the dataset to sample from
@@ -57,7 +73,7 @@ public class SamplingDataSetIterator implements DataSetIterator {
 
     @Override
     public DataSet next() {
-        DataSet ret = sampleFrom.sample(batchSize);
+        DataSet ret = sampleFrom.sample(batchSize,replace);
         numTimesSampled += batchSize;
         return ret;
     }

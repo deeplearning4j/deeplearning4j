@@ -19,7 +19,6 @@ package org.nd4j.linalg.dataset;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -640,7 +639,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public DataSet sample(int numSamples) {
-        return sample(numSamples, new MersenneTwister(System.currentTimeMillis()));
+        return sample(numSamples,Nd4j.getRandom());
     }
 
     /**
@@ -651,7 +650,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      * @return the sampled dataset without replacement
      */
     @Override
-    public DataSet sample(int numSamples, RandomGenerator rng) {
+    public DataSet sample(int numSamples, org.nd4j.linalg.api.rng.Random rng) {
         return sample(numSamples, rng, false);
     }
 
@@ -664,7 +663,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public DataSet sample(int numSamples, boolean withReplacement) {
-        return sample(numSamples, new MersenneTwister(System.currentTimeMillis()), withReplacement);
+        return sample(numSamples, Nd4j.getRandom(), withReplacement);
     }
 
     /**
@@ -676,26 +675,23 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      * @return the sample dataset
      */
     @Override
-    public DataSet sample(int numSamples, RandomGenerator rng, boolean withReplacement) {
-        if (numSamples >= numExamples())
-            return this;
-        else {
+    public DataSet sample(int numSamples, org.nd4j.linalg.api.rng.Random rng, boolean withReplacement) {
             INDArray examples = Nd4j.create(numSamples, getFeatures().columns());
             INDArray outcomes = Nd4j.create(numSamples, numOutcomes());
-            Set<Integer> added = new HashSet<Integer>();
+            Set<Integer> added = new HashSet<>();
             for (int i = 0; i < numSamples; i++) {
                 int picked = rng.nextInt(numExamples());
                 if (!withReplacement)
-                    while (added.contains(picked)) {
+                    while (added.contains(picked))
                         picked = rng.nextInt(numExamples());
 
-                    }
+
                 examples.putRow(i, get(picked).getFeatures());
                 outcomes.putRow(i, get(picked).getLabels());
 
             }
             return new DataSet(examples, outcomes);
-        }
+
     }
 
     @Override
