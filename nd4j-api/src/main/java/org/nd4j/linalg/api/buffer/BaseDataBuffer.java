@@ -107,6 +107,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void addReferencing(String id) {
+        if(!Nd4j.getResourceManager().isEnabled())
+            return;
         referencing.add(id);
     }
 

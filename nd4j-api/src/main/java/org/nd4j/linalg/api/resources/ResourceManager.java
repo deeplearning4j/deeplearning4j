@@ -97,6 +97,21 @@ public interface ResourceManager {
      */
     boolean shouldCollect(INDArray collect);
 
+    /**
+     * Disable the resource manager
+     */
+    void disable();
 
+    /**
+     * Enable the resource manager (on by default)
+     */
+    void enable();
+
+    /**
+     * Whether the resource manager is enabled
+     * @return true if the resource manager is enabled,
+     * false otehrwise
+     */
+    boolean isEnabled();
 
 }

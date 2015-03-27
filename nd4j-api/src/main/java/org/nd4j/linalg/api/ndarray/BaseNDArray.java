@@ -81,7 +81,7 @@ public abstract class BaseNDArray implements INDArray {
     protected int rows, columns;
     protected int length;
     protected INDArray linearView;
-    protected String id = UUID.randomUUID().toString();
+    protected String id = Nd4j.getResourceManager().isEnabled() ? UUID.randomUUID().toString() : "";
     protected boolean cleanedUp = false;
     protected transient WeakReference<INDArray> ref;
 
@@ -1754,11 +1754,6 @@ public abstract class BaseNDArray implements INDArray {
 
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-        cleanup();
-    }
 
     @Override
     public INDArray getScalar(int i) {

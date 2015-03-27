@@ -16,8 +16,6 @@
         <java.version>1.7</java.version>
         <hadoop.version>2.4.0</hadoop.version>
         <spark.version>1.2.1</spark.version>
-        <PermGen>512m</PermGen>
-        <MaxPermGen>2g</MaxPermGen>
     </properties>
 
     <artifactId>nd4j-scala-notebook</artifactId>
@@ -126,8 +124,6 @@
                         <jvmArg>-Xms64m</jvmArg>
                         <jvmArg>-Xms1024m</jvmArg>
                         <jvmArg>-Xmx1024m</jvmArg>
-                        <jvmArg>-XX:PermSize=${PermGen}</jvmArg>
-                        <jvmArg>-XX:MaxPermSize=${MaxPermGen}</jvmArg>
                     </jvmArgs>
                     <javacArgs>
                         <javacArg>-source</javacArg>

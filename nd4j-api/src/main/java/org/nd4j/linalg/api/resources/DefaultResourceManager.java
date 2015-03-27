@@ -10,6 +10,7 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Default resource manager
@@ -18,7 +19,7 @@ import java.util.*;
 public class DefaultResourceManager implements ResourceManager {
     private Map<String,DataBuffer> entries = new MapMaker().weakValues().concurrencyLevel(8).makeMap();
     private static Logger log = LoggerFactory.getLogger(DefaultResourceManager.class);
-
+    private AtomicBoolean disabled = new AtomicBoolean(false);
     public DefaultResourceManager() {
         ClassPathResource r = new ClassPathResource(NATIVE_PROPERTIES);
         if(!r.exists()) {
@@ -72,11 +73,15 @@ public class DefaultResourceManager implements ResourceManager {
 
     @Override
     public void remove(String id) {
+        if(disabled.get())
+            return;
         entries.remove(id);
     }
 
     @Override
     public void register(INDArray arr) {
+        if(disabled.get())
+            return;
         entries.put(arr.id(),arr.data());
     }
 
@@ -84,7 +89,9 @@ public class DefaultResourceManager implements ResourceManager {
     public void purge() {
         if(currentAllocated() > maxAllocated())
             throw new IllegalStateException("Illegal current allocated: " + currentAllocated() + " is greater than max " + maxAllocated());
-       double ratio = Double.valueOf(currentAllocated()) / Double.valueOf(maxAllocated());
+       if(disabled.get())
+           return;
+        double ratio = Double.valueOf(currentAllocated()) / Double.valueOf(maxAllocated());
         if(ratio >= memoryRatio.get()) {
             log.trace("Amount of memory " + currentAllocated() + " out of " + maxAllocated());
             System.gc();
@@ -108,6 +115,21 @@ public class DefaultResourceManager implements ResourceManager {
     public boolean shouldCollect(INDArray collect) {
         return !collect.data().isPersist() &&  collect.data().references().isEmpty();
 
+    }
+
+    @Override
+    public void disable() {
+        disabled.set(true);
+    }
+
+    @Override
+    public void enable() {
+        disabled.set(false);
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return !disabled.get();
     }
 
 
