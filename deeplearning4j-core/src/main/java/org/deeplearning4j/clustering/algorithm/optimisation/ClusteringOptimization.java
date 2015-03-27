@@ -19,9 +19,7 @@ package org.deeplearning4j.clustering.algorithm.optimisation;
 public class ClusteringOptimization {
 
 	private ClusteringOptimizationType	type;
-	private double						value;
-
-	
+	private double value;
 
 	public ClusteringOptimization(ClusteringOptimizationType type, double value) {
 		super();

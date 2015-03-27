@@ -32,12 +32,12 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 
 public class Point implements INDArray {
 
-	private static final long	serialVersionUID	= -6658028541426027226L;
+	private static final long	serialVersionUID = -6658028541426027226L;
 
-	private String				id					= UUID.randomUUID().toString();
-	private String				label;
-	private INDArray			array;
-	private boolean				cleanedUp			= false;
+	private String id = UUID.randomUUID().toString();
+	private String label;
+	private INDArray array;
+	private boolean	cleanedUp = false;
 
 	public Point(INDArray array) {
 		super();
@@ -60,8 +60,6 @@ public class Point implements INDArray {
 		this.label = label;
 		this.array = array;
 	}
-	
-	
 
 	public static List<Point> toPoints(List<INDArray> vectors) {
 		List<Point> points = new ArrayList<>();
