@@ -32,10 +32,24 @@ import java.net.URI;
 public class CanovaMapRedInputSplit implements org.canova.api.split.InputSplit {
 
     private InputSplit split;
+    private org.apache.hadoop.mapreduce.InputSplit inputSplit;
     private URI[] uris;
 
     public CanovaMapRedInputSplit(InputSplit split) {
         this.split = split;
+        try {
+            FileSplit split2 = (FileSplit) split;
+            //create from the path
+            uris = new URI[1];
+            uris[0] = URI.create(split2.getPath().toString());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    public CanovaMapRedInputSplit(org.apache.hadoop.mapreduce.InputSplit inputSplit) {
+        this.inputSplit = inputSplit;
         try {
             FileSplit split2 = (FileSplit) split;
             //create from the path
