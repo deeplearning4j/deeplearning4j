@@ -94,15 +94,12 @@ public class TestDataSetIterator implements DataSetIterator {
 		return wrapped.numExamples();
 	}
 
-    /**
-     * Set a pre processor
-     *
-     * @param preProcessor a pre processor to set
-     */
     @Override
-    public void setPreProcessor(DataSetPreProcessor preProcessor) {
-        this.preProcessor = preProcessor;
+    public void setPreProcessor(org.nd4j.linalg.dataset.api.DataSetPreProcessor preProcessor) {
+        this.preProcessor = (DataSetPreProcessor) preProcessor;
     }
+
+
 
     public synchronized int getNumDataSets() {
 		return numDataSets;
