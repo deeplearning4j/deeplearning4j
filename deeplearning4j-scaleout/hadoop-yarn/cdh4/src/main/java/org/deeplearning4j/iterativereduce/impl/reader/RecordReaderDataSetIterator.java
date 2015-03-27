@@ -18,7 +18,7 @@ package org.deeplearning4j.iterativereduce.impl.reader;
 
 
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapred.RecordReader;
+import org.apache.hadoop.mapreduce.RecordReader;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.DataSetPreProcessor;
 import org.deeplearning4j.iterativereduce.runtime.io.WritableConverter;
@@ -27,6 +27,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -59,12 +60,20 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
 
+
+
     @Override
     public DataSet next(int num) {
         List<DataSet> dataSets = new ArrayList<>();
         for(int i = 0; i < num; i++) {
-            Collection<Writable> record;
-            record = (Collection<Writable>) recordReader.createValue();
+            Collection<Writable> record = null;
+            try {
+                record = (Collection<Writable>) recordReader.getCurrentValue();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             List<Writable> currList;
             if(record instanceof List)
                 currList = (List<Writable>) record;
@@ -148,10 +157,13 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     }
 
+
+
+
     @Override
     public boolean hasNext() {
         try {
-            return recordReader.next(null,null);
+            return recordReader.getProgress() < 1;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -66,7 +66,7 @@ public class IRUnitDriver {
 	private ArrayList<ComputableWorker> workers;
 	private String appPropertiesFile = "";
 
-  static {
+	static {
 		try {
 			defaultConf.set("fs.defaultFS", "file:///");
 			localFs = FileSystem.getLocal(defaultConf);
@@ -161,8 +161,8 @@ public class IRUnitDriver {
 
 		// ---- this all needs to be done in
 		JobConf job = new JobConf(defaultConf);
-    RecordReader recordReader;
-    try {
+		RecordReader recordReader;
+		try {
 			recordReader = (RecordReader) Class.forName(defaultConf.get(APP_RECORD_READER)).newInstance();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -216,7 +216,7 @@ public class IRUnitDriver {
 				e.printStackTrace();
 			}
 
-      worker.setRecordReader(reader);
+			worker.setRecordReader(reader);
 			workers.add(worker);
 
 			log.info("> setup Worker " + x);
@@ -238,18 +238,18 @@ public class IRUnitDriver {
 
 		for (int x = 0; x < iterations; x++) {
 
-      for (ComputableWorker worker : workers) {
-        Updateable result = worker.compute();
-        workerResults.add(result);
-      }
+			for (ComputableWorker worker : workers) {
+				Updateable result = worker.compute();
+				workerResults.add(result);
+			}
 
 			Updateable master_result = this.master.compute(workerResults, master_results);
 
 
 			// process global updates
-      for (ComputableWorker worker : workers) {
-        worker.update(master_result);
-      }
+			for (ComputableWorker worker : workers) {
+				worker.update(master_result);
+			}
 
 
 			log.info("Complete " + iterations + " Iterations Per Worker.");

@@ -17,7 +17,7 @@
 package org.deeplearning4j.iterativereduce.runtime;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapred.RecordReader;
+import org.apache.hadoop.mapreduce.RecordReader;
 import org.deeplearning4j.scaleout.api.ir.Updateable;
 
 import java.util.List;

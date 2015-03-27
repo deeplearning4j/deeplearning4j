@@ -42,8 +42,15 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Word2Vec {
 
     private  Broadcast<VocabCache> vocabCacheBroadcast;
-    private String tokenizerFactoryClazz = DefaultTokenizerFactory.class.getName();
+    private String tokenizerFactoryClazz;
 
+    public Word2Vec(String tokenizerFactoryClazz) {
+        this.tokenizerFactoryClazz = tokenizerFactoryClazz;
+    }
+
+    public Word2Vec() {
+        this(DefaultTokenizerFactory.class.getName());
+    }
 
     /**
      * Train and return the result based on the given records.

@@ -17,7 +17,7 @@
 package org.deeplearning4j.iterativereduce.impl.single;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapred.RecordReader;
+import org.apache.hadoop.mapreduce.RecordReader;
 import org.deeplearning4j.scaleout.api.ir.ParameterVectorUpdateable;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.nn.api.Layer;
@@ -86,11 +86,11 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     @Override
     public ParameterVectorUpdateable compute() {
         try {
-            while(recordParser.next(null,null)) {
-                DataSet params = (DataSet) recordParser.createValue();
+            while(recordParser.nextKeyValue()) {
+                DataSet params = (DataSet) recordParser.getCurrentValue();
                 neuralNetwork.fit(params.getFeatureMatrix());
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -98,9 +98,10 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     }
 
     @Override
-    public void setRecordReader(org.apache.hadoop.mapred.RecordReader r) {
+    public void setRecordReader(org.apache.hadoop.mapreduce.RecordReader r) {
         this.recordParser = r;
     }
+
 
 
     @Override
