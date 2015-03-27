@@ -101,15 +101,12 @@ public class SamplingDataSetIterator implements DataSetIterator {
 		return sampleFrom.numExamples();
 	}
 
-	/**
-	 * Set a pre processor
-	 *
-	 * @param preProcessor a pre processor to set
-	 */
-	@Override
-	public void setPreProcessor(DataSetPreProcessor preProcessor) {
-			this.preProcessor = preProcessor;
-	}
+    @Override
+    public void setPreProcessor(org.nd4j.linalg.dataset.api.DataSetPreProcessor preProcessor) {
+        this.preProcessor = (DataSetPreProcessor) preProcessor;
+    }
+
+
 
     @Override
 	public DataSet next(int num) {

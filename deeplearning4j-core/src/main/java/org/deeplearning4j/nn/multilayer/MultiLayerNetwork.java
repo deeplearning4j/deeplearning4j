@@ -19,7 +19,6 @@ package org.deeplearning4j.nn.multilayer;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -34,6 +33,7 @@ import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
 import org.deeplearning4j.util.MultiLayerUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;

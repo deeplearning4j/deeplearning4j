@@ -20,14 +20,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.algorithm.iteration.IterationHistory;
 import org.deeplearning4j.clustering.algorithm.iteration.IterationInfo;
-import org.deeplearning4j.clustering.algorithm.optimisation.ClusteringOptimizationType;
 import org.deeplearning4j.clustering.algorithm.strategy.ClusteringStrategy;
 import org.deeplearning4j.clustering.algorithm.strategy.ClusteringStrategyType;
 import org.deeplearning4j.clustering.algorithm.strategy.OptimisationStrategy;
@@ -36,11 +33,9 @@ import org.deeplearning4j.clustering.cluster.ClusterSet;
 import org.deeplearning4j.clustering.cluster.ClusterUtils;
 import org.deeplearning4j.clustering.cluster.Point;
 import org.deeplearning4j.clustering.cluster.info.ClusterSetInfo;
-import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.util.MultiThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,14 +50,14 @@ import org.slf4j.LoggerFactory;
 public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializable {
 
 	private static final long serialVersionUID	= 338231277453149972L;
-	private static Logger log = LoggerFactory.getLogger(BaseClusteringAlgorithm.class);
+	private static final Logger log = LoggerFactory.getLogger(BaseClusteringAlgorithm.class);
 
 	private ClusteringStrategy clusteringStrategy;
 	private IterationHistory iterationHistory;
 	private int	currentIteration = 0;
 	private ClusterSet	clusterSet;
 	private List<Point>	initialPoints;
-    private transient ExecutorService exec;
+	private transient ExecutorService exec;
 
 	protected BaseClusteringAlgorithm(ClusteringStrategy clusteringStrategy) {
 		this.clusteringStrategy = clusteringStrategy;
@@ -88,7 +83,8 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
 	}
 
 	private void iterations() {
-		while (!clusteringStrategy.getTerminationCondition().isSatisfied(iterationHistory) || iterationHistory.getMostRecentIterationInfo().isStrategyApplied()) {
+		while (!clusteringStrategy.getTerminationCondition().isSatisfied(iterationHistory) ||
+				iterationHistory.getMostRecentIterationInfo().isStrategyApplied()) {
 			currentIteration++;
 			removePoints();
 			classifyPoints();

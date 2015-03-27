@@ -30,10 +30,10 @@ import com.google.common.collect.Table;
 
 public class ClusterSetInfo {
 
-	private Map<String, ClusterInfo>		clustersInfos					= new HashMap<String, ClusterInfo>();
+	private Map<String, ClusterInfo> clustersInfos	= new HashMap<>();
 	private Table<String, String, Double>	distancesBetweenClustersCenters	= HashBasedTable.create();
-	private AtomicInteger					pointLocationChange;
-	private boolean							threadSafe;
+	private AtomicInteger	pointLocationChange;
+	private boolean	threadSafe;
 
 	public ClusterSetInfo() {
 		this(false);
@@ -96,8 +96,6 @@ public class ClusterSetInfo {
 			count += clusterInfo.getPointDistancesFromCenter().size();
 		return count;
 	}
-	
-	
 
 	public Map<String, ClusterInfo> getClustersInfos() {
 		return clustersInfos;
