@@ -22,10 +22,10 @@ import java.util.List;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapred.RecordReader;
+import org.apache.hadoop.mapreduce.RecordReader;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.scaleout.api.ir.ParameterVectorUpdateable;
 import org.deeplearning4j.iterativereduce.impl.reader.RecordReaderDataSetIterator;
+import org.deeplearning4j.scaleout.api.ir.ParameterVectorUpdateable;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 
 
@@ -52,8 +52,8 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     private RecordReader recordParser;
     private DataSetIterator hdfsDataSetIterator = null;
     private long totalRecordsProcessed = 0;
-    StopWatch totalRunTimeWatch = new StopWatch();
-    StopWatch batchWatch = new StopWatch();
+    private StopWatch totalRunTimeWatch = new StopWatch();
+    private StopWatch batchWatch = new StopWatch();
 
     // confs (for now, may get rid of later)
     private int batchSize = 20;
@@ -72,20 +72,20 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     public ParameterVectorUpdateable compute() {
         log.info("Worker > Compute() -------------------------- ");
 
-        DataSet hdfs_recordBatch = null;
+        DataSet hdfsBatch = null;
 
         if ( this.hdfsDataSetIterator.hasNext() ) {
-            hdfs_recordBatch = this.hdfsDataSetIterator.next();
-            if (hdfs_recordBatch.getFeatures().rows() > 0) {
+            hdfsBatch = this.hdfsDataSetIterator.next();
+            if (hdfsBatch.getFeatures().rows() > 0) {
 
-                log.info("Rows: " + hdfs_recordBatch.numExamples() + ", inputs: " + hdfs_recordBatch.numInputs() + ", " + hdfs_recordBatch);
+                log.info("Rows: " + hdfsBatch.numExamples() + ", inputs: " + hdfsBatch.numInputs() + ", " + hdfsBatch);
 
 
                 // calc stats on number records processed
-                this.totalRecordsProcessed += hdfs_recordBatch.getFeatures().rows();
+                this.totalRecordsProcessed += hdfsBatch.getFeatures().rows();
                 batchWatch.reset();
                 batchWatch.start();
-                this.multiLayerNetwork.fit( hdfs_recordBatch );
+                this.multiLayerNetwork.fit( hdfsBatch );
                 batchWatch.stop();
                 log.info("Worker > Processed Total " + this.totalRecordsProcessed + ", Batch Time " + batchWatch.toString() + " Total Time " + totalRunTimeWatch.toString());
             }
@@ -106,6 +106,12 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
         return new ParameterVectorUpdateable(multiLayerNetwork.params());
     }
 
+    @Override
+    public void setRecordReader(RecordReader r) {
+        this.recordParser = r;
+        // int batchSize,int labelIndex,int numPossibleLabels
+        this.hdfsDataSetIterator = new RecordReaderDataSetIterator(r,null,batchSize,labelIndex,numberClasses);
+    }
 
 
     @Override
@@ -119,16 +125,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
         return new ParameterVectorUpdateable(multiLayerNetwork.params());
     }
 
-    /**
-     *
-     *
-     * @param lineParser
-     */
-    @Override
-    public void setRecordReader(RecordReader lineParser) {
-        this.recordParser = lineParser;
-        this.hdfsDataSetIterator = new RecordReaderDataSetIterator(recordParser,null,batchSize,labelIndex,numberClasses);
-    }
+
 
     /**
      * setup the local DBN instance based on conf params
