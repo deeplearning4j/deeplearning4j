@@ -18,6 +18,7 @@ package org.deeplearning4j.plot;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.core.io.ClassPathResource;
@@ -32,9 +33,11 @@ public class TsneTest {
 
     @Test
     public void testTsne() throws Exception {
+        Nd4j.dtype = DataBuffer.DOUBLE;
         Tsne calculation = new Tsne.Builder().setMaxIter(1).usePca(false).setSwitchMomentumIteration(20)
-                .normalize(true).useAdaGrad(true).learningRate(500f).perplexity(20f).minGain(1e-1f)
+                .normalize(true).useAdaGrad(false).learningRate(500).perplexity(20).minGain(1e-1f)
                 .build();
+        Nd4j.getResourceManager().disable();
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
         File f = resource.getFile();
         INDArray data = Nd4j.readTxt(f.getAbsolutePath(),"   ");

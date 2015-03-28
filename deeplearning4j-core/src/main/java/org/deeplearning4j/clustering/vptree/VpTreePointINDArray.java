@@ -24,6 +24,8 @@ import com.google.common.base.Preconditions;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SliceOp;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -63,7 +65,7 @@ public class VpTreePointINDArray implements VpTreePoint<VpTreePointINDArray> {
   @Override
   public double distance(VpTreePointINDArray p) {
     Preconditions.checkArgument(p != null);
-    return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createAccum("euclidean",data,p.data)).currentResult().doubleValue();
+    return Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(data,p.data)).currentResult().doubleValue();
   }
 
   @Override
