@@ -420,7 +420,7 @@ public class BarnesHutTsne extends Tsne implements Model {
     public void step(INDArray p,int i) {
         Gradient g = gradient();
         update(g);
-        y.addi(yIncs);
+        y.addi(g.getGradientFor(Y_GRAD));
 
     }
 
@@ -447,6 +447,7 @@ public class BarnesHutTsne extends Tsne implements Model {
             gradChange = adaGrad.getGradient(gradChange);
 
         }
+
         else
             gradChange.muli(learningRate);
 
@@ -483,9 +484,7 @@ public class BarnesHutTsne extends Tsne implements Model {
                 double Q = pow(buff,2).sum(Integer.MAX_VALUE).getDouble(0);
                 Q = (1.0 / (1.0 + Q)) / sum_Q.doubleValue();
                 double val = vals.getDouble(i);
-                double add = Math.log((val + Double.MIN_VALUE) / (Q + Double.MAX_VALUE));
-                if(Double.isNaN(add) || Double.isInfinite(add))
-                    add = Nd4j.EPS_THRESHOLD;
+                double add = FastMath.log((val + Double.MIN_VALUE) / (Q + Double.MIN_VALUE));
                 C += val * add;
             }
         }
