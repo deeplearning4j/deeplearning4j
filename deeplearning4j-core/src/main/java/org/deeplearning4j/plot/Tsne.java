@@ -16,12 +16,8 @@
 
 package org.deeplearning4j.plot;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.math3.random.MersenneTwister;
+
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.clustering.vptree.VpTreeNode;
-import org.deeplearning4j.clustering.vptree.VpTreePointINDArray;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
@@ -38,9 +34,6 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static org.nd4j.linalg.factory.Nd4j.*;
 import static org.nd4j.linalg.ops.transforms.Transforms.*;
@@ -71,51 +64,10 @@ public class Tsne implements Serializable {
     protected INDArray gains,yIncs;
     protected INDArray y;
     protected transient IterationListener iterationListener;
-
-
-
-
     protected static ClassPathResource r = new ClassPathResource("/scripts/tsne.py");
-    protected static ClassPathResource r2 = new ClassPathResource("/scripts/render.py");
-
-
-    static {
-        loadIntoTmp();
-    }
-
-    public Tsne() {
-
-    }
-
-    protected static void loadIntoTmp() {
-
-        File script = new File("/tmp/tsne.py");
-
-
-        try {
-            List<String> lines = IOUtils.readLines(r.getInputStream());
-            FileUtils.writeLines(script, lines);
-
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to load python file");
-
-        }
-
-
-        File script2 = new File("/tmp/render.py");
-
-
-        try {
-            List<String> lines2 = IOUtils.readLines(r2.getInputStream());
-            FileUtils.writeLines(script2, lines2);
-
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to load python file");
-
-        }
-
-    }
     protected static final Logger log = LoggerFactory.getLogger(Tsne.class);
+
+    public Tsne() {}
 
     public Tsne(
             int maxIter,
@@ -155,10 +107,7 @@ public class Tsne implements Serializable {
     public Pair<INDArray,INDArray> hBeta(INDArray d,double beta) {
         INDArray P =  exp(d.neg().muli(beta));
         INDArray sum = P.sum(Integer.MAX_VALUE);
-        INDArray otherSum = d.mul(P).sum(0);
-        INDArray H = log(sum)
-                .addi(otherSum.muli(beta).divi(sum));
-
+        INDArray H = log(sum).addi(d.mul(P).sum(0).muli(beta).divi(sum));
         P.divi(sum);
         return new Pair<>(H,P);
     }
@@ -178,69 +127,54 @@ public class Tsne implements Serializable {
         final INDArray p = zeros(n, n);
         final INDArray beta =  ones(n, 1);
         final double logU =  Math.log(u);
-        final VpTreeNode<VpTreePointINDArray> tree;
 
         log.info("Calculating probabilities of data similarities..");
-        ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         for(int i = 0; i < n; i++) {
-            if(i % 500 == 0)
+            if(i % 500 == 0 && i > 0)
                 log.info("Handled " + i + " records");
-            final int j = i;
-            service.submit(new Runnable() {
-                @Override
-                public void run() {
-                    double betaMin = Float.NEGATIVE_INFINITY;
-                    double betaMax = Float.POSITIVE_INFINITY;
-                    NDArrayIndex[] range = new NDArrayIndex[]{
-                            NDArrayIndex.concat(NDArrayIndex.interval(0, j),NDArrayIndex.interval(j + 1, d.columns()))};
 
-                    INDArray row = d.slice(j).get(range);
-                    Pair<INDArray,INDArray> pair =  hBeta(row,beta.getDouble(j));
-                    INDArray hDiff = pair.getFirst().sub(logU);
-                    int tries = 0;
+            double betaMin = Double.NEGATIVE_INFINITY;
+            double betaMax = Double.POSITIVE_INFINITY;
+            NDArrayIndex[] range = new NDArrayIndex[]{
+                    NDArrayIndex.concat(NDArrayIndex.interval(0, i),NDArrayIndex.interval(i + 1, d.columns()))};
+
+            INDArray row = d.slice(i).get(range);
+            Pair<INDArray,INDArray> pair =  hBeta(row,beta.getDouble(i));
+            INDArray hDiff = pair.getFirst().sub(logU);
+            int tries = 0;
 
 
-                    //while hdiff > tolerance
-                    while(BooleanIndexing.and(abs(hDiff), Conditions.greaterThan(tolerance)) && tries < 50) {
-                        //if hdiff > 0
-                        if(BooleanIndexing.and(hDiff,Conditions.greaterThan(0))) {
-                            if(Double.isInfinite(betaMax))
-                                beta.putScalar(j,beta.getDouble(j) * 2.0);
-                            else
-                                beta.putScalar(j,(beta.getDouble(j) + betaMax) / 2.0);
-                            betaMin = beta.getDouble(j);
-                        }
-                        else {
-                            if(Double.isInfinite(betaMin))
-                                beta.putScalar(j,beta.getDouble(j) / 2.0);
-                            else
-                                beta.putScalar(j,(beta.getDouble(j) + betaMin) / 2.0);
-                            betaMax = beta.getDouble(j);
-                        }
-
-                        pair = hBeta(row,beta.getDouble(j));
-                        hDiff = pair.getFirst().subi(logU);
-                        tries++;
-                    }
-
-                    p.slice(j).put(range,pair.getSecond());
-
+            //while hdiff > tolerance
+            while(BooleanIndexing.and(abs(hDiff), Conditions.greaterThan(tolerance)) && tries < 50) {
+                //if hdiff > 0
+                if(BooleanIndexing.and(hDiff,Conditions.greaterThan(0))) {
+                    if(Double.isInfinite(betaMax))
+                        beta.putScalar(i,beta.getDouble(i) * 2.0);
+                    else
+                        beta.putScalar(i,(beta.getDouble(i) + betaMax) / 2.0);
+                    betaMin = beta.getDouble(i);
                 }
-            });
+                else {
+                    if(Double.isInfinite(betaMin))
+                        beta.putScalar(i,beta.getDouble(i) / 2.0);
+                    else
+                        beta.putScalar(i,(beta.getDouble(i) + betaMin) / 2.0);
+                    betaMax = beta.getDouble(i);
+                }
+
+                pair = hBeta(row,beta.getDouble(i));
+                hDiff = pair.getFirst().subi(logU);
+                tries++;
+            }
+
+            p.slice(i).put(range,pair.getSecond());
+
 
         }
 
 
-        try {
-            service.shutdown();
-            service.awaitTermination(1, TimeUnit.DAYS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
 
         //dont need data in memory after
-        d.data().flush();
-
         log.info("Mean value of sigma " + sqrt(beta.rdiv(1)).mean(Integer.MAX_VALUE));
         BooleanIndexing.applyWhere(p,Conditions.isNan(),new Value(realMin));
 
@@ -250,10 +184,9 @@ public class Tsne implements Serializable {
 
 
         INDArray pOut = p.add(permute);
-        BooleanIndexing.applyWhere(pOut,Conditions.isNan(),new Value(realMin));
 
         pOut.divi(pOut.sum(Integer.MAX_VALUE));
-        BooleanIndexing.applyWhere(pOut,Conditions.lessThan(1e-12),new Value(1e-12));
+        BooleanIndexing.applyWhere(pOut,Conditions.lessThan(Nd4j.EPS_THRESHOLD),new Value(Nd4j.EPS_THRESHOLD));
         //ensure no nans
         return pOut;
 
@@ -274,7 +207,7 @@ public class Tsne implements Serializable {
         if(usePca)
             X = PCA.pca(X, Math.min(50,X.columns()),normalize);
             //normalization (don't normalize again after pca)
-        else if(normalize) {
+         if(normalize) {
             X.subi(X.min(Integer.MAX_VALUE));
             X = X.divi(X.max(Integer.MAX_VALUE));
             X = X.subiRowVector(X.mean(0));
@@ -283,21 +216,16 @@ public class Tsne implements Serializable {
         if(nDims > X.columns())
             nDims = X.columns();
 
-
-
-
         INDArray sumX =  pow(X, 2).sum(1);
 
 
         INDArray D = X.mmul(
                 X.transpose()).muli(-2)
-                .addiRowVector(sumX)
+                .addRowVector(sumX)
                 .transpose()
-                .addiRowVector(sumX);
+                .addRowVector(sumX);
 
 
-        //flush inputs after done
-        X.data().flush();
         //output
         if(y == null)
             y = randn(X.rows(),nDims,Nd4j.getRandom()).muli(1e-3f);
