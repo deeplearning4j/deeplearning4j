@@ -62,6 +62,7 @@ public class MultiLayerConfiguration implements Serializable {
         return processors.get(layer);
     }
 
+
     public double getDampingFactor() {
         return dampingFactor;
     }
@@ -225,8 +226,13 @@ public class MultiLayerConfiguration implements Serializable {
         protected boolean useRBMPropUpAsActivations = false;
         protected double dampingFactor = 100;
         protected Map<Integer,OutputPreProcessor> preProcessors = new HashMap<>();
+        protected boolean backward = false;
 
 
+        public Builder backward(boolean backward) {
+            this.backward = backward;
+            return this;
+        }
 
         public Builder preProcessor(Integer layer,OutputPreProcessor preProcessor) {
             preProcessors.put(layer,preProcessor);
@@ -286,6 +292,7 @@ public class MultiLayerConfiguration implements Serializable {
             conf.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
             conf.dampingFactor = dampingFactor;
             conf.processors = preProcessors;
+            conf.backward = backward;
             return conf;
 
         }

@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
@@ -84,6 +85,39 @@ public class MultiLayerTest {
     }
 
     @Test
+    public void testBackProp() {
+        LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
+                .activationFunction("tanh")
+                .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
+                .list(3).backward(true)
+                .hiddenLayerSizes(new int[]{3, 2}).override(new ClassifierOverride(2)).build();
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+
+
+        DataSet next = iter.next();
+        next.normalizeZeroMeanZeroUnitVariance();
+        SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
+        network.setInput(trainTest.getTrain().getFeatureMatrix());
+        network.setLabels(trainTest.getTrain().getLabels());
+        network.backPropStep();
+        network.fit(trainTest.getTrain());
+
+
+        DataSet test = trainTest.getTest();
+        Evaluation eval = new Evaluation();
+        INDArray output = network.output(test.getFeatureMatrix());
+        eval.eval(test.getLabels(),output);
+        log.info("Score " +eval.stats());
+
+
+    }
+
+    @Test
     public void testDbn() {
         LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -91,17 +125,7 @@ public class MultiLayerTest {
                 .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
                 .activationFunction("tanh")
                 .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
-                .list(3).hiddenLayerSizes(new int[]{3, 2}).override(new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        if (i == 2) {
-                            builder.layerFactory(new DefaultLayerFactory(OutputLayer.class));
-                            builder.activationFunction("softmax");
-                            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-
-                        }
-                    }
-                }).build();
+                .list(3).hiddenLayerSizes(new int[]{3, 2}).override(new ClassifierOverride(2)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);

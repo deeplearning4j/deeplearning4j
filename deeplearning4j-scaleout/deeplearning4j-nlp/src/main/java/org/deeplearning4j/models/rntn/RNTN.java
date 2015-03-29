@@ -21,8 +21,6 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import akka.actor.ActorSystem;
 import akka.dispatch.Futures;
 import com.google.common.util.concurrent.AtomicDouble;
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -1144,7 +1142,7 @@ public class RNTN implements Layer {
     }
 
     @Override
-    public void backWard(INDArray errors) {
+    public Gradient backWard(INDArray errors) {
 
     }
 

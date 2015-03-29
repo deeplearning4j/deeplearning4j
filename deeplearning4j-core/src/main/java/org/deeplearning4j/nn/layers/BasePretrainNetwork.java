@@ -26,9 +26,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import org.nd4j.linalg.util.Shape;
-
-import static org.deeplearning4j.util.MathUtils.binomial;
 
 
 /**

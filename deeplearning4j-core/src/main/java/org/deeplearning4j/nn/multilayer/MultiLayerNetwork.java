@@ -664,19 +664,11 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         }
 
 
-        weights.add(getOutputLayer().getParam(DefaultParamInitializer.WEIGHT_KEY));
-        biases.add(getOutputLayer().getParam(DefaultParamInitializer.BIAS_KEY));
-        activationFunctions.add(getOutputLayer().conf().getActivationFunction());
 
 
         //errors
-        for (int i = getnLayers() + 1; i >= 0; i--) {
-            //output layer
-            if (i >= getnLayers() + 1) {
-                //-( y - h) .* f'(z^l) where l is the output layer
-                deltas[i] = ix;
+        for (int i = getnLayers() - 1; i >= 0; i--) {
 
-            } else {
                 INDArray delta = activations.get(i).transpose().mmul(ix);
                 deltas[i] = delta;
                 applyDropConnectIfNecessary(deltas[i]);
@@ -685,7 +677,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                 if (i > 0)
                     ix = ix.mmul(weightsPlusBias).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunctions.get(i - 1),activation).derivative()));
 
-            }
 
         }
 
@@ -873,7 +864,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
         List<Pair<INDArray, INDArray>> list = new ArrayList<>();
 
-        for (int l = 0; l < getnLayers() + 1; l++) {
+        for (int l = 0; l < getnLayers(); l++) {
             INDArray gradientChange = deltas.get(l);
             if (gradientChange.length() != getLayers()[l].getParam(DefaultParamInitializer.WEIGHT_KEY).length())
                 throw new IllegalStateException("Gradient change not equal to weight change");
@@ -1012,18 +1003,60 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             pretrain(iter);
             iter.reset();
             finetune(iter);
-        } else {
-            //start at the output layer
-            INDArray propagate = layers[layers.length - 1].activate();
-            for (int i = layers.length - 2; i > 0; i--) {
-                //back propagate the layer
-                layers[i].backWard(propagate);
-                //get the previous layers activation
-                propagate = layers[i].activate();
-            }
         }
 
+        else {
+            while(iter.hasNext()) {
+                DataSet next = iter.next();
+                doBackWard(next.getFeatureMatrix(),next.getLabels());
+
+            }
+
+        }
+
+
+
     }
+
+    //do gradient descent for n iterations
+    protected void doBackWard(INDArray input,INDArray labels) {
+        setInput(input);
+        this.labels = labels;
+
+        feedForward();
+        if(!(getOutputLayer() instanceof  OutputLayer)) {
+            log.warn("Warning: final layer isn't output layer. You can ignore this message if you just intend on using a a deep neural network with no output layer.");
+            return;
+        }
+
+        OutputLayer output = (OutputLayer) getOutputLayer();
+        if(labels == null)
+            throw new IllegalStateException("No labels found");
+        output.setLabels(labels);
+        INDArray outputActivate = output.activate();
+        INDArray ixInitial = labels.sub(outputActivate).subi(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(getOutputLayer().conf().getActivationFunction(),outputActivate).derivative()));
+        Gradient ix = new DefaultGradient();
+        ix.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,ixInitial);
+        for(int i = 0; i < getLayerWiseConfigurations().getConf(0).getNumIterations(); i++) {
+            List<Pair<Gradient,Gradient>> backwards = new ArrayList<>();
+
+            //start at the output layer
+            Pair<Gradient,Gradient> ixDelta = getOutputLayer().backWard(ix,null,null);
+            backwards.add(ixDelta);
+            for (int layer = layers.length - 1; layer > 0; layer--) {
+                ixDelta = layers[layer].backWard(ixDelta.getFirst(), ixDelta.getSecond(), layerWiseConfigurations.getConf(layer - 1).getActivationFunction());
+                //back propagate the layer
+                backwards.add(ixDelta);
+            }
+
+            //error was calculated in reverse
+            Collections.reverse(backwards);
+            //apply each gradient update
+            for (int j = 0; j < layers.length; j++)
+                layers[j].update(backwards.get(j).getSecond());
+        }
+    }
+
 
     /**
      * Run SGD based on the given labels
@@ -1045,7 +1078,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                 feedForward();
                 if (getOutputLayer() instanceof OutputLayer) {
                     OutputLayer o = (OutputLayer) getOutputLayer();
-                    o.fit();
+                    o.fit(o.input(),getLabels());
 
                 }
             } else {
@@ -1136,23 +1169,11 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         if (!layerWiseConfigurations.isBackward()) {
             pretrain(examples);
             finetune(labels);
-            clear();
-            examples.data().destroy();
-            labels.data().destroy();
+            clear();}
 
-        }
+        else
+            doBackWard(examples,labels);
 
-        else {
-            feedForward();
-            //start at the output layer
-            INDArray propagate = layers[layers.length - 1].activate();
-            for (int i = layers.length - 2; i > 0; i--) {
-                //back propagate the layer
-                layers[i].backWard(propagate);
-                //get the previous layers activation
-                propagate = layers[i].activate();
-            }
-        }
     }
 
 
@@ -1334,9 +1355,9 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      * Clear the inputs
      */
     public void clear() {
-        for(Layer layer : layers) {
+        for(Layer layer : layers)
             layer.clear();
-        }
+
 
         input = null;
     }
@@ -1396,10 +1417,9 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     public void setInput(INDArray input) {
         if (input != null && this.layers == null)
             this.initializeLayers(input);
-        else {
-            clear();
+        else
             this.input = input;
-        }
+
     }
 
     private void initMask() {
