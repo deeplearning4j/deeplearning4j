@@ -228,7 +228,7 @@ public abstract class BaseLayer implements Layer {
         return conf;
     }
 
- 
+
 
     @Override
     public void clear() {
@@ -372,8 +372,21 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public void backWard(INDArray errors) {
-        //no-op
+    public Pair<Gradient, Gradient> backWard(Gradient ixes, Gradient deltas, String previousActivation) {
+        INDArray activation = activate();
+        //figure out how to set ixes and deltas
+        INDArray delta = activation.transpose().mmul(ixes.getGradientFor(DefaultParamInitializer.WEIGHT_KEY));
+        INDArray weightsPlusBias = getParam(DefaultParamInitializer.WEIGHT_KEY).transpose();
+        Gradient ret = new DefaultGradient();
+        INDArray errorForEach = ixes.getGradientFor(DefaultParamInitializer.WEIGHT_KEY).transpose();
+        INDArray wGradient =  weightsPlusBias.mmul(errorForEach).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(previousActivation,activation).derivative()));
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
+        INDArray deltaColumnSums = wGradient.isVector() ? wGradient.dup() : wGradient.mean(0);
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,deltaColumnSums);
+        Gradient weightDelta = new DefaultGradient();
+        weightDelta.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,delta);
+        return new Pair<>(ret,weightDelta);
+
     }
 
     @Override
