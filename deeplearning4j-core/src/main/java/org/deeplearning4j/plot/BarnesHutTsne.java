@@ -40,6 +40,10 @@ import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.learning.AdaGrad;
 
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -455,9 +459,52 @@ public class BarnesHutTsne extends Tsne implements Model {
         yIncs.muli(momentum).subi(gradChange);
 
 
-        gradient.gradientForVariable().put(Y_GRAD,yIncs);
+        gradient.gradientForVariable().put(Y_GRAD, yIncs);
 
     }
+
+
+    /**
+     * Plot tsne
+     * @param matrix the matrix to plot
+     * @param nDims the number
+     * @param labels
+     * @param path the path to write
+     * @throws IOException
+     */
+    public void plot(INDArray matrix,int nDims,List<String> labels,String path) throws IOException {
+
+        fit(matrix);
+
+        BufferedWriter write = new BufferedWriter(new FileWriter(new File(path)));
+
+        for(int i = 0; i < y.rows(); i++) {
+            if(i >= labels.size())
+                break;
+            String word = labels.get(i);
+            if(word == null)
+                continue;
+            StringBuffer sb = new StringBuffer();
+            INDArray wordVector = y.getRow(i);
+            for(int j = 0; j < wordVector.length(); j++) {
+                sb.append(wordVector.getDouble(j));
+                if(j < wordVector.length() - 1)
+                    sb.append(",");
+            }
+
+            sb.append(",");
+            sb.append(word);
+            sb.append(" ");
+
+            sb.append("\n");
+            write.write(sb.toString());
+
+        }
+
+        write.flush();
+        write.close();
+    }
+
 
     @Override
     public double score() {

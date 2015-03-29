@@ -201,7 +201,7 @@ public class WordVectorSerializer {
             if(word == null)
                 continue;
             StringBuilder sb = new StringBuilder();
-            sb.append(word);
+            sb.append(word.replaceAll(" ","_"));
             sb.append(" ");
             INDArray wordVector = l.vector(word);
             for(int j = 0; j < wordVector.length(); j++) {
@@ -234,7 +234,7 @@ public class WordVectorSerializer {
             if(word == null)
                 continue;
             StringBuilder sb = new StringBuilder();
-            sb.append(word);
+            sb.append(word.replaceAll(" ","_"));
             sb.append(" ");
             INDArray wordVector = vec.getWordVectorMatrix(word);
             for(int j = 0; j < wordVector.length(); j++) {
@@ -258,7 +258,7 @@ public class WordVectorSerializer {
 
     /**
      * Loads an in memory cache from the given path (sets syn0 and the vocab)
-     * @param path the path of the file to load
+     * @param path the path of the file to load\
      * @return the
      */
     public static WordVectors loadTxtVectors(File path) throws FileNotFoundException {

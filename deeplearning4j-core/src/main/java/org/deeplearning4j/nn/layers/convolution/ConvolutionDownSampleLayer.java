@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
@@ -46,7 +47,10 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
     }
 
 
-
+    @Override
+    public Pair<Gradient, Gradient> backWard(Gradient ixes, Gradient deltas, INDArray activation, String previousActivation) {
+        return super.backWard(ixes, deltas, activation, previousActivation);
+    }
 
     @Override
     public INDArray activate() {
