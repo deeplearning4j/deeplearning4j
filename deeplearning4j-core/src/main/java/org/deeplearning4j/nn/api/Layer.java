@@ -93,6 +93,7 @@ public interface Layer extends Serializable,Cloneable,Model {
      * @param errors the errors to propagate
      * @param deltas the previous deltas
      * @param previousActivation the previous layer's activation
+     * @param activation  the activation from the previous layer
      */
-   Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, String previousActivation);
+   Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation,String previousActivation);
 }

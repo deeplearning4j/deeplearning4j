@@ -28,6 +28,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.OutputLayer;
+import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
+import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -85,6 +87,49 @@ public class MultiLayerTest {
     }
 
     @Test
+    public void testBackPropConvolution() {
+
+        LayerFactory layerFactory = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
+        int batchSize = 110;
+        /**
+         *
+         */
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
+                .activationFunction("tanh").filterSize(5,1,2,2)
+                .nIn(4).nOut(3).batchSize(batchSize)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .layerFactory(layerFactory)
+                .list(2).backward(true)
+                .preProcessor(0,new ConvolutionPostProcessor())
+                .hiddenLayerSizes(new int[]{9})
+                .override(new ClassifierOverride(1)).build();
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+
+
+        org.nd4j.linalg.dataset.DataSet next = iter.next();
+        next.normalizeZeroMeanZeroUnitVariance();
+        SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
+        /**
+         * Likely cause: shape[0] mis match on the filter size and the input batch size.
+         * Likely need to make a little more general.
+         */
+        network.fit(trainTest.getTrain().getFeatureMatrix().reshape(trainTest.getTrain().numExamples(),1,2,2),trainTest.getTrain().getLabels());
+
+
+        //org.nd4j.linalg.dataset.DataSet test = trainTest.getTest();
+        Evaluation eval = new Evaluation();
+        INDArray output = network.output(trainTest.getTrain().getFeatureMatrix().reshape(trainTest.getTrain().numExamples(), 1, 2, 2));
+        eval.eval(trainTest.getTrain().getLabels(),output);
+        log.info("Score " +eval.stats());
+
+
+    }
+    @Test
     public void testBackProp() {
         LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -104,7 +149,6 @@ public class MultiLayerTest {
         SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
         network.setInput(trainTest.getTrain().getFeatureMatrix());
         network.setLabels(trainTest.getTrain().getLabels());
-        network.backPropStep();
         network.fit(trainTest.getTrain());
 
 

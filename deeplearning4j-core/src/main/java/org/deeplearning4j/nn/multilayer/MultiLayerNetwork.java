@@ -640,71 +640,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     }
 
 
-    /* delta computation for back prop */
-    protected List<INDArray> computeDeltas() {
-        List<INDArray> deltaRet = new ArrayList<>();
-        INDArray[] deltas = new INDArray[getnLayers() + 2];
-
-        List<INDArray> activations = feedForward();
-
-        //- y - h
-        INDArray ix = labels.sub(activations.get(activations.size() - 1)).subi(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(getOutputLayer().conf().getActivationFunction(),activations.get(activations.size() - 1)).derivative()));
-
-		/*
-		 * Precompute activations and z's (pre activation network outputs)
-		 */
-        List<INDArray> weights = new ArrayList<>();
-        List<INDArray> biases = new ArrayList<>();
-
-        List<String> activationFunctions = new ArrayList<>();
-        for (int j = 0; j < getLayers().length; j++) {
-            weights.add(getLayers()[j].getParam(DefaultParamInitializer.WEIGHT_KEY));
-            biases.add(getLayers()[j].getParam(DefaultParamInitializer.BIAS_KEY));
-            activationFunctions.add(getLayers()[j].conf().getActivationFunction());
-        }
-
-
-
-
-        //errors
-        for (int i = getnLayers() - 1; i >= 0; i--) {
-
-                INDArray delta = activations.get(i).transpose().mmul(ix);
-                deltas[i] = delta;
-                applyDropConnectIfNecessary(deltas[i]);
-                INDArray weightsPlusBias = weights.get(i).transpose();
-                INDArray activation = activations.get(i);
-                if (i > 0)
-                    ix = ix.mmul(weightsPlusBias).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunctions.get(i - 1),activation).derivative()));
-
-
-        }
-
-        for (int i = 0; i < deltas.length; i++) {
-            if (defaultConfiguration.isConstrainGradientToUnitNorm())
-                deltaRet.add(deltas[i].divi(deltas[i].norm2(Integer.MAX_VALUE)));
-
-            else
-                deltaRet.add(deltas[i]);
-        }
-
-
-        return deltaRet;
-    }
-
-    /**
-     * One step of back prop
-     */
-    public void backPropStep() {
-        List<Pair<INDArray, INDArray>> deltas = backPropGradient();
-        for (int i = 0; i < layers.length; i++) {
-            layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).addi(deltas.get(i).getFirst());
-            layers[i].getParam(DefaultParamInitializer.BIAS_KEY).addi(deltas.get(i).getSecond());
-
-        }
-
-    }
-
 
     /**
      * Gets the back prop gradient with the r operator (gauss vector)
@@ -842,52 +777,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         return score(data.getFeatureMatrix(), data.getLabels());
     }
 
-    /**
-     * Do a back prop iteration.
-     * This involves computing the activations, tracking the last neuralNets weights
-     * to revert to in case of convergence, the learning rate being used to iterate
-     * and the current epoch
-     *
-     * @return whether the training should converge or not
-     */
-    public List<Pair<INDArray, INDArray>> backPropGradient() {
-        //feedforward to compute activations
-        //initial error
-
-        //precompute deltas
-        List<INDArray> deltas = computeDeltas();
-
-        List<Pair<INDArray, INDArray>> vWvB = new ArrayList<>();
-        for (Layer layer : layers)
-            vWvB.add(new Pair<>(layer.getParam(DefaultParamInitializer.WEIGHT_KEY), layer.getParam(DefaultParamInitializer.BIAS_KEY)));
-
-
-        List<Pair<INDArray, INDArray>> list = new ArrayList<>();
-
-        for (int l = 0; l < getnLayers(); l++) {
-            INDArray gradientChange = deltas.get(l);
-            if (gradientChange.length() != getLayers()[l].getParam(DefaultParamInitializer.WEIGHT_KEY).length())
-                throw new IllegalStateException("Gradient change not equal to weight change");
-
-
-            //update hidden bias
-            INDArray deltaColumnSums = deltas.get(l).isVector() ? deltas.get(l) : deltas.get(l).mean(0);
-
-
-            list.add(new Pair<>(gradientChange, deltaColumnSums));
-
-
-        }
-
-
-        if (mask == null)
-            initMask();
-
-
-        return list;
-
-    }
-
+   
 
     /**
      * Unpacks a parameter matrix in to a
@@ -1039,12 +929,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         ix.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,ixInitial);
         for(int i = 0; i < getLayerWiseConfigurations().getConf(0).getNumIterations(); i++) {
             List<Pair<Gradient,Gradient>> backwards = new ArrayList<>();
-
+            List<INDArray> activations = feedForward();
             //start at the output layer
-            Pair<Gradient,Gradient> ixDelta = getOutputLayer().backWard(ix,null,null);
-            backwards.add(ixDelta);
-            for (int layer = layers.length - 1; layer > 0; layer--) {
-                ixDelta = layers[layer].backWard(ixDelta.getFirst(), ixDelta.getSecond(), layerWiseConfigurations.getConf(layer - 1).getActivationFunction());
+            Pair<Gradient,Gradient> ixDelta = new Pair<>(ix,null);
+            for (int layer = layers.length - 1; layer >= 0; layer--) {
+                String activationFunction = layer > 0 ? layerWiseConfigurations.getConf(layer - 1).getActivationFunction() : layerWiseConfigurations.getConf(0).getActivationFunction();
+                ixDelta = layers[layer].backWard(ixDelta.getFirst(), ixDelta.getSecond(), activations.get(layer),activationFunction);
                 //back propagate the layer
                 backwards.add(ixDelta);
             }
@@ -1113,7 +1003,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         if (getOutputLayer().conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
             List<INDArray> activations = feedForward();
             o.fit(activations.get(activations.size() - 2), labels);
-            activations.clear();
         }
 
         else {
@@ -1169,7 +1058,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         if (!layerWiseConfigurations.isBackward()) {
             pretrain(examples);
             finetune(labels);
-            clear();}
+        }
 
         else
             doBackWard(examples,labels);
