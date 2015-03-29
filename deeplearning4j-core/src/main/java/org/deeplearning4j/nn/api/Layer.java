@@ -17,11 +17,11 @@
 package org.deeplearning4j.nn.api;
 
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 
 import java.io.Serializable;
-import java.util.Map;
 
 /**
  * Interface for a layer of a neural network.
@@ -88,11 +88,11 @@ public interface Layer extends Serializable,Cloneable,Model {
 
 
     /**
-     * Propagate errors backwards for a particular layer
+     * Propagate errors backwards for a particular layer.
+     * This calculates the node error for a given true output.
      * @param errors the errors to propagate
+     * @param deltas the previous deltas
+     * @param previousActivation the previous layer's activation
      */
-    void backWard(INDArray errors);
-
-
-
+   Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, String previousActivation);
 }

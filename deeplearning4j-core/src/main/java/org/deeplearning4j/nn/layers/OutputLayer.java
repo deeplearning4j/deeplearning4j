@@ -239,7 +239,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         solver.optimize();
     }
 
-
     /**
      * Fit the model
      *

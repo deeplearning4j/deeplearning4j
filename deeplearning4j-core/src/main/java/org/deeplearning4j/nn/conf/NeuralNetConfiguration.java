@@ -776,6 +776,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int[] hiddenLayerSizes;
         private boolean useDropConnect = false;
         private boolean pretrain = true;
+        private boolean backward = false;
 
         private Map<Integer,OutputPreProcessor> preProcessors = new HashMap<>();
 
@@ -783,6 +784,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.layerwise = list;
         }
 
+
+        public ListBuilder backward(boolean backward) {
+            this.backward = backward;
+            return this;
+        }
 
         public ListBuilder preProcessor(Integer layer,OutputPreProcessor preProcessor) {
             preProcessors.put(layer,preProcessor);
@@ -826,7 +832,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             List<NeuralNetConfiguration> list = new ArrayList<>();
             for(int i = 0; i < layerwise.size(); i++)
                 list.add(layerwise.get(i).build());
-            return new MultiLayerConfiguration.Builder()
+            return new MultiLayerConfiguration.Builder().backward(backward)
                     .useDropConnect(useDropConnect).pretrain(pretrain).preProcessors(preProcessors)
                     .hiddenLayerSizes(hiddenLayerSizes)
                     .confs(list).build();
