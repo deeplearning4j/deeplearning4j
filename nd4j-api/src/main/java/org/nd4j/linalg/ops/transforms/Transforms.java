@@ -44,7 +44,7 @@ public class Transforms {
      * Max pooling
      *
      * @param input
-     * @param ds    the strides with which to pool expectations
+     * @param ds    the strides with which to sumPooling expectations
      * @return
      * @parma ignoreBorder whether to ignore the borders of images
      */
@@ -96,15 +96,43 @@ public class Transforms {
         return ret;
     }
 
-
     /**
-     * Pooled expectations
+     * Pooled expectations(avg)
      *
-     * @param toPool the ndarray to pool
+     * @param toPool the ndarray to sumPooling
      * @param stride the 2d stride across the ndarray
      * @return
      */
-    public static INDArray pool(INDArray toPool, int[] stride) {
+    public static INDArray avgPooling(INDArray toPool, int[] stride) {
+
+        int nDims = toPool.shape().length;
+        assert nDims == 3 : "NDArray must have 3 dimensions";
+        int nRows = toPool.shape()[nDims - 2];
+        int nCols = toPool.shape()[nDims - 1];
+        int yStride = stride[0], xStride = stride[1];
+        INDArray blocks = Nd4j.create(toPool.shape());
+        for (int iR = 0; iR < Math.ceil(nRows / yStride); iR++) {
+            NDArrayIndex rows = NDArrayIndex.interval(iR * yStride, iR * yStride, true);
+            for (int jC = 0; jC < Math.ceil(nCols / xStride); jC++) {
+                NDArrayIndex cols = NDArrayIndex.interval(jC * xStride, (jC * xStride) + 1, true);
+                INDArray blockVal = toPool.get(rows, cols).sum(toPool.shape().length - 1).mean(toPool.shape().length - 1);
+                blocks.put(
+                        new NDArrayIndex[]{rows, cols},
+                        blockVal.permute(new int[]{1, 2, 0}))
+                        .repmat(new int[]{rows.length(), cols.length()});
+            }
+        }
+
+        return blocks;
+    }
+    /**
+     * Pooled expectations(sum)
+     *
+     * @param toPool the ndarray to sumPooling
+     * @param stride the 2d stride across the ndarray
+     * @return
+     */
+    public static INDArray sumPooling(INDArray toPool, int[] stride) {
 
         int nDims = toPool.shape().length;
         assert nDims == 3 : "NDArray must have 3 dimensions";
