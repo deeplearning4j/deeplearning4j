@@ -777,7 +777,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         return score(data.getFeatureMatrix(), data.getLabels());
     }
 
-   
+
 
     /**
      * Unpacks a parameter matrix in to a
