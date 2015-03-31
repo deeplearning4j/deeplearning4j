@@ -81,7 +81,7 @@ public abstract class BaseNDArray implements INDArray {
     protected int rows, columns;
     protected int length;
     protected INDArray linearView;
-    protected String id = UUID.randomUUID().toString();
+    protected String id = Nd4j.getResourceManager().isEnabled() ? UUID.randomUUID().toString() : "";
     protected boolean cleanedUp = false;
     protected transient WeakReference<INDArray> ref;
 
@@ -1754,11 +1754,6 @@ public abstract class BaseNDArray implements INDArray {
 
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-        cleanup();
-    }
 
     @Override
     public INDArray getScalar(int i) {
@@ -1857,6 +1852,8 @@ public abstract class BaseNDArray implements INDArray {
         cleanedUp = true;
         if (Nd4j.shouldInstrument)
             Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
+        Nd4j.getResourceManager().remove(id());
+        data().removeReferencing(id());
 
 
     }
@@ -3311,7 +3308,8 @@ public abstract class BaseNDArray implements INDArray {
             }
             //row vector
             else if(dimension == 1) {
-                return reshape(ArrayUtil.reverseCopy(shape()));
+                //make a row vector
+                return baseCase.apply(this).transpose();
 
             }
         }

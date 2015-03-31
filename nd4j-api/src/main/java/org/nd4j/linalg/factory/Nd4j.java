@@ -34,7 +34,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.resources.ResourceManager;
-import org.nd4j.linalg.api.resources.WeakReferenceResourceManager;
+import org.nd4j.linalg.api.resources.DefaultResourceManager;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
@@ -78,7 +78,7 @@ public class Nd4j {
     public final static String DISTRIBUTION = "dist";
     public final static String INSTRUMENTATION = "instrumentation";
     public final static String RESOURCE_MANAGER = "resourcemanager";
-
+    public final static String RESOURCE_MANGER_ON = "resourcemanager_state";
 
     public static int dtype = DataBuffer.FLOAT;
     public static char ORDER = 'c';
@@ -92,6 +92,7 @@ public class Nd4j {
     public static boolean ENFORCE_NUMERICAL_STABILITY = false;
     public static boolean copyOnOps = true;
     public static boolean shouldInstrument = false;
+    public static boolean resourceManagerOn = false;
 
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
@@ -3190,6 +3191,8 @@ public class Nd4j {
             dtype = otherDtype.equals("float") ? DataBuffer.FLOAT : DataBuffer.DOUBLE;
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
             shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
+            resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));
+
             ORDER = System.getProperty(ORDER_KEY, props.getProperty(ORDER_KEY, "c").toString()).charAt(0);
             if (opExecutionerClazz == null)
                 opExecutionerClazz = (Class<? extends OpExecutioner>) Class.forName(System.getProperty(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
@@ -3204,7 +3207,7 @@ public class Nd4j {
                 dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
             }
             if(resourceManagerClazz == null) {
-                resourceManagerClazz = (Class<? extends ResourceManager>) Class.forName(props.getProperty(RESOURCE_MANAGER, WeakReferenceResourceManager.class.getName()));
+                resourceManagerClazz = (Class<? extends ResourceManager>) Class.forName(props.getProperty(RESOURCE_MANAGER, DefaultResourceManager.class.getName()));
             }
 
             if (randomClazz == null) {
@@ -3227,6 +3230,10 @@ public class Nd4j {
             }
 
             resourceManager = resourceManagerClazz.newInstance();
+            //ensure resource manager should be on
+            if(!resourceManagerOn)
+                resourceManager.disable();
+
             instrumentation = instrumentationClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             FFT_INSTANCE = fftInstanceClazz.newInstance();

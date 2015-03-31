@@ -41,9 +41,7 @@ public class LossFunctions {
      * @return the score for the given parameters
      */
     public static double score(INDArray labels, LossFunction lossFunction, INDArray z, double l2, boolean useRegularization) {
-        assert !Nd4j.hasInvalidNumber(z) : "Invalid output on labels. Must not contain nan or infinite numbers.";
-
-        double ret = 0.0f;
+        double ret = 0.0;
         double reg = 0.5 * l2;
         if (!Arrays.equals(labels.shape(), z.shape()))
             throw new IllegalArgumentException("Output and labels must be same length");

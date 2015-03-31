@@ -946,11 +946,10 @@ public abstract class NDArrayTests {
         ret = Nd4j.create(new float[]{1,1,1,1},new int[]{1,4},'f');
         ret2 = Nd4j.create(new double[]{1,1,1,1},new int[]{1,4},'f');
         INDArray  b0 = Nd4j.arange(0, 12).reshape(3, 4);
-        INDArray b4 =
-                Nd4j.create(
+        INDArray b4 = Nd4j.create(
                         b0.data().asDouble(),
                         new int[]{3,4},
-        'f');
+                        'f');
         b4.toString();
         Nd4j.dtype = DataBuffer.FLOAT;
 
@@ -1342,6 +1341,22 @@ public abstract class NDArrayTests {
     }
 
     @Test
+    public void testMoreReshape() {
+        INDArray nd = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9,
+
+                10, 11, 12}, new int[]{2, 6});
+
+
+        INDArray ndv = nd.getRow(0);
+        INDArray other = ndv.reshape(2, 3);
+        assertEquals(ndv.linearView(),other.linearView());
+
+        INDArray otherVec = Nd4j.create(new float[]{1,2,3,4,5,6});
+        assertEquals(ndv,otherVec);
+    }
+
+
+    @Test
     public void testDot() {
         INDArray vec1 = Nd4j.create(new float[]{1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new float[]{1, 2, 3, 4});
@@ -1486,11 +1501,9 @@ public abstract class NDArrayTests {
     @Test
     public void testAddScalar() {
         INDArray div = Nd4j.valueArrayOf(new int[]{4}, 4);
-        float[] value = div.data().asFloat();
-        div.toString();
         INDArray rdiv = div.add(1);
         INDArray answer = Nd4j.valueArrayOf(new int[]{4}, 5);
-        assertEquals(rdiv, answer);
+        assertEquals(answer, rdiv);
     }
 
     @Test

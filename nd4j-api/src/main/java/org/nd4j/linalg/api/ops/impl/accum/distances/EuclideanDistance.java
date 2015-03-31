@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.accum.distances;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
@@ -47,7 +48,10 @@ public class EuclideanDistance extends BaseAccumulation {
 
     @Override
     public void update(Number result) {
-        currentResult = currentResult.doubleValue() + result.doubleValue();
+        currentResult = currentResult.doubleValue() + FastMath.pow(result.doubleValue(), 2.0);
+        if(numProcessed() == n) {
+            currentResult = FastMath.sqrt(currentResult.doubleValue());
+        }
     }
 
     @Override

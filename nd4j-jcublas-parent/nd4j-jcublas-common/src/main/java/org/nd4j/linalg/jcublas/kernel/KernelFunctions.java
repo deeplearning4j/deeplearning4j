@@ -22,6 +22,7 @@ import jcuda.Sizeof;
 import jcuda.driver.CUfunction;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
+import jcuda.utils.KernelLauncher;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
@@ -58,8 +59,7 @@ public class KernelFunctions {
     private static Set<String> reduceFunctions = new ConcurrentSkipListSet<>();
 
 
-    private KernelFunctions() {
-    }
+    private KernelFunctions() {}
 
 
     static {
@@ -96,43 +96,24 @@ public class KernelFunctions {
     }
 
 
-    /**
-     * Construct kernel parameters from the given pointers.
-     * Think of it as follows. If I have a standard linear operator
-     * such as 2 vectors with 1 output vector, this would be 3 pointers
-     * such that the first 2 are the inputs and the third one is the outputs
-     *
-     * @param pointers the pointers to create parameters from
-     * @return the pointer to the pointers
-     */
-    public static Pointer constructKernelParameters(Pointer... pointers) {
-        return Pointer.to(pointers);
-    }
-
 
     /**
      * Invoke a function with the given number of parameters
      *
      * @param blocks           the number of blocks to launch the kernel
      * @param threadsPerBlock  the number of threads per block
-     * @param function         the function to invoke
      * @param kernelParameters the parameters
      * @param dataType         the data type ot use
      */
-    public static void invoke(int blocks, int threadsPerBlock, CUfunction function, Pointer kernelParameters, String dataType) {
+    public static   void invoke(int blocks, int threadsPerBlock, String functionName,String dataType,Object...kernelParameters) {
         // Call the kernel function.
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
         int sharedMemSize = threadsPerBlock * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
-
-        cuLaunchKernel(function,
-                blocks, 1, 1,      // Grid dimension
-                threadsPerBlock, 1, 1,      // Block dimension
-                sharedMemSize, null,               // Shared memory size and stream
-                kernelParameters, null // Kernel- and extra parameters
-        );
-
-        cuCtxSynchronize();
-
+        KernelFunctionLoader.launcher(functionName,dataType).forFunction(functionName + "_" + dataType)
+        .setBlockSize(threadsPerBlock,1,1)
+        .setGridSize(blocks,1,1)
+        .setSharedMemSize(sharedMemSize)
+        .call(kernelParameters);
 
     }
 

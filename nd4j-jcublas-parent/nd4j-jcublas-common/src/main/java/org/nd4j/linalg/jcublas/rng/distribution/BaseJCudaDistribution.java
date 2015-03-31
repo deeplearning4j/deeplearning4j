@@ -43,15 +43,12 @@ public abstract class BaseJCudaDistribution implements Distribution {
 
     protected void doBinomial(INDArray p, Pointer out, int n, int len) {
         String functionName = "binomial";
-        CUfunction func = KernelFunctionLoader.getInstance().getFunction(functionName, "float");
-        if (func == null)
-            throw new IllegalArgumentException("Function " + functionName + " with data type float does not exist");
         int blocks = PointerUtil.getNumBlocks(len, 128, 64);
         int threads = PointerUtil.getNumThreads(len, 64);
         JCudaBuffer randomNumbers = new CudaFloatDataBuffer(len * n);
         JCudaBuffer probBuffer = (JCudaBuffer) p.data();
 
-        Pointer kernelParams = Pointer.to(
+        Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{len})
                 , Pointer.to(new int[]{n})
                 , Pointer.to(probBuffer.pointer())
@@ -59,14 +56,15 @@ public abstract class BaseJCudaDistribution implements Distribution {
                 , Pointer.to(out)
                 , random.generator()
 
-        );
+        };
 
         //int len,int n,double *ps,double *result, curandState *s
         KernelFunctions.invoke(
                 blocks,
                 threads,
-                func
-                , kernelParams, "float");
+                functionName,
+                "float"
+                , kernelParams);
         //we don't need this buffer anymore this was purely for storing the output
         randomNumbers.destroy();
     }
@@ -74,15 +72,12 @@ public abstract class BaseJCudaDistribution implements Distribution {
 
     protected void doBinomialDouble(INDArray p, Pointer out, int n, int len) {
         String functionName = "binomial";
-        CUfunction func = KernelFunctionLoader.getInstance().getFunction(functionName, "double");
-        if (func == null)
-            throw new IllegalArgumentException("Function " + functionName + " with data type double does not exist");
         int blocks = PointerUtil.getNumBlocks(len, 128, 64);
         int threads = PointerUtil.getNumThreads(len, 64);
         JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(len);
         JCudaBuffer probBuffer = (JCudaBuffer) p.data();
 
-        Pointer kernelParams = Pointer.to(
+        Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{len})
                 , Pointer.to(new int[]{n})
                 , Pointer.to(probBuffer.pointer()),
@@ -90,15 +85,15 @@ public abstract class BaseJCudaDistribution implements Distribution {
                 , Pointer.to(out)
                 , random.generator()
 
-        );
+        };
 
 
         //int len,int n,double *ps,double *result, curandState *s
         KernelFunctions.invoke(
                 blocks,
                 threads,
-                func
-                , kernelParams, "double");
+                functionName,"double"
+                , kernelParams);
         //we don't need this buffer anymore this was purely for storing the output
         randomNumbers.destroy();
 
@@ -106,14 +101,11 @@ public abstract class BaseJCudaDistribution implements Distribution {
 
     protected void doBinomial(float p, Pointer out, int n, int len) {
         String functionName = "binomial_scalar";
-        CUfunction func = KernelFunctionLoader.getInstance().getFunction(functionName, "float");
-        if (func == null)
-            throw new IllegalArgumentException("Function " + functionName + " with data type float does not exist");
         int blocks = PointerUtil.getNumBlocks(len, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(len, KernelFunctions.THREADS);
         JCudaBuffer randomNumbers = new CudaFloatDataBuffer(len * n);
 
-        Pointer kernelParams = Pointer.to(
+        Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{len})
                 , Pointer.to(new int[]{n})
                 , Pointer.to(new float[]{p}),
@@ -121,14 +113,14 @@ public abstract class BaseJCudaDistribution implements Distribution {
                 , Pointer.to(out)
                 , random.generator()
 
-        );
+        };
 
         //int len,int n,double *ps,double *result, curandState *s
         KernelFunctions.invoke(
                 blocks,
                 threads,
-                func
-                , kernelParams, "float");
+                functionName,"float"
+                , kernelParams);
         //we don't need this buffer anymore this was purely for storing the output
         randomNumbers.destroy();
     }
@@ -136,14 +128,11 @@ public abstract class BaseJCudaDistribution implements Distribution {
 
     protected void doBinomialDouble(double p, Pointer out, int n, int len) {
         String functionName = "binomial_scalar";
-        CUfunction func = KernelFunctionLoader.getInstance().getFunction(functionName, "double");
-        if (func == null)
-            throw new IllegalArgumentException("Function " + functionName + " with data type double does not exist");
         int blocks = PointerUtil.getNumBlocks(len, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(len, KernelFunctions.THREADS);
         JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(len);
 
-        Pointer kernelParams = Pointer.to(
+        Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{len})
                 , Pointer.to(new int[]{n})
                 , Pointer.to(new double[]{p}),
@@ -151,14 +140,14 @@ public abstract class BaseJCudaDistribution implements Distribution {
                 , Pointer.to(out)
                 , Pointer.to(random.generator())
 
-        );
+        };
 
         //int len,int n,double *ps,double *result, curandState *s
         KernelFunctions.invoke(
                 blocks,
                 threads,
-                func
-                , kernelParams, "double");
+                functionName,"double"
+                , kernelParams);
         //we don't need this buffer anymore this was purely for storing the output
         randomNumbers.destroy();
 
@@ -173,26 +162,23 @@ public abstract class BaseJCudaDistribution implements Distribution {
     protected void doSampleUniformDouble(Pointer out, double min, double max, int n) {
         JCurand.curandGenerateUniformDouble(random.generator(), out, n);
         String functionName = "uniform";
-        CUfunction func = KernelFunctionLoader.getInstance().getFunction(functionName, "double");
-        if (func == null)
-            throw new IllegalArgumentException("Function " + functionName + " with data type double does not exist");
         int blocks = PointerUtil.getNumBlocks(n, 128, 64);
         int threads = PointerUtil.getNumThreads(n, 64);
-        Pointer kernelParams = Pointer.to(
+        Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{n})
                 , Pointer.to(new double[]{min})
                 , Pointer.to(new double[]{max})
                 , Pointer.to(out)
                 , Pointer.to(random.generator())
 
-        );
+        };
 
         //int len,int n,double *ps,double *result, curandState *s
         KernelFunctions.invoke(
                 blocks,
                 threads,
-                func
-                , kernelParams, "double");
+                functionName,"double"
+                , kernelParams);
     }
 
     protected void doSampleNormal(Pointer out, INDArray means, float std) {
@@ -241,26 +227,23 @@ public abstract class BaseJCudaDistribution implements Distribution {
     protected void doSampleUniform(Pointer out, float min, float max, int n) {
         JCurand.curandGenerateUniform(random.generator(), out, n);
         String functionName = "uniform";
-        CUfunction func = KernelFunctionLoader.getInstance().getFunction(functionName, "float");
-        if (func == null)
-            throw new IllegalArgumentException("Function " + functionName + " with data type double does not exist");
         int blocks = PointerUtil.getNumBlocks(n, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(n, KernelFunctions.THREADS);
-        Pointer kernelParams = Pointer.to(
+        Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{n})
                 , Pointer.to(new float[]{min})
                 , Pointer.to(new float[]{max})
                 , Pointer.to(out)
                 , Pointer.to(random.generator())
 
-        );
+        };
 
         //int len,int n,double *ps,double *result, curandState *s
         KernelFunctions.invoke(
                 blocks,
                 threads,
-                func
-                , kernelParams, "float");
+                functionName,"float"
+                , kernelParams);
 
     }
 

@@ -49,6 +49,12 @@ public interface DataBuffer extends Serializable {
      */
     boolean isPersist();
 
+    /**
+     * The number of bytes for each individual element
+     *
+     * @return the number of bytes for each individual element
+     */
+    public int elementSize();
 
     /**
      * Remove the referenced id if it exists

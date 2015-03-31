@@ -48,7 +48,7 @@ public class ManhattanDistance extends BaseAccumulation {
 
     @Override
     public void update(Number result) {
-        currentResult = currentResult.doubleValue() + FastMath.pow(result.doubleValue(), 2.0);
+       currentResult = currentResult.doubleValue() + FastMath.abs(result.doubleValue());
     }
 
     @Override

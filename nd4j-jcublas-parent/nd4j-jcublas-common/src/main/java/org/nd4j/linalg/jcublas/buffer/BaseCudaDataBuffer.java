@@ -59,7 +59,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void persist() {
-       isPersist = true;
+        isPersist = true;
     }
 
     @Override
@@ -127,12 +127,10 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public void alloc() {
         pointer = new Pointer();
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
+        Nd4j.getResourceManager().incrementCurrentAllocatedMemory(elementSize() * length());
         //allocate memory for the pointer
-        try {
-            JCuda.cudaMalloc(pointer(), elementSize() * length());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        JCuda.cudaMalloc(pointer(), elementSize() * length());
+
     }
 
 
@@ -179,7 +177,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        JCuda.cudaFree(pointer());
+       destroy();
     }
 
     @Override
@@ -312,8 +310,9 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                     Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
                 JCuda.cudaFree(pointer);
                 freed.set(true);
+                Nd4j.getResourceManager().decrementCurrentAllocatedMemory(elementSize() * length());
+                references().clear();
             }
-
 
         } catch (Exception e) {
             throw new RuntimeException(e);

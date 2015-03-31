@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.buffer;
 
 
 import com.google.common.primitives.Bytes;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.IOException;
@@ -38,6 +39,7 @@ public class DoubleBuffer extends BaseDataBuffer {
     public DoubleBuffer(int length) {
         super(length);
         this.buffer = new double[length];
+        Nd4j.getResourceManager().incrementCurrentAllocatedMemory(elementSize() * length);
     }
 
 
@@ -205,6 +207,11 @@ public class DoubleBuffer extends BaseDataBuffer {
         }
 
         buffer = null;
+    }
+
+    @Override
+    public int elementSize() {
+        return 8;
     }
 
     @Override

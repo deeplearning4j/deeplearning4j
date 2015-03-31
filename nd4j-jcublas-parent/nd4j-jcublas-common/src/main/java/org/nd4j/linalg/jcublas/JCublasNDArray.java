@@ -324,10 +324,14 @@ public class JCublasNDArray extends BaseNDArray {
     }
 
     public JCublasNDArray(double[] data, int[] shape, char ordering) {
-        this(new DoubleBuffer(data), shape, ordering);
+        this(new DoubleBuffer(data), shape, 0,ordering);
     }
 
     public JCublasNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
         super(data, shape, stride, offset, ordering);
     }
+
+
+
+
 }
