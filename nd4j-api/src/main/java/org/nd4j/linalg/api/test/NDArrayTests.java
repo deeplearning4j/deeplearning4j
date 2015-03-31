@@ -1342,6 +1342,22 @@ public abstract class NDArrayTests {
     }
 
     @Test
+    public void testMoreReshape() {
+        INDArray nd = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9,
+
+                10, 11, 12}, new int[]{2, 6});
+
+
+        INDArray ndv = nd.getRow(0);
+        INDArray other = ndv.reshape(2, 3);
+        assertEquals(ndv.linearView(),other.linearView());
+
+        INDArray otherVec = Nd4j.create(new float[]{1,2,3,4,5,6});
+        assertEquals(ndv,otherVec);
+    }
+
+
+    @Test
     public void testDot() {
         INDArray vec1 = Nd4j.create(new float[]{1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new float[]{1, 2, 3, 4});
