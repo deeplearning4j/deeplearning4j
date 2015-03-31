@@ -22,6 +22,7 @@ import jcuda.Sizeof;
 import jcuda.driver.CUfunction;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
+import jcuda.utils.KernelLauncher;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
@@ -115,24 +116,18 @@ public class KernelFunctions {
      *
      * @param blocks           the number of blocks to launch the kernel
      * @param threadsPerBlock  the number of threads per block
-     * @param function         the function to invoke
      * @param kernelParameters the parameters
      * @param dataType         the data type ot use
      */
-    public static void invoke(int blocks, int threadsPerBlock, CUfunction function, Pointer kernelParameters, String dataType) {
+    public static   void invoke(int blocks, int threadsPerBlock, String functionName,String dataType,Object...kernelParameters) {
         // Call the kernel function.
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
         int sharedMemSize = threadsPerBlock * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
-
-        cuLaunchKernel(function,
-                blocks, 1, 1,      // Grid dimension
-                threadsPerBlock, 1, 1,      // Block dimension
-                sharedMemSize, null,               // Shared memory size and stream
-                kernelParameters, null // Kernel- and extra parameters
-        );
-
-        cuCtxSynchronize();
-
+        KernelLauncher launcher = KernelFunctionLoader.launcher(functionName,dataType);
+        launcher.setBlockSize(blocks,1,1);
+        launcher.setGridSize(threadsPerBlock,1,1);
+        launcher.setSharedMemSize(sharedMemSize);
+        launcher.call(kernelParameters);
 
     }
 

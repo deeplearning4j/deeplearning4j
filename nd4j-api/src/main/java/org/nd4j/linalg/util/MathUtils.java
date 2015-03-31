@@ -25,7 +25,7 @@ import java.util.Random;
 
 
 /**
- * This is a math utils class.
+ * This is a math jcuda.utils class.
  *
  * @author Adam Gibson
  */

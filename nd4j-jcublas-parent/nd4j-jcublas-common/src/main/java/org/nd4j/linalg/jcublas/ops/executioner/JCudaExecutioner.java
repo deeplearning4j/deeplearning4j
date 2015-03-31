@@ -189,7 +189,7 @@ public class JCudaExecutioner implements OpExecutioner {
             Pointer yPointer = yBuffer.pointer().withByteOffset(op.y().offset() * yBuffer.elementSize());
 
             //int n,int xOffset,int yOffset, double *dx, double *dy,int incx,int incy,double *result
-            Pointer kernelParams = KernelFunctions.constructKernelParameters(
+            Pointer[] kernelParams = new Pointer[] {
                     Pointer.to(new int[]{op.n()}),
                     Pointer.to(new int[]{op.x().offset()}),
                     Pointer.to(new int[]{op.y().offset()}),
@@ -199,7 +199,7 @@ public class JCudaExecutioner implements OpExecutioner {
                     Pointer.to(new int[]{op.y().majorStride()}),
                     toArgs(op.extraArgs(), getType(op)),
                     Pointer.to(result.pointer())
-            );
+            };
 
             invokeFunction(op, kernelParams);
             setResultForOp(op, result.pointer());
@@ -207,14 +207,14 @@ public class JCudaExecutioner implements OpExecutioner {
 
         } else {
             //int n, int xOffset,double *dx,int incx,double result
-            Pointer kernelParams = KernelFunctions.constructKernelParameters(
+            Pointer[] kernelParams = new Pointer[] {
                     Pointer.to(new int[]{op.n()}),
                     Pointer.to(new int[]{op.x().offset()}),
                     Pointer.to(xPointer),
                     Pointer.to(new int[]{op.x().majorStride()}),
                     toArgs(op.extraArgs(), getType(op)),
                     Pointer.to(result.pointer())
-            );
+            };
 
             invokeFunction(op, kernelParams);
             setResultForOp(op, result.pointer());
@@ -226,20 +226,11 @@ public class JCudaExecutioner implements OpExecutioner {
     }
 
 
-    private void invokeFunction(Op op, Pointer kernelParams) {
+    private void invokeFunction(Op op, Object... kernelParams) {
         String functionName = op instanceof TransformOp || op instanceof Accumulation ? op.name() + "_strided" : op.name();
-        CUfunction func = KernelFunctionLoader.getInstance().getFunction(functionName, op.x().data().dataType() == DataBuffer.DOUBLE ? "double" : "float");
-        if (func == null)
-            throw new IllegalArgumentException("Function " + functionName + " with data type " + (op.x().data().dataType() == DataBuffer.DOUBLE ? "double does not exist" : "float does not exist"));
         int blocks = PointerUtil.getNumBlocks(op.n(), KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(op.n(), KernelFunctions.THREADS);
-
-        KernelFunctions.invoke(
-                blocks,
-                threads,
-                func
-                , kernelParams, getType(op));
-
+        KernelFunctions.invoke(blocks,threads,functionName,getType(op),kernelParams);
 
     }
 
@@ -271,7 +262,7 @@ public class JCudaExecutioner implements OpExecutioner {
         if (op.y() != null) {
             JCudaBuffer yBuffer = (JCudaBuffer) op.y().data();
             Pointer yPointer = yBuffer.pointer().withByteOffset(yBuffer.elementSize() * op.y().offset());
-            Pointer kernelParams = KernelFunctions.constructKernelParameters(
+            Pointer[] kernelParams = new Pointer[]{
                     Pointer.to(new int[]{op.n()}),
                     Pointer.to(new int[]{op.x().offset()}),
                     Pointer.to(new int[]{op.y().offset()}),
@@ -281,7 +272,7 @@ public class JCudaExecutioner implements OpExecutioner {
                     Pointer.to(new int[]{op.y().majorStride()}),
                     toArgs(op.extraArgs(), getType(op)),
                     Pointer.to(zPointer)
-            );
+            };
 
             invokeFunction(op, kernelParams);
 
@@ -290,7 +281,7 @@ public class JCudaExecutioner implements OpExecutioner {
             //int n,int idx,double *dy,int incy,double *result
             //int n, int idx,double dx,double *dy,int incy,double *result
 
-            Pointer kernelParams = KernelFunctions.constructKernelParameters(
+            Pointer[] kernelParams = new Pointer[]{
                     Pointer.to(new int[]{op.n()}),
                     Pointer.to(new int[]{op.x().offset()}),
                     PointerUtil.getPointer(op),
@@ -298,7 +289,7 @@ public class JCudaExecutioner implements OpExecutioner {
                     Pointer.to(new int[]{op.x().majorStride()}),
                     toArgs(op.extraArgs(), getType(op)),
                     Pointer.to(zPointer)
-            );
+            };
 
             invokeFunction(op, kernelParams);
 

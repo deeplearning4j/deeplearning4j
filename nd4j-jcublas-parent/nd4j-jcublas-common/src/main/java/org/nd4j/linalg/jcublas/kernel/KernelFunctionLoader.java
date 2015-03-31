@@ -16,9 +16,12 @@
 
 package org.nd4j.linalg.jcublas.kernel;
 
-import jcuda.driver.*;
+
+
+import jcuda.utils.KernelLauncher;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -30,9 +33,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 
-import static jcuda.driver.JCudaDriver.*;
 
 /**
  * Kernel function loader:
@@ -47,21 +48,18 @@ public class KernelFunctionLoader {
     public final static String IMPORTS_FLOAT = NAME_SPACE + ".float.imports";
     public final static String IMPORTS_DOUBLE = NAME_SPACE + ".double.imports";
     private static Logger log = LoggerFactory.getLogger(KernelFunctionLoader.class);
-    private static Map<Integer, CUcontext> devices = new ConcurrentHashMap<>();
     private static KernelFunctionLoader INSTANCE;
-    private Map<String, CUmodule> modules = new HashMap<>();
-    private Map<String, CUfunction> functions = new HashMap<>();
+    private static Map<String,KernelLauncher> launchers = new HashMap<>();
     private boolean init = false;
 
-    private KernelFunctionLoader() {
-    }
+    private KernelFunctionLoader() {}
 
     /**
      * Singleton pattern
      *
      * @return
      */
-    public static KernelFunctionLoader getInstance() {
+    public static synchronized KernelFunctionLoader getInstance() {
         if (INSTANCE == null) {
             INSTANCE = new KernelFunctionLoader();
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
@@ -78,49 +76,21 @@ public class KernelFunctionLoader {
         return "/kernels/" + (type == DataBuffer.FLOAT ? "float" : "double");
     }
 
-    /**
-     * Get the given cuda module
-     *
-     * @param function the function name
-     * @param dataType the data type for
-     * @return the cuda module if it exists or null
-     */
-    public CUfunction getFunction(String function, String dataType) {
-        return functions.get(function + "_" + dataType);
+
+    public  static KernelLauncher launcher(String functionName,String dataType) {
+        return launchers.get(functionName + "_" + dataType);
     }
 
-    /**
-     * Get the given cuda module
-     *
-     * @param function the function name
-     * @param dataType the data type for
-     * @return the cuda module if it exists or null
-     */
-    public CUmodule getModule(String function, String dataType) {
-        return modules.get(function + "_" + dataType);
-    }
+
 
     /**
      * Clean up all the modules
      */
     public void unload() {
-        for (CUmodule module : modules.values())
-            unload(module);
         init = false;
     }
 
-    /**
-     * Unload a module
-     *
-     * @param cUmodule the module to unload
-     */
-    public void unload(CUmodule cUmodule) {
-        try {
-            JCudaDriver.cuModuleUnload(cUmodule);
-        } catch (Exception e) {
 
-        }
-    }
 
     /**
      * Load the appropriate functions from the class
@@ -141,30 +111,17 @@ public class KernelFunctionLoader {
         Properties props = new Properties();
         props.load(res.getInputStream());
         log.info("Registering cuda functions...");
-        initDevices();
         //ensure imports for each file before compiling
         ensureImports(props, "float");
         ensureImports(props, "double");
-
+        KernelLauncher.setDeviceNumber(0);
         compileAndLoad(props, FLOAT, "float");
         compileAndLoad(props, DOUBLE, "double");
 
         init = true;
     }
 
-    public void initDevices() {
-        if (devices.containsKey(0))
-            return;
-        // Initialize the driver and create a context for the first device.
-        cuInit(0);
-        CUdevice device = new CUdevice();
-        cuDeviceGet(device, 0);
-        CUcontext context = new CUcontext();
-        cuCtxCreate(context, 0, device);
-        // Enable exceptions and omit all subsequent error checks
-        JCudaDriver.setExceptionsEnabled(true);
-        devices.put(0, context);
-    }
+
 
     /**
      * The extension of the given file name is replaced with "ptx".
@@ -247,21 +204,13 @@ public class KernelFunctionLoader {
             }
 
             for (String module : split) {
-                CUmodule m = new CUmodule();
                 log.info("Loading " + module);
                 String path = kernelPath + module + ".ptx";
-                cuModuleLoad(m, path);
-                modules.put(key + "_" + dataType, m);
-                // Obtain a function pointer to the "add" function.
-                CUfunction function = new CUfunction();
                 String name = module + "_" + dataType;
-                try {
-                    cuModuleGetFunction(function, m, name);
-                } catch (Exception e) {
-                    throw new RuntimeException("Function " + name + " not found!");
-                }
 
-                functions.put(name, function);
+                KernelLauncher launch = KernelLauncher.load(path,module + name);
+                launchers.put(name,launch);
+
                 //cleanup
                 File ptxFile = new File(path);
                 if (!ptxFile.exists())

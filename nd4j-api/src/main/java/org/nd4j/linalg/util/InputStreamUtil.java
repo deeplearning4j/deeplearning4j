@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Input stream utils
+ * Input stream jcuda.utils
  *
  * @author Adam Gibson
  */
