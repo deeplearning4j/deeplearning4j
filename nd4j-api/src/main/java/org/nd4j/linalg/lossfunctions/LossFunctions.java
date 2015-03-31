@@ -102,8 +102,11 @@ public class LossFunctions {
      * MSE: Mean Squared Error: Linear Regression
      * EXPLL: Exponential log likelihood: Poisson Regression
      * XENT: Cross Entropy: Binary Classification
-     * SOFTMAX: Softmax Regression
+     * MCXENT: Multiclass Cross Entropy
      * RMSE_XENT: RMSE Cross Entropy
+     * SQUARED_LOSS: Squared Loss
+     * RECONSUTRCTION_CROSSENTROPY: Reconstruction Cross Entropy
+     * NEGATIVELOGLIKELIHOOD: Negative Log Likelihood
      */
     public static enum LossFunction {
         MSE,
