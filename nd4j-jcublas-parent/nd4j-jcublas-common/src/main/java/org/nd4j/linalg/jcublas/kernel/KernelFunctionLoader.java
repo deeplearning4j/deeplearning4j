@@ -21,7 +21,6 @@ package org.nd4j.linalg.jcublas.kernel;
 import jcuda.utils.KernelLauncher;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -208,7 +207,7 @@ public class KernelFunctionLoader {
                 String path = kernelPath + module + ".ptx";
                 String name = module + "_" + dataType;
 
-                KernelLauncher launch = KernelLauncher.load(path,module + name);
+                KernelLauncher launch = KernelLauncher.load(path,name);
                 launchers.put(name,launch);
 
                 //cleanup

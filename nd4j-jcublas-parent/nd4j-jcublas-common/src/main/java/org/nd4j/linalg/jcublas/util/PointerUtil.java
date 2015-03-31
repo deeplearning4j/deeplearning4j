@@ -1,6 +1,5 @@
 package org.nd4j.linalg.jcublas.util;
 
-import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.driver.CUdeviceptr;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -102,12 +101,12 @@ public class PointerUtil {
     }
 
 
-    public static Pointer getPointer(ScalarOp scalarOp) {
+    public static Object getPointer(ScalarOp scalarOp) {
         if (scalarOp.scalar() != null) {
             if (scalarOp.x().data().dataType() == DataBuffer.FLOAT)
-                return Pointer.to(new float[]{scalarOp.scalar().floatValue()});
+                return new float[]{scalarOp.scalar().floatValue()};
             else if (scalarOp.x().data().dataType() == DataBuffer.DOUBLE)
-                return Pointer.to(new double[]{scalarOp.scalar().doubleValue()});
+                return new double[]{scalarOp.scalar().doubleValue()};
         }
 
         throw new IllegalStateException("Unable to get pointer for scalar operation " + scalarOp);

@@ -959,12 +959,10 @@ public class KernelLauncher
      * was given, or one of the internal functions for setting
      * up and executing the kernel failed.
      */
-    public void call(Object ... args)
-    {
+    public void call(Object ... args) {
         Pointer kernelParameters[] = new Pointer[args.length];
         
-        for (int i=0; i<args.length; i++)
-        {
+        for (int i = 0; i < args.length; i++) {
             Object arg = args[i];
             if (arg instanceof Pointer)
             {
@@ -1015,10 +1013,38 @@ public class KernelLauncher
                 kernelParameters[i] = pointer;
                 logger.info("argument " + i + " type is Double");
             }
+
+            else if (arg instanceof double[])
+            {
+                double[] value = (double[])arg;
+                Pointer pointer = Pointer.to(value);
+                kernelParameters[i] = pointer;
+                logger.info("argument " + i + " type is double[]");
+            }
+            else if (arg instanceof float[])
+            {
+                float[] value = (float[])arg;
+                Pointer pointer = Pointer.to(value);
+                kernelParameters[i] = pointer;
+                logger.info("argument " + i + " type is float[]");
+            }
+
+            else if (arg instanceof int[])
+            {
+                int[] value = (int[])arg;
+                Pointer pointer = Pointer.to(value);
+                kernelParameters[i] = pointer;
+                logger.info("argument " + i + " type is int[]");
+            }
+            else if(arg instanceof jcuda.jcurand.curandGenerator) {
+                jcuda.jcurand.curandGenerator rng = (jcuda.jcurand.curandGenerator) arg;
+                kernelParameters[i] = Pointer.to(rng);
+
+            }
             else
             {
                 throw new CudaException(
-                    "Type "+arg.getClass()+" may not be passed to a function");
+                    "Type " + arg.getClass() + " may not be passed to a function");
             }
         }
         checkResult(cuLaunchKernel(function,
@@ -1027,6 +1053,7 @@ public class KernelLauncher
             sharedMemSize, stream,
             Pointer.to(kernelParameters), null
         ));
+
         checkResult(cuCtxSynchronize());
     }
 
