@@ -899,7 +899,7 @@ public abstract class NDArrayTests {
     @Test
     public void testCopyMatrix() {
         INDArray twoByThree = Nd4j.linspace(1, 784, 784).reshape(28, 28);
-        INDArray copy = Nd4j.create(784, 784);
+        INDArray copy = Nd4j.create(28, 28);
         Nd4j.getBlasWrapper().copy(twoByThree, copy);
     }
 

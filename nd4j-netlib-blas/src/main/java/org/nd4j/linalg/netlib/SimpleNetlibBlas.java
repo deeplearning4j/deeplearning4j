@@ -37,6 +37,7 @@ import org.netlib.util.intW;
 public class SimpleNetlibBlas {
 
 
+
     /**
      * General matrix vector multiplication
      *
