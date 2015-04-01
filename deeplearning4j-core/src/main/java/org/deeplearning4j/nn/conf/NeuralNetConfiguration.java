@@ -1074,7 +1074,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if(filterSize == null)
                 return this;
             if(filterSize.length != 4)
-                throw new IllegalArgumentException("Invalid filter size must be length 2");
+                throw new IllegalArgumentException("Invalid filter size must be length 4");
             this.filterSize = filterSize;
             return this;
         }
