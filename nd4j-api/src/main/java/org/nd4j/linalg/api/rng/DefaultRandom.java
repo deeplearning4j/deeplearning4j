@@ -100,7 +100,7 @@ public class DefaultRandom implements Random, RandomGenerator {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
         for (int i = 0; i < linear.length(); i++) {
-            ret.putScalar(i, nextDouble());
+            linear.putScalar(i, nextDouble());
         }
         return ret;
     }

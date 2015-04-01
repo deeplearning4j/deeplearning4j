@@ -89,7 +89,7 @@ public abstract class NDArrayTests {
         ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
         DataInputStream dis = new DataInputStream(bis);
         INDArray read = Nd4j.read(dis);
-        assertEquals(write,read);
+        assertEquals(write, read);
 
     }
 
@@ -99,7 +99,7 @@ public abstract class NDArrayTests {
         INDArray second = Nd4j.arange(0,1).reshape(1,1);
         INDArray firstRet = Nd4j.concat(0,first,second);
         assertTrue(firstRet.isColumnVector());
-        INDArray secondRet = Nd4j.concat(1,first,second);
+        INDArray secondRet = Nd4j.concat(1, first, second);
         assertTrue(secondRet.isRowVector());
 
 
@@ -116,7 +116,7 @@ public abstract class NDArrayTests {
         ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
         DataInputStream dis = new DataInputStream(bis);
         INDArray read = Nd4j.read(dis);
-        assertEquals(write,read);
+        assertEquals(write, read);
 
     }
 
@@ -141,23 +141,23 @@ public abstract class NDArrayTests {
 
     @Test
     public void testBroadCasting() {
-        INDArray first = Nd4j.arange(0,3).reshape(3,1);
-        INDArray ret = first.broadcast(3,4);
+        INDArray first = Nd4j.arange(0, 3).reshape(3, 1);
+        INDArray ret = first.broadcast(3, 4);
         INDArray testRet = Nd4j.create(new double[][]{
                 {0,0,0,0},
                 {1,1,1,1},
                 {2,2,2,2}
         });
-        assertEquals(testRet,ret);
+        assertEquals(testRet, ret);
         INDArray r = Nd4j.arange(0,4).reshape(1,4);
-        INDArray r2 = r.broadcast(4,4);
+        INDArray r2 = r.broadcast(4, 4);
         INDArray testR2 = Nd4j.create(new double[][]{
                 {0, 1, 2, 3},
                 {0, 1, 2, 3},
                 {0, 1, 2, 3},
                 {0, 1, 2, 3}
         });
-        assertEquals(testR2,r2);
+        assertEquals(testR2, r2);
 
     }
 
@@ -903,6 +903,23 @@ public abstract class NDArrayTests {
         Nd4j.getBlasWrapper().copy(twoByThree, copy);
     }
 
+
+    @Test
+    public void testMultipleSlices() {
+        int embeddingSize = 7;
+        int sliceSize= 3;
+
+        INDArray wTest = Nd4j.rand(new int[]{embeddingSize,embeddingSize,sliceSize});
+        System.out.println("wTest: "+ wTest);
+        for (int slice = 0; slice < wTest.slices(); slice++) {
+            INDArray sliceOfW = wTest.slice(slice);
+            System.out.println("W slice "+slice+" :"+ "" +"rows: "+ sliceOfW.rows() + " | col: " +sliceOfW.columns());
+
+        }
+
+
+    }
+
     @Test
     public void testAddMatrix() {
         Nd4j.dtype = DataBuffer.FLOAT;
@@ -913,6 +930,13 @@ public abstract class NDArrayTests {
 
         INDArray twoByThree = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         Nd4j.getBlasWrapper().axpy(1, twoByThree, twoByThree);
+    }
+
+    @Test
+    public void testPrintAfterSum() {
+        INDArray arr = Nd4j.rand(2,1);
+        INDArray sum = Nd4j.sum(arr,1);
+        System.out.println(sum);
     }
 
 
@@ -947,9 +971,9 @@ public abstract class NDArrayTests {
         ret2 = Nd4j.create(new double[]{1,1,1,1},new int[]{1,4},'f');
         INDArray  b0 = Nd4j.arange(0, 12).reshape(3, 4);
         INDArray b4 = Nd4j.create(
-                        b0.data().asDouble(),
-                        new int[]{3,4},
-                        'f');
+                b0.data().asDouble(),
+                new int[]{3,4},
+                'f');
         b4.toString();
         Nd4j.dtype = DataBuffer.FLOAT;
 

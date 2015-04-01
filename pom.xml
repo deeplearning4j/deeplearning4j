@@ -180,7 +180,7 @@
                 <version>2.12.4</version>
                 <configuration>
                     <environmentVariables>
-                        <LD_LIBRARY_PATH>$LD_LIBRARY_PATH:${user.dir}</LD_LIBRARY_PATH>
+                        <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}</LD_LIBRARY_PATH>
                     </environmentVariables>
                 </configuration>
             </plugin>
