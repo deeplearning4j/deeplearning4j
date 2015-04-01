@@ -499,7 +499,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 stream.writeDouble(d[i]);
         }
         else if(dataType() == DataBuffer.FLOAT) {
-             float[] f = asFloat();
+            float[] f = asFloat();
             for(int i = 0; i < f.length; i++)
                 stream.writeFloat(f[i]);
         }
@@ -515,10 +515,11 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         isPersist = stream.readBoolean();
         referencing = Collections.synchronizedSet(new HashSet<String>());
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
+        freed  = new AtomicBoolean(false);
         if(dataType() == DataBuffer.DOUBLE) {
             double[] d = new double[length];
             for(int i = 0; i < d.length; i++)
-                  d[i] = stream.readDouble();
+                d[i] = stream.readDouble();
             pointer = KernelFunctions.alloc(d).pointer();
         }
         else if(dataType() == DataBuffer.FLOAT) {
