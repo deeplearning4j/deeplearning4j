@@ -30,7 +30,10 @@ import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Collection;
@@ -177,7 +180,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-       destroy();
+        destroy();
     }
 
     @Override
@@ -483,6 +486,47 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected void ensureNotFreed() {
         if (freed.get())
             throw new IllegalStateException("Unable to do operation, buffer already freed");
+    }
+
+    private void writeObject(java.io.ObjectOutputStream stream)
+            throws IOException {
+        stream.writeInt(length);
+        stream.writeInt(elementSize);
+        stream.writeBoolean(isPersist);
+        if(dataType() == DataBuffer.DOUBLE) {
+            double[] d = asDouble();
+            for(int i = 0; i < d.length; i++)
+                stream.writeDouble(d[i]);
+        }
+        else if(dataType() == DataBuffer.FLOAT) {
+             float[] f = asFloat();
+            for(int i = 0; i < f.length; i++)
+                stream.writeFloat(f[i]);
+        }
+
+
+    }
+
+
+    private void readObject(java.io.ObjectInputStream stream)
+            throws IOException, ClassNotFoundException {
+        length = stream.readInt();
+        elementSize = stream.readInt();
+        isPersist = stream.readBoolean();
+        referencing = Collections.synchronizedSet(new HashSet<String>());
+        ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
+        if(dataType() == DataBuffer.DOUBLE) {
+            double[] d = new double[length];
+            for(int i = 0; i < d.length; i++)
+                  d[i] = stream.readDouble();
+            pointer = KernelFunctions.alloc(d).pointer();
+        }
+        else if(dataType() == DataBuffer.FLOAT) {
+            float[] f = new float[length];
+            for(int i = 0; i < f.length; i++)
+                f[i] = stream.readFloat();
+            pointer = KernelFunctions.alloc(f).pointer();
+        }
     }
 
 
