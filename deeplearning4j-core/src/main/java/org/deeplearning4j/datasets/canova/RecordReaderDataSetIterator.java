@@ -112,7 +112,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                         } catch (WritableConverterException e) {
                             e.printStackTrace();
                         }
-                    label = FeatureUtil.toOutcomeVector(Integer.valueOf(current.toString()),numPossibleLabels);
+                    int curr =  Double.valueOf(current.toString()).intValue();
+                    label = FeatureUtil.toOutcomeVector(curr,numPossibleLabels);
                 }
                 else {
                     Writable current = currList.get(j);
