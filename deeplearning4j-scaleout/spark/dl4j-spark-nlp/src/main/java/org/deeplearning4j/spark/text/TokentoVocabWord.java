@@ -28,10 +28,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Handles converting tokens to vocab words based
- * on a given vo
+ * on a given vocab
+ *
+ * @author Adam Gibson
  */
 public class TokentoVocabWord implements Function<Pair<List<String>,Long>,Pair<List<VocabWord>,AtomicLong>> {
     private  Broadcast<VocabCache> vocab;
+    private AtomicLong lastSeen = new AtomicLong(0);
 
     public TokentoVocabWord(Broadcast<VocabCache> vocab) {
         this.vocab = vocab;
@@ -42,6 +45,6 @@ public class TokentoVocabWord implements Function<Pair<List<String>,Long>,Pair<L
         List<VocabWord> ret = new ArrayList<>();
         for(String s : v1.getFirst())
             ret.add(vocab.getValue().wordFor(s));
-        return new Pair<>(ret,new AtomicLong(0));
+        return new Pair<>(ret,new AtomicLong(v1.getSecond()));
     }
 }

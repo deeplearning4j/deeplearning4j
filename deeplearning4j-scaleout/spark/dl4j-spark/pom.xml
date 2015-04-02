@@ -34,6 +34,8 @@
         <hadoop.version>1.0.4</hadoop.version>
         <scala.version>2.10.4</scala.version>
         <spark.version>1.3.0</spark.version>
+        <hazelcast.version>3.4.2</hazelcast.version>
+
     </properties>
 
     <profiles>
@@ -125,7 +127,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.10</artifactId>
+            <artifactId>spark-core_${scala.binary.version}</artifactId>
             <version>${spark.version}</version>
             <exclusions>
 
@@ -149,6 +151,12 @@
             <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-all</artifactId>
+            <version>${hazelcast.version}</version>
+        </dependency>
+
 
     </dependencies>
 
