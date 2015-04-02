@@ -50,6 +50,9 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
 
     @Override
     public Pair<Gradient, Gradient> backWard(Gradient ixes, Gradient deltas, INDArray activation, String previousActivation) {
+        int[] stride = conf().getStride();
+        INDArray errors = Nd4j.zerosLike(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS));
+
         return super.backWard(ixes, deltas, activation, previousActivation);
     }
 
