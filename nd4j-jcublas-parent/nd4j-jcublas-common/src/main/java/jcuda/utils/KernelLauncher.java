@@ -177,7 +177,7 @@ public class KernelLauncher {
      * by the KernelLauncher
      *
      * @param number The number of the device to use
-     * @throws CudaException If number<0 or number>=deviceCount
+     * @throws CudaException If number < 0 or number >= deviceCount
      */
     public static void setDeviceNumber(int number)
     {
@@ -186,7 +186,7 @@ public class KernelLauncher {
         if (number < 0)
         {
             throw new CudaException(
-                    "Invalid device number: "+number+". "+
+                    "Invalid device number: " + number + ". "+
                             "There are only " + count[0] + " devices available");
         }
         deviceNumber = number;
