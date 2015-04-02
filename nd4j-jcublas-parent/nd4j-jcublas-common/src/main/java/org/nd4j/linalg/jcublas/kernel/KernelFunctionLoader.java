@@ -46,6 +46,7 @@ public class KernelFunctionLoader {
     public final static String FLOAT = NAME_SPACE + ".float.functions";
     public final static String IMPORTS_FLOAT = NAME_SPACE + ".float.imports";
     public final static String IMPORTS_DOUBLE = NAME_SPACE + ".double.imports";
+    public final static String CACHE_COMPILED = NAME_SPACE + ".cache_compiled";
     private static Logger log = LoggerFactory.getLogger(KernelFunctionLoader.class);
     private static KernelFunctionLoader INSTANCE;
     private static Map<String,KernelLauncher> launchers = new HashMap<>();
@@ -120,8 +121,6 @@ public class KernelFunctionLoader {
         init = true;
     }
 
-
-
     /**
      * The extension of the given file name is replaced with "ptx".
      * If the file with the resulting name does not exist, it is
@@ -150,12 +149,44 @@ public class KernelFunctionLoader {
      * @throws java.io.IOException If an I/O error occurs
      */
     private void compileAndLoad(Properties props, String key, String dataType) throws IOException {
+        compileAndLoad(props, key, dataType,0);
+    }
+
+    /**
+     * The extension of the given file name is replaced with "ptx".
+     * If the file with the resulting name does not exist, it is
+     * compiled from the given file using NVCC. The name of the
+     * PTX file is returned.
+     * <p/>
+     * <p/>
+     * Note that you may run in to an error akin to:
+     * Unsupported GCC version
+     * <p/>
+     * At your own risk, comment the lines under:
+     * /usr/local/cuda-$VERSION/include/host_config.h
+     * <p/>
+     * #if defined(__GNUC__)
+     * <p/>
+     * if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8)
+     * #error -- unsupported GNU version! gcc 4.9 and up are not supported!
+     * <p/>
+     * #endif /* __GNUC__> 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8)
+     * <p/>
+     * #endif  __GNUC__
+     * <p/>
+     * This will allow you to bypass the compiler restrictions. Again, do so at your own risk.
+     *
+     * @return The name of the PTX file
+     * @throws java.io.IOException If an I/O error occurs
+     */
+    private void compileAndLoad(Properties props, String key, String dataType,int compiledAttempts) throws IOException {
         String f = props.getProperty(key);
         StringBuffer sb = new StringBuffer();
         sb.append("nvcc -g -G ");
         sb.append(" --include-path ");
         String tmpDir = System.getProperty("java.io.tmpdir");
         StringBuffer dir = new StringBuffer();
+        boolean cache = Boolean.parseBoolean(props.getProperty(CACHE_COMPILED, String.valueOf("true")));
         sb.append(tmpDir)
                 .append(File.separator)
                 .append("kernels")
@@ -166,58 +197,78 @@ public class KernelFunctionLoader {
                 .append("kernels")
                 .append(File.separator).append(dataType).append(File.separator)
                 .toString();
+        boolean shouldCompile = cache;
+        if(cache) {
+            File tmpDir2 = new File(tmpDir + File.separator + "kernels");
+            if(tmpDir2.exists()) {
+                shouldCompile = cache && !tmpDir2.exists();
+            }
+        }
+        String[] split = f.split(",");
 
-        sb.append(" ").append(" -ptx ");
-        log.info("Loading " + dataType + " cuda functions");
-        if (f != null) {
-            String[] split = f.split(",");
-            for (String s : split) {
-                String loaded = extract("/kernels/" + dataType + "/" + s + ".cu", dataType.equals("float") ? DataBuffer.FLOAT : DataBuffer.DOUBLE);
-                sb.append(" " + loaded);
+        if(shouldCompile) {
+            sb.append(" ").append(" -ptx ");
+            log.info("Loading " + dataType + " cuda functions");
+            if (f != null) {
+                for (String s : split) {
+                    String loaded = extract("/kernels/" + dataType + "/" + s + ".cu", dataType.equals("float") ? DataBuffer.FLOAT : DataBuffer.DOUBLE);
+                    sb.append(" " + loaded);
+                }
+
+                sb.append(" --output-directory " + kernelPath);
+
+
+                Process process = Runtime.getRuntime().exec(sb.toString());
+
+                String errorMessage =
+                        new String(IOUtils.toByteArray(process.getErrorStream()));
+                String outputMessage =
+                        new String(IOUtils.toByteArray(process.getInputStream()));
+                int exitValue = 0;
+                try {
+                    exitValue = process.waitFor();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException(
+                            "Interrupted while waiting for nvcc output", e);
+                }
+
+                if (exitValue != 0) {
+                    log.info("nvcc process exitValue " + exitValue);
+                    log.info("errorMessage:\n" + errorMessage);
+                    log.info("outputMessage:\n" + outputMessage);
+                    throw new IOException(
+                            "Could not create .ptx file: " + errorMessage);
+                }
+
             }
 
-            sb.append(" --output-directory " + kernelPath);
 
 
-            Process process = Runtime.getRuntime().exec(sb.toString());
+        }
 
-            String errorMessage =
-                    new String(IOUtils.toByteArray(process.getErrorStream()));
-            String outputMessage =
-                    new String(IOUtils.toByteArray(process.getInputStream()));
-            int exitValue = 0;
-            try {
-                exitValue = process.waitFor();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IOException(
-                        "Interrupted while waiting for nvcc output", e);
-            }
+        else
+            log.info("Modules appear to already be compiled..attempting to use cacche");
 
-            if (exitValue != 0) {
-                log.info("nvcc process exitValue " + exitValue);
-                log.info("errorMessage:\n" + errorMessage);
-                log.info("outputMessage:\n" + outputMessage);
-                throw new IOException(
-                        "Could not create .ptx file: " + errorMessage);
-            }
-
+        try {
             for (String module : split) {
                 log.info("Loading " + module);
                 String path = kernelPath + module + ".ptx";
                 String name = module + "_" + dataType;
 
-                KernelLauncher launch = KernelLauncher.load(path,name);
-                launchers.put(name,launch);
-
-                //cleanup
-                File ptxFile = new File(path);
-                if (!ptxFile.exists())
-                    throw new IllegalStateException("No ptx file " + ptxFile.getAbsolutePath() + " found!");
-                ptxFile.delete();
+                KernelLauncher launch = KernelLauncher.load(path, name);
+                launchers.put(name, launch);
             }
-
+        }catch (Exception e) {
+            if(!shouldCompile && compiledAttempts < 3) {
+                log.warn("Error loading modules...attempting recompile");
+                props.setProperty(CACHE_COMPILED,String.valueOf(false));
+                compileAndLoad(props, key, dataType,compiledAttempts + 1);
+            }
+            else
+                throw new RuntimeException(e);
         }
+
     }
 
     //extract the source file
