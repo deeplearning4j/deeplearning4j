@@ -171,8 +171,7 @@ public class Transforms {
             INDArray tmp = Nd4j.zeros(d.size(i) * (int) scale.getDouble(i), 1);
             int[] indices = ArrayUtil.range(0, (int) scale.getDouble(i) * d.size(i), (int) scale.getDouble(i));
             tmp.putScalar(indices, 1.0f);
-            idx.put(i,
-                    tmp.cumsum(Integer.MAX_VALUE).sum(Integer.MAX_VALUE));
+            idx.put(i, tmp.cumsum(Integer.MAX_VALUE).sum(Integer.MAX_VALUE));
         }
         return idx;
     }
