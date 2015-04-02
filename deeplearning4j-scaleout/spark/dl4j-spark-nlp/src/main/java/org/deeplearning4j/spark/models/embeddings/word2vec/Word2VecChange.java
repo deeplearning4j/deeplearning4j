@@ -1,8 +1,6 @@
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
 import org.apache.commons.collections.map.HashedMap;
-import org.deeplearning4j.berkeley.CounterMap;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -39,6 +37,12 @@ public class Word2VecChange implements Serializable {
         }
     }
 
+    /**
+     * Take the changes and apply them
+     * to the given table
+     * @param table the memory lookup table
+     *              to apply the changes to
+     */
     public void apply(InMemoryLookupTable table) {
         for(Integer i : syn0Vectors.keySet())
             Nd4j.getBlasWrapper().axpy(1,syn0Vectors.get(i),table.getSyn0().slice(i));
@@ -46,29 +50,5 @@ public class Word2VecChange implements Serializable {
             Nd4j.getBlasWrapper().axpy(1,syn1Vectors.get(i),table.getSyn1().slice(i));
         for(Integer i : negSyn1Vectors.keySet())
             Nd4j.getBlasWrapper().axpy(1, negSyn1Vectors.get(i), table.getSyn1Neg().slice(i));
-    }
-
-    public Map<Integer, INDArray> getSyn0Vectors() {
-        return syn0Vectors;
-    }
-
-    public void setSyn0Vectors(Map<Integer, INDArray> syn0Vectors) {
-        this.syn0Vectors = syn0Vectors;
-    }
-
-    public Map<Integer, INDArray> getSyn1Vectors() {
-        return syn1Vectors;
-    }
-
-    public void setSyn1Vectors(Map<Integer, INDArray> syn1Vectors) {
-        this.syn1Vectors = syn1Vectors;
-    }
-
-    public Map<Integer, INDArray> getNegSyn1Vectors() {
-        return negSyn1Vectors;
-    }
-
-    public void setNegSyn1Vectors(Map<Integer, INDArray> negSyn1Vectors) {
-        this.negSyn1Vectors = negSyn1Vectors;
     }
 }
