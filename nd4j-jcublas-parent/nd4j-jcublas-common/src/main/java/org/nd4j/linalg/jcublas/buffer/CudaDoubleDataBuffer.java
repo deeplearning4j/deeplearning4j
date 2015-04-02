@@ -172,22 +172,16 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public float[] asFloat() {
-        return new float[0];
+        ensureNotFreed();
+        return ArrayUtil.toFloats(asDouble());
     }
 
     @Override
     public double[] asDouble() {
         ensureNotFreed();
-
         double[] ret = new double[length];
-        Pointer p = Pointer.to(ret);
-        JCublas.cublasGetVector(
-                length,
-                elementSize(),
-                pointer(),
-                1,
-                p,
-                1);
+        JCuda.cudaMemcpy(Pointer.to(ret), pointer(), length * elementSize(), cudaMemcpyKind.cudaMemcpyDeviceToHost);
+
         return ret;
     }
 

@@ -143,8 +143,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     public float[] asFloat() {
         ensureNotFreed();
         float[] ret = new float[length];
-        Pointer p = Pointer.to(ret);
-        JCublas.cublasGetVector(length, elementSize(), pointer(), 1, p, 1);
+        JCuda.cudaMemcpy(Pointer.to(ret),pointer(), length * elementSize(), cudaMemcpyKind.cudaMemcpyDeviceToHost);
         return ret;
     }
 
