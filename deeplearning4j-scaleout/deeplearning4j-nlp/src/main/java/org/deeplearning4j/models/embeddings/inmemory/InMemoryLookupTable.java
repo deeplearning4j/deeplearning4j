@@ -78,6 +78,13 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
     }
 
+    public double[] getExpTable() {
+        return expTable;
+    }
+
+    public void setExpTable(double[] expTable) {
+        this.expTable = expTable;
+    }
 
     @Override
     public int layerSize() {
