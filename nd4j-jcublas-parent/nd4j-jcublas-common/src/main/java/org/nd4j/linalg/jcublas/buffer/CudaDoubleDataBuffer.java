@@ -24,6 +24,10 @@ import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
 /**
  * Cuda double  buffer
  *
@@ -162,7 +166,16 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public byte[] asBytes() {
-        return new byte[0];
+        double[] data = asDouble();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        for(int i = 0; i < data.length; i++)
+            try {
+                dos.writeDouble(data[i]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        return bos.toByteArray();
     }
 
     @Override

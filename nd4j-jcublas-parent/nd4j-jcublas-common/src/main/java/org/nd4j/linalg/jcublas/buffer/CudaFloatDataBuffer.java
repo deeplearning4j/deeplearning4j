@@ -25,6 +25,10 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
 /**
  * Cuda float buffer
  *
@@ -131,7 +135,16 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public byte[] asBytes() {
-        return new byte[0];
+        float[] data = asFloat();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        for(int i = 0; i < data.length; i++)
+            try {
+                dos.writeFloat(data[i]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        return bos.toByteArray();
     }
 
     @Override
