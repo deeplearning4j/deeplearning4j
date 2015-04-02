@@ -65,6 +65,8 @@ import org.nd4j.linalg.api.rng.Random;
  */
 public class RNTN implements Layer {
 
+
+    protected NeuralNetConfiguration conf;
     protected double value = 0;
     private int numOuts = 3;
     //must be same size as word vectors
@@ -107,7 +109,7 @@ public class RNTN implements Layer {
     /**
      * 2Nx2NxN, where N is the size of the word vectors
      */
-    private MultiDimensionalMap<String, String, INDArray> binaryINd4j;
+    private MultiDimensionalMap<String, String, INDArray> binaryTensors;
 
     /**
      * CxN+1, where N = size of word vectors, C is the number of classes
@@ -233,7 +235,7 @@ public class RNTN implements Layer {
         identity = Nd4j.eye(numHidden);
 
         binaryTransform = MultiDimensionalMap.newTreeBackedMap();
-        binaryINd4j = MultiDimensionalMap.newTreeBackedMap();
+        binaryTensors = MultiDimensionalMap.newTreeBackedMap();
         binaryClassification = MultiDimensionalMap.newTreeBackedMap();
 
         // When making a flat model (no semantic untying) the
@@ -248,7 +250,7 @@ public class RNTN implements Layer {
 
             binaryTransform.put(left, right, randomTransformMatrix());
             if (useDoubleTensors) {
-                binaryINd4j.put(left, right, randomBinaryINDArray());
+                binaryTensors.put(left, right, randomBinaryINDArray());
             }
 
             if (!combineClassification) {
@@ -319,7 +321,7 @@ public class RNTN implements Layer {
 
     public INDArray randomTransformBlock() {
         double range = 1.0 /  (Math.sqrt((double) numHidden) * 2.0f);
-        INDArray ret = Nd4j.rand(numHidden,numHidden,-range,range,rng).add(identity);
+        INDArray ret = Nd4j.rand(numHidden,numHidden,-range,range,rng).addi(identity);
         return ret;
     }
 
@@ -334,13 +336,10 @@ public class RNTN implements Layer {
         ret.put(new NDArrayIndex[] {interval(0,numOuts),interval(0,numHidden)},insert);
         if(ret.data().dataType() == (DataBuffer.DOUBLE))
             return Nd4j.getBlasWrapper().scal(scalingForInit,ret);
-        return Nd4j.getBlasWrapper().scal((float) scalingForInit,ret);
+        return Nd4j.getBlasWrapper().scal((float) scalingForInit, ret);
 
     }
 
-    INDArray randomWordVector() {
-        return Nd4j.rand(numHidden,1, rng);
-    }
 
 
 
@@ -363,7 +362,7 @@ public class RNTN implements Layer {
                         INDArray gradient = getValueGradient();
                         if(params.length() != gradient.length())
                             throw new IllegalStateException("Params not equal to gradient!");
-                        setParameters(params.subi(gradient));
+                        setParams(params.subi(gradient));
                     }catch(NegativeArraySizeException e) {
                         log.warn("Couldnt compute parameters due to negative array size...for trees " + t);
                     }
@@ -393,14 +392,14 @@ public class RNTN implements Layer {
 
     public INDArray getINDArrayForNode(Tree node) {
         if (!useDoubleTensors) {
-            throw new AssertionError("Not using INd4j");
+            throw new AssertionError("Not using tensors");
         }
         if (node.children().size() == 2) {
             String leftLabel = node.children().get(0).value();
             String leftBasic = basicCategory(leftLabel);
             String rightLabel = node.children().get(1).value();
             String rightBasic = basicCategory(rightLabel);
-            return binaryINd4j.get(leftBasic, rightBasic);
+            return binaryTensors.get(leftBasic, rightBasic);
         } else if (node.children().size() == 1) {
             throw new AssertionError("No unary transform matrices, only unary classification");
         } else {
@@ -489,7 +488,7 @@ public class RNTN implements Layer {
     public INDArray getBinaryINDArray(String left, String right) {
         left = basicCategory(left);
         right = basicCategory(right);
-        return binaryINd4j.get(left, right);
+        return binaryTensors.get(left, right);
     }
 
 
@@ -690,7 +689,7 @@ public class RNTN implements Layer {
                 WTDelta.get(interval(0, (deltaFull.rows() * 2)));
         int size = deltaFull.length();
         INDArray deltaINDArray = Nd4j.create(size * 2, 1);
-        INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
+        INDArray fullVector = Nd4j.concat(0, leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
             if(deltaFull.data().dataType() == DataBuffer.DOUBLE) {
                 INDArray scaledFullVector = Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getDouble(0),fullVector);
@@ -825,13 +824,17 @@ public class RNTN implements Layer {
         return ret;
     }
 
-    public void setParameters(INDArray params) {
+    /**
+     * Set the parameters for the model
+     * @param params
+     */
+    public void setParams(INDArray params) {
         if(params.length() != getNumParameters())
             throw new IllegalStateException("Unable to set parameters of length " + params.length() + " must be of length " + numParameters);
         Nd4j.setParams(params,
                 binaryTransform.values().iterator(),
                 binaryClassification.values().iterator(),
-                binaryINd4j.values().iterator(),
+                binaryTensors.values().iterator(),
                 unaryClassification.values().iterator(),
                 featureVectors.vectors());
     }
@@ -839,9 +842,9 @@ public class RNTN implements Layer {
     public int getNumParameters() {
         if(numParameters < 0) {
             int totalSize = 0;
-            List<Iterator<INDArray>> list = Arrays.asList( binaryTransform.values().iterator(),
+            List<Iterator<INDArray>> list = Arrays.asList(binaryTransform.values().iterator(),
                     binaryClassification.values().iterator(),
-                    binaryINd4j.values().iterator(),
+                    binaryTensors.values().iterator(),
                     unaryClassification.values().iterator(),
                     featureVectors.vectors());
             for(Iterator<INDArray> iter : list) {
@@ -861,7 +864,7 @@ public class RNTN implements Layer {
                 getNumParameters(),
                 binaryTransform.values().iterator(),
                 binaryClassification.values().iterator(),
-                binaryINd4j.values().iterator(),
+                binaryTensors.values().iterator(),
                 unaryClassification.values().iterator(),
                 featureVectors.vectors());
     }
@@ -903,7 +906,7 @@ public class RNTN implements Layer {
         }
 
         if (useDoubleTensors) {
-            for (MultiDimensionalMap.Entry<String, String, INDArray> entry : binaryINd4j.entrySet()) {
+            for (MultiDimensionalMap.Entry<String, String, INDArray> entry : binaryTensors.entrySet()) {
                 int numRows = entry.getValue().size(1);
                 int numCols = entry.getValue().size(2);
                 int numSlices = entry.getValue().slices();
@@ -972,7 +975,7 @@ public class RNTN implements Layer {
 
         value += scaleAndRegularize(binaryTD, binaryTransform, scale, regTransformMatrix);
         value += scaleAndRegularize(binaryCD, binaryClassification, scale, regClassification);
-        value += scaleAndRegularizeINDArray(binaryINDArrayTD, binaryINd4j, scale, regTransformINDArray);
+        value += scaleAndRegularizeINDArray(binaryINDArrayTD, binaryTensors, scale, regTransformINDArray);
         value += scaleAndRegularize(unaryCD, unaryClassification, scale, regClassification);
         value += scaleAndRegularize(wordVectorD, featureVectors, scale, regWordVector);
 
@@ -1027,21 +1030,19 @@ public class RNTN implements Layer {
 
     @Override
     public int numParams() {
-        return 0;
+        return getNumParameters();
     }
 
-    @Override
-    public void setParams(INDArray params) {
-         setParameters(params);
-    }
+
 
     @Override
     public void fit(INDArray data) {
-
+          throw new UnsupportedOperationException();
     }
 
     @Override
     public void iterate(INDArray input) {
+        throw new UnsupportedOperationException();
 
     }
 
