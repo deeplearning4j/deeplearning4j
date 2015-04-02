@@ -201,7 +201,7 @@ public class KernelFunctionLoader {
         if(cache) {
             File tmpDir2 = new File(tmpDir + File.separator + "kernels");
             if(tmpDir2.exists()) {
-                shouldCompile = cache && !tmpDir2.exists();
+                shouldCompile = cache && !tmpDir2.exists() || compiledAttempts > 0;
             }
         }
         String[] split = f.split(",");
@@ -262,7 +262,7 @@ public class KernelFunctionLoader {
         }catch (Exception e) {
             if(!shouldCompile && compiledAttempts < 3) {
                 log.warn("Error loading modules...attempting recompile");
-                props.setProperty(CACHE_COMPILED,String.valueOf(false));
+                props.setProperty(CACHE_COMPILED,String.valueOf(true));
                 compileAndLoad(props, key, dataType,compiledAttempts + 1);
             }
             else
