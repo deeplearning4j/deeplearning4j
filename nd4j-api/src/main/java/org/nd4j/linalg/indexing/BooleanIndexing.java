@@ -54,7 +54,7 @@ public class BooleanIndexing {
      * @return
      */
     public static boolean or(IComplexNDArray n, Condition cond) {
-        boolean ret = true;
+        boolean ret = false;
         IComplexNDArray linear = n.linearView();
         for (int i = 0; i < linear.length(); i++) {
             ret = ret || cond.apply(linear.getComplex(i));
@@ -90,7 +90,7 @@ public class BooleanIndexing {
      * @return
      */
     public static boolean or(INDArray n, Condition cond) {
-        boolean ret = true;
+        boolean ret = false;
         INDArray linear = n.linearView();
         for (int i = 0; i < linear.length(); i++) {
             ret = ret || cond.apply(linear.getFloat(i));
