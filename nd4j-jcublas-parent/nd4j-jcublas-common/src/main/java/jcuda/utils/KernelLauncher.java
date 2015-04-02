@@ -1056,28 +1056,26 @@ public class KernelLauncher {
         }
 
 
-        synchronized (context) {
-            JCudaDriver.cuCtxSetCurrent(context);
+        JCudaDriver.cuCtxSetCurrent(context);
 
-            checkResult(cuLaunchKernel(function,
-                    gridSize.x, gridSize.y, gridSize.z,
-                    blockSize.x, blockSize.y, blockSize.z,
-                    sharedMemSize, stream,
-                    Pointer.to(kernelParameters), null
-            ));
+        checkResult(cuLaunchKernel(function,
+                gridSize.x, gridSize.y, gridSize.z,
+                blockSize.x, blockSize.y, blockSize.z,
+                sharedMemSize, stream,
+                Pointer.to(kernelParameters), null
+        ));
 
-        }
+        JCudaDriver.cuCtxSynchronize();
+
+
     }
 
     /**
      * Sync the current context for the thread
      * Syncs the current context for the thread.
      */
-    public static void syncContext() {
-        synchronized (context) {
+    public static synchronized  void syncContext() {
             JCudaDriver.cuCtxSetCurrent(context);
-
-        }
     }
 
     /**

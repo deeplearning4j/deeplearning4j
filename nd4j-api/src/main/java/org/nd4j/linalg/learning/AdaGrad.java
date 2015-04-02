@@ -204,6 +204,15 @@ public class AdaGrad implements Serializable {
         return gradient;
     }
 
+
+    public INDArray getHistoricalGradient() {
+        return historicalGradient;
+    }
+
+    public void setHistoricalGradient(INDArray historicalGradient) {
+        this.historicalGradient = historicalGradient;
+    }
+
     public double getMasterStepSize() {
         return masterStepSize;
     }
