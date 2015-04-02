@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.deeplearning4j.spark.models.glove;
+package org.deeplearning4j.spark.models.embeddings.glove;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 

@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.deeplearning4j.spark.models.glove;
+package org.deeplearning4j.spark.models.embeddings.glove;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
@@ -26,8 +26,8 @@ import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.models.glove.GloveWeightLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.spark.models.glove.cooccurrences.CoOccurrenceCalculator;
-import org.deeplearning4j.spark.models.glove.cooccurrences.CoOccurrenceCounts;
+import org.deeplearning4j.spark.models.embeddings.glove.cooccurrences.CoOccurrenceCalculator;
+import org.deeplearning4j.spark.models.embeddings.glove.cooccurrences.CoOccurrenceCounts;
 import org.deeplearning4j.spark.text.TextPipeline;
 import org.deeplearning4j.spark.text.TokenizerFunction;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
