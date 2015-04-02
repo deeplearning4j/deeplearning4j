@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProc
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -81,13 +82,12 @@ public class ConvolutionDownSampleLayerTest {
          *
          */
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
-                .activationFunction("tanh").filterSize(5,1,2,2)
+                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
+                .dist(Nd4j.getDistributions().createNormal(0,1))
+                .iterations(100).iterationListener(new ScoreIterationListener(1))
+                .activationFunction("tanh").filterSize(5,1,2,2).constrainGradientToUnitNorm(true)
                 .nIn(4).nOut(3).batchSize(batchSize)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .layerFactory(layerFactory)
+               .layerFactory(layerFactory)
                 .list(2)
                 .preProcessor(0,new ConvolutionPostProcessor())
                 .hiddenLayerSizes(new int[]{9})
