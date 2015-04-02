@@ -31,6 +31,7 @@ import org.deeplearning4j.spark.models.embeddings.glove.cooccurrences.CoOccurren
 import org.deeplearning4j.spark.text.TextPipeline;
 import org.deeplearning4j.spark.text.TokenizerFunction;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -94,6 +95,9 @@ public class Glove {
                .xMax(conf.getDouble(GlovePerformer.X_MAX,0.75)).build();
         gloveWeightLookupTable.resetWeights();
 
+        gloveWeightLookupTable.getBiasAdaGrad().historicalGradient = Nd4j.zeros(gloveWeightLookupTable.getSyn0().rows());
+        gloveWeightLookupTable.getWeightAdaGrad().historicalGradient = Nd4j.create(gloveWeightLookupTable.getSyn0().shape());
+
         CounterMap<String,String> coOccurrenceCounts = rdd.map(new TokenizerFunction(tokenizerFactoryClazz))
                 .map(new CoOccurrenceCalculator(symmetric,vocabCacheBroadcast,windowSize)).fold(new CounterMap<String, String>(),new CoOccurrenceCounts());
 
@@ -108,7 +112,9 @@ public class Glove {
             Collections.shuffle(counts);
             JavaRDD<Triple<String,String,Double>> parallel = sc.parallelize(counts);
             JavaRDD<Triple<VocabWord,VocabWord,Double>> vocab = parallel.map(new VocabWordPairs(vocabCacheBroadcast));
-            vocab.foreach(new GlovePerformer(gloveWeightLookupTable));
+            JavaRDD<GloveChange> deltas = vocab.map(new GlovePerformer(gloveWeightLookupTable));
+            for(GloveChange change : deltas.collect())
+                change.apply(gloveWeightLookupTable);
         }
 
         return new Pair<>(vocabAndNumWords.getFirst(),gloveWeightLookupTable);
