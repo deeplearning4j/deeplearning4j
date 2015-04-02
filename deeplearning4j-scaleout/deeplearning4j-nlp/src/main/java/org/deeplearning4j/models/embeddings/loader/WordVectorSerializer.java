@@ -255,6 +255,33 @@ public class WordVectorSerializer {
 
     }
 
+    /**
+     * Load word vectors for the given
+     * vocab and table
+     * @param table the weights to use
+     * @param vocab the vocab to use
+     * @return wordvectors based on the given
+     * parameters
+     */
+    public static WordVectors fromTableAndVocab(WeightLookupTable table,VocabCache vocab) {
+        WordVectorsImpl vectors = new WordVectorsImpl();
+        vectors.setLookupTable(table);
+        vectors.setVocab(vocab);
+        return vectors;
+    }
+
+    /**
+     * Load word vectors from the given pair
+     * @param pair the given pair
+     * @return a read only word vectors impl
+     * based on the given lookup table and vocab
+     */
+    public static WordVectors fromPair(Pair<WeightLookupTable,VocabCache> pair) {
+        WordVectorsImpl vectors = new WordVectorsImpl();
+        vectors.setLookupTable(pair.getFirst());
+        vectors.setVocab(pair.getSecond());
+        return vectors;
+    }
 
     /**
      * Loads an in memory cache from the given path (sets syn0 and the vocab)
@@ -263,10 +290,7 @@ public class WordVectorSerializer {
      */
     public static WordVectors loadTxtVectors(File path) throws FileNotFoundException {
         Pair<WeightLookupTable,VocabCache> pair = loadTxt(path);
-        WordVectorsImpl vectors = new WordVectorsImpl();
-        vectors.setLookupTable(pair.getFirst());
-        vectors.setVocab(pair.getSecond());
-        return vectors;
+        return fromPair(pair);
     }
     /**
      * Loads an in memory cache from the given path (sets syn0 and the vocab)
