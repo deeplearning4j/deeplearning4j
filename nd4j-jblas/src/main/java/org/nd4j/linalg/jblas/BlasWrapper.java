@@ -594,7 +594,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y) {
-        DataTypeValidation.assertDouble(a, x, y);
+        DataTypeValidation.assertFloat(a, x, y);
         NativeBlas.cgemv(
                 'N',
                 a.rows(),

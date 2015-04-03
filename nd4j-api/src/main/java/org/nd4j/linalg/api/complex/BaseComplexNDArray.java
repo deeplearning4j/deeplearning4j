@@ -450,7 +450,27 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNDArray linearViewColumnOrder() {
         return Nd4j.createComplex(data, new int[]{length, 1}, offset());
     }
+    /**
+     * Iterate along a dimension.
+     * This encapsulates the process of sum, mean, and other processes
+     * take when iterating over a dimension.
+     *
+     * @param dimension the dimension to iterate over
+     * @param op        the operation to apply
+     * @param modify    whether to modify this array while iterating
+     */
+    @Override
+    public void iterateOverDimension(int dimension, SliceOp op, boolean modify) {
+        ensureNotCleanedUp();
+        if (dimension >= shape.length)
+            throw new IllegalArgumentException("Unable to remove dimension  " + dimension + " was >= shape length");
+        int vectors = vectorsAlongDimension(dimension);
+        for (int i = 0; i < vectors; i++) {
+            IComplexNDArray vector = vectorAlongDimension(i, dimension);
+            op.operate(vector);
+        }
 
+    }
     /**
      * Returns a linear view reference of shape
      * 1,length(ndarray)
@@ -468,7 +488,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public void resetLinearView() {
-        linearView = Nd4j.createComplex(data, new int[]{1, length}, stride(), offset());
+        linearView = Nd4j.createComplex(data, new int[]{length}, stride(), offset());
     }
 
     @Override
@@ -2029,7 +2049,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             return Nd4j.createComplex(data,
                     new int[]{shape[dimension], 1}
                     , new int[]{stride[dimension], 1},
-                    offset + index * 2 * stride[0]);
+                    offset + index *  stride[0]);
         } else if (ordering == NDArrayFactory.FORTRAN) {
 
             if (dimension == shape.length - 1 && dimension != 0) {
@@ -2042,7 +2062,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                     return Nd4j.createComplex(data,
                             new int[]{1, shape[dimension]}
                             , ArrayUtil.removeIndex(stride, 0),
-                            offset + index * 2 * stride[0]);
+                            offset + index *  stride[0]);
             }
 
             if (size(dimension) == 1) {
