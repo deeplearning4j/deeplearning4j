@@ -1046,8 +1046,11 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray dup() {
         ensureNotCleanedUp();
-        DataBuffer dup = data().dup();
-        INDArray ret = Nd4j.create(dup, shape(), stride(), offset());
+        DataBuffer dup = Nd4j.createBuffer(length());
+        for(int i = 0; i < length(); i++){
+            dup.put(i,linearView().getDouble(i));
+        }
+        INDArray ret = Nd4j.create(dup, shape());
         return ret;
     }
 
