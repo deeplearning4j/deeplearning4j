@@ -64,15 +64,15 @@ public class Word2VecWork implements Serializable {
             throw new IllegalArgumentException("Word must not be null!");
 
         indexes.put(word.getIndex(),word);
-        vectors.put(word.getWord(),new Pair<>(word,table.getSyn0().getRow(word.getIndex()).dup()));
-        originalVectors.put(word.getWord(),table.getSyn0().getRow(word.getIndex()).dup());
+        vectors.put(word.getWord(),new Pair<>(word,table.getSyn0().getRow(word.getIndex()).ravel()));
+        originalVectors.put(word.getWord(),table.getSyn0().getRow(word.getIndex()).ravel());
         if(table instanceof InMemoryLookupTable) {
             InMemoryLookupTable l = table;
-            syn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).dup());
-            originalSyn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).dup());
+            syn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).ravel());
+            originalSyn1Vectors.put(word.getWord(),l.getSyn1().slice(word.getIndex()).ravel());
             if(l.getSyn1Neg() != null) {
-                originalNegative.put(word.getWord(),l.getSyn1Neg().slice(word.getIndex()).dup());
-                negativeVectors.put(word.getWord(), new Pair<>(word, l.getSyn1Neg().slice(word.getIndex()).dup()));
+                originalNegative.put(word.getWord(),l.getSyn1Neg().slice(word.getIndex()).ravel());
+                negativeVectors.put(word.getWord(), new Pair<>(word, l.getSyn1Neg().slice(word.getIndex()).ravel()));
             }
         }
 

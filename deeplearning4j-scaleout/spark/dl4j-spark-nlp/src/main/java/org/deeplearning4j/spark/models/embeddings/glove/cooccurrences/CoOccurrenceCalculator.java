@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.deeplearning4j.spark.models.glove.cooccurrences;
+package org.deeplearning4j.spark.models.embeddings.glove.cooccurrences;
 
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;

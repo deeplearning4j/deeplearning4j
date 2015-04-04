@@ -14,11 +14,10 @@
  *    limitations under the License.
  */
 
-package org.deeplearning4j.spark.models.word2vec;
+package org.deeplearning4j.spark.models.embeddings.word2vec;
 
 import org.apache.commons.math3.util.FastMath;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
@@ -39,7 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,AtomicLong>> {
+public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,AtomicLong>> {
 
 
     public final static String NAME_SPACE = "org.deeplearning4j.scaleout.perform.models.word2vec";
@@ -64,14 +63,15 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
     private double minAlpha = 1e-2;
     private int totalWords = 1;
     private int iterations = 5;
-    private static transient final Logger log = LoggerFactory.getLogger(Word2VecPerformer.class);
+    private static transient final Logger log = LoggerFactory.getLogger(Word2VecPerformerVoid.class);
     private int lastChecked = 0;
     private  Broadcast<AtomicLong> wordCount;
     private InMemoryLookupTable weights;
     private double[] expTable = new double[1000];
+    private int vectorLength;
 
 
-    public Word2VecPerformer(SparkConf sc,Broadcast<AtomicLong> wordCount,InMemoryLookupTable weights) {
+    public Word2VecPerformerVoid(SparkConf sc, Broadcast<AtomicLong> wordCount, InMemoryLookupTable weights) {
         this.weights = weights;
         this.wordCount = wordCount;
         setup(sc);
@@ -84,8 +84,9 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
         window = conf.getInt(WINDOW, 5);
         alpha = conf.getDouble(ALPHA, 0.025f);
         minAlpha = conf.getDouble(MIN_ALPHA, 1e-2f);
-        totalWords = conf.getInt(NUM_WORDS,1);
+        totalWords = conf.getInt(NUM_WORDS, 1);
         iterations = conf.getInt(ITERATIONS,5);
+        vectorLength = conf.getInt(VECTOR_LENGTH,100);
 
         initExpTable();
 
@@ -103,20 +104,151 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
     }
 
 
+    public int getVectorLength() {
+        return vectorLength;
+    }
+
+    public void setVectorLength(int vectorLength) {
+        this.vectorLength = vectorLength;
+    }
+
+    public double[] getExpTable() {
+        return expTable;
+    }
+
+    public void setExpTable(double[] expTable) {
+        this.expTable = expTable;
+    }
+
+    public InMemoryLookupTable getWeights() {
+        return weights;
+    }
+
+    public void setWeights(InMemoryLookupTable weights) {
+        this.weights = weights;
+    }
+
+    public Broadcast<AtomicLong> getWordCount() {
+        return wordCount;
+    }
+
+    public void setWordCount(Broadcast<AtomicLong> wordCount) {
+        this.wordCount = wordCount;
+    }
+
+    public int getLastChecked() {
+        return lastChecked;
+    }
+
+    public void setLastChecked(int lastChecked) {
+        this.lastChecked = lastChecked;
+    }
+
+    public static Logger getLog() {
+        return log;
+    }
+
+    public int getIterations() {
+        return iterations;
+    }
+
+    public void setIterations(int iterations) {
+        this.iterations = iterations;
+    }
+
+    public int getTotalWords() {
+        return totalWords;
+    }
+
+    public void setTotalWords(int totalWords) {
+        this.totalWords = totalWords;
+    }
+
+    public double getMinAlpha() {
+        return minAlpha;
+    }
+
+    public void setMinAlpha(double minAlpha) {
+        this.minAlpha = minAlpha;
+    }
+
+    public double getAlpha() {
+        return alpha;
+    }
+
+    public void setAlpha(double alpha) {
+        this.alpha = alpha;
+    }
+
+    public AtomicLong getNextRandom() {
+        return nextRandom;
+    }
+
+    public void setNextRandom(AtomicLong nextRandom) {
+        this.nextRandom = nextRandom;
+    }
+
+    public int getWindow() {
+        return window;
+    }
+
+    public void setWindow(int window) {
+        this.window = window;
+    }
+
+    public INDArray getTable() {
+        return table;
+    }
+
+    public void setTable(INDArray table) {
+        this.table = table;
+    }
+
+    public int getNumWords() {
+        return numWords;
+    }
+
+    public void setNumWords(int numWords) {
+        this.numWords = numWords;
+    }
+
+    public double getNegative() {
+        return negative;
+    }
+
+    public void setNegative(double negative) {
+        this.negative = negative;
+    }
+
+    public boolean isUseAdaGrad() {
+        return useAdaGrad;
+    }
+
+    public void setUseAdaGrad(boolean useAdaGrad) {
+        this.useAdaGrad = useAdaGrad;
+    }
+
+    public static double getMAX_EXP() {
+        return MAX_EXP;
+    }
+
+    public static void setMAX_EXP(double MAX_EXP) {
+        Word2VecPerformerVoid.MAX_EXP = MAX_EXP;
+    }
 
     /**
      * Train on a list of vocab words
      * @param sentence the list of vocab words to train on
      */
     public void trainSentence(final List<VocabWord> sentence,double alpha) {
-      if (sentence != null && !sentence.isEmpty()) {
-        for (int i = 0; i < sentence.size(); i++) {
-          if (!sentence.get(i).getWord().endsWith("STOP")) {
-            nextRandom.set(nextRandom.get() * 25214903917L + 11);
-            skipGram(i, sentence, (int) nextRandom.get() % window, alpha);
-          }
+        if (sentence != null && !sentence.isEmpty()) {
+            for (int i = 0; i < sentence.size(); i++) {
+                if (!sentence.get(i).getWord().endsWith("STOP")) {
+                    nextRandom.set(nextRandom.get() * 25214903917L + 11);
+                    skipGram(i, sentence, (int) nextRandom.get() % window, alpha);
+                }
+            }
         }
-      }
 
     }
 
@@ -128,19 +260,19 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
      */
     public void skipGram(int i,List<VocabWord> sentence, int b,double alpha) {
 
-      final VocabWord word = sentence.get(i);
-      if (word != null && !sentence.isEmpty()) {
-        int end = window * 2 + 1 - b;
-        for (int a = b; a < end; a++) {
-          if (a != window) {
-            int c = i - window + a;
-            if (c >= 0 && c < sentence.size()) {
-              VocabWord lastWord = sentence.get(c);
-              iterateSample(word, lastWord, alpha);
+        final VocabWord word = sentence.get(i);
+        if (word != null && !sentence.isEmpty()) {
+            int end = window * 2 + 1 - b;
+            for (int a = b; a < end; a++) {
+                if (a != window) {
+                    int c = i - window + a;
+                    if (c >= 0 && c < sentence.size()) {
+                        VocabWord lastWord = sentence.get(c);
+                        iterateSample(word, lastWord, alpha);
+                    }
+                }
             }
-          }
         }
-      }
     }
 
 
@@ -160,7 +292,7 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
 
 
         //error for current word and context
-        INDArray neu1e = Nd4j.create(weights.getVectorLength());
+        INDArray neu1e = Nd4j.create(vectorLength);
 
         for(int i = 0; i < w1.getCodeLength(); i++) {
             int code = w1.getCodes().get(i);
@@ -170,26 +302,26 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
 
             double dot = Nd4j.getBlasWrapper().dot(l1,syn1);
 
-          if (dot >= -MAX_EXP && dot < MAX_EXP) {
+            if (dot >= -MAX_EXP && dot < MAX_EXP) {
 
-            int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
-            if (idx >= expTable.length)
-              continue;
+                int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
+                if (idx >= expTable.length)
+                    continue;
 
-            //score
-            double f = expTable[idx];
-            //gradient
-            double g = (1 - code - f) * (useAdaGrad ? w1.getGradient(i, alpha) : alpha);
+                //score
+                double f = expTable[idx];
+                //gradient
+                double g = (1 - code - f) * (useAdaGrad ? w1.getGradient(i, alpha) : alpha);
 
 
-            if (neu1e.data().dataType() == DataBuffer.DOUBLE) {
-              Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
-              Nd4j.getBlasWrapper().axpy(g, l1, syn1);
-            } else {
-              Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
-              Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
+                if (neu1e.data().dataType() == DataBuffer.DOUBLE) {
+                    Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
+                    Nd4j.getBlasWrapper().axpy(g, l1, syn1);
+                } else {
+                    Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
+                    Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
+                }
             }
-          }
 
 
         }
@@ -258,8 +390,7 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
         List<VocabWord> sentence = pair.getFirst();
         double alpha2 = Math.max(minAlpha, alpha * (1 - (1.0 * numWordsSoFar / (double) totalWords)));
         int totalNewWords = 0;
-        for(int i = 0; i < iterations; i++)
-            trainSentence(sentence, alpha2);
+        trainSentence(sentence, alpha2);
         totalNewWords += sentence.size();
 
 

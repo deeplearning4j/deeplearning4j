@@ -14,24 +14,27 @@
  *    limitations under the License.
  */
 
-package org.deeplearning4j.spark.models.word2vec;
+package org.deeplearning4j.spark.models.embeddings.word2vec;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.Huffman;
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.text.TextPipeline;
 import org.deeplearning4j.spark.text.TokenizerFunction;
 import org.deeplearning4j.spark.text.TokentoVocabWord;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
-import org.deeplearning4j.util.SerializationUtils;
 
-import java.io.File;
+import java.io.Serializable;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -39,7 +42,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public class Word2Vec {
+public class Word2Vec implements Serializable {
 
     private  Broadcast<VocabCache> vocabCacheBroadcast;
     private String tokenizerFactoryClazz;
@@ -65,23 +68,41 @@ public class Word2Vec {
         JavaSparkContext sc = new JavaSparkContext(rdd.context());
         vocabCacheBroadcast = sc.broadcast(vocabAndNumWords.getFirst());
         InMemoryLookupTable lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder()
-                .cache(vocabAndNumWords.getFirst()).lr(conf.getDouble(Word2VecPerformer.ALPHA,0.025))
-                .vectorLength(conf.getInt(Word2VecPerformer.VECTOR_LENGTH,100)).negative(conf.getDouble(Word2VecPerformer.NEGATIVE,5))
-                .useAdaGrad(conf.getBoolean(Word2VecPerformer.ADAGRAD,false)).build();
+                .cache(vocabAndNumWords.getFirst()).lr(conf.getDouble(Word2VecPerformerVoid.ALPHA,0.025))
+                .vectorLength(conf.getInt(Word2VecPerformerVoid.VECTOR_LENGTH,100)).negative(conf.getDouble(Word2VecPerformerVoid.NEGATIVE,5))
+                .useAdaGrad(conf.getBoolean(Word2VecPerformerVoid.ADAGRAD,false)).build();
         lookupTable.resetWeights();
 
         Huffman huffman = new Huffman(vocabAndNumWords.getFirst().vocabWords());
         huffman.build();
 
-        Word2VecPerformer performer = new Word2VecPerformer(
-                sc.getConf(),sc.broadcast(new AtomicLong(vocabAndNumWords.getSecond())),lookupTable
-        );
-
-        rdd.map(new TokenizerFunction(tokenizerFactoryClazz))
-                .map(new TokentoVocabWord(vocabCacheBroadcast)).foreach(performer);
 
 
-       return new Pair<VocabCache, WeightLookupTable>(vocabCacheBroadcast.getValue(),lookupTable);
+        JavaRDD<Pair<List<VocabWord>, AtomicLong>> r = rdd
+                .map(new TokenizerFunction(tokenizerFactoryClazz))
+                .map(new TokentoVocabWord(vocabCacheBroadcast)).cache();
+
+        final Word2VecParam param = new Word2VecParam.Builder()
+                .negative(lookupTable.getNegative()).window(conf.getInt(Word2VecPerformer.WINDOW,5))
+                .expTable(sc.broadcast(lookupTable.getExpTable())).setAlpha(lookupTable.getLr().get())
+                .setMinAlpha(1e-3).setVectorLength(lookupTable.getVectorLength())
+                .useAdaGrad(lookupTable.isUseAdaGrad()).weights(lookupTable)
+                .createWord2VecParam();
+
+
+
+
+        for(int i = 0; i < conf.getInt(Word2VecPerformerVoid.ITERATIONS,5); i++) {
+            JavaRDD<Word2VecChange> deltas = r.map(new SentenceBatch(param));
+            List<Word2VecChange> deltasList = deltas.collect();
+            for(Word2VecChange change : deltasList) {
+                change.apply(lookupTable);
+            }
+
+        }
+
+
+        return new Pair<VocabCache, WeightLookupTable>(vocabCacheBroadcast.getValue(),lookupTable);
 
     }
 

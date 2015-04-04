@@ -498,7 +498,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
         if(type.equals("master") && !PortTaken.portTaken(stateTrackerPort)) {
             //sets up a proper connection string for reference wrt external actors needing a reference
             if(connectionString.equals("master")) {
-                String hazelCastHost = null;
+                String hazelCastHost;
                 try {
                     //try localhost fall back to 0.0.0.0
                     hazelCastHost = System.getProperty(HAZELCAST_HOST, InetAddress.getLocalHost().getHostName());

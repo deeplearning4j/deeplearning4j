@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.text;
 
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
@@ -37,6 +38,7 @@ public class TextPipeline {
     private JavaRDD<String> corpus;
     private List<String> stopWords;
     private int minWordFrequency = 5;
+    public final static String MIN_WORDS = "org.deeplearning4j.spark.text.minwords";
 
 
 
@@ -50,6 +52,10 @@ public class TextPipeline {
         this.corpus = corpus;
         this.stopWords = stopWords;
         this.minWordFrequency = minWordFrequency;
+        SparkConf conf = corpus.context().conf();
+        int val = conf.getInt(MIN_WORDS,minWordFrequency);
+        this.minWordFrequency = val;
+
     }
 
     /**
