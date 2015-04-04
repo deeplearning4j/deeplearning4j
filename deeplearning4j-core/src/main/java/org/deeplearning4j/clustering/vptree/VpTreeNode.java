@@ -20,6 +20,7 @@ import org.deeplearning4j.berkeley.Counter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -81,6 +82,8 @@ public final class VpTreeNode<T extends VpTreePoint<T>> {
 
         }
 
+
+
         solution.keepBottomNKeys(k - 1);
         return solution;
 
@@ -113,7 +116,9 @@ public final class VpTreeNode<T extends VpTreePoint<T>> {
             }
 
             counter.keepBottomNKeys(k);
-            result.addAll(counter.getSortedKeys());
+            List<T> keys = counter.getSortedKeys();
+            Collections.reverse(keys);
+            result.addAll(keys);
             solution.addAll(result);
         }
 
@@ -135,7 +140,10 @@ public final class VpTreeNode<T extends VpTreePoint<T>> {
 
         c.keepBottomNKeys(k);
         solution.clear();
-        solution.addAll(c.getSortedKeys());
+        List<T> keys = c.getSortedKeys();
+        Collections.reverse(keys);
+
+        solution.addAll(keys);
         solution = solution.subList(0,k);
         return solution;
 
@@ -155,7 +163,11 @@ public final class VpTreeNode<T extends VpTreePoint<T>> {
             }
 
             counter.keepBottomNKeys(k);
-            result.addAll(counter.getSortedKeys());
+
+            List<T> keys = counter.getSortedKeys();
+            Collections.reverse(keys);
+
+            result.addAll(keys);
             return result;
         }
 

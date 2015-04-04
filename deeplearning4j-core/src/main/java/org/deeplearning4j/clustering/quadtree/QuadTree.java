@@ -20,6 +20,8 @@ import com.google.common.util.concurrent.AtomicDouble;
 import java.io.Serializable;
 import java.util.Set;
 import java.util.TreeSet;
+
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -130,29 +132,6 @@ public class QuadTree implements Serializable {
         INDArray  point = data.slice(newIndex);
         if(!boundary.containsPoint(point))
             return false;
-            //duplicate point
-        else if(size > 0) {
-            for(int i = 0; i < size; i++) {
-                INDArray compPoint = data.slice(index[i]);
-                if(point.getDouble(0) == compPoint.getDouble(0) && point.getDouble(1) == compPoint.getDouble(1))
-                    return false;
-            }
-        }
-
-
-
-        // If this Node has already been subdivided just add the elements to the
-        // appropriate cell
-        if (!isLeaf()) {
-            QuadTree index = findIndex(point);
-            index.insert(newIndex);
-            return true;
-        }
-
-
-        else if(index[0] > 0) {
-            return false;
-        }
 
         cumSize++;
         double mult1 = (double) (cumSize - 1) / (double) cumSize;
@@ -168,18 +147,33 @@ public class QuadTree implements Serializable {
             return true;
         }
 
-        // Otherwise, we need to subdivide the current cell
-        subDivide();
+        //duplicate point
+        if(size > 0) {
+            for(int i = 0; i < size; i++) {
+                INDArray compPoint = data.slice(index[i]);
+                if(point.getDouble(0) == compPoint.getDouble(0) && point.getDouble(1) == compPoint.getDouble(1))
+                    return true;
+            }
+        }
 
 
-        insertIntoOneOf(index[0]);
-        index[0] = -1;
+
+
+        // If this Node has already been subdivided just add the elements to the
+        // appropriate cell
+        if (!isLeaf()) {
+            QuadTree index = findIndex(point);
+            index.insert(newIndex);
+            return true;
+        }
+
+        if(isLeaf())
+            subDivide();
+
         insertIntoOneOf(newIndex);
 
-        // Empty parent node
-        size = 0;
-        isLeaf = false;
-        // Otherwise, the point cannot be inserted (this should never happen)
+
+
         return false;
     }
 
@@ -210,8 +204,8 @@ public class QuadTree implements Serializable {
         }
 
         return isLeaf() || northWest.isCorrect()
-            && northEast.isCorrect() && southWest.isCorrect()
-            && southEast.isCorrect();
+                && northEast.isCorrect() && southWest.isCorrect()
+                && southEast.isCorrect();
 
     }
 
@@ -294,7 +288,6 @@ public class QuadTree implements Serializable {
         southWest = new QuadTree(this,data,new Cell(boundary.getX() - .5 * boundary.getHw(), boundary.getY() + .5 * boundary.getHh(), .5 * boundary.getHw(), .5 * boundary.getHh()));
         southEast = new QuadTree(this,data,new Cell(boundary.getX() + .5 * boundary.getHw(), boundary.getY() + .5 * boundary.getHh(), .5 * boundary.getHw(), .5 * boundary.getHh()));
 
-
     }
 
 
@@ -317,7 +310,7 @@ public class QuadTree implements Serializable {
         double D = Nd4j.getBlasWrapper().dot(buf,buf);
 
         // Check whether we can use this node as a "summary"
-        if(isLeaf || max(boundary.getHh(), boundary.getHw()) / Math.sqrt(D) < theta) {
+        if(isLeaf || FastMath.max(boundary.getHh(), boundary.getHw()) / FastMath.sqrt(D) < theta) {
 
             // Compute and add t-SNE force between point and current node
             double Q = 1.0 / (1.0 + D);

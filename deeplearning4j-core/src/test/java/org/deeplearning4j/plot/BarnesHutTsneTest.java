@@ -33,8 +33,12 @@ public class BarnesHutTsneTest {
 
     @Test
     public void testTsne() throws Exception {
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(100)
-                .theta(0.6).learningRate(500).useAdaGrad(true)
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
+        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
+        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
+
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250)
+                .theta(0.5).learningRate(200).useAdaGrad(false)
                 .build();
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
         File f = resource.getFile();

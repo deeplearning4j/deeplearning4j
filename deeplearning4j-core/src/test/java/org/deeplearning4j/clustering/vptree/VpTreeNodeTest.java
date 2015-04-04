@@ -59,7 +59,7 @@ public class VpTreeNodeTest {
         List<VpTreePointINDArray> nearbyPoints = node.findNearByPointsK(search, 2);
         Assert.assertEquals(2, nearbyPoints.size());
 
-        Assert.assertTrue(nearbyPoints.contains(new VpTreePointINDArray(create(54, 54))));
+        Assert.assertTrue(nearbyPoints.contains(new VpTreePointINDArray(create(55, 55))));
         Assert.assertTrue(nearbyPoints.contains(new VpTreePointINDArray(create(56, 56))));
 
         nearbyPoints = node.findNearbyPoints(new VpTreePointINDArray(create(10.1, 10.5)), 0.6);
@@ -115,22 +115,7 @@ public class VpTreeNodeTest {
         return Nd4j.create(Nd4j.createBuffer(new double[]{first,second}));
     }
 
-    @Test
-    public void testSimple() {
-        List<VpTreePoint2D> points = new ArrayList<>();
-        for (int i = 0; i < 1000; ++i) {
-            points.add(new VpTreePoint2D(i, i));
-        }
-        VpTreeNode<VpTreePoint2D> node = VpTreeNode.buildVpTree(points);
-        List<VpTreePoint2D> nearbyPoints = node.findNearbyPoints(new VpTreePoint2D(55.1, 55.2), 1.5);
 
-        Assert.assertTrue(nearbyPoints.contains(new VpTreePoint2D(55, 55)));
-        Assert.assertTrue(nearbyPoints.contains(new VpTreePoint2D(56, 56)));
-
-        nearbyPoints = node.findNearbyPoints(new VpTreePoint2D(10.1, 10.5), 0.6);
-        Assert.assertTrue(nearbyPoints.contains(new VpTreePoint2D(10, 10)));
-        Assert.assertEquals(1, nearbyPoints.size());
-    }
 
     @Test
     public void test() {
