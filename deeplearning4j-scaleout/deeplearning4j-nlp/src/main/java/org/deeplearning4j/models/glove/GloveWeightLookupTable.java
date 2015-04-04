@@ -128,8 +128,6 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
         //the gradient of the OPPOSITE word
         //for adagrad we will use the index of the word passed in
         //for the gradient calculation we will use the context vector
-
-
         update(w1,w1Vector,w2Vector,gradient);
         update(w2,w2Vector,w1Vector,gradient);
         return fDiff;
@@ -157,36 +155,12 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
         return weightAdaGrad;
     }
 
-    public void setWeightAdaGrad(AdaGrad weightAdaGrad) {
-        this.weightAdaGrad = weightAdaGrad;
-    }
 
     public AdaGrad getBiasAdaGrad() {
         return biasAdaGrad;
     }
 
-    public void setBiasAdaGrad(AdaGrad biasAdaGrad) {
-        this.biasAdaGrad = biasAdaGrad;
-    }
 
-    /**
-     * Load the weights in raw format
-     * @param is the input stream to read from for the weights
-     * @param vocab the vocab for the lookuptable
-     * @param vectorLength the length of each row
-     * @return the lookup table
-     * @throws IOException
-     */
-    public static GloveWeightLookupTable loadRawArray(InputStream is,VocabCache vocab,int vectorLength) throws IOException {
-        GloveWeightLookupTable ret = new GloveWeightLookupTable.Builder()
-                .cache(vocab).vectorLength(vectorLength)
-                .build();
-        INDArray syn0 = Nd4j.readTxt(is," ");
-        ret.setSyn0(syn0);
-        ret.resetWeights(false);
-        return ret;
-
-    }
 
     /**
      * Load a glove model from an input stream.

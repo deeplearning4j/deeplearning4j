@@ -14,11 +14,12 @@
  *    limitations under the License.
  */
 
-package org.deeplearning4j.spark.models.glove;
+package org.deeplearning4j.spark.models.embeddings.glove;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.berkeley.Pair;
@@ -26,30 +27,31 @@ import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.models.glove.GloveWeightLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.spark.models.glove.cooccurrences.CoOccurrenceCalculator;
-import org.deeplearning4j.spark.models.glove.cooccurrences.CoOccurrenceCounts;
+import org.deeplearning4j.spark.models.embeddings.glove.cooccurrences.CoOccurrenceCalculator;
+import org.deeplearning4j.spark.models.embeddings.glove.cooccurrences.CoOccurrenceCounts;
 import org.deeplearning4j.spark.text.TextPipeline;
 import org.deeplearning4j.spark.text.TokenizerFunction;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.io.Serializable;
+import java.util.*;
 
 /**
  * Spark glove
  *
  * @author Adam Gibson
  */
-public class Glove {
+public class Glove implements Serializable {
 
     private Broadcast<VocabCache> vocabCacheBroadcast;
     private String tokenizerFactoryClazz = DefaultTokenizerFactory.class.getName();
     private boolean symmetric = true;
     private int windowSize = 15;
     private int iterations = 300;
-
+    private static Logger log = LoggerFactory.getLogger(Glove.class);
     /**
      *
      * @param tokenizerFactoryClazz the fully qualified class name of the tokenizer
@@ -88,12 +90,18 @@ public class Glove {
         JavaSparkContext sc = new JavaSparkContext(rdd.context());
         vocabCacheBroadcast = sc.broadcast(vocabAndNumWords.getFirst());
 
-        GloveWeightLookupTable gloveWeightLookupTable = new GloveWeightLookupTable.Builder()
+        final GloveWeightLookupTable gloveWeightLookupTable = new GloveWeightLookupTable.Builder()
                 .cache(vocabAndNumWords.getFirst()).lr(conf.getDouble(GlovePerformer.ALPHA,0.025))
                 .maxCount(conf.getDouble(GlovePerformer.MAX_COUNT,100)).vectorLength(conf.getInt(GlovePerformer.VECTOR_LENGTH,100))
                .xMax(conf.getDouble(GlovePerformer.X_MAX,0.75)).build();
         gloveWeightLookupTable.resetWeights();
 
+        gloveWeightLookupTable.getBiasAdaGrad().historicalGradient = Nd4j.zeros(gloveWeightLookupTable.getSyn0().rows());
+        gloveWeightLookupTable.getWeightAdaGrad().historicalGradient = Nd4j.create(gloveWeightLookupTable.getSyn0().shape());
+
+
+
+        log.info("Created lookup table of size " + Arrays.toString(gloveWeightLookupTable.getSyn0().shape()));
         CounterMap<String,String> coOccurrenceCounts = rdd.map(new TokenizerFunction(tokenizerFactoryClazz))
                 .map(new CoOccurrenceCalculator(symmetric,vocabCacheBroadcast,windowSize)).fold(new CounterMap<String, String>(),new CoOccurrenceCounts());
 
@@ -104,11 +112,22 @@ public class Glove {
             counts.add(new Triple<>(pair.getFirst(),pair.getSecond(),coOccurrenceCounts.getCount(pair.getFirst(),pair.getSecond())));
         }
 
+        log.info("Calculated co occurrences");
+
+
         for(int i = 0; i < iterations; i++) {
+            log.info("Iteration " + i);
             Collections.shuffle(counts);
             JavaRDD<Triple<String,String,Double>> parallel = sc.parallelize(counts);
             JavaRDD<Triple<VocabWord,VocabWord,Double>> vocab = parallel.map(new VocabWordPairs(vocabCacheBroadcast));
-            vocab.foreach(new GlovePerformer(gloveWeightLookupTable));
+            JavaRDD<GloveChange> deltas = vocab.map(new GlovePerformer(gloveWeightLookupTable));
+            deltas.foreach(new VoidFunction<GloveChange>() {
+                @Override
+                public void call(GloveChange gloveChange) throws Exception {
+                    gloveChange.apply(gloveWeightLookupTable);
+                }
+            });
+
         }
 
         return new Pair<>(vocabAndNumWords.getFirst(),gloveWeightLookupTable);

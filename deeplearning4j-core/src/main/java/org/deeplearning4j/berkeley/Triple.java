@@ -15,7 +15,10 @@
  */
 
 package org.deeplearning4j.berkeley;
-public class Triple<S,T,U> {
+
+import java.io.Serializable;
+
+public class Triple<S,T,U>  implements Serializable {
 	S first;
 	T second;
 	U third;

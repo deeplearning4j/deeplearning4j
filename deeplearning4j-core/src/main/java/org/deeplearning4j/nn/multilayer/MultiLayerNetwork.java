@@ -1026,8 +1026,11 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     public int[] predict(INDArray d) {
         INDArray output = output(d);
         int[] ret = new int[d.slices()];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
+        if (d.isRowVector()) ret[0] = Nd4j.getBlasWrapper().iamax(output);
+        else {
+            for (int i = 0; i < ret.length; i++)
+                ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
+        }
         return ret;
     }
 

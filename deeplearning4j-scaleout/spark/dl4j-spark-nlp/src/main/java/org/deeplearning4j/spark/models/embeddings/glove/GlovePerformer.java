@@ -14,20 +14,20 @@
  *    limitations under the License.
  */
 
-package org.deeplearning4j.spark.models.glove;
+package org.deeplearning4j.spark.models.embeddings.glove;
 
-import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.api.java.function.Function;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.models.glove.GloveWeightLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 
 
 /**
- * Base line word 2 vec performer
+ * Base line glove performer
  *
  * @author Adam Gibson
  */
-public class GlovePerformer implements VoidFunction<Triple<VocabWord,VocabWord,Double>> {
+public class GlovePerformer implements Function<Triple<VocabWord,VocabWord,Double>,GloveChange> {
 
 
     public final static String NAME_SPACE = "org.deeplearning4j.scaleout.perform.models.glove";
@@ -42,7 +42,8 @@ public class GlovePerformer implements VoidFunction<Triple<VocabWord,VocabWord,D
     }
 
     @Override
-    public void call(Triple<VocabWord, VocabWord,Double> pair) throws Exception {
+    public GloveChange call(Triple<VocabWord, VocabWord,Double> pair) throws Exception {
         table.iterateSample(pair.getFirst(),pair.getSecond(),pair.getThird());
+        return new GloveChange(pair.getFirst(),pair.getSecond(),table);
     }
 }
