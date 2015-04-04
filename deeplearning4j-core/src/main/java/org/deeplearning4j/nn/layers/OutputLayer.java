@@ -332,7 +332,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             throw new IllegalArgumentException("No null input allowed");
         INDArray preOutput = preOutput(x);
         INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preOutput), 1);
-        applyDropOutIfNecessary(ret);
         return ret;
 
 
