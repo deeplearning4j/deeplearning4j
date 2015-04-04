@@ -967,6 +967,7 @@ public class KernelLauncher {
      * up and executing the kernel failed.
      */
     public void call(Object ... args) {
+
         Pointer kernelParameters[] = new Pointer[args.length];
 
         for (int i = 0; i < args.length; i++) {
@@ -1056,7 +1057,7 @@ public class KernelLauncher {
         }
 
 
-        JCudaDriver.cuCtxSetCurrent(context);
+        KernelLauncher.syncContext();
 
         checkResult(cuLaunchKernel(function,
                 gridSize.x, gridSize.y, gridSize.z,

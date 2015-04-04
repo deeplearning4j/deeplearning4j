@@ -140,6 +140,8 @@ public class KernelFunctions {
     public static JCudaBuffer alloc(float[] data) {
         // Allocate the device input data, and copy the
         // host input data to the device
+        KernelLauncher.syncContext();
+
         Pointer deviceInputA = new Pointer();
         JCuda.cudaMalloc(deviceInputA, Sizeof.FLOAT * data.length);
         JCuda.cudaMemcpy(deviceInputA, Pointer.to(data), Sizeof.FLOAT * data.length, cudaMemcpyKind.cudaMemcpyHostToDevice);

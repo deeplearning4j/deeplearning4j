@@ -21,6 +21,7 @@ import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
+import jcuda.utils.KernelLauncher;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -145,6 +146,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void setData(double[] data) {
+        KernelLauncher.syncContext();
 
         ensureNotFreed();
 

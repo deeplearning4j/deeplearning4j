@@ -22,6 +22,7 @@ import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
+import jcuda.utils.KernelLauncher;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -32,7 +33,6 @@ import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
@@ -101,6 +101,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public void put(int i, IComplexNumber result) {
         ensureNotFreed();
+        KernelLauncher.syncContext();
+
         if (dataType() == DataBuffer.FLOAT) {
             JCublas.cublasSetVector(
                     length(),
@@ -128,6 +130,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void alloc() {
+        KernelLauncher.syncContext();
+
         pointer = new Pointer();
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         Nd4j.getResourceManager().incrementCurrentAllocatedMemory(elementSize() * length());
@@ -140,6 +144,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public void set(Pointer pointer) {
         ensureNotFreed();
+        KernelLauncher.syncContext();
 
         if (dataType() == DOUBLE) {
             JCublas.cublasDcopy(
@@ -170,6 +175,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      */
     protected void copyTo(JCudaBuffer to) {
         ensureNotFreed();
+        KernelLauncher.syncContext();
 
         if (to.dataType() != dataType())
             throw new IllegalArgumentException("Unable to copy buffer, mis matching data types.");
@@ -199,21 +205,18 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      */
     protected void get(int index, int inc, int length, Pointer init) {
         ensureNotFreed();
+        KernelLauncher.syncContext();
 
-        //cuda memcpy is a little more stable
-        if (inc == 1) {
-            JCuda.cudaMemcpy(init, pointer().withByteOffset(elementSize() * index), length * elementSize(), cudaMemcpyKind.cudaMemcpyDeviceToHost);
-        } else {
-            JCublas.cublasGetVector(
-                    length
-                    , elementSize(),
-                    pointer().withByteOffset(index * elementSize())
-                    ,
-                    inc,
-                    init
-                    , 1);
+        JCublas.cublasGetVector(
+                length
+                , elementSize(),
+                pointer().withByteOffset(index * elementSize())
+                ,
+                inc,
+                init
+                , 1);
 
-        }
+
 
     }
 
@@ -262,6 +265,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      */
     protected void set(int index, int length, Pointer from, int inc) {
         ensureNotFreed();
+        KernelLauncher.syncContext();
+
         int offset = elementSize() * index;
         if (offset >= length() * elementSize())
             throw new IllegalArgumentException("Illegal offset " + offset + " with index of " + index + " and length " + length());
@@ -308,6 +313,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public  void destroy() {
         try {
+            KernelLauncher.syncContext();
+
             if(!freed.get()) {
                 if (Nd4j.shouldInstrument)
                     Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
@@ -439,6 +446,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
         ensureNotFreed();
+        KernelLauncher.syncContext();
 
         int count = 0;
         for (int i = 0; i < buffers.length; i++) {

@@ -8,6 +8,7 @@ import jcuda.jcublas.JCublas;
 import jcuda.jcurand.JCurand;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
+import jcuda.utils.KernelLauncher;
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -47,6 +48,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
         int threads = PointerUtil.getNumThreads(len, 64);
         JCudaBuffer randomNumbers = new CudaFloatDataBuffer(len * n);
         JCudaBuffer probBuffer = (JCudaBuffer) p.data();
+        KernelLauncher.syncContext();
 
         Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{len})
@@ -76,6 +78,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
         int threads = PointerUtil.getNumThreads(len, 64);
         JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(len);
         JCudaBuffer probBuffer = (JCudaBuffer) p.data();
+        KernelLauncher.syncContext();
 
         Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{len})
@@ -104,6 +107,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
         int blocks = PointerUtil.getNumBlocks(len, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(len, KernelFunctions.THREADS);
         JCudaBuffer randomNumbers = new CudaFloatDataBuffer(len * n);
+        KernelLauncher.syncContext();
 
         Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{len})
@@ -131,6 +135,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
         int blocks = PointerUtil.getNumBlocks(len, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(len, KernelFunctions.THREADS);
         JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(len);
+        KernelLauncher.syncContext();
 
         Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{len})
@@ -160,10 +165,13 @@ public abstract class BaseJCudaDistribution implements Distribution {
 
 
     protected void doSampleUniformDouble(Pointer out, double min, double max, int n) {
+        KernelLauncher.syncContext();
+
         JCurand.curandGenerateUniformDouble(random.generator(), out, n);
         String functionName = "uniform";
         int blocks = PointerUtil.getNumBlocks(n, 128, 64);
         int threads = PointerUtil.getNumThreads(n, 64);
+
         Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{n})
                 , Pointer.to(new double[]{min})
@@ -172,6 +180,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
                 , Pointer.to(random.generator())
 
         };
+        KernelLauncher.syncContext();
 
         //int len,int n,double *ps,double *result, curandState *s
         KernelFunctions.invoke(
