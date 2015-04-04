@@ -26,6 +26,13 @@ public class LFWDataSetIterator extends BaseDatasetIterator {
 	 * 
 	 */
 	private static final long serialVersionUID = 7295562586439084858L;
+	public LFWDataSetIterator(int batch) {
+		this(batch,LFWDataFetcher.NUM_IMAGES,28,28);
+	}
+
+	public LFWDataSetIterator(int batch,int imageHeight,int imageWidth) {
+		super(batch, LFWDataFetcher.NUM_IMAGES,new LFWDataFetcher(imageWidth,imageHeight));
+	}
 
 	public LFWDataSetIterator(int batch,int numExamples) {
 		this(batch,numExamples,28,28);

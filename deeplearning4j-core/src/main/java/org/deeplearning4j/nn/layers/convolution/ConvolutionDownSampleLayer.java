@@ -28,7 +28,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
- * Convolution layer
+ * Convolutional max pooling
+ * layer
  *
  * @author Adam Gibson
  */
@@ -94,10 +95,6 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
         return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(),pooled));
     }
 
-    @Override
-    public void update(Gradient gradient) {
-
-    }
 
     @Override
     public double score() {
@@ -109,10 +106,7 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
         return activate(data);
     }
 
-    @Override
-    public void setParams(INDArray params) {
 
-    }
 
     @Override
     public void iterate(INDArray input) {

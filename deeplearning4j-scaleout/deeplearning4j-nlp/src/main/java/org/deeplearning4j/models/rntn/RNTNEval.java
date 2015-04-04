@@ -36,7 +36,11 @@ public class RNTNEval {
     private static final Logger log = LoggerFactory.getLogger(RNTNEval.class);
 
 
-
+    /**
+     * Eval the RNTN
+     * @param rntn
+     * @param trees
+     */
     public void eval(RNTN rntn, List<Tree> trees) {
         for(Tree t : trees) {
             rntn.forwardPropagateTree(t);
@@ -60,6 +64,10 @@ public class RNTNEval {
     }
 
 
+    /**
+     * Print the summary of the rntnresults
+     * @return the summary of the rntn
+     */
     public String stats() {
         StringBuilder builder = new StringBuilder()
                 .append("\n");

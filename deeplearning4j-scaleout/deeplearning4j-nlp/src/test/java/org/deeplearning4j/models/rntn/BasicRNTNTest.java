@@ -19,7 +19,6 @@ package org.deeplearning4j.models.rntn;
 import static org.junit.Assert.*;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.featuredetectors.autoencoder.recursive.Tree;
@@ -105,11 +104,12 @@ public class BasicRNTNTest {
                 .setUseTensors(true).build();
         INDArray params = rntn.getParameters();
         INDArray gradient = rntn.getValueGradient();
-        rntn.setParameters(params);
-        assertEquals(params.length(),gradient.length());
+        rntn.setParams(params);
+        assertEquals(params.length(), gradient.length());
 
         List<Tree> trees = vectorizer.getTreesWithLabels(sentence,Arrays.asList("LABEL"));
         rntn.fit(trees);
+
 
 
     }
