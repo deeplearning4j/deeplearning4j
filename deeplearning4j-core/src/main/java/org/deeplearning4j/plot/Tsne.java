@@ -47,7 +47,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
 public class Tsne implements Serializable {
 
     protected int maxIter = 1000;
-    protected double realMin = 1e-12;
+    protected double realMin = Nd4j.EPS_THRESHOLD;
     protected double initialMomentum = 0.5;
     protected double finalMomentum = 0.8;
     protected  double minGain = 1e-2;

@@ -44,6 +44,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -65,7 +66,6 @@ public class BarnesHutTsne extends Tsne implements Model {
     private INDArray rows;
     private INDArray cols;
     private INDArray vals;
-    private INDArray p;
     private INDArray x;
     private int numDimensions = 0;
     public final static String Y_GRAD = "yIncs";
@@ -123,7 +123,7 @@ public class BarnesHutTsne extends Tsne implements Model {
 
         final INDArray beta =  ones(N, 1);
 
-        final double logU =  Math.log(u);
+        final double logU =  FastMath.log(u);
 
         final List<VpTreePointINDArray> list = VpTreePointINDArray.dataPoints(d);
         final VpTreeNode<VpTreePointINDArray> tree = VpTreeNode.buildVpTree(list);
@@ -133,9 +133,10 @@ public class BarnesHutTsne extends Tsne implements Model {
             if(i % 500 == 0)
                 log.info("Handled " + i + " records");
 
-            double betaMin = Double.NEGATIVE_INFINITY;
-            double betaMax = Double.POSITIVE_INFINITY;
+            double betaMin = -Double.MAX_VALUE;
+            double betaMax = Double.MAX_VALUE;
             Counter<VpTreePointINDArray> c = tree.findNearByPointsWithDistancesK(list.get(i),k + 1);
+            double betas = beta.getDouble(i);
 
             INDArray cArr = toNDArray(c);
             Pair<INDArray,Double> pair =  computeGaussianKernel(cArr, beta.getDouble(i),k);
@@ -145,27 +146,26 @@ public class BarnesHutTsne extends Tsne implements Model {
             boolean found = false;
             //binary search
             while(!found && tries < 200) {
-
-
                 if(hDiff < tolerance && -hDiff < tolerance)
                     found = true;
                 else {
                     if(hDiff > 0) {
-                        if(Double.isInfinite(betaMax))
-                            beta.putScalar(i,beta.getDouble(i) * 2.0);
+                        betaMin = betas;
+
+                        if(betaMax == Double.MAX_VALUE || betaMax == -Double.MAX_VALUE)
+                            betas *= 2;
                         else
-                            beta.putScalar(i,(beta.getDouble(i) + betaMax) / 2.0);
-                        betaMin = beta.getDouble(i);
+                            betas = (betas + betaMax) / 2.0;
                     }
                     else {
-                        if(Double.isInfinite(betaMin))
-                            beta.putScalar(i,beta.getDouble(i) / 2.0);
+                        betaMax = betas;
+                        if(betaMin == -Double.MAX_VALUE || betaMin == Double.MAX_VALUE)
+                           betas /= 2.0;
                         else
-                            beta.putScalar(i,(beta.getDouble(i) + betaMin) / 2.0);
-                        betaMax = beta.getDouble(i);
+                            betas = (betas + betaMin) / 2.0;
                     }
 
-                    pair = computeGaussianKernel(toNDArray(c), beta.getDouble(i),k);
+                    pair = computeGaussianKernel(cArr, betas,k);
                     hDiff = pair.getSecond() - logU;
                     tries++;
                 }
@@ -177,8 +177,8 @@ public class BarnesHutTsne extends Tsne implements Model {
             INDArray indices = toIndex(c,k);
 
 
-            for(int l = 0; l < indices.length(); l++) {
-                cols.putScalar(rows.getInt(i) + l,l < indices.length() - 1 ? indices.getDouble(l + 1) : 0.0);
+            for(int l = 0; l < k; l++) {
+                cols.putScalar(rows.getInt(i) + l,indices.getDouble(l + 1));
                 vals.putScalar(rows.getInt(i) + l,currP.getDouble(l));
             }
 
@@ -230,9 +230,7 @@ public class BarnesHutTsne extends Tsne implements Model {
     }
 
     @Override
-    public void clear() {
-        this.p = null;
-    }
+    public void clear(){}
 
     /* compute the gradient given the current solution, the probabilities and the constant */
     @Override
@@ -244,8 +242,9 @@ public class BarnesHutTsne extends Tsne implements Model {
 
 
     private INDArray toIndex(Counter<VpTreePointINDArray> counter,int k) {
-        INDArray ret = Nd4j.create(k);
+        INDArray ret = Nd4j.create(k + 1);
         List<VpTreePointINDArray> list = counter.getSortedKeys();
+        Collections.reverse(list);
         for(int i = 0; i < list.size(); i++) {
             ret.putScalar(i,list.get(i).getIndex());
         }
@@ -255,6 +254,7 @@ public class BarnesHutTsne extends Tsne implements Model {
     private INDArray toNDArray(Counter<VpTreePointINDArray> counter) {
         INDArray ret = Nd4j.create(N - 1);
         List<VpTreePointINDArray> list = counter.getSortedKeys();
+        Collections.reverse(list);
         for(int i = 0; i < list.size(); i++) {
             ret.putScalar(i,counter.getCount(list.get(i)));
         }
@@ -279,7 +279,6 @@ public class BarnesHutTsne extends Tsne implements Model {
                 for(int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i) + 1); m++)
                     if(colP.getInt(m) == n) {
                         present = true;
-                        break;
                     }
 
 
@@ -288,8 +287,7 @@ public class BarnesHutTsne extends Tsne implements Model {
 
                 else {
                     rowCounts.putScalar(n,rowCounts.getDouble(n) + 1);
-                    double putIdx = rowCounts.getDouble(colP.getInt(i));
-                    rowCounts.putScalar(colP.getInt(i),putIdx + 1);
+                    rowCounts.putScalar(colP.getInt(i),rowCounts.getDouble(colP.getInt(i)) + 1);
                 }
             }
         }
@@ -352,6 +350,7 @@ public class BarnesHutTsne extends Tsne implements Model {
         return symValP;
 
     }
+
     /**
      * Computes a gaussian kernel
      * given a vector of squared euclidean distances
@@ -367,7 +366,7 @@ public class BarnesHutTsne extends Tsne implements Model {
             currP.putScalar(m, FastMath.exp(-beta * distances.getDouble(m + 1)));
 
         double sum = currP.sum(Integer.MAX_VALUE).getDouble(0);
-        double h = Double.MIN_VALUE;
+        double h = 0.0;
         for(int m = 0; m < k; m++)
             h += beta * (distances.getDouble(m + 1) * currP.getDouble(m));
 
@@ -422,10 +421,7 @@ public class BarnesHutTsne extends Tsne implements Model {
      */
     @Override
     public void step(INDArray p,int i) {
-        Gradient g = gradient();
-        update(g);
-        y.addi(g.getGradientFor(Y_GRAD));
-
+        update(gradient());
     }
 
 
@@ -455,11 +451,8 @@ public class BarnesHutTsne extends Tsne implements Model {
         else
             gradChange.muli(learningRate);
 
-
         yIncs.muli(momentum).subi(gradChange);
-
-
-        gradient.gradientForVariable().put(Y_GRAD, yIncs);
+        y.addi(yIncs);
 
     }
 
