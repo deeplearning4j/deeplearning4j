@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.convolution.preprocessor;
 
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.OutputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -34,7 +35,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public class ConvolutionInputPreProcessor implements OutputPreProcessor {
+public class ConvolutionInputPreProcessor implements OutputPreProcessor,InputPreProcessor {
     private int rows,cols;
 
     public ConvolutionInputPreProcessor(int rows, int cols) {

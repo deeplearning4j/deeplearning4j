@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
 import org.deeplearning4j.util.MultiLayerUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -330,27 +331,48 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             throw new IllegalStateException("Unable to createComplex network neuralNets; number specified is less than 1");
 
         int[] hiddenLayerSizes = layerWiseConfigurations.getHiddenLayerSizes();
+        int numHiddenLayersSizesUsed = 0;
         if (this.layers == null || this.layers[0] == null) {
             //
             this.layers = new Layer[hiddenLayerSizes.length + 1];
             // construct multi-layer
             for (int i = 0; i < getnLayers(); i++) {
 
-                if (i == 0)
+                if (i == 0) {
                     inputSize = layerWiseConfigurations.getConf(0).getnIn();
+                    numHiddenLayersSizesUsed++;
+                }
                 else
-                    inputSize = hiddenLayerSizes[i - 1];
+                    inputSize = hiddenLayerSizes[numHiddenLayersSizesUsed - 1];
 
                 if (i == 0) {
                     layerWiseConfigurations.getConf(i).setnIn(inputSize);
                     layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
                     // construct sigmoid_layer
                     layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(layerWiseConfigurations.getConf(i));
-                } else if (i < getLayers().length - 1) {
+                }
+                else if (i < getLayers().length - 1) {
                     if (input != null)
                         layerInput = activationFromPrevLayer(i - 1, layerInput);
-
-                    layerWiseConfigurations.getConf(i).setnIn(inputSize);
+                    /**
+                     * Count the number of hidden layers used.
+                     * Only use the input size when the hidden layer
+                     * size output ends up being the same as the number of columns
+                     * of the output.
+                     *
+                     * An example scenario is whe nwe have a convolution layer
+                     * before, we aren't going to be using the hidden layer sizes then.
+                     *
+                     * Exploiting the fact we know the columns of the output
+                     * we can transparently set this for the next layer.
+                     *
+                     * This will also allow us to specify the hidden layers in contiguous
+                     * order in the array without having to create an override
+                     * for eery layer.
+                     */
+                    if(layerInput.columns() == hiddenLayerSizes[i])
+                        numHiddenLayersSizesUsed++;
+                    layerWiseConfigurations.getConf(i).setnIn(layerInput.columns());
                     layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
                     layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(layerWiseConfigurations.getConf(i));
 
@@ -432,6 +454,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      * @return the activation from the previous layer
      */
     public INDArray activationFromPrevLayer(int curr, INDArray input) {
+        if(getLayerWiseConfigurations().getInputPreProcess(curr) != null)
+            input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input);
         INDArray ret = layers[curr].activate(input);
         if (getLayerWiseConfigurations().getProcessors() != null && getLayerWiseConfigurations().getPreProcessor(curr) != null) {
             ret = getLayerWiseConfigurations().getPreProcessor(curr).preProcess(ret);
@@ -453,10 +477,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
         for (int i = 0; i < layers.length; i++) {
             currInput = activationFromPrevLayer(i, currInput);
-            //pre process the activation before passing to the next layer
-            OutputPreProcessor preProcessor = getLayerWiseConfigurations().getPreProcessor(i);
-            if (preProcessor != null)
-                currInput = preProcessor.preProcess(currInput);
             //applies drop connect to the activation
             applyDropConnectIfNecessary(currInput);
             activations.add(currInput);
@@ -889,20 +909,22 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
     @Override
     public void fit(DataSetIterator iter) {
-        if (!layerWiseConfigurations.isBackward()) {
+        if (layerWiseConfigurations.isPretrain()) {
             pretrain(iter);
             iter.reset();
             finetune(iter);
         }
-
-        else {
+        if(layerWiseConfigurations.isBackward()) {
+            iter.reset();
             while(iter.hasNext()) {
                 DataSet next = iter.next();
                 doBackWard(next.getFeatureMatrix(),next.getLabels());
 
             }
-
         }
+
+
+
 
 
 
@@ -944,6 +966,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             //apply each gradient update
             for (int j = 0; j < layers.length; j++)
                 layers[j].update(backwards.get(j).getSecond());
+            for(IterationListener listener : getOutputLayer().conf().getListeners())
+                listener.iterationDone(getOutputLayer(),i);
         }
     }
 
@@ -1058,12 +1082,14 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     public void fit(INDArray examples, INDArray labels) {
         setInput(examples);
 
-        if (!layerWiseConfigurations.isBackward()) {
+
+
+        if (layerWiseConfigurations.isPretrain()) {
             pretrain(examples);
             finetune(labels);
         }
 
-        else
+        if(layerWiseConfigurations.isBackward())
             doBackWard(examples,labels);
 
     }
