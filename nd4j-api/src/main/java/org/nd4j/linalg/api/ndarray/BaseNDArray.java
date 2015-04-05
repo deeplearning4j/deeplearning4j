@@ -1265,7 +1265,7 @@ public abstract class BaseNDArray implements INDArray {
                 int idx = linearIndex(column);
                 return idx;
             } else
-                throw new IllegalStateException("Unable to getFromOrigin row/column from a non matrix");
+                throw new IllegalStateException("Unable to get row/column from a non matrix");
         }
 
 
@@ -2799,7 +2799,7 @@ public abstract class BaseNDArray implements INDArray {
     /**
      * Fetch a particular number on a multi dimensional scale.
      *
-     * @param indexes the indexes to getFromOrigin a number from
+     * @param indexes the indexes to get a number from
      * @return the number at the specified indices
      */
     @Override
@@ -3243,7 +3243,7 @@ public abstract class BaseNDArray implements INDArray {
             else
                 return shape[0];
         }
-        throw new IllegalStateException("Unable to getFromOrigin number of of rows for a non 2d matrix");
+        throw new IllegalStateException("Unable to get number of of rows for a non 2d matrix");
     }
 
     /**

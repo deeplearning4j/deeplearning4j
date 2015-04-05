@@ -276,7 +276,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         INDArray columnStds = getFeatureMatrix().std(0);
 
         setFeatures(getFeatures().subiRowVector(columnMeans));
-        columnStds.addi(Nd4j.scalar(1e-6));
+        columnStds.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
         setFeatures(getFeatures().diviRowVector(columnStds));
     }
 
