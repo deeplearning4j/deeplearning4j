@@ -16,8 +16,7 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
+
 import org.deeplearning4j.nn.conf.OutputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -27,7 +26,6 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class BinomialSamplingPreProcessor implements OutputPreProcessor {
-    private static RandomGenerator rng = new MersenneTwister(123);
 
     @Override
     public INDArray preProcess(INDArray output) {

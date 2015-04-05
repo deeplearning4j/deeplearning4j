@@ -771,54 +771,19 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     /**
      * Fluent interface for building a list of configurations
      */
-    public static class ListBuilder {
+    public static class ListBuilder extends MultiLayerConfiguration.Builder {
         private List<Builder> layerwise;
-        private int[] hiddenLayerSizes;
-        private boolean useDropConnect = false;
-        private boolean pretrain = true;
-        private boolean backward = false;
-
-        private Map<Integer,OutputPreProcessor> preProcessors = new HashMap<>();
-
         public ListBuilder(List<Builder> list) {
             this.layerwise = list;
         }
+
+
 
 
         public ListBuilder backward(boolean backward) {
             this.backward = backward;
             return this;
         }
-
-        public ListBuilder preProcessor(Integer layer,OutputPreProcessor preProcessor) {
-            preProcessors.put(layer,preProcessor);
-            return this;
-        }
-
-        public ListBuilder preProcessors(Map<Integer,OutputPreProcessor> preProcessors) {
-            this.preProcessors = preProcessors;
-            return this;
-        }
-
-
-        public ListBuilder pretrain(boolean pretrain) {
-            this.pretrain = pretrain;
-            return this;
-        }
-
-        public ListBuilder useDropConnect(boolean useDropConnect) {
-            this.useDropConnect = useDropConnect;
-            return this;
-        }
-
-
-        public ListBuilder override(ConfOverride override) {
-            for(int i = 0; i < layerwise.size(); i++)
-                override.overrideLayer(i, layerwise.get(i));
-            return this;
-        }
-
-
 
         public ListBuilder hiddenLayerSizes(int...hiddenLayerSizes) {
             this.hiddenLayerSizes = hiddenLayerSizes;
@@ -830,9 +795,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 throw new IllegalStateException("Number of hidden layers mut be equal to hidden layer sizes + 1");
 
             List<NeuralNetConfiguration> list = new ArrayList<>();
-            for(int i = 0; i < layerwise.size(); i++)
+            for(int i = 0; i < layerwise.size(); i++) {
+                if(confOverrides.get(i) != null)
+                    confOverrides.get(i).overrideLayer(i,layerwise.get(i));
                 list.add(layerwise.get(i).build());
-            return new MultiLayerConfiguration.Builder().backward(backward)
+            }
+            return new MultiLayerConfiguration.Builder().backward(backward).inputPreProcessors(inputPreProcessor)
                     .useDropConnect(useDropConnect).pretrain(pretrain).preProcessors(preProcessors)
                     .hiddenLayerSizes(hiddenLayerSizes)
                     .confs(list).build();
