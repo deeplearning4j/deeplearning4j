@@ -45,6 +45,13 @@ public class ConvolutionPostProcessor implements OutputPreProcessor {
             System.arraycopy(outputShape, 1, otherOutputs, 0, otherOutputs.length);
             shape = new int[] {output.shape()[0], ArrayUtil.prod(otherOutputs)};
         }
+
+        else if(ArrayUtil.prod(shape) != output.length()) {
+            int[] otherOutputs = new int[3];
+            int[] outputShape = output.shape();
+            System.arraycopy(outputShape, 1, otherOutputs, 0, otherOutputs.length);
+            shape = new int[] {output.shape()[0], ArrayUtil.prod(otherOutputs)};
+        }
         return output.reshape(shape);
     }
 }

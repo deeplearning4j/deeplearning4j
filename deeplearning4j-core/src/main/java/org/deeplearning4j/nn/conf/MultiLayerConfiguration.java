@@ -399,6 +399,11 @@ public class MultiLayerConfiguration implements Serializable {
             return this;
         }
 
+        public Builder override(int layer,ConfOverride override) {
+            confOverrides.put(layer,override);
+            return this;
+        }
+
 
     }
 

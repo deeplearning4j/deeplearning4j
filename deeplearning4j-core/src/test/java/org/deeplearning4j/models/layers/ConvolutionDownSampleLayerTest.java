@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
+import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionInputPreProcessor;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -82,16 +83,16 @@ public class ConvolutionDownSampleLayerTest {
          *
          */
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
-                .dist(Nd4j.getDistributions().createNormal(0,1))
+                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .dist(Nd4j.getDistributions().createNormal(0, 1))
                 .iterations(100).iterationListener(new ScoreIterationListener(1))
-                .activationFunction("tanh").filterSize(5,1,2,2).constrainGradientToUnitNorm(true)
+                .activationFunction("tanh").filterSize(5, 1, 2, 2).constrainGradientToUnitNorm(true)
                 .nIn(4).nOut(3).batchSize(batchSize)
                .layerFactory(layerFactory)
                 .list(2)
-                .preProcessor(0,new ConvolutionPostProcessor())
+                .preProcessor(0, new ConvolutionPostProcessor()).inputPreProcessor(0, new ConvolutionInputPreProcessor(2, 2))
                 .hiddenLayerSizes(new int[]{9})
-                .override(new ClassifierOverride(1)).build();
+                .override(1,new ClassifierOverride(1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -104,13 +105,13 @@ public class ConvolutionDownSampleLayerTest {
          * Likely cause: shape[0] mis match on the filter size and the input batch size.
          * Likely need to make a little more general.
          */
-        network.fit(trainTest.getTrain().getFeatureMatrix().reshape(trainTest.getTrain().numExamples(),1,2,2),trainTest.getTrain().getLabels());
+        network.fit(trainTest.getTrain());
 
 
         //org.nd4j.linalg.dataset.DataSet test = trainTest.getTest();
         Evaluation eval = new Evaluation();
-        INDArray output = network.output(trainTest.getTrain().getFeatureMatrix().reshape(trainTest.getTrain().numExamples(),1,2,2));
-        eval.eval(trainTest.getTrain().getLabels(),output);
+        INDArray output = network.output(trainTest.getTest().getFeatureMatrix());
+        eval.eval(trainTest.getTest().getLabels(),output);
         log.info("Score " +eval.stats());
 
     }
