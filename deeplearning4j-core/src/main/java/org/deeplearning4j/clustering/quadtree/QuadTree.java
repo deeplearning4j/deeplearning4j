@@ -170,11 +170,11 @@ public class QuadTree implements Serializable {
         if(isLeaf())
             subDivide();
 
-        insertIntoOneOf(newIndex);
+        boolean ret = insertIntoOneOf(newIndex);
 
 
 
-        return false;
+        return ret;
     }
 
     private boolean insertIntoOneOf(int index) {
@@ -210,77 +210,12 @@ public class QuadTree implements Serializable {
     }
 
 
-    /**
-     * Get the indices for the node
-     * @return the indices for the node
-     */
-    public Set<Integer> getIndices() {
-        Set<Integer> ret = new TreeSet<>();
-        getIndices(ret);
-        return ret;
-    }
-
-    /**
-     * Collect all of the indices
-     * @param indices
-     */
-    public void getIndices(Set<Integer> indices) {
-        for (int anIndex : this.index)
-            if (anIndex >= 0)
-                indices.add(anIndex);
-
-
-        if(!isLeaf()) {
-            northWest.getIndices(indices);
-            northEast.getIndices(indices);
-            southWest.getIndices(indices);
-            southEast.getIndices(indices);
-        }
-    }
 
 
     /**
-     *
-     */
-    public void rebuildTree() {
-        for(int n = 0; n < size; n++) {
-
-            // Check whether point is erroneous
-            INDArray  point = data.slice(index[n]);
-            if(!boundary.containsPoint(point)) {
-
-                // Remove erroneous point
-                int rem_index = index[n];
-                for(int m = n + 1; m < size; m++) index[m - 1] = index[m];
-                index[size - 1] = -1;
-                size--;
-
-                // Update center-of-mass and counter in all parents
-                boolean done = false;
-                QuadTree node = this;
-                while(!done) {
-                    node.getCenterOfMass().assign(node.centerOfMass.mul(cumSize).sub(point).divi(node.cumSize - 1));
-                    node.cumSize--;
-                    if(node.getParent() == null)
-                        done = true;
-                    else node = node.getParent();
-                }
-
-                // Reinsert point in the root tree
-                node.insert(rem_index);
-            }
-        }
-
-        // Rebuild lower parts of the tree
-        northWest.rebuildTree();
-        northEast.rebuildTree();
-        southWest.rebuildTree();
-        southEast.rebuildTree();
-    }
-
-
-    /**
-     *  Create four children which fully divide this cell into four quads of equal area
+     *  Create four children
+     *  which fully divide this cell
+     *  into four quads of equal area
      */
     public void subDivide() {
         northWest = new QuadTree(this,data,new Cell(boundary.getX() - .5 * boundary.getHw(), boundary.getY() - .5 * boundary.getHh(), .5 * boundary.getHw(), .5 * boundary.getHh()));
@@ -314,8 +249,9 @@ public class QuadTree implements Serializable {
 
             // Compute and add t-SNE force between point and current node
             double Q = 1.0 / (1.0 + D);
-            sumQ.addAndGet(cumSize * Q);
-            double mult = cumSize * Q * Q;
+            double mult = cumSize * Q;
+            sumQ.addAndGet(mult);
+            mult *= Q;
             negativeForce.addi(buf.mul(mult));
 
         }
@@ -353,7 +289,7 @@ public class QuadTree implements Serializable {
                 buf.assign(data.slice(n)).subi(data.slice(colP.getInt(i)));
 
                 D = Nd4j.getBlasWrapper().dot(buf,buf);
-                D = valP.getDouble(i) / (1.0 + D);
+                D = valP.getDouble(i) / D;
 
                 // Sum positive force
                 posF.slice(n).addi(buf.mul(D));
@@ -362,32 +298,6 @@ public class QuadTree implements Serializable {
         }
     }
 
-    /**
-     *
-     * @param rowP
-     * @param colP
-     * @param valP
-     * @param N
-     * @param posF
-     */
-    public void computeEdgeForces(int[] rowP, int[] colP, INDArray valP, int N, INDArray posF) {
-        // Loop over all edges in the graph
-        double D;
-        for(int n = 0; n < N; n++) {
-            for(int i = rowP[n]; i < rowP[n + 1]; i++) {
-
-                // Compute pairwise distance and Q-value
-                buf.assign(data.slice(n)).subi(data.slice(colP[i]));
-
-                D = Nd4j.getBlasWrapper().dot(buf,buf);
-                D = valP.getDouble(i) / (1.0 + D);
-
-                // Sum positive force
-                posF.slice(n).addi(buf.mul(D));
-
-            }
-        }
-    }
 
     /**
      * The depth of the node

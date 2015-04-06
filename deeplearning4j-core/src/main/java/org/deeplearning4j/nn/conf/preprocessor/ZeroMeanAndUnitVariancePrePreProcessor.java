@@ -7,7 +7,7 @@ import org.nd4j.linalg.factory.Nd4j;
 /**
  * Zero mean and unit variance operation
  *
- * @author Adma Gibson
+ * @author Adam Gibson
  */
 public class ZeroMeanAndUnitVariancePrePreProcessor implements InputPreProcessor {
     @Override
