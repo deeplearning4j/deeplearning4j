@@ -45,6 +45,8 @@ public class ConvolutionInputPreProcessor implements OutputPreProcessor,InputPre
 
     @Override
     public INDArray preProcess(INDArray output) {
+        if(output.shape().length == 4)
+            return output;
         if(output.columns() != rows * cols)
             throw new IllegalArgumentException("Output columns must be equal to rows " + rows + " x columns " + cols);
 
