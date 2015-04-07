@@ -1338,6 +1338,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     public void setInput(INDArray input) {
         if(getLayerWiseConfigurations().getInputPreProcess(0) != null)
             this.input = this.layerWiseConfigurations.getInputPreProcess(0).preProcess(input);
+        else
+            this.input =  input;
         if ( this.layers == null)
             this.initializeLayers(getInput());
         else if(this.input == null)
