@@ -63,14 +63,8 @@ public class AutoEncoder extends BasePretrainNetwork  {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
 
-        INDArray preAct;
-        if(conf.isConcatBiases()) {
-            INDArray concat = Nd4j.hstack(W,hBias.transposei());
-            preAct =  x.mmul(concat);
-        }
-        else {
-          preAct = x.mmul(W).addiRowVector(hBias);
-        }
+        INDArray preAct = x.mmul(W).addiRowVector(hBias);
+
 
         return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
     }
@@ -79,20 +73,9 @@ public class AutoEncoder extends BasePretrainNetwork  {
     public INDArray decode(INDArray y) {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
         INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
-
-        if(conf.isConcatBiases()) {
-            //row already accounted for earlier
-            INDArray preAct = y.mmul(W.transposei());
-            preAct = Nd4j.hstack(preAct,Nd4j.ones(preAct.rows(),1));
-            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
-
-        }
-        else {
-            INDArray preAct = y.mmul(W.transposei());
-            preAct.addiRowVector(vBias);
-            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
-
-        }
+        INDArray preAct = y.mmul(W.transposei());
+        preAct.addiRowVector(vBias);
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
 
     }
 
