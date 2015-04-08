@@ -218,46 +218,46 @@ public  class RBM extends BasePretrainNetwork {
      */
     @Override
     public  Pair<INDArray,INDArray> sampleHiddenGivenVisible(INDArray v) {
-      INDArray h1Mean = propUp(v);
-      INDArray h1Sample;
+        INDArray h1Mean = propUp(v);
+        INDArray h1Sample;
 
-      switch (conf.getHiddenUnit()) {
-        case RECTIFIED: {
-          INDArray sigH1Mean = sigmoid(h1Mean);
+        switch (conf.getHiddenUnit()) {
+            case RECTIFIED: {
+                INDArray sigH1Mean = sigmoid(h1Mean);
 		/*
 		 * Rectified linear part
 		 */
-          INDArray sqrtSigH1Mean = sqrt(sigH1Mean);
-          INDArray sample = Nd4j.getDistributions().createNormal(h1Mean, 1).sample(h1Mean.shape());
-          sample.muli(sqrtSigH1Mean);
-          h1Sample = h1Mean.add(sample);
-          h1Sample = max(h1Sample, 0.0);
-          //apply dropout
-          applyDropOutIfNecessary(h1Sample);
-          break;
-        }
-        case GAUSSIAN: {
-          h1Sample = h1Mean.add(Nd4j.randn(h1Mean.rows(), h1Mean.columns(), conf.getRng()));
+                INDArray sqrtSigH1Mean = sqrt(sigH1Mean);
+                INDArray sample = Nd4j.getDistributions().createNormal(h1Mean, 1).sample(h1Mean.shape());
+                sample.muli(sqrtSigH1Mean);
+                h1Sample = h1Mean.add(sample);
+                h1Sample = max(h1Sample, 0.0);
+                //apply dropout
+                applyDropOutIfNecessary(h1Sample);
+                break;
+            }
+            case GAUSSIAN: {
+                h1Sample = h1Mean.add(Nd4j.randn(h1Mean.rows(), h1Mean.columns(), conf.getRng()));
 
-          //apply dropout
-          applyDropOutIfNecessary(h1Sample);
-          break;
+                //apply dropout
+                applyDropOutIfNecessary(h1Sample);
+                break;
+            }
+            case SOFTMAX: {
+                h1Sample = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", h1Mean), 0);
+                applyDropOutIfNecessary(h1Sample);
+                break;
+            }
+            case BINARY: {
+                h1Sample = Nd4j.getDistributions().createBinomial(1, h1Mean).sample(h1Mean.shape());
+                applyDropOutIfNecessary(h1Sample);
+                break;
+            }
+            default:
+                throw new IllegalStateException("Hidden unit type must either be rectified linear or binary");
         }
-        case SOFTMAX: {
-          h1Sample = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", h1Mean), 0);
-          applyDropOutIfNecessary(h1Sample);
-          break;
-        }
-        case BINARY: {
-          h1Sample = Nd4j.getDistributions().createBinomial(1, h1Mean).sample(h1Mean.shape());
-          applyDropOutIfNecessary(h1Sample);
-          break;
-        }
-        default:
-          throw new IllegalStateException("Hidden unit type must either be rectified linear or binary");
-      }
 
-      return new Pair<>(h1Mean, h1Sample);
+        return new Pair<>(h1Mean, h1Sample);
     }
 
     /**
@@ -287,25 +287,25 @@ public  class RBM extends BasePretrainNetwork {
         INDArray v1Sample;
 
         switch (conf.getVisibleUnit()) {
-          case GAUSSIAN: {
-            v1Sample = v1Mean.add(Nd4j.randn(v1Mean.rows(), v1Mean.columns(), conf.getRng()));
-            break;
-          }
-          case LINEAR: {
-            v1Sample = Nd4j.getDistributions().createNormal(v1Mean, 1).sample(v1Mean.shape());
-            break;
-          }
-          case SOFTMAX: {
-            v1Sample = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", v1Mean), 0);
-            break;
-          }
-          case BINARY: {
-            v1Sample = Nd4j.getDistributions().createBinomial(1, v1Mean).sample(v1Mean.shape());
-            break;
-          }
-          default: {
-            throw new IllegalStateException("Visible type must be one of Binary, Gaussian, SoftMax or Linear");
-          }
+            case GAUSSIAN: {
+                v1Sample = v1Mean.add(Nd4j.randn(v1Mean.rows(), v1Mean.columns(), conf.getRng()));
+                break;
+            }
+            case LINEAR: {
+                v1Sample = Nd4j.getDistributions().createNormal(v1Mean, 1).sample(v1Mean.shape());
+                break;
+            }
+            case SOFTMAX: {
+                v1Sample = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", v1Mean), 0);
+                break;
+            }
+            case BINARY: {
+                v1Sample = Nd4j.getDistributions().createBinomial(1, v1Mean).sample(v1Mean.shape());
+                break;
+            }
+            default: {
+                throw new IllegalStateException("Visible type must be one of Binary, Gaussian, SoftMax or Linear");
+            }
         }
 
         return new Pair<>(v1Mean, v1Sample);
@@ -325,27 +325,22 @@ public  class RBM extends BasePretrainNetwork {
         if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN)
             this.sigma = v.var(0).divi(input.rows());
 
-        INDArray preSig = v.mmul(W);
-
-        if(conf.isConcatBiases())
-            preSig = Nd4j.hstack(preSig,hBias);
-        else
-            preSig.addiRowVector(hBias);
+        INDArray preSig = v.mmul(W).addiRowVector(hBias);
 
         switch (conf.getHiddenUnit()) {
-          case RECTIFIED:
-            preSig = max(preSig, 0.0);
-            return preSig;
-          case GAUSSIAN:
-            INDArray add = preSig.add(Nd4j.randn(preSig.rows(), preSig.columns(), conf.getRng()));
-            preSig.addi(add);
-            return preSig;
-          case BINARY:
-            return sigmoid(preSig);
-          case SOFTMAX:
-            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preSig), 0);
-          default:
-            throw new IllegalStateException("Hidden unit type should either be binary, gaussian, or rectified linear");
+            case RECTIFIED:
+                preSig = max(preSig, 0.0);
+                return preSig;
+            case GAUSSIAN:
+                INDArray add = preSig.add(Nd4j.randn(preSig.rows(), preSig.columns(), conf.getRng()));
+                preSig.addi(add);
+                return preSig;
+            case BINARY:
+                return sigmoid(preSig);
+            case SOFTMAX:
+                return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preSig), 0);
+            default:
+                throw new IllegalStateException("Hidden unit type should either be binary, gaussian, or rectified linear");
         }
 
     }
@@ -360,25 +355,21 @@ public  class RBM extends BasePretrainNetwork {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY).transpose();
         INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
 
-        INDArray vMean = h.mmul(W);
-        if(conf.isConcatBiases())
-            vMean = Nd4j.hstack(vMean, vBias);
-        else
-            vMean.addiRowVector(vBias);
+        INDArray vMean = h.mmul(W).addiRowVector(vBias);
 
         switch (conf.getVisibleUnit()) {
-          case GAUSSIAN:
-            INDArray sample = Nd4j.getDistributions().createNormal(vMean, 1).sample(vMean.shape());
-            vMean.addi(sample);
-            return vMean;
-          case LINEAR:
-            return vMean;
-          case BINARY:
-            return sigmoid(vMean);
-          case SOFTMAX:
-            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", vMean), 0);
-          default:
-            throw new IllegalStateException("Visible unit type should either be binary or gaussian");
+            case GAUSSIAN:
+                INDArray sample = Nd4j.getDistributions().createNormal(vMean, 1).sample(vMean.shape());
+                vMean.addi(sample);
+                return vMean;
+            case LINEAR:
+                return vMean;
+            case BINARY:
+                return sigmoid(vMean);
+            case SOFTMAX:
+                return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", vMean), 0);
+            default:
+                throw new IllegalStateException("Visible unit type should either be binary or gaussian");
         }
 
     }

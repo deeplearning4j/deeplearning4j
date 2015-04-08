@@ -183,11 +183,7 @@ public abstract class BaseLayer implements Layer {
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
 
 
-        INDArray ret = input().mmul(W);
-        if(conf.isConcatBiases())
-            ret = Nd4j.hstack(ret,b);
-        else
-            ret.addiRowVector(b);
+        INDArray ret = input().mmul(W).addiRowVector(b);
         return ret;
 
 
