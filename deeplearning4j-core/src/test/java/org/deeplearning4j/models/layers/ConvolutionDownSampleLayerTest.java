@@ -26,6 +26,9 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
+import org.deeplearning4j.nn.conf.override.ComposableOverride;
+import org.deeplearning4j.nn.conf.override.ConfOverride;
+import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionInputPreProcessor;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
@@ -40,6 +43,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +64,7 @@ public class ConvolutionDownSampleLayerTest {
         data.fetch(2);
         DataSet d = data.next();
 
-        d.setFeatures(d.getFeatureMatrix().reshape(2,1,28,28));
+        d.setFeatures(d.getFeatureMatrix().reshape(2, 1, 28, 28));
         LayerFactory layerFactory = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
         NeuralNetConfiguration n = new NeuralNetConfiguration.Builder()
                 .filterSize(2, 1, 2, 2).layerFactory(layerFactory).build();
@@ -83,16 +87,46 @@ public class ConvolutionDownSampleLayerTest {
          *
          */
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .dist(Nd4j.getDistributions().createNormal(0, 1))
                 .iterations(100).iterationListener(new ScoreIterationListener(1))
                 .activationFunction("tanh").filterSize(5, 1, 2, 2).constrainGradientToUnitNorm(true)
                 .nIn(4).nOut(3).batchSize(batchSize)
-               .layerFactory(layerFactory)
-                .list(2)
+                .layerFactory(layerFactory).dropOut(0.5)
+                .list(3)
                 .preProcessor(0, new ConvolutionPostProcessor()).inputPreProcessor(0, new ConvolutionInputPreProcessor(2, 2))
-                .hiddenLayerSizes(new int[]{9})
-                .override(1,new ClassifierOverride(1)).build();
+                .preProcessor(1, new ConvolutionPostProcessor()).inputPreProcessor(1, new ConvolutionInputPreProcessor(3, 3))
+                .hiddenLayerSizes(new int[]{4, 25})
+                .override(0, new ConfOverride() {
+
+                    @Override
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+                        if (i == 0)
+                            builder.filterSize(5, 1, 2, 2);
+
+                    }
+                })    .override(1, new ConfOverride() {
+
+                    @Override
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+
+                        if (i == 1)
+                            builder.filterSize(5, 1, 3, 3);
+
+                    }
+                })
+                .override(2, new ConfOverride() {
+
+                    @Override
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+                        if (i == 2) {
+                            builder.activationFunction("softmax");
+                            builder.weightInit(WeightInit.ZERO);
+                            builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
+                            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+                        }
+                    }
+                }).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);

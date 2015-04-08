@@ -20,6 +20,7 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
@@ -42,7 +43,7 @@ public class LSTMTest {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().activationFunction("tanh")
                 .layerFactory(factory).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
+                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).iterationListener(new ScoreIterationListener(10))
                 .nIn(4).nOut(4).build();
         LSTM l = factory.create(conf);
         INDArray predict = FeatureUtil.toOutcomeMatrix(new int[]{0,1,2,3},4);

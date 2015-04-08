@@ -22,6 +22,7 @@ import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -33,6 +34,7 @@ import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.layers.factory.PretrainLayerFactory;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -166,30 +168,57 @@ public class MultiLayerTest {
     }
 
     @Test
-    public void testDbn() {
-        LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
+    public void testDbn() throws Exception {
+        Nd4j.MAX_SLICES_TO_PRINT = -1;
+        Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
-                .activationFunction("tanh")
-                .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
-                .list(3).hiddenLayerSizes(new int[]{3, 2}).override(new ClassifierOverride(2)).build();
+                .iterations(100).layerFactory(new PretrainLayerFactory(RBM.class))
+                .weightInit(WeightInit.DISTRIBUTION).dist(Nd4j.getDistributions().createUniform(0,1))
+                .activationFunction("tanh").momentum(0.9)
+                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
+                .constrainGradientToUnitNorm(true).k(1).regularization(true).l2(2e-4)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .learningRate(1e-1f).iterationListener(new ScoreIterationListener(2))
+                .nIn(4).nOut(3).list(2)
+                .hiddenLayerSizes(new int[]{3})
+                .override(new ClassifierOverride(1)).build();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+            NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                    .layerFactory(LayerFactories.getFactory(RBM.class))
+                    .nIn(784).nOut(600).applySparsity(true).sparsity(0.1)
+                    .build();
+
+        Layer l = LayerFactories.getFactory(RBM.class).create(conf2);
+
+
+
+        MultiLayerNetwork d = new MultiLayerNetwork(conf);
+
+
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
-
         DataSet next = iter.next();
+
+        Nd4j.writeTxt(next.getFeatureMatrix(),"iris.txt","\t");
+
         next.normalizeZeroMeanZeroUnitVariance();
-        SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
-        network.fit(trainTest.getTrain());
+
+        SplitTestAndTrain testAndTrain = next.splitTestAndTrain(110);
+        DataSet train = testAndTrain.getTrain();
+
+        d.fit(train);
 
 
-        DataSet test = trainTest.getTest();
+
+
+        DataSet test = testAndTrain.getTest();
+
+
         Evaluation eval = new Evaluation();
-        INDArray output = network.output(test.getFeatureMatrix());
+        INDArray output = d.output(test.getFeatureMatrix());
         eval.eval(test.getLabels(),output);
-        log.info("Score " +eval.stats());
+        log.info("Score " + eval.stats());
 
 
     }

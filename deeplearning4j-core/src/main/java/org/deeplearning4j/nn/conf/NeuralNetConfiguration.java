@@ -23,8 +23,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.conf.deserializers.*;
-import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.conf.serializers.*;
+import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -32,7 +32,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
-import org.nd4j.linalg.api.rng.*;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -74,9 +74,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected WeightInit weightInit = WeightInit.VI;
     protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
     protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
-    protected int renderWeightsEveryNumEpochs = -1;
-    //whether to concat hidden bias or add it
-    protected  boolean concatBiases = false;
     //whether to constrain the gradient to unit norm or not
     protected boolean constrainGradientToUnitNorm = false;
     /* RNG for sampling. */
@@ -115,12 +112,52 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //minimize or maximize objective
     protected boolean minimize = false;
 
+    protected ConvolutionDownSampleLayer.ConvolutionType convolutionType;
 
     public NeuralNetConfiguration() {}
 
 
-
-
+    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, int numLineSearchIterations, double dropOut, boolean applySparsity, WeightInit weightInit, OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, int renderWeightsEveryNumEpochs, boolean constrainGradientToUnitNorm, long seed, Random rng, Distribution dist, List<IterationListener> listeners, StepFunction stepFunction, LayerFactory layerFactory, List<String> variables, int nIn, int nOut, String activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, int k, int[] weightShape, int[] filterSize, int numFeatureMaps, int[] featureMapSize, int[] stride, int kernel, int batchSize, boolean minimize, ConvolutionDownSampleLayer.ConvolutionType convolutionType) {
+        this.sparsity = sparsity;
+        this.useAdaGrad = useAdaGrad;
+        this.lr = lr;
+        this.corruptionLevel = corruptionLevel;
+        this.numIterations = numIterations;
+        this.momentum = momentum;
+        this.l2 = l2;
+        this.useRegularization = useRegularization;
+        this.momentumAfter = momentumAfter;
+        this.resetAdaGradIterations = resetAdaGradIterations;
+        this.numLineSearchIterations = numLineSearchIterations;
+        this.dropOut = dropOut;
+        this.applySparsity = applySparsity;
+        this.weightInit = weightInit;
+        this.optimizationAlgo = optimizationAlgo;
+        this.lossFunction = lossFunction;
+        this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
+        this.seed = seed;
+        this.rng = rng;
+        this.dist = dist;
+        this.listeners = listeners;
+        this.stepFunction = stepFunction;
+        this.layerFactory = layerFactory;
+        this.variables = variables;
+        this.nIn = nIn;
+        this.nOut = nOut;
+        this.activationFunction = activationFunction;
+        this.visibleUnit = visibleUnit;
+        this.hiddenUnit = hiddenUnit;
+        this.k = k;
+        this.weightShape = weightShape;
+        this.filterSize = filterSize;
+        this.numFeatureMaps = numFeatureMaps;
+        this.featureMapSize = featureMapSize;
+        this.stride = stride;
+        this.kernel = kernel;
+        this.batchSize = batchSize;
+        this.minimize = minimize;
+        this.convolutionType = convolutionType;
+    }
 
     public NeuralNetConfiguration(double sparsity,
                                   boolean useAdaGrad,
@@ -139,7 +176,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   OptimizationAlgorithm optimizationAlgo,
                                   LossFunctions.LossFunction lossFunction,
                                   int renderWeightsEveryNumEpochs,
-                                  boolean concatBiases,
                                   boolean constrainGradientToUnitNorm,
                                   org.nd4j.linalg.api.rng.Random rng,
                                   Distribution dist,
@@ -158,8 +194,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   int numLineSearchIterations,
                                   boolean minimize,
                                   List<IterationListener> listeners,
-                                  LayerFactory layerFactory) {
+                                  LayerFactory layerFactory,ConvolutionDownSampleLayer.ConvolutionType convolutionType) {
         this.minimize = minimize;
+        this.convolutionType = convolutionType;
         this.numLineSearchIterations = numLineSearchIterations;
         this.batchSize = batchSize;
         if (layerFactory == null) {
@@ -185,8 +222,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.weightInit = weightInit;
         this.optimizationAlgo = optimizationAlgo;
         this.lossFunction = lossFunction;
-        this.renderWeightsEveryNumEpochs = renderWeightsEveryNumEpochs;
-        this.concatBiases = concatBiases;
         this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
         this.rng = rng;
         this.dist = dist;
@@ -229,8 +264,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.weightInit = neuralNetConfiguration.weightInit;
         this.optimizationAlgo = neuralNetConfiguration.optimizationAlgo;
         this.lossFunction = neuralNetConfiguration.lossFunction;
-        this.renderWeightsEveryNumEpochs = neuralNetConfiguration.renderWeightsEveryNumEpochs;
-        this.concatBiases = neuralNetConfiguration.concatBiases;
         this.constrainGradientToUnitNorm = neuralNetConfiguration.constrainGradientToUnitNorm;
         this.rng = neuralNetConfiguration.rng;
         this.dist = neuralNetConfiguration.dist;
@@ -244,10 +277,25 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.numFeatureMaps = neuralNetConfiguration.numFeatureMaps;
         this.filterSize = neuralNetConfiguration.filterSize;
         this.featureMapSize = neuralNetConfiguration.featureMapSize;
+        this.convolutionType = neuralNetConfiguration.getConvolutionType();
+
         if(dist == null)
             this.dist = Nd4j.getDistributions().createNormal(0.01,1);
 
         this.hiddenUnit = neuralNetConfiguration.hiddenUnit;
+    }
+
+    /**
+     * The convolution type to use with the convolution layer
+     * @return the convolution type to use
+     * with the convolution layer
+     */
+    public ConvolutionDownSampleLayer.ConvolutionType getConvolutionType() {
+        return convolutionType;
+    }
+
+    public void setConvolutionType(ConvolutionDownSampleLayer.ConvolutionType convolutionType) {
+        this.convolutionType = convolutionType;
     }
 
     public int getNumLineSearchIterations() {
@@ -486,21 +534,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.optimizationAlgo = optimizationAlgo;
     }
 
-    public int getRenderWeightIterations() {
-        return renderWeightsEveryNumEpochs;
-    }
 
-    public void setRenderWeightIterations(int renderWeightsEveryNumEpochs) {
-        this.renderWeightsEveryNumEpochs = renderWeightsEveryNumEpochs;
-    }
 
-    public boolean isConcatBiases() {
-        return concatBiases;
-    }
-
-    public void setConcatBiases(boolean concatBiases) {
-        this.concatBiases = concatBiases;
-    }
 
     public boolean isConstrainGradientToUnitNorm() {
         return constrainGradientToUnitNorm;
@@ -559,94 +594,54 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
     @Override
-    public String toString() {
-        return "NeuralNetConfiguration{" +
-                "sparsity=" + sparsity +
-                ", useAdaGrad=" + useAdaGrad +
-                ", lr=" + lr +
-                ", k=" + k +
-                ", corruptionLevel=" + corruptionLevel +
-                ", numIterations=" + numIterations +
-                ", momentum=" + momentum +
-                ", l2=" + l2 +
-                ", useRegularization=" + useRegularization +
-                ", momentumAfter=" + momentumAfter +
-                ", resetAdaGradIterations=" + resetAdaGradIterations +
-                ", dropOut=" + dropOut +
-                ", applySparsity=" + applySparsity +
-                ", weightInit=" + weightInit +
-                ", optimizationAlgo=" + optimizationAlgo +
-                ", lossFunction=" + lossFunction +
-                ", renderWeightsEveryNumEpochs=" + renderWeightsEveryNumEpochs +
-                ", concatBiases=" + concatBiases +
-                ", constrainGradientToUnitNorm=" + constrainGradientToUnitNorm +
-                ", rng=" + rng +
-                ", dist=" + dist +
-                ", seed=" + seed +
-                ", nIn=" + nIn +
-                ", nOut=" + nOut +
-                ", activationFunction=" + activationFunction +
-                ", visibleUnit=" + visibleUnit +
-                ", hiddenUnit=" + hiddenUnit +
-                ", weightShape=" + Arrays.toString(weightShape) +
-                ", filterSize=" + Arrays.toString(filterSize) +
-                ", numFeatureMaps=" + numFeatureMaps +
-                ", featureMapSize=" + Arrays.toString(featureMapSize) +
-                ", stride=" + Arrays.toString(stride) +
-                '}';
-    }
-
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof NeuralNetConfiguration)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
 
         NeuralNetConfiguration that = (NeuralNetConfiguration) o;
 
-        if (applySparsity != that.applySparsity) return false;
-        if (batchSize != that.batchSize) return false;
-        if (concatBiases != that.concatBiases) return false;
-        if (constrainGradientToUnitNorm != that.constrainGradientToUnitNorm) return false;
-        if (Double.compare(that.corruptionLevel, corruptionLevel) != 0) return false;
-        if (Double.compare(that.dropOut, dropOut) != 0) return false;
-        if (k != that.k) return false;
-        if (kernel != that.kernel) return false;
-        if (Double.compare(that.l2, l2) != 0) return false;
-        if (Double.compare(that.lr, lr) != 0) return false;
-        if (minimize != that.minimize) return false;
-        if (Double.compare(that.momentum, momentum) != 0) return false;
-        if (nIn != that.nIn) return false;
-        if (nOut != that.nOut) return false;
-        if (numFeatureMaps != that.numFeatureMaps) return false;
-        if (numIterations != that.numIterations) return false;
-        if (numLineSearchIterations != that.numLineSearchIterations) return false;
-        if (renderWeightsEveryNumEpochs != that.renderWeightsEveryNumEpochs) return false;
-        if (resetAdaGradIterations != that.resetAdaGradIterations) return false;
-        if (seed != that.seed) return false;
         if (Double.compare(that.sparsity, sparsity) != 0) return false;
         if (useAdaGrad != that.useAdaGrad) return false;
+        if (Double.compare(that.lr, lr) != 0) return false;
+        if (Double.compare(that.corruptionLevel, corruptionLevel) != 0) return false;
+        if (numIterations != that.numIterations) return false;
+        if (Double.compare(that.momentum, momentum) != 0) return false;
+        if (Double.compare(that.l2, l2) != 0) return false;
         if (useRegularization != that.useRegularization) return false;
-        if (activationFunction != null ? !activationFunction.equals(that.activationFunction) : that.activationFunction != null)
-            return false;
-        if (dist != null ? !dist.getClass().getName().equals(that.dist.getClass().getName()) : that.dist != null) return false;
-        if (!Arrays.equals(featureMapSize, that.featureMapSize)) return false;
-        if (!Arrays.equals(filterSize, that.filterSize)) return false;
-        if (variables != null ? !variables.equals(that.variables) : that.variables != null) return false;
-        if (hiddenUnit != that.hiddenUnit) return false;
-        if (layerFactory != null ? !layerFactory.equals(that.layerFactory) : that.layerFactory != null) return false;
-        if (lossFunction != that.lossFunction) return false;
+        if (resetAdaGradIterations != that.resetAdaGradIterations) return false;
+        if (numLineSearchIterations != that.numLineSearchIterations) return false;
+        if (Double.compare(that.dropOut, dropOut) != 0) return false;
+        if (applySparsity != that.applySparsity) return false;
+        if (constrainGradientToUnitNorm != that.constrainGradientToUnitNorm) return false;
+        if (seed != that.seed) return false;
+        if (nIn != that.nIn) return false;
+        if (nOut != that.nOut) return false;
+        if (k != that.k) return false;
+        if (numFeatureMaps != that.numFeatureMaps) return false;
+        if (kernel != that.kernel) return false;
+        if (batchSize != that.batchSize) return false;
+        if (minimize != that.minimize) return false;
         if (momentumAfter != null ? !momentumAfter.equals(that.momentumAfter) : that.momentumAfter != null)
             return false;
-        if (optimizationAlgo != that.optimizationAlgo) return false;
-        if (rng != null ? !rng.getClass().getName().equals(that.rng.getClass().getName()) : that.rng != null) return false;
-        if (stepFunction != null ? !stepFunction.getClass().getName().equals(that.stepFunction.getClass().getName()) : that.stepFunction != null) return false;
-        if (!Arrays.equals(stride, that.stride)) return false;
-        if (visibleUnit != that.visibleUnit) return false;
         if (weightInit != that.weightInit) return false;
+        if (optimizationAlgo != that.optimizationAlgo) return false;
+        if (lossFunction != that.lossFunction) return false;
+        if (rng != null ? !rng.equals(that.rng) : that.rng != null) return false;
+        if (dist != null ? !dist.equals(that.dist) : that.dist != null) return false;
+        if (listeners != null ? !listeners.equals(that.listeners) : that.listeners != null) return false;
+        if (stepFunction != null ? !stepFunction.equals(that.stepFunction) : that.stepFunction != null) return false;
+        if (layerFactory != null ? !layerFactory.equals(that.layerFactory) : that.layerFactory != null) return false;
+        if (variables != null ? !variables.equals(that.variables) : that.variables != null) return false;
+        if (activationFunction != null ? !activationFunction.equals(that.activationFunction) : that.activationFunction != null)
+            return false;
+        if (visibleUnit != that.visibleUnit) return false;
+        if (hiddenUnit != that.hiddenUnit) return false;
         if (!Arrays.equals(weightShape, that.weightShape)) return false;
+        if (!Arrays.equals(filterSize, that.filterSize)) return false;
+        if (!Arrays.equals(featureMapSize, that.featureMapSize)) return false;
+        if (!Arrays.equals(stride, that.stride)) return false;
+        return convolutionType == that.convolutionType;
 
-        return true;
     }
 
     @Override
@@ -675,8 +670,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         result = 31 * result + (weightInit != null ? weightInit.hashCode() : 0);
         result = 31 * result + (optimizationAlgo != null ? optimizationAlgo.hashCode() : 0);
         result = 31 * result + (lossFunction != null ? lossFunction.hashCode() : 0);
-        result = 31 * result + renderWeightsEveryNumEpochs;
-        result = 31 * result + (concatBiases ? 1 : 0);
         result = 31 * result + (constrainGradientToUnitNorm ? 1 : 0);
         result = 31 * result + (int) (seed ^ (seed >>> 32));
         result = 31 * result + (rng != null ? rng.hashCode() : 0);
@@ -699,8 +692,55 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         result = 31 * result + kernel;
         result = 31 * result + batchSize;
         result = 31 * result + (minimize ? 1 : 0);
+        result = 31 * result + (convolutionType != null ? convolutionType.hashCode() : 0);
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "NeuralNetConfiguration{" +
+                "sparsity=" + sparsity +
+                ", useAdaGrad=" + useAdaGrad +
+                ", lr=" + lr +
+                ", corruptionLevel=" + corruptionLevel +
+                ", numIterations=" + numIterations +
+                ", momentum=" + momentum +
+                ", l2=" + l2 +
+                ", useRegularization=" + useRegularization +
+                ", momentumAfter=" + momentumAfter +
+                ", resetAdaGradIterations=" + resetAdaGradIterations +
+                ", numLineSearchIterations=" + numLineSearchIterations +
+                ", dropOut=" + dropOut +
+                ", applySparsity=" + applySparsity +
+                ", weightInit=" + weightInit +
+                ", optimizationAlgo=" + optimizationAlgo +
+                ", lossFunction=" + lossFunction +
+                ", constrainGradientToUnitNorm=" + constrainGradientToUnitNorm +
+                ", seed=" + seed +
+                ", rng=" + rng +
+                ", dist=" + dist +
+                ", listeners=" + listeners +
+                ", stepFunction=" + stepFunction +
+                ", layerFactory=" + layerFactory +
+                ", variables=" + variables +
+                ", nIn=" + nIn +
+                ", nOut=" + nOut +
+                ", activationFunction='" + activationFunction + '\'' +
+                ", visibleUnit=" + visibleUnit +
+                ", hiddenUnit=" + hiddenUnit +
+                ", k=" + k +
+                ", weightShape=" + Arrays.toString(weightShape) +
+                ", filterSize=" + Arrays.toString(filterSize) +
+                ", numFeatureMaps=" + numFeatureMaps +
+                ", featureMapSize=" + Arrays.toString(featureMapSize) +
+                ", stride=" + Arrays.toString(stride) +
+                ", kernel=" + kernel +
+                ", batchSize=" + batchSize +
+                ", minimize=" + minimize +
+                ", convolutionType=" + convolutionType +
+                '}';
+    }
+
 
     /**
      * Creates and returns a copy of this object.  The precise meaning
@@ -932,7 +972,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private WeightInit weightInit = WeightInit.VI;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private int renderWeightsEveryNumEpochs = -1;
-        private boolean concatBiases = false;
         private boolean constrainGradientToUnitNorm = false;
         private org.nd4j.linalg.api.rng.Random rng = Nd4j.getRandom();
         private long seed = 123;
@@ -956,6 +995,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int batchSize = 0;
         private int numLineSearchIterations = 100;
         private boolean minimize = false;
+        private ConvolutionDownSampleLayer.ConvolutionType convolutionType;
+
+        public Builder convolutionType(ConvolutionDownSampleLayer.ConvolutionType convolutionType) {
+            this.convolutionType = convolutionType;
+            return this;
+        }
 
         public Builder minimize(boolean minimize) {
             this.minimize = minimize;
@@ -998,9 +1043,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         public Builder clone() {
-            return new Builder().activationFunction(activationFunction).layerFactory(layerFactory)
+            return new Builder().activationFunction(activationFunction).layerFactory(layerFactory).convolutionType(convolutionType)
                     .adagradResetIterations(resetAdaGradIterations).applySparsity(applySparsity).minimize(minimize)
-                    .concatBiases(concatBiases).constrainGradientToUnitNorm(constrainGradientToUnitNorm)
+                    .constrainGradientToUnitNorm(constrainGradientToUnitNorm)
                     .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize).numLineSearchIterations(numLineSearchIterations)
                     .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr).useAdaGrad(adagrad).stepFunction(stepFunction)
                     .lossFunction(lossFunction).momentumAfter(momentumAfter).momentum(momentum).listeners(listeners)
@@ -1122,10 +1167,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder concatBiases(boolean concatBiases) {
-            this.concatBiases = concatBiases;
-            return this;
-        }
+
 
         public Builder rng(org.nd4j.linalg.api.rng.Random rng) {
             this.rng = rng;
@@ -1141,8 +1183,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             NeuralNetConfiguration ret = new NeuralNetConfiguration( sparsity,  useAdaGrad,  lr,  k,
                     corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction, renderWeightsEveryNumEpochs,
-                    concatBiases,  constrainGradientToUnitNorm,  rng,
-                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel,batchSize,numLineSearchIterations,minimize,listeners,layerFactory);
+                    constrainGradientToUnitNorm,  rng,
+                    dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel,batchSize,numLineSearchIterations,minimize,listeners,layerFactory,convolutionType);
             ret.useAdaGrad = this.adagrad;
             ret.stepFunction = stepFunction;
             return ret;

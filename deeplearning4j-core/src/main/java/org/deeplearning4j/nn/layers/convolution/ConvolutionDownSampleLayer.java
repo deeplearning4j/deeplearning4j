@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
@@ -28,12 +29,19 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
- * Convolutional max pooling
+ * Convolutional and pooling
  * layer
  *
  * @author Adam Gibson
  */
 public class ConvolutionDownSampleLayer extends BaseLayer {
+    /**
+     * Convolution type: max avg or sum
+     */
+    public  enum ConvolutionType {
+        MAX,AVG,SUM
+    }
+
 
     /**
      * Create a layer from a configuration
@@ -75,8 +83,8 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
 
         }
 
-        final INDArray pooled = Transforms.maxPool(convolution, conf.getStride(),true);
-        final INDArray bias = b.dimShuffle(new Object[]{'x',0,'x','x'},new int[4],new boolean[]{true});
+        final INDArray pooled = getPool(convolution);
+        final INDArray bias = b.dimShuffle(new Object[]{'x', 0, 'x', 'x'}, new int[4], new boolean[]{true});
         final INDArray broadCasted = bias.broadcast(pooled.shape());
         broadCasted.iterateOverAllRows(new SliceOp() {
 
@@ -92,9 +100,28 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
             }
         });
 
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(),pooled));
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), pooled));
     }
 
+
+    private INDArray getPool(INDArray convolution) {
+        INDArray pooled = null;
+        switch (conf.getConvolutionType()) {
+            case MAX:
+                pooled = Transforms.maxPool(convolution, conf.getStride(),true);
+                break;
+            case SUM:
+                pooled = Transforms.sumPooling(convolution,conf.getStride());
+                break;
+            case AVG:
+                pooled = Transforms.avgPooling(convolution,conf.getStride());
+                break;
+
+
+        }
+
+        return pooled;
+    }
 
     @Override
     public double score() {
@@ -115,7 +142,7 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
 
     @Override
     public Gradient gradient() {
-        return null;
+        return new DefaultGradient();
     }
 
     @Override
