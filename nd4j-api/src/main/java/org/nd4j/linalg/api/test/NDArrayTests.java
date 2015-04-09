@@ -1678,11 +1678,12 @@ public abstract class NDArrayTests {
     @Test
     public void testPutRowGetRowOrdering() {
         Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.factory().setOrder('f');
+
         INDArray row1 = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray put = Nd4j.create(new double[]{5, 6});
         row1.putRow(1, put);
 
-        Nd4j.factory().setOrder('f');
 
         INDArray row1Fortran = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray putFortran = Nd4j.create(new double[]{5, 6});

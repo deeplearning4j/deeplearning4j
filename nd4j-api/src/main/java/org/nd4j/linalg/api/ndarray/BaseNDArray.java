@@ -2773,19 +2773,6 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray slice(int slice, int dimension) {
-        if (shape.length == 2) {
-            //rows
-            if (dimension == 1)
-                return getRow(slice);
-
-
-            else if (dimension == 0)
-                return getColumn(slice);
-
-            else throw new IllegalAccessError("Illegal dimension for matrix");
-
-        }
-
         if (slice == shape.length - 1)
             return slice(dimension);
 
@@ -3383,25 +3370,15 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray getColumn(int c) {
         ensureNotCleanedUp();
         if (shape.length == 2) {
-            if (ordering == NDArrayFactory.C) {
-                INDArray ret = Nd4j.create(
-                        data,
-                        new int[]{shape[0], 1},
-                        new int[]{stride[0], 1},
-                        offset + c, ordering
-                );
+            INDArray ret = Nd4j.create(
+                    data,
+                    new int[]{shape[0], 1},
+                    new int[]{stride[0], 1},
+                    offset + c * rows(), ordering
+            );
 
-                return ret;
-            } else {
-                INDArray ret = Nd4j.create(
-                        data,
-                        new int[]{shape[0], 1},
-                        new int[]{stride[0], 1},
-                        offset + c * rows(), ordering
-                );
+            return ret;
 
-                return ret;
-            }
 
         } else if (isRowVector()) {
             return Nd4j.scalar(getDouble(c));
@@ -3518,27 +3495,32 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray getRow(int r) {
         ensureNotCleanedUp();
         if (shape.length == 2) {
-            if (ordering == NDArrayFactory.C) {
-                INDArray ret = Nd4j.create(
-                        data,
-                        new int[]{shape[1]},
-                        new int[]{stride[1]},
-                        offset + r * columns(),
-                        ordering
-                );
-
-                return ret;
-            } else if (isColumnVector()) {
+            if (isColumnVector()) {
                 return Nd4j.scalar(getDouble(r));
             } else {
-                INDArray ret = Nd4j.create(
-                        data,
-                        new int[]{shape[1]},
-                        new int[]{stride[1]},
-                        offset + r,
-                        ordering
-                );
-                return ret;
+                if(offset == 0) {
+                    INDArray ret = Nd4j.create(
+                            data,
+                            new int[]{shape[1]},
+                            new int[]{stride[1]},
+                            offset + r * columns(),
+                            ordering
+                    );
+                    ret.toString();
+                    return ret;
+                }
+                else {
+                    INDArray ret = Nd4j.create(
+                            data,
+                            new int[]{shape[1]},
+                            new int[]{stride[1]},
+                            offset + r,
+                            ordering
+                    );
+                    ret.toString();
+                    return ret;
+                }
+
             }
 
 
