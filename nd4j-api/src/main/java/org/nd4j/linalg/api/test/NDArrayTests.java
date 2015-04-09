@@ -149,7 +149,7 @@ public abstract class NDArrayTests {
                 {2,2,2,2}
         });
         assertEquals(testRet, ret);
-        INDArray r = Nd4j.arange(0,4).reshape(1,4);
+        INDArray r = Nd4j.arange(0,4).reshape(1, 4);
         INDArray r2 = r.broadcast(4, 4);
         INDArray testR2 = Nd4j.create(new double[][]{
                 {0, 1, 2, 3},
@@ -724,35 +724,7 @@ public abstract class NDArrayTests {
     }
 
 
-    @Test
-    public void testTransposeMmul() {
 
-        //note that transpose() and transposei() are equivalent here
-        INDArray a = Nd4j.linspace(1, 6, 6).reshape(2, 3);
-        INDArray aT = a.transposei();
-
-        double[][] result = new double[][]{
-                {1, 4}, {2, 5}, {3, 6}
-        };
-        for (int i = 0; i < result.length; i++) {
-            for (int j = 0; j < result[i].length; j++) {
-                assertEquals(result[i][j], aT.getDouble(i, j), 1e-1);
-            }
-        }
-
-        INDArray testMMul = a.mmul(aT);
-        double[][] result2 = new double[][]{
-                {23, 44}, {30, 58}
-        };
-
-        for (int i = 0; i < result2.length; i++) {
-            for (int j = 0; j < result2[i].length; j++) {
-                assertEquals(result2[i][j], testMMul.getDouble(i, j), 1e-1);
-            }
-        }
-
-
-    }
 
     @Test
     public void testMmulF() {
@@ -900,7 +872,7 @@ public abstract class NDArrayTests {
     public void testCopyMatrix() {
         INDArray twoByThree = Nd4j.linspace(1, 784, 784).reshape(28, 28);
         INDArray copy = Nd4j.create(28, 28);
-        Nd4j.getBlasWrapper().copy(twoByThree, copy);
+        Nd4j.getBlasWrapper().copy(twoByThree.linearView(), copy.linearView());
     }
 
 
@@ -1688,12 +1660,11 @@ public abstract class NDArrayTests {
         INDArray row1Fortran = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray putFortran = Nd4j.create(new double[]{5, 6});
         row1Fortran.putRow(1, putFortran);
-        assertNotEquals(row1, row1Fortran);
+        assertEquals(row1, row1Fortran);
         INDArray row1CTest = row1.getRow(1);
         INDArray row1FortranTest = row1Fortran.getRow(1);
         assertEquals(row1CTest, row1FortranTest);
 
-        Nd4j.factory().setOrder('c');
 
 
     }
