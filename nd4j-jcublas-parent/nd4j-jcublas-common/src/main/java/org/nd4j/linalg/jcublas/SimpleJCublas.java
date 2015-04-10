@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.jcublas;
 
+import jcublas.JCublas2;
 import jcublas.cublasHandle;
 import jcuda.LogLevel;
 import jcuda.Pointer;
@@ -88,10 +89,9 @@ public class SimpleJCublas {
             return;
         JCublas.setLogLevel(LogLevel.LOG_DEBUG);
         JCublas.setExceptionsEnabled(true);
-        KernelLauncher.syncContext();
 
-       /* Will re enable when link problem is found
-       cublasHandle handle = new cublasHandle();
+       /* JCublas2.initialize();
+        cublasHandle handle = new cublasHandle();
         JCublas2.cublasCreate(handle);*/
         try {
             KernelFunctionLoader.getInstance().load();
@@ -116,7 +116,7 @@ public class SimpleJCublas {
 
         DataTypeValidation.assertDouble(A, B, C);
         assertCudaBuffer(A.data(), B.data(), C.data());
-        KernelLauncher.syncContext();
+
 
         Pointer cAPointer = getPointer(A);
         Pointer cBPointer = getPointer(B);
@@ -158,7 +158,7 @@ public class SimpleJCublas {
         Pointer cAPointer = getPointer(A);
         Pointer cBPointer = getPointer(B);
         Pointer cCPointer = getPointer(C);
-        KernelLauncher.syncContext();
+
 
 
         JCublas.cublasSgemv('N',
@@ -191,7 +191,7 @@ public class SimpleJCublas {
     public static IComplexNDArray gemv(IComplexNDArray A, IComplexNDArray B, IComplexDouble a, IComplexNDArray C
             , IComplexDouble b) {
         DataTypeValidation.assertSameDataType(A, B, C);
-        KernelLauncher.syncContext();
+
 
 
         Pointer cAPointer = getPointer(A);
@@ -234,7 +234,7 @@ public class SimpleJCublas {
             , IComplexFloat b) {
         DataTypeValidation.assertFloat(A, B, C);
         assertCudaBuffer(A, B, C);
-        KernelLauncher.syncContext();
+
 
         Pointer cAPointer = getPointer(A);
         Pointer cBPointer = getPointer(B);
@@ -281,7 +281,7 @@ public class SimpleJCublas {
         Pointer cAPointer = getPointer(A);
         Pointer cBPointer = getPointer(B);
         Pointer cCPointer = getPointer(C);
-        KernelLauncher.syncContext();
+
 
 
         cuDoubleComplex alpha = cuDoubleComplex.cuCmplx(a.realComponent().doubleValue(), b.imaginaryComponent().doubleValue());
@@ -320,7 +320,7 @@ public class SimpleJCublas {
     public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexFloat a, IComplexNDArray C
             , IComplexFloat b) {
         DataTypeValidation.assertFloat(A, B, C);
-        KernelLauncher.syncContext();
+
 
 
         Pointer cAPointer = getPointer(A);
@@ -365,7 +365,7 @@ public class SimpleJCublas {
                                 double alpha, double beta) {
 
         DataTypeValidation.assertDouble(A, B, C);
-        KernelLauncher.syncContext();
+
 
 
         JCublasNDArray cA = (JCublasNDArray) A;
@@ -410,7 +410,7 @@ public class SimpleJCublas {
     public static INDArray gemm(INDArray A, INDArray B, INDArray C,
                                 float alpha, float beta) {
         DataTypeValidation.assertFloat(A, B, C);
-        KernelLauncher.syncContext();
+
 
 
         Pointer cAPointer = getPointer(A);
@@ -447,7 +447,7 @@ public class SimpleJCublas {
      * @return the ndarray to calculate the norm2 of
      */
     public static double nrm2(IComplexNDArray A) {
-        KernelLauncher.syncContext();
+
 
 
         Pointer cAPointer = getPointer(A);
@@ -469,7 +469,7 @@ public class SimpleJCublas {
      */
     public static void copy(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-        KernelLauncher.syncContext();
+
 
 
         Pointer xCPointer = getPointer(x);
@@ -497,7 +497,7 @@ public class SimpleJCublas {
      * @return the max index of the given ndarray
      */
     public static int iamax(IComplexNDArray x) {
-        KernelLauncher.syncContext();
+
 
         Pointer xCPointer = getPointer(x);
         if (x.data().dataType() == DataBuffer.FLOAT) {
@@ -528,7 +528,7 @@ public class SimpleJCublas {
      * @param y
      */
     public static void swap(INDArray x, INDArray y) {
-        KernelLauncher.syncContext();
+
 
         DataTypeValidation.assertSameDataType(x, y);
 
@@ -562,7 +562,7 @@ public class SimpleJCublas {
      * @return
      */
     public static double asum(INDArray x) {
-        KernelLauncher.syncContext();
+
 
         Pointer xCPointer = getPointer(x);
         if (x.data().dataType() == DataBuffer.FLOAT) {
@@ -582,7 +582,7 @@ public class SimpleJCublas {
      * @return
      */
     public static double nrm2(INDArray x) {
-        KernelLauncher.syncContext();
+
 
         if (x.data().dataType() == DataBuffer.FLOAT) {
             Pointer xCPointer = getPointer(x);
@@ -608,7 +608,7 @@ public class SimpleJCublas {
      * @return
      */
     public static int iamax(INDArray x) {
-        KernelLauncher.syncContext();
+
 
 
         Pointer xCPointer = getPointer(x);
@@ -641,7 +641,7 @@ public class SimpleJCublas {
      * @param B  the matrix to add to
      */
     public static void axpy(float da, INDArray A, INDArray B) {
-        KernelLauncher.syncContext();
+
 
         DataTypeValidation.assertFloat(A, B);
 
@@ -666,7 +666,7 @@ public class SimpleJCublas {
      */
     public static void axpy(IComplexFloat da, IComplexNDArray A, IComplexNDArray B) {
         DataTypeValidation.assertFloat(A, B);
-        KernelLauncher.syncContext();
+
 
 
         Pointer aCPointer = getPointer(A);
@@ -692,7 +692,7 @@ public class SimpleJCublas {
      */
     public static void axpy(IComplexDouble da, IComplexNDArray A, IComplexNDArray B) {
         DataTypeValidation.assertDouble(A, B);
-        KernelLauncher.syncContext();
+
 
 
         Pointer aCPointer = getPointer(A);
@@ -722,7 +722,7 @@ public class SimpleJCublas {
      */
     public static INDArray scal(double alpha, INDArray x) {
         DataTypeValidation.assertDouble(x);
-        KernelLauncher.syncContext();
+
 
 
         Pointer xCPointer = getPointer(x);
@@ -745,7 +745,7 @@ public class SimpleJCublas {
      * @return
      */
     public static INDArray scal(float alpha, INDArray x) {
-        KernelLauncher.syncContext();
+
 
         DataTypeValidation.assertFloat(x);
 
@@ -768,7 +768,7 @@ public class SimpleJCublas {
      * @param y the destination
      */
     public static void copy(INDArray x, INDArray y) {
-        KernelLauncher.syncContext();
+
         DataTypeValidation.assertSameDataType(x, y);
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
@@ -788,7 +788,7 @@ public class SimpleJCublas {
     public static double dot(INDArray x, INDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
 
-        KernelLauncher.syncContext();
+
 
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
@@ -818,7 +818,7 @@ public class SimpleJCublas {
 
     public static IComplexDouble dot(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-        KernelLauncher.syncContext();
+
 
 
         Pointer aCPointer = getPointer(x);
@@ -839,7 +839,7 @@ public class SimpleJCublas {
 
     public static INDArray ger(INDArray A, INDArray B, INDArray C, double alpha) {
         DataTypeValidation.assertDouble(A, B, C);
-        KernelLauncher.syncContext();
+
 
         // = alpha * A * transpose(B) + C
         Pointer aCPointer = getPointer(A);
@@ -866,7 +866,7 @@ public class SimpleJCublas {
 
     public static INDArray ger(INDArray A, INDArray B, INDArray C, float alpha) {
         DataTypeValidation.assertFloat(A, B, C);
-        KernelLauncher.syncContext();
+
 
         // = alpha * A * transpose(B) + C
 
@@ -901,7 +901,7 @@ public class SimpleJCublas {
      */
     public static IComplexNDArray scal(IComplexFloat alpha, IComplexNDArray x) {
         DataTypeValidation.assertFloat(x);
-        KernelLauncher.syncContext();
+
 
 
         Pointer xCPointer = getPointer(x);
@@ -926,7 +926,7 @@ public class SimpleJCublas {
      */
     public static IComplexNDArray scal(IComplexDouble alpha, IComplexNDArray x) {
         DataTypeValidation.assertDouble(x);
-        KernelLauncher.syncContext();
+
 
 
         Pointer xCPointer = getPointer(x);
@@ -952,7 +952,7 @@ public class SimpleJCublas {
     public static IComplexDouble dotu(IComplexNDArray x, IComplexNDArray y) {
 
         DataTypeValidation.assertSameDataType(x, y);
-        KernelLauncher.syncContext();
+
 
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
@@ -983,7 +983,7 @@ public class SimpleJCublas {
 
         DataTypeValidation.assertDouble(A, B, C);
 
-        KernelLauncher.syncContext();
+
 
         Pointer aCPointer = getPointer(A);
         Pointer bCPointer = getPointer(B);
@@ -1018,7 +1018,7 @@ public class SimpleJCublas {
                                        IComplexFloat Alpha) {
         DataTypeValidation.assertFloat(A, B, C);
         // = alpha * A * tranpose(B) + C
-        KernelLauncher.syncContext();
+
 
         Pointer aCPointer = getPointer(A);
         Pointer bCPointer = getPointer(B);
@@ -1056,7 +1056,7 @@ public class SimpleJCublas {
 
         DataTypeValidation.assertFloat(A, B, C);
         // = alpha * A * tranpose(B) + C
-        KernelLauncher.syncContext();
+
 
         Pointer aCPointer = getPointer(A);
         Pointer bCPointer = getPointer(B);
@@ -1092,7 +1092,7 @@ public class SimpleJCublas {
 
         DataTypeValidation.assertDouble(A, B, C);
         // = alpha * A * tranpose(B) + C
-        KernelLauncher.syncContext();
+
 
 
         Pointer aCPointer = getPointer(A);
@@ -1129,7 +1129,7 @@ public class SimpleJCublas {
      */
     public static void axpy(double alpha, INDArray x, INDArray y) {
         DataTypeValidation.assertDouble(x, y);
-        KernelLauncher.syncContext();
+
 
 
         Pointer xCPointer = getPointer(x);
@@ -1150,7 +1150,7 @@ public class SimpleJCublas {
      */
     public static void saxpy(float alpha, INDArray x, INDArray y) {
         DataTypeValidation.assertFloat(x, y);
-        KernelLauncher.syncContext();
+
 
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);

@@ -26,7 +26,6 @@ public class JcudaRandom implements Random {
      * Initialize the random generator on the gpu
      */
     public JcudaRandom() {
-        KernelLauncher.syncContext();
         curandCreateGenerator(generator, CURAND_RNG_PSEUDO_DEFAULT);
         curandSetPseudoRandomGeneratorSeed(generator, 1234);
         JCurand.setExceptionsEnabled(true);
@@ -40,7 +39,7 @@ public class JcudaRandom implements Random {
 
     @Override
     public void setSeed(int seed) {
-        KernelLauncher.syncContext();
+       
         curandSetPseudoRandomGeneratorSeed(generator, seed);
     }
 
@@ -50,7 +49,7 @@ public class JcudaRandom implements Random {
 
     @Override
     public void setSeed(long seed) {
-        KernelLauncher.syncContext();
+       
         curandSetPseudoRandomGeneratorSeed(generator, seed);
 
     }
@@ -62,7 +61,7 @@ public class JcudaRandom implements Random {
 
     @Override
     public int nextInt() {
-        KernelLauncher.syncContext();
+       
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
         curandGenerate(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
@@ -73,7 +72,7 @@ public class JcudaRandom implements Random {
 
     @Override
     public int nextInt(int n) {
-        KernelLauncher.syncContext();
+       
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
         curandGenerateUniformDouble(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
@@ -84,7 +83,7 @@ public class JcudaRandom implements Random {
 
     @Override
     public long nextLong() {
-        KernelLauncher.syncContext();
+       
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
         curandGenerate(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
@@ -100,7 +99,7 @@ public class JcudaRandom implements Random {
 
     @Override
     public float nextFloat() {
-        KernelLauncher.syncContext();
+       
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
         curandGenerate(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
@@ -111,7 +110,7 @@ public class JcudaRandom implements Random {
 
     @Override
     public double nextDouble() {
-        KernelLauncher.syncContext();
+       
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
         curandGenerate(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
@@ -121,7 +120,7 @@ public class JcudaRandom implements Random {
 
     @Override
     public double nextGaussian() {
-        KernelLauncher.syncContext();
+       
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
         curandGenerateUniformDouble(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
@@ -131,7 +130,7 @@ public class JcudaRandom implements Random {
 
     @Override
     public INDArray nextGaussian(int[] shape) {
-        KernelLauncher.syncContext();
+       
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
         if (buffer.dataType() == DataBuffer.FLOAT)
@@ -145,7 +144,7 @@ public class JcudaRandom implements Random {
 
     @Override
     public INDArray nextDouble(int[] shape) {
-        KernelLauncher.syncContext();
+       
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
         if (buffer.dataType() == DataBuffer.FLOAT)
@@ -159,7 +158,7 @@ public class JcudaRandom implements Random {
 
     @Override
     public INDArray nextFloat(int[] shape) {
-        KernelLauncher.syncContext();
+       
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
         if (buffer.dataType() == DataBuffer.FLOAT)
@@ -173,7 +172,7 @@ public class JcudaRandom implements Random {
 
     @Override
     public INDArray nextInt(int[] shape) {
-        KernelLauncher.syncContext();
+       
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
         if (buffer.dataType() == DataBuffer.FLOAT)
@@ -190,7 +189,7 @@ public class JcudaRandom implements Random {
 
     @Override
     public INDArray nextInt(int n, int[] shape) {
-        KernelLauncher.syncContext();
+       
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
         if (buffer.dataType() == DataBuffer.FLOAT)

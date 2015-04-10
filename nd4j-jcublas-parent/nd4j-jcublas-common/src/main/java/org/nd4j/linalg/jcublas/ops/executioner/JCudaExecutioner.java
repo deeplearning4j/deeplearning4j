@@ -242,13 +242,11 @@ public class JCudaExecutioner implements OpExecutioner {
         if (buff.dataType() == DataBuffer.DOUBLE) {
             double[] data = new double[1];
             Pointer get = Pointer.to(data);
-            KernelLauncher.syncContext();
             JCuda.cudaMemcpy(get, resultPointer, Sizeof.DOUBLE, cudaMemcpyKind.cudaMemcpyDeviceToHost);
             acc.setCurrentResult(data[0]);
         } else {
             float[] data = new float[1];
             Pointer get = Pointer.to(data);
-            KernelLauncher.syncContext();
             JCuda.cudaMemcpy(get, resultPointer, Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyDeviceToHost);
             acc.setCurrentResult(data[0]);
         }

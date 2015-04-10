@@ -48,7 +48,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
         int threads = PointerUtil.getNumThreads(len, 64);
         JCudaBuffer randomNumbers = new CudaFloatDataBuffer(len * n);
         JCudaBuffer probBuffer = (JCudaBuffer) p.data();
-        KernelLauncher.syncContext();
+       
 
         Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{len})
@@ -78,7 +78,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
         int threads = PointerUtil.getNumThreads(len, 64);
         JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(len);
         JCudaBuffer probBuffer = (JCudaBuffer) p.data();
-        KernelLauncher.syncContext();
+       
 
         Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{len})
@@ -107,7 +107,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
         int blocks = PointerUtil.getNumBlocks(len, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(len, KernelFunctions.THREADS);
         JCudaBuffer randomNumbers = new CudaFloatDataBuffer(len * n);
-        KernelLauncher.syncContext();
+       
 
         Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{len})
@@ -135,7 +135,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
         int blocks = PointerUtil.getNumBlocks(len, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(len, KernelFunctions.THREADS);
         JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(len);
-        KernelLauncher.syncContext();
+       
 
         Object[] kernelParams = new Object[]{
                 Pointer.to(new int[]{len})
@@ -165,7 +165,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
 
 
     protected void doSampleUniformDouble(Pointer out, double min, double max, int n) {
-        KernelLauncher.syncContext();
+       
 
         JCurand.curandGenerateUniformDouble(random.generator(), out, n);
         String functionName = "uniform";
@@ -180,7 +180,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
                 , Pointer.to(random.generator())
 
         };
-        KernelLauncher.syncContext();
+       
 
         //int len,int n,double *ps,double *result, curandState *s
         KernelFunctions.invoke(

@@ -146,7 +146,6 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void setData(double[] data) {
-        KernelLauncher.syncContext();
 
         ensureNotFreed();
 

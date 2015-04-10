@@ -34,6 +34,7 @@ import java.io.*;
 
 import jcuda.*;
 import jcuda.driver.*;
+import jcuda.runtime.JCuda;
 import jcuda.runtime.dim3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -544,7 +545,7 @@ public class KernelLauncher {
     /**
      * The context which was used to create this instance
      */
-    private  static CUcontext context;
+    private  CUcontext context;
 
     /**
      * The module which contains the function
@@ -602,9 +603,6 @@ public class KernelLauncher {
      * context.
      */
     private void initialize() {
-        if(context != null)
-            return;
-
         int result = cuInit(0);
         if (result != CUresult.CUDA_SUCCESS)
         {
@@ -880,8 +878,7 @@ public class KernelLauncher {
      * @param stream The stream for the function call
      * @return This instance
      */
-    public KernelLauncher setStream(CUstream stream)
-    {
+    public KernelLauncher setStream(CUstream stream) {
         this.stream = stream;
         return this;
     }
@@ -924,7 +921,7 @@ public class KernelLauncher {
     }
 
 
-    public static CUcontext context() {
+    public  CUcontext context() {
         return context;
     }
 
@@ -943,8 +940,7 @@ public class KernelLauncher {
      * @return This instance
      */
     public KernelLauncher setup(dim3 gridSize, dim3 blockSize,
-                                int sharedMemSize, CUstream stream)
-    {
+                                int sharedMemSize, CUstream stream) {
         setGridSize(gridSize.x, gridSize.y);
         setBlockSize(blockSize.x, blockSize.y, blockSize.z);
         setSharedMemSize(sharedMemSize);
@@ -966,7 +962,7 @@ public class KernelLauncher {
      * was given, or one of the internal functions for setting
      * up and executing the kernel failed.
      */
-    public void call(Object ... args) {
+    public synchronized void call(Object ... args) {
 
         Pointer kernelParameters[] = new Pointer[args.length];
 
@@ -1057,7 +1053,7 @@ public class KernelLauncher {
         }
 
 
-        KernelLauncher.syncContext();
+        syncContext();
 
         checkResult(cuLaunchKernel(function,
                 gridSize.x, gridSize.y, gridSize.z,
@@ -1075,8 +1071,10 @@ public class KernelLauncher {
      * Sync the current context for the thread
      * Syncs the current context for the thread.
      */
-    public static synchronized  void syncContext() {
-            JCudaDriver.cuCtxSetCurrent(context);
+    public void syncContext() {
+        JCuda.cudaSetDevice(0);
+        JCudaDriver.cuCtxSetCurrent(context);
+        JCudaDriver.cuCtxSynchronize();
     }
 
     /**

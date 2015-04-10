@@ -101,7 +101,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public void put(int i, IComplexNumber result) {
         ensureNotFreed();
-        KernelLauncher.syncContext();
+       
 
         if (dataType() == DataBuffer.FLOAT) {
             JCublas.cublasSetVector(
@@ -130,7 +130,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void alloc() {
-        KernelLauncher.syncContext();
+       
 
         pointer = new Pointer();
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
@@ -144,7 +144,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public void set(Pointer pointer) {
         ensureNotFreed();
-        KernelLauncher.syncContext();
+       
 
         if (dataType() == DOUBLE) {
             JCublas.cublasDcopy(
@@ -175,7 +175,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      */
     protected void copyTo(JCudaBuffer to) {
         ensureNotFreed();
-        KernelLauncher.syncContext();
+       
 
         if (to.dataType() != dataType())
             throw new IllegalArgumentException("Unable to copy buffer, mis matching data types.");
@@ -205,7 +205,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      */
     protected void get(int index, int inc, int length, Pointer init) {
         ensureNotFreed();
-        KernelLauncher.syncContext();
+       
 
         JCublas.cublasGetVector(
                 length
@@ -265,7 +265,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      */
     protected void set(int index, int length, Pointer from, int inc) {
         ensureNotFreed();
-        KernelLauncher.syncContext();
+       
 
         int offset = elementSize() * index;
         if (offset >= length() * elementSize())
@@ -313,7 +313,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public  void destroy() {
         try {
-            KernelLauncher.syncContext();
+           
 
             if(!freed.get()) {
                 if (Nd4j.shouldInstrument)
@@ -446,7 +446,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
         ensureNotFreed();
-        KernelLauncher.syncContext();
+       
 
         int count = 0;
         for (int i = 0; i < buffers.length; i++) {
