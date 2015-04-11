@@ -28,6 +28,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.FloatBuffer;
 
 /**
  * Cuda float buffer
@@ -96,8 +97,11 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         if (offset + length > length())
             length -= offset;
         float[] ret = new float[length];
-        Pointer p = Pointer.to(ret);
-        get(offset, inc, length, p);
+        FloatBuffer buf = getFloatBuffer(offset);
+        for(int i = 0; i < length; i++) {
+            ret[i] = buf.get(i * inc);
+        }
+
         return ret;
     }
 
@@ -105,9 +109,9 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     public void assign(Number value, int offset) {
         int arrLength = length - offset;
         float[] data = new float[arrLength];
+        FloatBuffer buf = getFloatBuffer(offset);
         for (int i = 0; i < data.length; i++)
-            data[i] = value.floatValue();
-        set(offset, arrLength, Pointer.to(data));
+            buf.put(i,value.floatValue());
 
     }
 
@@ -125,7 +129,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         if (pointer() == null)
             alloc();
 
-        JCuda.cudaMemcpy(pointer(), Pointer.to(data), data.length * elementSize(), cudaMemcpyKind.cudaMemcpyHostToDevice);
+        getFloatBuffer().put(data);
     }
 
     @Override
@@ -155,8 +159,11 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     @Override
     public float[] asFloat() {
         ensureNotFreed();
-        float[] ret = new float[length];
-        JCuda.cudaMemcpy(Pointer.to(ret),pointer(), length * elementSize(), cudaMemcpyKind.cudaMemcpyDeviceToHost);
+        float[] ret = new float[length()];
+        FloatBuffer buf = getFloatBuffer();
+        for(int i = 0; i < length(); i++) {
+            ret[i] = buf.get(i);
+        }
         return ret;
     }
 
@@ -179,10 +186,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     @Override
     public float getFloat(int i) {
         ensureNotFreed();
-        float[] data = new float[1];
-        Pointer p = Pointer.to(data);
-        get(i, p);
-        return data[0];
+        return getFloatBuffer().get(i);
     }
 
     @Override
@@ -194,9 +198,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     @Override
     public void put(int i, float element) {
         ensureNotFreed();
-        float[] data = new float[]{element};
-        Pointer p = Pointer.to(data);
-        set(i, p);
+        getFloatBuffer().put(i,element);
     }
 
     @Override

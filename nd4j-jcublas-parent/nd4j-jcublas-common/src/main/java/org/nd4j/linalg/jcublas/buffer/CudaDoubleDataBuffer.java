@@ -28,6 +28,8 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
 
 /**
  * Cuda double  buffer
@@ -112,8 +114,11 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
             length -= offset;
 
         double[] ret = new double[length];
-        Pointer p = Pointer.to(ret);
-        get(offset, inc, length, p);
+        ByteBuffer buf = getBuffer(offset);
+        DoubleBuffer buf2 = buf.asDoubleBuffer();
+        for(int i = 0; i < length; i++) {
+            ret[i] = buf2.get(i * inc);
+        }
         return ret;
     }
 
@@ -126,12 +131,10 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     @Override
     public void assign(Number value, int offset) {
         ensureNotFreed();
-
-        int arrLength = length - offset;
-        double[] data = new double[arrLength];
-        for (int i = 0; i < data.length; i++)
-            data[i] = value.doubleValue();
-        set(offset, arrLength, Pointer.to(data));
+        ByteBuffer buf = getBuffer(offset);
+        DoubleBuffer buf2 = buf.asDoubleBuffer();
+        for (int i = offset; i < length(); i++)
+            buf2.put(i,value.doubleValue());
     }
 
     @Override
@@ -155,28 +158,18 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         if (pointer() == null)
             alloc();
 
+        DoubleBuffer buf = getDoubleBuffer();
+        buf.put(data);
 
-        JCuda.cudaMemcpy(
-                pointer(),
-                Pointer.to(data)
-                , data.length * elementSize()
-                , cudaMemcpyKind.cudaMemcpyHostToDevice);
+
 
 
     }
 
     @Override
     public byte[] asBytes() {
-        double[] data = asDouble();
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(bos);
-        for(int i = 0; i < data.length; i++)
-            try {
-                dos.writeDouble(data[i]);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        return bos.toByteArray();
+        ByteBuffer buf = pinnedPointer.getByteBuffer(0, length() * elementSize());
+        return buf.array();
     }
 
     @Override
@@ -184,35 +177,12 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         return DataBuffer.DOUBLE;
     }
 
-    @Override
-    public float[] asFloat() {
-        ensureNotFreed();
-        return ArrayUtil.toFloats(asDouble());
-    }
-
-    @Override
-    public double[] asDouble() {
-        ensureNotFreed();
-        double[] ret = new double[length];
-        JCuda.cudaMemcpy(Pointer.to(ret), pointer(), length * elementSize(), cudaMemcpyKind.cudaMemcpyDeviceToHost);
-
-        return ret;
-    }
-
-    @Override
-    public int[] asInt() {
-        return new int[0];
-    }
 
 
     @Override
     public double getDouble(int i) {
         ensureNotFreed();
-
-        double[] d = new double[1];
-        Pointer p = Pointer.to(d);
-        get(i, p);
-        return d[0];
+        return getDoubleBuffer().get(i);
     }
 
     @Override
@@ -234,10 +204,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     @Override
     public void put(int i, double element) {
         ensureNotFreed();
-        double[] d = new double[]{element};
-        Pointer p = Pointer.to(d);
-        set(i, p);
-
+        getDoubleBuffer().put(i,element);
     }
 
     @Override

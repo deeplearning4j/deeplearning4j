@@ -136,7 +136,7 @@ public class SimpleJCublas {
                 cCPointer,
                 1);
 
-
+        JCuda.cudaDeviceSynchronize();
         return C;
     }
 
@@ -173,6 +173,7 @@ public class SimpleJCublas {
                 cCPointer,
                 1);
 
+        JCuda.cudaDeviceSynchronize();
 
         return C;
     }
@@ -215,6 +216,7 @@ public class SimpleJCublas {
                 cCPointer, // y
                 C.secondaryStride()); // ldc
 
+        JCuda.cudaDeviceSynchronize();
 
         return C;
 
@@ -257,6 +259,7 @@ public class SimpleJCublas {
                 cCPointer, // y
                 C.secondaryStride()); // ldc
 
+        JCuda.cudaDeviceSynchronize();
 
         return C;
 
@@ -302,6 +305,7 @@ public class SimpleJCublas {
                 cCPointer, // y
                 C.rows()); // ldc
 
+        JCuda.cudaDeviceSynchronize();
 
         return C;
 
@@ -346,6 +350,7 @@ public class SimpleJCublas {
                 cCPointer, // y
                 C.rows()); // ldc
 
+        JCuda.cudaDeviceSynchronize();
 
         return C;
 
@@ -392,6 +397,7 @@ public class SimpleJCublas {
                 cCPointer, // y
                 C.rows()); // incy
 
+        JCuda.cudaDeviceSynchronize();
 
         return C;
 
@@ -431,6 +437,7 @@ public class SimpleJCublas {
                 beta,  // beta
                 cCPointer, // y
                 C.rows()); // incy
+        JCuda.cudaDeviceSynchronize();
 
         return C;
 
@@ -485,6 +492,7 @@ public class SimpleJCublas {
                     , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
         else
             Nd4j.getExecutioner().exec(new CopyOp(x, y, y, x.length()));
+        JCuda.cudaDeviceSynchronize();
 
 
     }
@@ -553,6 +561,7 @@ public class SimpleJCublas {
                     1);
 
         }
+        JCuda.cudaDeviceSynchronize();
 
 
     }
@@ -655,6 +664,7 @@ public class SimpleJCublas {
                 A.majorStride(),
                 xBPointer,
                 B.majorStride());
+        JCuda.cudaDeviceSynchronize();
 
 
     }
@@ -681,6 +691,7 @@ public class SimpleJCublas {
                 bCPointer,
                 1
         );
+        JCuda.cudaDeviceSynchronize();
 
 
     }
@@ -707,6 +718,7 @@ public class SimpleJCublas {
                 bCPointer,
                 B.majorStride()
         );
+        JCuda.cudaDeviceSynchronize();
 
 
     }
@@ -731,6 +743,7 @@ public class SimpleJCublas {
                 alpha,
                 xCPointer,
                 x.majorStride());
+        JCuda.cudaDeviceSynchronize();
 
         return x;
 
@@ -756,6 +769,7 @@ public class SimpleJCublas {
                 alpha,
                 xCPointer,
                 x.majorStride());
+        JCuda.cudaDeviceSynchronize();
 
         return x;
 
@@ -776,6 +790,8 @@ public class SimpleJCublas {
             JCublas.cublasDcopy(x.length(),xCPointer,x.majorStride(),yCPointer,y.majorStride());
         if(x.data().dataType() == DataBuffer.FLOAT)
             JCublas.cublasScopy(x.length(),xCPointer,x.majorStride(),yCPointer,y.majorStride());
+        JCuda.cudaDeviceSynchronize();
+
     }
 
     /**
@@ -800,6 +816,7 @@ public class SimpleJCublas {
                     x.majorStride()
                     , yCPointer,
                     y.majorStride());
+            JCuda.cudaDeviceSynchronize();
 
             return ret;
         } else {
@@ -809,6 +826,7 @@ public class SimpleJCublas {
                     y.majorStride()
                     , yCPointer,
                     y.majorStride());
+            JCuda.cudaDeviceSynchronize();
 
             return ret;
         }
@@ -833,6 +851,9 @@ public class SimpleJCublas {
                 y.majorStride());
 
         IComplexDouble ret = Nd4j.createDouble(dott.x, dott.y);
+        JCuda.cudaDeviceSynchronize();
+
+
         return ret;
     }
 
@@ -859,6 +880,7 @@ public class SimpleJCublas {
                 C.rows()    // lda
         );
 
+        JCuda.cudaDeviceSynchronize();
 
         return C;
     }
@@ -886,6 +908,7 @@ public class SimpleJCublas {
                 cCPointer,        // dC or A
                 C.rows()    // lda
         );
+        JCuda.cudaDeviceSynchronize();
 
 
         return C;
@@ -912,6 +935,7 @@ public class SimpleJCublas {
                 xCPointer,
                 x.majorStride()
         );
+        JCuda.cudaDeviceSynchronize();
 
 
         return x;
@@ -937,6 +961,7 @@ public class SimpleJCublas {
                 xCPointer,
                 x.majorStride()
         );
+        JCuda.cudaDeviceSynchronize();
 
 
         return x;
@@ -964,6 +989,7 @@ public class SimpleJCublas {
             jcuda.cuComplex dott = JCublas.cublasCdotu(x.length(), xCPointer, x.majorStride(), yCPointer, y.majorStride());
             ret = Nd4j.createDouble(dott.x, dott.y);
         }
+        JCuda.cudaDeviceSynchronize();
 
         return ret;
     }
@@ -1002,6 +1028,7 @@ public class SimpleJCublas {
                 cCPointer,        // d_C or A
                 C.rows()    // lda
         );
+        JCuda.cudaDeviceSynchronize();
 
 
         return C;
@@ -1039,6 +1066,7 @@ public class SimpleJCublas {
                 cCPointer,        // dC or A
                 C.rows()    // lda
         );
+        JCuda.cudaDeviceSynchronize();
 
         return C;
     }
@@ -1076,6 +1104,7 @@ public class SimpleJCublas {
                 C.rows()    // lda
         );
 
+        JCuda.cudaDeviceSynchronize();
 
         return C;
     }
@@ -1115,6 +1144,7 @@ public class SimpleJCublas {
                 C.rows()    // lda
         );
 
+        JCuda.cudaDeviceSynchronize();
 
         return C;
     }
@@ -1137,6 +1167,7 @@ public class SimpleJCublas {
 
         JCublas.cublasDaxpy(x.length(), alpha, xCPointer, x.majorStride(), yCPointer, y.majorStride());
 
+        JCuda.cudaDeviceSynchronize();
 
     }
 
@@ -1156,6 +1187,7 @@ public class SimpleJCublas {
         Pointer yCPointer = getPointer(y);
 
         JCublas.cublasSaxpy(x.length(), alpha, xCPointer, x.majorStride(), yCPointer, y.majorStride());
+        JCuda.cudaDeviceSynchronize();
 
 
     }
