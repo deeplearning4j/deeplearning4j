@@ -47,6 +47,7 @@ public class KernelFunctionLoader {
     public final static String IMPORTS_FLOAT = NAME_SPACE + ".float.imports";
     public final static String IMPORTS_DOUBLE = NAME_SPACE + ".double.imports";
     public final static String CACHE_COMPILED = NAME_SPACE + ".cache_compiled";
+    private Map<String,String> paths = new HashMap<>();
     private static Logger log = LoggerFactory.getLogger(KernelFunctionLoader.class);
     private static KernelFunctionLoader INSTANCE;
     private static Map<String,KernelLauncher> launchers = new HashMap<>();
@@ -68,7 +69,14 @@ public class KernelFunctionLoader {
                     INSTANCE.unload();
                 }
             }));
+            try {
+                INSTANCE.load();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+
+
         return INSTANCE;
     }
 
@@ -78,9 +86,17 @@ public class KernelFunctionLoader {
 
 
     public  static KernelLauncher launcher(String functionName,String dataType) {
-        return launchers.get(functionName + "_" + dataType);
+        return KernelFunctionLoader.getInstance().get(functionName,dataType);
     }
 
+
+    public KernelLauncher get(String functionName,String dataType) {
+        String path = paths.get(functionName + "_" + dataType);
+        if(path == null) {
+            throw new IllegalArgumentException("Unable to find " + functionName + "_" + dataType);
+        }
+        return KernelLauncher.load(path, functionName + "_" + dataType);
+    }
 
 
     /**
@@ -114,7 +130,6 @@ public class KernelFunctionLoader {
         //ensure imports for each file before compiling
         ensureImports(props, "float");
         ensureImports(props, "double");
-        KernelLauncher.setDeviceNumber(0);
         compileAndLoad(props, FLOAT, "float");
         compileAndLoad(props, DOUBLE, "double");
 
@@ -247,15 +262,24 @@ public class KernelFunctionLoader {
 
         }
 
-        else
-            log.info("Modules appear to already be compiled..attempting to use cacche");
+        else {
+            log.info("Modules appear to already be compiled..attempting to use cache");
+
+            for (String module : split) {
+                log.info("Loading " + module);
+                String path = kernelPath + module + ".ptx";
+                String name = module + "_" + dataType;
+                paths.put(name,path);
+
+            }
+        }
 
         try {
             for (String module : split) {
                 log.info("Loading " + module);
                 String path = kernelPath + module + ".ptx";
                 String name = module + "_" + dataType;
-
+                paths.put(name,path);
                 KernelLauncher launch = KernelLauncher.load(path, name);
                 launchers.put(name, launch);
             }

@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
@@ -49,6 +50,7 @@ public class JCudaExecutioner implements OpExecutioner {
     private JCudaBuffer dummyFloatPointer, dummyDoublePointer;
 
     public JCudaExecutioner() {
+        SimpleJCublas.init();
         dummyFloatPointer = KernelFunctions.alloc(new float[]{1});
         dummyDoublePointer =KernelFunctions.alloc(new double[]{1});
     }

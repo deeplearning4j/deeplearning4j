@@ -110,10 +110,10 @@ public class KernelFunctions {
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
         int sharedMemSize = threadsPerBlock * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
         KernelFunctionLoader.launcher(functionName,dataType).forFunction(functionName + "_" + dataType)
-        .setBlockSize(threadsPerBlock,1,1)
-        .setGridSize(blocks,1,1)
-        .setSharedMemSize(sharedMemSize)
-        .call(kernelParameters);
+                .setBlockSize(threadsPerBlock,1,1)
+                .setGridSize(blocks,1,1)
+                .setSharedMemSize(sharedMemSize)
+                .call(kernelParameters);
 
     }
 
@@ -140,10 +140,6 @@ public class KernelFunctions {
     public static JCudaBuffer alloc(float[] data) {
         // Allocate the device input data, and copy the
         // host input data to the device
-
-        Pointer deviceInputA = new Pointer();
-        JCuda.cudaMalloc(deviceInputA, Sizeof.FLOAT * data.length);
-        JCuda.cudaMemcpy(deviceInputA, Pointer.to(data), Sizeof.FLOAT * data.length, cudaMemcpyKind.cudaMemcpyHostToDevice);
         JCudaBuffer floatBuffer = new CudaFloatDataBuffer(data);
         return floatBuffer;
     }

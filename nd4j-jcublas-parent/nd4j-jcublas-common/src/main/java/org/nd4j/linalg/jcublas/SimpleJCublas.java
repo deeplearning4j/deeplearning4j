@@ -87,12 +87,13 @@ public class SimpleJCublas {
     public static void init() {
         if (init)
             return;
+      /*  JCublas2.initialize();
+        cublasHandle handle = new cublasHandle();
+        JCublas2.cublasCreate(handle);
+*/
         JCublas.setLogLevel(LogLevel.LOG_DEBUG);
         JCublas.setExceptionsEnabled(true);
 
-       /* JCublas2.initialize();
-        cublasHandle handle = new cublasHandle();
-        JCublas2.cublasCreate(handle);*/
         try {
             KernelFunctionLoader.getInstance().load();
         } catch (Exception e) {
@@ -101,6 +102,11 @@ public class SimpleJCublas {
         init = true;
     }
 
+
+    public static void sync() {
+        JCuda.cudaDeviceSynchronize();
+        KernelLauncher.setContext();
+    }
 
     /**
      * General matrix vector multiplication
@@ -116,7 +122,7 @@ public class SimpleJCublas {
 
         DataTypeValidation.assertDouble(A, B, C);
         assertCudaBuffer(A.data(), B.data(), C.data());
-
+        sync();
 
         Pointer cAPointer = getPointer(A);
         Pointer cBPointer = getPointer(B);
@@ -136,7 +142,7 @@ public class SimpleJCublas {
                 cCPointer,
                 1);
 
-        JCuda.cudaDeviceSynchronize();
+        sync();
         return C;
     }
 
@@ -153,7 +159,7 @@ public class SimpleJCublas {
     public static INDArray gemv(INDArray A, INDArray B, INDArray C, float alpha, float beta) {
 
         DataTypeValidation.assertFloat(A, B, C);
-
+        sync();
 
         Pointer cAPointer = getPointer(A);
         Pointer cBPointer = getPointer(B);
@@ -173,7 +179,7 @@ public class SimpleJCublas {
                 cCPointer,
                 1);
 
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
         return C;
     }
@@ -192,7 +198,7 @@ public class SimpleJCublas {
     public static IComplexNDArray gemv(IComplexNDArray A, IComplexNDArray B, IComplexDouble a, IComplexNDArray C
             , IComplexDouble b) {
         DataTypeValidation.assertSameDataType(A, B, C);
-
+        sync();
 
 
         Pointer cAPointer = getPointer(A);
@@ -216,7 +222,7 @@ public class SimpleJCublas {
                 cCPointer, // y
                 C.secondaryStride()); // ldc
 
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
         return C;
 
@@ -236,7 +242,7 @@ public class SimpleJCublas {
             , IComplexFloat b) {
         DataTypeValidation.assertFloat(A, B, C);
         assertCudaBuffer(A, B, C);
-
+        sync();
 
         Pointer cAPointer = getPointer(A);
         Pointer cBPointer = getPointer(B);
@@ -259,7 +265,7 @@ public class SimpleJCublas {
                 cCPointer, // y
                 C.secondaryStride()); // ldc
 
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
         return C;
 
@@ -279,7 +285,7 @@ public class SimpleJCublas {
     public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexDouble a, IComplexNDArray C
             , IComplexDouble b) {
         DataTypeValidation.assertSameDataType(A, B, C);
-
+        sync();
 
         Pointer cAPointer = getPointer(A);
         Pointer cBPointer = getPointer(B);
@@ -305,7 +311,7 @@ public class SimpleJCublas {
                 cCPointer, // y
                 C.rows()); // ldc
 
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
         return C;
 
@@ -325,7 +331,7 @@ public class SimpleJCublas {
             , IComplexFloat b) {
         DataTypeValidation.assertFloat(A, B, C);
 
-
+        sync();
 
         Pointer cAPointer = getPointer(A);
         Pointer cBPointer = getPointer(B);
@@ -350,7 +356,7 @@ public class SimpleJCublas {
                 cCPointer, // y
                 C.rows()); // ldc
 
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
         return C;
 
@@ -371,7 +377,7 @@ public class SimpleJCublas {
 
         DataTypeValidation.assertDouble(A, B, C);
 
-
+        sync();
 
         JCublasNDArray cA = (JCublasNDArray) A;
         JCublasNDArray cB = (JCublasNDArray) B;
@@ -397,7 +403,7 @@ public class SimpleJCublas {
                 cCPointer, // y
                 C.rows()); // incy
 
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
         return C;
 
@@ -416,7 +422,7 @@ public class SimpleJCublas {
     public static INDArray gemm(INDArray A, INDArray B, INDArray C,
                                 float alpha, float beta) {
         DataTypeValidation.assertFloat(A, B, C);
-
+        sync();
 
 
         Pointer cAPointer = getPointer(A);
@@ -437,7 +443,7 @@ public class SimpleJCublas {
                 beta,  // beta
                 cCPointer, // y
                 C.rows()); // incy
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
         return C;
 
@@ -455,7 +461,7 @@ public class SimpleJCublas {
      */
     public static double nrm2(IComplexNDArray A) {
 
-
+        sync();
 
         Pointer cAPointer = getPointer(A);
         if (A.data().dataType() == DataBuffer.FLOAT) {
@@ -477,7 +483,7 @@ public class SimpleJCublas {
     public static void copy(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
 
-
+        sync();
 
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
@@ -492,7 +498,7 @@ public class SimpleJCublas {
                     , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
         else
             Nd4j.getExecutioner().exec(new CopyOp(x, y, y, x.length()));
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
 
     }
@@ -505,7 +511,7 @@ public class SimpleJCublas {
      * @return the max index of the given ndarray
      */
     public static int iamax(IComplexNDArray x) {
-
+        sync();
 
         Pointer xCPointer = getPointer(x);
         if (x.data().dataType() == DataBuffer.FLOAT) {
@@ -542,7 +548,7 @@ public class SimpleJCublas {
 
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
-
+        sync();
 
         if (x.data().dataType() == DataBuffer.FLOAT) {
             JCublas.cublasSswap(
@@ -561,7 +567,7 @@ public class SimpleJCublas {
                     1);
 
         }
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
 
     }
@@ -656,7 +662,7 @@ public class SimpleJCublas {
 
         Pointer xAPointer = getPointer(A);
         Pointer xBPointer = getPointer(B);
-
+        sync();
         JCublas.cublasSaxpy(
                 A.length(),
                 da,
@@ -664,7 +670,7 @@ public class SimpleJCublas {
                 A.majorStride(),
                 xBPointer,
                 B.majorStride());
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
 
     }
@@ -681,7 +687,7 @@ public class SimpleJCublas {
 
         Pointer aCPointer = getPointer(A);
         Pointer bCPointer = getPointer(B);
-
+        sync();
 
         JCublas.cublasCaxpy(
                 A.length(),
@@ -691,7 +697,7 @@ public class SimpleJCublas {
                 bCPointer,
                 1
         );
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
 
     }
@@ -708,7 +714,7 @@ public class SimpleJCublas {
 
         Pointer aCPointer = getPointer(A);
         Pointer bCPointer = getPointer(B);
-
+        sync();
 
         JCublas.cublasZaxpy(
                 A.length(),
@@ -718,7 +724,7 @@ public class SimpleJCublas {
                 bCPointer,
                 B.majorStride()
         );
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
 
     }
@@ -735,7 +741,7 @@ public class SimpleJCublas {
     public static INDArray scal(double alpha, INDArray x) {
         DataTypeValidation.assertDouble(x);
 
-
+        sync();
 
         Pointer xCPointer = getPointer(x);
         JCublas.cublasDscal(
@@ -743,7 +749,7 @@ public class SimpleJCublas {
                 alpha,
                 xCPointer,
                 x.majorStride());
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
         return x;
 
@@ -761,7 +767,7 @@ public class SimpleJCublas {
 
 
         DataTypeValidation.assertFloat(x);
-
+        sync();
 
         Pointer xCPointer = getPointer(x);
         JCublas.cublasSscal(
@@ -769,7 +775,7 @@ public class SimpleJCublas {
                 alpha,
                 xCPointer,
                 x.majorStride());
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
         return x;
 
@@ -782,7 +788,7 @@ public class SimpleJCublas {
      * @param y the destination
      */
     public static void copy(INDArray x, INDArray y) {
-
+        sync();
         DataTypeValidation.assertSameDataType(x, y);
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
@@ -790,7 +796,7 @@ public class SimpleJCublas {
             JCublas.cublasDcopy(x.length(),xCPointer,x.majorStride(),yCPointer,y.majorStride());
         if(x.data().dataType() == DataBuffer.FLOAT)
             JCublas.cublasScopy(x.length(),xCPointer,x.majorStride(),yCPointer,y.majorStride());
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
     }
 
@@ -804,7 +810,7 @@ public class SimpleJCublas {
     public static double dot(INDArray x, INDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
 
-
+        sync();
 
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
@@ -816,7 +822,7 @@ public class SimpleJCublas {
                     x.majorStride()
                     , yCPointer,
                     y.majorStride());
-            JCuda.cudaDeviceSynchronize();
+            sync();
 
             return ret;
         } else {
@@ -826,7 +832,7 @@ public class SimpleJCublas {
                     y.majorStride()
                     , yCPointer,
                     y.majorStride());
-            JCuda.cudaDeviceSynchronize();
+            sync();
 
             return ret;
         }
@@ -837,7 +843,7 @@ public class SimpleJCublas {
     public static IComplexDouble dot(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
 
-
+        sync();
 
         Pointer aCPointer = getPointer(x);
         Pointer bCPointer = getPointer(y);
@@ -851,7 +857,7 @@ public class SimpleJCublas {
                 y.majorStride());
 
         IComplexDouble ret = Nd4j.createDouble(dott.x, dott.y);
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
 
         return ret;
@@ -860,7 +866,7 @@ public class SimpleJCublas {
 
     public static INDArray ger(INDArray A, INDArray B, INDArray C, double alpha) {
         DataTypeValidation.assertDouble(A, B, C);
-
+        sync();
 
         // = alpha * A * transpose(B) + C
         Pointer aCPointer = getPointer(A);
@@ -880,7 +886,7 @@ public class SimpleJCublas {
                 C.rows()    // lda
         );
 
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
         return C;
     }
@@ -889,7 +895,7 @@ public class SimpleJCublas {
     public static INDArray ger(INDArray A, INDArray B, INDArray C, float alpha) {
         DataTypeValidation.assertFloat(A, B, C);
 
-
+        sync();
         // = alpha * A * transpose(B) + C
 
         Pointer aCPointer = getPointer(A);
@@ -908,7 +914,7 @@ public class SimpleJCublas {
                 cCPointer,        // dC or A
                 C.rows()    // lda
         );
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
 
         return C;
@@ -925,7 +931,7 @@ public class SimpleJCublas {
     public static IComplexNDArray scal(IComplexFloat alpha, IComplexNDArray x) {
         DataTypeValidation.assertFloat(x);
 
-
+        sync();
 
         Pointer xCPointer = getPointer(x);
 
@@ -935,7 +941,7 @@ public class SimpleJCublas {
                 xCPointer,
                 x.majorStride()
         );
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
 
         return x;
@@ -950,7 +956,7 @@ public class SimpleJCublas {
      */
     public static IComplexNDArray scal(IComplexDouble alpha, IComplexNDArray x) {
         DataTypeValidation.assertDouble(x);
-
+        sync();
 
 
         Pointer xCPointer = getPointer(x);
@@ -961,7 +967,7 @@ public class SimpleJCublas {
                 xCPointer,
                 x.majorStride()
         );
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
 
         return x;
@@ -977,7 +983,7 @@ public class SimpleJCublas {
     public static IComplexDouble dotu(IComplexNDArray x, IComplexNDArray y) {
 
         DataTypeValidation.assertSameDataType(x, y);
-
+        sync();
 
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
@@ -989,7 +995,7 @@ public class SimpleJCublas {
             jcuda.cuComplex dott = JCublas.cublasCdotu(x.length(), xCPointer, x.majorStride(), yCPointer, y.majorStride());
             ret = Nd4j.createDouble(dott.x, dott.y);
         }
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
         return ret;
     }
@@ -1006,7 +1012,7 @@ public class SimpleJCublas {
                                        IComplexNDArray B,
                                        IComplexNDArray C, IComplexDouble Alpha) {
         // = alpha * A * tranpose(B) + C
-
+        sync();
         DataTypeValidation.assertDouble(A, B, C);
 
 
@@ -1028,7 +1034,7 @@ public class SimpleJCublas {
                 cCPointer,        // d_C or A
                 C.rows()    // lda
         );
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
 
         return C;
@@ -1046,7 +1052,7 @@ public class SimpleJCublas {
         DataTypeValidation.assertFloat(A, B, C);
         // = alpha * A * tranpose(B) + C
 
-
+        sync();
         Pointer aCPointer = getPointer(A);
         Pointer bCPointer = getPointer(B);
         Pointer cCPointer = getPointer(C);
@@ -1066,7 +1072,7 @@ public class SimpleJCublas {
                 cCPointer,        // dC or A
                 C.rows()    // lda
         );
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
         return C;
     }
@@ -1084,7 +1090,7 @@ public class SimpleJCublas {
 
         DataTypeValidation.assertFloat(A, B, C);
         // = alpha * A * tranpose(B) + C
-
+        sync();
 
         Pointer aCPointer = getPointer(A);
         Pointer bCPointer = getPointer(B);
@@ -1104,7 +1110,7 @@ public class SimpleJCublas {
                 C.rows()    // lda
         );
 
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
         return C;
     }
@@ -1122,7 +1128,7 @@ public class SimpleJCublas {
         DataTypeValidation.assertDouble(A, B, C);
         // = alpha * A * tranpose(B) + C
 
-
+        sync();
 
         Pointer aCPointer = getPointer(A);
         Pointer bCPointer = getPointer(B);
@@ -1144,7 +1150,7 @@ public class SimpleJCublas {
                 C.rows()    // lda
         );
 
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
         return C;
     }
@@ -1160,14 +1166,14 @@ public class SimpleJCublas {
     public static void axpy(double alpha, INDArray x, INDArray y) {
         DataTypeValidation.assertDouble(x, y);
 
-
+        sync();
 
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
 
         JCublas.cublasDaxpy(x.length(), alpha, xCPointer, x.majorStride(), yCPointer, y.majorStride());
 
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
     }
 
@@ -1181,13 +1187,13 @@ public class SimpleJCublas {
      */
     public static void saxpy(float alpha, INDArray x, INDArray y) {
         DataTypeValidation.assertFloat(x, y);
-
+        sync();
 
         Pointer xCPointer = getPointer(x);
         Pointer yCPointer = getPointer(y);
 
         JCublas.cublasSaxpy(x.length(), alpha, xCPointer, x.majorStride(), yCPointer, y.majorStride());
-        JCuda.cudaDeviceSynchronize();
+        sync();
 
 
     }

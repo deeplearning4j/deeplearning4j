@@ -52,7 +52,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
-    protected transient Pointer pointer;
     protected transient Pointer pinnedPointer;
     protected int length;
     protected int elementSize;
@@ -84,7 +83,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public BaseCudaDataBuffer(int length, int elementSize) {
         this.length = length;
         this.elementSize = elementSize;
-        if (pointer() == null)
+        if (pinnedPointer == null)
             alloc();
     }
 
@@ -156,6 +155,9 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public Pointer pointer() {
         ensureNotFreed();
+        Pointer pointer = new Pointer();
+        JCuda.cudaHostAlloc(pinnedPointer, elementSize() * length(), JCuda.cudaHostAllocMapped);
+        JCuda.cudaHostGetDevicePointer(pointer, pinnedPointer, 0);
         return pointer;
     }
 
@@ -163,7 +165,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public void alloc() {
 
 
-        pointer = new Pointer();
         pinnedPointer = new Pointer();
 
         // Check if the device supports mapped host memory
@@ -177,9 +178,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
         // Set the flag indicating that mapped memory will be used
         JCuda.cudaSetDeviceFlags(JCuda.cudaDeviceMapHost);
-
-        JCuda.cudaHostAlloc(pinnedPointer, elementSize() * length(), JCuda.cudaHostAllocMapped);
-        JCuda.cudaHostGetDevicePointer(pointer, pinnedPointer, 0);
+        JCuda.cudaHostAlloc(pinnedPointer,elementSize() * length(),JCuda.cudaHostAllocMapped);
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         Nd4j.getResourceManager().incrementCurrentAllocatedMemory(elementSize() * length());
 
@@ -320,7 +319,12 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
 
     protected java.nio.FloatBuffer getFloatBuffer(long offset) {
+        if(pinnedPointer == null)
+            throw new IllegalStateException("Pinned pointer uninitialized");
+
         ByteBuffer buf = pinnedPointer.getByteBuffer(offset * elementSize(),elementSize() * length() - offset * elementSize());
+        if(buf == null)
+            throw new IllegalStateException("Unable to obtain buffer: was null");
         // Set the byte order of the ByteBuffer
         buf.order(ByteOrder.nativeOrder());
         return buf.asFloatBuffer();
@@ -331,7 +335,12 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
 
     protected java.nio.DoubleBuffer getDoubleBuffer(long offset) {
+        if(pinnedPointer == null)
+            throw new IllegalStateException("Pinned pointer uninitialized");
         ByteBuffer buf = pinnedPointer.getByteBuffer(offset * elementSize(),elementSize() * length() - offset * elementSize());
+
+        if(buf == null)
+            throw new IllegalStateException("Unable to obtain buffer: was null");
         // Set the byte order of the ByteBuffer
         buf.order(ByteOrder.nativeOrder());
         return buf.asDoubleBuffer();
@@ -447,37 +456,32 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof BaseCudaDataBuffer)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
 
         BaseCudaDataBuffer that = (BaseCudaDataBuffer) o;
 
-        if (elementSize != that.elementSize) return false;
         if (length != that.length) return false;
-        if (dataType() != that.dataType()) return false;
-        if (dataType() == DataBuffer.DOUBLE) {
-            double[] data = asDouble();
-            double[] other = that.asDouble();
-            if (!Arrays.equals(data, other))
-                return false;
-        } else if (dataType() == DataBuffer.FLOAT) {
-            float[] data = asFloat();
-            float[] other = that.asFloat();
-            if (!Arrays.equals(data, other))
-                return false;
+        if (elementSize != that.elementSize) return false;
+        if (isPersist != that.isPersist) return false;
+        if (pinnedPointer != null ? !pinnedPointer.equals(that.pinnedPointer) : that.pinnedPointer != null)
+            return false;
+        if (freed != null ? !freed.equals(that.freed) : that.freed != null) return false;
+        if (referencing != null ? !referencing.equals(that.referencing) : that.referencing != null) return false;
+        return !(ref != null ? !ref.equals(that.ref) : that.ref != null);
 
-        }
-
-        return true;
     }
 
     @Override
     public int hashCode() {
-        int result = pointer != null ? pointer.hashCode() : 0;
+        int result = pinnedPointer != null ? pinnedPointer.hashCode() : 0;
         result = 31 * result + length;
         result = 31 * result + elementSize;
+        result = 31 * result + (freed != null ? freed.hashCode() : 0);
+        result = 31 * result + (referencing != null ? referencing.hashCode() : 0);
+        result = 31 * result + (ref != null ? ref.hashCode() : 0);
+        result = 31 * result + (isPersist ? 1 : 0);
         return result;
     }
-
 
     @Override
     public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
@@ -565,7 +569,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             for(int i = 0; i < d.length; i++)
                 d[i] = stream.readDouble();
             BaseCudaDataBuffer  buf = (BaseCudaDataBuffer) KernelFunctions.alloc(d);
-            pointer = buf.pointer();
             pinnedPointer = buf.pinnedPointer;
         }
         else if(dataType() == DataBuffer.FLOAT) {
@@ -573,7 +576,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             for(int i = 0; i < f.length; i++)
                 f[i] = stream.readFloat();
             BaseCudaDataBuffer  buf = (BaseCudaDataBuffer) KernelFunctions.alloc(f);
-            pointer = buf.pointer();
             pinnedPointer = buf.pinnedPointer;
         }
     }

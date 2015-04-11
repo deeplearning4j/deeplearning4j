@@ -55,6 +55,10 @@
     <dependencies>
 
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>jcublas</artifactId>
             <version>${jcuda.version}</version>

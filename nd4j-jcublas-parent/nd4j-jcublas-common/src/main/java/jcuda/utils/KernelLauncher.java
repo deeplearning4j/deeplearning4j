@@ -31,11 +31,15 @@ package jcuda.utils;
 import static jcuda.driver.JCudaDriver.*;
 
 import java.io.*;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import jcuda.*;
 import jcuda.driver.*;
+import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.dim3;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,7 +153,7 @@ public class KernelLauncher {
      * The number of the device which should be used by the
      * KernelLauncher
      */
-    private static int deviceNumber = 0;
+    private  int deviceNumber = 0;
 
     /**
      * Set the path to the NVCC compiler. For example: <br />
@@ -180,7 +184,7 @@ public class KernelLauncher {
      * @param number The number of the device to use
      * @throws CudaException If number < 0 or number >= deviceCount
      */
-    public static void setDeviceNumber(int number)
+    public  void setDeviceNumber(int number)
     {
         int count[] = new int[1];
         cuDeviceGetCount(count);
@@ -418,8 +422,7 @@ public class KernelLauncher {
      * or the specified function can not be obtained.
      */
     public static KernelLauncher load(
-            String moduleFileName, String functionName)
-    {
+            String moduleFileName, String functionName) {
         KernelLauncher kernelLauncher = new KernelLauncher();
         byte moduleData[] = loadData(moduleFileName);
         kernelLauncher.initModule(moduleData);
@@ -542,10 +545,11 @@ public class KernelLauncher {
     }
 
 
+
     /**
      * The context which was used to create this instance
      */
-    private  CUcontext context;
+    private   CUcontext context;
 
     /**
      * The module which contains the function
@@ -585,8 +589,7 @@ public class KernelLauncher {
      * Private constructor. Instantiation only via the static
      * methods.
      */
-    private KernelLauncher()
-    {
+    private KernelLauncher() {
         initialize();
     }
 
@@ -603,56 +606,26 @@ public class KernelLauncher {
      * context.
      */
     private void initialize() {
-        int result = cuInit(0);
-        if (result != CUresult.CUDA_SUCCESS)
-        {
-            throw new CudaException(
-                    "Failed to initialize the driver: "+
-                            CUresult.stringFor(result));
-        }
-
-        // Try to obtain the current context
-        context = new CUcontext();
-        result = cuCtxGetCurrent(context);
-        if (result != CUresult.CUDA_SUCCESS)
-        {
-            throw new CudaException(
-                    "Failed to obtain the current context: "+
-                            CUresult.stringFor(result));
-        }
-
-        // If the context is 'null', then a new context
-        // has to be created.
-        CUcontext nullContext = new CUcontext();
-        if (context.equals(nullContext))
-        {
-            createContext();
-        }
+        context = ContextHolder.getInstance().getContext(deviceNumber);
     }
+
+
 
     /**
-     * Tries to create a context for device 'deviceNumber'.
-     *
-     * @throws CudaException If the device can not be 
-     * accessed or the context can not be created
+     * Sync the context for the current thread.
      */
-    private void createContext() {
-        CUdevice device = new CUdevice();
-        int result = cuDeviceGet(device, deviceNumber);
-        if (result != CUresult.CUDA_SUCCESS) {
-            throw new CudaException(
-                    "Failed to obtain a device: "+
-                            CUresult.stringFor(result));
+    public static  void setContext() {
+        int status = JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext());
+        if(status != CUresult.CUDA_SUCCESS) {
+            throw new IllegalStateException("Unable to set context");
         }
 
-        result = cuCtxCreate(context, 0, device);
-        if (result != CUresult.CUDA_SUCCESS) {
-            throw new CudaException(
-                    "Failed to create a context: "+
-                            CUresult.stringFor(result));
-        }
+
+        JCudaDriver.cuCtxSynchronize();
+        JCuda.cudaDeviceSynchronize();
+
+
     }
-
 
     /**
      * Create a new KernelLauncher which uses the same module as
@@ -1053,6 +1026,7 @@ public class KernelLauncher {
         }
 
 
+
         syncContext();
 
         checkResult(cuLaunchKernel(function,
@@ -1072,8 +1046,8 @@ public class KernelLauncher {
      * Syncs the current context for the thread.
      */
     public void syncContext() {
-        JCuda.cudaSetDevice(0);
-        JCudaDriver.cuCtxSetCurrent(context);
+        JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext());
+        JCudaDriver.cuCtxAttach(ContextHolder.getInstance().getContext(),0);
         JCudaDriver.cuCtxSynchronize();
     }
 
