@@ -564,7 +564,9 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             double[] d = new double[length];
             for(int i = 0; i < d.length; i++)
                 d[i] = stream.readDouble();
-            pointer = KernelFunctions.alloc(d).pointer();
+            BaseCudaDataBuffer  buf = (BaseCudaDataBuffer) KernelFunctions.alloc(d);
+            pointer = buf.pointer();
+            pinnedPointer = buf.pinnedPointer;
         }
         else if(dataType() == DataBuffer.FLOAT) {
             float[] f = new float[length];
