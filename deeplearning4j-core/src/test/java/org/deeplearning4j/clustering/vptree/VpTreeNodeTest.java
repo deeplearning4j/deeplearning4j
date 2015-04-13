@@ -15,10 +15,12 @@
  */
 
 package org.deeplearning4j.clustering.vptree;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -30,114 +32,19 @@ import org.nd4j.linalg.factory.Nd4j;
 public class VpTreeNodeTest {
 
     @Test
-    public void testTopKDistances() {
-        List<VpTreePointINDArray> points = new ArrayList<>();
-        for (int i = 0; i < 100; ++i) {
-            points.add(new VpTreePointINDArray(create(i,i)));
-        }
-
-        VpTreeNode<VpTreePointINDArray> node = VpTreeNode.buildVpTree(points);
-        VpTreePointINDArray search = new VpTreePointINDArray(create(55.1, 55.2));
-
-        Counter<VpTreePointINDArray> nearbyPoints = node.findNearByPointsWithDistancesK(search, 2);
-        Assert.assertEquals(2,nearbyPoints.size());
+    public void vpTreeTest() {
+        List<DataPoint> points = new ArrayList<>();
+        points.add(new DataPoint(0,Nd4j.create(new double[]{55,55})));
+        points.add(new DataPoint(1,Nd4j.create(new double[]{60,60})));
+        points.add(new DataPoint(2,Nd4j.create(new double[]{65,65})));
+        VPTree tree = new VPTree(points);
+        List<DataPoint> add = new ArrayList<>();
+        List<Double> distances = new ArrayList<>();
+        tree.search(new DataPoint(0,Nd4j.create(new double[]{50,50})),1,add,distances);
+        DataPoint assertion = add.get(0);
+        assertEquals(new DataPoint(0,Nd4j.create(new double[]{55,55})),assertion);
 
 
     }
 
-
-    @Test
-    public void testTopK() {
-        List<VpTreePointINDArray> points = new ArrayList<>();
-        for (int i = 0; i < 100; ++i) {
-            points.add(new VpTreePointINDArray(create(i,i)));
-        }
-
-        VpTreeNode<VpTreePointINDArray> node = VpTreeNode.buildVpTree(points);
-        VpTreePointINDArray search = new VpTreePointINDArray(create(55.1, 55.2));
-
-        List<VpTreePointINDArray> nearbyPoints = node.findNearByPointsK(search, 2);
-        Assert.assertEquals(2, nearbyPoints.size());
-
-        Assert.assertTrue(nearbyPoints.contains(new VpTreePointINDArray(create(55, 55))));
-        Assert.assertTrue(nearbyPoints.contains(new VpTreePointINDArray(create(56, 56))));
-
-        nearbyPoints = node.findNearbyPoints(new VpTreePointINDArray(create(10.1, 10.5)), 0.6);
-        Assert.assertTrue(nearbyPoints.contains(new VpTreePointINDArray(create(10, 10))));
-        Assert.assertEquals(1, nearbyPoints.size());
-    }
-
-    @Test
-    public void testSimpleINDArray() {
-        List<VpTreePointINDArray> points = new ArrayList<>();
-        for (int i = 0; i < 100; ++i) {
-            points.add(new VpTreePointINDArray(create(i,i)));
-        }
-
-        VpTreeNode<VpTreePointINDArray> node = VpTreeNode.buildVpTree(points);
-        VpTreePointINDArray search = new VpTreePointINDArray(create(55.1, 55.2));
-
-        List<VpTreePointINDArray> nearbyPoints = node.findNearbyPoints(search, 1.5);
-        Assert.assertTrue(nearbyPoints.contains(new VpTreePointINDArray(create(55, 55))));
-        Assert.assertTrue(nearbyPoints.contains(new VpTreePointINDArray(create(56, 56))));
-
-        nearbyPoints = node.findNearbyPoints(new VpTreePointINDArray(create(10.1, 10.5)), 0.6);
-        Assert.assertTrue(nearbyPoints.contains(new VpTreePointINDArray(create(10, 10))));
-        Assert.assertEquals(1, nearbyPoints.size());
-    }
-
-    @Test
-    public void testINDArray() {
-        List<VpTreePointINDArray> points = new ArrayList<>();
-
-        for (int i = 0; i < 5000; ++i) {
-            points.add(new VpTreePointINDArray(create(Math.random() * 10, Math.random())));
-        }
-
-        for (int i = 0; i < 5000; ++i) {
-            points.add(new VpTreePointINDArray(create(5 + Math.random() * 5, Math.random())));
-        }
-
-        long start = System.currentTimeMillis();
-        System.out.println("Building VP-tree...");
-        VpTreeNode<VpTreePointINDArray> node = VpTreeNode.buildVpTree(points);
-        System.out.println("VP-tree completed, took " + (System.currentTimeMillis() - start) / 1000. + " s");
-        start = System.nanoTime();
-        List<VpTreePointINDArray> nearbyPoints = node.findNearbyPoints(new VpTreePointINDArray(create(0.1, 0.1)), 0.001);
-        System.out.println("VP-tree search completed, took " + (System.nanoTime() - start) + " ns");
-        for (VpTreePointINDArray p : nearbyPoints) {
-            System.out.println(p);
-        }
-    }
-
-
-    private INDArray create(double first,double second) {
-        return Nd4j.create(Nd4j.createBuffer(new double[]{first,second}));
-    }
-
-
-
-    @Test
-    public void test() {
-        List<VpTreePoint2D> points = new ArrayList<>();
-
-        for (int i = 0; i < 5000; ++i) {
-            points.add(new VpTreePoint2D(Math.random() * 10, Math.random()));
-        }
-
-        for (int i = 0; i < 5000; ++i) {
-            points.add(new VpTreePoint2D(5 + Math.random() * 5, Math.random()));
-        }
-
-        long start = System.currentTimeMillis();
-        System.out.println("Building VP-tree...");
-        VpTreeNode<VpTreePoint2D> node = VpTreeNode.buildVpTree(points);
-        System.out.println("VP-tree completed, took " + (System.currentTimeMillis() - start) / 1000. + " s");
-        start = System.nanoTime();
-        List<VpTreePoint2D> nearbyPoints = node.findNearbyPoints(new VpTreePoint2D(0.1, 0.1), 0.001);
-        System.out.println("VP-tree search completed, took " + (System.nanoTime() - start) + " ns");
-        for (VpTreePoint2D p : nearbyPoints) {
-            System.out.println(p);
-        }
-    }
 }

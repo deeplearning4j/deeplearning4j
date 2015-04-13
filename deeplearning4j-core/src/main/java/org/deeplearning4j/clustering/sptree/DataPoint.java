@@ -1,4 +1,4 @@
-package org.deeplearning4j.clustering.vptree;
+package org.deeplearning4j.clustering.sptree;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;

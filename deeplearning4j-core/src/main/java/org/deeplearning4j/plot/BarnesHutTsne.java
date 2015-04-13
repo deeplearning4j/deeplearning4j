@@ -21,11 +21,11 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.util.FastMath;
-import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.clustering.quadtree.QuadTree;
-import org.deeplearning4j.clustering.vptree.VpTreeNode;
-import org.deeplearning4j.clustering.vptree.VpTreePointINDArray;
+import org.deeplearning4j.clustering.sptree.DataPoint;
+import org.deeplearning4j.clustering.sptree.SpTree;
+import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -44,6 +44,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -124,9 +125,7 @@ public class BarnesHutTsne extends Tsne implements Model {
         final INDArray beta =  ones(N, 1);
 
         final double logU =  FastMath.log(u);
-
-        final List<VpTreePointINDArray> list = VpTreePointINDArray.dataPoints(d);
-        final VpTreeNode<VpTreePointINDArray> tree = VpTreeNode.buildVpTree(list);
+        VPTree tree = new VPTree(d);
 
         log.info("Calculating probabilities of data similarities...");
         for(int i = 0; i < N; i++) {
@@ -135,10 +134,11 @@ public class BarnesHutTsne extends Tsne implements Model {
 
             double betaMin = -Double.MAX_VALUE;
             double betaMax = Double.MAX_VALUE;
-            Counter<VpTreePointINDArray> c = tree.findNearByPointsWithDistancesK(list.get(i),k + 1);
+            List<DataPoint> results = new ArrayList<>();
+            tree.search(new DataPoint(i,d.slice(i)),k + 1,results,new ArrayList<Double>());
             double betas = beta.getDouble(i);
 
-            INDArray cArr = toNDArray(c);
+            INDArray cArr = VPTree.buildFromData(results);
             Pair<INDArray,Double> pair =  computeGaussianKernel(cArr, beta.getDouble(i),k);
             INDArray currP = pair.getFirst();
             double hDiff =  pair.getSecond() - logU;
@@ -160,7 +160,7 @@ public class BarnesHutTsne extends Tsne implements Model {
                     else {
                         betaMax = betas;
                         if(betaMin == -Double.MAX_VALUE || betaMin == Double.MAX_VALUE)
-                           betas /= 2.0;
+                            betas /= 2.0;
                         else
                             betas = (betas + betaMin) / 2.0;
                     }
@@ -174,8 +174,12 @@ public class BarnesHutTsne extends Tsne implements Model {
 
 
             currP.divi(currP.sum(Integer.MAX_VALUE));
-            INDArray indices = toIndex(c,k);
-
+            INDArray indices = Nd4j.create(k + 1);
+            for(int j = 0; j < indices.length(); j++) {
+                if(j >= results.size())
+                    break;
+                indices.putScalar(j, results.get(j).getIndex());
+            }
 
             for(int l = 0; l < k; l++) {
                 cols.putScalar(rows.getInt(i) + l,indices.getDouble(l + 1));
@@ -241,25 +245,6 @@ public class BarnesHutTsne extends Tsne implements Model {
 
 
 
-    private INDArray toIndex(Counter<VpTreePointINDArray> counter,int k) {
-        INDArray ret = Nd4j.create(k + 1);
-        List<VpTreePointINDArray> list = counter.getSortedKeys();
-        Collections.reverse(list);
-        for(int i = 0; i < list.size(); i++) {
-            ret.putScalar(i,list.get(i).getIndex());
-        }
-        return ret;
-    }
-
-    private INDArray toNDArray(Counter<VpTreePointINDArray> counter) {
-        INDArray ret = Nd4j.create(N - 1);
-        List<VpTreePointINDArray> list = counter.getSortedKeys();
-        Collections.reverse(list);
-        for(int i = 0; i < list.size(); i++) {
-            ret.putScalar(i,counter.getCount(list.get(i)));
-        }
-        return ret;
-    }
 
 
     /**
@@ -503,7 +488,7 @@ public class BarnesHutTsne extends Tsne implements Model {
     public double score() {
         // Get estimate of normalization term
         int QT_NO_DIMS = 2;
-        QuadTree tree = new QuadTree(y);
+        SpTree tree = new SpTree(y.columns(),y,y.rows());
         INDArray buff = Nd4j.create(QT_NO_DIMS);
         AtomicDouble sum_Q = new AtomicDouble(0.0);
         for(int n = 0; n < N; n++)
@@ -511,21 +496,22 @@ public class BarnesHutTsne extends Tsne implements Model {
 
         // Loop over all edges to compute t-SNE error
         double C = .0;
-        INDArray linear = y.linearView();
+        INDArray linear = y;
         for(int n = 0; n < N; n++) {
             int begin = rows.getInt(n);
             int end = rows.getInt(n + 1);
-            int ind1 = n * QT_NO_DIMS;
+            int ind1 = n;
             for(int i = begin; i < end; i++) {
-                int ind2 = cols.getInt(i) * QT_NO_DIMS;
-                buff.assign(linear.get(NDArrayIndex.interval(ind1, ind1 + QT_NO_DIMS)));
-                buff.subi(linear.get(NDArrayIndex.interval(ind2, ind2 + QT_NO_DIMS)));
+                int ind2 = cols.getInt(i);
+                buff.assign(linear.slice(ind1));
+                buff.subi(linear.slice(ind2));
 
                 double Q = pow(buff,2).sum(Integer.MAX_VALUE).getDouble(0);
                 Q = (1.0 / (1.0 + Q)) / sum_Q.doubleValue();
                 double val = vals.getDouble(i);
                 double add = FastMath.log((val + Double.MIN_VALUE) / (Q + Double.MIN_VALUE));
-                C += val * add;
+                // C += val_P[i] * log((val_P[i] + FLT_MIN) / (Q + FLT_MIN));
+                C += vals.getDouble(i) * FastMath.log(vals.getDouble(i) + Nd4j.EPS_THRESHOLD) / (Q + Nd4j.EPS_THRESHOLD);
             }
         }
 
@@ -584,8 +570,7 @@ public class BarnesHutTsne extends Tsne implements Model {
         /* Calculate gradient based on barnes hut approximation with positive and negative forces */
         INDArray posF = Nd4j.create(y.shape());
         INDArray negF = Nd4j.create(y.shape());
-
-        QuadTree quad = new QuadTree(y);
+        SpTree quad = new SpTree(y.columns(),y,N);
         quad.computeEdgeForces(rows,cols,vals,N,posF);
 
         for(int n = 0; n < N; n++)
