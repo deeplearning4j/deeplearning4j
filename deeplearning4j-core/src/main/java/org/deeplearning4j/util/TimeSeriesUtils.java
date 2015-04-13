@@ -21,11 +21,18 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 /**
- * Created by agibsonccc on 12/29/14.
+ * Basic time series utils
+ * @author Adam Gibson
  */
 public class TimeSeriesUtils {
 
 
+    /**
+     * Calculate a moving average given the length
+     * @param toAvg the array to average
+     * @param n the length of the moving window
+     * @return the moving averages for each row
+     */
     public static INDArray movingAverage(INDArray toAvg,int n) {
         INDArray ret = Nd4j.cumsum(toAvg);
         NDArrayIndex[] ends = new NDArrayIndex[]{NDArrayIndex.interval(n ,toAvg.columns())};

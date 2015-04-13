@@ -116,9 +116,9 @@ public class NeuralNetPlotter implements Serializable {
     }
 
     public void plotNetworkGradient(Layer network,Gradient gradient,int patchesPerRow) {
-        histogram(
-                new String[]{"W", "hbias", "vbias", "w-gradient", "hbias-gradient", "vbias-gradient"},
 
+        histogram(
+                gradient.gradientForVariable().keySet().toArray(new String[]{}),
                 new INDArray[]{
                         network.getParam(DefaultParamInitializer.WEIGHT_KEY),
                         network.getParam(PretrainParamInitializer.BIAS_KEY),
