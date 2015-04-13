@@ -20,8 +20,10 @@ import org.apache.commons.io.EndianUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.BufferedOutputStream;
@@ -38,21 +40,22 @@ public class BarnesHutTsneTest {
     @Test
     public void testTsne() throws Exception {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
-        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
-        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
+        Nd4j.factory().setDType(DataBuffer.DOUBLE);
         Nd4j.getRandom().setSeed(123);
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250)
-                .theta(0.5).learningRate(200).useAdaGrad(true)
+                .theta(0.5).learningRate(500).useAdaGrad(false)
                 .build();
 
-        BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(new File("/home/agibsonccc/code/barneshut/data.dat"),false));
+      /*  BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(new File("/home/agibsonccc/code/barneshut/data.dat"),false));
         DataOutputStream dos = new DataOutputStream(fos);
+     */
+
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
         File f = resource.getFile();
-        INDArray data = Nd4j.readTxt(f.getAbsolutePath(),"   ");
+        INDArray data = Nd4j.readTxt(f.getAbsolutePath(),"   ").get(NDArrayIndex.interval(0,100),NDArrayIndex.interval(0,784));
 
 
-        EndianUtils.writeSwappedInteger(dos,data.rows());
+      /*  EndianUtils.writeSwappedInteger(dos,data.rows());
         EndianUtils.writeSwappedInteger(dos, data.columns());
         EndianUtils.writeSwappedDouble(dos, 0.5);
         EndianUtils.writeSwappedDouble(dos, 30);
@@ -66,10 +69,10 @@ public class BarnesHutTsneTest {
 
         dos.flush();
         fos.flush();
-        dos.close();
+        dos.close();*/
 
         ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
-        List<String> labelsList = IOUtils.readLines(labels.getInputStream());
+        List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0,100);
         b.fit(data);
     }
 

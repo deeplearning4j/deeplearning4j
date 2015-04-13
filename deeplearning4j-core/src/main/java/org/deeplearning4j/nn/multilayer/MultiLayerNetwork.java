@@ -343,6 +343,10 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                 if (i == 0) {
                     inputSize = layerWiseConfigurations.getConf(0).getnIn();
                     numHiddenLayersSizesUsed++;
+                    if(input == null) {
+                        input = Nd4j.ones(inputSize);
+                        layerInput = input;
+                    }
                 }
                 else
                     inputSize = hiddenLayerSizes[numHiddenLayersSizesUsed - 1];
