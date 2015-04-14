@@ -53,6 +53,14 @@ public class Cell  implements Serializable {
 
     }
 
+    public INDArray width() {
+        return width;
+    }
+
+    public INDArray corner() {
+        return corner;
+    }
+
 
 
 

@@ -6,10 +6,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
-import static java.lang.Math.max;
+
 
 /**
  * @author Adam Gibson
@@ -20,7 +18,6 @@ public class SpTree implements Serializable {
 
     private INDArray data;
     private int N;
-    private boolean isLeaf;
     private INDArray buf;
     private int size;
     private int cumSize;
@@ -29,11 +26,12 @@ public class SpTree implements Serializable {
     private SpTree parent;
     private int[] index = new int[1];
     private int numChildren = 2;
+    private boolean isLeaf = true;
 
-    private List<SpTree> children = new ArrayList<>();
+    private SpTree[] children;
 
     public SpTree(SpTree parent,int D,INDArray data,INDArray corner,INDArray width) {
-        init(parent,D,data,corner,width);
+        init(parent, D, data, corner, width);
     }
 
 
@@ -62,15 +60,61 @@ public class SpTree implements Serializable {
         this.D = D;
         for(int d = 1; d < this.D; d++)
             numChildren *= 2;
-        this.data = data;
         isLeaf = true;
+        size = 0;
+        cumSize = 0;
+        children = new SpTree[numChildren];
+        this.data = data;
         boundary = new Cell(D);
-        boundary.setCorner(corner);
-        boundary.setWidth(width);
+        boundary.setCorner(corner.dup());
+        boundary.setWidth(width.dup());
         centerOfMass = Nd4j.create(D);
         buf = Nd4j.create(D);
     }
 
+    public SpTree(int cumSize) {
+        this.cumSize = cumSize;
+    }
+
+    public SpTree[] getChildren() {
+        return children;
+    }
+
+    public int getD() {
+        return D;
+    }
+
+    public INDArray getCenterOfMass() {
+        return centerOfMass;
+    }
+
+    public Cell getBoundary() {
+        return boundary;
+    }
+
+    public int[] getIndex() {
+        return index;
+    }
+
+    public int getCumSize() {
+        return cumSize;
+    }
+
+    public void setCumSize(int cumSize) {
+        this.cumSize = cumSize;
+    }
+
+    public int getNumChildren() {
+        return numChildren;
+    }
+
+    public void setNumChildren(int numChildren) {
+        this.numChildren = numChildren;
+    }
+
+    public boolean isLeaf() {
+        return isLeaf;
+    }
 
     private boolean insert(int index) {
         INDArray point = data.slice(index);
@@ -83,7 +127,7 @@ public class SpTree implements Serializable {
         centerOfMass.muli(mult1);
         centerOfMass.addi(point.mul(mult2));
         // If there is space in this quad tree and it is a leaf, add the object here
-        if(isLeaf && size < QT_NODE_CAPACITY) {
+        if(isLeaf() && size < QT_NODE_CAPACITY) {
             this.index[size] = index;
             size++;
             return true;
@@ -93,26 +137,28 @@ public class SpTree implements Serializable {
 
         for(int i = 0; i < size; i++) {
             INDArray compPoint = data.slice(this.index[i]);
-            if(point.getDouble(0) == compPoint.getDouble(0) && point.getDouble(1) == compPoint.getDouble(1))
+            if(point.equals(compPoint))
                 return true;
         }
 
         if(anyDuplicate)
             return true;
 
-        if(isLeaf)
+        if(isLeaf())
             subDivide();
 
 
         // Find out where the point can be inserted
         for(int i = 0; i < numChildren; i++) {
-            if(children.get(i).insert(index))
+            if(children[i].insert(index))
                 return true;
         }
 
-        // Otherwise, the point cannot be inserted (this should never happen)
-        return false;
+       return false;
     }
+
+
+
 
 
 
@@ -124,15 +170,13 @@ public class SpTree implements Serializable {
             for( int d = 0; d < D; d++) {
                 newWidth.putScalar(d,.5 * boundary.width(d));
                 if((i / div) % 2 == 1)
-                    newCorner.putScalar(d,boundary.corner(d) - .5 * boundary.width(d));
+                    newCorner.putScalar(d, boundary.corner(d) - .5 * boundary.width(d));
                 else
                     newCorner.putScalar(d,boundary.corner(d) + 0.5 * boundary.width(d));
                 div *= 2;
             }
-            if(children.isEmpty())
-                children.add(new SpTree(this, D, data, newCorner, newWidth));
-            else
-                children.add(i,new SpTree(this,D,data,newCorner,newWidth));
+
+            children[i] = new SpTree(this, D, data, newCorner, newWidth);
 
         }
 
@@ -141,7 +185,7 @@ public class SpTree implements Serializable {
             boolean success = false;
             for(int j = 0; j < this.numChildren; j++) {
                 if(!success)
-                    success = children.get(j).insert(index[i]);
+                    success = children[j].insert(index[i]);
             }
             index[i] = -1;
         }
@@ -162,7 +206,7 @@ public class SpTree implements Serializable {
      */
     public void computeNonEdgeForces(int pointIndex, double theta, INDArray negativeForce, AtomicDouble sumQ) {
         // Make sure that we spend no time on empty nodes or self-interactions
-        if(cumSize == 0 || (isLeaf && size == 1 && index[0] == pointIndex))
+        if(cumSize == 0 || (isLeaf() && size == 1 && index[0] == pointIndex))
             return;
 
 
@@ -178,7 +222,7 @@ public class SpTree implements Serializable {
             max_width = (max_width > cur_width) ? max_width : cur_width;
         }
         // Check whether we can use this node as a "summary"
-        if(isLeaf || max_width / FastMath.sqrt(D) < theta) {
+        if(isLeaf() || max_width / FastMath.sqrt(D) < theta) {
 
             // Compute and add t-SNE force between point and current node
             double Q = 1.0 / (1.0 + D);
@@ -192,7 +236,7 @@ public class SpTree implements Serializable {
 
             // Recursively apply Barnes-Hut to children
             for(int i = 0; i < numChildren; i++) {
-                children.get(i).computeNonEdgeForces(pointIndex, theta, negativeForce, sumQ);
+                children[i].computeNonEdgeForces(pointIndex, theta, negativeForce, sumQ);
             }
 
         }
@@ -232,14 +276,14 @@ public class SpTree implements Serializable {
 
     public boolean isCorrect() {
         for(int n = 0; n < size; n++) {
-            INDArray point = data.slice(n);
+            INDArray point = data.slice(index[n]);
             if(!boundary.contains(point))
                 return false;
         }
-        if(!isLeaf) {
+        if(!isLeaf()) {
             boolean correct = true;
             for(int i = 0; i < numChildren; i++)
-                correct = correct && children.get(i).isCorrect();
+                correct = correct && children[i].isCorrect();
             return correct;
         }
         else return true;
@@ -250,12 +294,12 @@ public class SpTree implements Serializable {
      * @return the depth of the node
      */
     public int depth() {
-        if(isLeaf)
+        if(isLeaf())
             return 1;
         int depth = 1;
         int maxChildDepth = 0;
-        for(int i = 0; i < children.size(); i++) {
-            maxChildDepth = Math.max(maxChildDepth,children.get(0).depth());
+        for(int i = 0; i < numChildren; i++) {
+            maxChildDepth = Math.max(maxChildDepth, children[0].depth());
         }
 
         return depth + maxChildDepth;
