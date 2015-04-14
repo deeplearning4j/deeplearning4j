@@ -160,9 +160,6 @@ public class RNTN implements Layer {
 
     private INDArray identity;
 
-    private List<Tree> trainingTrees;
-
-
     private Map<Integer,Double> classWeights;
 
     private static final Logger log = LoggerFactory.getLogger(RNTN.class);
@@ -386,7 +383,6 @@ public class RNTN implements Layer {
      * @param trainingBatch the trees to iterate on
      */
     public List<Future<Object>> fitAsync(List<Tree> trainingBatch) {
-        this.trainingTrees = trainingBatch;
         int count = 0;
         
         List<Future<Object>> futureBatch = new ArrayList<>();
@@ -399,7 +395,7 @@ public class RNTN implements Layer {
                     forwardPropagateTree(t);
                     try {
                         INDArray params = getParameters();
-                        INDArray gradient = getValueGradient();
+                        INDArray gradient = getValueGradient(trainingBatch);
                         if(params.length() != gradient.length())
                             throw new IllegalStateException("Params not equal to gradient!");
                         setParams(params.subi(gradient));
@@ -531,12 +527,6 @@ public class RNTN implements Layer {
         right = basicCategory(right);
         return binaryTensors.get(left, right);
     }
-
-
-
-
-
-
 
     double scaleAndRegularize(MultiDimensionalMap<String, String, INDArray> derivatives,
                               MultiDimensionalMap<String, String, INDArray> currentMatrices,
@@ -911,7 +901,7 @@ public class RNTN implements Layer {
     }
 
 
-    public INDArray getValueGradient() {
+    public INDArray getValueGradient(final List<Tree> trainingBatch) {
 
 
         // We use TreeMap for each of these so that they stay in a
@@ -972,7 +962,8 @@ public class RNTN implements Layer {
 
 
         final List<Tree> forwardPropTrees = new CopyOnWriteArrayList<>();
-            Parallelization.iterateInParallel(trainingTrees,new Parallelization.RunnableWithParams<Tree>() {
+        //if(!forwardPropTrees.isEmpty())
+            Parallelization.iterateInParallel(trainingBatch,new Parallelization.RunnableWithParams<Tree>() {
 
                 public void run(Tree currentItem, Object[] args) {
                     Tree trainingTree = new Tree(currentItem);
@@ -1006,7 +997,7 @@ public class RNTN implements Layer {
 
         // scale the error by the number of sentences so that the
         // regularization isn't drowned out for large training batchs
-        double scale = trainingTrees == null || trainingTrees.isEmpty() ? 1.0f :  (1.0f / trainingTrees.size());
+        double scale = trainingBatch == null || trainingBatch.isEmpty() ? 1.0f :  (1.0f / trainingBatch.size());
         value = error.doubleValue() * scale;
 
         value += scaleAndRegularize(binaryTD, binaryTransform, scale, regTransformMatrix);
