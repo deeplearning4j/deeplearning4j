@@ -101,13 +101,14 @@ public class BasicRNTNTest {
                 .setAdagradResetFrequency(1)
                 .setCombineClassification(true).setFeatureVectors(vec)
                 .setRandomFeatureVectors(false)
-                .setUseTensors(true).build();
+                .setUseTensors(false).build();
+        List<Tree> trees = vectorizer.getTreesWithLabels(sentence,Arrays.asList("LABEL"));
+
         INDArray params = rntn.getParameters();
-        INDArray gradient = rntn.getValueGradient();
+        INDArray gradient = rntn.getValueGradient(trees);
         rntn.setParams(params);
         assertEquals(params.length(), gradient.length());
 
-        List<Tree> trees = vectorizer.getTreesWithLabels(sentence,Arrays.asList("LABEL"));
         rntn.fit(trees);
 
 
