@@ -972,7 +972,6 @@ public class RNTN implements Layer {
 
 
         final List<Tree> forwardPropTrees = new CopyOnWriteArrayList<>();
-        if(!forwardPropTrees.isEmpty())
             Parallelization.iterateInParallel(trainingTrees,new Parallelization.RunnableWithParams<Tree>() {
 
                 public void run(Tree currentItem, Object[] args) {
