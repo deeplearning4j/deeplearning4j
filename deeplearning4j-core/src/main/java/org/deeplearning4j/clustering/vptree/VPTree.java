@@ -52,7 +52,6 @@ public class VPTree {
         if(upper - lower > 1) {
             int randomPoint = MathUtils.randomNumberBetween(lower, upper - 1);
 
-            // Nd4j.getBlasWrapper().swap(items.get(lower),items.slice(i));
             // Partition around the median distance
             int median = (upper + lower) / 2;
             double distances[] = new double[items.size()];
@@ -86,7 +85,7 @@ public class VPTree {
 
             ret.setThreshold(items.get(lower).euclidean(items.get(median)));
             ret.setIndex(lower);
-            ret.setRight(buildFromPoints(lower + 1,median));
+            ret.setLeft(buildFromPoints(lower + 1,median));
             ret.setRight(buildFromPoints(median,upper));
 
 

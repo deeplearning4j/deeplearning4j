@@ -19,11 +19,8 @@ import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.clustering.sptree.DataPoint;
-import org.junit.Assert;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**

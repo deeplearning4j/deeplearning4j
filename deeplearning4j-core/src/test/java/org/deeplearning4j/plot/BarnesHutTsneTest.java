@@ -46,16 +46,15 @@ public class BarnesHutTsneTest {
                 .theta(0.5).learningRate(500).useAdaGrad(false)
                 .build();
 
-      /*  BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(new File("/home/agibsonccc/code/barneshut/data.dat"),false));
+        BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(new File("/home/agibsonccc/code/barneshut/data.dat"),false));
         DataOutputStream dos = new DataOutputStream(fos);
-     */
 
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
         File f = resource.getFile();
         INDArray data = Nd4j.readTxt(f.getAbsolutePath(),"   ").get(NDArrayIndex.interval(0,100),NDArrayIndex.interval(0,784));
 
 
-      /*  EndianUtils.writeSwappedInteger(dos,data.rows());
+        EndianUtils.writeSwappedInteger(dos,data.rows());
         EndianUtils.writeSwappedInteger(dos, data.columns());
         EndianUtils.writeSwappedDouble(dos, 0.5);
         EndianUtils.writeSwappedDouble(dos, 30);
@@ -69,10 +68,10 @@ public class BarnesHutTsneTest {
 
         dos.flush();
         fos.flush();
-        dos.close();*/
+        dos.close();
 
         ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
-        List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0,100);
+        List<String> labelsList = IOUtils.readLines(labels.getInputStream());
         b.fit(data);
     }
 
