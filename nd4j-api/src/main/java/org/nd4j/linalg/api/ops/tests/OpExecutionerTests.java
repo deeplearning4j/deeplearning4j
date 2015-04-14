@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
@@ -47,6 +48,15 @@ public abstract class OpExecutionerTests {
         INDArray vec2 = Nd4j.create(new float[]{1, 2, 3, 4});
         double sim = Transforms.cosineSim(vec1, vec2);
         assertEquals(1, sim, 1e-1);
+
+    }
+
+    @Test
+    public void testEuclideanDistance() {
+        INDArray arr = Nd4j.create(new double[]{55,55});
+        INDArray arr2 = Nd4j.create(new double[]{60,60});
+        double result = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr,arr2)).currentResult().doubleValue();
+        assertEquals(7.0710678118654755,result,1e-1);
 
     }
 

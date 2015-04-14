@@ -74,16 +74,19 @@ public class ManhattanDistance extends BaseAccumulation {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
+        numProcessed++;
         return origin.sub(other);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
+        numProcessed++;
         return origin.sub(other);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
+        numProcessed++;
         return origin.sub(other);
     }
 
@@ -94,21 +97,25 @@ public class ManhattanDistance extends BaseAccumulation {
 
     @Override
     public double op(double origin, double other) {
+        numProcessed++;
         return origin - other;
     }
 
     @Override
     public double op(double origin) {
+        numProcessed++;
         return origin;
     }
 
     @Override
     public float op(float origin) {
+        numProcessed++;
         return origin;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
+        numProcessed++;
         return origin;
     }
 
