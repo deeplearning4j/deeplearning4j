@@ -485,7 +485,7 @@ public class BarnesHutTsne extends Tsne implements Model {
     public double score() {
         // Get estimate of normalization term
         int QT_NO_DIMS = 2;
-        SpTree tree = new SpTree(y.columns(),y,y.rows());
+        SpTree tree = new SpTree(y);
         INDArray buff = Nd4j.create(QT_NO_DIMS);
         AtomicDouble sum_Q = new AtomicDouble(0.0);
         for(int n = 0; n < N; n++)
@@ -564,7 +564,7 @@ public class BarnesHutTsne extends Tsne implements Model {
         /* Calculate gradient based on barnes hut approximation with positive and negative forces */
         INDArray posF = Nd4j.create(y.shape());
         INDArray negF = Nd4j.create(y.shape());
-        SpTree quad = new SpTree(y.columns(),y,N);
+        SpTree quad = new SpTree(y);
         quad.computeEdgeForces(rows,cols,vals,N,posF);
 
         for(int n = 0; n < N; n++)
