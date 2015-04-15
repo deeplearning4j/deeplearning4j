@@ -15,7 +15,7 @@ import java.util.Set;
  */
 public class SpTree implements Serializable {
     private int D;
-    public final static int QT_NODE_CAPACITY = 1;
+    public final static int QT_NODE_CAPACITY = 4;
 
     private INDArray data;
     private int N;
@@ -58,9 +58,6 @@ public class SpTree implements Serializable {
 
     }
 
-    public SpTree(SpTree parent,int D,INDArray data,INDArray corner,INDArray width) {
-        init(parent, D, data, corner, width,indices);
-    }
 
 
     public SpTree(int d, INDArray data, int n) {
@@ -86,53 +83,12 @@ public class SpTree implements Serializable {
     }
 
 
-    public SpTree[] getChildren() {
-        return children;
-    }
 
-    public int getD() {
-        return D;
-    }
-
-    public INDArray getCenterOfMass() {
-        return centerOfMass;
-    }
-
-    public Cell getBoundary() {
-        return boundary;
-    }
-
-    public int[] getIndex() {
-        return index;
-    }
-
-    public int getCumSize() {
-        return cumSize;
-    }
-
-    public void setCumSize(int cumSize) {
-        this.cumSize = cumSize;
-    }
-
-    public int getNumChildren() {
-        return numChildren;
-    }
-
-    public void setNumChildren(int numChildren) {
-        this.numChildren = numChildren;
-    }
-
-    public boolean isLeaf() {
-        return isLeaf;
-    }
 
     private boolean insert(int index) {
         INDArray point = data.slice(index);
         if(!boundary.contains(point))
             return false;
-
-        else if(indices.contains(point))
-            return true;
 
 
         cumSize++;
@@ -147,16 +103,14 @@ public class SpTree implements Serializable {
             return true;
         }
 
-        boolean anyDuplicate = false;
 
         for(int i = 0; i < size; i++) {
             INDArray compPoint = data.slice(this.index[i]);
-            if(indices.contains(compPoint))
+            if(compPoint.equals(point))
                 return true;
         }
 
-        if(anyDuplicate)
-            return true;
+
 
         if(isLeaf())
             subDivide();
@@ -197,10 +151,10 @@ public class SpTree implements Serializable {
         // Move existing points to correct children
         for(int i = 0; i < size; i++) {
             boolean success = false;
-            for(int j = 0; j < this.numChildren; j++) {
+            for(int j = 0; j < this.numChildren; j++)
                 if(!success)
                     success = children[j].insert(index[i]);
-            }
+
             index[i] = -1;
         }
 
@@ -229,14 +183,9 @@ public class SpTree implements Serializable {
 
         double D = Nd4j.getBlasWrapper().dot(buf, buf);
         // Check whether we can use this node as a "summary"
-        double max_width = 0.0;
-        double cur_width;
-        for(int d = 0; d < this.D; d++) {
-            cur_width = boundary.width(d);
-            max_width = (max_width > cur_width) ? max_width : cur_width;
-        }
+        double maxWidth = boundary.width().max(Integer.MAX_VALUE).getDouble(0);
         // Check whether we can use this node as a "summary"
-        if(isLeaf() || max_width / FastMath.sqrt(D) < theta) {
+        if(isLeaf() || maxWidth / FastMath.sqrt(D) < theta) {
 
             // Compute and add t-SNE force between point and current node
             double Q = 1.0 / (1.0 + D);
@@ -259,11 +208,12 @@ public class SpTree implements Serializable {
 
     /**
      *
+     * Compute edge forces using barns hut
      * @param rowP a vector
      * @param colP
      * @param valP
-     * @param N
-     * @param posF
+     * @param N the number of elements
+     * @param posF the positive force
      */
     public void computeEdgeForces(INDArray rowP, INDArray colP, INDArray valP, int N, INDArray posF) {
         if(!rowP.isVector())
@@ -288,6 +238,16 @@ public class SpTree implements Serializable {
     }
 
 
+
+    public boolean isLeaf() {
+        return isLeaf;
+    }
+
+    /**
+     * Verifies the structure of the tree (does bounds checking on each node)
+     * @return true if the structure of the tree
+     * is correct.
+     */
     public boolean isCorrect() {
         for(int n = 0; n < size; n++) {
             INDArray point = data.slice(index[n]);
@@ -300,7 +260,8 @@ public class SpTree implements Serializable {
                 correct = correct && children[i].isCorrect();
             return correct;
         }
-        else return true;
+
+        return true;
     }
 
     /**
@@ -323,4 +284,42 @@ public class SpTree implements Serializable {
         for(int i = 0; i < n; i++)
             insert(i);
     }
+
+
+    public SpTree[] getChildren() {
+        return children;
+    }
+
+    public int getD() {
+        return D;
+    }
+
+    public INDArray getCenterOfMass() {
+        return centerOfMass;
+    }
+
+    public Cell getBoundary() {
+        return boundary;
+    }
+
+    public int[] getIndex() {
+        return index;
+    }
+
+    public int getCumSize() {
+        return cumSize;
+    }
+
+    public void setCumSize(int cumSize) {
+        this.cumSize = cumSize;
+    }
+
+    public int getNumChildren() {
+        return numChildren;
+    }
+
+    public void setNumChildren(int numChildren) {
+        this.numChildren = numChildren;
+    }
+
 }

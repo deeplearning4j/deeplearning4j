@@ -505,8 +505,6 @@ public class BarnesHutTsne extends Tsne implements Model {
 
                 double Q = pow(buff,2).sum(Integer.MAX_VALUE).getDouble(0);
                 Q = (1.0 / (1.0 + Q)) / sum_Q.doubleValue();
-                double val = vals.getDouble(i);
-                // C += val_P[i] * log((val_P[i] + FLT_MIN) / (Q + FLT_MIN));
                 C += vals.getDouble(i) * FastMath.log(vals.getDouble(i) + Nd4j.EPS_THRESHOLD) / (Q + Nd4j.EPS_THRESHOLD);
             }
         }
