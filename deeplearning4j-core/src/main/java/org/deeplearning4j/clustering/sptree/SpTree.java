@@ -6,7 +6,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
-
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -27,39 +28,51 @@ public class SpTree implements Serializable {
     private int[] index = new int[1];
     private int numChildren = 2;
     private boolean isLeaf = true;
-
+    private Set<INDArray> indices;
     private SpTree[] children;
 
-    public SpTree(SpTree parent,int D,INDArray data,INDArray corner,INDArray width) {
-        init(parent, D, data, corner, width);
+
+
+
+    public SpTree(SpTree parent,int D,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices) {
+        init(parent, D, data, corner, width,indices);
     }
 
 
-    public SpTree(int d, INDArray data, int n) {
+    public SpTree(int d, INDArray data, int n,Set<INDArray> indices) {
         this.D = d;
         this.data = data;
         N = n;
-
+        this.indices = indices;
         INDArray meanY = data.mean(0);
         INDArray minY = data.min(0);
         INDArray maxY = data.max(0);
-        //  for(int d = 0; d < D; d++) width[d] = fmax(max_Y[d] - mean_Y[d], mean_Y[d] - min_Y[d]) + 1e-5;
         INDArray width = Nd4j.create(meanY.shape());
         for(int i = 0; i < width.length(); i++) {
             width.putScalar(i, FastMath.max(maxY.getDouble(i) - meanY.getDouble(i),meanY.getDouble(i) - minY.getDouble(i) + Nd4j.EPS_THRESHOLD));
         }
 
-        init(null,D,data,meanY,width);
+        init(null,D,data,meanY,width,indices);
         fill(N);
 
 
     }
 
-    private void init(SpTree parent,int D,INDArray data,INDArray corner,INDArray width) {
+    public SpTree(SpTree parent,int D,INDArray data,INDArray corner,INDArray width) {
+        init(parent, D, data, corner, width,indices);
+    }
+
+
+    public SpTree(int d, INDArray data, int n) {
+        this(d,data,n,new HashSet<INDArray>());
+    }
+
+    private void init(SpTree parent,int D,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices) {
         this.parent = parent;
         this.D = D;
         for(int d = 1; d < this.D; d++)
             numChildren *= 2;
+        this.indices = indices;
         isLeaf = true;
         size = 0;
         cumSize = 0;
@@ -72,9 +85,6 @@ public class SpTree implements Serializable {
         buf = Nd4j.create(D);
     }
 
-    public SpTree(int cumSize) {
-        this.cumSize = cumSize;
-    }
 
     public SpTree[] getChildren() {
         return children;
@@ -121,6 +131,10 @@ public class SpTree implements Serializable {
         if(!boundary.contains(point))
             return false;
 
+        else if(indices.contains(point))
+            return true;
+
+
         cumSize++;
         double mult1 = (double) (cumSize - 1) / (double) cumSize;
         double mult2 = 1.0 / (double) cumSize;
@@ -137,7 +151,7 @@ public class SpTree implements Serializable {
 
         for(int i = 0; i < size; i++) {
             INDArray compPoint = data.slice(this.index[i]);
-            if(point.equals(compPoint))
+            if(indices.contains(compPoint))
                 return true;
         }
 
@@ -154,14 +168,14 @@ public class SpTree implements Serializable {
                 return true;
         }
 
-       return false;
+        return false;
     }
 
 
-
-
-
-
+    /**
+     * Subdivide the node in to
+     * 4 children
+     */
     public void subDivide() {
         INDArray newCorner = Nd4j.create(D);
         INDArray newWidth = Nd4j.create(D);
@@ -172,11 +186,11 @@ public class SpTree implements Serializable {
                 if((i / div) % 2 == 1)
                     newCorner.putScalar(d, boundary.corner(d) - .5 * boundary.width(d));
                 else
-                    newCorner.putScalar(d,boundary.corner(d) + 0.5 * boundary.width(d));
+                    newCorner.putScalar(d,boundary.corner(d) + .5 * boundary.width(d));
                 div *= 2;
             }
 
-            children[i] = new SpTree(this, D, data, newCorner, newWidth);
+            children[i] = new SpTree(this, D, data, newCorner, newWidth,indices);
 
         }
 
