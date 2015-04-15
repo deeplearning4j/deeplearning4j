@@ -1,5 +1,6 @@
 package org.deeplearning4j.clustering.vptree;
 
+import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.berkeley.PriorityQueue;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.HeapItem;
@@ -22,17 +23,39 @@ public class VPTree {
     private List<DataPoint> items;
     private double tau;
     private Node root;
+    private CounterMap<DataPoint,DataPoint> distances;
 
     public VPTree(INDArray items) {
         List<DataPoint> thisItems = new ArrayList<>();
         for(int i = 0; i < items.slices(); i++)
             thisItems.add(new DataPoint(i,items.slice(i)));
         this.items = thisItems;
+        distances = CounterMap.runPairWise(thisItems, new CounterMap.CountFunction<DataPoint>() {
+            @Override
+            public double count(DataPoint v1, DataPoint v2) {
+               return v1.euclidean(v2);
+            }
+        });
+
+
         root = buildFromPoints(0,this.items.size());
+    }
+
+    public VPTree(List<DataPoint> items,CounterMap<DataPoint,DataPoint> distances) {
+        this.items = items;
+        this.distances = distances;
+        root = buildFromPoints(0,items.size());
+
     }
 
     public VPTree(List<DataPoint> items) {
         this.items = items;
+        distances = CounterMap.runPairWise(items, new CounterMap.CountFunction<DataPoint>() {
+            @Override
+            public double count(DataPoint v1, DataPoint v2) {
+                return v1.euclidean(v2);
+            }
+        });
         root = buildFromPoints(0,items.size());
     }
 
@@ -45,6 +68,10 @@ public class VPTree {
 
 
 
+    private double getDistance(DataPoint d1,DataPoint d2) {
+        return distances.getCount(d1, d2);
+    }
+
     private Node buildFromPoints(int lower,int upper) {
         if(upper == lower)
             return null;
@@ -52,14 +79,13 @@ public class VPTree {
         if(upper - lower > 1) {
             int randomPoint = MathUtils.randomNumberBetween(lower, upper - 1);
 
-            // Nd4j.getBlasWrapper().swap(items.get(lower),items.slice(i));
             // Partition around the median distance
             int median = (upper + lower) / 2;
             double distances[] = new double[items.size()];
             double sortedDistances[] = new double[items.size()];
             DataPoint basePoint = items.get(randomPoint);
             for (int i = 0; i < items.size(); ++i) {
-                distances[i] = basePoint.euclidean(items.get(i));
+                distances[i] = getDistance(basePoint, items.get(i));
                 sortedDistances[i] = distances[i];
             }
 
@@ -84,7 +110,7 @@ public class VPTree {
                 items.set(i + leftPoints.size(), rightPoints.get(i));
             }
 
-            ret.setThreshold(items.get(lower).euclidean(items.get(median)));
+            ret.setThreshold(getDistance(items.get(lower),items.get(median)));
             ret.setIndex(lower);
             ret.setRight(buildFromPoints(lower + 1,median));
             ret.setRight(buildFromPoints(median,upper));
@@ -121,13 +147,14 @@ public class VPTree {
     public void search(Node node,DataPoint target,int k,PriorityQueue<HeapItem> pq) {
         if(node == null)
             return;
-        double distance = items.get(node.getIndex()).euclidean(target);
+        DataPoint get = items.get(node.getIndex());
+        double distance = getDistance(get, target);
         if(distance < tau) {
             if(pq.size() == k)
                 pq.next();
-                pq.add(new HeapItem(node.index,distance),distance);
-                if(pq.size() == k)
-                    tau = pq.peek().getDistance();
+            pq.add(new HeapItem(node.index,distance),distance);
+            if(pq.size() == k)
+                tau = pq.peek().getDistance();
 
 
         }
@@ -157,8 +184,13 @@ public class VPTree {
 
     }
 
+    public CounterMap<DataPoint, DataPoint> getDistances() {
+        return distances;
+    }
 
-
+    public void setDistances(CounterMap<DataPoint, DataPoint> distances) {
+        this.distances = distances;
+    }
 
     public static class Node {
         private int index;
