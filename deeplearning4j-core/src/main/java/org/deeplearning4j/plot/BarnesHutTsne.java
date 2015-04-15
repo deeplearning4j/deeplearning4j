@@ -293,7 +293,7 @@ public class BarnesHutTsne extends Tsne implements Model {
                 for(int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i)) + 1; m++) {
                     if(colP.getInt(m) == n) {
                         present = true;
-                        if(n <= colP.getInt(i)) {
+                        if(n < colP.getInt(i)) {
                             // make sure we do not add elements twice
                             symColP.putScalar(symRowP.getInt(n) + offset.getInt(n),colP.getInt(i));
                             symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colP.getInt(i)), n);
@@ -306,7 +306,7 @@ public class BarnesHutTsne extends Tsne implements Model {
                 // If (colP[i], n) is not present, there is no addition involved
                 if(!present) {
                     int colPI = colP.getInt(i);
-                    if(n <= colPI) {
+                    if(n < colPI) {
                         symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colPI);
                         symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colPI),n);
                         symValP.putScalar(symRowP.getInt(n) + offset.getInt(n),valP.getDouble(i));
@@ -316,7 +316,7 @@ public class BarnesHutTsne extends Tsne implements Model {
                 }
 
                 // Update offsets
-                if(!present || (present && n <= colP.getInt(i))) {
+                if(!present || (present && n < colP.getInt(i))) {
                     offset.putScalar(n,offset.getInt(n)+ 1);
                     int colPI = colP.getInt(i);
                     if(colPI != n)
