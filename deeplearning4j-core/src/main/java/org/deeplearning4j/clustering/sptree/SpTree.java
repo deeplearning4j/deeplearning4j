@@ -30,7 +30,7 @@ public class SpTree implements Serializable {
     private int[] index = new int[1];
     private int numChildren = 2;
 
-    private List<SpTree> children = new ArrayList<>();
+    private SpTree[] children;
 
     public SpTree(SpTree parent,int D,INDArray data,INDArray corner,INDArray width) {
         init(parent,D,data,corner,width);
@@ -69,6 +69,7 @@ public class SpTree implements Serializable {
         boundary.setWidth(width);
         centerOfMass = Nd4j.create(D);
         buf = Nd4j.create(D);
+        children = new SpTree[numChildren];
     }
 
 
@@ -106,7 +107,7 @@ public class SpTree implements Serializable {
 
         // Find out where the point can be inserted
         for(int i = 0; i < numChildren; i++) {
-            if(children.get(i).insert(index))
+            if(children[i].insert(index))
                 return true;
         }
 
@@ -129,10 +130,8 @@ public class SpTree implements Serializable {
                     newCorner.putScalar(d,boundary.corner(d) + 0.5 * boundary.width(d));
                 div *= 2;
             }
-            if(children.isEmpty())
-                children.add(new SpTree(this, D, data, newCorner, newWidth));
-            else
-                children.add(i,new SpTree(this,D,data,newCorner,newWidth));
+
+            children[i] = new SpTree(this,D,data,newCorner,newWidth);
 
         }
 
@@ -141,7 +140,7 @@ public class SpTree implements Serializable {
             boolean success = false;
             for(int j = 0; j < this.numChildren; j++) {
                 if(!success)
-                    success = children.get(j).insert(index[i]);
+                    success = children[j].insert(index[i]);
             }
             index[i] = -1;
         }
@@ -192,7 +191,7 @@ public class SpTree implements Serializable {
 
             // Recursively apply Barnes-Hut to children
             for(int i = 0; i < numChildren; i++) {
-                children.get(i).computeNonEdgeForces(pointIndex, theta, negativeForce, sumQ);
+                children[i].computeNonEdgeForces(pointIndex, theta, negativeForce, sumQ);
             }
 
         }
@@ -239,7 +238,7 @@ public class SpTree implements Serializable {
         if(!isLeaf) {
             boolean correct = true;
             for(int i = 0; i < numChildren; i++)
-                correct = correct && children.get(i).isCorrect();
+                correct = correct && children[i].isCorrect();
             return correct;
         }
         else return true;
@@ -254,8 +253,8 @@ public class SpTree implements Serializable {
             return 1;
         int depth = 1;
         int maxChildDepth = 0;
-        for(int i = 0; i < children.size(); i++) {
-            maxChildDepth = Math.max(maxChildDepth,children.get(0).depth());
+        for(int i = 0; i < children.length; i++) {
+            maxChildDepth = Math.max(maxChildDepth,children[0].depth());
         }
 
         return depth + maxChildDepth;
