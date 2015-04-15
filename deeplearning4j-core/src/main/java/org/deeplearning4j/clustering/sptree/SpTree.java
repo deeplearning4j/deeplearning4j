@@ -25,7 +25,7 @@ public class SpTree implements Serializable {
     private Cell boundary;
     private INDArray centerOfMass;
     private SpTree parent;
-    private int[] index = new int[1];
+    private int[] index = new int[QT_NODE_CAPACITY];
     private int numChildren = 2;
     private boolean isLeaf = true;
     private Set<INDArray> indices;
