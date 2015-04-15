@@ -47,7 +47,6 @@ public class SpTree implements Serializable {
         INDArray meanY = data.mean(0);
         INDArray minY = data.min(0);
         INDArray maxY = data.max(0);
-        //  for(int d = 0; d < D; d++) width[d] = fmax(max_Y[d] - mean_Y[d], mean_Y[d] - min_Y[d]) + 1e-5;
         INDArray width = Nd4j.create(meanY.shape());
         for(int i = 0; i < width.length(); i++) {
             width.putScalar(i, FastMath.max(maxY.getDouble(i) - meanY.getDouble(i),meanY.getDouble(i) - minY.getDouble(i) + Nd4j.EPS_THRESHOLD));
@@ -132,6 +131,8 @@ public class SpTree implements Serializable {
         if(!boundary.contains(point))
             return false;
 
+        else if(indices.contains(point))
+            return true;
 
 
         cumSize++;
@@ -171,10 +172,10 @@ public class SpTree implements Serializable {
     }
 
 
-
-
-
-
+    /**
+     * Subdivide the node in to
+     * 4 children
+     */
     public void subDivide() {
         INDArray newCorner = Nd4j.create(D);
         INDArray newWidth = Nd4j.create(D);
