@@ -15,7 +15,7 @@ import java.util.Set;
  */
 public class SpTree implements Serializable {
     private int D;
-    public final static int QT_NODE_CAPACITY = 4;
+    public final static int QT_NODE_CAPACITY = 1;
 
     private INDArray data;
     private int N;
@@ -34,16 +34,15 @@ public class SpTree implements Serializable {
 
 
 
-    public SpTree(SpTree parent,int D,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices) {
-        init(parent, D, data, corner, width,indices);
+    public SpTree(SpTree parent,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices) {
+        init(parent, data, corner, width,indices);
     }
 
 
-    public SpTree(int d, INDArray data, int n,Set<INDArray> indices) {
-        this.D = d;
-        this.data = data;
-        N = n;
+    public SpTree(INDArray data,Set<INDArray> indices) {
         this.indices = indices;
+        this.N = data.rows();
+        this.D = data.columns();
         INDArray meanY = data.mean(0);
         INDArray minY = data.min(0);
         INDArray maxY = data.max(0);
@@ -52,7 +51,7 @@ public class SpTree implements Serializable {
             width.putScalar(i, FastMath.max(maxY.getDouble(i) - meanY.getDouble(i),meanY.getDouble(i) - minY.getDouble(i) + Nd4j.EPS_THRESHOLD));
         }
 
-        init(null,D,data,meanY,width,indices);
+        init(null,data,meanY,width,indices);
         fill(N);
 
 
@@ -60,13 +59,14 @@ public class SpTree implements Serializable {
 
 
 
-    public SpTree(int d, INDArray data, int n) {
-        this(d,data,n,new HashSet<INDArray>());
+    public SpTree(INDArray data) {
+        this(data,new HashSet<INDArray>());
     }
 
-    private void init(SpTree parent,int D,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices) {
+    private void init(SpTree parent,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices) {
         this.parent = parent;
-        this.D = D;
+        D = data.columns();
+        N = data.rows();
         for(int d = 1; d < this.D; d++)
             numChildren *= 2;
         this.indices = indices;
@@ -122,7 +122,7 @@ public class SpTree implements Serializable {
                 return true;
         }
 
-        return false;
+        throw new IllegalStateException("Shouldn't reach this state");
     }
 
 
@@ -144,7 +144,7 @@ public class SpTree implements Serializable {
                 div *= 2;
             }
 
-            children[i] = new SpTree(this, D, data, newCorner, newWidth,indices);
+            children[i] = new SpTree(this,data, newCorner, newWidth,indices);
 
         }
 
