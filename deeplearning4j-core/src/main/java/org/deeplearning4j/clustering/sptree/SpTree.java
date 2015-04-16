@@ -34,7 +34,6 @@ public class SpTree implements Serializable {
     private static Logger log = LoggerFactory.getLogger(SpTree.class);
 
 
-
     public SpTree(SpTree parent,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices) {
         init(parent, data, corner, width,indices);
     }
@@ -283,10 +282,13 @@ public class SpTree implements Serializable {
     }
 
     private void fill(int n) {
-        for(int i = 0; i < n; i++) {
-            log.trace("Inserted " + i);
-            insert(i);
-        }
+        if(!indices.isEmpty())
+            for(int i = 0; i < n; i++) {
+                log.trace("Inserted " + i);
+                insert(i);
+            }
+        else
+            log.warn("Called fill already");
     }
 
 
