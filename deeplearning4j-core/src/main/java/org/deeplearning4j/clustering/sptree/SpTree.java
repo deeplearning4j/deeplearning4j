@@ -4,6 +4,8 @@ import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.HashSet;
@@ -29,7 +31,7 @@ public class SpTree implements Serializable {
     private boolean isLeaf = true;
     private Set<INDArray> indices;
     private SpTree[] children;
-
+    private static Logger log = LoggerFactory.getLogger(SpTree.class);
 
 
 
@@ -59,7 +61,7 @@ public class SpTree implements Serializable {
 
 
     public SpTree(INDArray data) {
-        this(data,new HashSet<INDArray>());
+        this(data, new HashSet<INDArray>());
     }
 
     private void init(SpTree parent,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices) {
@@ -110,7 +112,6 @@ public class SpTree implements Serializable {
             if(compPoint.equals(point))
                 return true;
         }
-
 
 
         if(isLeaf())
@@ -282,8 +283,10 @@ public class SpTree implements Serializable {
     }
 
     private void fill(int n) {
-        for(int i = 0; i < n; i++)
+        for(int i = 0; i < n; i++) {
+            log.trace("Inserted " + i);
             insert(i);
+        }
     }
 
 
