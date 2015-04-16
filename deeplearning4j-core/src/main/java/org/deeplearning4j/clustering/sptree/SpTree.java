@@ -14,10 +14,8 @@ import java.util.Set;
  * @author Adam Gibson
  */
 public class SpTree implements Serializable {
-    private int D;
-    public final static int QT_NODE_CAPACITY = 4;
-
-    private INDArray data;
+    private int D;private INDArray data;
+    public final static int NODE_RATIO = 8000;
     private int N;
     private INDArray buf;
     private int size;
@@ -25,7 +23,8 @@ public class SpTree implements Serializable {
     private Cell boundary;
     private INDArray centerOfMass;
     private SpTree parent;
-    private int[] index = new int[QT_NODE_CAPACITY];
+    private int[] index;
+    private int nodeCapacity;
     private int numChildren = 2;
     private boolean isLeaf = true;
     private Set<INDArray> indices;
@@ -67,6 +66,8 @@ public class SpTree implements Serializable {
         this.parent = parent;
         D = data.columns();
         N = data.rows();
+        nodeCapacity = N % NODE_RATIO;
+        index = new int[nodeCapacity];
         for(int d = 1; d < this.D; d++)
             numChildren *= 2;
         this.indices = indices;
@@ -97,7 +98,7 @@ public class SpTree implements Serializable {
         centerOfMass.muli(mult1);
         centerOfMass.addi(point.mul(mult2));
         // If there is space in this quad tree and it is a leaf, add the object here
-        if(isLeaf() && size < QT_NODE_CAPACITY) {
+        if(isLeaf() && size < nodeCapacity) {
             this.index[size] = index;
             size++;
             return true;
