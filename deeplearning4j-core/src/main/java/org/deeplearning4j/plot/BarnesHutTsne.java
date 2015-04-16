@@ -67,6 +67,7 @@ public class BarnesHutTsne extends Tsne implements Model {
     private INDArray x;
     private int numDimensions = 0;
     public final static String Y_GRAD = "yIncs";
+    private SpTree tree;
 
     public BarnesHutTsne(INDArray x,
                          INDArray y,
@@ -484,9 +485,7 @@ public class BarnesHutTsne extends Tsne implements Model {
     @Override
     public double score() {
         // Get estimate of normalization term
-        int QT_NO_DIMS = 2;
-        SpTree tree = new SpTree(y);
-        INDArray buff = Nd4j.create(QT_NO_DIMS);
+        INDArray buff = Nd4j.create(numDimensions);
         AtomicDouble sum_Q = new AtomicDouble(0.0);
         for(int n = 0; n < N; n++)
             tree.computeNonEdgeForces(n, theta, buff, sum_Q);
@@ -564,11 +563,12 @@ public class BarnesHutTsne extends Tsne implements Model {
         /* Calculate gradient based on barnes hut approximation with positive and negative forces */
         INDArray posF = Nd4j.create(y.shape());
         INDArray negF = Nd4j.create(y.shape());
-        SpTree quad = new SpTree(y);
-        quad.computeEdgeForces(rows,cols,vals,N,posF);
+        if(tree == null)
+            tree = new SpTree(y);
+        tree.computeEdgeForces(rows,cols,vals,N,posF);
 
         for(int n = 0; n < N; n++)
-            quad.computeNonEdgeForces(n,theta,negF.slice(n),sumQ);
+            tree.computeNonEdgeForces(n,theta,negF.slice(n),sumQ);
 
 
         INDArray dC = posF.subi(negF.divi(sumQ));
