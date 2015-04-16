@@ -20,7 +20,6 @@ public class SPTreeTest {
 
         SpTree tree = new SpTree(data);
         assertEquals(Nd4j.create(new double[]{2.5,3.5,4.5}),tree.getCenterOfMass());
-        assertTrue(tree.isLeaf());
         assertEquals(2, tree.getCumSize());
         assertEquals(8, tree.getNumChildren());
         assertTrue(tree.isCorrect());
@@ -29,7 +28,7 @@ public class SPTreeTest {
 
     @Test
     public void testLargeTree() {
-        int num = 10;
+        int num = 30000;
         INDArray arr = Nd4j.linspace(1,num,num).reshape(num,1);
         SpTree tree = new SpTree(arr);
     }
