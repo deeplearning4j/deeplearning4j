@@ -15,7 +15,7 @@ import java.util.Set;
  */
 public class SpTree implements Serializable {
     private int D;
-    public final static int QT_NODE_CAPACITY = 1;
+    public final static int QT_NODE_CAPACITY = 4;
 
     private INDArray data;
     private int N;
