@@ -282,7 +282,7 @@ public class SpTree implements Serializable {
     }
 
     private void fill(int n) {
-        if(!indices.isEmpty())
+        if(indices.isEmpty())
             for(int i = 0; i < n; i++) {
                 log.trace("Inserted " + i);
                 insert(i);
