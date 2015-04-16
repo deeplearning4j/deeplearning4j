@@ -101,7 +101,7 @@ public class SpTree implements Serializable {
         // If there is space in this quad tree and it is a leaf, add the object here
         if(isLeaf() && size < nodeCapacity) {
             this.index[size] = index;
-            indices.add(index);
+            indices.add(point);
             size++;
             return true;
         }
