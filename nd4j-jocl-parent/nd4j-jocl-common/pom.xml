@@ -9,13 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-jocl-2.1</artifactId>
+    <artifactId>nd4j-jocl-common</artifactId>
 
 
-    <dependencies>
-        <dependency>
-            <groupId></groupId>
-            <artifactId>jocl</artifactId>
-        </dependency>
-    </dependencies>
 </project>

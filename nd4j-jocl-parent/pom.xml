@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>nd4j</artifactId>
@@ -10,9 +8,19 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-jocl-parent</artifactId>
-     <packaging>pom</packaging>
+    <packaging>pom</packaging>
+
+    <name>nd4j-jocl-parent</name>
     <modules>
-        <module>nd4j-jocl-2.1</module>
+        <module>nd4j-jocl-1.9</module>
+        <module>nd4j-jocl-common</module>
     </modules>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 </project>

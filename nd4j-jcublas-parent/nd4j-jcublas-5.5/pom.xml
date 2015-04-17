@@ -28,7 +28,7 @@
         <version>0.0.3.5.5.3-SNAPSHOT</version>
     </parent>
 
-    <name>nd4j-jcublas</name>
+    <name>nd4j-jcublas-5.5</name>
     <url>http://nd4j.org/</url>
 
     <properties>
