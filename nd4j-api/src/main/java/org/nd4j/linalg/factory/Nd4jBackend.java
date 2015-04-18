@@ -55,7 +55,7 @@ public abstract class Nd4jBackend {
                 backends.add(backendIterator.next());
             }
         } catch (ServiceConfigurationError serviceError) {
-            // a fatal error due to a syntax or provider construction error.   
+            // a fatal error due to a syntax or provider construction error.
             // backends mustn't throw an exception during construction.
             throw new RuntimeException("failed to process available backends", serviceError);
         }
@@ -74,7 +74,7 @@ public abstract class Nd4jBackend {
                 continue;
             }
 
-            log.trace("Loaded [{}] backend", backend.getClass().getSimpleName());			
+            log.trace("Loaded [{}] backend", backend.getClass().getSimpleName());
             return backend;
         }
 
