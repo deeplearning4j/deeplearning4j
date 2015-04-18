@@ -14,8 +14,7 @@ import org.springframework.core.io.Resource;
 
 /**
  * An ND4j backend.
- * 
- * This class provides default implementations where appropriate.
+ *
  */
 public abstract class Nd4jBackend {
 
