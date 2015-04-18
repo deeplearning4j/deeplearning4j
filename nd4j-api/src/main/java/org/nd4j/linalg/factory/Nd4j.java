@@ -18,6 +18,7 @@ package org.nd4j.linalg.factory;
 
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
+
 import org.nd4j.linalg.api.buffer.BufferReaper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
@@ -41,6 +42,7 @@ import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
 import org.nd4j.linalg.api.rng.distribution.factory.DistributionFactory;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
+import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
 import org.nd4j.linalg.fft.DefaultFFTInstance;
 import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -48,7 +50,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.Shape;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 import java.io.*;
 import java.lang.ref.ReferenceQueue;
@@ -62,7 +64,6 @@ import java.util.*;
  */
 public class Nd4j {
 
-    public final static String LINALG_PROPS = "/nd4j.properties";
     public final static String NUMERICAL_STABILITY = "force.stability";
     public final static String FFT_OPS = "fft";
     public final static String DATA_BUFFER_OPS = "databufferfactory";
@@ -3182,7 +3183,16 @@ public class Nd4j {
      */
     public void initContext() {
         try {
-            ClassPathResource c = new ClassPathResource(LINALG_PROPS);
+            Nd4jBackend backend = Nd4jBackend.load();
+            initWithBackend(backend);
+        } catch (NoAvailableBackendException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void initWithBackend(Nd4jBackend backend) {
+        try {
+            Resource c = backend.getConfigurationResource();
             props = new Properties();
             props.load(c.getInputStream());
             for (String key : props.stringPropertyNames())
