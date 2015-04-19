@@ -97,7 +97,7 @@ public class SimpleJCublas {
         try {
             KernelFunctionLoader.getInstance().load();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         init = true;
     }
