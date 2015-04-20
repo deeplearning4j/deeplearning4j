@@ -1001,7 +1001,8 @@ public abstract class NDArrayTests {
     @Test
     public void testLogDouble() {
         Nd4j.dtype = DataBuffer.DOUBLE;
-        INDArray log = Transforms.log(Nd4j.linspace(1, 6, 6));
+        INDArray linspace = Nd4j.linspace(1, 6, 6);
+        INDArray log = Transforms.log(linspace);
         INDArray assertion = Nd4j.create(new double[]{0, 0.69314718, 1.09861229, 1.38629436, 1.60943791, 1.79175947});
         assertEquals(assertion, log);
     }

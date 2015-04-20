@@ -156,7 +156,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public Pointer pointer() {
         ensureNotFreed();
         Pointer pointer = new Pointer();
-        JCuda.cudaHostAlloc(pinnedPointer, elementSize() * length(), JCuda.cudaHostAllocMapped);
         JCuda.cudaHostGetDevicePointer(pointer, pinnedPointer, 0);
         return pointer;
     }
@@ -463,11 +462,12 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         if (length != that.length) return false;
         if (elementSize != that.elementSize) return false;
         if (isPersist != that.isPersist) return false;
-        if (pinnedPointer != null ? !pinnedPointer.equals(that.pinnedPointer) : that.pinnedPointer != null)
-            return false;
-        if (freed != null ? !freed.equals(that.freed) : that.freed != null) return false;
-        if (referencing != null ? !referencing.equals(that.referencing) : that.referencing != null) return false;
-        return !(ref != null ? !ref.equals(that.ref) : that.ref != null);
+        for(int i = 0; i < length(); i++) {
+            if(getDouble(i) != that.getDouble(i))
+                return false;
+        }
+
+        return true;
 
     }
 
