@@ -270,7 +270,7 @@ public class Word2VecParam implements Serializable {
             return this;
         }
 
-        public Word2VecParam createWord2VecParam() {
+        public Word2VecParam build() {
             return new Word2VecParam(useAdaGrad, negative, numWords, table, window, nextRandom, alpha, minAlpha, totalWords, lastChecked, wordCount, weights, vectorLength,expTable);
         }
     }

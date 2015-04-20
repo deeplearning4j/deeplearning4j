@@ -168,7 +168,6 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof VocabWord)) return false;
 
         VocabWord vocabWord = (VocabWord) o;
 
@@ -179,7 +178,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
             return false;
         if (!points.equals(vocabWord.points)) return false;
         if (!word.equals(vocabWord.word)) return false;
-        if (!wordFrequency.equals(vocabWord.wordFrequency)) return false;
+        if (wordFrequency.get() != vocabWord.wordFrequency.get()) return false;
 
         return true;
     }

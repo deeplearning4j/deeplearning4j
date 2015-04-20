@@ -19,10 +19,8 @@ package org.deeplearning4j.spark.models.embeddings.word2vec;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.Huffman;
@@ -46,6 +44,12 @@ public class Word2Vec implements Serializable {
 
     private  Broadcast<VocabCache> vocabCacheBroadcast;
     private String tokenizerFactoryClazz;
+    private InMemoryLookupTable table;
+
+    public Word2Vec(String tokenizerFactoryClazz, InMemoryLookupTable table) {
+        this.tokenizerFactoryClazz = tokenizerFactoryClazz;
+        this.table = table;
+    }
 
     public Word2Vec(String tokenizerFactoryClazz) {
         this.tokenizerFactoryClazz = tokenizerFactoryClazz;
@@ -67,11 +71,13 @@ public class Word2Vec implements Serializable {
         SparkConf conf = rdd.context().getConf();
         JavaSparkContext sc = new JavaSparkContext(rdd.context());
         vocabCacheBroadcast = sc.broadcast(vocabAndNumWords.getFirst());
-        InMemoryLookupTable lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder()
+        InMemoryLookupTable lookupTable = this.table != null ? table : (InMemoryLookupTable) new InMemoryLookupTable.Builder()
                 .cache(vocabAndNumWords.getFirst()).lr(conf.getDouble(Word2VecPerformerVoid.ALPHA,0.025))
                 .vectorLength(conf.getInt(Word2VecPerformerVoid.VECTOR_LENGTH,100)).negative(conf.getDouble(Word2VecPerformerVoid.NEGATIVE,5))
                 .useAdaGrad(conf.getBoolean(Word2VecPerformerVoid.ADAGRAD,false)).build();
-        lookupTable.resetWeights();
+        //only initialize if necessary
+        if(this.table == null)
+            lookupTable.resetWeights();
 
         Huffman huffman = new Huffman(vocabAndNumWords.getFirst().vocabWords());
         huffman.build();
@@ -87,7 +93,7 @@ public class Word2Vec implements Serializable {
                 .expTable(sc.broadcast(lookupTable.getExpTable())).setAlpha(lookupTable.getLr().get())
                 .setMinAlpha(1e-3).setVectorLength(lookupTable.getVectorLength())
                 .useAdaGrad(lookupTable.isUseAdaGrad()).weights(lookupTable)
-                .createWord2VecParam();
+                .build();
 
 
 
