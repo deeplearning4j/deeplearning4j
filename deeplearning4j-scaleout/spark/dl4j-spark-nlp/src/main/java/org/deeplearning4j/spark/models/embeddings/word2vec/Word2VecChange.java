@@ -45,10 +45,10 @@ public class Word2VecChange implements Serializable {
      */
     public void apply(InMemoryLookupTable table) {
         for(Integer i : syn0Vectors.keySet())
-            Nd4j.getBlasWrapper().axpy(1,syn0Vectors.get(i),table.getSyn0().slice(i));
+            Nd4j.getBlasWrapper().axpy(1,syn0Vectors.get(i).sub(table.getSyn0().slice(i)),table.getSyn0().slice(i));
         for(Integer i : syn1Vectors.keySet())
-            Nd4j.getBlasWrapper().axpy(1,syn1Vectors.get(i),table.getSyn1().slice(i));
+            Nd4j.getBlasWrapper().axpy(1,syn1Vectors.get(i).sub(table.getSyn1().slice(i)),table.getSyn1().slice(i));
         for(Integer i : negSyn1Vectors.keySet())
-            Nd4j.getBlasWrapper().axpy(1, negSyn1Vectors.get(i), table.getSyn1Neg().slice(i));
+            Nd4j.getBlasWrapper().axpy(1, negSyn1Vectors.get(i).sub(table.getSyn1Neg().slice(i)), table.getSyn1Neg().slice(i));
     }
 }
