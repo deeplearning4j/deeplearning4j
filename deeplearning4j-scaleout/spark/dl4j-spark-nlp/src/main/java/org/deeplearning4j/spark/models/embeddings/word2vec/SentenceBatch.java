@@ -92,7 +92,7 @@ public class SentenceBatch implements Function<Pair<List<VocabWord>,AtomicLong>,
      * @param w2 the second word to iterate on
      */
     public  void iterateSample(VocabWord w1, VocabWord w2,double alpha,List<Triple<Integer,Integer,Integer>> changed) {
-        if(w2 == null || w2.getIndex() < 0)
+        if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex())
             return;
         int vectorLength = param.getVectorLength();
         InMemoryLookupTable weights = param.getWeights();
@@ -143,6 +143,7 @@ public class SentenceBatch implements Function<Pair<List<VocabWord>,AtomicLong>,
         }
 
 
+        changed.add(new Triple<>(w1.getIndex(),w2.getIndex(),-1));
         //negative sampling
         if(negative > 0) {
             int target = w1.getIndex();
