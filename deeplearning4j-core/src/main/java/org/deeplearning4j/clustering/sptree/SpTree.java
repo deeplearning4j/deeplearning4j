@@ -131,10 +131,6 @@ public class SpTree implements Serializable {
         if(!boundary.contains(point))
             return false;
 
-        else if(indices.contains(point))
-            return true;
-
-
         cumSize++;
         double mult1 = (double) (cumSize - 1) / (double) cumSize;
         double mult2 = 1.0 / (double) cumSize;
