@@ -382,7 +382,7 @@ public class RNTN implements Layer {
      * Trains the network on this mini batch and returns a list of futures for each training job
      * @param trainingBatch the trees to iterate on
      */
-    public List<Future<Object>> fitAsync(List<Tree> trainingBatch) {
+    public List<Future<Object>> fitAsync(final List<Tree> trainingBatch) {
         int count = 0;
         
         List<Future<Object>> futureBatch = new ArrayList<>();
