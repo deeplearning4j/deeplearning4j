@@ -50,10 +50,10 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
 
     protected INDArray syn0,syn1;
-    protected int vectorLength = 50;
+    protected int vectorLength;
     protected transient Random rng = Nd4j.getRandom();
-    protected AtomicDouble lr = new AtomicDouble(1e-1);
-    protected double[] expTable = new double[1000];
+    protected AtomicDouble lr = new AtomicDouble(25e-3);
+    protected double[] expTable;
     protected static double MAX_EXP = 6;
     protected long seed = 123;
     //negative sampling table
@@ -174,6 +174,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
 
     protected void initExpTable() {
+        expTable = new double[1000];
         for (int i = 0; i < expTable.length; i++) {
             double tmp =   FastMath.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
             expTable[i]  = tmp / (tmp + 1.0);
@@ -193,9 +194,9 @@ public class InMemoryLookupTable implements WeightLookupTable {
      */
     @Override
     public  void iterateSample(VocabWord w1, VocabWord w2,AtomicLong nextRandom,double alpha) {
-        if(w2 == null || w2.getIndex() < 0)
-            return;
-        //current word vector
+        if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getWord().equals("STOP") || w2.getWord().equals("STOP") || w1.getWord().equals("UNK") || w2.getWord().equals("UNK"))
+           return;
+            //current word vector
         INDArray l1 = this.syn0.slice(w2.getIndex());
 
 

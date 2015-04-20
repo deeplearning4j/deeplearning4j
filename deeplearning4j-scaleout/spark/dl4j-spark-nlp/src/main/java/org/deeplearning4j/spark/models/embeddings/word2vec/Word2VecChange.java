@@ -1,40 +1,40 @@
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
-import org.apache.commons.collections.map.HashedMap;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Adam Gibson
  */
 public class Word2VecChange implements Serializable {
-    private Map<Integer,INDArray> syn0Vectors = new HashedMap();
-    private Map<Integer,INDArray> syn1Vectors = new HashMap<>();
-    private Map<Integer,INDArray> negSyn1Vectors = new HashMap<>();
+    private Map<Integer,Set<INDArray>> changes = new HashMap<>();
 
     public Word2VecChange(List<Triple<Integer,Integer,Integer>> counterMap,Word2VecParam param) {
         Iterator<Triple<Integer,Integer,Integer>> iter = counterMap.iterator();
         while(iter.hasNext()) {
             Triple<Integer,Integer,Integer> next = iter.next();
-            if(!syn0Vectors.containsKey(next.getFirst()))
-                syn0Vectors.put(next.getFirst(),param.getWeights().getSyn0().slice(next.getFirst()));
-            if(!syn1Vectors.containsKey(next.getSecond()))
-                syn1Vectors.put(next.getFirst(),param.getWeights().getSyn1().slice(next.getSecond()));
-            if(param.getNegative() > 0) {
-                if(!negSyn1Vectors.containsKey(next.getThird()))
-                    negSyn1Vectors.put(next.getFirst(), param.getWeights().getSyn1Neg().slice(next.getThird()));
-
+            Set<INDArray> changes = this.changes.get(next.getFirst());
+            if(changes == null) {
+                changes = new HashSet<>();
+                this.changes.put(next.getFirst(),changes);
             }
 
+            changes.add(param.getWeights().getSyn1().slice(next.getSecond()));
+
         }
+    }
+
+    public Map<Integer, Set<INDArray>> getChanges() {
+        return changes;
+    }
+
+    public void setChanges(Map<Integer, Set<INDArray>> changes) {
+        this.changes = changes;
     }
 
     /**
@@ -44,11 +44,12 @@ public class Word2VecChange implements Serializable {
      *              to apply the changes to
      */
     public void apply(InMemoryLookupTable table) {
-        for(Integer i : syn0Vectors.keySet())
-            Nd4j.getBlasWrapper().axpy(1,syn0Vectors.get(i).sub(table.getSyn0().slice(i)),table.getSyn0().slice(i));
-        for(Integer i : syn1Vectors.keySet())
-            Nd4j.getBlasWrapper().axpy(1,syn1Vectors.get(i).sub(table.getSyn1().slice(i)),table.getSyn1().slice(i));
-        for(Integer i : negSyn1Vectors.keySet())
-            Nd4j.getBlasWrapper().axpy(1, negSyn1Vectors.get(i).sub(table.getSyn1Neg().slice(i)), table.getSyn1Neg().slice(i));
+
+        for(Integer i : changes.keySet()) {
+            Set<INDArray> changes = this.changes.get(i);
+            INDArray toChange = table.getSyn0().slice(i);
+            for(INDArray syn1 : changes)
+                Nd4j.getBlasWrapper().axpy(1,syn1,toChange);
+        }
     }
 }

@@ -409,7 +409,7 @@ public class Word2Vec extends WordVectorsImpl  {
         protected TokenizerFactory tokenizerFactory;
         protected VocabCache vocabCache;
         protected DocumentIterator docIter;
-        protected double lr = 2.5e-1;
+        protected double lr = 2.5e-2;
         protected int iterations = 1;
         protected long seed = 123;
         protected boolean saveVocab = false;
