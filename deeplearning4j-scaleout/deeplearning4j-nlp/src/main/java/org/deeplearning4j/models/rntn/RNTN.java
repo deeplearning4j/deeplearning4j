@@ -18,36 +18,47 @@ package org.deeplearning4j.models.rntn;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
-import akka.actor.ActorSystem;
-import akka.dispatch.Futures;
-import com.google.common.util.concurrent.AtomicDouble;
-import org.deeplearning4j.berkeley.Pair;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.featuredetectors.autoencoder.recursive.Tree;
-import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.Word2Vec;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.learning.AdaGrad;
 import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.util.MultiDimensionalMap;
 import org.deeplearning4j.util.MultiDimensionalSet;
-
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CopyOnWriteArrayList;
-import org.nd4j.linalg.api.rng.Random;
+import scala.concurrent.Future;
+import akka.actor.ActorSystem;
+import akka.dispatch.Futures;
+import akka.dispatch.OnComplete;
+
+import com.google.common.util.concurrent.AtomicDouble;
 /**
  * Recursive Neural Tensor Network by Socher et. al
  *
@@ -148,9 +159,6 @@ public class RNTN implements Layer {
     private  int unaryClassificationSize;
 
     private INDArray identity;
-
-    private List<Tree> trainingTrees;
-
 
     private Map<Integer,Double> classWeights;
 
@@ -339,27 +347,55 @@ public class RNTN implements Layer {
         return Nd4j.getBlasWrapper().scal((float) scalingForInit, ret);
 
     }
+    
+    
+	/**
+	 * Trains the network on this mini batch and waits for the training set to complete
+     * @param trainingBatch the trees to iterate on
+	 */
+    public void fit(List<Tree> trainingBatch) {
+    	final CountDownLatch c = new CountDownLatch(trainingBatch.size());
+    	
+    	List<Future<Object>> futureBatch = fitAsync(trainingBatch);
+    	
+    	for(Future<Object> f : futureBatch) {
+	    	f.onComplete(new OnComplete<Object>() {
+	            @Override
+	            public void onComplete(Throwable throwable, Object e) throws Throwable {
+	                if(throwable != null)
+	                    log.warn("Error occurred training batch",throwable);
+	                
+	                c.countDown();
+	            }
+	        },rnTnActorSystem.dispatcher());
+    	}
+    
 
-
-
-
+	    try {
+	        c.await();
+	    } catch (InterruptedException e) {
+	        Thread.currentThread().interrupt();
+	    }
+    }
 
     /**
-     * Trains the network on this mini batch
+     * Trains the network on this mini batch and returns a list of futures for each training job
      * @param trainingBatch the trees to iterate on
      */
-    public void fit(List<Tree> trainingBatch) {
-        this.trainingTrees = trainingBatch;
+    public List<Future<Object>> fitAsync(List<Tree> trainingBatch) {
         int count = 0;
+        
+        List<Future<Object>> futureBatch = new ArrayList<>();
+        
         for(final Tree t : trainingBatch) {
             log.info("Working mini batch " + count++);
-            Futures.future(new Callable<Object>() {
+            futureBatch.add(Futures.future(new Callable<Object>() {
                 @Override
                 public Object call() throws Exception {
                     forwardPropagateTree(t);
                     try {
                         INDArray params = getParameters();
-                        INDArray gradient = getValueGradient();
+                        INDArray gradient = getValueGradient(trainingBatch);
                         if(params.length() != gradient.length())
                             throw new IllegalStateException("Params not equal to gradient!");
                         setParams(params.subi(gradient));
@@ -369,10 +405,11 @@ public class RNTN implements Layer {
 
                     return null;
                 }
-            },rnTnActorSystem.dispatcher());
+            },rnTnActorSystem.dispatcher()));
 
 
         }
+        return futureBatch;
     }
 
 
@@ -490,12 +527,6 @@ public class RNTN implements Layer {
         right = basicCategory(right);
         return binaryTensors.get(left, right);
     }
-
-
-
-
-
-
 
     double scaleAndRegularize(MultiDimensionalMap<String, String, INDArray> derivatives,
                               MultiDimensionalMap<String, String, INDArray> currentMatrices,
@@ -870,7 +901,7 @@ public class RNTN implements Layer {
     }
 
 
-    public INDArray getValueGradient() {
+    public INDArray getValueGradient(final List<Tree> trainingBatch) {
 
 
         // We use TreeMap for each of these so that they stay in a
@@ -931,8 +962,8 @@ public class RNTN implements Layer {
 
 
         final List<Tree> forwardPropTrees = new CopyOnWriteArrayList<>();
-        if(!forwardPropTrees.isEmpty())
-            Parallelization.iterateInParallel(trainingTrees,new Parallelization.RunnableWithParams<Tree>() {
+        //if(!forwardPropTrees.isEmpty())
+            Parallelization.iterateInParallel(trainingBatch,new Parallelization.RunnableWithParams<Tree>() {
 
                 public void run(Tree currentItem, Object[] args) {
                     Tree trainingTree = new Tree(currentItem);
@@ -944,10 +975,6 @@ public class RNTN implements Layer {
 
                 }
             },rnTnActorSystem);
-
-
-
-
 
 
         // TODO: we may find a big speedup by separating the derivatives and then summing
@@ -970,7 +997,7 @@ public class RNTN implements Layer {
 
         // scale the error by the number of sentences so that the
         // regularization isn't drowned out for large training batchs
-        double scale = trainingTrees == null || trainingTrees.isEmpty() ? 1.0f :  (1.0f / trainingTrees.size());
+        double scale = trainingBatch == null || trainingBatch.isEmpty() ? 1.0f :  (1.0f / trainingBatch.size());
         value = error.doubleValue() * scale;
 
         value += scaleAndRegularize(binaryTD, binaryTransform, scale, regTransformMatrix);
@@ -1005,12 +1032,10 @@ public class RNTN implements Layer {
 
     @Override
     public void fit() {
-
     }
 
     @Override
     public void update(Gradient gradient) {
-
     }
 
     @Override
