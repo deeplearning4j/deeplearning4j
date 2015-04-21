@@ -18,7 +18,7 @@ import org.nd4j.linalg.jcublas.rng.JcudaRandom;
 public class UniformDistribution extends BaseJCudaDistribution {
     private double upper, lower;
 
-    public UniformDistribution(JcudaRandom random, double upper, double lower) {
+    public UniformDistribution(JcudaRandom random, double lower, double upper) {
         super(random);
         this.upper = upper;
         this.lower = lower;
@@ -118,7 +118,7 @@ public class UniformDistribution extends BaseJCudaDistribution {
         INDArray ret = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) ret.data();
         if (buffer.dataType() == DataBuffer.FLOAT)
-            doSampleUniform(buffer.pointer(), (float) lower, (float) upper, buffer.length());
+            doSampleUniform(buffer.pointer(), (float) lower, (float) upper,  buffer.length());
         else if (buffer.dataType() == DataBuffer.DOUBLE)
             doSampleUniformDouble(buffer.pointer(), lower, upper, buffer.length());
 
