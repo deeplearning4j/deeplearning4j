@@ -96,6 +96,8 @@ public class Nd4jBackendTest {
         @Override
         public boolean isAvailable() {
             BackendBehavior behavior = behaviorHolder.get();
+            
+            if(behavior == null) return false;
             assert (behavior != null);
             assert (behavior.availabilityMap.containsKey(this.getClass()));
 

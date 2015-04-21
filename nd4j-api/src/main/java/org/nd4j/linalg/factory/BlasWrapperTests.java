@@ -30,6 +30,7 @@ public abstract class BlasWrapperTests {
 
     @Test
     public void axpyTest() {
+    	 Nd4j.factory().setOrder('f');
         Nd4j.dtype = DataBuffer.DOUBLE;
         INDArray a = Nd4j.getBlasWrapper().axpy(1.0, Nd4j.ones(3), Nd4j.ones(3));
         INDArray a2 = Nd4j.create(new double[]{2, 2, 2});
@@ -38,7 +39,7 @@ public abstract class BlasWrapperTests {
         INDArray matrix = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray row = matrix.getRow(1);
         INDArray result = Nd4j.create(new double[]{1, 2});
-        Nd4j.getBlasWrapper().axpy(1.0, row, result);
+        result = Nd4j.getBlasWrapper().axpy(1.0, row, result);
         assertEquals(Nd4j.create(new double[]{3, 6}), result);
 
 

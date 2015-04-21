@@ -134,6 +134,11 @@ public class BufferReaper extends Thread {
             }
 
             Nd4j.getResourceManager().purge();
+            
+            try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+			}
         }
     }
 }

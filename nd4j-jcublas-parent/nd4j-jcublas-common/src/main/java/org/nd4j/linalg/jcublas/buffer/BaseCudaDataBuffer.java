@@ -16,6 +16,17 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
@@ -23,9 +34,8 @@ import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaDeviceProp;
 import jcuda.runtime.cudaMemcpyKind;
-import jcuda.utils.KernelLauncher;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -34,16 +44,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
-
-import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Base class for a data buffer
@@ -150,16 +150,22 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         ByteBuffer buf = pinnedPointer.getByteBuffer(0, length() * elementSize());
         return buf.asIntBuffer().array();
     }
+    
+    private void doCuda(int result) {
+    	if(result!=0) {
+        	//System.out.printf("getPointer %d\n",result);
+        }
+    }
 
 
     @Override
     public Pointer pointer() {
         ensureNotFreed();
         Pointer pointer = new Pointer();
-        JCuda.cudaHostGetDevicePointer(pointer, pinnedPointer, 0);
+        doCuda(JCuda.cudaHostGetDevicePointer(pointer, pinnedPointer, 0));
         return pointer;
     }
-
+    
     @Override
     public void alloc() {
 
@@ -177,7 +183,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
         // Set the flag indicating that mapped memory will be used
         JCuda.cudaSetDeviceFlags(JCuda.cudaDeviceMapHost);
-        JCuda.cudaHostAlloc(pinnedPointer,elementSize() * length(),JCuda.cudaHostAllocMapped);
+        doCuda(JCuda.cudaHostAlloc(pinnedPointer,elementSize() * length(),JCuda.cudaHostAllocMapped));
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         Nd4j.getResourceManager().incrementCurrentAllocatedMemory(elementSize() * length());
 
@@ -199,7 +205,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                     1
             );
         } else {
-            JCublas.cublasScopy(
+        	JCublas.cublasScopy(
                     length(),
                     pointer,
                     1,
@@ -370,11 +376,14 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public  void destroy() {
         try {
-
+        	
 
             if(!freed.get()) {
                 if (Nd4j.shouldInstrument)
                     Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
+
+                
+                
                 JCuda.cudaFreeHost(pinnedPointer);
                 freed.set(true);
                 Nd4j.getResourceManager().decrementCurrentAllocatedMemory(elementSize() * length());

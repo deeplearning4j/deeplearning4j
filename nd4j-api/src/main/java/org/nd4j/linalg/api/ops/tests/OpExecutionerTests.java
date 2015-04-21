@@ -16,6 +16,8 @@
 
 package org.nd4j.linalg.api.ops.tests;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
@@ -42,6 +44,11 @@ import static org.junit.Assert.assertTrue;
  */
 public abstract class OpExecutionerTests {
 
+    @After
+    public void after() {
+        Nd4j.factory().setOrder('f');
+    }
+	
     @Test
     public void testCosineSimilarity() {
         INDArray vec1 = Nd4j.create(new float[]{1, 2, 3, 4});
@@ -296,6 +303,7 @@ public abstract class OpExecutionerTests {
 
     @Test
     public void testDimensionSoftMax() {
+    	Nd4j.factory().setOrder('c');
         INDArray linspace = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         SoftMax max = new SoftMax(linspace);
         Nd4j.getExecutioner().exec(max, 1);
