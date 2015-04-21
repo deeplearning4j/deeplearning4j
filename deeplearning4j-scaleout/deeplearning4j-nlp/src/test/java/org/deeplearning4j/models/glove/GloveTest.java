@@ -15,10 +15,11 @@
  */
 
 package org.deeplearning4j.models.glove;
+import static org.junit.Assert.*;
 
-import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.text.sentenceiterator.LineSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.SentencePreProcessor;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
+import java.util.Collection;
 
 /**
  * Created by agibsonccc on 12/3/14.
@@ -39,23 +41,29 @@ public class GloveTest {
     @Before
     public void before() throws Exception {
 
-        ClassPathResource resource = new ClassPathResource("other/oneline.txt");
-        File file = resource.getFile().getParentFile();
-        iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
-
+        ClassPathResource resource = new ClassPathResource("/raw_sentences.txt");
+        File file = resource.getFile();
+        iter = new LineSentenceIterator(file);
+        iter.setPreProcessor(new SentencePreProcessor() {
+            @Override
+            public String preProcess(String sentence) {
+                return sentence.toLowerCase();
+            }
+        });
 
     }
 
 
     @Test
     public void testGlove() throws Exception {
-        FileUtils.deleteDirectory(new File("word2vec-index"));
-        log.info("Deleted directory " + new File("word2vec-index").getAbsolutePath());
-        glove = new Glove.Builder().iterate(iter)
-                .minWordFrequency(1)
+        glove = new Glove.Builder().iterate(iter).symmetric(true).shuffle(true)
+                .minWordFrequency(1).iterations(100).learningRate(0.1)
+                .layerSize(300)
                 .build();
 
         glove.fit();
+        Collection<String> words = glove.wordsNearest("day", 20);
+        assertTrue(words.contains("week"));
 
 
 
