@@ -18,6 +18,7 @@ package org.nd4j.linalg.factory;
 
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
+
 import org.nd4j.linalg.api.buffer.BufferReaper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
@@ -1263,6 +1264,7 @@ public class Nd4j {
      * @return a drandom matrix of the specified shape and range
      */
     public static INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
+    	if(min>max) throw new IllegalArgumentException("the maximum value supplied is smaller than the minimum");
         INDArray ret = INSTANCE.rand(rows, columns, min, max, rng);
         logCreationIfNecessary(ret);
         return ret;
