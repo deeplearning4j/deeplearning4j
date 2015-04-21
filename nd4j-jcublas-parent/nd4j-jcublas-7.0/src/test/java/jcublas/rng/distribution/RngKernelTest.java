@@ -1,6 +1,6 @@
 package jcublas.rng.distribution;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -16,16 +16,17 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class RngKernelTest {
 	
+	double max = 0.4;
+	double min = -max;
 
 	@Test
 	public void testUniformSample() {
 		Nd4j.dtype = DataBuffer.FLOAT;
 		for(int x = 0; x<100; x++) {
-			INDArray arr = Nd4j.rand(200,200,-0.4,0.4,Nd4j.getRandom());
+			INDArray arr = Nd4j.rand(200,200,max,min,Nd4j.getRandom());
 			
-			// Just test that we get the shape and there is no execptions thrown
-			assertEquals(Nd4j.create(200,200).shape()[0],arr.shape()[0]);
-	    	assertEquals(Nd4j.create(200,200).shape()[1],arr.shape()[1]);
+			// Assert the values are within range
+			assertMaxMin(arr);
 		}
 	}
 	
@@ -33,12 +34,27 @@ public class RngKernelTest {
 	public void testUniformSampleDouble() {
 		Nd4j.dtype = DataBuffer.DOUBLE;
 		for(int x = 0; x<100; x++) {
-			INDArray arr = Nd4j.rand(200,200,-0.4,0.4,Nd4j.getRandom());
 			
-			// Just test that we get the shape and there is no execptions thrown
-			assertEquals(Nd4j.create(200,200).shape()[0],arr.shape()[0]);
-	    	assertEquals(Nd4j.create(200,200).shape()[1],arr.shape()[1]);
+			INDArray arr = Nd4j.rand(200,200,min,max,Nd4j.getRandom());
+			
+			// Assert the values are within range
+			assertMaxMin(arr);
 		}
 	}
-
+	
+	private void assertMaxMin(INDArray arr) {
+		
+		boolean nonZero = false;
+		for(Double d: arr.data().asDouble()) {
+			assertTrue("Returned value is above the maximum", max > d);
+			assertTrue("Returned value is below the minimum", min < d);
+			
+			if(d != 0.0) {
+				nonZero = true;
+			}
+		}
+		
+		assertTrue("The entire array is zeros", nonZero);
+		
+	}
 }
