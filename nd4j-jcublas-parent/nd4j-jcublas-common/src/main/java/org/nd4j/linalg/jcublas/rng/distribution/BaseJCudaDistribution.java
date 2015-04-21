@@ -129,6 +129,10 @@ public abstract class BaseJCudaDistribution implements Distribution {
         randomNumbers.destroy();
     }
 
+    @Override
+    public double sample() {
+    	return inverseCumulativeProbability(random.nextDouble());
+    }
 
     protected void doBinomialDouble(double p, Pointer out, int n, int len) {
         String functionName = "binomial_scalar";
@@ -158,36 +162,63 @@ public abstract class BaseJCudaDistribution implements Distribution {
 
     }
 
-    @Override
-    public double sample() {
-        return inverseCumulativeProbability(random.nextDouble());
+    
+    /**
+     * Generate floats from a uniform distribution
+     * @param out
+     * @param min
+     * @param max
+     * @param n
+     */
+    protected void doSampleUniform(Pointer out, float min, float max, int n) {
+        String functionName = "uniform";
+        int blocks = PointerUtil.getNumBlocks(n, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
+        int threads = PointerUtil.getNumThreads(n, KernelFunctions.THREADS);
+        
+        //In the future these random numbers could be generated within the kernel
+        JCudaBuffer randomNumbers = new CudaFloatDataBuffer(n);
+        JCurand.curandGenerateUniform(random.generator(), randomNumbers.pointer(), n);
+        
+        //Generate the kernel parameters
+        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers.pointer(), out };
+
+        KernelFunctions.invoke(
+                blocks,
+                threads,
+                functionName,"float"
+                , kernelParams);
+
+        // No longer need this bit of memory as it was temporary
+        randomNumbers.destroy();
     }
 
-
+    /**
+     * Generate doubles from a uniform distribution
+     * @param out
+     * @param min
+     * @param max
+     * @param n
+     */
     protected void doSampleUniformDouble(Pointer out, double min, double max, int n) {
-       
-
-        JCurand.curandGenerateUniformDouble(random.generator(), out, n);
         String functionName = "uniform";
         int blocks = PointerUtil.getNumBlocks(n, 128, 64);
         int threads = PointerUtil.getNumThreads(n, 64);
+        
+        //In the future these random numbers could be generated within the kernel
+        JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(n);
+        JCurand.curandGenerateUniformDouble(random.generator(), randomNumbers.pointer(), n);
 
-        Object[] kernelParams = new Object[]{
-                Pointer.to(new int[]{n})
-                , Pointer.to(new double[]{min})
-                , Pointer.to(new double[]{max})
-                , Pointer.to(out)
-                , Pointer.to(random.generator())
-
-        };
+        //Generate the kernel parameters
+        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers, out };
        
-
-        //int len,int n,double *ps,double *result, curandState *s
         KernelFunctions.invoke(
                 blocks,
                 threads,
                 functionName,"double"
                 , kernelParams);
+        
+        // No longer need this bit of memory as it was temporary
+        randomNumbers.destroy();
     }
 
     protected void doSampleNormal(Pointer out, INDArray means, float std) {
@@ -233,28 +264,6 @@ public abstract class BaseJCudaDistribution implements Distribution {
 
     }
 
-    protected void doSampleUniform(Pointer out, float min, float max, int n) {
-        JCurand.curandGenerateUniform(random.generator(), out, n);
-        String functionName = "uniform";
-        int blocks = PointerUtil.getNumBlocks(n, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
-        int threads = PointerUtil.getNumThreads(n, KernelFunctions.THREADS);
-        Object[] kernelParams = new Object[]{
-                Pointer.to(new int[]{n})
-                , Pointer.to(new float[]{min})
-                , Pointer.to(new float[]{max})
-                , Pointer.to(out)
-                , Pointer.to(random.generator())
-
-        };
-
-        //int len,int n,double *ps,double *result, curandState *s
-        KernelFunctions.invoke(
-                blocks,
-                threads,
-                functionName,"float"
-                , kernelParams);
-
-    }
 
     protected void doSampleNormal(float mean, float std, Pointer out, int n) {
         JCurand.curandGenerateNormal(random.generator(), out, n, mean, std);
