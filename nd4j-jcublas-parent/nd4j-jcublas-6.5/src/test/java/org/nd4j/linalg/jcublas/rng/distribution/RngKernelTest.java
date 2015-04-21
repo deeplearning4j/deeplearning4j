@@ -42,6 +42,11 @@ public class RngKernelTest {
 		}
 	}
 	
+	@Test(expected=IllegalArgumentException.class)
+	public void testBadMaxMin() {
+		Nd4j.rand(200,200,2,1,Nd4j.getRandom());
+	}
+	
 	private void assertMaxMin(INDArray arr) {
 		
 		boolean nonZero = false;
