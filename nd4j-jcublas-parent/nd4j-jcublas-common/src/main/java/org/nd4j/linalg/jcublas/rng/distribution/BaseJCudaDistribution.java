@@ -209,7 +209,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
         JCurand.curandGenerateUniformDouble(random.generator(), randomNumbers.pointer(), n);
 
         //Generate the kernel parameters
-        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers, out };
+        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers.pointer(), out };
        
         KernelFunctions.invoke(
                 blocks,
