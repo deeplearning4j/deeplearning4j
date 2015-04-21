@@ -23,7 +23,7 @@ public class RngKernelTest {
 	public void testUniformSample() {
 		Nd4j.dtype = DataBuffer.FLOAT;
 		for(int x = 0; x<100; x++) {
-			INDArray arr = Nd4j.rand(200,200,max,min,Nd4j.getRandom());
+			INDArray arr = Nd4j.rand(200,200,min,max,Nd4j.getRandom());
 			
 			// Assert the values are within range
 			assertMaxMin(arr);
