@@ -100,7 +100,7 @@ public class AdaGrad implements Serializable {
         }
 
         double sqrtHistory = !historicalInitialized ? Math.sqrt(historicalGradient.getDouble(column)) : historicalGradient.getDouble(column);
-        double learningRates = (masterStepSize) / sqrtHistory;
+        double learningRates = (masterStepSize) / (sqrtHistory + Nd4j.EPS_THRESHOLD);
         double adjustedGradient = gradient * (learningRates);
 
         historicalGradient.putScalar(column, historicalGradient.getDouble(column) + Math.pow(gradient, 2));
@@ -164,7 +164,7 @@ public class AdaGrad implements Serializable {
 
         else
             sqrtHistory = !historicalInitialized ? sqrt(historicalGradient.slice(slice)) : historicalGradient;
-        INDArray learningRates = sqrtHistory.rdivi(masterStepSize);
+        INDArray learningRates = sqrtHistory.add(Nd4j.EPS_THRESHOLD).rdivi(masterStepSize);
         gradient.muli(learningRates);
 
         this.historicalGradient.slice(slice).addi(pow(gradient, 2));
@@ -194,7 +194,7 @@ public class AdaGrad implements Serializable {
 
 
         INDArray sqrtHistory = !historicalInitialized ? sqrt(historicalGradient) : historicalGradient;
-        INDArray learningRates = sqrtHistory.rdivi(masterStepSize);
+        INDArray learningRates = sqrtHistory.add(Nd4j.EPS_THRESHOLD).rdivi(masterStepSize);
         gradient.muli(learningRates);
 
         this.historicalGradient.addi(pow(gradient, 2));
