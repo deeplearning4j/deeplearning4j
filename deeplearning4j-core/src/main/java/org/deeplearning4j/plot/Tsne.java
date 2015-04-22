@@ -98,7 +98,7 @@ public class Tsne implements Serializable {
 
     /**
      * Computes a gaussian kernel
-     * given a vector of squared euclidean distances
+     * given a vector of squared distance distances
      *
      * @param d the data
      * @param beta
