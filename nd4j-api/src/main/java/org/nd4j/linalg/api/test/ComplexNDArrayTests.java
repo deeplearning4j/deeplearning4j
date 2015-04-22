@@ -211,7 +211,7 @@ public abstract class ComplexNDArrayTests {
     @Test
     public void testSum() {
         IComplexNDArray n = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2}));
-        assertEquals(Nd4j.createDouble(36, 0), n.sum(Integer.MAX_VALUE).element());
+        assertEquals(Nd4j.createDouble(36, 0), n.sum(Integer.MAX_VALUE).getComplex(0));
     }
 
 
@@ -436,6 +436,14 @@ public abstract class ComplexNDArrayTests {
 
     }
 
+    @Test
+    public void testCopy() {
+        IComplexNDArray ones = Nd4j.complexOnes(2);
+        IComplexNDArray zeros = Nd4j.complexZeros(2);
+        Nd4j.getBlasWrapper().copy(ones,zeros);
+        assertEquals(ones,zeros);
+
+    }
 
     @Test
     public void testMmul() {

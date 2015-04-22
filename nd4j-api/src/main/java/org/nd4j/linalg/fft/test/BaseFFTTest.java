@@ -75,7 +75,7 @@ public abstract class BaseFFTTest {
     @Test
     public void testMultiDimFFT() {
         INDArray a = Nd4j.linspace(1,8,8).reshape(2,2,2);
-        INDArray fftedAnswer = Nd4j.create(new int[]{2, 2}, new double[]{6, 10, -4, -4}, new double[]{8, 12, -4, -4});
+        INDArray fftedAnswer = Nd4j.createComplex(Nd4j.create(new int[]{2, 2}, new double[]{6, 10, -4, -4}, new double[]{8, 12, -4, -4}));
         INDArray ffted = FFT.fft(a);
         assertEquals(fftedAnswer,ffted);
 

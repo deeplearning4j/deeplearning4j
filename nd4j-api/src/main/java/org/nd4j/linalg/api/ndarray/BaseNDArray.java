@@ -560,6 +560,12 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray vectorAlongDimension(int index, int dimension) {
         ensureNotCleanedUp();
         assert dimension <= shape.length : "Invalid dimension " + dimension;
+        if(isScalar()) {
+            if(dimension > 1 && index > 0)
+                throw new IllegalArgumentException("Illegal dimension for scalar " + dimension);
+            return this;
+        }
+
         if (dimension > shape().length - 1)
             dimension = shape.length - 1;
         if (ordering == NDArrayFactory.C) {
@@ -3460,7 +3466,7 @@ public abstract class BaseNDArray implements INDArray {
     public int size(int dimension) {
         ensureNotCleanedUp();
         if (isScalar()) {
-            if (dimension == 0)
+            if (dimension == 0 || dimension == 1)
                 return length;
             else
                 throw new IllegalArgumentException("Illegal dimension for scalar " + dimension);

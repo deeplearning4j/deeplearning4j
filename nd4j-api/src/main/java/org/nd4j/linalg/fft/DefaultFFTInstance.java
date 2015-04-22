@@ -132,7 +132,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     @Override
     public IComplexNDArray ifft(IComplexNDArray inputC) {
         if (inputC.isVector())
-            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,inputC.length()));
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorIFFT(inputC,inputC.length()));
         else {
             return rawifft(inputC, inputC.size(inputC.shape().length - 1), inputC.shape().length - 1);
         }

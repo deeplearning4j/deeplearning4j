@@ -31,12 +31,12 @@ public interface JCudaBuffer extends DataBuffer {
      *
      * @return the pointer for this buffer
      */
-    public Pointer pointer();
+    Pointer pointer();
 
     /**
      * Allocate the buffer
      */
-    public void alloc();
+    void alloc();
 
 
 

@@ -155,9 +155,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public Pointer pointer() {
         ensureNotFreed();
-        Pointer pointer = new Pointer();
-        JCuda.cudaHostGetDevicePointer(pointer, pinnedPointer, 0);
-        return pointer;
+        return pinnedPointer;
     }
 
     @Override
@@ -176,8 +174,9 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         }
 
         // Set the flag indicating that mapped memory will be used
-        JCuda.cudaSetDeviceFlags(JCuda.cudaDeviceMapHost);
-        JCuda.cudaHostAlloc(pinnedPointer,elementSize() * length(),JCuda.cudaHostAllocMapped);
+        //JCuda.cudaSetDeviceFlags(JCuda.cudaDeviceMapHost);
+        //JCuda.cudaHostAlloc(pinnedPointer,elementSize() * length(),JCuda.cudaHostAllocMapped);
+        JCuda.cudaMallocManaged(pinnedPointer,elementSize() * length(),0);
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         Nd4j.getResourceManager().incrementCurrentAllocatedMemory(elementSize() * length());
 
@@ -375,7 +374,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             if(!freed.get()) {
                 if (Nd4j.shouldInstrument)
                     Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
-                JCuda.cudaFreeHost(pinnedPointer);
+                JCuda.cudaFree(pinnedPointer);
                 freed.set(true);
                 Nd4j.getResourceManager().decrementCurrentAllocatedMemory(elementSize() * length());
                 references().clear();

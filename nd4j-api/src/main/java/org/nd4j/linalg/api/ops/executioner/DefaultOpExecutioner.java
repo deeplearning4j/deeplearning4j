@@ -71,40 +71,39 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
         //execute row wise
         else if(op.x().isMatrix() || op.x().isColumnVector()) {
-           if(op.x() instanceof IComplexNDArray) {
-               IComplexNDArray original = (IComplexNDArray) op.x();
-               IComplexNDArray originalZ = (IComplexNDArray) op.z();
-               IComplexNDArray y = (IComplexNDArray) op.y();
+            if(op.x() instanceof IComplexNDArray) {
+                IComplexNDArray original = (IComplexNDArray) op.x();
+                IComplexNDArray originalZ = (IComplexNDArray) op.z();
+                IComplexNDArray y = (IComplexNDArray) op.y();
 
-               for(int i = 0; i < op.x().rows(); i++) {
-                   IComplexNDArray row = original.getRow(i);
-                   IComplexNDArray zRow = originalZ.getRow(i);
-                   op.setX(row);
-                   op.setZ(zRow);
-                   if(y != null)
-                       op.setY(y.getRow(i));
-                   exec(op);
-                   originalZ.putRow(i, zRow);
+                for(int i = 0; i < original.rows(); i++) {
+                    IComplexNDArray row = original.slice(i);
+                    IComplexNDArray zRow = originalZ.slice(i);
+                    op.setX(row.ravel());
+                    op.setZ(zRow.ravel());
+                    if(y != null)
+                        op.setY(y.getRow(i));
+                    exec(op);
+                    originalZ.slice(i).assign(op.z());
 
-               }
-           }
+                }
+            }
             else {
-               INDArray original = op.x();
-               INDArray originalZ = op.z();
-               INDArray y = op.y();
+                INDArray original = op.x();
+                INDArray originalZ = op.z();
+                INDArray y = op.y();
 
-               for(int i = 0; i < op.x().rows(); i++) {
-                   INDArray row = original.getRow(i);
-                   INDArray zRow = originalZ.getRow(i);
-                   op.setX(row);
-                   op.setZ(zRow);
-                   if(y != null)
-                       op.setY(y.getRow(i));
-                   exec(op);
-                   originalZ.putRow(i,zRow);
-
-               }
-           }
+                for(int i = 0; i < op.x().rows(); i++) {
+                    INDArray row = original.getRow(i);
+                    INDArray zRow = originalZ.getRow(i);
+                    op.setX(row.ravel());
+                    op.setZ(zRow.ravel());
+                    if(y != null)
+                        op.setY(y.getRow(i));
+                    exec(op);
+                    originalZ.slice(i).assign(op.z());
+                }
+            }
 
         }
         else {
@@ -201,8 +200,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int dimension) {
-        if(dimension == Integer.MAX_VALUE)
-            return Nd4j.scalar(execAndReturn(op).currentResult());
+        if(dimension == Integer.MAX_VALUE) {
+            if(op.x() instanceof IComplexNDArray)
+                return Nd4j.scalar(execAndReturn(op).currentResultComplex());
+            else
+                return Nd4j.scalar(execAndReturn(op).currentResult());
+        }
         else if(op.x().isScalar())
             return op.x();
         if(op.x() instanceof IComplexNDArray) {
@@ -241,7 +244,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return ret;
         }
         else {
-             if(op.x().isRowVector()) {
+            if(op.x().isRowVector()) {
                 //same shape
                 if(dimension == 0) {
                     //no reduction

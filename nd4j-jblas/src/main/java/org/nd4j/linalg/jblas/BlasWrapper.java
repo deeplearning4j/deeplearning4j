@@ -141,24 +141,11 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public IComplexNDArray copy(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-        if (x.data().dataType() == DataBuffer.DOUBLE)
-            NativeBlas.dcopy(
-                    x.length(),
-                    x.data().asDouble(),
-                    x.offset(),
-                    x.secondaryStride(),
-                    y.data().asDouble(),
-                    y.offset(),
-                    y.secondaryStride());
-        else
-            NativeBlas.scopy(
-                    x.length(),
-                    x.data().asFloat(),
-                    x.offset(),
-                    x.secondaryStride(),
-                    y.data().asFloat(),
-                    y.offset(),
-                    y.secondaryStride());
+        IComplexNDArray xLinear = x.linearView();
+        IComplexNDArray yLinear = y.linearView();
+        for(int i = 0; i < xLinear.length(); i++) {
+            yLinear.putScalar(i,xLinear.getComplex(i));
+        }
         return y;
     }
 

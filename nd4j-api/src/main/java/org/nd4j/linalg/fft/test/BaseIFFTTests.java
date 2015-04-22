@@ -18,12 +18,15 @@ package org.nd4j.linalg.fft.test;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.api.ops.impl.transforms.VectorIFFT;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.fft.FFT;
 
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by agibsonccc on 9/6/14.
@@ -41,18 +44,29 @@ public abstract class BaseIFFTTests {
         assertEquals(iffted, c);
 
 
-        double[] ffted2 = {17.8, 9., -1, -8.6, 4.6, 3.};
-        double[] orig2 = {3.6, 2, 6.6, 3, 7.6, 4};
-        double[] fftOrig2 = {17.8000000, 9, -4.3660254, -0.6339746, -2.6339746, -2.3660254};
-        IComplexNDArray c2 = Nd4j.createComplex(orig2, new int[]{3});
+    }
 
-        IComplexNDArray fftOrig2Arr = Nd4j.createComplex(fftOrig2, new int[]{fftOrig2.length / 2});
-        IComplexNDArray fftOrig2Test = (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(assertion.dup(),fftOrig2Arr.length()));
-        assertEquals(fftOrig2Arr, fftOrig2Test);
+    @Test
+    public void testFftToIfft() {
+        IComplexNDArray linspace = Nd4j.complexLinSpace(1,8,8);
+        IComplexNDArray ffted = Nd4j.createComplex(new IComplexNumber[]{
+                Nd4j.createComplexNumber(36, 0),
+                Nd4j.createComplexNumber(-4, 9.6585425),
+                Nd4j.createComplexNumber(-4, 4),
+                Nd4j.createComplexNumber(-4, 1.65685425),
+                Nd4j.createComplexNumber(-4, 0),
+                Nd4j.createComplexNumber(-4, -1.65685425),
+                Nd4j.createComplexNumber(-4, -4),
+                Nd4j.createComplexNumber(-4, -9.65685425),
 
-        IComplexNDArray ifftTestFor = Nd4j.createComplex(new double[]{3.6, 2, 6.6, 3, 7.6, 4}, new int[]{3});
-        IComplexNDArray ifftTest =  (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(fftOrig2Arr,fftOrig2Arr.length()));
-        assertEquals(ifftTestFor, ifftTest);
+        });
+        IComplexNDArray ffted2 = FFT.fft(linspace);
+        Nd4j.EPS_THRESHOLD = 1e-1;
+        assertEquals(ffted.eps(ffted2).sum(Integer.MAX_VALUE).getDouble(0),8,1e-1);
+
+        IComplexNDArray iffted = FFT.ifft(ffted2);
+        assertEquals(iffted.eps(linspace).sum(Integer.MAX_VALUE).getDouble(0),8,1e-1);
+
     }
 
 

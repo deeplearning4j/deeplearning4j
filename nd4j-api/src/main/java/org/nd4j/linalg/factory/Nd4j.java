@@ -1833,7 +1833,7 @@ public class Nd4j {
      * @param columns the number of columns in the row vector
      * @return ndarray
      */
-    public static INDArray complexZeros(int columns) {
+    public static IComplexNDArray complexZeros(int columns) {
         return INSTANCE.complexZeros(columns);
     }
 

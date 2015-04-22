@@ -34,6 +34,8 @@ public class VectorIFFT extends BaseTransformOp {
 
     private int fftLength;
     private int originalN = -1;
+    private boolean executed = false;
+
 
     public VectorIFFT(INDArray x, INDArray z,int fftLength) {
         super(x, z);
@@ -124,9 +126,29 @@ public class VectorIFFT extends BaseTransformOp {
 
 
     @Override
+    public void setX(INDArray x) {
+        this.x = x;
+        executed = false;
+    }
+
+    @Override
+    public void setZ(INDArray z) {
+        this.z = z;
+        executed = false;
+
+    }
+
+    @Override
     public void exec() {
         if(!x.isVector())
             return;
+        if(executed)
+            return;
+
+        executed = true;
+
+
+
         //ifft(x) = conj(fft(conj(x)) / length(x)
         IComplexNDArray ndArray = x instanceof IComplexNDArray ? (IComplexNDArray) x : Nd4j.createComplex(x);
         IComplexNDArray fft = (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(ndArray.conj(),y,z,x.length(),fftLength));

@@ -442,8 +442,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public int blasOffset() {
-        return offset > 0 ? offset() / 2 : offset();
-    }
+        return offset > 0 ? offset() / 2 : offset();    }
 
     @Override
     public IComplexNDArray linearViewColumnOrder() {
@@ -1999,6 +1998,16 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNDArray vectorAlongDimension(int index, int dimension) {
         assert dimension <= shape.length : "Invalid dimension " + dimension;
+        if(isScalar()) {
+            if(dimension > 1 && index > 0)
+             throw new IllegalArgumentException("Illegal dimension for scalar " + dimension);
+            return this;
+        }
+
+        if (dimension > shape().length - 1)
+            dimension = shape.length - 1;
+
+
         if (ordering == NDArrayFactory.C) {
 
             if (dimension == shape.length - 1 && dimension != 0) {
@@ -3754,12 +3763,12 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         //epsilon equals
         if (isScalar()) {
             IComplexNumber c = n.getComplex(0);
-            return getComplex(0).sub(c).absoluteValue().doubleValue() < 1e-6;
+            return getComplex(0).sub(c).absoluteValue().doubleValue() < 1e-1;
         } else if (isVector()) {
             for (int i = 0; i < length; i++) {
                 IComplexNumber curr = getComplex(i);
                 IComplexNumber comp = n.getComplex(i);
-                if (curr.sub(comp).absoluteValue().doubleValue() > 1e-6)
+                if (curr.sub(comp).absoluteValue().doubleValue() > 1e-1)
                     return false;
             }
 
