@@ -522,12 +522,14 @@ public class Nd4j {
      * @param length the length of te buffer
      * @return the buffer to create
      */
-    public static DataBuffer createBuffer(long length) {
-        if (dataType() == DataBuffer.FLOAT) {
-            return createBuffer(new float[(int) length]);
-
-        }
-        return createBuffer(new double[(int) length]);
+    public static DataBuffer createBuffer(int length) {
+    	DataBuffer ret;
+        if (dataType() == DataBuffer.FLOAT)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
+        else
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(length);
+        logCreationIfNecessary(ret);
+        return ret;
     }
 
     /**
