@@ -17,7 +17,6 @@
 package org.nd4j.linalg.api.complex;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
@@ -567,17 +566,6 @@ public interface IComplexNDArray extends INDArray {
 
     INDArray imag();
 
-    /**
-     * Iterate along a dimension.
-     * This encapsulates the process of sum, mean, and other processes
-     * take when iterating over a dimension.
-     *
-     * @param dimension the dimension to iterate over
-     * @param op        the operation to apply
-     * @param modify    whether to modify this array while iterating
-     */
-    @Override
-    void iterateOverDimension(int dimension, SliceOp op, boolean modify);
 
 
     /**

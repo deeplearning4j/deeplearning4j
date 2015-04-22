@@ -23,7 +23,6 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
@@ -405,105 +404,6 @@ public abstract class ComplexNDArrayTests {
     }
 
 
-    @Test
-    public void testIterateOverAllRows() {
-        IComplexNDArray c = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(0, 29, 30).data(), new int[]{3, 5, 2}));
-
-        final AtomicInteger i = new AtomicInteger(0);
-        final Set<IComplexNDArray> set = new HashSet<>();
-
-        c.iterateOverAllRows(new SliceOp() {
-
-
-            /**
-             * Operates on an ndarray slice
-             *
-             * @param nd the result to operate on
-             */
-            @Override
-            public void operate(INDArray nd) {
-                IComplexNDArray result = (IComplexNDArray) nd;
-                int curr = i.get();
-                i.incrementAndGet();
-                IComplexNDArray test = Nd4j.createComplex(new double[]{curr * 2, 0, curr * 2 + 1, 0}, new int[]{2});
-                assertEquals(result, test);
-                assertEquals(true, !set.contains(test));
-                set.add(result);
-
-                result.put(0, Nd4j.scalar((curr + 1) * 3));
-                result.put(1, Nd4j.scalar((curr + 2) * 3));
-                IComplexNumber n = (IComplexNumber) result.getScalar(0).element();
-                IComplexNumber n2 = (IComplexNumber) result.getScalar(1).element();
-
-                assertEquals((curr + 1) * 3, n.realComponent().doubleValue(), 1e-1);
-                assertEquals((curr + 2) * 3, n2.realComponent().doubleValue(), 1e-1);
-
-            }
-        });
-
-        IComplexNDArray permuted = c.permute(new int[]{2, 1, 0});
-        set.clear();
-        i.set(0);
-
-        permuted.iterateOverAllRows(new SliceOp() {
-
-
-            /**
-             * Operates on an ndarray slice
-             *
-             * @param nd the result to operate on
-             */
-            @Override
-            public void operate(INDArray nd) {
-                IComplexNDArray result = (IComplexNDArray) nd;
-                int curr = i.get();
-                i.incrementAndGet();
-
-                result.put(0, Nd4j.scalar((curr + 1) * 3));
-                result.put(1, Nd4j.scalar((curr + 2) * 3));
-
-                IComplexNumber n = (IComplexNumber) result.getScalar(0).element();
-                IComplexNumber n2 = (IComplexNumber) result.getScalar(1).element();
-
-
-                assertEquals((curr + 1) * 3, n.realComponent().doubleValue(), 1e-1);
-                assertEquals((curr + 2) * 3, n2.realComponent().doubleValue(), 1e-1);
-            }
-        });
-
-        IComplexNDArray swapped = c.swapAxes(2, 1);
-        i.set(0);
-
-        swapped.iterateOverAllRows(new SliceOp() {
-
-            /**
-             * Operates on an ndarray slice
-             *
-             * @param nd the result to operate on
-             */
-            @Override
-            public void operate(INDArray nd) {
-                IComplexNDArray result = (IComplexNDArray) nd;
-                int curr = i.get();
-                i.incrementAndGet();
-
-
-                result.put(0, Nd4j.scalar((curr + 1) * 3));
-                result.put(1, Nd4j.scalar((curr + 2) * 3));
-
-
-                IComplexNumber n = (IComplexNumber) result.getScalar(0).element();
-                IComplexNumber n2 = (IComplexNumber) result.getScalar(1).element();
-
-
-                assertEquals((curr + 1) * 3, n.realComponent().doubleValue(), 1e-1);
-                assertEquals((curr + 2) * 3, n2.realComponent().doubleValue(), 1e-1);
-
-            }
-        });
-
-
-    }
 
 
     @Test
@@ -781,67 +681,6 @@ public abstract class ComplexNDArrayTests {
     }
 
 
-    @Test
-    public void testVectorDimension() {
-        IComplexNDArray test = Nd4j.createComplex(new double[]{1, 0, 2, 0, 3, 0, 4, 0}, new int[]{2, 2});
-        final AtomicInteger count = new AtomicInteger(0);
-        //row wise
-        test.iterateOverDimension(1, new SliceOp() {
-
-            /**
-             * Operates on an ndarray slice
-             *
-             * @param nd the result to operate on
-             */
-            @Override
-            public void operate(INDArray nd) {
-                log.info("Operator " + nd);
-                IComplexNDArray test = (IComplexNDArray) nd;
-                if (count.get() == 0) {
-                    IComplexNDArray firstDimension = Nd4j.createComplex(new double[]{1, 0, 2, 0}, new int[]{2, 1});
-                    assertEquals(firstDimension, test);
-                } else {
-                    IComplexNDArray firstDimension = Nd4j.createComplex(new double[]{3, 0, 4, 0}, new int[]{2});
-                    assertEquals(firstDimension, test);
-
-                }
-
-                count.incrementAndGet();
-            }
-
-        }, false);
-
-
-        count.set(0);
-
-        //columnwise
-        test.iterateOverDimension(0, new SliceOp() {
-
-            /**
-             * Operates on an ndarray slice
-             *
-             * @param nd the result to operate on
-             */
-            @Override
-            public void operate(INDArray nd) {
-                log.info("Operator " + nd);
-                IComplexNDArray test = (IComplexNDArray) nd;
-                if (count.get() == 0) {
-                    IComplexNDArray firstDimension = Nd4j.createComplex(new double[]{1, 0, 3, 0}, new int[]{2});
-                    assertEquals(firstDimension, test);
-                } else {
-                    IComplexNDArray firstDimension = Nd4j.createComplex(new double[]{2, 0, 4, 0}, new int[]{2});
-                    assertEquals(firstDimension, test);
-
-                }
-
-                count.incrementAndGet();
-            }
-
-        }, false);
-
-
-    }
 
     @Test
     public void testFlatten() {
@@ -893,70 +732,7 @@ public abstract class ComplexNDArrayTests {
     }
 
 
-    @Test
-    public void testVectorDimensionMulti() {
-        IComplexNDArray arr = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 24, 24).data(), new int[]{4, 3, 2}));
-        final AtomicInteger count = new AtomicInteger(0);
 
-        arr.iterateOverDimension(0, new SliceOp() {
-
-
-            /**
-             * Operates on an ndarray slice
-             *
-             * @param nd the result to operate on
-             */
-            @Override
-            public void operate(INDArray nd) {
-                IComplexNDArray test = (IComplexNDArray) nd;
-                if (count.get() == 0) {
-                    IComplexNDArray answer = Nd4j.createComplex(new double[]{1, 0, 7, 0, 13, 0, 19, 0}, new int[]{4});
-                    assertEquals(answer, test);
-                } else if (count.get() == 1) {
-                    IComplexNDArray answer = Nd4j.createComplex(new double[]{2, 0, 8, 0, 14, 0, 20, 0}, new int[]{4});
-                    assertEquals(answer, test);
-                } else if (count.get() == 2) {
-                    IComplexNDArray answer = Nd4j.createComplex(new double[]{3, 0, 9, 0, 15, 0, 21, 0}, new int[]{4});
-                    assertEquals(answer, test);
-                } else if (count.get() == 3) {
-                    IComplexNDArray answer = Nd4j.createComplex(new double[]{4, 0, 10, 0, 16, 0, 22, 0}, new int[]{4});
-                    assertEquals(answer, test);
-                } else if (count.get() == 4) {
-                    IComplexNDArray answer = Nd4j.createComplex(new double[]{5, 0, 11, 0, 17, 0, 23, 0}, new int[]{4});
-                    assertEquals(answer, test);
-                } else if (count.get() == 5) {
-                    IComplexNDArray answer = Nd4j.createComplex(new double[]{6, 0, 12, 0, 18, 0, 24, 0}, new int[]{4});
-                    assertEquals(answer, test);
-                }
-
-
-                count.incrementAndGet();
-            }
-        }, false);
-
-
-        IComplexNDArray ret = Nd4j.createComplex(new double[]{1, 0, 2, 0, 3, 0, 4, 0}, new int[]{2, 2});
-        final IComplexNDArray firstRow = Nd4j.createComplex(new double[]{1, 0, 2, 0}, new int[]{2});
-        final IComplexNDArray secondRow = Nd4j.createComplex(new double[]{3, 0, 4, 0}, new int[]{2});
-        count.set(0);
-        ret.iterateOverDimension(1, new SliceOp() {
-
-            /**
-             * Operates on an ndarray slice
-             *
-             * @param nd the result to operate on
-             */
-            @Override
-            public void operate(INDArray nd) {
-                IComplexNDArray c = (IComplexNDArray) nd;
-                if (count.get() == 0) {
-                    assertEquals(firstRow, c);
-                } else if (count.get() == 1)
-                    assertEquals(secondRow, c);
-                count.incrementAndGet();
-            }
-        }, false);
-    }
 
 
     protected void verifyElements(IComplexNDArray d, IComplexNDArray d2) {

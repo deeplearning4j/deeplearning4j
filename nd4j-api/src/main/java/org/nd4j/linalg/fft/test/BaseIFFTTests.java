@@ -18,9 +18,10 @@ package org.nd4j.linalg.fft.test;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
+import org.nd4j.linalg.api.ops.impl.transforms.VectorIFFT;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.fft.VectorFFT;
-import org.nd4j.linalg.fft.VectorIFFT;
+
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,8 +36,8 @@ public abstract class BaseIFFTTests {
         IComplexNDArray c = Nd4j.createComplex(orig, new int[]{2});
         IComplexNDArray assertion = Nd4j.createComplex(ffted, new int[]{2});
 
-        assertEquals(assertion, new VectorFFT(2).apply(c));
-        IComplexNDArray iffted = new VectorIFFT(2).apply(assertion.dup());
+        assertEquals(assertion, Nd4j.getExecutioner().execAndReturn(new VectorFFT(c,2)));
+        IComplexNDArray iffted = (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorIFFT(assertion.dup(),2));
         assertEquals(iffted, c);
 
 
@@ -46,11 +47,11 @@ public abstract class BaseIFFTTests {
         IComplexNDArray c2 = Nd4j.createComplex(orig2, new int[]{3});
 
         IComplexNDArray fftOrig2Arr = Nd4j.createComplex(fftOrig2, new int[]{fftOrig2.length / 2});
-        IComplexNDArray fftOrig2Test = new VectorFFT(fftOrig2Arr.length()).apply(c2);
+        IComplexNDArray fftOrig2Test = (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(assertion.dup(),fftOrig2Arr.length()));
         assertEquals(fftOrig2Arr, fftOrig2Test);
 
         IComplexNDArray ifftTestFor = Nd4j.createComplex(new double[]{3.6, 2, 6.6, 3, 7.6, 4}, new int[]{3});
-        IComplexNDArray ifftTest = new VectorIFFT(fftOrig2Arr.length()).apply(fftOrig2Arr);
+        IComplexNDArray ifftTest =  (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(fftOrig2Arr,fftOrig2Arr.length()));
         assertEquals(ifftTestFor, ifftTest);
     }
 

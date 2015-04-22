@@ -20,7 +20,6 @@ package org.nd4j.linalg.api.complex;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.Indices;
@@ -450,27 +449,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNDArray linearViewColumnOrder() {
         return Nd4j.createComplex(data, new int[]{length, 1}, offset());
     }
-    /**
-     * Iterate along a dimension.
-     * This encapsulates the process of sum, mean, and other processes
-     * take when iterating over a dimension.
-     *
-     * @param dimension the dimension to iterate over
-     * @param op        the operation to apply
-     * @param modify    whether to modify this array while iterating
-     */
-    @Override
-    public void iterateOverDimension(int dimension, SliceOp op, boolean modify) {
-        ensureNotCleanedUp();
-        if (dimension >= shape.length)
-            throw new IllegalArgumentException("Unable to remove dimension  " + dimension + " was >= shape length");
-        int vectors = vectorsAlongDimension(dimension);
-        for (int i = 0; i < vectors; i++) {
-            IComplexNDArray vector = vectorAlongDimension(i, dimension);
-            op.operate(vector);
-        }
 
-    }
     /**
      * Returns a linear view reference of shape
      * 1,length(ndarray)
@@ -3907,31 +3886,20 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray ravel() {
-        final IComplexNDArray ret = Nd4j.createComplex(length, ordering);
-        final AtomicInteger counter = new AtomicInteger(0);
+        ensureNotCleanedUp();
+        IComplexNDArray ret = Nd4j.createComplex(length, ordering);
 
-        SliceOp op = new SliceOp() {
-            @Override
-            public void operate(INDArray nd) {
-                IComplexNDArray nd1 = (IComplexNDArray) nd;
-                for (int i = 0; i < nd.length(); i++) {
-                    int element = counter.getAndIncrement();
-                    ret.putScalar(element, nd1.getComplex(i));
-
-
-                }
+        int dimension = shape.length == 2 ? 1 : shape.length;
+        int count = 0;
+        for (int i = 0; i < vectorsAlongDimension(dimension); i++) {
+            IComplexNDArray vec = vectorAlongDimension(i, dimension);
+            for (int j = 0; j < vec.length(); j++) {
+                ret.putScalar(count++, vec.getComplex(j));
             }
-        };
-        //row order
-        if (ordering == NDArrayFactory.C) {
-            iterateOverAllRows(op);
-        }
-        //column order
-        else if (ordering == NDArrayFactory.FORTRAN) {
-            iterateOverAllColumns(op);
         }
 
         return ret;
+
 
     }
 

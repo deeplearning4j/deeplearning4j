@@ -106,7 +106,7 @@ public class Convolution {
         return Nd4j.getConvolution().convn(input, kernel, type);
     }
 
-    public static enum Type {
+    public enum Type {
         FULL, VALID, SAME
     }
 

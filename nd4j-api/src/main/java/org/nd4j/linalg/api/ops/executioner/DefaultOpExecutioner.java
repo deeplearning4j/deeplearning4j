@@ -23,6 +23,8 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Basic op executioner. Knows how to iterate over
@@ -56,6 +58,63 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
         return op;
+    }
+
+    @Override
+    public void iterateOverAllRows(Op op) {
+        if(op.x().isRowVector()) {
+            exec(op);
+        }
+        //execute row wise
+        else if(op.x().isMatrix() || op.x().isColumnVector()) {
+            INDArray original = op.x();
+            INDArray originalZ = op.z();
+            INDArray y = op.y();
+
+            for(int i = 0; i < op.x().rows(); i++) {
+                INDArray row = original.getRow(i);
+                INDArray zRow = originalZ.getRow(i);
+                op.setX(row);
+                op.setZ(zRow);
+                if(y != null)
+                    op.setY(y.getRow(i));
+                exec(op);
+            }
+        }
+        else {
+            INDArray originalX = op.x();
+            INDArray originalZ = op.z();
+            for(int i = 0; i < op.x().slices(); i++) {
+                op.setX(originalX.slice(i));
+                op.setZ(originalZ.slice(i));
+                iterateOverAllRows(op);
+            }
+
+
+        }
+    }
+
+    @Override
+    public void iterateOverAllColumns(Op op) {
+        if(op.x().isRowVector()) {
+            exec(op);
+        }
+        //execute row wise
+        else if(op.x().isMatrix() || op.x().isColumnVector()) {
+            exec(op,1);
+        }
+        else {
+            INDArray originalX = op.x();
+            INDArray originalZ = op.z();
+            INDArray y = op.y();
+            for(int i = 0; i < op.x().slices(); i++) {
+                op.setX(originalX.getColumn(i));
+                op.setZ(originalZ.getColumn(i));
+                if(y != null)
+                    op.setY(y.getColumn(i));
+                iterateOverAllColumns(op);
+            }
+        }
     }
 
 
@@ -99,6 +158,88 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return op;
     }
 
+    @Override
+    public INDArray exec(Accumulation op, int dimension) {
+        if(dimension == Integer.MAX_VALUE)
+            return Nd4j.scalar(execAndReturn(op).currentResult());
+        else if(op.x().isScalar())
+            return op.x();
+        if(op.x() instanceof IComplexNDArray) {
+            IComplexNDArray ret = Nd4j.createComplex(ArrayUtil.removeIndex(op.x().shape(), dimension));
+            IComplexNDArray linear = ret.linearView();
+            if(op.x().isRowVector()) {
+                //same shape
+                if(dimension == 0) {
+                    //no reduction
+                    return op.x();
+                }
+                else if(dimension == 1) {
+                    return Nd4j.scalar(execAndReturn(op).currentResult());
+                }
+            }
+            else if(op.x().isColumnVector()) {
+                if(dimension == 0) {
+                    return Nd4j.scalar(execAndReturn(op).currentResult());
+
+                }
+                //row vector
+                else if(dimension == 1) {
+                    //make a row vector
+                    return Nd4j.scalar(execAndReturn(op).currentResult());
+
+                }
+            }
+
+            for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+                Op op2 = op.opForDimension(i, dimension);
+                IComplexNumber result = execAndReturn((Accumulation) op2).currentResultComplex();
+                linear.putScalar(i,result);
+
+            }
+
+            return ret;
+        }
+        else {
+             if(op.x().isRowVector()) {
+                //same shape
+                if(dimension == 0) {
+                    //no reduction
+                    return op.x();
+                }
+                else if(dimension == 1) {
+                    return Nd4j.scalar(execAndReturn(op).currentResult());
+                }
+            }
+            else if(op.x().isColumnVector()) {
+                if(dimension == 0) {
+                    return Nd4j.scalar(execAndReturn(op).currentResult());
+
+                }
+                //row vector
+                else if(dimension == 1) {
+                    //make a row vector
+                    return Nd4j.scalar(execAndReturn(op).currentResult());
+
+                }
+            }
+
+            INDArray ret = Nd4j.create(ArrayUtil.removeIndex(op.x().shape(), dimension));
+            INDArray linear = ret.linearView();
+
+            for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+                Op op2 = op.opForDimension(i, dimension);
+                Number result = execAndReturn((Accumulation) op2).currentResult();
+                linear.putScalar(i,result.doubleValue());
+
+            }
+
+            return ret;
+
+        }
+
+
+    }
+
 
     @Override
     public INDArray execAndReturn(TransformOp op, int dimension) {
@@ -117,10 +258,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
-    @Override
-    public Accumulation execAndReturn(Accumulation op, int dimension) {
-        return (Accumulation) exec(op, dimension);
-    }
+
 
     @Override
     public INDArray execAndReturn(ScalarOp op, int dimension) {

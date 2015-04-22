@@ -18,6 +18,7 @@ package org.nd4j.linalg.fft;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
@@ -41,7 +42,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
     public IComplexNDArray fft(INDArray transform, int numElements) {
         IComplexNDArray inputC = Nd4j.createComplex(transform);
         if (inputC.isVector())
-            return new VectorFFT(inputC.length()).apply(inputC);
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,inputC.length()));
         else {
             return rawfft(inputC, numElements, inputC.shape().length - 1);
         }
@@ -60,7 +61,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
     @Override
     public IComplexNDArray fft(IComplexNDArray inputC) {
         if (inputC.isVector())
-            return new VectorFFT(inputC.length()).apply(inputC);
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,inputC.length()));
         else {
             return rawfft(inputC, inputC.size(inputC.shape().length - 1), inputC.shape().length - 1);
         }

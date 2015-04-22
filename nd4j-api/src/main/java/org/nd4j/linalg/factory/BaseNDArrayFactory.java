@@ -23,7 +23,6 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -906,7 +905,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(float[] data, int[] shape, char ordering) {
-        return create(Nd4j.createBuffer(data),shape,Nd4j.getStrides(shape),0,ordering);
+        return create(Nd4j.createBuffer(data), shape, Nd4j.getStrides(shape), 0, ordering);
     }
 
     /**
@@ -921,18 +920,61 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if (toConcat.length == 1)
             return toConcat[0];
 
-        validateConcat(dimension, toConcat);
 
-        if(toConcat[0].isScalar()) {
-            int[] outputShape = dimension == 0 ? new int[]{toConcat.length,1} : new int[]{toConcat.length};
+        if (toConcat[0].isScalar()) {
+            int[] outputShape = dimension == 0 ? new int[]{toConcat.length, 1} : new int[]{toConcat.length};
             INDArray ret = Nd4j.create(outputShape);
-            for(int i = 0; i < ret.length(); i++) {
-                ret.putScalar(i,toConcat[i].getDouble(0));
+            for (int i = 0; i < ret.length(); i++) {
+                ret.putScalar(i, toConcat[i].getDouble(0));
             }
             return ret;
         }
 
+        else if (toConcat[0].isVector()) {
+            if (toConcat[0].isRowVector()) {
+                if (dimension == 1 || dimension == 0) {
+                    INDArray ret = Nd4j.create(toConcat.length * toConcat[0].length());
+                    int count = 0;
+                    for (INDArray arr : toConcat) {
+                        for (int i = 0; i < arr.length(); i++) {
+                            ret.putScalar(count++, arr.getDouble(i));
+                        }
+                    }
+
+                    return ret;
+
+                } else
+                    throw new IllegalArgumentException("Illegal dimension " + dimension);
+
+            } else if (toConcat[0].isColumnVector()) {
+                if (dimension == 1) {
+                    INDArray ret = Nd4j.create(toConcat[0].rows(), toConcat.length);
+                    int count = 0;
+                    for (INDArray arr : toConcat) {
+                        for (int i = 0; i < arr.length(); i++) {
+                            ret.putColumn(count++, arr);
+                        }
+                    }
+                    return ret;
+                } else if (dimension == 0) {
+                    INDArray ret = Nd4j.create(toConcat.length * toConcat[0].length(), 1);
+                    int count = 0;
+                    for (INDArray arr : toConcat) {
+                        for (int i = 0; i < arr.length(); i++) {
+                            ret.putScalar(count++, arr.getDouble(i));
+                        }
+                    }
+                    return ret;
+
+                }
+
+
+            }
+        }
+
         else {
+            validateConcat(dimension, toConcat);
+
             int sumAlongDim = 0;
             for (int i = 0; i < toConcat.length; i++)
                 sumAlongDim += toConcat[i].shape()[dimension];
@@ -950,13 +992,15 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
                 INDArray flattened = toConcat[i].linearView();
 
                 for (int j = 0; j < flattened.length(); j++) {
-                    linear.putScalar(count++, flattened.getFloat(j));
+                    linear.putScalar(count++, flattened.getDouble(j));
                 }
             }
 
 
             return ret;
         }
+
+        return null;
     }
 
     /**
@@ -1032,43 +1076,14 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     /**
-     * Concatenates two matrices horizontally. Matrices must have identical
+     * Concatenates two matrices horizontally.
+     * Matrices must have identical
      * numbers of rows.
      *
      * @param arrs
      */
     public INDArray hstack(INDArray... arrs) {
-        int cols = arrs[0].columns();
-        int rows = arrs[0].rows();
-
-        for (int i = 1; i < arrs.length; i++) {
-            cols += arrs[i].columns();
-            if (arrs[i].rows() != rows)
-                throw new IllegalStateException("Illegal number of rows for array " + i);
-
-        }
-
-
-        final INDArray ret = Nd4j.create(rows, cols);
-        final AtomicInteger i = new AtomicInteger(0);
-        for (INDArray a : arrs) {
-            a.iterateOverAllColumns(new SliceOp() {
-
-
-                @Override
-                public void operate(INDArray nd) {
-                    for (int j = 0; j < nd.length(); j++) {
-                        ret.putScalar(i.get(), nd.getDouble(j));
-
-                    }
-                    i.incrementAndGet();
-                }
-            });
-
-        }
-
-
-        return ret;
+        return Nd4j.concat(1,arrs);
     }
 
     /**
@@ -1091,17 +1106,14 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
         final INDArray ret = Nd4j.create(rows, cols);
-        final AtomicInteger i = new AtomicInteger(0);
 
 
+        int count = 0;
         for (INDArray arr : arrs) {
-            arr.iterateOverAllRows(new SliceOp() {
-                @Override
-                public void operate(INDArray nd) {
-                    ret.putRow(i.get(), nd);
-                    i.incrementAndGet();
-                }
-            });
+            for(int j = 0; j < arr.rows(); j++) {
+                ret.putRow(count++, arr.getRow(j));
+            }
+
         }
 
 

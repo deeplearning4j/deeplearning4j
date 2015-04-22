@@ -22,7 +22,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -37,7 +36,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -1185,72 +1183,6 @@ public abstract class NDArrayTests {
     }
 
 
-    @Test
-    public void testVectorDimension() {
-        INDArray test = Nd4j.create(Nd4j.linspace(1, 4, 4).data(), new int[]{2, 2});
-        final AtomicInteger count = new AtomicInteger(0);
-        //row wise
-        test.iterateOverDimension(1, new SliceOp() {
-
-
-            /**
-             * Operates on an ndarray slice
-             *
-             * @param nd the result to operate on
-             */
-            @Override
-            public void operate(INDArray nd) {
-                INDArray test = nd;
-                if (count.get() == 0) {
-                    INDArray firstDimension = Nd4j.create(new float[]{1, 2}, new int[]{2});
-                    assertEquals(firstDimension, test);
-                } else {
-                    INDArray firstDimension = Nd4j.create(new float[]{3, 4}, new int[]{2});
-                    assertEquals(firstDimension, test);
-
-                }
-
-                count.incrementAndGet();
-            }
-
-        }, false);
-
-
-        count.set(0);
-
-        //columnwise
-        test.iterateOverDimension(0, new SliceOp() {
-
-
-            /**
-             * Operates on an ndarray slice
-             *
-             * @param nd the result to operate on
-             */
-            @Override
-            public void operate(INDArray nd) {
-                log.info("Operator " + nd);
-                INDArray test = nd;
-                if (count.get() == 0) {
-                    INDArray firstDimension = Nd4j.create(new float[]{1, 3}, new int[]{2});
-                    assertEquals(firstDimension, test);
-                } else {
-                    INDArray firstDimension = Nd4j.create(new float[]{2, 4}, new int[]{2});
-                    assertEquals(firstDimension, test);
-                    firstDimension.data().destroy();
-
-                }
-
-                count.incrementAndGet();
-            }
-
-        }, false);
-
-
-        test.data().destroy();
-
-
-    }
 
 
     @Test
@@ -1752,50 +1684,6 @@ public abstract class NDArrayTests {
 
     }
 
-    @Test
-    public void testVectorDimensionMulti() {
-        INDArray arr = Nd4j.create(Nd4j.linspace(1, 24, 24).data(), new int[]{4, 3, 2});
-        final AtomicInteger count = new AtomicInteger(0);
-
-        arr.iterateOverDimension(arr.shape().length - 1, new SliceOp() {
-
-
-            /**
-             * Operates on an ndarray slice
-             *
-             * @param nd the result to operate on
-             */
-            @Override
-            public void operate(INDArray nd) {
-                INDArray test = nd;
-                if (count.get() == 0) {
-                    INDArray answer = Nd4j.create(new float[]{1, 2}, new int[]{2});
-                    assertEquals(answer, test);
-                } else if (count.get() == 1) {
-                    INDArray answer = Nd4j.create(new float[]{3, 4}, new int[]{2});
-                    assertEquals(answer, test);
-                } else if (count.get() == 2) {
-                    INDArray answer = Nd4j.create(new float[]{5, 6}, new int[]{2});
-                    assertEquals(answer, test);
-                } else if (count.get() == 3) {
-                    INDArray answer = Nd4j.create(new float[]{7, 8}, new int[]{2});
-                    assertEquals(answer, test);
-                    answer.data().destroy();
-                } else if (count.get() == 4) {
-                    INDArray answer = Nd4j.create(new float[]{9, 10}, new int[]{2});
-                    assertEquals(answer, test);
-                    answer.data().destroy();
-                } else if (count.get() == 5) {
-                    INDArray answer = Nd4j.create(new float[]{11, 12}, new int[]{2});
-                    assertEquals(answer, test);
-                    answer.data().destroy();
-                }
-
-
-                count.incrementAndGet();
-            }
-        }, false);
-    }
 
 
 }

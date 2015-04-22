@@ -70,6 +70,16 @@ public class JCudaExecutioner implements OpExecutioner {
         return op;
     }
 
+    @Override
+    public void iterateOverAllRows(Op op) {
+
+    }
+
+    @Override
+    public void iterateOverAllColumns(Op op) {
+
+    }
+
 
     private Pointer dummyDoublePointer() {
         return Pointer.to(dummyDoublePointer.pointer());
@@ -118,6 +128,11 @@ public class JCudaExecutioner implements OpExecutioner {
         return op;
     }
 
+    @Override
+    public INDArray exec(Accumulation accumulation, int dimension) {
+        return null;
+    }
+
 
     @Override
     public INDArray execAndReturn(TransformOp op, int dimension) {
@@ -133,11 +148,6 @@ public class JCudaExecutioner implements OpExecutioner {
 
         }
         return op.z();
-    }
-
-    @Override
-    public Accumulation execAndReturn(Accumulation op, int dimension) {
-        return (Accumulation) exec(op, dimension);
     }
 
     @Override

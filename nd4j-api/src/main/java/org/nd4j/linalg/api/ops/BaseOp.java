@@ -31,6 +31,21 @@ public abstract class BaseOp implements Op {
     protected int numProcessed;
     protected Object[] extraArgs;
 
+    @Override
+    public void setX(INDArray x) {
+        this.x = x;
+    }
+
+    @Override
+    public void setZ(INDArray z) {
+        this.z = z;
+    }
+
+    @Override
+    public void setY(INDArray y) {
+       this.y = y;
+    }
+
     /**
      * Specify an alternative result array
      *

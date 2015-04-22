@@ -28,7 +28,9 @@ import org.nd4j.linalg.util.Shape;
 import java.util.Arrays;
 
 /**
- * Created by agibsonccc on 1/6/15.
+ * Default convolution instance (FFT based)
+ *
+ * @author Adam Gibson
  */
 public class DefaultConvolutionInstance extends BaseConvolution {
 

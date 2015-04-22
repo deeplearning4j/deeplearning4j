@@ -210,6 +210,40 @@ public class Nd4j {
         CONVOLUTION_INSTANCE = convolutionInstance;
     }
 
+
+    /**
+     * Create an ndarray based on the given data
+     * @param sliceShape the shape of each slice
+     * @param arrays the arrays of data to create
+     * @return the ndarray of the specified shape where
+     * number of slices is equal to array length and each
+     * slice is the specified shape
+     */
+    public static INDArray create(int[] sliceShape,float[]...arrays) {
+        int slices = arrays.length;
+        INDArray ret = Nd4j.create(ArrayUtil.combine(new int[]{slices},sliceShape));
+        for(int i = 0; i < ret.slices(); i++)
+            ret.putSlice(i,Nd4j.create(arrays[i]).reshape(sliceShape));
+        return ret;
+    }
+
+    /**
+     * Create an ndarray based on the given data
+     * @param sliceShape the shape of each slice
+     * @param arrays the arrays of data to create
+     * @return the ndarray of the specified shape where
+     * number of slices is equal to array length and each
+     * slice is the specified shape
+     */
+    public static INDArray create(int[] sliceShape,double[]...arrays) {
+        int slices = arrays.length;
+        INDArray ret = Nd4j.create(ArrayUtil.combine(new int[]{slices},sliceShape));
+        for(int i = 0; i < ret.slices(); i++)
+            ret.putSlice(i,Nd4j.create(arrays[i]).reshape(sliceShape));
+        return ret;
+    }
+
+
     /**
      * Get the operation executioner instance
      *

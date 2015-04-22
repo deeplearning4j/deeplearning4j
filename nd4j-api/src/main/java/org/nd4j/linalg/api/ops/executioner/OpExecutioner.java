@@ -37,6 +37,19 @@ public interface OpExecutioner {
      */
     Op exec(Op op);
 
+    /**
+     * Iterate over every row of every slice
+     *
+     * @param op the operation to apply
+     */
+    void iterateOverAllRows(Op op);
+
+    /**
+     * Iterate over every column of every slice
+     *
+     * @param op the operation to apply
+     */
+    void iterateOverAllColumns(Op op);
 
     /**
      * Execute the operation
@@ -72,6 +85,16 @@ public interface OpExecutioner {
 
 
     /**
+     * Execute an accumulation along a dimension
+     * @param accumulation the accumulation
+     * @param dimension the dimension
+     * @return the accmulation op
+     */
+    INDArray exec(Accumulation accumulation, int dimension);
+
+
+
+    /**
      * Execute the operation
      *
      * @param op the operation to execute
@@ -79,13 +102,7 @@ public interface OpExecutioner {
     INDArray execAndReturn(TransformOp op, int dimension);
 
 
-    /**
-     * Execute and return the result from an accumulation
-     *
-     * @param op the operation to execute
-     * @return the accumulated result
-     */
-    Accumulation execAndReturn(Accumulation op, int dimension);
+
 
     /**
      * Execute and return the result from an accumulation

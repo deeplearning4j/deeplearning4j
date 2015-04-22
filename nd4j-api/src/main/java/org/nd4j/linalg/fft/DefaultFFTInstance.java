@@ -18,6 +18,8 @@ package org.nd4j.linalg.fft;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
+import org.nd4j.linalg.api.ops.impl.transforms.VectorIFFT;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
@@ -40,7 +42,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     public IComplexNDArray fft(INDArray transform, int numElements, int dimension) {
         IComplexNDArray inputC = Nd4j.createComplex(transform);
         if (inputC.isVector())
-            return new VectorFFT(numElements).apply(inputC);
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,numElements));
         else {
             return rawfft(inputC, numElements, dimension);
         }
@@ -58,7 +60,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     @Override
     public IComplexNDArray fft(IComplexNDArray inputC, int numElements, int dimension) {
         if (inputC.isVector())
-            return new VectorFFT(numElements).apply(inputC);
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,numElements));
         else {
             return rawfft(inputC, numElements, dimension);
         }
@@ -77,7 +79,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     public IComplexNDArray ifft(INDArray transform, int numElements, int dimension) {
         IComplexNDArray inputC = Nd4j.createComplex(transform);
         if (inputC.isVector())
-            return new VectorIFFT(numElements).apply(inputC);
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorIFFT(inputC,numElements));
         else {
             return rawifft(inputC, numElements, dimension);
         }
@@ -95,7 +97,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     @Override
     public IComplexNDArray ifft(IComplexNDArray inputC, int numElements, int dimension) {
         if (inputC.isVector())
-            return new VectorIFFT(numElements).apply(inputC);
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorIFFT(inputC,numElements));
         else {
             return rawifft(inputC, numElements, dimension);
         }
@@ -112,7 +114,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     public IComplexNDArray ifft(INDArray transform, int numElements) {
         IComplexNDArray inputC = Nd4j.createComplex(transform);
         if (inputC.isVector())
-            return new VectorIFFT(numElements).apply(inputC);
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorIFFT(inputC,numElements));
         else {
             return rawifft(inputC, numElements, inputC.shape().length - 1);
         }
@@ -130,7 +132,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     @Override
     public IComplexNDArray ifft(IComplexNDArray inputC) {
         if (inputC.isVector())
-            return new VectorIFFT(inputC.length()).apply(inputC);
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,inputC.length()));
         else {
             return rawifft(inputC, inputC.size(inputC.shape().length - 1), inputC.shape().length - 1);
         }
@@ -164,7 +166,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
             result = result.swapAxes(result.shape().length - 1, dimension);
 
 
-        result.iterateOverAllRows(new FFTSliceOp(result.size(result.shape().length - 1)));
+        Nd4j.getExecutioner().iterateOverAllRows(new org.nd4j.linalg.api.ops.impl.transforms.VectorFFT(result, result.size(result.shape().length - 1)));
 
         if (dimension != result.shape().length - 1)
             result = result.swapAxes(result.shape().length - 1, dimension);
@@ -192,7 +194,8 @@ public class DefaultFFTInstance extends BaseFFTInstance {
         if (dimension != result.shape().length - 1)
             result = result.swapAxes(result.shape().length - 1, dimension);
 
-        result.iterateOverAllRows(new IFFTSliceOp(result.size(result.shape().length - 1)));
+        Nd4j.getExecutioner().iterateOverAllRows(new VectorIFFT(result, result.size(result.shape().length - 1)));
+
 
         if (dimension != result.shape().length - 1)
             result = result.swapAxes(result.shape().length - 1, dimension);

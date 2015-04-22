@@ -77,7 +77,7 @@ public interface INDArray extends Serializable {
      *
      * @return the linear view of this ndarray
      */
-    public INDArray linearView();
+    INDArray linearView();
 
     /**
      * Returns a linear view reference of shape
@@ -85,7 +85,7 @@ public interface INDArray extends Serializable {
      *
      * @return the linear view of this ndarray
      */
-    public INDArray linearViewColumnOrder();
+    INDArray linearViewColumnOrder();
 
     /**
      * Returns the number of possible vectors for a given dimension
@@ -93,7 +93,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to calculate the number of vectors for
      * @return the number of possible vectors along a dimension
      */
-    public int vectorsAlongDimension(int dimension);
+    int vectorsAlongDimension(int dimension);
 
     /**
      * Get the vector along a particular dimension
@@ -102,7 +102,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
-    public INDArray vectorAlongDimension(int index, int dimension);
+    INDArray vectorAlongDimension(int index, int dimension);
 
     /**
      * Cumulative sum along a dimension
@@ -110,7 +110,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to perform cumulative sum along
      * @return the cumulative sum along the specified dimension
      */
-    public INDArray cumsumi(int dimension);
+    INDArray cumsumi(int dimension);
 
     /**
      * Cumulative sum along a dimension (in place)
@@ -118,7 +118,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to perform cumulative sum along
      * @return the cumulative sum along the specified dimension
      */
-    public INDArray cumsum(int dimension);
+    INDArray cumsum(int dimension);
 
     /**
      * Assign all of the elements in the given
@@ -127,7 +127,7 @@ public interface INDArray extends Serializable {
      * @param arr the elements to assign
      * @return this
      */
-    public INDArray assign(INDArray arr);
+    INDArray assign(INDArray arr);
 
     /**
      * Insert the number linearly in to the ndarray
@@ -136,7 +136,7 @@ public interface INDArray extends Serializable {
      * @param value the value to insert
      * @return this
      */
-    public INDArray putScalar(int i, double value);
+    INDArray putScalar(int i, double value);
 
     /**
      * Insert a scalar float at the specified index
@@ -163,7 +163,7 @@ public interface INDArray extends Serializable {
      * @param value the number to insert
      * @return this
      */
-    public INDArray putScalar(int[] i, double value);
+    INDArray putScalar(int[] i, double value);
 
     /**
      * Returns an ndarray with 1 if the element is less than
@@ -173,7 +173,7 @@ public interface INDArray extends Serializable {
      * @return a copied ndarray with the given
      * binary conditions
      */
-    public INDArray lt(Number other);
+    INDArray lt(Number other);
 
     /**
      * In place less than comparison:
@@ -183,7 +183,7 @@ public interface INDArray extends Serializable {
      * @param other the number to compare
      * @return
      */
-    public INDArray lti(Number other);
+    INDArray lti(Number other);
 
     INDArray putScalar(int[] indexes, float value);
 
@@ -196,7 +196,7 @@ public interface INDArray extends Serializable {
      * @return a copied ndarray with the given
      * binary conditions
      */
-    public INDArray eps(Number other);
+    INDArray eps(Number other);
 
 
     /**
@@ -206,7 +206,7 @@ public interface INDArray extends Serializable {
      * @return a copied ndarray with the given
      * binary conditions
      */
-    public INDArray epsi(Number other);
+    INDArray epsi(Number other);
 
 
     /**
@@ -217,7 +217,7 @@ public interface INDArray extends Serializable {
      * @return a copied ndarray with the given
      * binary conditions
      */
-    public INDArray eq(Number other);
+    INDArray eq(Number other);
 
     /**
      * In place less than comparison:
@@ -227,7 +227,7 @@ public interface INDArray extends Serializable {
      * @param other the number to compare
      * @return
      */
-    public INDArray eqi(Number other);
+    INDArray eqi(Number other);
 
     /**
      * Greater than boolean (copying)(
@@ -235,7 +235,7 @@ public interface INDArray extends Serializable {
      * @param other
      * @return
      */
-    public INDArray gt(Number other);
+    INDArray gt(Number other);
 
     /**
      * In place greater than comparison:
@@ -245,7 +245,7 @@ public interface INDArray extends Serializable {
      * @param other the number to compare
      * @return
      */
-    public INDArray gti(Number other);
+    INDArray gti(Number other);
 
     /**
      * less than comparison:
@@ -256,7 +256,7 @@ public interface INDArray extends Serializable {
      * @return the result ndarray
      */
 
-    public INDArray lt(INDArray other);
+    INDArray lt(INDArray other);
 
     /**
      * In place less than comparison:
@@ -266,7 +266,7 @@ public interface INDArray extends Serializable {
      * @param other the number to compare
      * @return
      */
-    public INDArray lti(INDArray other);
+    INDArray lti(INDArray other);
 
 
     /**
@@ -277,7 +277,7 @@ public interface INDArray extends Serializable {
      * @param other the number to compare
      * @return
      */
-    public INDArray eps(INDArray other);
+    INDArray eps(INDArray other);
 
     /**
      * In place epsilon equals than comparison:
@@ -287,7 +287,7 @@ public interface INDArray extends Serializable {
      * @param other the number to compare
      * @return
      */
-    public INDArray epsi(INDArray other);
+    INDArray epsi(INDArray other);
 
 
     INDArray neq(Number other);
@@ -306,7 +306,7 @@ public interface INDArray extends Serializable {
      * @param other the number to compare
      * @return
      */
-    public INDArray eq(INDArray other);
+    INDArray eq(INDArray other);
 
     /**
      * In place equal than comparison:
@@ -316,7 +316,7 @@ public interface INDArray extends Serializable {
      * @param other the number to compare
      * @return
      */
-    public INDArray eqi(INDArray other);
+    INDArray eqi(INDArray other);
 
     /**
      * greater than comparison:
@@ -326,7 +326,7 @@ public interface INDArray extends Serializable {
      * @param other the number to compare
      * @return
      */
-    public INDArray gt(INDArray other);
+    INDArray gt(INDArray other);
 
     /**
      * In place greater than comparison:
@@ -336,7 +336,7 @@ public interface INDArray extends Serializable {
      * @param other the number to compare
      * @return
      */
-    public INDArray gti(INDArray other);
+    INDArray gti(INDArray other);
 
 
     /**
@@ -344,14 +344,14 @@ public interface INDArray extends Serializable {
      *
      * @return
      */
-    public INDArray neg();
+    INDArray neg();
 
     /**
      * In place setting of the negative version of this ndarray
      *
      * @return
      */
-    public INDArray negi();
+    INDArray negi();
 
     /**
      * Reverse division
@@ -359,7 +359,7 @@ public interface INDArray extends Serializable {
      * @param n
      * @return
      */
-    public INDArray rdiv(Number n);
+    INDArray rdiv(Number n);
 
     /**
      * In place reverse division
@@ -367,7 +367,7 @@ public interface INDArray extends Serializable {
      * @param n
      * @return
      */
-    public INDArray rdivi(Number n);
+    INDArray rdivi(Number n);
 
     /**
      * Reverse subtraction with duplicates
@@ -375,9 +375,9 @@ public interface INDArray extends Serializable {
      * @param n
      * @return
      */
-    public INDArray rsub(Number n);
+    INDArray rsub(Number n);
 
-    public INDArray rsubi(Number n);
+    INDArray rsubi(Number n);
 
 
     /**
@@ -386,7 +386,7 @@ public interface INDArray extends Serializable {
      * @param n
      * @return
      */
-    public INDArray div(Number n);
+    INDArray div(Number n);
 
     /**
      * In place scalar division
@@ -394,7 +394,7 @@ public interface INDArray extends Serializable {
      * @param n
      * @return
      */
-    public INDArray divi(Number n);
+    INDArray divi(Number n);
 
 
     /**
@@ -403,7 +403,7 @@ public interface INDArray extends Serializable {
      * @param n the number to multiply by
      * @return a copy of this ndarray multiplied by the given number
      */
-    public INDArray mul(Number n);
+    INDArray mul(Number n);
 
     /**
      * In place scalar multiplication
@@ -411,7 +411,7 @@ public interface INDArray extends Serializable {
      * @param n
      * @return
      */
-    public INDArray muli(Number n);
+    INDArray muli(Number n);
 
 
     /**
@@ -420,7 +420,7 @@ public interface INDArray extends Serializable {
      * @param n the number to subtract by
      * @return this ndarray - the given number
      */
-    public INDArray sub(Number n);
+    INDArray sub(Number n);
 
 
     /**
@@ -429,7 +429,7 @@ public interface INDArray extends Serializable {
      * @param n
      * @return
      */
-    public INDArray subi(Number n);
+    INDArray subi(Number n);
 
     /**
      * Scalar addition (cloning)
@@ -437,7 +437,7 @@ public interface INDArray extends Serializable {
      * @param n the number to add
      * @return a clone with this matrix + the given number
      */
-    public INDArray add(Number n);
+    INDArray add(Number n);
 
     /**
      * In place scalar addition
@@ -445,7 +445,7 @@ public interface INDArray extends Serializable {
      * @param n
      * @return
      */
-    public INDArray addi(Number n);
+    INDArray addi(Number n);
 
 
     /**
@@ -455,7 +455,7 @@ public interface INDArray extends Serializable {
      * @param result
      * @return
      */
-    public INDArray rdiv(Number n, INDArray result);
+    INDArray rdiv(Number n, INDArray result);
 
 
     /**
@@ -465,7 +465,7 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return the result ndarray
      */
-    public INDArray rdivi(Number n, INDArray result);
+    INDArray rdivi(Number n, INDArray result);
 
     /**
      * Reverse subtraction
@@ -474,7 +474,7 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return
      */
-    public INDArray rsub(Number n, INDArray result);
+    INDArray rsub(Number n, INDArray result);
 
     /**
      * Reverse in place subtraction
@@ -483,7 +483,7 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return the result ndarray
      */
-    public INDArray rsubi(Number n, INDArray result);
+    INDArray rsubi(Number n, INDArray result);
 
 
     /**
@@ -491,7 +491,7 @@ public interface INDArray extends Serializable {
      * @param result
      * @return
      */
-    public INDArray div(Number n, INDArray result);
+    INDArray div(Number n, INDArray result);
 
     /**
      * In place division of this ndarray
@@ -500,10 +500,10 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return
      */
-    public INDArray divi(Number n, INDArray result);
+    INDArray divi(Number n, INDArray result);
 
 
-    public INDArray mul(Number n, INDArray result);
+    INDArray mul(Number n, INDArray result);
 
 
     /**
@@ -513,10 +513,10 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return
      */
-    public INDArray muli(Number n, INDArray result);
+    INDArray muli(Number n, INDArray result);
 
 
-    public INDArray sub(Number n, INDArray result);
+    INDArray sub(Number n, INDArray result);
 
     /**
      * In place subtraction of this ndarray
@@ -525,9 +525,9 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return the result ndarray
      */
-    public INDArray subi(Number n, INDArray result);
+    INDArray subi(Number n, INDArray result);
 
-    public INDArray add(Number n, INDArray result);
+    INDArray add(Number n, INDArray result);
 
     /**
      * In place addition
@@ -536,7 +536,7 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return the result ndarray
      */
-    public INDArray addi(Number n, INDArray result);
+    INDArray addi(Number n, INDArray result);
 
 
     /**
@@ -546,7 +546,7 @@ public interface INDArray extends Serializable {
      * @param indexes the indexes in to the array
      * @return a view of the array with the specified indices
      */
-    public INDArray get(NDArrayIndex... indexes);
+    INDArray get(NDArrayIndex... indexes);
 
 
     /**
@@ -647,21 +647,9 @@ public interface INDArray extends Serializable {
      * @param i the index to getScalar
      * @return the linear index in to the data
      */
-    public int linearIndex(int i);
+    int linearIndex(int i);
 
-    /**
-     * Iterate over every row of every slice
-     *
-     * @param op the operation to apply
-     */
-    public void iterateOverAllRows(SliceOp op);
 
-    /**
-     * Iterate over every column of every slice
-     *
-     * @param op the operation to apply
-     */
-    public void iterateOverAllColumns(SliceOp op);
 
 
     /**
@@ -670,14 +658,14 @@ public interface INDArray extends Serializable {
      * @param other the other ndarray to compare
      */
 
-    public void checkDimensions(INDArray other);
+    void checkDimensions(INDArray other);
 
     /**
      * Gives the indices for the ending of each slice
      *
      * @return the off sets for the beginning of each slice
      */
-    public int[] endsForSlices();
+    int[] endsForSlices();
 
     void sliceVectors(List<INDArray> list);
 
@@ -689,7 +677,7 @@ public interface INDArray extends Serializable {
      * @param put   the slice to applyTransformToDestination
      * @return this for chainability
      */
-    public INDArray putSlice(int slice, INDArray put);
+    INDArray putSlice(int slice, INDArray put);
 
     /**
      * 1 in the ndarray if the element matches
@@ -709,16 +697,7 @@ public interface INDArray extends Serializable {
      */
     INDArray condi(Condition condition);
 
-    /**
-     * Iterate along a dimension.
-     * This encapsulates the process of sum, mean, and other processes
-     * take when iterating over a dimension.
-     *
-     * @param dimension the dimension to iterate over
-     * @param op        the operation to apply
-     * @param modify    whether to modify this array while iterating
-     */
-    public void iterateOverDimension(int dimension, SliceOp op, boolean modify);
+
 
 
     /**
@@ -727,7 +706,7 @@ public interface INDArray extends Serializable {
      * @param shape the new shape of this ndarray
      * @return the shape to fill out to
      */
-    public INDArray repmat(int[] shape);
+    INDArray repmat(int[] shape);
 
     /**
      * Insert a row in to this array
@@ -738,7 +717,7 @@ public interface INDArray extends Serializable {
      * @param toPut the row to insert
      * @return this
      */
-    public INDArray putRow(int row, INDArray toPut);
+    INDArray putRow(int row, INDArray toPut);
 
     /**
      * Insert a column in to this array
@@ -749,7 +728,7 @@ public interface INDArray extends Serializable {
      * @param toPut  the array to put
      * @return this
      */
-    public INDArray putColumn(int column, INDArray toPut);
+    INDArray putColumn(int column, INDArray toPut);
 
     /**
      * Returns the element at the specified row/column
@@ -759,7 +738,7 @@ public interface INDArray extends Serializable {
      * @param column the row of the element to return
      * @return a scalar indarray of the element at this index
      */
-    public INDArray getScalar(int row, int column);
+    INDArray getScalar(int row, int column);
 
     /**
      * Returns the element at the specified index
@@ -767,7 +746,7 @@ public interface INDArray extends Serializable {
      * @param i the index of the element to return
      * @return a scalar ndarray of the element at this index
      */
-    public INDArray getScalar(int i);
+    INDArray getScalar(int i);
 
 
     /**
@@ -782,17 +761,17 @@ public interface INDArray extends Serializable {
     /**
      * Returns the squared (Euclidean) distance.
      */
-    public double squaredDistance(INDArray other);
+    double squaredDistance(INDArray other);
 
     /**
      * Returns the (euclidean) distance.
      */
-    public double distance2(INDArray other);
+    double distance2(INDArray other);
 
     /**
      * Returns the (1-norm) distance.
      */
-    public double distance1(INDArray other);
+    double distance1(INDArray other);
 
 
     /**
@@ -803,7 +782,7 @@ public interface INDArray extends Serializable {
      * @param element the ndarray to put
      * @return this ndarray
      */
-    public INDArray put(NDArrayIndex[] indices, INDArray element);
+    INDArray put(NDArrayIndex[] indices, INDArray element);
 
     /**
      * Put the elements of the ndarray
@@ -813,7 +792,7 @@ public interface INDArray extends Serializable {
      * @param element the ndarray to put
      * @return this ndarray
      */
-    public INDArray put(NDArrayIndex[] indices, Number element);
+    INDArray put(NDArrayIndex[] indices, Number element);
 
     /**
      * Inserts the element at the specified index
@@ -822,7 +801,7 @@ public interface INDArray extends Serializable {
      * @param element a scalar ndarray
      * @return a scalar ndarray of the element at this index
      */
-    public INDArray put(int[] indices, INDArray element);
+    INDArray put(int[] indices, INDArray element);
 
 
     /**
@@ -833,7 +812,7 @@ public interface INDArray extends Serializable {
      * @param element a scalar ndarray
      * @return a scalar ndarray of the element at this index
      */
-    public INDArray put(int i, int j, INDArray element);
+    INDArray put(int i, int j, INDArray element);
 
 
     /**
@@ -844,7 +823,7 @@ public interface INDArray extends Serializable {
      * @param element a scalar ndarray
      * @return a scalar ndarray of the element at this index
      */
-    public INDArray put(int i, int j, Number element);
+    INDArray put(int i, int j, Number element);
 
 
     /**
@@ -854,7 +833,7 @@ public interface INDArray extends Serializable {
      * @param element a scalar ndarray
      * @return a scalar ndarray of the element at this index
      */
-    public INDArray put(int i, INDArray element);
+    INDArray put(int i, INDArray element);
 
 
     /**
@@ -863,7 +842,7 @@ public interface INDArray extends Serializable {
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray diviColumnVector(INDArray columnVector);
+    INDArray diviColumnVector(INDArray columnVector);
 
     /**
      * In place addition of a column vector
@@ -871,7 +850,7 @@ public interface INDArray extends Serializable {
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray divColumnVector(INDArray columnVector);
+    INDArray divColumnVector(INDArray columnVector);
 
     /**
      * In place addition of a column vector
@@ -879,7 +858,7 @@ public interface INDArray extends Serializable {
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray diviRowVector(INDArray rowVector);
+    INDArray diviRowVector(INDArray rowVector);
 
     /**
      * In place addition of a column vector
@@ -887,7 +866,7 @@ public interface INDArray extends Serializable {
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray divRowVector(INDArray rowVector);
+    INDArray divRowVector(INDArray rowVector);
 
 
     /**
@@ -896,7 +875,7 @@ public interface INDArray extends Serializable {
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray rdiviColumnVector(INDArray columnVector);
+    INDArray rdiviColumnVector(INDArray columnVector);
 
     /**
      * In place reverse division of a column vector
@@ -904,7 +883,7 @@ public interface INDArray extends Serializable {
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray rdivColumnVector(INDArray columnVector);
+    INDArray rdivColumnVector(INDArray columnVector);
 
     /**
      * In place addition of a column vector
@@ -912,7 +891,7 @@ public interface INDArray extends Serializable {
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray rdiviRowVector(INDArray rowVector);
+    INDArray rdiviRowVector(INDArray rowVector);
 
     /**
      * In place addition of a column vector
@@ -920,7 +899,7 @@ public interface INDArray extends Serializable {
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray rdivRowVector(INDArray rowVector);
+    INDArray rdivRowVector(INDArray rowVector);
 
 
     /**
@@ -929,7 +908,7 @@ public interface INDArray extends Serializable {
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray muliColumnVector(INDArray columnVector);
+    INDArray muliColumnVector(INDArray columnVector);
 
     /**
      * In place addition of a column vector
@@ -937,7 +916,7 @@ public interface INDArray extends Serializable {
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray mulColumnVector(INDArray columnVector);
+    INDArray mulColumnVector(INDArray columnVector);
 
     /**
      * In place addition of a column vector
@@ -945,7 +924,7 @@ public interface INDArray extends Serializable {
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray muliRowVector(INDArray rowVector);
+    INDArray muliRowVector(INDArray rowVector);
 
     /**
      * In place addition of a column vector
@@ -953,7 +932,7 @@ public interface INDArray extends Serializable {
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray mulRowVector(INDArray rowVector);
+    INDArray mulRowVector(INDArray rowVector);
 
 
     /**
@@ -962,7 +941,7 @@ public interface INDArray extends Serializable {
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray rsubiColumnVector(INDArray columnVector);
+    INDArray rsubiColumnVector(INDArray columnVector);
 
     /**
      * In place addition of a column vector
@@ -970,7 +949,7 @@ public interface INDArray extends Serializable {
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray rsubColumnVector(INDArray columnVector);
+    INDArray rsubColumnVector(INDArray columnVector);
 
     /**
      * In place addition of a column vector
@@ -978,7 +957,7 @@ public interface INDArray extends Serializable {
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray rsubiRowVector(INDArray rowVector);
+    INDArray rsubiRowVector(INDArray rowVector);
 
     /**
      * In place addition of a column vector
@@ -986,7 +965,7 @@ public interface INDArray extends Serializable {
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray rsubRowVector(INDArray rowVector);
+    INDArray rsubRowVector(INDArray rowVector);
 
     /**
      * In place addition of a column vector
@@ -994,7 +973,7 @@ public interface INDArray extends Serializable {
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray subiColumnVector(INDArray columnVector);
+    INDArray subiColumnVector(INDArray columnVector);
 
     /**
      * In place addition of a column vector
@@ -1002,7 +981,7 @@ public interface INDArray extends Serializable {
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray subColumnVector(INDArray columnVector);
+    INDArray subColumnVector(INDArray columnVector);
 
     /**
      * In place addition of a column vector
@@ -1010,7 +989,7 @@ public interface INDArray extends Serializable {
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray subiRowVector(INDArray rowVector);
+    INDArray subiRowVector(INDArray rowVector);
 
     /**
      * In place addition of a column vector
@@ -1018,7 +997,7 @@ public interface INDArray extends Serializable {
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray subRowVector(INDArray rowVector);
+    INDArray subRowVector(INDArray rowVector);
 
     /**
      * In place addition of a column vector
@@ -1026,7 +1005,7 @@ public interface INDArray extends Serializable {
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray addiColumnVector(INDArray columnVector);
+    INDArray addiColumnVector(INDArray columnVector);
 
     /**
      * In place addition of a column vector
@@ -1034,7 +1013,7 @@ public interface INDArray extends Serializable {
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray addColumnVector(INDArray columnVector);
+    INDArray addColumnVector(INDArray columnVector);
 
     /**
      * In place addition of a column vector
@@ -1042,7 +1021,7 @@ public interface INDArray extends Serializable {
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray addiRowVector(INDArray rowVector);
+    INDArray addiRowVector(INDArray rowVector);
 
     /**
      * In place addition of a column vector
@@ -1050,7 +1029,7 @@ public interface INDArray extends Serializable {
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray addRowVector(INDArray rowVector);
+    INDArray addRowVector(INDArray rowVector);
 
     /**
      * Perform a copy matrix multiplication
@@ -1058,7 +1037,7 @@ public interface INDArray extends Serializable {
      * @param other the other matrix to perform matrix multiply with
      * @return the result of the matrix multiplication
      */
-    public INDArray mmul(INDArray other);
+    INDArray mmul(INDArray other);
 
 
     /**
@@ -1068,7 +1047,7 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return the result of the matrix multiplication
      */
-    public INDArray mmul(INDArray other, INDArray result);
+    INDArray mmul(INDArray other, INDArray result);
 
 
     /**
@@ -1077,7 +1056,7 @@ public interface INDArray extends Serializable {
      * @param other the second ndarray to divide
      * @return the result of the divide
      */
-    public INDArray div(INDArray other);
+    INDArray div(INDArray other);
 
     /**
      * copy (element wise) division of two matrices
@@ -1086,7 +1065,7 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return the result of the divide
      */
-    public INDArray div(INDArray other, INDArray result);
+    INDArray div(INDArray other, INDArray result);
 
 
     /**
@@ -1095,7 +1074,7 @@ public interface INDArray extends Serializable {
      * @param other the second ndarray to multiply
      * @return the result of the addition
      */
-    public INDArray mul(INDArray other);
+    INDArray mul(INDArray other);
 
     /**
      * copy (element wise) multiplication of two matrices
@@ -1104,7 +1083,7 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return the result of the multiplication
      */
-    public INDArray mul(INDArray other, INDArray result);
+    INDArray mul(INDArray other, INDArray result);
 
     /**
      * copy subtraction of two matrices
@@ -1112,7 +1091,7 @@ public interface INDArray extends Serializable {
      * @param other the second ndarray to subtract
      * @return the result of the addition
      */
-    public INDArray sub(INDArray other);
+    INDArray sub(INDArray other);
 
     /**
      * copy subtraction of two matrices
@@ -1121,7 +1100,7 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return the result of the subtraction
      */
-    public INDArray sub(INDArray other, INDArray result);
+    INDArray sub(INDArray other, INDArray result);
 
     /**
      * copy addition of two matrices
@@ -1129,7 +1108,7 @@ public interface INDArray extends Serializable {
      * @param other the second ndarray to add
      * @return the result of the addition
      */
-    public INDArray add(INDArray other);
+    INDArray add(INDArray other);
 
     /**
      * copy addition of two matrices
@@ -1138,7 +1117,7 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return the result of the addition
      */
-    public INDArray add(INDArray other, INDArray result);
+    INDArray add(INDArray other, INDArray result);
 
 
     /**
@@ -1147,7 +1126,7 @@ public interface INDArray extends Serializable {
      * @param other the other matrix to perform matrix multiply with
      * @return the result of the matrix multiplication
      */
-    public INDArray mmuli(INDArray other);
+    INDArray mmuli(INDArray other);
 
 
     /**
@@ -1157,7 +1136,7 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return the result of the matrix multiplication
      */
-    public INDArray mmuli(INDArray other, INDArray result);
+    INDArray mmuli(INDArray other, INDArray result);
 
 
     /**
@@ -1166,7 +1145,7 @@ public interface INDArray extends Serializable {
      * @param other the second ndarray to divide
      * @return the result of the divide
      */
-    public INDArray divi(INDArray other);
+    INDArray divi(INDArray other);
 
     /**
      * in place (element wise) division of two matrices
@@ -1175,7 +1154,7 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return the result of the divide
      */
-    public INDArray divi(INDArray other, INDArray result);
+    INDArray divi(INDArray other, INDArray result);
 
 
     /**
@@ -1184,7 +1163,7 @@ public interface INDArray extends Serializable {
      * @param other the second ndarray to multiply
      * @return the result of the addition
      */
-    public INDArray muli(INDArray other);
+    INDArray muli(INDArray other);
 
     /**
      * in place (element wise) multiplication of two matrices
@@ -1193,7 +1172,7 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return the result of the multiplication
      */
-    public INDArray muli(INDArray other, INDArray result);
+    INDArray muli(INDArray other, INDArray result);
 
     /**
      * in place subtraction of two matrices
@@ -1201,7 +1180,7 @@ public interface INDArray extends Serializable {
      * @param other the second ndarray to subtract
      * @return the result of the addition
      */
-    public INDArray subi(INDArray other);
+    INDArray subi(INDArray other);
 
     /**
      * in place subtraction of two matrices
@@ -1210,7 +1189,7 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return the result of the subtraction
      */
-    public INDArray subi(INDArray other, INDArray result);
+    INDArray subi(INDArray other, INDArray result);
 
     /**
      * in place addition of two matrices
@@ -1218,7 +1197,7 @@ public interface INDArray extends Serializable {
      * @param other the second ndarray to add
      * @return the result of the addition
      */
-    public INDArray addi(INDArray other);
+    INDArray addi(INDArray other);
 
     /**
      * in place addition of two matrices
@@ -1227,7 +1206,7 @@ public interface INDArray extends Serializable {
      * @param result the result ndarray
      * @return the result of the addition
      */
-    public INDArray addi(INDArray other, INDArray result);
+    INDArray addi(INDArray other, INDArray result);
 
 
     /**
@@ -1236,7 +1215,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to getScalar the norm1 along
      * @return the norm1 along the specified dimension
      */
-    public INDArray normmax(int dimension);
+    INDArray normmax(int dimension);
 
 
     /**
@@ -1245,7 +1224,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to getScalar the norm2 along
      * @return the norm2 along the specified dimension
      */
-    public INDArray norm2(int dimension);
+    INDArray norm2(int dimension);
 
 
     /**
@@ -1254,7 +1233,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to getScalar the norm1 along
      * @return the norm1 along the specified dimension
      */
-    public INDArray norm1(int dimension);
+    INDArray norm1(int dimension);
 
 
     /**
@@ -1263,7 +1242,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to getScalar the std along
      * @return the standard deviation along a particular dimension
      */
-    public INDArray std(int dimension);
+    INDArray std(int dimension);
 
     /**
      * Returns the product along a given dimension
@@ -1271,7 +1250,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to getScalar the product along
      * @return the product along the specified dimension
      */
-    public INDArray prod(int dimension);
+    INDArray prod(int dimension);
 
 
     /**
@@ -1280,7 +1259,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    public INDArray mean(int dimension);
+    INDArray mean(int dimension);
 
 
     /**
@@ -1289,7 +1268,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    public INDArray var(int dimension);
+    INDArray var(int dimension);
 
 
     /**
@@ -1298,7 +1277,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    public INDArray max(int dimension);
+    INDArray max(int dimension);
 
     /**
      * Returns the overall min of this ndarray
@@ -1306,7 +1285,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    public INDArray min(int dimension);
+    INDArray min(int dimension);
 
     /**
      * Returns the sum along the last dimension of this ndarray
@@ -1314,10 +1293,10 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to getScalar the sum along
      * @return the sum along the specified dimension of this ndarray
      */
-    public INDArray sum(int dimension);
+    INDArray sum(int dimension);
 
 
-    public void setStride(int[] stride);
+    void setStride(int[] stride);
 
     /**
      * @param offsets
@@ -1325,7 +1304,7 @@ public interface INDArray extends Serializable {
      * @param stride
      * @return
      */
-    public INDArray subArray(int[] offsets, int[] shape, int[] stride);
+    INDArray subArray(int[] offsets, int[] shape, int[] stride);
 
     /**
      * Returns the elements at the the specified indices
@@ -1333,7 +1312,7 @@ public interface INDArray extends Serializable {
      * @param indices the indices to getScalar
      * @return the array with the specified elements
      */
-    public INDArray getScalar(int[] indices);
+    INDArray getScalar(int[] indices);
 
 
     int getInt(int... indices);
@@ -1346,7 +1325,7 @@ public interface INDArray extends Serializable {
      * @param indices the indices to getScalar
      * @return the array with the specified elements
      */
-    public float getFloat(int[] indices);
+    float getFloat(int[] indices);
 
 
     double getDouble(int i);
@@ -1359,7 +1338,7 @@ public interface INDArray extends Serializable {
      * @param i the index of the item to getScalar
      * @return the item at index j
      */
-    public float getFloat(int i);
+    float getFloat(int i);
 
     /**
      * Return the item at row i column j
@@ -1369,7 +1348,7 @@ public interface INDArray extends Serializable {
      * @param j the column to getScalar
      * @return the item at row i column j
      */
-    public float getFloat(int i, int j);
+    float getFloat(int i, int j);
 
 
     /**
@@ -1377,7 +1356,7 @@ public interface INDArray extends Serializable {
      *
      * @return a copy of this ndarray
      */
-    public INDArray dup();
+    INDArray dup();
 
 
     /**
@@ -1385,7 +1364,7 @@ public interface INDArray extends Serializable {
      *
      * @return a flattened version (row vector) of this ndarray
      */
-    public INDArray ravel();
+    INDArray ravel();
 
 
     void setData(DataBuffer data);
@@ -1395,7 +1374,7 @@ public interface INDArray extends Serializable {
      *
      * @return the number of slices in this ndarray
      */
-    public int slices();
+    int slices();
 
 
     /**
@@ -1405,7 +1384,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to return the slice for
      * @return the specified slice of this ndarray
      */
-    public INDArray slice(int i, int dimension);
+    INDArray slice(int i, int dimension);
 
 
     /**
@@ -1414,7 +1393,7 @@ public interface INDArray extends Serializable {
      * @param i the index of the slice to return
      * @return the specified slice of this ndarray
      */
-    public INDArray slice(int i);
+    INDArray slice(int i);
 
 
     /**
@@ -1423,7 +1402,7 @@ public interface INDArray extends Serializable {
      *
      * @return the starting offset
      */
-    public int offset();
+    int offset();
 
     /**
      * Reshapes the ndarray (can't change the length of the ndarray)
@@ -1431,7 +1410,7 @@ public interface INDArray extends Serializable {
      * @param newShape the new shape of the ndarray
      * @return the reshaped ndarray
      */
-    public INDArray reshape(int... newShape);
+    INDArray reshape(int... newShape);
 
 
     /**
@@ -1441,14 +1420,14 @@ public interface INDArray extends Serializable {
      * @param columns the columns of the matrix
      * @return the reshaped ndarray
      */
-    public INDArray reshape(int rows, int columns);
+    INDArray reshape(int rows, int columns);
 
     /**
      * Flip the rows and columns of a matrix
      *
      * @return the flipped rows and columns of a matrix
      */
-    public INDArray transpose();
+    INDArray transpose();
 
 
     /**
@@ -1456,7 +1435,7 @@ public interface INDArray extends Serializable {
      *
      * @return the flipped rows and columns of a matrix
      */
-    public INDArray transposei();
+    INDArray transposei();
 
     /**
      * Mainly here for people coming from numpy.
@@ -1466,7 +1445,7 @@ public interface INDArray extends Serializable {
      * @param with      the one to swap it with
      * @return the swapped axes view
      */
-    public INDArray swapAxes(int dimension, int with);
+    INDArray swapAxes(int dimension, int with);
 
     /**
      * See: http://www.mathworks.com/help/matlab/ref/permute.html
@@ -1474,7 +1453,7 @@ public interface INDArray extends Serializable {
      * @param rearrange the dimensions to swap to
      * @return the newly permuted array
      */
-    public INDArray permute(int... rearrange);
+    INDArray permute(int... rearrange);
 
     /**
      * Dimshuffle: an extension of permute that adds the ability
@@ -1488,7 +1467,7 @@ public interface INDArray extends Serializable {
      * @param broadCastable (whether the dimension is broadcastable) (must be same length as new order)
      * @return the newly permuted array
      */
-    public INDArray dimShuffle(Object[] rearrange, int[] newOrder, boolean[] broadCastable);
+    INDArray dimShuffle(Object[] rearrange, int[] newOrder, boolean[] broadCastable);
 
     /**
      * Returns the specified column.
@@ -1623,65 +1602,65 @@ public interface INDArray extends Serializable {
      *
      * @return the linear double array representation of this ndarray
      */
-    public DataBuffer data();
+    DataBuffer data();
 
 
     void setData(float[] data);
 
-    public IComplexNDArray rdiv(IComplexNumber n);
+    IComplexNDArray rdiv(IComplexNumber n);
 
-    public IComplexNDArray rdivi(IComplexNumber n);
+    IComplexNDArray rdivi(IComplexNumber n);
 
-    public IComplexNDArray rsub(IComplexNumber n);
+    IComplexNDArray rsub(IComplexNumber n);
 
-    public IComplexNDArray rsubi(IComplexNumber n);
-
-
-    public IComplexNDArray div(IComplexNumber n);
-
-    public IComplexNDArray divi(IComplexNumber n);
+    IComplexNDArray rsubi(IComplexNumber n);
 
 
-    public IComplexNDArray mul(IComplexNumber n);
+    IComplexNDArray div(IComplexNumber n);
 
-    public IComplexNDArray muli(IComplexNumber n);
-
-
-    public IComplexNDArray sub(IComplexNumber n);
-
-    public IComplexNDArray subi(IComplexNumber n);
-
-    public IComplexNDArray add(IComplexNumber n);
-
-    public IComplexNDArray addi(IComplexNumber n);
+    IComplexNDArray divi(IComplexNumber n);
 
 
-    public IComplexNDArray rdiv(IComplexNumber n, IComplexNDArray result);
+    IComplexNDArray mul(IComplexNumber n);
 
-    public IComplexNDArray rdivi(IComplexNumber n, IComplexNDArray result);
-
-    public IComplexNDArray rsub(IComplexNumber n, IComplexNDArray result);
-
-    public IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result);
+    IComplexNDArray muli(IComplexNumber n);
 
 
-    public IComplexNDArray div(IComplexNumber n, IComplexNDArray result);
+    IComplexNDArray sub(IComplexNumber n);
 
-    public IComplexNDArray divi(IComplexNumber n, IComplexNDArray result);
+    IComplexNDArray subi(IComplexNumber n);
+
+    IComplexNDArray add(IComplexNumber n);
+
+    IComplexNDArray addi(IComplexNumber n);
 
 
-    public IComplexNDArray mul(IComplexNumber n, IComplexNDArray result);
+    IComplexNDArray rdiv(IComplexNumber n, IComplexNDArray result);
 
-    public IComplexNDArray muli(IComplexNumber n, IComplexNDArray result);
+    IComplexNDArray rdivi(IComplexNumber n, IComplexNDArray result);
+
+    IComplexNDArray rsub(IComplexNumber n, IComplexNDArray result);
+
+    IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result);
 
 
-    public IComplexNDArray sub(IComplexNumber n, IComplexNDArray result);
+    IComplexNDArray div(IComplexNumber n, IComplexNDArray result);
 
-    public IComplexNDArray subi(IComplexNumber n, IComplexNDArray result);
+    IComplexNDArray divi(IComplexNumber n, IComplexNDArray result);
 
-    public IComplexNDArray add(IComplexNumber n, IComplexNDArray result);
 
-    public IComplexNDArray addi(IComplexNumber n, IComplexNDArray result);
+    IComplexNDArray mul(IComplexNumber n, IComplexNDArray result);
+
+    IComplexNDArray muli(IComplexNumber n, IComplexNDArray result);
+
+
+    IComplexNDArray sub(IComplexNumber n, IComplexNDArray result);
+
+    IComplexNDArray subi(IComplexNumber n, IComplexNDArray result);
+
+    IComplexNDArray add(IComplexNumber n, IComplexNDArray result);
+
+    IComplexNDArray addi(IComplexNumber n, IComplexNDArray result);
 
 
 }

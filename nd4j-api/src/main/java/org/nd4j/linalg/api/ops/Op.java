@@ -180,4 +180,21 @@ public interface Op {
     Object[] extraArgs();
 
 
+    /**
+     * set x (the input ndarray)
+     * @param x
+     */
+    void setX(INDArray x);
+
+    /**
+     * set z (the solution ndarray)
+     * @param z
+     */
+    void setZ(INDArray z);
+
+    /**
+     * set y(the pairwise ndarray)
+     * @param y
+     */
+    void setY(INDArray y);
 }
