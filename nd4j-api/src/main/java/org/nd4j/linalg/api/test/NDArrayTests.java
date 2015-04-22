@@ -1232,8 +1232,8 @@ public abstract class NDArrayTests {
     @Test
     public void testRand() {
         INDArray rand = Nd4j.randn(5, 5);
-        Nd4j.getDistributions().createUniform(1, 5).sample(5);
-        Nd4j.getDistributions().createNormal(1, 5).sample();
+        Nd4j.getDistributions().createUniform(0.4, -0.4).sample(5);
+        Nd4j.getDistributions().createNormal(1, 5).sample(10);
         Nd4j.getDistributions().createBinomial(5, 1.0).sample(new int[]{5, 5});
         Nd4j.getDistributions().createBinomial(1, Nd4j.ones(5, 5)).sample(rand.shape());
         Nd4j.getDistributions().createNormal(rand, 1).sample(rand.shape());

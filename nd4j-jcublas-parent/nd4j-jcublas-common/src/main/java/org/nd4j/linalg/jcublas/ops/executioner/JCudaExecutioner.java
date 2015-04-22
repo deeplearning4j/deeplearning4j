@@ -235,7 +235,6 @@ public class JCudaExecutioner implements OpExecutioner {
 
 
         }
-
         result.destroy();
     }
 
