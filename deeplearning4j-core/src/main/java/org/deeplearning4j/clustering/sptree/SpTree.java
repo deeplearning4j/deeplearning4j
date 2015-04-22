@@ -32,17 +32,19 @@ public class SpTree implements Serializable {
     private Set<INDArray> indices;
     private SpTree[] children;
     private static Logger log = LoggerFactory.getLogger(SpTree.class);
+    private String similarityFunction = "euclidean";
 
 
-    public SpTree(SpTree parent,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices) {
-        init(parent, data, corner, width,indices);
+    public SpTree(SpTree parent,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices,String similarityFunction) {
+        init(parent, data, corner, width,indices,similarityFunction);
     }
 
 
-    public SpTree(INDArray data,Set<INDArray> indices) {
+    public SpTree(INDArray data,Set<INDArray> indices,String similarityFunction) {
         this.indices = indices;
         this.N = data.rows();
         this.D = data.columns();
+        this.similarityFunction = similarityFunction;
         INDArray meanY = data.mean(0);
         INDArray minY = data.min(0);
         INDArray maxY = data.max(0);
@@ -51,8 +53,20 @@ public class SpTree implements Serializable {
             width.putScalar(i, FastMath.max(maxY.getDouble(i) - meanY.getDouble(i),meanY.getDouble(i) - minY.getDouble(i) + Nd4j.EPS_THRESHOLD));
         }
 
-        init(null,data,meanY,width,indices);
+        init(null,data,meanY,width,indices,similarityFunction);
         fill(N);
+
+
+    }
+
+
+    public SpTree(SpTree parent,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices) {
+        this(parent, data, corner, width,indices,"euclidean");
+    }
+
+
+    public SpTree(INDArray data,Set<INDArray> indices) {
+        this(data,indices,"euclidean");
 
 
     }
@@ -63,10 +77,11 @@ public class SpTree implements Serializable {
         this(data, new HashSet<INDArray>());
     }
 
-    private void init(SpTree parent,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices) {
+    private void init(SpTree parent,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices,String similarityFunction) {
         this.parent = parent;
         D = data.columns();
         N = data.rows();
+        this.similarityFunction = similarityFunction;
         nodeCapacity = N % NODE_RATIO;
         index = new int[nodeCapacity];
         for(int d = 1; d < this.D; d++)

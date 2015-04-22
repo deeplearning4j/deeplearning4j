@@ -97,11 +97,12 @@ public class Glove implements Serializable {
         //gradient for word vectors
         INDArray grad1 =  contextVector.mul(gradient);
         INDArray update = weightAdaGrad.getGradient(grad1,w1.getIndex(),syn0.shape());
-
+        wordVector.subi(update);
 
         double w1Bias = bias.getDouble(w1.getIndex());
         double biasGradient = biasAdaGrad.getGradient(gradient,w1.getIndex(),bias.shape());
         double update2 = w1Bias - biasGradient;
+        bias.putScalar(w1.getIndex(),bias.getDouble(w1.getIndex()) - update2);
         return new Pair<>(update,update2);
     }
 
@@ -158,7 +159,7 @@ public class Glove implements Serializable {
             public Tuple2<VocabWord, Tuple2<VocabWord, Double>> call(Tuple2<String, Tuple2<String, Double>> stringTuple2Tuple2) throws Exception {
                 VocabWord w1 = vocabCacheBroadcast.getValue().wordFor(stringTuple2Tuple2._1());
                 VocabWord w2 = vocabCacheBroadcast.getValue().wordFor(stringTuple2Tuple2._2()._1());
-                return new Tuple2<>(w1, new Tuple2<>(w2,stringTuple2Tuple2._2()._2()));
+                return new Tuple2<>(w1, new Tuple2<>(w2, stringTuple2Tuple2._2()._2()));
             }
         });
 
