@@ -24,16 +24,20 @@ public class VPTree {
     private double tau;
     private Node root;
     private CounterMap<DataPoint,DataPoint> distances;
+    private String similarityFunction;
 
-    public VPTree(INDArray items) {
+
+
+    public VPTree(INDArray items,String similarityFunction) {
         List<DataPoint> thisItems = new ArrayList<>();
+        this.similarityFunction = similarityFunction;
         for(int i = 0; i < items.slices(); i++)
-            thisItems.add(new DataPoint(i,items.slice(i)));
+            thisItems.add(new DataPoint(i,items.slice(i),similarityFunction));
         this.items = thisItems;
         distances = CounterMap.runPairWise(thisItems, new CounterMap.CountFunction<DataPoint>() {
             @Override
             public double count(DataPoint v1, DataPoint v2) {
-               return v1.euclidean(v2);
+                return v1.distance(v2);
             }
         });
 
@@ -41,22 +45,38 @@ public class VPTree {
         root = buildFromPoints(0,this.items.size());
     }
 
-    public VPTree(List<DataPoint> items,CounterMap<DataPoint,DataPoint> distances) {
+    public VPTree(List<DataPoint> items,CounterMap<DataPoint,DataPoint> distances,String similarityFunction) {
         this.items = items;
         this.distances = distances;
+        this.similarityFunction = similarityFunction;
         root = buildFromPoints(0,items.size());
 
     }
 
-    public VPTree(List<DataPoint> items) {
+    public VPTree(List<DataPoint> items,String similarityFunction) {
         this.items = items;
+        this.similarityFunction = similarityFunction;
         distances = CounterMap.runPairWise(items, new CounterMap.CountFunction<DataPoint>() {
             @Override
             public double count(DataPoint v1, DataPoint v2) {
-                return v1.euclidean(v2);
+                return v1.distance(v2);
             }
         });
         root = buildFromPoints(0,items.size());
+    }
+
+
+    public VPTree(INDArray items) {
+        this(items,"euclidean");
+    }
+
+    public VPTree(List<DataPoint> items,CounterMap<DataPoint,DataPoint> distances) {
+        this(items,distances,"euclidean");
+
+    }
+
+    public VPTree(List<DataPoint> items) {
+       this(items,"euclidean");
     }
 
     public static INDArray buildFromData(List<DataPoint> data) {

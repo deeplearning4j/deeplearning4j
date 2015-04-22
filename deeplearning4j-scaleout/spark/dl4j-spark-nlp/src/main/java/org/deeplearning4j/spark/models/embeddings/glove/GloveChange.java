@@ -42,10 +42,10 @@ public class GloveChange implements Serializable {
         table.getBias().putScalar(w2.getIndex(),table.getBias().getDouble(w2.getIndex()) - w2BiasUpdate);
         table.getSyn0().slice(w1.getIndex()).subi(w1Update);
         table.getSyn0().slice(w2.getIndex()).subi(w2Update);
-        //table.getWeightAdaGrad().getHistoricalGradient().slice(w1.getIndex()).addi(w1History);
-        //table.getWeightAdaGrad().getHistoricalGradient().slice(w2.getIndex()).addi(w2History);
-        //table.getBiasAdaGrad().getHistoricalGradient().putScalar(w1.getIndex(),table.getBiasAdaGrad().getHistoricalGradient().getDouble(w1.getIndex()) + w1BiasHistory);
-        //table.getBiasAdaGrad().getHistoricalGradient().putScalar(w2.getIndex(),table.getBiasAdaGrad().getHistoricalGradient().getDouble(w2.getIndex()) + w1BiasHistory);
+        table.getWeightAdaGrad().getHistoricalGradient().slice(w1.getIndex()).addi(w1History);
+        table.getWeightAdaGrad().getHistoricalGradient().slice(w2.getIndex()).addi(w2History);
+        table.getBiasAdaGrad().getHistoricalGradient().putScalar(w1.getIndex(),table.getBiasAdaGrad().getHistoricalGradient().getDouble(w1.getIndex()) + w1BiasHistory);
+        table.getBiasAdaGrad().getHistoricalGradient().putScalar(w2.getIndex(),table.getBiasAdaGrad().getHistoricalGradient().getDouble(w2.getIndex()) + w1BiasHistory);
 
     }
 
@@ -136,4 +136,10 @@ public class GloveChange implements Serializable {
     public void setError(double error) {
         this.error = error;
     }
+
+    @Override
+    public String toString() {
+        return w1.getIndex() + "," + w2.getIndex() + " error " + error;
+    }
+
 }
