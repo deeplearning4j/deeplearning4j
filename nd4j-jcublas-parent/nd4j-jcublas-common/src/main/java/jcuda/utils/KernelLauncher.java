@@ -39,6 +39,7 @@ import jcuda.driver.*;
 import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.dim3;
+
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -609,8 +610,6 @@ public class KernelLauncher {
         context = ContextHolder.getInstance().getContext(deviceNumber);
     }
 
-
-
     /**
      * Sync the context for the current thread.
      */
@@ -946,49 +945,49 @@ public class KernelLauncher {
                 Pointer argPointer = (Pointer)arg;
                 Pointer pointer = Pointer.to(argPointer);
                 kernelParameters[i] = pointer;
-                logger.info("argument " + i + " type is Pointer");
+                //logger.info("argument " + i + " type is Pointer");
             }
             else if (arg instanceof Byte)
             {
                 Byte value = (Byte)arg;
                 Pointer pointer = Pointer.to(new byte[]{value});
                 kernelParameters[i] = pointer;
-                logger.info("argument " + i + " type is Byte");
+                //logger.info("argument " + i + " type is Byte");
             }
             else if (arg instanceof Short)
             {
                 Short value = (Short)arg;
                 Pointer pointer = Pointer.to(new short[]{value});
                 kernelParameters[i] = pointer;
-                logger.info("argument " + i + " type is Short");
+               // logger.info("argument " + i + " type is Short");
             }
             else if (arg instanceof Integer)
             {
                 Integer value = (Integer)arg;
                 Pointer pointer = Pointer.to(new int[]{value});
                 kernelParameters[i] = pointer;
-                logger.info("argument " + i + " type is Integer");
+                //logger.info("argument " + i + " type is Integer");
             }
             else if (arg instanceof Long)
             {
                 Long value = (Long)arg;
                 Pointer pointer = Pointer.to(new long[]{value});
                 kernelParameters[i] = pointer;
-                logger.info("argument " + i + " type is Long");
+                //logger.info("argument " + i + " type is Long");
             }
             else if (arg instanceof Float)
             {
                 Float value = (Float)arg;
                 Pointer pointer = Pointer.to(new float[]{value});
                 kernelParameters[i] = pointer;
-                logger.info("argument " + i + " type is Float");
+                //logger.info("argument " + i + " type is Float");
             }
             else if (arg instanceof Double)
             {
                 Double value = (Double)arg;
                 Pointer pointer = Pointer.to(new double[]{value});
                 kernelParameters[i] = pointer;
-                logger.info("argument " + i + " type is Double");
+                //logger.info("argument " + i + " type is Double");
             }
 
             else if (arg instanceof double[])
@@ -996,14 +995,14 @@ public class KernelLauncher {
                 double[] value = (double[])arg;
                 Pointer pointer = Pointer.to(value);
                 kernelParameters[i] = pointer;
-                logger.info("argument " + i + " type is double[]");
+                //logger.info("argument " + i + " type is double[]");
             }
             else if (arg instanceof float[])
             {
                 float[] value = (float[])arg;
                 Pointer pointer = Pointer.to(value);
                 kernelParameters[i] = pointer;
-                logger.info("argument " + i + " type is float[]");
+                //logger.info("argument " + i + " type is float[]");
             }
 
             else if (arg instanceof int[])
@@ -1011,7 +1010,7 @@ public class KernelLauncher {
                 int[] value = (int[])arg;
                 Pointer pointer = Pointer.to(value);
                 kernelParameters[i] = pointer;
-                logger.info("argument " + i + " type is int[]");
+                //logger.info("argument " + i + " type is int[]");
             }
             else if(arg instanceof jcuda.jcurand.curandGenerator) {
                 jcuda.jcurand.curandGenerator rng = (jcuda.jcurand.curandGenerator) arg;
@@ -1036,7 +1035,7 @@ public class KernelLauncher {
                 Pointer.to(kernelParameters), null
         ));
 
-        JCudaDriver.cuCtxSynchronize();
+        checkResult(JCudaDriver.cuCtxSynchronize());
 
 
     }
@@ -1046,9 +1045,9 @@ public class KernelLauncher {
      * Syncs the current context for the thread.
      */
     public void syncContext() {
-        JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext());
-        JCudaDriver.cuCtxAttach(ContextHolder.getInstance().getContext(),0);
-        JCudaDriver.cuCtxSynchronize();
+    	checkResult(JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext()));
+    	checkResult(JCudaDriver.cuCtxAttach(ContextHolder.getInstance().getContext(),0));
+    	checkResult(JCudaDriver.cuCtxSynchronize());
     }
 
     /**
@@ -1058,7 +1057,7 @@ public class KernelLauncher {
      * @param cuResult The result
      * @throws CudaException if the result is not CUresult.CUDA_SUCCESS
      */
-    private static void checkResult(int cuResult)
+    public static void checkResult(int cuResult)
     {
         if (cuResult != CUresult.CUDA_SUCCESS)
         {

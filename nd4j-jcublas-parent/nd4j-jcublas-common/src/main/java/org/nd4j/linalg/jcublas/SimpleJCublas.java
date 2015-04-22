@@ -87,10 +87,10 @@ public class SimpleJCublas {
     public static void init() {
         if (init)
             return;
-      /*  JCublas2.initialize();
-        cublasHandle handle = new cublasHandle();
-        JCublas2.cublasCreate(handle);
-*/
+//        JCublas2.initialize();
+//        cublasHandle handle = new cublasHandle();
+//        JCublas2.cublasCreate(handle);
+
         JCublas.setLogLevel(LogLevel.LOG_DEBUG);
         JCublas.setExceptionsEnabled(true);
 
@@ -104,7 +104,7 @@ public class SimpleJCublas {
 
 
     public static void sync() {
-        JCuda.cudaDeviceSynchronize();
+    	JCuda.cudaDeviceSynchronize();
         KernelLauncher.setContext();
     }
 
