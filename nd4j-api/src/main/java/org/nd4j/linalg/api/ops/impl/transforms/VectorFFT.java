@@ -37,25 +37,32 @@ import static org.nd4j.linalg.ops.transforms.Transforms.exp;
 public class VectorFFT extends BaseTransformOp {
     private int fftLength;
     private int originalN = -1;
+    private boolean executed = false;
 
     public VectorFFT(INDArray x, INDArray z,int fftLength) {
         super(x, z);
         this.fftLength = fftLength;
+        exec();
     }
 
     public VectorFFT(INDArray x, INDArray z, int n,int fftLength) {
         super(x, z, n);
         this.fftLength = fftLength;
+        exec();
     }
 
     public VectorFFT(INDArray x, INDArray y, INDArray z, int n,int fftLength) {
         super(x, y, z, n);
+        this.z = z;
         this.fftLength = fftLength;
+        exec();
     }
 
     public VectorFFT(INDArray x,int fftLength) {
         super(x);
+        this.z = x;
         this.fftLength = fftLength;
+        exec();
     }
 
 
@@ -118,15 +125,20 @@ public class VectorFFT extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
-        super.init(x, y, z, n);
+    public void exec() {
+        if(!x.isVector())
+            return;
+        if(executed)
+            return;
 
-        double len = n;
+        executed = true;
+
+        double len = fftLength;
         IComplexNDArray ret = x instanceof IComplexNDArray ? (IComplexNDArray) x : Nd4j.createComplex(x);
         int desiredElementsAlongDimension = ret.length();
 
         if (len > desiredElementsAlongDimension) {
-            ret = ComplexNDArrayUtil.padWithZeros(ret, new int[]{n});
+            ret = ComplexNDArrayUtil.padWithZeros(ret, new int[]{fftLength});
         } else if (len < desiredElementsAlongDimension) {
             ret = ComplexNDArrayUtil.truncate(ret, n, 0);
         }
@@ -154,5 +166,28 @@ public class VectorFFT extends BaseTransformOp {
         //completely pass through
         this.x = matrix;
         this.z = matrix;
+    }
+
+    @Override
+    public boolean isPassThrough() {
+        return true;
+    }
+
+    @Override
+    public void setX(INDArray x) {
+        this.x = x;
+        executed = false;
+    }
+
+    @Override
+    public void setZ(INDArray z) {
+        this.z = z;
+        executed = false;
+
+    }
+
+    @Override
+    public void setY(INDArray y) {
+        this.y = y;
     }
 }

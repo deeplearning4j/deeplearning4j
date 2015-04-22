@@ -3303,4 +3303,12 @@ public class Nd4j {
     }
 
 
+    /**
+     * Create a complex array from the given numbers
+     * @param iComplexNumbers the numbers to use
+     * @return the complex numbers
+     */
+    public static IComplexNDArray createComplex(IComplexNumber[] iComplexNumbers) {
+        return createComplex(iComplexNumbers,new int[]{1,iComplexNumbers.length});
+    }
 }

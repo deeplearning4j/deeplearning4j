@@ -1210,7 +1210,7 @@ public abstract class BaseNDArray implements INDArray {
         else if (put.isVector())
             for (int i = 0; i < put.length(); i++)
                 view.putScalar(i, put.getDouble(i));
-        else if (put.shape().length == 2)
+        else if (put.isMatrix())
             for (int i = 0; i < put.rows(); i++)
                 view.putRow(i, put.getRow(i));
 

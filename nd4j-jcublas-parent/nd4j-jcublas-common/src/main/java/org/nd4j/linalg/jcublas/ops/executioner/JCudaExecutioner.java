@@ -72,11 +72,12 @@ public class JCudaExecutioner implements OpExecutioner {
 
     @Override
     public void iterateOverAllRows(Op op) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void iterateOverAllColumns(Op op) {
+        throw new UnsupportedOperationException();
 
     }
 

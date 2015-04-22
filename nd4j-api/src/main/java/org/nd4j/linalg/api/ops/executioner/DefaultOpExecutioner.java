@@ -35,6 +35,10 @@ import org.nd4j.linalg.util.ArrayUtil;
 public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public Op exec(Op op) {
+        if(op.isPassThrough()) {
+            op.exec();
+            return op;
+        }
         if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
             //make assumption x and z are same type
@@ -67,19 +71,41 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
         //execute row wise
         else if(op.x().isMatrix() || op.x().isColumnVector()) {
-            INDArray original = op.x();
-            INDArray originalZ = op.z();
-            INDArray y = op.y();
+           if(op.x() instanceof IComplexNDArray) {
+               IComplexNDArray original = (IComplexNDArray) op.x();
+               IComplexNDArray originalZ = (IComplexNDArray) op.z();
+               IComplexNDArray y = (IComplexNDArray) op.y();
 
-            for(int i = 0; i < op.x().rows(); i++) {
-                INDArray row = original.getRow(i);
-                INDArray zRow = originalZ.getRow(i);
-                op.setX(row);
-                op.setZ(zRow);
-                if(y != null)
-                    op.setY(y.getRow(i));
-                exec(op);
-            }
+               for(int i = 0; i < op.x().rows(); i++) {
+                   IComplexNDArray row = original.getRow(i);
+                   IComplexNDArray zRow = originalZ.getRow(i);
+                   op.setX(row);
+                   op.setZ(zRow);
+                   if(y != null)
+                       op.setY(y.getRow(i));
+                   exec(op);
+                   originalZ.putRow(i, zRow);
+
+               }
+           }
+            else {
+               INDArray original = op.x();
+               INDArray originalZ = op.z();
+               INDArray y = op.y();
+
+               for(int i = 0; i < op.x().rows(); i++) {
+                   INDArray row = original.getRow(i);
+                   INDArray zRow = originalZ.getRow(i);
+                   op.setX(row);
+                   op.setZ(zRow);
+                   if(y != null)
+                       op.setY(y.getRow(i));
+                   exec(op);
+                   originalZ.putRow(i,zRow);
+
+               }
+           }
+
         }
         else {
             INDArray originalX = op.x();
@@ -104,16 +130,31 @@ public class DefaultOpExecutioner implements OpExecutioner {
             exec(op,1);
         }
         else {
-            INDArray originalX = op.x();
-            INDArray originalZ = op.z();
-            INDArray y = op.y();
-            for(int i = 0; i < op.x().slices(); i++) {
-                op.setX(originalX.getColumn(i));
-                op.setZ(originalZ.getColumn(i));
-                if(y != null)
-                    op.setY(y.getColumn(i));
-                iterateOverAllColumns(op);
+            if(op.x() instanceof IComplexNDArray) {
+                IComplexNDArray originalX = (IComplexNDArray) op.x();
+                IComplexNDArray originalZ = (IComplexNDArray) op.z();
+                IComplexNDArray y = (IComplexNDArray) op.y();
+                for(int i = 0; i < op.x().slices(); i++) {
+                    op.setX(originalX.getColumn(i));
+                    op.setZ(originalZ.getColumn(i));
+                    if(y != null)
+                        op.setY(y.getColumn(i));
+                    iterateOverAllColumns(op);
+                }
             }
+            else {
+                INDArray originalX = op.x();
+                INDArray originalZ = op.z();
+                INDArray y = op.y();
+                for(int i = 0; i < op.x().slices(); i++) {
+                    op.setX(originalX.getColumn(i));
+                    op.setZ(originalZ.getColumn(i));
+                    if(y != null)
+                        op.setY(y.getColumn(i));
+                    iterateOverAllColumns(op);
+                }
+            }
+
         }
     }
 
@@ -193,7 +234,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
                 Op op2 = op.opForDimension(i, dimension);
                 IComplexNumber result = execAndReturn((Accumulation) op2).currentResultComplex();
-                linear.putScalar(i,result);
+                linear.putScalar(i, result);
 
             }
 
@@ -266,6 +307,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     private void apply(ScalarOp op, int c) {
+        if(op.isPassThrough())
+            return;
+
         if (op.x() instanceof IComplexNDArray) {
             IComplexNDArray ndArray = (IComplexNDArray) op.z();
             ndArray.putScalar(c, op.op(((IComplexNDArray) op.x()).getComplex(c)));
@@ -276,6 +320,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     //apply a pairwise op to x and store the result
     private void apply(TransformOp op, int c) {
+        if(op.isPassThrough())
+            return;
         if (op.y() != null) {
             //x is complex, y could be complex or real
             if (op.x() instanceof IComplexNDArray) {
@@ -314,6 +360,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     private void apply(Accumulation op, int x) {
+        if(op.isPassThrough())
+            return;
+
         if (op.y() != null) {
 
             //x is complex, y could be complex or real

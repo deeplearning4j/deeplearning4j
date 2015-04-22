@@ -197,4 +197,16 @@ public interface Op {
      * @param y
      */
     void setY(INDArray y);
+
+    /**
+     * Returns whether the op should be executed or not (through the executioner)
+     *
+     * @return true if the op is pass through false otherwise
+     */
+    boolean isPassThrough();
+
+    /**
+     * Execute the op if its pass through (not needed most of the time)
+     */
+    void exec();
 }

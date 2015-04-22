@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import com.google.common.base.Function;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -39,21 +38,25 @@ public class VectorIFFT extends BaseTransformOp {
     public VectorIFFT(INDArray x, INDArray z,int fftLength) {
         super(x, z);
         this.fftLength = fftLength;
+        exec();
     }
 
     public VectorIFFT(INDArray x, INDArray z, int n,int fftLength) {
         super(x, z, n);
         this.fftLength = fftLength;
+        exec();
     }
 
     public VectorIFFT(INDArray x, INDArray y, INDArray z, int n,int fftLength) {
         super(x, y, z, n);
         this.fftLength = fftLength;
+        exec();
     }
 
     public VectorIFFT(INDArray x,int fftLength) {
         super(x);
         this.fftLength = fftLength;
+        exec();
     }
 
 
@@ -114,13 +117,21 @@ public class VectorIFFT extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
-        super.init(x, y, z, n);
+    public boolean isPassThrough() {
+        return true;
+    }
+
+
+
+    @Override
+    public void exec() {
+        if(!x.isVector())
+            return;
         //ifft(x) = conj(fft(conj(x)) / length(x)
         IComplexNDArray ndArray = x instanceof IComplexNDArray ? (IComplexNDArray) x : Nd4j.createComplex(x);
         IComplexNDArray fft = (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(ndArray.conj(),y,z,x.length(),fftLength));
         IComplexNDArray ret = fft.conj().divi(Nd4j.complexScalar(fftLength));
-       //completely pass through
+        //completely pass through
         this.z = originalN > 0 ? ComplexNDArrayUtil.truncate(ret, originalN, 0) : ret;
         this.x = this.z;
     }

@@ -19,6 +19,7 @@ package org.nd4j.linalg.fft.test;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,43 +35,6 @@ import static org.junit.Assert.assertEquals;
 public abstract class BaseFFTTest {
 
     private static Logger log = LoggerFactory.getLogger(BaseFFTTest.class);
-
-    private double[] testVector = new double[]{
-            55.00000000
-            , 0.00000000e+00
-            , -26.37586651
-            , -2.13098631e+01
-            , 12.07106781
-            , 2.58578644e+00
-            , -9.44674873
-            , 1.75576651e+00
-            , 5.00000000
-            , -6.00000000e+00
-            , -0.89639702
-            , 5.89790214e+00
-            , -2.07106781
-            , -5.41421356e+00
-            , 4.71901226
-            , 2.83227249e+00
-            , -5.00000000
-            , -6.12323400e-15
-            , 4.71901226
-            , -2.83227249e+00
-            , -2.07106781
-            , 5.41421356e+00
-            , -0.89639702
-            , -5.89790214e+00
-            , 5.00000000
-            , 6.00000000e+00
-            , -9.44674873
-            , -1.75576651e+00
-            , 12.07106781
-            , -2.58578644e+00
-            , -26.37586651
-            , 2.13098631e+01
-    };
-
-    private float[] testFloatVector = new float[]{55f, 0f, -5, 1.53884177e01f, -5f, 6.88190960e00f, -5f, 3.63271264e00f, -5f, 1.62459848e00f, -5f, 4.44089210e-16f, -5.f, -1.62459848e00f, -5.f, -3.63271264e00f, -5.f, -6.88190960e00f, -5.f, -1.53884177e01f};
 
 
     @Test
@@ -94,6 +58,18 @@ public abstract class BaseFFTTest {
         IComplexNDArray testNoOffset = Nd4j.createComplex(new double[]{1, 0, 4, 0, 7, 0, 10, 0, 13, 0}, new int[]{5});
         assertEquals(Nd4j.getExecutioner().execAndReturn(new VectorFFT(testNoOffset,5)), Nd4j.getExecutioner().execAndReturn(new VectorFFT(test,5)));
 
+    }
+
+    @Test
+    public void testSimple() {
+        IComplexNDArray arr = Nd4j.createComplex(new IComplexNumber[]{Nd4j.createComplexNumber(5, 0), Nd4j.createComplexNumber(1, 0)});
+        IComplexNDArray arr2 = Nd4j.createComplex(new IComplexNumber[]{Nd4j.createComplexNumber(1, 0), Nd4j.createComplexNumber(5, 0)});
+
+        IComplexNDArray assertion = Nd4j.createComplex(new IComplexNumber[]{Nd4j.createComplexNumber(6,0),Nd4j.createComplexNumber(4,0)});
+        IComplexNDArray assertion2 = Nd4j.createComplex(new IComplexNumber[]{Nd4j.createComplexNumber(6,0),Nd4j.createComplexNumber(-4,4.371139E-7)});
+
+        assertEquals(assertion,Nd4j.getFFt().fft(arr));
+        assertEquals(assertion2,Nd4j.getFFt().fft(arr2));
     }
 
     @Test

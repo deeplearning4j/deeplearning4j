@@ -30,6 +30,12 @@ public abstract class BaseOp implements Op {
     protected int n;
     protected int numProcessed;
     protected Object[] extraArgs;
+    protected boolean passThrough;
+
+    @Override
+    public boolean isPassThrough() {
+        return passThrough;
+    }
 
     @Override
     public void setX(INDArray x) {
@@ -43,7 +49,7 @@ public abstract class BaseOp implements Op {
 
     @Override
     public void setY(INDArray y) {
-       this.y = y;
+        this.y = y;
     }
 
     /**
@@ -126,5 +132,10 @@ public abstract class BaseOp implements Op {
     @Override
     public String toString() {
         return name();
+    }
+
+    @Override
+    public void exec() {
+        //no-op
     }
 }

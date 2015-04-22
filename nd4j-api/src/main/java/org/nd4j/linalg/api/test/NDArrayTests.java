@@ -958,7 +958,6 @@ public abstract class NDArrayTests {
         n.putSlice(0, newSlice);
         assertEquals(newSlice, n.slice(0));
 
-
     }
 
     @Test
@@ -1415,6 +1414,8 @@ public abstract class NDArrayTests {
         assertEquals(rowVector.columns() * 2, concat.columns());
 
     }
+
+
 
 
     @Test
