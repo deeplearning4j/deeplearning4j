@@ -1,4 +1,4 @@
-package org.deeplearning4j.plot.dropwizard;
+package org.deeplearning4j.plot.dropwizard.nearestneighbors;
 
 import io.dropwizard.views.View;
 

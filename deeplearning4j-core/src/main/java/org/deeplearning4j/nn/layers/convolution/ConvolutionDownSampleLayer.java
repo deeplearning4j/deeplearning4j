@@ -23,7 +23,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -86,19 +85,7 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
         final INDArray pooled = getPool(convolution);
         final INDArray bias = b.dimShuffle(new Object[]{'x', 0, 'x', 'x'}, new int[4], new boolean[]{true});
         final INDArray broadCasted = bias.broadcast(pooled.shape());
-        broadCasted.iterateOverAllRows(new SliceOp() {
-
-            @Override
-            public void operate(final INDArray nd1) {
-                pooled.iterateOverAllRows(new SliceOp() {
-
-                    @Override
-                    public void operate(INDArray nd2) {
-                        nd1.addi(nd2);
-                    }
-                });
-            }
-        });
+        pooled.addi(broadCasted);
 
         return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), pooled));
     }

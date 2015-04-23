@@ -25,7 +25,6 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -406,13 +405,6 @@ public class Point implements INDArray {
 		return array.linearIndex(i);
 	}
 
-	public void iterateOverAllRows(SliceOp op) {
-		array.iterateOverAllRows(op);
-	}
-
-	public void iterateOverAllColumns(SliceOp op) {
-		array.iterateOverAllColumns(op);
-	}
 
 	public void checkDimensions(INDArray other) {
 		array.checkDimensions(other);
@@ -439,9 +431,6 @@ public class Point implements INDArray {
 		return array.condi(condition);
 	}
 
-	public void iterateOverDimension(int dimension, SliceOp op, boolean modify) {
-		array.iterateOverDimension(dimension, op, modify);
-	}
 
 	public INDArray repmat(int[] shape) {
 		return array.repmat(shape);
