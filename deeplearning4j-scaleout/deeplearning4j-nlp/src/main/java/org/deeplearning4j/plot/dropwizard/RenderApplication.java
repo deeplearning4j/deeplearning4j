@@ -23,7 +23,6 @@ import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 
 import org.apache.commons.compress.utils.IOUtils;
-import org.slf4j.Logger;
 import org.springframework.core.io.ClassPathResource;
 
 import com.google.common.collect.ImmutableMap;
@@ -38,7 +37,6 @@ import java.io.InputStream;
  * @author Adam Gibson
  */
 public class RenderApplication extends Application<ApiConfiguration> {
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(RenderApplication.class);
 
     @Override
     public void initialize(Bootstrap<ApiConfiguration> apiConfigurationBootstrap) {
