@@ -186,7 +186,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         doCuda(JCuda.cudaHostAlloc(pinnedPointer,elementSize() * length(),JCuda.cudaHostAllocMapped));
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         Nd4j.getResourceManager().incrementCurrentAllocatedMemory(elementSize() * length());
-
+        freed.set(false);
 
     }
 
@@ -225,35 +225,17 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      */
     protected void copyTo(JCudaBuffer to) {
         ensureNotFreed();
-
-
-        if (to.dataType() != dataType())
-            throw new IllegalArgumentException("Unable to copy buffer, mis matching data types.");
-        JCuda.cudaMemcpy(to.pointer(), pointer(), length() * elementSize(), cudaMemcpyKind.cudaMemcpyDeviceToDevice);
-        if(dataType() == DataBuffer.DOUBLE) {
-            java.nio.DoubleBuffer buf = getDoubleBuffer();
-            BaseCudaDataBuffer bufTo = (BaseCudaDataBuffer) to;
-            java.nio.DoubleBuffer bufCopy = bufTo.getDoubleBuffer();
-            for(int i = 0; i < length(); i++) {
-                bufCopy.put(i,buf.get(i));
-            }
-        }
-        else {
-            java.nio.FloatBuffer buf = getFloatBuffer();
-            BaseCudaDataBuffer bufTo = (BaseCudaDataBuffer) to;
-            java.nio.FloatBuffer bufCopy = bufTo.getFloatBuffer();
-            for(int i = 0; i < length(); i++) {
-                bufCopy.put(i,buf.get(i));
-            }
+        for(int i = 0; i < length(); i++) {
+            to.put(i,getDouble(i));
         }
     }
 
-    @Override
+ /*   @Override
     protected void finalize() throws Throwable {
         super.finalize();
         destroy();
     }
-
+*/
     @Override
     public void assign(Number value) {
         assign(value, 0);

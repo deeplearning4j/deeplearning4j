@@ -33,22 +33,10 @@ public interface ConvolutionInstance {
      * @param type
      * @return
      */
-    public INDArray conv2d(INDArray input, INDArray kernel, Convolution.Type type);
+    INDArray conv2d(INDArray input, INDArray kernel, Convolution.Type type);
 
 
-    public INDArray conv2d(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type);
-
-    /**
-     * ND Convolution
-     *
-     * @param input  the input to op
-     * @param kernel the kernel to op with
-     * @param type   the type of convolution
-     * @param axes   the axes to do the convolution along
-     * @return the convolution of the given input and kernel
-     */
-    public INDArray convn(INDArray input, INDArray kernel, Convolution.Type type, int[] axes);
-
+    INDArray conv2d(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type);
 
     /**
      * ND Convolution
@@ -59,7 +47,19 @@ public interface ConvolutionInstance {
      * @param axes   the axes to do the convolution along
      * @return the convolution of the given input and kernel
      */
-    public IComplexNDArray convn(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type, int[] axes);
+    INDArray convn(INDArray input, INDArray kernel, Convolution.Type type, int[] axes);
+
+
+    /**
+     * ND Convolution
+     *
+     * @param input  the input to op
+     * @param kernel the kernel to op with
+     * @param type   the type of convolution
+     * @param axes   the axes to do the convolution along
+     * @return the convolution of the given input and kernel
+     */
+    IComplexNDArray convn(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type, int[] axes);
 
     /**
      * ND Convolution
@@ -69,7 +69,7 @@ public interface ConvolutionInstance {
      * @param type   the type of convolution
      * @return the convolution of the given input and kernel
      */
-    public INDArray convn(INDArray input, INDArray kernel, Convolution.Type type);
+    INDArray convn(INDArray input, INDArray kernel, Convolution.Type type);
 
     /**
      * ND Convolution
@@ -79,5 +79,5 @@ public interface ConvolutionInstance {
      * @param type   the type of convolution
      * @return the convolution of the given input and kernel
      */
-    public IComplexNDArray convn(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type);
+    IComplexNDArray convn(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type);
 }

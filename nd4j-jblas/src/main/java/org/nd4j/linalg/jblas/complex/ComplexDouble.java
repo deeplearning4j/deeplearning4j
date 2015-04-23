@@ -752,13 +752,26 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     }
 
     /**
-     * Comparing two DoubleComplex values.
+     * Comparing two floatComplex values.
      *
      * @param o
      */
     @Override
     public boolean equals(Object o) {
-        return super.equals(o);
+        if (!(o instanceof IComplexNumber) || !(o instanceof org.jblas.ComplexFloat) && !(o instanceof org.jblas.ComplexDouble)) {
+            return false;
+        }
+        else {
+
+            IComplexNumber num = (IComplexNumber) o;
+            double thisReal = realComponent().doubleValue();
+            double otherReal = num.realComponent().doubleValue();
+            double thisImag = imaginaryComponent().doubleValue();
+            double otherImag = imaginaryComponent().doubleValue();
+            double diff = Math.abs(thisReal - otherReal);
+            double imagDiff = Math.abs(thisImag - otherImag);
+            return diff < Nd4j.EPS_THRESHOLD && imagDiff < Nd4j.EPS_THRESHOLD;
+        }
     }
 
     @Override

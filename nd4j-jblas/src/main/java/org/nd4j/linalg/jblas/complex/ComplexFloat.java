@@ -757,7 +757,17 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
      */
     @Override
     public boolean equals(Object o) {
-        return super.equals(o);
+        if (!(o instanceof IComplexNumber) || !(o instanceof org.jblas.ComplexFloat) && !(o instanceof org.jblas.ComplexDouble)) {
+            return false;
+        }
+        else {
+            if(o instanceof org.jblas.ComplexFloat)
+                return super.equals(o);
+            else {
+                IComplexNumber num = (IComplexNumber) o;
+                return num.realComponent().doubleValue() == realComponent().doubleValue() && num.imaginaryComponent().doubleValue() == imaginaryComponent().doubleValue();
+            }
+        }
     }
 
     @Override

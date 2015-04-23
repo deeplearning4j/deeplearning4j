@@ -532,14 +532,19 @@ public abstract class BaseComplexFloat implements IComplexFloat {
         return Nd4j.createFloat(p, q);
     }
 
-    /**
-     * Comparing two floatComplex values.
-     *
-     * @param o
-     */
     @Override
     public boolean equals(Object o) {
-        return super.equals(o);
+        if (this == o) return true;
+        if (!(o instanceof BaseComplexFloat)) return false;
+
+        BaseComplexFloat that = (BaseComplexFloat) o;
+
+        if (Float.compare(that.real, real) != 0)
+            return false;
+        if(Math.abs(that.imag - imag) > Nd4j.EPS_THRESHOLD)
+            return false;
+
+        return true;
     }
 
     public boolean isZero() {

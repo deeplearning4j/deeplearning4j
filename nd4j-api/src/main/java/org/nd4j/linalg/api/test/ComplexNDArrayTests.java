@@ -205,6 +205,9 @@ public abstract class ComplexNDArrayTests {
 
         Nd4j.factory().setOrder('c');
 
+
+
+
     }
 
 
@@ -341,6 +344,21 @@ public abstract class ComplexNDArrayTests {
     public void testSlice() {
         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
         Nd4j.MAX_SLICES_TO_PRINT = -1;
+        IComplexNDArray slices = Nd4j.createComplex(2,3);
+        slices.put(0,0,1);
+        slices.put(0,1,2);
+        slices.put(0,2,3);
+        slices.put(1,1,4);
+        IComplexNDArray assertion = Nd4j.createComplex(new IComplexNumber[]{
+                Nd4j.createComplexNumber(1,0),
+                Nd4j.createComplexNumber(2,0),
+                Nd4j.createComplexNumber(3,0),
+
+        });
+        assertEquals(assertion,slices.slice(0));
+
+
+
         INDArray arr = Nd4j.create(Nd4j.linspace(1, 24, 24).data(), new int[]{4, 3, 2});
         IComplexNDArray arr2 = Nd4j.createComplex(arr);
         assertEquals(arr, arr2.getReal());
@@ -610,6 +628,16 @@ public abstract class ComplexNDArrayTests {
 
     @Test
     public void testPutAndGet() {
+        IComplexNDArray multiRow = Nd4j.createComplex(2,2);
+        multiRow.putScalar(0,0,Nd4j.createComplexNumber(1,0));
+        multiRow.putScalar(0,1,Nd4j.createComplexNumber(2,0));
+        multiRow.putScalar(1,0,Nd4j.createComplexNumber(3,0));
+        multiRow.putScalar(1, 1, Nd4j.createComplexNumber(4, 0));
+        assertEquals(Nd4j.createComplexNumber(1, 0), multiRow.getComplex(0, 0));
+        assertEquals(Nd4j.createComplexNumber(2, 0), multiRow.getComplex(0, 1));
+        assertEquals(Nd4j.createComplexNumber(3, 0), multiRow.getComplex(1,0));
+        assertEquals(Nd4j.createComplexNumber(4, 0), multiRow.getComplex(1, 1));
+
         IComplexNDArray arr = Nd4j.createComplex(Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2}));
         assertEquals(4, arr.length());
         assertEquals(8, arr.data().length());
@@ -620,6 +648,9 @@ public abstract class ComplexNDArrayTests {
 
         assertEquals(5.0, n1.realComponent().doubleValue(), 1e-1);
         assertEquals(0.0, n2.imaginaryComponent().doubleValue(), 1e-1);
+
+
+
 
     }
 
@@ -701,6 +732,8 @@ public abstract class ComplexNDArrayTests {
             assertEquals(i + 1, get.realComponent().doubleValue(), 1e-1);
         }
     }
+
+
 
 
     @Test

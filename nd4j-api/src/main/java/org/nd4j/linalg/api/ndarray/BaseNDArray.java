@@ -517,6 +517,8 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public int majorStride() {
         ensureNotCleanedUp();
+        if(stride.length == 0)
+            return 1;
         //return ordering == NDArrayFactory.C ? stride[0] : stride[stride.length - 1];r
         return stride[0];
     }
@@ -524,6 +526,8 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public int secondaryStride() {
         ensureNotCleanedUp();
+        if(stride.length == 0)
+            return 1;
         if (stride.length >= 2) {
             if (ordering == NDArrayFactory.C) {
                 if (isColumnVector())
@@ -2943,10 +2947,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public double getDouble(int i, int j) {
-        int idx = index(i, j);
-        if (idx >= data.length())
-            throw new IllegalArgumentException("Invalid index " + i + " , " + j);
-        return data.getDouble(idx);
+       return getDouble(new int[]{i,j});
     }
 
     @Override

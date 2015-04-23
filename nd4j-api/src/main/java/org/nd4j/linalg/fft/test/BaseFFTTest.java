@@ -18,12 +18,14 @@ package org.nd4j.linalg.fft.test;
 
 
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.fft.FFT;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +52,7 @@ public abstract class BaseFFTTest {
 
     @Test
     public void testWithOffset() {
+        Nd4j.dtype = DataBuffer.DOUBLE;
         Nd4j.factory().setOrder('f');
         INDArray n = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[]{3, 5, 2});
         INDArray swapped = n.swapAxes(n.shape().length - 1, 1);
@@ -58,7 +61,10 @@ public abstract class BaseFFTTest {
         IComplexNDArray testNoOffset = Nd4j.createComplex(new double[]{1, 0, 4, 0, 7, 0, 10, 0, 13, 0}, new int[]{5});
         assertEquals(Nd4j.getExecutioner().execAndReturn(new VectorFFT(testNoOffset,5)), Nd4j.getExecutioner().execAndReturn(new VectorFFT(test,5)));
 
+
     }
+
+
 
     @Test
     public void testSimple() {
@@ -74,12 +80,57 @@ public abstract class BaseFFTTest {
 
     @Test
     public void testMultiDimFFT() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
         INDArray a = Nd4j.linspace(1,8,8).reshape(2,2,2);
-        INDArray fftedAnswer = Nd4j.createComplex(Nd4j.create(new int[]{2, 2}, new double[]{6, 10, -4, -4}, new double[]{8, 12, -4, -4}));
-        INDArray ffted = FFT.fft(a);
+        IComplexNDArray fftedAnswer = Nd4j.createComplex(2, 2, 2);
+        IComplexNDArray matrix1 = Nd4j.createComplex(new IComplexNumber[][] {
+                {Nd4j.createComplexNumber(36,0),Nd4j.createComplexNumber(-16,0)}
+                ,{Nd4j.createComplexNumber(-8,0),Nd4j.createComplexNumber(0,0)}
+        });
+
+        IComplexNDArray matrix2 = Nd4j.createComplex(new IComplexNumber[][] {
+                {Nd4j.createComplexNumber(-4,0),Nd4j.createComplexNumber(0,0)}
+                ,{Nd4j.createComplexNumber(0,0),Nd4j.createComplexNumber(0,0)}
+        });
+
+        fftedAnswer.putSlice(0,matrix1);
+        fftedAnswer.putSlice(1, matrix2);
+
+        IComplexNDArray ffted = FFT.fftn(a);
         assertEquals(fftedAnswer,ffted);
+        Nd4j.EPS_THRESHOLD = 1e-12;
+
 
     }
+
+    @Test
+    public void testOnes() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
+        IComplexNDArray ones = Nd4j.complexOnes(5, 5);
+        IComplexNDArray ffted = FFT.fftn(ones);
+        IComplexNDArray zeros = Nd4j.createComplex(5,5);
+        zeros.putScalar(0, 0, Nd4j.createComplexNumber(25, 0));
+        assertEquals(zeros, ffted);
+
+        IComplexNDArray threeOnes = Nd4j.complexOnes(3,3);
+        IComplexNDArray threeComp = Nd4j.createComplex(3, 3);
+        threeComp.putScalar(0, 0, Nd4j.createComplexNumber(9, 0));
+        assertEquals(FFT.fftn(threeOnes),threeComp);
+
+
+
+    }
+
+
+
+
+    @Test
+    public void testRawFft() {
+        IComplexNDArray a = Nd4j.complexOnes(5,5);
+        IComplexNDArray fftedA = FFT.rawfftn(a,new int[]{7,7}, ArrayUtil.reverseCopy(ArrayUtil.range(2,0)));
+        System.out.println(fftedA);
+    }
+
 
 
 

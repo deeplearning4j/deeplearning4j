@@ -23,6 +23,7 @@ import org.nd4j.linalg.fft.FFT;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
+import org.nd4j.linalg.util.MathUtils;
 import org.nd4j.linalg.util.Shape;
 
 import java.util.Arrays;
@@ -84,7 +85,9 @@ public class DefaultConvolutionInstance extends BaseConvolution {
         INDArray shape = ArrayUtil.toNDArray(Shape.sizeForAxes(axes, input.shape())).add(ArrayUtil.toNDArray(Shape.sizeForAxes(axes, kernel.shape()))).subi(1);
 
         int[] intShape = ArrayUtil.toInts(shape);
-
+        for(int i = 0; i < intShape.length; i++) {
+            intShape[i] = (int) MathUtils.nextPowOf2(intShape[i]);
+        }
         IComplexNDArray fftedInput = FFT.rawfftn(Nd4j.createComplex(input), intShape, axes);
         IComplexNDArray fftedKernel = FFT.rawfftn(Nd4j.createComplex(kernel), intShape, axes);
         //broadcast to be same shape
@@ -95,8 +98,8 @@ public class DefaultConvolutionInstance extends BaseConvolution {
                 fftedKernel = fftedKernel.broadcast(fftedInput.shape());
             }
         }
-        IComplexNDArray inputTimesKernel = fftedInput.muli(fftedKernel);
 
+        IComplexNDArray inputTimesKernel = fftedInput.muli(fftedKernel);
         IComplexNDArray convolution = FFT.ifftn(inputTimesKernel);
 
 

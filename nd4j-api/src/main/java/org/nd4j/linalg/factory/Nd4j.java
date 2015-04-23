@@ -1953,8 +1953,8 @@ public class Nd4j {
      * @param columns the number of columns in the row vector
      * @return ndarray
      */
-    public static INDArray complexOnes(int rows, int columns) {
-        INDArray ret = INSTANCE.complexOnes(rows, columns);
+    public static IComplexNDArray complexOnes(int rows, int columns) {
+        IComplexNDArray ret = INSTANCE.complexOnes(rows, columns);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3312,5 +3312,20 @@ public class Nd4j {
      */
     public static IComplexNDArray createComplex(IComplexNumber[] iComplexNumbers) {
         return createComplex(iComplexNumbers,new int[]{1,iComplexNumbers.length});
+    }
+
+    /**
+     * Create a complex ndarray based on the specified matrices
+     * @param iComplexNumbers the complex numbers
+     * @return the complex numbers
+     */
+    public static IComplexNDArray createComplex(IComplexNumber[][] iComplexNumbers) {
+        IComplexNDArray shape = Nd4j.createComplex(iComplexNumbers.length,iComplexNumbers[0].length);
+        for(int i = 0; i < iComplexNumbers.length; i++) {
+            for(int j = 0; j < iComplexNumbers[i].length; j++) {
+                shape.putScalar(i, j, iComplexNumbers[i][j]);
+            }
+        }
+        return shape;
     }
 }

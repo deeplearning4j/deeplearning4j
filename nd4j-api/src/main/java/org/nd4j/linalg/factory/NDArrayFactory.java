@@ -576,7 +576,7 @@ public interface NDArrayFactory {
      * @param columns the number of columns in the row vector
      * @return ndarray
      */
-    INDArray complexOnes(int rows, int columns);
+    IComplexNDArray complexOnes(int rows, int columns);
 
     /**
      * Creates a row vector with the specified number of columns

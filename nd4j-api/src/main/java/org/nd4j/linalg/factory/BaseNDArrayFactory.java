@@ -31,7 +31,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Base NDArrayFactory class.
@@ -875,8 +874,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return ndarray
      */
     @Override
-    public INDArray complexOnes(int rows, int columns) {
-        return createComplex(new int[]{rows, columns});
+    public IComplexNDArray complexOnes(int rows, int columns) {
+        return complexOnes(new int[]{rows, columns});
     }
 
     /**

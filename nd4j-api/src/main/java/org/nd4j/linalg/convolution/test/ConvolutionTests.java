@@ -49,10 +49,11 @@ public abstract class ConvolutionTests {
 
     @Test
     public void testConv2d() {
-        INDArray input = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
-        INDArray kernel = input.dup();
-        INDArray convolution = Convolution.conv2d(input, kernel, Convolution.Type.FULL);
-        assertTrue(Arrays.equals(new int[]{2,3, 3}, convolution.shape()));
+        INDArray nd = Nd4j.ones(5, 5);
+        INDArray kernel2  = Nd4j.ones(3, 3);
+        INDArray conv = Nd4j.getConvolution().conv2d(nd, kernel2, Convolution.Type.VALID);
+        INDArray assertion = Nd4j.valueArrayOf(new int[]{3,3},9);
+        assertEquals(assertion,conv);
     }
 
 
@@ -73,6 +74,8 @@ public abstract class ConvolutionTests {
 
         log.info(Convolution.convn(image, kernel, Convolution.Type.VALID).toString());
     }
+
+
 
 
 }

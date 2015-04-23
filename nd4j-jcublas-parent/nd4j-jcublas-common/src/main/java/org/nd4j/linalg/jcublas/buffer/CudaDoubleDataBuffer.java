@@ -38,6 +38,7 @@ import java.nio.DoubleBuffer;
  */
 public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
+    private double[] data;
 
     /**
      * Base constructor
@@ -149,20 +150,10 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void setData(double[] data) {
-
         ensureNotFreed();
-
+        this.data = data;
         if (data.length != length)
             throw new IllegalArgumentException("Unable to set vector, must be of length " + length() + " but found length " + data.length);
-
-        if (pointer() == null)
-            alloc();
-
-        DoubleBuffer buf = getDoubleBuffer();
-        buf.put(data);
-
-
-
 
     }
 
@@ -182,7 +173,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     @Override
     public double getDouble(int i) {
         ensureNotFreed();
-        return getDoubleBuffer().get(i);
+        return data[i];
     }
 
     @Override
@@ -204,7 +195,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     @Override
     public void put(int i, double element) {
         ensureNotFreed();
-        getDoubleBuffer().put(i,element);
+        data[i] = element;
     }
 
     @Override

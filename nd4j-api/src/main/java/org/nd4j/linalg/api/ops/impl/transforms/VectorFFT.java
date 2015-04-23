@@ -140,7 +140,7 @@ public class VectorFFT extends BaseTransformOp {
         if (len > desiredElementsAlongDimension) {
             ret = ComplexNDArrayUtil.padWithZeros(ret, new int[]{fftLength});
         } else if (len < desiredElementsAlongDimension) {
-            ret = ComplexNDArrayUtil.truncate(ret, n, 0);
+            ret = ComplexNDArrayUtil.truncate(ret, fftLength, 0);
         }
 
 

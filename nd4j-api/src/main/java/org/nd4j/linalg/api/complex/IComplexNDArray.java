@@ -1253,7 +1253,7 @@ public interface IComplexNDArray extends INDArray {
      * @return the reshaped ndarray
      */
     @Override
-    IComplexNDArray reshape(int[] newShape);
+    IComplexNDArray reshape(int...newShape);
 
     /**
      * Flip the rows and columns of a matrix
@@ -1271,6 +1271,14 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray put(int[] indexes, double value);
 
     IComplexNDArray putSlice(int slice, IComplexNDArray put);
+
+    /**
+     * Get the complex number at the given indices
+     * @param indices the indices to
+     *                get the complex number at
+     * @return the complex number at the given indices
+     */
+    IComplexNumber getComplex(int...indices);
 
     /**
      * Mainly here for people coming from numpy.

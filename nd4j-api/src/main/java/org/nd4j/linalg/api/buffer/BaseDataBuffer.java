@@ -211,7 +211,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public IComplexFloat getComplexFloat(int i) {
-        return Nd4j.createFloat(getFloat(i), getFloat(i) + 1);
+        return Nd4j.createFloat(getFloat(i), getFloat(i + 1));
     }
 
     @Override

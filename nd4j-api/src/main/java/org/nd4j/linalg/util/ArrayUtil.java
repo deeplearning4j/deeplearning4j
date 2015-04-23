@@ -303,7 +303,7 @@ public class ArrayUtil {
             }
         } else if (from > to) {
             int count = 0;
-            for (int i = from; i > to; i -= increment)
+            for (int i = from - 1; i >= to; i -= increment)
                 ret[count++] = i;
         }
 
