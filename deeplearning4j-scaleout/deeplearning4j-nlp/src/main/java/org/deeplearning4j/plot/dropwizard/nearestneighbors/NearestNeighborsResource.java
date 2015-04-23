@@ -1,4 +1,4 @@
-package org.deeplearning4j.plot.dropwizard;
+package org.deeplearning4j.plot.dropwizard.nearestneighbors;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
