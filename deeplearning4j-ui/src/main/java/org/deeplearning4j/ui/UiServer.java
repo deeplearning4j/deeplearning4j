@@ -39,7 +39,7 @@ public class UiServer extends Application<UIConfiguration> {
 
 
     public static void main(String[] args) throws Exception {
-        ClassPathResource resource = new ClassPathResource("/render/dropwizard.yml");
+        ClassPathResource resource = new ClassPathResource("dropwizard.yml");
         InputStream is = resource.getInputStream();
         File tmpConfig = new File("dropwizard-render.yml");
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpConfig));
