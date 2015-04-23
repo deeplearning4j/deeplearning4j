@@ -120,9 +120,14 @@ public class NeuralNetPlotter implements Serializable {
     }
 
     public void plotNetworkGradient(Layer network,Gradient gradient,int patchesPerRow) {
-
+        Set<String> vars = new TreeSet<>(gradient.gradientForVariable().keySet());
+        Set<String> gradients = new LinkedHashSet<>();
+        for(String s : vars) {
+            gradients.add(s + "-gradient");
+        }
+        vars.addAll(gradients);
         histogram(
-                gradient.gradientForVariable().keySet().toArray(new String[]{}),
+                vars.toArray(new String[vars.size()]),
                 new INDArray[]{
                         network.getParam(DefaultParamInitializer.WEIGHT_KEY),
                         network.getParam(PretrainParamInitializer.BIAS_KEY),
