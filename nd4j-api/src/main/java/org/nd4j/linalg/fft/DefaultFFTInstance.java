@@ -44,7 +44,21 @@ public class DefaultFFTInstance extends BaseFFTInstance {
         if (inputC.isVector())
             return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,numElements));
         else {
-            return rawfft(inputC, numElements, dimension);
+            int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
+            int[] axes = ArrayUtil.range(0, finalShape.length);
+            IComplexNDArray transform2 = Nd4j.createComplex(transform);
+            IComplexNDArray result = transform2.dup();
+
+            int desiredElementsAlongDimension = result.size(dimension);
+
+            if(numElements > desiredElementsAlongDimension) {
+                result = ComplexNDArrayUtil.padWithZeros(result,finalShape);
+            }
+
+            else if(numElements < desiredElementsAlongDimension)
+                result = ComplexNDArrayUtil.truncate(result,numElements,dimension);
+
+            return rawfft(result, numElements, dimension);
         }
     }
 
@@ -62,6 +76,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
         if (inputC.isVector())
             return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,numElements));
         else {
+
             return rawfft(inputC, numElements, dimension);
         }
     }
@@ -166,7 +181,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
             result = result.swapAxes(result.shape().length - 1, dimension);
 
 
-        Nd4j.getExecutioner().iterateOverAllRows(new VectorFFT(result, result.size(result.shape().length - 1)));
+        Nd4j.getExecutioner().iterateOverAllRows(new VectorFFT(result, n));
 
         if (dimension != result.shape().length - 1)
             result = result.swapAxes(result.shape().length - 1, dimension);

@@ -720,40 +720,34 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray putScalar(int[] indexes, double value) {
         ensureNotCleanedUp();
-        int ix = offset;
-        for (int i = 0; i < shape.length; i++) {
-            ix += indexes[i] * stride[i];
+        if(isRowVector() && indexes.length == 2 && indexes[0] == 0) {
+            int ix = linearIndex(indexes[1]);
+            data.put(ix,value);
         }
-        if (ix >= data.length())
-            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
-        data.put(ix, value);
+        else {
+            int ix = offset;
+            for (int i = 0; i < shape.length; i++) {
+                ix += indexes[i] * stride[i];
+            }
+            if (ix >= data.length())
+                throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
+            data.put(ix, value);
+        }
+
+
         return this;
     }
 
     @Override
     public INDArray putScalar(int[] indexes, float value) {
         ensureNotCleanedUp();
-        int ix = offset;
-        for (int i = 0; i < shape.length; i++) {
-            ix += indexes[i] * stride[i];
-        }
-        if (ix >= data.length())
-            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
-        data.put(ix, value);
-        return this;
+        return putScalar(indexes, (double) value);
     }
 
     @Override
     public INDArray putScalar(int[] indexes, int value) {
         ensureNotCleanedUp();
-        int ix = offset;
-        for (int i = 0; i < shape.length; i++) {
-            ix += indexes[i] * stride[i];
-        }
-        if (ix >= data.length())
-            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
-        data.put(ix, value);
-        return this;
+        return putScalar(indexes,(double) value);
     }
 
     /**
@@ -1056,7 +1050,7 @@ public abstract class BaseNDArray implements INDArray {
         ensureNotCleanedUp();
         DataBuffer dup = Nd4j.createBuffer(length());
         INDArray ret = Nd4j.create(dup, shape());
-        Nd4j.getBlasWrapper().copy(this.linearView(),ret.linearView());
+        Nd4j.getBlasWrapper().copy(this.linearView(), ret.linearView());
         return ret;
     }
 
@@ -1086,11 +1080,18 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public double getDouble(int... indices) {
         ensureNotCleanedUp();
-        int ix = offset;
-        for (int i = 0; i < indices.length; i++)
-            ix += indices[i] * stride[i];
+        if(isRowVector() && indices[0] == 0 && indices.length == 2) {
+            int ix = linearIndex(indices[1]);
+            return data.getDouble(ix);
+        }
+        else {
+            int ix = offset;
+            for (int i = 0; i < indices.length; i++)
+                ix += indices[i] * stride[i];
 
-        return data.getDouble(ix);
+            return data.getDouble(ix);
+        }
+
 
     }
 
@@ -1103,12 +1104,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public float getFloat(int... indices) {
         ensureNotCleanedUp();
-        int ix = offset;
-        for (int i = 0; i < indices.length; i++)
-            ix += indices[i] * stride[i];
-
-        return data.getFloat(ix);
-
+        return (float) getDouble(indices);
     }
 
     /**
@@ -1142,12 +1138,24 @@ public abstract class BaseNDArray implements INDArray {
         ensureNotCleanedUp();
         if (!element.isScalar())
             throw new IllegalArgumentException("Unable to insert anything but a scalar");
-        int ix = offset;
-        for (int i = 0; i < indices.length; i++)
-            ix += indices[i] * stride[i];
-        if (ix >= data.length())
-            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indices));
-        data.put(ix, element.getDouble(0));
+        if(isRowVector() && indices[0] == 0 && indices.length == 2) {
+            int ix = offset;
+            for (int i = 1; i < indices.length; i++)
+                ix += indices[i] * stride[i];
+            if (ix >= data.length())
+                throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indices));
+            data.put(ix, element.getDouble(0));
+        }
+        else {
+            int ix = offset;
+            for (int i = 0; i < indices.length; i++)
+                ix += indices[i] * stride[i];
+            if (ix >= data.length())
+                throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indices));
+            data.put(ix, element.getDouble(0));
+        }
+
+
         return this;
 
     }
@@ -1272,7 +1280,8 @@ public abstract class BaseNDArray implements INDArray {
             } else if (isRowVector()) {
                 int idx = linearIndex(column);
                 return idx;
-            } else
+            }
+            else
                 throw new IllegalStateException("Unable to get row/column from a non matrix");
         }
 
@@ -1943,6 +1952,7 @@ public abstract class BaseNDArray implements INDArray {
         if (element == null)
             throw new IllegalArgumentException("Unable to insert null element");
         assert element.isScalar() : "Unable to insert non scalar element";
+
         int idx = linearIndex(i);
         if (idx >= data.length())
             throw new IllegalArgumentException("Illegal indices " + i);
@@ -2660,8 +2670,10 @@ public abstract class BaseNDArray implements INDArray {
 
         if (shape.length == 0)
             throw new IllegalArgumentException("Can't slice a 0-d NDArray");
-
-            //slice of a vector is a scalar
+        else if(slice == -1) {
+            return slice(shape().length - 1);
+        }
+        //slice of a vector is a scalar
         else if (shape.length == 1) {
             if (size(0) == 1)
                 return Nd4j.create(data, ArrayUtil.empty(), ArrayUtil.empty(), offset + slice);

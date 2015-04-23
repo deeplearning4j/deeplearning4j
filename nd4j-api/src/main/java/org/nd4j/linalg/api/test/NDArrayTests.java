@@ -961,6 +961,13 @@ public abstract class NDArrayTests {
     }
 
     @Test
+    public void testRowVectorMultipleIndices() {
+        INDArray linear = Nd4j.create(1,4);
+        linear.putScalar(new int[]{0,1},1);
+        assertEquals(linear.getDouble(0,1),1,1e-1);
+    }
+
+    @Test
     public void testColumnMean() {
         INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray columnMean = twoByThree.mean(0);

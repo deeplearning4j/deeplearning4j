@@ -25,7 +25,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
- * Euclidean distance
+ * Manhattan distance
  *
  * @author Adam Gibson
  */

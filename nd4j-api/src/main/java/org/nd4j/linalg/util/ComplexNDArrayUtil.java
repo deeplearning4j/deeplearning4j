@@ -77,7 +77,7 @@ public class ComplexNDArrayUtil {
         INDArray startIndex = currShape.sub(shapeMatrix).divi(Nd4j.scalar(2));
         INDArray endIndex = startIndex.add(shapeMatrix);
         if (shapeMatrix.length() > 1) {
-            arr = Nd4j.createComplex(arr.get(NDArrayIndex.interval((int) startIndex.getDouble(0), (int) endIndex.getDouble(0) + 1), NDArrayIndex.interval((int) startIndex.getDouble(1), (int) endIndex.getDouble(1) + 1)));
+            arr = Nd4j.createComplex(arr.get(NDArrayIndex.interval((int) startIndex.getDouble(0), (int) endIndex.getDouble(0)), NDArrayIndex.interval((int) startIndex.getDouble(1), (int) endIndex.getDouble(1))));
         } else {
             IComplexNDArray ret = Nd4j.createComplex(new int[]{(int) shapeMatrix.getDouble(0)});
             int start = (int) startIndex.getDouble(0);
