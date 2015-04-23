@@ -879,8 +879,8 @@ public abstract class NDArrayTests {
         int embeddingSize = 7;
         int sliceSize= 3;
 
-        INDArray wTest = Nd4j.rand(new int[]{embeddingSize,embeddingSize,sliceSize});
-        System.out.println("wTest: "+ wTest);
+        INDArray wTest = Nd4j.rand(new int[]{embeddingSize, embeddingSize, sliceSize});
+        System.out.println("wTest: " + wTest);
         for (int slice = 0; slice < wTest.slices(); slice++) {
             INDArray sliceOfW = wTest.slice(slice);
             System.out.println("W slice "+slice+" :"+ "" +"rows: "+ sliceOfW.rows() + " | col: " +sliceOfW.columns());
@@ -904,15 +904,15 @@ public abstract class NDArrayTests {
 
     @Test
     public void testPrintAfterSum() {
-        INDArray arr = Nd4j.rand(2,1);
-        INDArray sum = Nd4j.sum(arr,1);
+        INDArray arr = Nd4j.rand(2, 1);
+        INDArray sum = Nd4j.sum(arr, 1);
         System.out.println(sum);
     }
 
 
     @Test
     public void testDimensionWiseWithVector() {
-        INDArray ret = Nd4j.linspace(1,2,2).reshape(1,2);
+        INDArray ret = Nd4j.linspace(1,2,2).reshape(1, 2);
         assertTrue(ret.sum(0).isRowVector());
         assertTrue(ret.sum(1).isScalar());
         INDArray retColumn = Nd4j.linspace(1,2,2).reshape(2,1);
@@ -934,15 +934,15 @@ public abstract class NDArrayTests {
 
     @Test
     public void testCreationWithOrder() {
-        INDArray ret = Nd4j.create(new float[]{1,1,1,1},new int[]{1,4},'f');
-        INDArray ret2 = Nd4j.create(new double[]{1,1,1,1},new int[]{1,4},'f');
+        INDArray ret = Nd4j.create(new float[]{1, 1, 1, 1}, new int[]{1, 4}, 'f');
+        INDArray ret2 = Nd4j.create(new double[]{1, 1, 1, 1}, new int[]{1, 4}, 'f');
         Nd4j.dtype = DataBuffer.DOUBLE;
         ret = Nd4j.create(new float[]{1,1,1,1},new int[]{1,4},'f');
         ret2 = Nd4j.create(new double[]{1,1,1,1},new int[]{1,4},'f');
         INDArray  b0 = Nd4j.arange(0, 12).reshape(3, 4);
         INDArray b4 = Nd4j.create(
                 b0.data().asDouble(),
-                new int[]{3,4},
+                new int[]{3, 4},
                 'f');
         b4.toString();
         Nd4j.dtype = DataBuffer.FLOAT;
@@ -962,8 +962,8 @@ public abstract class NDArrayTests {
 
     @Test
     public void testRowVectorMultipleIndices() {
-        INDArray linear = Nd4j.create(1,4);
-        linear.putScalar(new int[]{0,1},1);
+        INDArray linear = Nd4j.create(1, 4);
+        linear.putScalar(new int[]{0, 1}, 1);
         assertEquals(linear.getDouble(0,1),1,1e-1);
     }
 
@@ -975,6 +975,14 @@ public abstract class NDArrayTests {
         assertEquals(assertion, columnMean);
     }
 
+
+    @Test
+    public void testSumVectors() {
+        int linspace = 14 * 4;
+        INDArray test = Nd4j.linspace(1,linspace,linspace).reshape(14,4);
+        INDArray sum1 = Nd4j.sum(test,1);
+
+    }
 
     @Test
     public void testColumnVar() {
@@ -993,6 +1001,14 @@ public abstract class NDArrayTests {
         assertEquals(assertion, columnStd);
 
     }
+
+    @Test
+    public void testDim1() {
+        INDArray sum = Nd4j.linspace(1,2,2).reshape(2,1);
+        INDArray same = sum.dup();
+        assertEquals(same.sum(1),sum);
+    }
+
 
     @Test
     public void testEps() {

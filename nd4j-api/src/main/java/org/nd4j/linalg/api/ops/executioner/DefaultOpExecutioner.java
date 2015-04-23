@@ -262,7 +262,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 //row vector
                 else if(dimension == 1) {
                     //make a row vector
-                    return Nd4j.scalar(execAndReturn(op).currentResult());
+                    return op.z().transpose();
 
                 }
             }
