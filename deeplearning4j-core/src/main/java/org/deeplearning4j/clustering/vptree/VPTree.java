@@ -87,6 +87,13 @@ public class VPTree {
     }
 
 
+    public List<DataPoint> getItems() {
+        return items;
+    }
+
+    public void setItems(List<DataPoint> items) {
+        this.items = items;
+    }
 
     private double getDistance(DataPoint d1,DataPoint d2) {
         return distances.getCount(d1, d2);
