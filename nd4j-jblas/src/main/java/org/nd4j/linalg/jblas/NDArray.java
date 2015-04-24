@@ -46,6 +46,10 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class NDArray extends BaseNDArray {
+	
+	public void close() {
+	}
+	
     public NDArray() {
         super();
     }

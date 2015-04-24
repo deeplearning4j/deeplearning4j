@@ -32,6 +32,9 @@ import java.util.List;
 
 
 public class NetlibBlasNDArray extends BaseNDArray {
+	
+	public void close() {
+	}
 
     public NetlibBlasNDArray() {
         super();

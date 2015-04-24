@@ -34,6 +34,13 @@ import java.util.List;
  */
 
 public class JCublasNDArray extends BaseNDArray {
+	
+	/**
+	 * De-allocate the pinned cuda buffer
+	 */
+	public void close() {
+		data.destroy();
+	}
 
 
     public JCublasNDArray(double[][] data) {

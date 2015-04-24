@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
+import java.io.Closeable;
 import java.io.Serializable;
 import java.util.List;
 
@@ -30,7 +31,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public interface INDArray extends Serializable {
+public interface INDArray extends Serializable, AutoCloseable  {
 
 
     /**

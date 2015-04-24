@@ -3297,7 +3297,7 @@ public class Nd4j {
             ENFORCE_NUMERICAL_STABILITY = Boolean.parseBoolean(System.getProperty(NUMERICAL_STABILITY, String.valueOf(false)));
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
             //start the buffer reaper
-            new BufferReaper(refQueue(),bufferRefQueue()).start();
+            // NO BAD BAD BAD BAD NO new BufferReaper(refQueue(),bufferRefQueue()).start();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

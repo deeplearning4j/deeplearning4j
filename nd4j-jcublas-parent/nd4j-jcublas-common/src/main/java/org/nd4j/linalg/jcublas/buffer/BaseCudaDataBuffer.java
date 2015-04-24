@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import jcuda.Pointer;
 import jcuda.cuComplex;
@@ -44,6 +46,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base class for a data buffer
@@ -59,6 +63,11 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
     protected transient WeakReference<DataBuffer> ref;
     protected boolean isPersist = false;
+    
+    static AtomicLong allocated = new AtomicLong();
+    static AtomicLong totalAllocated = new AtomicLong();
+    
+    private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
 
     static {
         SimpleJCublas.init();
@@ -151,24 +160,21 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         return buf.asIntBuffer().array();
     }
     
-    private void doCuda(int result) {
-    	if(result!=0) {
-        	//System.out.printf("getPointer %d\n",result);
-        }
-    }
-
-
     @Override
     public Pointer pointer() {
         ensureNotFreed();
         Pointer pointer = new Pointer();
-        doCuda(JCuda.cudaHostGetDevicePointer(pointer, pinnedPointer, 0));
+        JCuda.cudaHostGetDevicePointer(pointer, pinnedPointer, 0);
         return pointer;
     }
     
     @Override
     public void alloc() {
-
+    	if(pinnedPointer!=null) {
+    		throw new RuntimeException("Cannot reallocate");
+    	}
+    	if(Nd4j.getResourceManager().currentAllocated()+elementSize()*length() > Nd4j.getResourceManager().maxAllocated())
+            throw new IllegalStateException("Illegal current allocated: " + Nd4j.getResourceManager().currentAllocated() + " is greater than max " + Nd4j.getResourceManager().maxAllocated());
 
         pinnedPointer = new Pointer();
 
@@ -183,10 +189,12 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
         // Set the flag indicating that mapped memory will be used
         JCuda.cudaSetDeviceFlags(JCuda.cudaDeviceMapHost);
-        doCuda(JCuda.cudaHostAlloc(pinnedPointer,elementSize() * length(),JCuda.cudaHostAllocMapped));
-        ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
-        Nd4j.getResourceManager().incrementCurrentAllocatedMemory(elementSize() * length());
-        freed.set(false);
+        allocated.addAndGet(elementSize() * length());
+        totalAllocated.addAndGet(elementSize() * length());
+        log.debug("Allocating {} bytes, total: {}, overall: {}", elementSize() * length(), allocated.get(), totalAllocated);
+        JCuda.cudaHostAlloc(pinnedPointer,elementSize() * length(),JCuda.cudaHostAllocMapped);
+//      ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
+//      Nd4j.getResourceManager().incrementCurrentAllocatedMemory(elementSize() * length());
 
     }
 
@@ -230,12 +238,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         }
     }
 
- /*   @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-        destroy();
-    }
-*/
     @Override
     public void assign(Number value) {
         assign(value, 0);
@@ -365,11 +367,12 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                     Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
 
                 
-                
+                allocated.addAndGet(-elementSize() * length());
+                log.debug("freeing {} bytes, total: {}", elementSize() * length(), allocated.get());
                 JCuda.cudaFreeHost(pinnedPointer);
                 freed.set(true);
-                Nd4j.getResourceManager().decrementCurrentAllocatedMemory(elementSize() * length());
-                references().clear();
+//				Nd4j.getResourceManager().decrementCurrentAllocatedMemory(elementSize() * length());
+//				references().clear();
             }
 
         } catch (Exception e) {
