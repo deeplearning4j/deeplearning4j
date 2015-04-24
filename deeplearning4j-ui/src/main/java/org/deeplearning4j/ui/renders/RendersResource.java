@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.deeplearning4j.ui;
+package org.deeplearning4j.ui.renders;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -26,7 +26,7 @@ import javax.ws.rs.core.MediaType;
  */
 @Path("/render")
 @Produces(MediaType.TEXT_HTML)
-public class RenderResource {
+public class RendersResource {
 
     @GET
     public RenderView get() {

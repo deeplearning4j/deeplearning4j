@@ -14,16 +14,26 @@
  *    limitations under the License.
  */
 
-package org.deeplearning4j.ui;
+package org.deeplearning4j.ui.weights;
 
 import io.dropwizard.views.View;
+import org.deeplearning4j.ui.tsne.TsneView;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
 /**
  * Created by agibsonccc on 10/8/14.
  */
-public class RenderView extends View {
-    public RenderView() {
-        super("render.ftl");
+@Path("/weights")
+@Produces(MediaType.TEXT_HTML)
+public class WeightResource {
 
+    @GET
+    public View get() {
+        return new TsneView();
     }
+
 }
