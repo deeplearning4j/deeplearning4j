@@ -45,6 +45,17 @@
             <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>    
+		<dependency>
+		  	<groupId>org.nd4j</groupId>
+		  	<artifactId>nd4j-api</artifactId>
+		  	<version>${project.version}</version>
+		  	<type>test-jar</type>
+		  	<scope>test</scope>	
+		</dependency>
     </dependencies>
 </project>
