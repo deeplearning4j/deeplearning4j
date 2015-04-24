@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.nd4j.linalg.api.complex.test;
+package org.nd4j.linalg.api.complex;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexDouble;

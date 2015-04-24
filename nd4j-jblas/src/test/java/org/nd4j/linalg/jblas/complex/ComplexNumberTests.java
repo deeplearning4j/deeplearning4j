@@ -27,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 9/5/14.
  */
-public class ComplexNumberTests extends org.nd4j.linalg.api.complex.test.ComplexNumberTests {
+public class ComplexNumberTests extends org.nd4j.linalg.api.complex.ComplexNumberTests {
 
 
     @Test
