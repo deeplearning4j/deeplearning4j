@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.nd4j.linalg.ops.transforms;
+package org.nd4j.linalg.indexing.conditions;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -22,34 +22,25 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 
-
 /**
- * Created by agibsonccc on 9/6/14.
+ * Created by agibsonccc on 10/10/14.
  */
-public abstract class TransformTests {
-
+public abstract class ConditionTest {
 
     @Test
-    public void testPooling() {
-        INDArray twoByTwo = Nd4j.ones(new int[]{2, 2, 2});
-        INDArray pool = Transforms.sumPooling(twoByTwo, new int[]{1, 2});
+    public void testNeq() {
+        INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
+        INDArray n2 = n.neq(Nd4j.create(new int[]{4}));
+        assertEquals(4, n2.sum(Integer.MAX_VALUE).getFloat(0), 1e-1);
 
     }
 
     @Test
-    public void testMaxPooling() {
-        INDArray nd = Nd4j.rand(new int[]{1, 2, 3, 4});
-        INDArray pool = Transforms.maxPool(nd, new int[]{1, 2}, false);
-        pool = Transforms.maxPool(nd, new int[]{1, 2}, true);
+    public void testEq() {
+        INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
+        INDArray n2 = n.eq(Nd4j.create(new int[]{4}));
+        assertEquals(0, n2.sum(Integer.MAX_VALUE).getFloat(0), 1e-1);
+
     }
-
-
-    @Test
-    public void testPow() {
-        INDArray twos = Nd4j.valueArrayOf(2, 2);
-        INDArray pow = Transforms.pow(twos, 2);
-        assertEquals(Nd4j.valueArrayOf(2, 4), pow);
-    }
-
 
 }

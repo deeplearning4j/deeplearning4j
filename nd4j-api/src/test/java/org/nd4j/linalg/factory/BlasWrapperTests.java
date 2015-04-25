@@ -16,11 +16,12 @@
 
 package org.nd4j.linalg.factory;
 
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import static org.junit.Assert.assertEquals;
+import org.nd4j.linalg.factory.Nd4j;
 
 
 /**

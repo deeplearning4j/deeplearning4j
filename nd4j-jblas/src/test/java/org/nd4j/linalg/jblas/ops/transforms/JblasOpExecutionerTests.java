@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.jblas.ops.transforms;
 
-import org.nd4j.linalg.api.ops.tests.OpExecutionerTests;
+import org.nd4j.linalg.api.ops.OpExecutionerTests;
 
 /**
  * Created by agibsonccc on 2/22/15.

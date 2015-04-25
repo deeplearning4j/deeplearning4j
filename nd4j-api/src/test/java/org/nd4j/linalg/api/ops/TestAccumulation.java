@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.nd4j.linalg.api.ops.tests;
+package org.nd4j.linalg.api.ops;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;

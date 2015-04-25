@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.nd4j.linalg.dataset.test;
+package org.nd4j.linalg.dataset;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;

@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.nd4j.linalg.api.ops.tests;
+package org.nd4j.linalg.api.ops;
 
 import org.junit.After;
 import org.junit.Before;

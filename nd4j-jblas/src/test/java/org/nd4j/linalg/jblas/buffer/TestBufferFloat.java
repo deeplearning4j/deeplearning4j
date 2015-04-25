@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.jblas.buffer;
 
-import org.nd4j.linalg.api.buffer.test.FloatDataBufferTest;
+import org.nd4j.linalg.api.buffer.FloatDataBufferTest;
 
 /**
  * Created by agibsonccc on 2/14/15.
