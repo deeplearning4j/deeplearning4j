@@ -39,7 +39,6 @@ public class DoubleBuffer extends BaseDataBuffer {
     public DoubleBuffer(int length) {
         super(length);
         this.buffer = new double[length];
-        Nd4j.getResourceManager().incrementCurrentAllocatedMemory(elementSize() * length);
     }
 
 
@@ -215,8 +214,8 @@ public class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public void destroy() {
-        super.destroy();
+    public void close() {
+        super.close();
         if (buffer != null)
             buffer = null;
         if (memoryMappedBuffer != null) {

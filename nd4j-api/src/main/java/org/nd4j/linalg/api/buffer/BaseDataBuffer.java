@@ -107,8 +107,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void addReferencing(String id) {
-        if(!Nd4j.getResourceManager().isEnabled())
-            return;
         referencing.add(id);
     }
 
@@ -146,10 +144,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
 
     @Override
-    public void destroy() {
+    public void close() {
         if (Nd4j.shouldInstrument)
             Nd4j.getInstrumentation().log(this, "destroyed");
-        Nd4j.getResourceManager().decrementCurrentAllocatedMemory(elementSize() * length);
 
     }
 

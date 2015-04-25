@@ -22,20 +22,17 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import jcuda.CudaException;
 import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
+import jcuda.driver.CUresult;
 import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaDeviceProp;
-import jcuda.runtime.cudaMemcpyKind;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -164,7 +161,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public Pointer pointer() {
         ensureNotFreed();
         Pointer pointer = new Pointer();
-        JCuda.cudaHostGetDevicePointer(pointer, pinnedPointer, 0);
+        checkResult(JCuda.cudaHostGetDevicePointer(pointer, pinnedPointer, 0));
         return pointer;
     }
     
@@ -173,26 +170,13 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     	if(pinnedPointer!=null) {
     		throw new RuntimeException("Cannot reallocate");
     	}
-    	if(Nd4j.getResourceManager().currentAllocated()+elementSize()*length() > Nd4j.getResourceManager().maxAllocated())
-            throw new IllegalStateException("Illegal current allocated: " + Nd4j.getResourceManager().currentAllocated() + " is greater than max " + Nd4j.getResourceManager().maxAllocated());
 
         pinnedPointer = new Pointer();
 
-        // Check if the device supports mapped host memory
-        cudaDeviceProp deviceProperties = new cudaDeviceProp();
-        JCuda.cudaGetDeviceProperties(deviceProperties, 0);
-        if (deviceProperties.canMapHostMemory == 0) {
-            System.err.println("This device can not map host memory");
-            System.err.println(deviceProperties.toFormattedString());
-            return;
-        }
-
-        // Set the flag indicating that mapped memory will be used
-        JCuda.cudaSetDeviceFlags(JCuda.cudaDeviceMapHost);
         allocated.addAndGet(elementSize() * length());
         totalAllocated.addAndGet(elementSize() * length());
         log.debug("Allocating {} bytes, total: {}, overall: {}", elementSize() * length(), allocated.get(), totalAllocated);
-        JCuda.cudaHostAlloc(pinnedPointer,elementSize() * length(),JCuda.cudaHostAllocMapped);
+        checkResult(JCuda.cudaHostAlloc(pinnedPointer,elementSize() * length(),JCuda.cudaHostAllocWriteCombined));
 //      ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
 //      Nd4j.getResourceManager().incrementCurrentAllocatedMemory(elementSize() * length());
 
@@ -355,21 +339,26 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         ensureNotFreed();
         set(index, 1, from);
     }
-
+    
+    public static void checkResult(int cuResult)
+    {
+        if (cuResult != CUresult.CUDA_SUCCESS)
+        {
+            throw new CudaException(CUresult.stringFor(cuResult));
+        }
+    }
 
     @Override
-    public  void destroy() {
+    public void close() {
         try {
         	
-
             if(!freed.get()) {
                 if (Nd4j.shouldInstrument)
                     Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
-
                 
                 allocated.addAndGet(-elementSize() * length());
                 log.debug("freeing {} bytes, total: {}", elementSize() * length(), allocated.get());
-                JCuda.cudaFreeHost(pinnedPointer);
+                checkResult(JCuda.cudaFreeHost(pinnedPointer));
                 freed.set(true);
 //				Nd4j.getResourceManager().decrementCurrentAllocatedMemory(elementSize() * length());
 //				references().clear();

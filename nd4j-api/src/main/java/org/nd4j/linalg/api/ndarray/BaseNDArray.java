@@ -71,6 +71,9 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.Shape;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 
 /**
@@ -106,9 +109,10 @@ public abstract class BaseNDArray implements INDArray {
     protected int rows, columns;
     protected int length;
     protected INDArray linearView;
-    protected String id = Nd4j.getResourceManager().isEnabled() ? UUID.randomUUID().toString() : "";
     protected boolean cleanedUp = false;
     protected transient WeakReference<INDArray> ref;
+    
+    protected static final Logger log = LoggerFactory.getLogger(BaseNDArray.class);
 
     public BaseNDArray() {
     }
@@ -490,11 +494,6 @@ public abstract class BaseNDArray implements INDArray {
             ix += indexes[i] * stride[i];
         }
         return ix;
-    }
-
-    @Override
-    public String id() {
-        return id;
     }
 
     @Override
@@ -1738,11 +1737,6 @@ public abstract class BaseNDArray implements INDArray {
                 this.stride = ArrayUtil.calcStrides(this.shape);
         }
 
-        //add the reference for clean up later (clean up the buffer when this becomes a weak reference)
-        data().addReferencing(id());
-        ref = new WeakReference<>((INDArray) this, Nd4j.refQueue());
-
-
     }
 
 
@@ -1842,9 +1836,11 @@ public abstract class BaseNDArray implements INDArray {
     public  void cleanup() {
     	if (Nd4j.shouldInstrument)
             Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
-        Nd4j.getResourceManager().remove(id());
-        data().removeReferencing(id());
-        data().destroy();
+        try {
+			data().close();
+		} catch (Exception e) {
+			log.error("could not clean up resource, memory leak possible");
+		}
     	cleanedUp = true;
     }
 

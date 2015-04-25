@@ -248,4 +248,5 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         setData(arr);
     }
 
+
 }

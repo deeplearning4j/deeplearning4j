@@ -36,40 +36,40 @@ public abstract class DoubleDataBufferTest {
     }
 
     @Test
-    public void testGetSet() {
+    public void testGetSet() throws Exception {
         double[] d1 = new double[]{1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         double[] d2 = d.asDouble();
         assertArrayEquals(d1, d2, 1e-1f);
-        d.destroy();
+        d.close();
 
     }
 
 
     @Test
-    public void testDup() {
+    public void testDup() throws Exception {
         double[] d1 = new double[]{1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
         assertEquals(d, d2);
-        d.destroy();
-        d2.destroy();
+        d.close();
+        d2.close();
     }
 
     @Test
-    public void testPut() {
+    public void testPut() throws Exception {
         double[] d1 = new double[]{1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         d.put(0, 0.0);
         double[] result = new double[]{0, 2, 3, 4};
         d1 = d.asDouble();
         assertArrayEquals(d1, result, 1e-1f);
-        d.destroy();
+        d.close();
     }
 
 
     @Test
-    public void testGetRange() {
+    public void testGetRange() throws Exception {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         double[] get = buffer.getDoublesAt(0, 3);
         double[] data = new double[]{1, 2, 3};
@@ -79,14 +79,14 @@ public abstract class DoubleDataBufferTest {
         double[] get2 = buffer.asDouble();
         double[] allData = buffer.getDoublesAt(0, buffer.length());
         assertArrayEquals(get2, allData, 1e-1f);
-        buffer.destroy();
+        buffer.close();
 
 
     }
 
 
     @Test
-    public void testGetOffsetRange() {
+    public void testGetOffsetRange() throws Exception {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         double[] get = buffer.getDoublesAt(1, 3);
         double[] data = new double[]{2, 3, 4};
@@ -97,7 +97,7 @@ public abstract class DoubleDataBufferTest {
 
         double[] allData = buffer.getDoublesAt(1, buffer.length());
         assertArrayEquals(allButLast, allData, 1e-1f);
-        buffer.destroy();
+        buffer.close();
 
 
     }

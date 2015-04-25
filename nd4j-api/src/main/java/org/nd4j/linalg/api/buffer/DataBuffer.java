@@ -29,7 +29,7 @@ import java.util.Collection;
  *
  * @author Adam Gibson
  */
-public interface DataBuffer extends Serializable {
+public interface DataBuffer extends Serializable, AutoCloseable {
 
 
     public final static int DOUBLE = 0;
@@ -340,12 +340,6 @@ public interface DataBuffer extends Serializable {
      * Flush the data buffer
      */
     void flush();
-
-    /**
-     * Clears this buffer
-     */
-    void destroy();
-
 
     void put(int i, IComplexNumber result);
 

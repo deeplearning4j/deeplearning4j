@@ -106,11 +106,13 @@ public class UniformDistribution extends BaseJCudaDistribution {
 
     @Override
     public double[] sample(int sampleSize) {
-        CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(sampleSize);
-        doSampleUniformDouble(buffer.pointer(), lower, upper, buffer.length());
-        double[] buffer2 = buffer.asDouble();
-        buffer.destroy();
-        return buffer2;
+        try(CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(sampleSize)) {
+	        doSampleUniformDouble(buffer.pointer(), lower, upper, buffer.length());
+	        double[] buffer2 = buffer.asDouble();
+	        return buffer2;
+        } catch(Exception e) {
+	    	throw new RuntimeException("Cannot allocate resources for function", e);
+	    }
     }
 
     @Override

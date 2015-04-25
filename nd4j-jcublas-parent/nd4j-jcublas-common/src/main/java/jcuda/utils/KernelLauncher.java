@@ -38,6 +38,7 @@ import jcuda.*;
 import jcuda.driver.*;
 import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaDeviceProp;
 import jcuda.runtime.dim3;
 
 import org.nd4j.linalg.jcublas.context.ContextHolder;
@@ -620,8 +621,8 @@ public class KernelLauncher {
         }
 
 
-        JCudaDriver.cuCtxSynchronize();
-        JCuda.cudaDeviceSynchronize();
+        checkResult(JCudaDriver.cuCtxSynchronize());
+        checkResult(JCuda.cudaDeviceSynchronize());
 
 
     }

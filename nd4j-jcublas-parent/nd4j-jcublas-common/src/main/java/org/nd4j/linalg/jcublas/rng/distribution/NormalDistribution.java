@@ -229,11 +229,14 @@ public class NormalDistribution extends BaseJCudaDistribution {
 
     @Override
     public double[] sample(int sampleSize) {
-        CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(sampleSize);
-        doSampleNormal(mean, standardDeviation, buffer.pointer(), sampleSize);
-        double[] buffer2 = buffer.asDouble();
-        buffer.destroy();
-        return buffer2;
+        try(CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(sampleSize)) {
+	        doSampleNormal(mean, standardDeviation, buffer.pointer(), sampleSize);
+	        double[] buffer2 = buffer.asDouble();
+	        
+	        return buffer2;
+        } catch(Exception e) {
+	    	throw new RuntimeException("Cannot allocate resources for function", e);
+	    }
     }
 
     @Override

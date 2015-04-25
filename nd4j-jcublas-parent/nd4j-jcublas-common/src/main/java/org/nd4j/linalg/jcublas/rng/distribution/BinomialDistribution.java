@@ -121,15 +121,17 @@ public class BinomialDistribution extends BaseJCudaDistribution {
 
     @Override
     public double[] sample(int sampleSize) {
-        CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(sampleSize);
-        if (pNDArray != null) {
-
-        } else {
-            doBinomialDouble(probabilityOfSuccess, buffer.pointer(), numberOfTrials, buffer.length());
-        }
-        double[] buffer2 = buffer.asDouble();
-        buffer.destroy();
-        return buffer2;
+        try(CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(sampleSize)) {
+	        if (pNDArray != null) {
+	
+	        } else {
+	            doBinomialDouble(probabilityOfSuccess, buffer.pointer(), numberOfTrials, buffer.length());
+	        }
+	        double[] buffer2 = buffer.asDouble();
+	        return buffer2;
+        } catch(Exception e) {
+	    	throw new RuntimeException("Cannot allocate resources for function", e);
+	    }
     }
 
     @Override

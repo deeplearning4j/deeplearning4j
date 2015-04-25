@@ -46,29 +46,30 @@ public abstract class BaseJCudaDistribution implements Distribution {
         String functionName = "binomial";
         int blocks = PointerUtil.getNumBlocks(len, 128, 64);
         int threads = PointerUtil.getNumThreads(len, 64);
-        JCudaBuffer randomNumbers = new CudaFloatDataBuffer(len * n);
-        JCudaBuffer probBuffer = (JCudaBuffer) p.data();
-       
-
-        Object[] kernelParams = new Object[]{
-                Pointer.to(new int[]{len})
-                , Pointer.to(new int[]{n})
-                , Pointer.to(probBuffer.pointer())
-                , Pointer.to(randomNumbers.pointer())
-                , Pointer.to(out)
-                , random.generator()
-
-        };
-
-        //int len,int n,double *ps,double *result, curandState *s
-        KernelFunctions.invoke(
-                blocks,
-                threads,
-                functionName,
-                "float"
-                , kernelParams);
-        //we don't need this buffer anymore this was purely for storing the output
-        randomNumbers.destroy();
+        try(JCudaBuffer randomNumbers = new CudaFloatDataBuffer(len * n)) {
+	        JCudaBuffer probBuffer = (JCudaBuffer) p.data();
+	       
+	
+	        Object[] kernelParams = new Object[]{
+	                Pointer.to(new int[]{len})
+	                , Pointer.to(new int[]{n})
+	                , Pointer.to(probBuffer.pointer())
+	                , Pointer.to(randomNumbers.pointer())
+	                , Pointer.to(out)
+	                , random.generator()
+	
+	        };
+	
+	        //int len,int n,double *ps,double *result, curandState *s
+	        KernelFunctions.invoke(
+	                blocks,
+	                threads,
+	                functionName,
+	                "float"
+	                , kernelParams);
+        } catch(Exception e) {
+        	throw new RuntimeException("Cannot allocate resources for function", e);
+        }
     }
 
 
@@ -76,29 +77,30 @@ public abstract class BaseJCudaDistribution implements Distribution {
         String functionName = "binomial";
         int blocks = PointerUtil.getNumBlocks(len, 128, 64);
         int threads = PointerUtil.getNumThreads(len, 64);
-        JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(len);
-        JCudaBuffer probBuffer = (JCudaBuffer) p.data();
-       
-
-        Object[] kernelParams = new Object[]{
-                Pointer.to(new int[]{len})
-                , Pointer.to(new int[]{n})
-                , Pointer.to(probBuffer.pointer()),
-                Pointer.to(randomNumbers.pointer())
-                , Pointer.to(out)
-                , random.generator()
-
-        };
-
-
-        //int len,int n,double *ps,double *result, curandState *s
-        KernelFunctions.invoke(
-                blocks,
-                threads,
-                functionName,"double"
-                , kernelParams);
-        //we don't need this buffer anymore this was purely for storing the output
-        randomNumbers.destroy();
+        try(JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(len)) {
+	        JCudaBuffer probBuffer = (JCudaBuffer) p.data();
+	       
+	
+	        Object[] kernelParams = new Object[]{
+	                Pointer.to(new int[]{len})
+	                , Pointer.to(new int[]{n})
+	                , Pointer.to(probBuffer.pointer()),
+	                Pointer.to(randomNumbers.pointer())
+	                , Pointer.to(out)
+	                , random.generator()
+	
+	        };
+	
+	
+	        //int len,int n,double *ps,double *result, curandState *s
+	        KernelFunctions.invoke(
+	                blocks,
+	                threads,
+	                functionName,"double"
+	                , kernelParams);
+	    } catch(Exception e) {
+	    	throw new RuntimeException("Cannot allocate resources for function", e);
+	    }
 
     }
 
@@ -106,27 +108,28 @@ public abstract class BaseJCudaDistribution implements Distribution {
         String functionName = "binomial_scalar";
         int blocks = PointerUtil.getNumBlocks(len, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(len, KernelFunctions.THREADS);
-        JCudaBuffer randomNumbers = new CudaFloatDataBuffer(len * n);
+        try(JCudaBuffer randomNumbers = new CudaFloatDataBuffer(len * n)) {
        
 
-        Object[] kernelParams = new Object[]{
-                Pointer.to(new int[]{len})
-                , Pointer.to(new int[]{n})
-                , Pointer.to(new float[]{p}),
-                Pointer.to(randomNumbers.pointer())
-                , Pointer.to(out)
-                , random.generator()
-
-        };
-
-        //int len,int n,double *ps,double *result, curandState *s
-        KernelFunctions.invoke(
-                blocks,
-                threads,
-                functionName,"float"
-                , kernelParams);
-        //we don't need this buffer anymore this was purely for storing the output
-        randomNumbers.destroy();
+	        Object[] kernelParams = new Object[]{
+	                Pointer.to(new int[]{len})
+	                , Pointer.to(new int[]{n})
+	                , Pointer.to(new float[]{p}),
+	                Pointer.to(randomNumbers.pointer())
+	                , Pointer.to(out)
+	                , random.generator()
+	
+	        };
+	
+	        //int len,int n,double *ps,double *result, curandState *s
+	        KernelFunctions.invoke(
+	                blocks,
+	                threads,
+	                functionName,"float"
+	                , kernelParams);
+        } catch(Exception e) {
+	    	throw new RuntimeException("Cannot allocate resources for function", e);
+	    }
     }
 
     @Override
@@ -138,27 +141,28 @@ public abstract class BaseJCudaDistribution implements Distribution {
         String functionName = "binomial_scalar";
         int blocks = PointerUtil.getNumBlocks(len, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(len, KernelFunctions.THREADS);
-        JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(len);
+        try(JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(len)) {
        
 
-        Object[] kernelParams = new Object[]{
-                Pointer.to(new int[]{len})
-                , Pointer.to(new int[]{n})
-                , Pointer.to(new double[]{p}),
-                Pointer.to(randomNumbers.pointer())
-                , Pointer.to(out)
-                , Pointer.to(random.generator())
-
-        };
-
-        //int len,int n,double *ps,double *result, curandState *s
-        KernelFunctions.invoke(
-                blocks,
-                threads,
-                functionName,"double"
-                , kernelParams);
-        //we don't need this buffer anymore this was purely for storing the output
-        randomNumbers.destroy();
+	        Object[] kernelParams = new Object[]{
+	                Pointer.to(new int[]{len})
+	                , Pointer.to(new int[]{n})
+	                , Pointer.to(new double[]{p}),
+	                Pointer.to(randomNumbers.pointer())
+	                , Pointer.to(out)
+	                , Pointer.to(random.generator())
+	
+	        };
+	
+	        //int len,int n,double *ps,double *result, curandState *s
+	        KernelFunctions.invoke(
+	                blocks,
+	                threads,
+	                functionName,"double"
+	                , kernelParams);
+        } catch(Exception e) {
+	    	throw new RuntimeException("Cannot allocate resources for function", e);
+	    }
 
     }
 
@@ -176,20 +180,21 @@ public abstract class BaseJCudaDistribution implements Distribution {
         int threads = PointerUtil.getNumThreads(n, KernelFunctions.THREADS);
         
         //In the future these random numbers could be generated within the kernel
-        JCudaBuffer randomNumbers = new CudaFloatDataBuffer(n);
-        JCurand.curandGenerateUniform(random.generator(), randomNumbers.pointer(), n);
-        
-        //Generate the kernel parameters
-        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers.pointer(), out };
+        try(JCudaBuffer randomNumbers = new CudaFloatDataBuffer(n)) {
+	        JCurand.curandGenerateUniform(random.generator(), randomNumbers.pointer(), n);
+	        
+	        //Generate the kernel parameters
+	        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers.pointer(), out };
+	
+	        KernelFunctions.invoke(
+	                blocks,
+	                threads,
+	                functionName,"float"
+	                , kernelParams);
 
-        KernelFunctions.invoke(
-                blocks,
-                threads,
-                functionName,"float"
-                , kernelParams);
-
-        // No longer need this bit of memory as it was temporary
-        randomNumbers.destroy();
+        } catch(Exception e) {
+	    	throw new RuntimeException("Cannot allocate resources for function", e);
+	    }
     }
 
     /**
@@ -205,41 +210,44 @@ public abstract class BaseJCudaDistribution implements Distribution {
         int threads = PointerUtil.getNumThreads(n, 64);
         
         //In the future these random numbers could be generated within the kernel
-        JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(n);
-        JCurand.curandGenerateUniformDouble(random.generator(), randomNumbers.pointer(), n);
-
-        //Generate the kernel parameters
-        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers.pointer(), out };
-       
-        KernelFunctions.invoke(
-                blocks,
-                threads,
-                functionName,"double"
-                , kernelParams);
+        try(JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(n)) {
+	        JCurand.curandGenerateUniformDouble(random.generator(), randomNumbers.pointer(), n);
+	
+	        //Generate the kernel parameters
+	        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers.pointer(), out };
+	       
+	        KernelFunctions.invoke(
+	                blocks,
+	                threads,
+	                functionName,"double"
+	                , kernelParams);
         
-        // No longer need this bit of memory as it was temporary
-        randomNumbers.destroy();
+        } catch(Exception e) {
+	    	throw new RuntimeException("Cannot allocate resources for function", e);
+	    }
     }
 
     protected void doSampleNormal(Pointer out, INDArray means, float std) {
         float[] means2 = means.data().asFloat();
         for (int i = 0; i < means.length(); i++) {
-            JCudaBuffer dummy = KernelFunctions.alloc(new float[2]);
+            try(JCudaBuffer dummy = KernelFunctions.alloc(new float[2])) {
 
-            JCurand.curandGenerateNormal(
-                    random.generator()
-                    , dummy.pointer()
-                    , 2
-                    , means2[i]
-                    , std);
-            JCuda.cudaMemcpy(
-                    out.withByteOffset(Sizeof.FLOAT * i)
-                    , dummy.pointer()
-                    , Sizeof.FLOAT
-                    , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
-            dummy.destroy();
+	            JCurand.curandGenerateNormal(
+	                    random.generator()
+	                    , dummy.pointer()
+	                    , 2
+	                    , means2[i]
+	                    , std);
+	            JCuda.cudaMemcpy(
+	                    out.withByteOffset(Sizeof.FLOAT * i)
+	                    , dummy.pointer()
+	                    , Sizeof.FLOAT
+	                    , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+            } catch(Exception e) {
+    	    	throw new RuntimeException("Cannot allocate resources for function", e);
+    	    }
 
-        }
+        } 
 
 
     }
@@ -247,19 +255,21 @@ public abstract class BaseJCudaDistribution implements Distribution {
     protected void doSampleNormalDouble(Pointer out, INDArray means, double std) {
         double[] means2 = means.data().asDouble();
         for (int i = 0; i < means.length(); i++) {
-            JCudaBuffer dummy = KernelFunctions.alloc(new double[2]);
+            try(JCudaBuffer dummy = KernelFunctions.alloc(new double[2])) {
 
-            JCurand.curandGenerateNormalDouble(
-                    random.generator()
-                    , dummy.pointer()
-                    , 2
-                    , means2[i]
-                    , std);
-            JCuda.cudaMemcpy(
-                    out.withByteOffset(Sizeof.DOUBLE * i)
-                    , dummy.pointer(), Sizeof.DOUBLE
-                    , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
-            dummy.destroy();
+	            JCurand.curandGenerateNormalDouble(
+	                    random.generator()
+	                    , dummy.pointer()
+	                    , 2
+	                    , means2[i]
+	                    , std);
+	            JCuda.cudaMemcpy(
+	                    out.withByteOffset(Sizeof.DOUBLE * i)
+	                    , dummy.pointer(), Sizeof.DOUBLE
+	                    , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+            } catch(Exception e) {
+    	    	throw new RuntimeException("Cannot allocate resources for function", e);
+    	    }
         }
 
     }

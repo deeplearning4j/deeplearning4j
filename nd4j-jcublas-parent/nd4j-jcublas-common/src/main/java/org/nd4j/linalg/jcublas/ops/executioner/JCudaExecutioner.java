@@ -18,11 +18,8 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import jcuda.Pointer;
 import jcuda.Sizeof;
-import jcuda.driver.CUfunction;
-import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
-import jcuda.utils.KernelLauncher;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -38,7 +35,6 @@ import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -87,12 +83,12 @@ public class JCudaExecutioner implements OpExecutioner {
     }
 
 
-    private Pointer dummyDoublePointer() {
-        return Pointer.to(dummyDoublePointer.pointer());
+    private JCudaBuffer dummyDouble() {
+        return dummyDoublePointer;
     }
 
-    private Pointer dummyFloatPointer() {
-        return Pointer.to(dummyFloatPointer.pointer());
+    private JCudaBuffer dummyFloat() {
+        return dummyFloatPointer;
     }
 
     @Override
@@ -249,77 +245,96 @@ public class JCudaExecutioner implements OpExecutioner {
      * @param dataType  the data type
      * @return
      */
-    private Pointer toArgs(Object[] extraArgs, String dataType) {
+    private JCudaBuffer toArgs(Object[] extraArgs, String dataType) {
         if (dataType.equals("double")) {
             if (extraArgs == null || extraArgs.length < 1)
-                return dummyDoublePointer();
-            return KernelFunctions.alloc(PointerUtil.toDoubles(extraArgs)).pointer();
+                return dummyDouble();
+            return KernelFunctions.alloc(PointerUtil.toDoubles(extraArgs));
         } else if (dataType.equals("float")) {
             if (extraArgs == null || extraArgs.length < 1)
-                return dummyFloatPointer();
-            return KernelFunctions.alloc(PointerUtil.toFloats(extraArgs)).pointer();
+                return dummyFloat();
+            return KernelFunctions.alloc(PointerUtil.toFloats(extraArgs));
         }
         throw new IllegalArgumentException("Illegal datatype");
     }
 
 
-    private void invoke(Accumulation op) {
+    private void invoke(Accumulation op)  {
         JCudaBuffer xBuffer = (JCudaBuffer) op.x().data();
         Pointer xPointer = xBuffer.pointer().withByteOffset(xBuffer.elementSize() * op.x().offset());
-        JCudaBuffer result;
-        int resultLength = 1000;
-        if (op.x().data().dataType() == DataBuffer.DOUBLE) {
-            double[] resultBuffer = new double[resultLength];
-            for (int i = 0; i < resultBuffer.length; i++)
-                resultBuffer[i] = op.zero().doubleValue();
-            result = new CudaDoubleDataBuffer(resultBuffer);
-
-
-        } else {
-            float[] resultBuffer = new float[resultLength];
-            for (int i = 0; i < resultBuffer.length; i++)
-                resultBuffer[i] = op.zero().floatValue();
-            result = new CudaFloatDataBuffer(resultBuffer);
-        }
-
-        if (op.y() != null) {
-            JCudaBuffer yBuffer = (JCudaBuffer) op.y().data();
-            Pointer yPointer = yBuffer.pointer().withByteOffset(op.y().offset() * yBuffer.elementSize());
-
-            //int n,int xOffset,int yOffset, double *dx, double *dy,int incx,int incy,double *result
-            Object[] kernelParams = new Object[] {
-                    new int[]{op.n()},
-                    new int[]{op.x().offset()},
-                    new int[]{op.y().offset()},
-                    xPointer,
-                    yPointer,
-                    new int[]{op.x().majorStride()},
-                    new int[]{op.y().majorStride()},
-                    toArgs(op.extraArgs(), getType(op)),
-                    result.pointer()
-            };
-
-            invokeFunction(op, kernelParams);
-            setResultForOp(op, result.pointer());
-
-
-        } else {
-            //int n, int xOffset,double *dx,int incx,double result
-            Object[] kernelParams = new Object[] {
-                    new int[]{op.n()},
-                    new int[]{op.x().offset()},
-                    xPointer,
-                    new int[]{op.x().majorStride()},
-                    toArgs(op.extraArgs(), getType(op)),
-                    result.pointer()
-            };
-
-            invokeFunction(op, kernelParams);
-            setResultForOp(op, result.pointer());
-
-
-        }
-        result.destroy();
+        
+	    JCudaBuffer result = null;
+	    try {
+	        int resultLength = 1000;
+	        if (op.x().data().dataType() == DataBuffer.DOUBLE) {
+	            double[] resultBuffer = new double[resultLength];
+	            for (int i = 0; i < resultBuffer.length; i++)
+	                resultBuffer[i] = op.zero().doubleValue();
+	            result = new CudaDoubleDataBuffer(resultBuffer);
+	
+	
+	        } else {
+	            float[] resultBuffer = new float[resultLength];
+	            //for (int i = 0; i < resultBuffer.length; i++)
+	            //    resultBuffer[i] = op.zero().floatValue();
+	            result = new CudaFloatDataBuffer(resultBuffer);
+	        }
+	
+	        if (op.y() != null) {
+	            JCudaBuffer yBuffer = (JCudaBuffer) op.y().data();
+	            Pointer yPointer = yBuffer.pointer().withByteOffset(op.y().offset() * yBuffer.elementSize());
+	
+	            try(JCudaBuffer args = toArgs(op.extraArgs(), getType(op))) {
+		            //int n,int xOffset,int yOffset, double *dx, double *dy,int incx,int incy,double *result
+		            Object[] kernelParams = new Object[] {
+		                    new int[]{op.n()},
+		                    new int[]{op.x().offset()},
+		                    new int[]{op.y().offset()},
+		                    xPointer,
+		                    yPointer,
+		                    new int[]{op.x().majorStride()},
+		                    new int[]{op.y().majorStride()},
+		                    args.pointer(),
+		                    result.pointer()
+		            };
+		            
+		            invokeFunction(op, kernelParams);
+		            setResultForOp(op, result.pointer());
+	            } catch (Exception e) {
+	            	throw new RuntimeException("Could not allocate resources for execution", e);
+	            }
+	
+	            
+	
+	
+	        } else {
+	        	try(JCudaBuffer args = toArgs(op.extraArgs(), getType(op))) {
+		            //int n, int xOffset,double *dx,int incx,double result
+		            Object[] kernelParams = new Object[] {
+		                    new int[]{op.n()},
+		                    new int[]{op.x().offset()},
+		                    xPointer,
+		                    new int[]{op.x().majorStride()},
+		                    args.pointer(),
+		                    result.pointer()
+		            };
+	
+		            invokeFunction(op, kernelParams);
+		            setResultForOp(op, result.pointer());
+	        	} catch(Exception e ) {
+	        		throw new RuntimeException("Could not allocate resources for execution", e);
+	        	}
+	
+	
+	        }
+        } finally {
+			if(result!=null)
+				try {
+					result.close();
+				} catch(Exception e ) {
+	        		throw new RuntimeException("Could not allocate resources for execution", e);
+	        	}
+		}
     }
 
 
@@ -367,7 +382,7 @@ public class JCudaExecutioner implements OpExecutioner {
                     yPointer,
                     new int[]{op.x().majorStride()},
                     new int[]{op.y().majorStride()},
-                    toArgs(op.extraArgs(), getType(op)),
+                    toArgs(op.extraArgs(), getType(op)).pointer(),
                     zPointer
             };
 
@@ -384,7 +399,7 @@ public class JCudaExecutioner implements OpExecutioner {
                     PointerUtil.getPointer(op),
                     xPointer,
                     new int[]{op.x().majorStride()},
-                    toArgs(op.extraArgs(), getType(op)),
+                    toArgs(op.extraArgs(), getType(op)).pointer(),
                     zPointer
             };
 
@@ -411,26 +426,27 @@ public class JCudaExecutioner implements OpExecutioner {
         if (op.y() != null) {
             JCudaBuffer yBuffer = (JCudaBuffer) op.y().data();
             Pointer yPointer = yBuffer.pointer().withByteOffset(op.y().offset() * yBuffer.elementSize());
-            /**
-             * Construct pointer arguments in the following order:
-             * n
-             * offset,
-             * pointer to buffer
-             * increment,
-             * extraArgs,
-             * result
-             */
-            Object[] params = new Object[9];
-            params[0] = new int[]{op.n()};
-            params[1] = new int[]{op.x().offset()};
-            params[2] = new int[]{op.y().offset()};
-            params[3] = xPointer;
-            params[4] = yPointer;
-            params[5] = new int[]{op.x().majorStride()};
-            params[6] = new int[]{op.y().majorStride()};
-            params[7] = toArgs(op.extraArgs(), getType(op));
-            params[8] = zPointer;
-            invokeFunction(op, params);
+            
+	            /**
+	             * Construct pointer arguments in the following order:
+	             * n
+	             * offset,
+	             * pointer to buffer
+	             * increment,
+	             * extraArgs,
+	             * result
+	             */
+	            Object[] params = new Object[9];
+	            params[0] = new int[]{op.n()};
+	            params[1] = new int[]{op.x().offset()};
+	            params[2] = new int[]{op.y().offset()};
+	            params[3] = xPointer;
+	            params[4] = yPointer;
+	            params[5] = new int[]{op.x().majorStride()};
+	            params[6] = new int[]{op.y().majorStride()};
+	            params[7] = toArgs(op.extraArgs(), getType(op)).pointer();
+	            params[8] = zPointer;
+	            invokeFunction(op, params);
 
 
         } else {
@@ -440,11 +456,12 @@ public class JCudaExecutioner implements OpExecutioner {
                     new int[]{op.x().offset()},
                     xPointer,
                     new int[]{op.x().majorStride()},
-                    toArgs(op.extraArgs(), getType(op)),
+                    toArgs(op.extraArgs(), getType(op)).pointer(),
                     zPointer
             };
 
             invokeFunction(op, kernelParams);
+            
 
 
         }

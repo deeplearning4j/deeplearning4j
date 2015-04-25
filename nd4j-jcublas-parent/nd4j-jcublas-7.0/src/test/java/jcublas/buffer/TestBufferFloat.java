@@ -58,11 +58,11 @@ public class TestBufferFloat extends FloatDataBufferTest {
     }
 
     @Test
-    public void testAsFloat() {
+    public void testAsFloat() throws Exception {
         float[] answer = new float[]{1, 1, 1, 1};
         DataBuffer buff = Nd4j.createBuffer(new float[]{1, 1, 1, 1});
         assertTrue(Arrays.equals(answer, buff.asFloat()));
-        buff.destroy();
+        buff.close();
     }
 
 

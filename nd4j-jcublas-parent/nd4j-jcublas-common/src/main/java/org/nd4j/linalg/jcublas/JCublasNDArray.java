@@ -37,9 +37,14 @@ public class JCublasNDArray extends BaseNDArray {
 	
 	/**
 	 * De-allocate the pinned cuda buffer
+	 * @throws Exception 
 	 */
 	public void close() {
-		data.destroy();
+		try {
+			data.close();
+		} catch (Exception e) {
+			throw new RuntimeException("Could not release resources", e);
+		}
 	}
 
 
@@ -337,8 +342,5 @@ public class JCublasNDArray extends BaseNDArray {
     public JCublasNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
         super(data, shape, stride, offset, ordering);
     }
-
-
-
 
 }

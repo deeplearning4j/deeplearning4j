@@ -22,7 +22,6 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
-import java.io.Closeable;
 import java.io.Serializable;
 import java.util.List;
 
@@ -44,13 +43,6 @@ public interface INDArray extends Serializable, AutoCloseable  {
      * Cleanup resources
      */
     void cleanup();
-
-    /**
-     * Reference to the ndarray
-     *
-     * @return the id for this ndarray
-     */
-    String id();
 
     /**
      * Resets the linear view

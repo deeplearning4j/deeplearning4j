@@ -18,14 +18,19 @@ package org.nd4j.linalg.jcublas;
 
 import jcublas.JCublas2;
 import jcublas.cublasHandle;
+import jcuda.CudaException;
 import jcuda.LogLevel;
 import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
+import jcuda.driver.JCudaDriver;
 import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaDeviceProp;
+import jcuda.runtime.cudaError;
 import jcuda.runtime.cudaMemcpyKind;
 import jcuda.utils.KernelLauncher;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -35,6 +40,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 
 /**
@@ -80,6 +86,16 @@ public class SimpleJCublas {
     public static cublasHandle handle() {
         return handle;
     }
+    
+    private static int checkResult(int result)
+    {
+        if (result != cudaError.cudaSuccess)
+        {
+            throw new CudaException(cudaError.stringFor(result));
+        }
+        return result;
+    }
+
 
     /**
      * Initialize jcublas only called once
@@ -99,6 +115,22 @@ public class SimpleJCublas {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+        
+        // Check if the device supports mapped host memory
+        cudaDeviceProp deviceProperties = new cudaDeviceProp();
+        checkResult(JCuda.cudaGetDeviceProperties(deviceProperties, 0));
+        if (deviceProperties.canMapHostMemory == 0) {
+            System.err.println("This device can not map host memory");
+            System.err.println(deviceProperties.toFormattedString());
+            return;
+        }
+        int[] version = new int[100];
+        JCudaDriver.cuCtxGetApiVersion(ContextHolder.getInstance().getContext(), version);
+        
+        
+        // Set the flag indicating that mapped memory will be used
+        //checkResult(JCuda.cudaSetDeviceFlags(JCuda.cudaDeviceMapHost));
+        
         init = true;
     }
 

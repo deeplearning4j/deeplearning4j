@@ -181,7 +181,7 @@ public class IntBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public void destroy() {
+    public void close() {
         if (buffer != null)
             buffer = null;
         if (memoryMappedBuffer != null) {

@@ -211,8 +211,8 @@ public class FloatBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public void destroy() {
-        super.destroy();
+    public void close() {
+        super.close();
         if (buffer != null)
             buffer = null;
         if (memoryMappedBuffer != null) {

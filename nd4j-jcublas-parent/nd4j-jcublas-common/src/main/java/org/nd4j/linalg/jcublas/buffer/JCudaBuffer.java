@@ -17,6 +17,7 @@
 package org.nd4j.linalg.jcublas.buffer;
 
 import jcuda.Pointer;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 /**

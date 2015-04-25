@@ -22,7 +22,7 @@ public class LogEntry extends DataBufferLogEntry {
     }
 
     public LogEntry(INDArray toLog, String status) {
-        this.id = toLog.id();
+        //this.id = toLog.id();
         this.shape = toLog.shape();
         this.stride = toLog.stride();
         this.ndArrayType = toLog.getClass().getName();
@@ -36,7 +36,7 @@ public class LogEntry extends DataBufferLogEntry {
 
 
     public LogEntry(INDArray toLog, StackTraceElement[] stackTraceElements, String status) {
-        this.id = toLog.id();
+        //this.id = toLog.id();
         this.shape = toLog.shape();
         this.stride = toLog.stride();
         this.ndArrayType = toLog.getClass().getName();

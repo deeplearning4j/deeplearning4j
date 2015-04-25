@@ -3,6 +3,7 @@ package org.nd4j.linalg.jcublas.rng;
 import jcuda.jcurand.JCurand;
 import jcuda.jcurand.curandGenerator;
 import jcuda.utils.KernelLauncher;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.SetRange;
@@ -66,7 +67,11 @@ public class JcudaRandom implements Random {
         curandGenerate(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
         int ret = (int) data[0];
-        buffer.destroy();
+        try {
+			buffer.close();
+		} catch (Exception e) {
+			throw new RuntimeException("Could not release resources",e);
+		}
         return ret;
     }
 
@@ -77,7 +82,11 @@ public class JcudaRandom implements Random {
         curandGenerateUniformDouble(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
         int ret = (int) data[0];
-        buffer.destroy();
+        try {
+			buffer.close();
+		} catch (Exception e) {
+			throw new RuntimeException("Could not release resources",e);
+		}
         return ret;
     }
 
@@ -88,7 +97,11 @@ public class JcudaRandom implements Random {
         curandGenerate(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
         long ret = (long) data[0];
-        buffer.destroy();
+        try {
+			buffer.close();
+		} catch (Exception e) {
+			throw new RuntimeException("Could not release resources",e);
+		}
         return ret;
     }
 
@@ -104,7 +117,11 @@ public class JcudaRandom implements Random {
         curandGenerate(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
         float ret = (float) data[0];
-        buffer.destroy();
+        try {
+			buffer.close();
+		} catch (Exception e) {
+			throw new RuntimeException("Could not release resources",e);
+		}
         return ret;
     }
 
@@ -114,7 +131,11 @@ public class JcudaRandom implements Random {
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
         curandGenerate(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
-        buffer.destroy();
+        try {
+			buffer.close();
+		} catch (Exception e) {
+			throw new RuntimeException("Could not release resources",e);
+		}
         return data[0];
     }
 
@@ -124,7 +145,11 @@ public class JcudaRandom implements Random {
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
         curandGenerateUniformDouble(generator, buffer.pointer(), 2);
         double[] data = buffer.asDouble();
-        buffer.destroy();
+        try {
+			buffer.close();
+		} catch (Exception e) {
+			throw new RuntimeException("Could not release resources",e);
+		}
         return data[0];
     }
 
