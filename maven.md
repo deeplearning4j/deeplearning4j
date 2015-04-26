@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Intro to Maven for Python Programmers
+# Maven for Python Programmers
 
 [Maven](https://en.wikipedia.org/wiki/Apache_Maven) is the most commonly used build automation tool for Java programmers, analogous to a package management system like [pip](https://en.wikipedia.org/wiki/Pip_(package_manager)) in Python, or PyBuilder. 
 
@@ -15,8 +15,7 @@ Maven dynamically downloads Java libraries and Maven plug-ins from Maven Central
 
 To quote *Maven: The Complete Reference*: 
 
-		Running mvn install from the command line will process resources, compile source, execute unit tests, create a JAR and
-		install the JAR in a local repository for reuse in other projects. 
+		Running mvn install from the command line will process resources, compile source, execute unit tests, create a JAR and install the JAR in a local repository for reuse in other projects. 
 
 Like Deeplearning4j, Maven relies on convention over configuration, which means that it provides default values that allow it to run without the programmer having to specify each parameter for each new project. 
 
