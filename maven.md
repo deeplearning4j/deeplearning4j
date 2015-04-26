@@ -11,7 +11,9 @@ As a build automation tool, Maven compiles source to byte code and links object 
 
 (A [JAR](https://en.wikipedia.org/wiki/JAR_%28file_format%29) is a *Java ARchive*, a package file format that aggregates many Java class files, associated metadata and resources such as text and images. It's a compressed file format that helps Java runtimes  deploy a set of classes and their resources.) 
 
-Maven dynamically downloads Java libraries and Maven plug-ins from Maven Central Repository which are specified in an XML file that stores a Project Object Model, which you'll find in the file POM.xml.
+Maven dynamically downloads Java libraries and Maven plug-ins from Maven Central Repository which are specified in an XML file that stores a Project Object Model, which you'll find in the file POM.xml. 
+
+![Alt text](../img/how_maven_works.png)
 
 To quote *Maven: The Complete Reference*: 
 
