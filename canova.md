@@ -14,3 +14,5 @@ Key aspects:
 - DL4J's new CLI system will use input formats that match up to not only your custom ones, but also the standard ones (ARFF, SVMLight, etc)
 
 Summary: Vectorization is now a first-class citizen.
+
+Right now we're finishing up the CLI system and running tests on basic datasets for converting just stock CSV data that you'd export from a DB or get from UCI. You can transform this data with a small conf file based transform language (label, normalize, copy, etc).
