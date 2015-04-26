@@ -15,6 +15,7 @@ We believe Scala's many strengths will lead it to dominate numerical computing, 
 
 ### See also
 
+* [Learn: The Scala Programming Language](http://www.scala-lang.org/documentation/)
 * [A Scala Tutorial for Java programmers](http://www.scala-lang.org/docu/files/ScalaTutorial.pdf) (PDF)
 * [Scala By Example, by Martin Odersky](http://www.scala-lang.org/docu/files/ScalaByExample.pdf) (PDF) 
 * [Scala API examples on ND4J](http://nd4j.org/scala.html)
@@ -23,3 +24,5 @@ We believe Scala's many strengths will lead it to dominate numerical computing, 
 * [Our Spark integration](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark)
 * [Our early-stage Scala API](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-scala-api/src/main/scala/org/nd4j/api/linalg): ([One example](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-scala-api/src/test/scala/org/nd4j/api/linalg/TestNDArray.scala#L18))
 * [ND4J: Scientific Computing for the JVM](http://nd4j.org)
+* [Scala Basics for Python Developers](https://bugra.github.io/work/notes/2014-10-18/scala-basics-for-python-developers/)
+* [Why We Love Scala at Coursera](https://tech.coursera.org/blog/2014/02/18/why-we-love-scala-at-coursera/)
