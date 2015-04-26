@@ -24,6 +24,7 @@ If you have both IntelliJ and Maven installed, IntelliJ will allow you to choose
 Several useful books have been written about Apache Maven. They are available on the website of Sonatype, the company that supports the open-source project. 
 
 Further reading:
+
 * [Maven by Example](https://books.sonatype.com/mvnex-book/reference/public-book.html)
 * [Maven: The Complete Reference](https://books.sonatype.com/mvnref-book/reference/public-book.html)
 * [Developing with Eclipse and Maven](https://books.sonatype.com/m2eclipse-book/reference/)
