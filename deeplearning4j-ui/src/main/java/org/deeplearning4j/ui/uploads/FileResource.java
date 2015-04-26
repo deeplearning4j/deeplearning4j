@@ -2,7 +2,6 @@ package org.deeplearning4j.ui.uploads;
 
 
 
-import com.sun.xml.internal.messaging.saaj.packaging.mime.MessagingException;
 
 
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -39,7 +38,7 @@ public abstract class FileResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response uploadFile(
             @FormDataParam("file") InputStream uploadedInputStream,
-            @FormDataParam("file") FormDataContentDisposition fileDetail) throws MessagingException, IOException {
+            @FormDataParam("file") FormDataContentDisposition fileDetail) throws  IOException {
         String uploadedFileLocation = new File(filePath,fileDetail.getFileName()).getAbsolutePath();
         LOGGER.info(uploadedFileLocation);
         // save it
