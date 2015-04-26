@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Maven for Python Programmers
+# Intro to Maven for Python Programmers
 
 [Maven](https://en.wikipedia.org/wiki/Apache_Maven) is the most commonly used build automation tool for Java programmers, analogous to a package management system like [pip](https://en.wikipedia.org/wiki/Pip_(package_manager)) in Python, or PyBuilder. 
 
@@ -13,7 +13,10 @@ As a build automation tool, Maven compiles source to byte code and links object 
 
 Maven dynamically downloads Java libraries and Maven plug-ins from Maven Central Repository which are specified in an XML file that stores a Project Object Model, which you'll encounter under the file name POM.xml.
 
-		[Running mvn install](https://books.sonatype.com/mvnref-book/reference/installation-sect-compare-ant-maven.html) from the command line will process resources, compile source, execute unit tests, create a JAR, and install the JAR in a local repository for reuse in other projects. 
+To quote *Maven: The Complete Reference*: 
+
+		Running mvn install from the command line will process resources, compile source, execute unit tests, create a JAR and
+		install the JAR in a local repository for reuse in other projects. 
 
 Like Deeplearning4j, Maven relies on convention over configuration, which means that it provides default values that allow it to run without the programmer having to specify each parameter for each new project. 
 
@@ -22,8 +25,7 @@ If you have both IntelliJ and Maven installed, IntelliJ will allow you to choose
 Several useful books have been written about Apache Maven. They are available on the website of Sonatype, the company that supports the open-source project. 
 
 Further reading:
-
-[Maven by Example](https://books.sonatype.com/mvnex-book/reference/public-book.html)
-[Maven: The Complete Reference](https://books.sonatype.com/mvnref-book/reference/public-book.html)
-[Developing with Eclipse and Maven](https://books.sonatype.com/m2eclipse-book/reference/)
+* [Maven by Example](https://books.sonatype.com/mvnex-book/reference/public-book.html)
+* [Maven: The Complete Reference](https://books.sonatype.com/mvnref-book/reference/public-book.html)
+* [Developing with Eclipse and Maven](https://books.sonatype.com/m2eclipse-book/reference/)
 
