@@ -11,7 +11,7 @@ As a build automation tool, Maven compiles source to byte code and links object 
 
 (A [JAR](https://en.wikipedia.org/wiki/JAR_%28file_format%29) is a *Java ARchive*, a package file format that aggregates many Java class files, associated metadata and resources such as text and images. It's a compressed file format that helps Java runtimes  deploy a set of classes and their resources.) 
 
-Maven dynamically downloads Java libraries and Maven plug-ins from Maven Central Repository which are specified in an XML file that stores a Project Object Model, which you'll encounter under the file name POM.xml.
+Maven dynamically downloads Java libraries and Maven plug-ins from Maven Central Repository which are specified in an XML file that stores a Project Object Model, which you'll find in the file POM.xml.
 
 To quote *Maven: The Complete Reference*: 
 
@@ -20,7 +20,7 @@ To quote *Maven: The Complete Reference*:
 
 Like Deeplearning4j, Maven relies on convention over configuration, which means that it provides default values that allow it to run without the programmer having to specify each parameter for each new project. 
 
-If you have both IntelliJ and Maven installed, IntelliJ will allow you to choose Maven when creating a new project in the IDE, and will then take you through the wizard (we comment more thoroughly on the process [here](http://nd4j.org/getstarted.html#maven).
+If you have both IntelliJ and Maven installed, IntelliJ will allow you to choose Maven when creating a new project in the IDE, and will then take you through the wizard (we comment more thoroughly on the process [here](http://nd4j.org/getstarted.html#maven). That is, you can make the build happen from within IntelliJ, without going anywhere else. 
 
 Several useful books have been written about Apache Maven. They are available on the website of Sonatype, the company that supports the open-source project. 
 
