@@ -26,3 +26,32 @@ We believe Scala's many strengths will lead it to dominate numerical computing, 
 * [ND4J: Scientific Computing for the JVM](http://nd4j.org)
 * [Scala Basics for Python Developers](https://bugra.github.io/work/notes/2014-10-18/scala-basics-for-python-developers/)
 * [Why We Love Scala at Coursera](https://tech.coursera.org/blog/2014/02/18/why-we-love-scala-at-coursera/)
+
+A non-exhaustive list of [organizations using Scala](http://alvinalexander.com/scala/whos-using-scala-akka-play-framework):
+
+* AirBnB
+* Amazon
+* Apple
+* Ask.com
+* AT&T
+* Autodesk
+* Bank of America
+* Bloomberg
+* Credit Suisse
+* eBay
+* Foursquare
+* (The) Guardian
+* IBM
+* Klout
+* LinkedIn
+* NASA
+* Netflix
+* precog
+* Siemens
+* Sony
+* Twitter
+* Tumblr
+* UBS
+* (The) Weather Channel
+* Xerox
+* Yammer
