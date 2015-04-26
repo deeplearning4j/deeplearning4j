@@ -86,7 +86,8 @@ public class DefaultConvolutionInstance extends BaseConvolution {
 
         int[] intShape = ArrayUtil.toInts(shape);
         for(int i = 0; i < intShape.length; i++) {
-            intShape[i] = (int) MathUtils.nextPowOf2(intShape[i]);
+            if(intShape[i] % 2 != 0)
+                intShape[i] = (int) MathUtils.nextPowOf2(intShape[i]);
         }
         IComplexNDArray fftedInput = FFT.rawfftn(Nd4j.createComplex(input), intShape, axes);
         IComplexNDArray fftedKernel = FFT.rawfftn(Nd4j.createComplex(kernel), intShape, axes);

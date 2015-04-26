@@ -177,11 +177,21 @@ public class FFT {
         return Nd4j.getFFt().irfftn(arr);
     }
 
-
+    /**
+     *
+     * @param arr
+     * @param dimension
+     * @return
+     */
     public static IComplexNDArray irfft(IComplexNDArray arr, int dimension) {
         return Nd4j.getFFt().irfft(arr, dimension);
     }
 
+    /**
+     *
+     * @param arr
+     * @return
+     */
     public static IComplexNDArray irfft(IComplexNDArray arr) {
         return Nd4j.getFFt().irfft(arr);
     }

@@ -65,7 +65,9 @@ public class VectorFFT extends BaseTransformOp {
         exec();
     }
 
-
+    public VectorFFT(INDArray x) {
+        this(x,x.length());
+    }
 
 
 

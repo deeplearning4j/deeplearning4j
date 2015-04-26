@@ -1335,7 +1335,7 @@ public abstract class BaseNDArray implements INDArray {
 
         //needed to copy data
         if (newStrides == null)
-            newStrides = Nd4j.getStrides(newShape);
+            newStrides = this instanceof IComplexNDArray ? Nd4j.getComplexStrides(newShape) : Nd4j.getStrides(newShape);
         if (this instanceof IComplexNDArray)
             return Nd4j.createComplex(newCopy.data(), newShape, newStrides, offset);
         return Nd4j.create(newCopy.data(), newShape, newStrides, offset);
@@ -2651,6 +2651,9 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int linearIndex(int i) {
+        if(isScalar() && i > 0)
+            throw new IllegalArgumentException("Illegal index for scalar " + i);
+
         int realStride = secondaryStride();
         int idx = offset + i * realStride;
 
@@ -2987,7 +2990,7 @@ public abstract class BaseNDArray implements INDArray {
         else if (isColumnVector())
             return Nd4j.create(data, new int[]{shape[0]}, offset);
 
-        INDArray ret = permute(ArrayUtil.range(shape.length - 1, -1));
+        INDArray ret = permute(ArrayUtil.reverseCopy(ArrayUtil.range(0, shape.length)));
         return ret;
     }
 
@@ -3556,10 +3559,27 @@ public abstract class BaseNDArray implements INDArray {
         int[] retShape = new int[shape.length];
 
         for (int i = 0; i < retShape.length; i++) {
-            if (i < shape().length)
-                retShape[i] = Math.max(shape[i], shape()[i]);
-            else
-                retShape[i] = shape[i];
+            if(shape().length == 1) {
+                if(i == 0) {
+                    if (i < shape().length)
+                        retShape[i] = Math.max(1, shape[i]);
+                    else
+                        retShape[i] = shape[i];
+                }
+                else {
+                    if (i < shape().length)
+                        retShape[i] = Math.max(shape[i], shape()[i]);
+                    else
+                        retShape[i] = shape[i];
+                }
+            }
+            else {
+                if (i < shape().length)
+                    retShape[i] = Math.max(shape[i], shape()[i]);
+                else
+                    retShape[i] = shape[i];
+            }
+
         }
 
         INDArray ret = Nd4j.create(retShape);

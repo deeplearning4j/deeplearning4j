@@ -67,6 +67,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public void iterateOverAllRows(Op op) {
         if(op.x().isRowVector()) {
+            //reset the op in case
+            op.setX(op.x());
+            op.setY(op.y());
+            op.setZ(op.z());
             exec(op);
         }
         //execute row wise
@@ -82,7 +86,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     op.setX(row.ravel());
                     op.setZ(zRow.ravel());
                     if(y != null)
-                        op.setY(y.getRow(i));
+                        op.setY(y.slice(i));
                     exec(op);
                     originalZ.slice(i).assign(op.z());
 

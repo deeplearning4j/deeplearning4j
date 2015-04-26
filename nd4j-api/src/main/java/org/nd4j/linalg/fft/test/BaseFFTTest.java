@@ -41,6 +41,7 @@ public abstract class BaseFFTTest {
 
     @Test
     public void testColumnVector() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
         IComplexNDArray n = (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(Nd4j.complexLinSpace(1,8,8),8));
         IComplexNDArray assertion = Nd4j.createComplex(new double[]
                 {36., 0., -4., 9.65685425, -4., 4, -4., 1.65685425, -4., 0., -4., -1.65685425, -4., -4., -4., -9.65685425
@@ -108,16 +109,25 @@ public abstract class BaseFFTTest {
         Nd4j.EPS_THRESHOLD = 1e-1;
         IComplexNDArray ones = Nd4j.complexOnes(5, 5);
         IComplexNDArray ffted = FFT.fftn(ones);
-        IComplexNDArray zeros = Nd4j.createComplex(5,5);
+        IComplexNDArray zeros = Nd4j.createComplex(5, 5);
         zeros.putScalar(0, 0, Nd4j.createComplexNumber(25, 0));
         assertEquals(zeros, ffted);
 
-        IComplexNDArray threeOnes = Nd4j.complexOnes(3,3);
+        IComplexNDArray threeOnes = Nd4j.complexOnes(3, 3);
         IComplexNDArray threeComp = Nd4j.createComplex(3, 3);
         threeComp.putScalar(0, 0, Nd4j.createComplexNumber(9, 0));
-        assertEquals(FFT.fftn(threeOnes),threeComp);
+        assertEquals(FFT.fftn(threeOnes), threeComp);
 
 
+
+    }
+
+    @Test
+    public void testOnesDifferentShapes() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
+        IComplexNDArray ones = Nd4j.complexOnes(5, 5);
+        IComplexNDArray ffted = Nd4j.getFFt().rawfftn(ones,new int[]{3,3},new int[]{0,1});
+        System.out.println(ffted);
 
     }
 
@@ -125,10 +135,15 @@ public abstract class BaseFFTTest {
 
 
     @Test
-    public void testRawFft() {
-        IComplexNDArray a = Nd4j.complexOnes(5,5);
-        IComplexNDArray fftedA = FFT.rawfftn(a,new int[]{7,7}, ArrayUtil.reverseCopy(ArrayUtil.range(2,0)));
-        System.out.println(fftedA);
+    public void testRawfft() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
+
+        IComplexNDArray test = Nd4j.complexOnes(5,5);
+        IComplexNDArray result = Nd4j.getFFt().rawfft(test, 3, 1);
+        IComplexNDArray assertion = Nd4j.createComplex(1,3);
+        assertion.putScalar(0, Nd4j.createComplexNumber(3, 0));
+        for(int i = 0; i < result.slices(); i++)
+            assertEquals(assertion,result.slice(i));
     }
 
 

@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.test;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -341,6 +342,23 @@ public abstract class ComplexNDArrayTests {
 
 
     @Test
+    public void testSliceOffset() {
+        IComplexNDArray test = Nd4j.complexLinSpace(1, 10, 10).reshape(2,5);
+        IComplexNDArray testSlice0 = Nd4j.complexLinSpace(1, 5, 5);
+        IComplexNDArray testSlice1 = Nd4j.complexLinSpace(6, 10, 5);
+        assertEquals(testSlice0,test.slice(0));
+        assertEquals(testSlice1,test.slice(1));
+
+        IComplexNDArray sliceOfSlice0 = test.slice(0).slice(0);
+        assertEquals(sliceOfSlice0.getComplex(0),Nd4j.createComplexNumber(1,0));
+        assertEquals( test.slice(1).slice(0).getComplex(0),Nd4j.createComplexNumber(6,0));
+        assertEquals(test.slice(1).getComplex(1),Nd4j.createComplexNumber(7,0));
+
+
+    }
+
+
+    @Test
     public void testSlice() {
         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
         Nd4j.MAX_SLICES_TO_PRINT = -1;
@@ -581,6 +599,25 @@ public abstract class ComplexNDArrayTests {
     }
 
 
+
+    @Test
+    public void testGetComplex() {
+        IComplexNDArray arr = Nd4j.createComplex(Nd4j.create(new DoubleBuffer(new double[]{
+                1,2,3,4,5
+        })));
+
+        IComplexNumber num = arr.getComplex(4);
+        assertEquals(Nd4j.createDouble(5, 0),num);
+
+        IComplexNDArray matrix = Nd4j.complexLinSpace(1,10,10).reshape(2,5);
+        IComplexNDArray slice = matrix.slice(0);
+        IComplexNDArray assertion = Nd4j.complexLinSpace(1,5,5);
+        assertEquals(assertion,slice);
+        IComplexNDArray assert2 = Nd4j.complexLinSpace(6,10,5);
+        assertEquals(assert2,matrix.slice(1));
+
+    }
+
     @Test
     public void testNdArrayConstructor() {
         IComplexNDArray result = Nd4j.createComplex(Nd4j.create(new double[]{2, 6}, new int[]{1, 2}));
@@ -670,6 +707,17 @@ public abstract class ComplexNDArrayTests {
 
     }
 
+
+    @Test
+    public void testBroadcast() {
+        IComplexNDArray arr = Nd4j.complexLinSpace(1,5,5);
+        IComplexNDArray arrs = arr.broadcast(new int[]{5,5});
+        IComplexNDArray arrs3 = Nd4j.createComplex(5,5);
+        assertTrue(Arrays.equals(arrs.shape(),arrs3.shape()));
+        for(int i = 0; i < arrs.slices(); i++)
+            arrs3.putSlice(i,arr);
+        assertEquals(arrs3,arrs);
+    }
 
     @Test
     public void testBasicOperations() {

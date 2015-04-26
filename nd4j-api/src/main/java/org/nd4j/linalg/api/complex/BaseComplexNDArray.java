@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.complex;
 
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -470,7 +471,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public void resetLinearView() {
-        linearView = Nd4j.createComplex(data, new int[]{length}, stride(), offset());
+        linearView = reshape(1,length());
     }
 
     @Override
@@ -1382,6 +1383,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public int linearIndex(int i) {
+        if(isScalar() && i > 0)
+            throw new IllegalArgumentException("Illegal index for scalar " + i);
         int realStride = majorStride();
         int idx = offset + (i * realStride);
         if (idx >= data.length())
@@ -1746,27 +1749,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNDArray slice(int slice, int dimension) {
         int offset = this.offset + dimension * stride[slice];
-        if (this.offset == 0)
-            offset *= 2;
-        IComplexNDArray ret;
-        if (shape.length == 2) {
-            int st = stride[1];
-            if (st == 1) {
-                return Nd4j.createComplex(
-                        data,
-                        new int[]{shape[dimension]},
-                        offset, ordering);
-            } else {
-                return Nd4j.createComplex(
-                        data,
-                        new int[]{shape[dimension]},
-                        new int[]{st},
-                        offset);
-            }
-
-
-        }
-
         if (slice == 0)
             return slice(dimension);
 
@@ -3793,8 +3775,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         //epsilon equals
         if (isScalar() && n.isScalar()) {
             IComplexNumber c = n.getComplex(0);
-            return Math.abs(getComplex(0).sub(c).realComponent().doubleValue()) < 1e-6;
-        } else if (isVector() && n.isVector()) {
+            return FastMath.abs(getComplex(0).sub(c).realComponent().doubleValue()) < Nd4j.EPS_THRESHOLD;
+        }
+        else if (isVector() && n.isVector()) {
             for (int i = 0; i < length; i++) {
                 IComplexNumber nComplex = n.getComplex(i);
                 IComplexNumber thisComplex = getComplex(i);
@@ -3811,8 +3794,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         //epsilon equals
         if (isScalar()) {
             IComplexNumber c = n.getComplex(0);
-            return getComplex(0).sub(c).absoluteValue().doubleValue() < 1e-1;
-        } else if (isVector()) {
+            return getComplex(0).sub(c).absoluteValue().doubleValue() < Nd4j.EPS_THRESHOLD;
+        }
+        else if (isVector()) {
             for (int i = 0; i < length; i++) {
                 IComplexNumber curr = getComplex(i);
                 IComplexNumber comp = n.getComplex(i);
@@ -3826,7 +3810,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         }
 
         for (int i = 0; i < slices(); i++) {
-            if (!(slice(i).equals(n.slice(i))))
+            IComplexNDArray sliceI = slice(i);
+            IComplexNDArray nSliceI = n.slice(i);
+            if (!sliceI.equals(nSliceI))
                 return false;
         }
 
@@ -3880,10 +3866,27 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         int[] retShape = new int[shape.length];
 
         for (int i = 0; i < retShape.length; i++) {
-            if (i < shape().length)
-                retShape[i] = Math.max(shape[i], shape()[i]);
-            else
-                retShape[i] = shape[i];
+            if(shape().length == 1) {
+                if(i == 0) {
+                    if (i < shape().length)
+                        retShape[i] = Math.max(shape[i], 1);
+                    else
+                        retShape[i] = shape[i];
+                }
+                else {
+                    if (i < shape().length)
+                        retShape[i] = Math.max(shape[i], shape()[i]);
+                    else
+                        retShape[i] = shape[i];
+                }
+            }
+            else {
+                if (i < shape().length)
+                    retShape[i] = Math.max(shape[i], shape()[i]);
+                else
+                    retShape[i] = shape[i];
+            }
+
         }
 
         IComplexNDArray ret = Nd4j.createComplex(retShape);
