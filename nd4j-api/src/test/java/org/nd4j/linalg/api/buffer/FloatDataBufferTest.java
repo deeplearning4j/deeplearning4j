@@ -14,7 +14,8 @@
  *    limitations under the License.
  */
 
-package org.nd4j.linalg.api.buffer.test;
+package org.nd4j.linalg.api.buffer;
+
 
 import org.junit.Before;
 import org.junit.Test;
@@ -26,29 +27,28 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Created by agibsonccc on 2/21/15.
+ * Created by agibsonccc on 2/14/15.
  */
-public abstract class DoubleDataBufferTest {
+public abstract class FloatDataBufferTest {
 
     @Before
     public void before() {
-        Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.dtype = DataBuffer.FLOAT;
     }
 
     @Test
     public void testGetSet() {
-        double[] d1 = new double[]{1, 2, 3, 4};
+        float[] d1 = new float[]{1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
-        double[] d2 = d.asDouble();
+        float[] d2 = d.asFloat();
         assertArrayEquals(d1, d2, 1e-1f);
         d.destroy();
 
     }
 
-
     @Test
     public void testDup() {
-        double[] d1 = new double[]{1, 2, 3, 4};
+        float[] d1 = new float[]{1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
         assertEquals(d, d2);
@@ -58,11 +58,11 @@ public abstract class DoubleDataBufferTest {
 
     @Test
     public void testPut() {
-        double[] d1 = new double[]{1, 2, 3, 4};
+        float[] d1 = new float[]{1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         d.put(0, 0.0);
-        double[] result = new double[]{0, 2, 3, 4};
-        d1 = d.asDouble();
+        float[] result = new float[]{0, 2, 3, 4};
+        d1 = d.asFloat();
         assertArrayEquals(d1, result, 1e-1f);
         d.destroy();
     }
@@ -71,13 +71,13 @@ public abstract class DoubleDataBufferTest {
     @Test
     public void testGetRange() {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
-        double[] get = buffer.getDoublesAt(0, 3);
-        double[] data = new double[]{1, 2, 3};
+        float[] get = buffer.getFloatsAt(0, 3);
+        float[] data = new float[]{1, 2, 3};
         assertArrayEquals(get, data, 1e-1f);
 
 
-        double[] get2 = buffer.asDouble();
-        double[] allData = buffer.getDoublesAt(0, buffer.length());
+        float[] get2 = buffer.asFloat();
+        float[] allData = buffer.getFloatsAt(0, buffer.length());
         assertArrayEquals(get2, allData, 1e-1f);
         buffer.destroy();
 
@@ -88,19 +88,20 @@ public abstract class DoubleDataBufferTest {
     @Test
     public void testGetOffsetRange() {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
-        double[] get = buffer.getDoublesAt(1, 3);
-        double[] data = new double[]{2, 3, 4};
+        float[] get = buffer.getFloatsAt(1, 3);
+        float[] data = new float[]{2, 3, 4};
         assertArrayEquals(get, data, 1e-1f);
 
 
-        double[] allButLast = new double[]{2, 3, 4, 5};
+        float[] allButLast = new float[]{2, 3, 4, 5};
 
-        double[] allData = buffer.getDoublesAt(1, buffer.length());
+        float[] allData = buffer.getFloatsAt(1, buffer.length());
         assertArrayEquals(allButLast, allData, 1e-1f);
         buffer.destroy();
 
 
     }
+
 
     @Test
     public void testAssign() {

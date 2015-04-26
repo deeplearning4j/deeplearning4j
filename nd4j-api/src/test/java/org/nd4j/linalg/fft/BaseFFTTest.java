@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.nd4j.linalg.fft.test;
+package org.nd4j.linalg.fft;
 
 
 import org.junit.Test;
