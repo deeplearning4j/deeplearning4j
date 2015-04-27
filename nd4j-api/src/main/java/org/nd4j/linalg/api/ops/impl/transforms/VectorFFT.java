@@ -178,12 +178,19 @@ public class VectorFFT extends BaseTransformOp {
     @Override
     public void setX(INDArray x) {
         this.x = x;
+        if(!x.isVector())
+            throw new IllegalArgumentException("Only accepts vector arguments");
+        this.fftLength = x.length();
         executed = false;
+
     }
 
     @Override
     public void setZ(INDArray z) {
         this.z = z;
+        if(!z.isVector())
+            throw new IllegalArgumentException("Only accepts vector arguments");
+        this.fftLength = z.length();
         executed = false;
 
     }

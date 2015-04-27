@@ -82,7 +82,8 @@ public abstract class BaseNDArray implements INDArray {
     protected DataBuffer data;
     protected int rows, columns;
     protected int length;
-    protected INDArray linearView;
+    protected INDArray linearView,secondaryLinearView;
+
     protected String id = Nd4j.getResourceManager().isEnabled() ? UUID.randomUUID().toString() : "";
     protected boolean cleanedUp = false;
     protected transient WeakReference<INDArray> ref;
@@ -506,6 +507,7 @@ public abstract class BaseNDArray implements INDArray {
     public void resetLinearView() {
         ensureNotCleanedUp();
         linearView = Nd4j.create(data, new int[]{length}, new int[]{1}, offset());
+
     }
 
     @Override
@@ -1492,51 +1494,37 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray put(NDArrayIndex[] indices, INDArray element) {
-        ensureNotCleanedUp();
-        if (Indices.isContiguous(indices)) {
-            INDArray get = get(indices);
-            INDArray linear = get.linearView();
-            if (element.isScalar()) {
-                for (int i = 0; i < linear.length(); i++) {
-                    linear.putScalar(i, element.getDouble(0));
-                }
+        if (isVector()) {
+            assert indices.length == 1 : "Indices must only be of length 1.";
+            assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
+            assert indices[0].length() <= element.length() : "Number of specified elements in index does not match length of element.";
+            int[] assign = indices[0].indices();
+            for (int i = 0; i < element.length(); i++) {
+                putScalar(assign[i], element.getDouble(i));
             }
 
-            if (Shape.shapeEquals(element.shape(), get.shape()) || element.length() <= get.length()) {
-                INDArray elementLinear = element.linearView();
-
-                for (int i = 0; i < elementLinear.length(); i++) {
-                    linear.putScalar(i, elementLinear.getDouble(i));
-                }
-            }
-
-
-        } else {
-            if (isVector()) {
-                assert indices.length == 1 : "Indices must only be of length 1.";
-                assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
-                assert indices[0].length() == element.length() : "Number of specified elements in index does not match length of element.";
-                int[] assign = indices[0].indices();
-                for (int i = 0; i < element.length(); i++) {
-                    putScalar(assign[i], element.getDouble(i));
-                }
-
-                return this;
-
-            }
-
-            if (element.isVector())
-                slice(indices[0].indices()[0]).put(Arrays.copyOfRange(indices, 1, indices.length), element);
-
-
-            else {
-                for (int i = 0; i < element.slices(); i++) {
-                    INDArray slice = slice(indices[0].indices()[i]);
-                    slice.put(Arrays.copyOfRange(indices, 1, indices.length), element.slice(i));
-                }
-            }
+            return this;
 
         }
+
+        if (element.isVector())
+            slice(indices[0].indices()[0]).put(Arrays.copyOfRange(indices, 1, indices.length), element);
+        else if(isMatrix() && element.isMatrix()) {
+            NDArrayIndex[] columns = Arrays.copyOfRange(indices,1,indices.length);
+            for(int i = 0; i < element.rows(); i++) {
+                slice(i).put(columns,element.slice(i));
+            }
+        }
+
+        else {
+            NDArrayIndex[] indicesSub = Arrays.copyOfRange(indices,1,indices.length);
+
+            for (int i = 0; i < element.slices(); i++) {
+                slice(i).put(indicesSub,element.slice(i));
+            }
+        }
+
+
 
         return this;
     }
@@ -3491,6 +3479,11 @@ public abstract class BaseNDArray implements INDArray {
                 return length;
             else if (dimension == 1)
                 return 1;
+        }
+
+        if(dimension < 0) {
+            int length = shape.length + dimension;
+            return shape[length];
         }
 
         return shape[dimension];

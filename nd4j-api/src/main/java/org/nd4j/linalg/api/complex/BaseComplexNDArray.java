@@ -471,7 +471,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public void resetLinearView() {
-        linearView = reshape(1,length());
+        linearView = Nd4j.createComplex(data(),new int[]{1,length()},new int[]{majorStride(),2},offset());
     }
 
     @Override
@@ -1118,53 +1118,34 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray put(NDArrayIndex[] indices, INDArray element) {
-        if (Indices.isContiguous(indices)) {
-            IComplexNDArray get = get(indices);
-            IComplexNDArray linear = get.linearView();
+        if (isVector()) {
+            assert indices.length == 1 : "Indices must only be of length 1.";
+            assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
+            assert indices[0].length() == element.length() : "Number of specified elements in index does not match length of element.";
+            int[] assign = indices[0].indices();
             IComplexNDArray imag = element instanceof IComplexNDArray ? (IComplexNDArray) element : Nd4j.createComplex(element);
             IComplexNDArray elementLinear = imag.linearView();
-            if (element.isScalar()) {
-                for (int i = 0; i < linear.length(); i++) {
-                    linear.putScalar(i, elementLinear.getComplex(0));
-                }
+
+            for (int i = 0; i < element.length(); i++) {
+                putScalar(assign[i], elementLinear.getComplex(i));
             }
 
-            if (Shape.shapeEquals(element.shape(), get.shape()) || element.length() <= get.length()) {
-                for (int i = 0; i < elementLinear.length(); i++) {
-                    linear.putScalar(i, elementLinear.getComplex(i));
-                }
-            }
-
-
-        } else {
-            if (isVector()) {
-                assert indices.length == 1 : "Indices must only be of length 1.";
-                assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
-                assert indices[0].length() == element.length() : "Number of specified elements in index does not match length of element.";
-                int[] assign = indices[0].indices();
-                IComplexNDArray imag = element instanceof IComplexNDArray ? (IComplexNDArray) element : Nd4j.createComplex(element);
-                IComplexNDArray elementLinear = imag.linearView();
-
-                for (int i = 0; i < element.length(); i++) {
-                    putScalar(assign[i], elementLinear.getComplex(i));
-                }
-
-                return this;
-
-            }
-
-            if (element.isVector())
-                slice(indices[0].indices()[0]).put(Arrays.copyOfRange(indices, 1, indices.length), element);
-
-
-            else {
-                for (int i = 0; i < element.slices(); i++) {
-                    INDArray slice = slice(indices[0].indices()[i]);
-                    slice.put(Arrays.copyOfRange(indices, 1, indices.length), element.slice(i));
-                }
-            }
+            return this;
 
         }
+
+        if (element.isVector())
+            slice(indices[0].indices()[0]).put(Arrays.copyOfRange(indices, 1, indices.length), element);
+
+
+        else {
+            for (int i = 0; i < element.slices(); i++) {
+                INDArray slice = slice(indices[0].indices()[i]);
+                slice.put(Arrays.copyOfRange(indices, 1, indices.length), element.slice(i));
+            }
+        }
+
+
 
         return this;
     }
@@ -1385,6 +1366,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public int linearIndex(int i) {
         if(isScalar() && i > 0)
             throw new IllegalArgumentException("Illegal index for scalar " + i);
+        if(isRowVector() && stride.length == 2) {
+            int realStride = stride[1];
+            int idx = offset + (i * realStride);
+            return idx;
+        }
         int realStride = majorStride();
         int idx = offset + (i * realStride);
         if (idx >= data.length())
@@ -1811,6 +1797,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
 
+    @Override
     protected IComplexNDArray newShape(int[] newShape, char ordering) {
         if (Arrays.equals(newShape, this.shape()))
             return this;
@@ -1836,7 +1823,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                     IComplexNDArray copyFrom = vectorAlongDimension(i, 0);
                     IComplexNDArray copyTo = newCopy.vectorAlongDimension(i, 0);
                     for (int j = 0; j < copyFrom.length(); j++) {
-                        copyTo.putScalar(j, copyFrom.getDouble(i));
+                        copyTo.putScalar(j, copyFrom.getComplex(i));
                     }
                 }
             }
@@ -1950,50 +1937,36 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray put(NDArrayIndex[] indices, IComplexNDArray element) {
-        if (Indices.isContiguous(indices)) {
-            IComplexNDArray get = get(indices);
-            IComplexNDArray linear = get.linearView();
-            if (element.isScalar()) {
-                for (int i = 0; i < linear.length(); i++) {
-                    linear.putScalar(i, element.getComplex(0));
-                }
+        if (isVector()) {
+            assert indices.length == 1 : "Indices must only be of length 1.";
+            assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
+            int[] assign = indices[0].indices();
+            for (int i = 0; i < element.length(); i++) {
+                putScalar(assign[i], element.getComplex(i));
             }
 
-            if (Shape.shapeEquals(element.shape(), get.shape()) || element.length() <= get.length()) {
-                IComplexNDArray elementLinear = element.linearView();
-
-                for (int i = 0; i < elementLinear.length(); i++) {
-                    linear.putScalar(i, elementLinear.getComplex(i));
-                }
-            }
-
-
-        } else {
-            if (isVector()) {
-                assert indices.length == 1 : "Indices must only be of length 1.";
-                assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
-                assert indices[0].length() == element.length() : "Number of specified elements in index does not match length of element.";
-                int[] assign = indices[0].indices();
-                for (int i = 0; i < element.length(); i++) {
-                    putScalar(assign[i], element.getComplex(i));
-                }
-
-                return this;
-
-            }
-
-            if (element.isVector())
-                slice(indices[0].indices()[0]).put(Arrays.copyOfRange(indices, 1, indices.length), element);
-
-
-            else {
-                for (int i = 0; i < element.slices(); i++) {
-                    INDArray slice = slice(indices[0].indices()[i]);
-                    slice.put(Arrays.copyOfRange(indices, 1, indices.length), element.slice(i));
-                }
-            }
+            return this;
 
         }
+
+        if (element.isVector())
+            slice(indices[0].indices()[0]).put(Arrays.copyOfRange(indices, 1, indices.length), element);
+        else if(isMatrix() && element.isMatrix()) {
+            NDArrayIndex[] columns = Arrays.copyOfRange(indices,1,indices.length);
+            for(int i = 0; i < element.rows(); i++) {
+                slice(i).put(columns,element.slice(i));
+            }
+        }
+
+        else {
+            NDArrayIndex[] indicesSub = Arrays.copyOfRange(indices,1,indices.length);
+
+            for (int i = 0; i < element.slices(); i++) {
+               slice(i).put(indicesSub,element.slice(i));
+            }
+        }
+
+
 
         return this;
     }

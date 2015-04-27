@@ -146,7 +146,7 @@ public class ComplexUtil {
 
 
     public static IComplexNumber round(IComplexNumber num) {
-        return Nd4j.createDouble(Math.round(num.realComponent().doubleValue()), Math.round(num.realComponent().doubleValue()));
+        return Nd4j.createDouble(Math.round(num.realComponent().doubleValue()), Math.round(num.imaginaryComponent().doubleValue()));
     }
 
     /**

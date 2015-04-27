@@ -20,6 +20,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
 
@@ -186,9 +187,9 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
         int desiredElementsAlongDimension = result.size(dimension);
 
-        if (numElements > desiredElementsAlongDimension) {
+        if (numElements > desiredElementsAlongDimension)
             result = ComplexNDArrayUtil.padWithZeros(result, finalShape);
-        } else if (numElements < desiredElementsAlongDimension)
+         else if (numElements < desiredElementsAlongDimension)
             result = ComplexNDArrayUtil.truncate(result, numElements, dimension);
 
         return rawfftn(result, finalShape, axes);
@@ -228,7 +229,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
      */
     @Override
     public IComplexNDArray fftn(IComplexNDArray transform) {
-        return fftn(transform, transform.shape().length - 1, transform.shape()[transform.shape().length - 1]);
+        return rawfftn(transform,null,null);
     }
 
     @Override
@@ -238,7 +239,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
     @Override
     public IComplexNDArray ifftn(IComplexNDArray transform) {
-        return ifftn(transform, transform.shape().length - 1, transform.size(transform.shape().length - 1));
+        return rawifftn(transform, null, null);
     }
 
     @Override
@@ -249,14 +250,31 @@ public abstract class BaseFFTInstance implements FFTInstance {
     //underlying ifftn
     @Override
     public IComplexNDArray rawifftn(IComplexNDArray transform, int[] shape, int[] axes) {
-        assert shape.length > 0 : "Shape length must be > 0";
-        assert shape.length == axes.length : "Axes and shape must be the same length";
-
         IComplexNDArray result = transform.dup();
+        if(shape == null)
+            shape = ArrayUtil.copy(result.shape());
+
+        boolean noAxes = false;
+        if(axes == null || axes.length < 1) {
+            noAxes = true;
+            axes = ArrayUtil.range(0,shape.length);
+            axes = ArrayUtil.reverseCopy(axes);
+        }
+
+        if(noAxes) {
+            for(int i : axes) {
+                if(i < 0) {
+                    i = shape.length + i;
+                }
+                transform = fixShape(transform,shape,i,shape[i]);
+            }
+        }
 
 
-        for (int i = shape.length - 1; i >= 0; i--) {
-            result = ifft(result, shape[i], axes[i]);
+
+
+        for(int i = 0; i < shape.length; i++) {
+            result = ifft(result, shape[i], i);
         }
 
 
@@ -267,13 +285,50 @@ public abstract class BaseFFTInstance implements FFTInstance {
     @Override
     public IComplexNDArray rawfftn(IComplexNDArray transform, int[] shape, int[] axes) {
         IComplexNDArray result = transform.dup();
+        if(shape == null)
+            shape = ArrayUtil.copy(result.shape());
 
-        for (int i = shape.length - 1; i >= 0; i--) {
-            result = fft(result, shape[i], axes[i]);
+        boolean noAxes = false;
+        if(axes == null || axes.length < 1) {
+            noAxes = true;
+            axes = ArrayUtil.range(0,shape.length);
+            axes = ArrayUtil.reverseCopy(axes);
+        }
+
+        if(noAxes) {
+            for(int i : axes) {
+                if(i < 0) {
+                    i = shape.length + i;
+                }
+                transform = fixShape(transform,shape,i,shape[i]);
+            }
+        }
+
+
+
+
+        for(int i = 0; i < shape.length; i++) {
+            result = fft(result,shape[i],i);
         }
 
 
         return result;
+    }
+
+    private IComplexNDArray fixShape(IComplexNDArray x,int[] shape,int axis, int n) {
+        if(shape[axis] > n) {
+            int[] newShape = ArrayUtil.copy(shape);
+            newShape[axis] = n;
+            x = ComplexNDArrayUtil.truncate(x,n,axis);
+        }
+        else {
+            int[] newShape = ArrayUtil.copy(shape);
+            newShape[axis] = n;
+            x = ComplexNDArrayUtil.padWithZeros(x,newShape);
+            return x;
+
+        }
+        return x;
     }
 
 

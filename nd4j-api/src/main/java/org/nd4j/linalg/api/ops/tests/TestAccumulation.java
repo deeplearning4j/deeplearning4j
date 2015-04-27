@@ -14,92 +14,93 @@
  *    limitations under the License.
  */
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.tests;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.util.ComplexUtil;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Rounding function
- *
- * @author Adam Gibson
+ * Created by agibsonccc on 2/22/15.
  */
-public class Round extends BaseTransformOp {
-
-    public Round(INDArray x, INDArray z) {
-        super(x, z);
+public class TestAccumulation extends BaseAccumulation {
+    public TestAccumulation(INDArray x, INDArray y, int n) {
+        super(x, y, n);
     }
 
-    public Round(INDArray x, INDArray z, int n) {
-        super(x, z, n);
-    }
-
-    public Round(INDArray x, INDArray y, INDArray z, int n) {
-        super(x, y, z, n);
-    }
-
-    public Round(INDArray x) {
+    public TestAccumulation(INDArray x) {
         super(x);
     }
 
     @Override
+    public void update(Number result) {
+        this.currentResult = result.doubleValue() + this.currentResult.doubleValue();
+    }
+
+    @Override
+    public void update(IComplexNumber result) {
+        this.currentComplexResult.addi(result);
+    }
+
+    @Override
+    public Number zero() {
+        return 0;
+    }
+
+    @Override
+    public IComplexNumber zeroComplex() {
+        return Nd4j.createComplexNumber(0, 0);
+    }
+
+    @Override
     public String name() {
-        return "round";
+        return "test";
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return ComplexUtil.round(origin);
+        return origin.add(other);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return ComplexUtil.round(origin);
+        return origin.add(other);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return ComplexUtil.round(origin);
+        return origin.add(other);
     }
 
     @Override
     public float op(float origin, float other) {
-        return FastMath.round(origin);
+        return origin + other;
     }
 
     @Override
     public double op(double origin, double other) {
-        return FastMath.round(origin);
+        return origin + other;
     }
 
     @Override
     public double op(double origin) {
-        return FastMath.round(origin);
+        return origin;
     }
 
     @Override
     public float op(float origin) {
-        return FastMath.round(origin);
+        return origin;
     }
-
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return ComplexUtil.round(origin);
+        return origin;
     }
 
     @Override
     public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Round(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Round(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-
+        return null;
     }
 }

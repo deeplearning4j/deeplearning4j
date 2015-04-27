@@ -88,7 +88,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     if(y != null)
                         op.setY(y.slice(i));
                     exec(op);
-                    originalZ.slice(i).assign(op.z());
+                    zRow.assign(op.z());
 
                 }
             }
@@ -105,7 +105,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     if(y != null)
                         op.setY(y.getRow(i));
                     exec(op);
-                    originalZ.slice(i).assign(op.z());
+                    zRow.assign(op.z());
                 }
             }
 

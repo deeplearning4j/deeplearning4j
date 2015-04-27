@@ -39,6 +39,20 @@ public class NDArrayIndex {
     }
 
     /**
+     * Creates an index covering the given shape
+     * (for each dimension 0,shape[i])
+     * @param shape the shape to cover
+     * @return the ndarray indexes to cover
+     */
+    public static NDArrayIndex[] createCoveringShape(int[] shape) {
+        NDArrayIndex[] ret = new NDArrayIndex[shape.length];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = NDArrayIndex.interval(0,shape[i]);
+        }
+        return ret;
+    }
+
+    /**
      * Create from a matrix. The rows are the indices
      * The columns are the individual element in each ndarrayindex
      *

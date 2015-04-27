@@ -210,7 +210,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
         if (dimension != result.shape().length - 1)
             result = result.swapAxes(result.shape().length - 1, dimension);
 
-        Nd4j.getExecutioner().iterateOverAllRows(new VectorFFT(result, n));
+        Nd4j.getExecutioner().iterateOverAllRows(new VectorIFFT(result, n));
 
 
         if (dimension != result.shape().length - 1)

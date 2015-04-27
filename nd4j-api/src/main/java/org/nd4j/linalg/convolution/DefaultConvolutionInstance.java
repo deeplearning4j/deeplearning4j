@@ -85,12 +85,10 @@ public class DefaultConvolutionInstance extends BaseConvolution {
         INDArray shape = ArrayUtil.toNDArray(Shape.sizeForAxes(axes, input.shape())).add(ArrayUtil.toNDArray(Shape.sizeForAxes(axes, kernel.shape()))).subi(1);
 
         int[] intShape = ArrayUtil.toInts(shape);
-        for(int i = 0; i < intShape.length; i++) {
-            if(intShape[i] % 2 != 0)
-                intShape[i] = (int) MathUtils.nextPowOf2(intShape[i]);
-        }
-        IComplexNDArray fftedInput = FFT.rawfftn(Nd4j.createComplex(input), intShape, axes);
-        IComplexNDArray fftedKernel = FFT.rawfftn(Nd4j.createComplex(kernel), intShape, axes);
+
+
+        IComplexNDArray fftedInput = FFT.rawfftn(Nd4j.createComplex(input), intShape, null);
+        IComplexNDArray fftedKernel = FFT.rawfftn(Nd4j.createComplex(kernel), intShape, null);
         //broadcast to be same shape
         if (!Arrays.equals(fftedInput.shape(), fftedKernel.shape())) {
             if (fftedInput.length() < fftedKernel.length()) {

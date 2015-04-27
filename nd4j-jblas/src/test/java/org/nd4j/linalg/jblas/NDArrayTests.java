@@ -34,7 +34,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Adam Gibson
  */
-public class NDArrayTests extends org.nd4j.linalg.api.NDArrayTests {
+public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
     private static Logger log = LoggerFactory.getLogger(NDArrayTests.class);
 
 
