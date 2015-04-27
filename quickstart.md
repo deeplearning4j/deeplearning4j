@@ -22,7 +22,7 @@ If you need to install any of the above, please check the [Getting Started guide
 Installing From Maven Central 
 =========================================
 
-You must first have Maven installed. ([See details here](http://nd4j.org/getstarted.html#maven).)
+You must first have Maven installed. ([See installation details here](http://nd4j.org/getstarted.html#maven) and read our [brief introduction to Maven here](../maven.html).)
 
 Please use the latest version of the examples, which you will find in Maven. We are currently on 0.0.3.3.x.
 
