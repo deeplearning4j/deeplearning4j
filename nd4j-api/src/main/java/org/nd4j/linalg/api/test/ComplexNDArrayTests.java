@@ -672,12 +672,15 @@ public abstract class ComplexNDArrayTests {
 
 
 
+
     @Test
     public void testGetIndexing() {
+        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
+        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
         IComplexNDArray tenByTen = Nd4j.complexLinSpace(1,100,100).reshape(10,10);
-        IComplexNDArray thirtyToSixty = (IComplexNDArray) Transforms.round(Nd4j.complexLinSpace(30,60,30)).reshape(3,10);
-        IComplexNDArray test = tenByTen.get(NDArrayIndex.interval(30,61),NDArrayIndex.interval(0,tenByTen.columns()));
-        System.out.println(test);
+        IComplexNDArray thirtyToSixty = (IComplexNDArray) Transforms.round(Nd4j.complexLinSpace(31,60,30)).reshape(3,10);
+        IComplexNDArray test = tenByTen.get(NDArrayIndex.interval(3, 6), NDArrayIndex.interval(0, tenByTen.columns()));
+        assertEquals(thirtyToSixty,test);
     }
 
     @Test

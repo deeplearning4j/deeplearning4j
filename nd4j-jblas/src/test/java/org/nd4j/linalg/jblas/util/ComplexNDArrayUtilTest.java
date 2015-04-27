@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
@@ -43,6 +44,30 @@ public class ComplexNDArrayUtilTest {
         assertEquals(assertion,padded);
 
 
+
+    }
+
+    @Test
+    public void testCenter() {
+        IComplexNDArray linspaced = Nd4j.complexLinSpace(1,100,100).reshape(10,10);
+        IComplexNDArray centered = ComplexNDArrayUtil.center(linspaced,new int[]{5,5});
+        IComplexNDArray assertion = Nd4j.createComplex(5,5);
+        IComplexNDArray linspaced2 = Nd4j.createComplex(new IComplexNumber[]{
+                Nd4j.createComplexNumber(20,0),
+                Nd4j.createComplexNumber(30,0),
+                Nd4j.createComplexNumber(40,0),
+                Nd4j.createComplexNumber(50,0),
+                Nd4j.createComplexNumber(60,0),
+
+
+        });
+
+
+        int count = 3;
+        for(int i = 0; i < assertion.rows(); i++) {
+            assertion.putRow(i,linspaced2.add(count++));
+        }
+        assertEquals(assertion,centered);
 
     }
 

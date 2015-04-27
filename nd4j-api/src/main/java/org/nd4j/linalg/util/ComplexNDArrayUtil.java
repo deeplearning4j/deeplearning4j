@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,12 +75,12 @@ public class ComplexNDArrayUtil {
                 throw new IllegalArgumentException("Illegal shape passed in with value < 0");
         INDArray currShape = ArrayUtil.toNDArray(arr.shape());
 
-        INDArray startIndex = currShape.sub(shapeMatrix).divi(Nd4j.scalar(2));
+        INDArray startIndex = Transforms.floor(currShape.sub(shapeMatrix).divi(Nd4j.scalar(2)));
         INDArray endIndex = startIndex.add(shapeMatrix);
         if (shapeMatrix.length() > 1)
             arr = arr.get(
                     NDArrayIndex.interval((int) startIndex.getDouble(0), (int) endIndex.getDouble(0))
-                    , NDArrayIndex.interval((int) startIndex.getDouble(shape.length - 1), (int) endIndex.getDouble(shape.length - 1)));
+                    , NDArrayIndex.interval((int) startIndex.getDouble(1), (int) endIndex.getDouble(1)));
 
 
         else {

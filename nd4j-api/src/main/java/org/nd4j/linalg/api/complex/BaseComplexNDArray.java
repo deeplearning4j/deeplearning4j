@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.nd4j.linalg.util.ArrayUtil.calcStrides;
 import static org.nd4j.linalg.util.ArrayUtil.calcStridesFortran;
+import static org.nd4j.linalg.util.ArrayUtil.of;
 
 
 /**
@@ -1566,7 +1567,10 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray subArray(int[] offsets, int[] shape, int[] stride) {
+        ensureNotCleanedUp();
         int n = shape.length;
+        if (shape.length < 1)
+            return Nd4j.createComplex(shape);
         if (offsets.length != n)
             throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
         if (shape.length != n)
@@ -1580,15 +1584,25 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             }
         }
 
+
+        int offset = this.offset + ArrayUtil.dotProduct(offsets, this.stride);
+
         return Nd4j.createComplex(
                 data
                 , Arrays.copyOf(shape, shape.length)
                 , stride
-                , offset + ArrayUtil.dotProduct(offsets, stride)
+                , offset, ordering
         );
     }
 
 
+    private NDArrayIndex[] intervalFrom(int[] offsets,int startingIndex) {
+        NDArrayIndex[] ret = new NDArrayIndex[offsets.length - startingIndex];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = NDArrayIndex.interval(offsets[i + startingIndex],size(i + startingIndex));
+        }
+        return ret;
+    }
 
 
     /**
@@ -1962,7 +1976,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             NDArrayIndex[] indicesSub = Arrays.copyOfRange(indices,1,indices.length);
 
             for (int i = 0; i < element.slices(); i++) {
-               slice(i).put(indicesSub,element.slice(i));
+                slice(i).put(indicesSub,element.slice(i));
             }
         }
 
@@ -2343,6 +2357,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray get(NDArrayIndex... indexes) {
+        ensureNotCleanedUp();
         //fill in to match the rest of the dimensions: aka grab all the content
         //in the dimensions not filled in
         //also prune indices greater than the shape to be the shape instead
@@ -2352,39 +2367,47 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
         int[] offsets = Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(), indexes);
-
-        if (ArrayUtil.prod(shape) > length())
-            return this;
-
         //no stride will help here, need to do manually
-
         if (!Indices.isContiguous(indexes)) {
             IComplexNDArray ret = Nd4j.createComplex(shape);
             if (ret.isVector() && isVector()) {
                 int[] indices = indexes[0].indices();
                 for (int i = 0; i < ret.length(); i++) {
-                    ret.putScalar(i, getComplex(indices[i]));
+                    ret.putScalar(i, getDouble(indices[i]));
                 }
 
                 return ret;
             }
-            for (int i = 0; i < ret.slices(); i++) {
-                IComplexNDArray putSlice = slice(i).get(Arrays.copyOfRange(indexes, 1, indexes.length));
-                ret.putSlice(i, putSlice);
+            if (!ret.isVector()) {
+                //overrides when shouldn't
+                for (int i = 0; i < ret.slices(); i++) {
+                    INDArray putSlice = slice(i).get(Arrays.copyOfRange(indexes, 1, indexes.length));
+                    ret.putSlice(i, putSlice);
+
+                }
+            } else {
+                INDArray putSlice = slice(0).get(Arrays.copyOfRange(indexes, 1, indexes.length));
+                ret.putSlice(0, putSlice);
 
             }
+
 
             return ret;
         }
 
-        int[] strides = ordering == 'f' ? ArrayUtil.calcStridesFortran(shape, 2) : ArrayUtil.copy(stride());
+        if (ArrayUtil.prod(shape) > length())
+            return this;
+
+
+        int[] strides = null;
+
+        strides = ArrayUtil.copy(stride());
 
         if (offsets.length != shape.length)
             offsets = Arrays.copyOfRange(offsets, 0, shape.length);
 
         if (strides.length != shape.length)
-            strides = Arrays.copyOfRange(offsets, 0, shape.length);
-
+            strides = Arrays.copyOfRange(strides, 0, shape.length);
 
         return subArray(offsets, shape, strides);
     }

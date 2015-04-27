@@ -91,11 +91,11 @@ public class DefaultConvolutionInstance extends BaseConvolution {
         IComplexNDArray fftedKernel = FFT.rawfftn(Nd4j.createComplex(kernel), intShape, null);
         //broadcast to be same shape
         if (!Arrays.equals(fftedInput.shape(), fftedKernel.shape())) {
-            if (fftedInput.length() < fftedKernel.length()) {
+            if (fftedInput.length() < fftedKernel.length())
                 fftedInput = fftedInput.broadcast(fftedKernel.shape());
-            } else {
+            else
                 fftedKernel = fftedKernel.broadcast(fftedInput.shape());
-            }
+
         }
 
         IComplexNDArray inputTimesKernel = fftedInput.muli(fftedKernel);
