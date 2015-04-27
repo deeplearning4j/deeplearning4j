@@ -18,7 +18,7 @@ Deeplearning4j is the first commercial-grade, open-source, distributed deep-lear
 
 * A versatile [n-dimensional array](http://nd4j.org/) class. 
 * [GPU](http://nd4j.org/gpu_native_backends.html) integration
-* [Scalable](../scaleout.html) on [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn), [Spark](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark) and Akka + AWS and other platforms
+* [Scalable](../scaleout.html) on [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn), [Spark](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark) and Akka + AWS et al
 
 Deeplearning4j includes a distributed multi-threaded deep-learning framework and a normal single-threaded deep-learning framework. Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via iterative reduce, and they are equally compatible with **Java**, **Scala** and **Clojure**.
 
