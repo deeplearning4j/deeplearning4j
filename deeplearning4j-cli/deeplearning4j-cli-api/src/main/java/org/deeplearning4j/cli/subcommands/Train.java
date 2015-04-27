@@ -39,6 +39,12 @@ public class Train extends BaseSubCommand {
     @Option(name = "--output", usage = "location for saving model", aliases = "-o", required = true)
     private String output = "output.txt";
 
+    @Option(name = "--runtime", usage = "runtime- local, Hadoop, Spark, etc.", aliases = "-r", required = false)
+    private String runtime = "local";
+
+    @Option(name = "--properties", usage = "configuration for distributed systems", aliases = "-p", required = false)
+    private String properties;
+
     public Train(String[] args) {
         super(args);
     }

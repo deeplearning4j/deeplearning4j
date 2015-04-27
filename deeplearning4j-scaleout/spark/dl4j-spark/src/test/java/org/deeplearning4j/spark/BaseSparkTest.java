@@ -21,13 +21,15 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.junit.After;
 import org.junit.Before;
 
+import java.io.Serializable;
 
 
 /**
  * Created by agibsonccc on 1/23/15.
  */
-public abstract class BaseSparkTest {
-    protected JavaSparkContext sc;
+public abstract class BaseSparkTest  implements Serializable
+{
+    protected transient JavaSparkContext sc;
 
     @Before
     public void before() {
