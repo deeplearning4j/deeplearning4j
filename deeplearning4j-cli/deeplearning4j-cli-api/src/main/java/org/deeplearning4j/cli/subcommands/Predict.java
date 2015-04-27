@@ -34,11 +34,17 @@ public class Predict extends BaseSubCommand {
     @Option(name = "--input", usage = "input data",aliases = "-i", required = true)
     private String input = "input.txt";
 
-    @Option(name = "--model", usage = "model for prediction", aliases = "-m", required = true)
+    @Option(name = "--model", usage = "model config for prediction", aliases = "-m", required = true)
     private String model = "model.json";
 
     @Option(name = "--output", usage = "location for saving model", aliases = "-o", required = true)
     private String output = "output.txt";
+
+    @Option(name = "--runtime", usage = "runtime- local, Hadoop, Spark, etc.", aliases = "-r", required = false)
+    private String runtime = "local";
+
+    @Option(name = "--properties", usage = "configuration for distributed systems", aliases = "-p", required = false)
+    private String properties;
 
     public Predict(String[] args) {
         super(args);
