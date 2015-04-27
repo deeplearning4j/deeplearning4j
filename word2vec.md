@@ -23,7 +23,7 @@ Contents
 
 Word2vec is a neural net that processes text before that text is handled by deep-learning algorithms. While it does not implement deep learning, Word2vec turns text into a numerical form that deep-learning nets can understand -- the vector. 
 
-(Word2vec's applications extend beyond parsing natural language in the form of sentences occurring in the wild. It can be applied just as well to playlists, social media graphs and other verbal series in which patterns may be discerned.)
+(Word2vec's applications extend beyond parsing natural-language sentences occurring in the wild. It can be applied just as well to playlists, social media graphs and other verbal series in which patterns may be discerned.)
 
 Word2vec creates features without human intervention, including the context of individual words. That context comes in the form of multiword windows. Given enough data, usage and context, Word2vec can make highly accurate guesses about a word’s meaning (for the purpose of deep learning, a word's meaning is simply a signal that helps to classify larger entities; e.g. placing a document in a cluster) based on its past appearances. 
 
