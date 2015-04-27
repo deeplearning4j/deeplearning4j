@@ -20,7 +20,7 @@ private[spark] trait HasMultiLayerConfiguration extends Params {
 }
 
 /**
- * The reconstruction column is similar to 'prediction' but its type is not likely Double
+ * The reconstruction column is similar to 'prediction' but is typically a Vector, not Double
  */
 @DeveloperApi
 private[spark] trait HasReconstructionCol extends Params {
@@ -33,7 +33,7 @@ private[spark] trait HasReconstructionCol extends Params {
     new Param[String](this, "reconstructionCol", "reconstruction column name", Some("reconstruction"))
 
   /** @group getParam */
-  def getProbabilityCol: String = get(reconstructionCol)
+  def getReconstructionCol: String = get(reconstructionCol)
 }
 
 @DeveloperApi
@@ -60,5 +60,18 @@ private[spark] trait HasWindowSize extends Params {
   
   /** @group getParam */
   def getWindowSize: Int = get(windowSizeParam)
+}
+
+@DeveloperApi
+private[spark] trait HasLayerIndex extends Params {
+
+  /**
+   * Param for layer index
+   * @group param
+   */
+  val layerIndexParam: IntParam = new IntParam(this, "layerIndex", "layer index (one-based)", Some(1))
+
+  /** @group getParam */
+  def getLayerIndex: Int = get(layerIndexParam)
 }
 

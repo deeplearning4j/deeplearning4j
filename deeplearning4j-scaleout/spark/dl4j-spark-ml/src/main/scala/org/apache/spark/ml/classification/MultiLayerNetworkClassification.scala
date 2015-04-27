@@ -20,7 +20,6 @@ import org.nd4j.linalg.api.ndarray.INDArray
 
 private[classification] trait NeuralNetworkClassificationParams extends ProbabilisticClassifierParams 
   with HasMultiLayerConfiguration 
-  with HasBatchSize
   with HasWindowSize {
 }
 
@@ -33,19 +32,19 @@ class NeuralNetworkClassification
     val sqlContext = dataset.sqlContext
     var sc = sqlContext.sparkContext
     
-    // compute the effective parameter values
-    val map = this.paramMap ++ paramMap
-    val conf = map(confParam)
-    val batchSize = map(batchSizeParam)
+    // parameters
+    val conf = paramMap(confParam)
+    //val batchSize = paramMap(batchSizeParam)
+    val windowSize = paramMap(windowSizeParam)
     
     // prepare the dataset for classification
-    val prepared = dataset.select(map(labelCol), map(featuresCol))
+    val prepared = dataset.select(paramMap(labelCol), paramMap(featuresCol))
     val numClasses = conf.getConf(conf.getConfs().size() - 1).getnOut() // TODO - use ML column metadata 'numValues'
     
     // devise a training strategy for the distributed neural network
     val trainingStrategy = new ParameterAveragingTrainingStrategy[Row](
         conf, 
-        map(windowSizeParam), 
+        windowSize, 
         conf.getConf(0).getNumIterations())
 
     // train
@@ -63,7 +62,7 @@ class NeuralNetworkClassification
           network.fit(featureMatrix, labelMatrix)
     })
     
-    new NeuralNetworkClassificationModel(this, map, numClasses, networkParams)
+    new NeuralNetworkClassificationModel(this, paramMap, numClasses, networkParams)
 
   }
 }
