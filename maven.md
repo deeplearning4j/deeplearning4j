@@ -7,7 +7,7 @@ layout: default
 
 [Maven](https://en.wikipedia.org/wiki/Apache_Maven) is the most commonly used build automation tool for Java programmers, analogous to a package management system like [pip](https://en.wikipedia.org/wiki/Pip_(package_manager)) in Python, or PyBuilder. 
 
-It is also the single most convenient way to get up and running with Deeplearning4j, which offers a [Scala API](../scala.html) whose syntax will strike many Python programmers as eerily familiar, while offering them powerful concurrent features. 
+It is also the single most convenient way to get up and running with Deeplearning4j, which offers a [Scala API](http://nd4j.org/scala.html) whose syntax will strike many Python programmers as eerily familiar, while offering them powerful concurrent features. 
 
 As a build automation tool, Maven compiles source to byte code and links object files to executables, library files etc. Its deliverable is a JAR file, created from Java source, as well as resources for deployment. 
 
