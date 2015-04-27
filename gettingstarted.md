@@ -98,7 +98,7 @@ which will import the source and set everything up.
 * Deeplearning4j includes an **autocomplete function**. If you are unsure which commands are available, press any letter and a drop-down list like this will appear:
 ![Alt text](../img/dl4j_autocomplete.png)
 * Here's the Javadoc for all [Deeplearning4j's classes and methods](http://deeplearning4j.org/doc/).
-* Some problems you encounter using DL4J may be due to a lack of familiarity with the ideas and techniques of machine learning. We strongly encourage all Deeplearning4j users to rely on resources beyond this website to understand the fundamentals. Andrew Ng's watershed [machine-learning lectures on Coursera](https://www.coursera.org/course/ml) are a great place to start. [Geoff Hinton's neural nets course](https://www.youtube.com/watch?v=S3bx8xKpdQE), available on Youtube, is also instructive. 
+* Some problems you encounter using DL4J may be due to a lack of familiarity with the ideas and techniques of machine learning. We strongly encourage all Deeplearning4j users to rely on resources beyond this website to understand the fundamentals. Andrew Ng's watershed [machine-learning lectures on Coursera](https://www.coursera.org/course/ml) are a great place to start. [Geoff Hinton's neural nets course](https://www.youtube.com/watch?v=S3bx8xKpdQE), available on Youtube, is also instructive. While we've partially documented DL4J, many parts of the code are essentially a raw domain-specific language for deep learning. 
 
 ### <a name="next">Next Steps: MNIST and Running Examples</a>
 
