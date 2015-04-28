@@ -58,25 +58,6 @@ public abstract class ConvolutionTests {
     }
 
 
-    @Test
-    public void testConvolution() {
-        INDArray image = Nd4j.create(new double[][]{
-                {3, 2, 5, 6, 7, 8},
-                {5, 4, 2, 10, 8, 1}
-        });
-
-        INDArray kernel = Nd4j.create(new double[][]{
-                {4, 5},
-                {1, 2}
-        });
-
-
-        log.info(Convolution.convn(image, kernel, Convolution.Type.FULL).toString());
-
-        log.info(Convolution.convn(image, kernel, Convolution.Type.VALID).toString());
-    }
-
-
 
 
 }

@@ -52,10 +52,6 @@ public abstract class ComplexNDArrayTests {
 
 
 
-
-
-
-
     @Test
     public void testConstruction() {
 
@@ -156,6 +152,8 @@ public abstract class ComplexNDArrayTests {
 
     }
 
+
+
     @Test
     public void testPutComplex() {
         INDArray fourTwoTwo = Nd4j.linspace(1, 16, 16).reshape(4, 2, 2);
@@ -244,6 +242,26 @@ public abstract class ComplexNDArrayTests {
         }
     }
 
+
+
+    @Test
+    public void testVectorOffsetRavel() {
+        IComplexNDArray arr = Nd4j.complexLinSpace(1,20,20).reshape(4,5);
+        for(int i = 0; i < arr.slices(); i++) {
+            assertEquals(arr.slice(i),arr.slice(i).ravel());
+        }
+    }
+
+
+    @Test
+    public void testSliceVsVectorAlongDimension() {
+        IComplexNDArray arr = Nd4j.complexLinSpace(1,20,20).reshape(4,5);
+        assertEquals(arr.slices(),arr.vectorsAlongDimension(1));
+        for(int i = 0; i < arr.slices(); i++) {
+            assertEquals(arr.vectorAlongDimension(i,1),arr.slice(i));
+            assertEquals(arr.vectorAlongDimension(i,1).ravel(),arr.slice(i).ravel());
+        }
+    }
 
     @Test
     public void testVectorAlongDimension() {

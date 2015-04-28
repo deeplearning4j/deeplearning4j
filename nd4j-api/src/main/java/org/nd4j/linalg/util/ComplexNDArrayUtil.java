@@ -78,7 +78,7 @@ public class ComplexNDArrayUtil {
         INDArray startIndex = Transforms.floor(currShape.sub(shapeMatrix).divi(Nd4j.scalar(2)));
         INDArray endIndex = startIndex.add(shapeMatrix);
         if (shapeMatrix.length() > 1)
-            arr = arr.get(
+            return arr.get(
                     NDArrayIndex.interval((int) startIndex.getDouble(0), (int) endIndex.getDouble(0))
                     , NDArrayIndex.interval((int) startIndex.getDouble(1), (int) endIndex.getDouble(1)));
 
@@ -96,7 +96,6 @@ public class ComplexNDArrayUtil {
         }
 
 
-        return arr;
     }
 
     /**
@@ -112,7 +111,7 @@ public class ComplexNDArrayUtil {
 
 
         if (nd.isVector()) {
-            IComplexNDArray truncated = Nd4j.createComplex(new int[]{n});
+            IComplexNDArray truncated = Nd4j.createComplex(new int[]{1,n});
             for (int i = 0; i < n; i++)
                 truncated.putScalar(i, nd.getComplex(i));
 
@@ -124,14 +123,10 @@ public class ComplexNDArrayUtil {
             int[] shape = ArrayUtil.copy(nd.shape());
             shape[dimension] = n;
             IComplexNDArray ret = Nd4j.createComplex(shape);
-            for(int i = 0; i < nd.vectorsAlongDimension(dimension); i++) {
-                IComplexNDArray put = ret.vectorAlongDimension(i,dimension);
-                IComplexNDArray getFrom = nd.vectorAlongDimension(i,dimension);
-                for(int j = 0; j < n; j++) {
-                    put.putScalar(j,getFrom.getComplex(j));
-                }
-            }
-
+            IComplexNDArray ndLinear = nd.linearView();
+            IComplexNDArray retLinear = ret.linearView();
+            for(int i = 0; i < ret.length(); i++)
+                retLinear.putScalar(i,ndLinear.getComplex(i));
             return ret;
 
         }

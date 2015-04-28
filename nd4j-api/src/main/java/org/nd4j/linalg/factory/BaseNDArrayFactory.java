@@ -670,7 +670,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(double[] data) {
-        return create(data, new int[]{data.length});
+        return create(data, new int[]{1,data.length});
     }
 
     /**
@@ -681,7 +681,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(float[] data) {
-        return create(data, new int[]{data.length});
+        return create(data, new int[]{1,data.length});
     }
 
     /**
@@ -693,7 +693,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public IComplexNDArray createComplex(double[] data) {
         assert data.length % 2 == 0 : "Length of data must be even. A complex ndarray is made up of pairs of real and imaginary components";
-        return createComplex(data, new int[]{data.length / 2});
+        return createComplex(data, new int[]{1,data.length / 2});
     }
 
     /**
@@ -704,7 +704,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(int columns) {
-        return create(new int[]{columns});
+        return create(new int[]{1,columns});
     }
 
     /**
@@ -715,7 +715,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(int columns) {
-        return createComplex(new int[]{columns});
+        return createComplex(new int[]{1,columns});
     }
 
     /**
@@ -1819,7 +1819,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(double[] data, char order) {
-        return create(data, new int[]{data.length}, ArrayUtil.calcStrides(new int[]{data.length}), order, 0);
+        return create(data, new int[]{1,data.length}, Nd4j.getStrides(new int[]{1,data.length}), order, 0);
     }
 
     @Override

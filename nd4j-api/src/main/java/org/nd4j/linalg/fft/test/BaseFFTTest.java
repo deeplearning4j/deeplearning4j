@@ -173,10 +173,14 @@ public abstract class BaseFFTTest {
 
         IComplexNDArray test = Nd4j.complexOnes(5,5);
         IComplexNDArray result = Nd4j.getFFt().rawfft(test, 3, 1);
-        IComplexNDArray assertion = Nd4j.createComplex(1,3);
-        assertion.putScalar(0, Nd4j.createComplexNumber(3, 0));
-        for(int i = 0; i < result.slices(); i++)
-            assertEquals(assertion,result.slice(i));
+        IComplexNDArray assertion = Nd4j.createComplex(5,3);
+        for(int i = 0; i < assertion.rows(); i++)
+            assertion.slice(i).putScalar(0, Nd4j.createComplexNumber(3, 0));
+        for(int i = 0; i < result.slices(); i++) {
+            IComplexNDArray assertionSlice = assertion.slice(i);
+            IComplexNDArray resultSlice = result.slice(i);
+            assertEquals("Failed on iteration " + i, assertionSlice, resultSlice);
+        }
     }
 
 

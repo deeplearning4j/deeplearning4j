@@ -244,7 +244,7 @@ public class FFT {
      * @return the ffted array
      */
     public static IComplexNDArray fftn(INDArray transform) {
-        return Nd4j.getFFt().fftn(transform, transform.shape().length - 1, transform.shape()[transform.shape().length - 1]);
+        return Nd4j.getFFt().rawfftn(Nd4j.createComplex(transform),null,null);
     }
 
 
@@ -255,13 +255,9 @@ public class FFT {
      * @return the ffted array
      */
     public static IComplexNDArray fftn(IComplexNDArray transform) {
-        return Nd4j.getFFt().fftn(transform, transform.shape().length - 1, transform.shape()[transform.shape().length - 1]);
+        return Nd4j.getFFt().rawfftn(Nd4j.createComplex(transform), null, null);
     }
 
-
-    public static IComplexNDArray ifftn(IComplexNDArray transform, int dimension) {
-        return Nd4j.getFFt().ifftn(transform, dimension, transform.shape()[dimension]);
-    }
 
 
     public static IComplexNDArray ifftn(IComplexNDArray transform) {
@@ -269,9 +265,6 @@ public class FFT {
     }
 
 
-    public static IComplexNDArray ifftn(INDArray transform) {
-        return Nd4j.getFFt().ifftn(transform);
-    }
 
     //underlying ifftn
     public static IComplexNDArray rawifftn(IComplexNDArray transform, int[] shape, int[] axes) {

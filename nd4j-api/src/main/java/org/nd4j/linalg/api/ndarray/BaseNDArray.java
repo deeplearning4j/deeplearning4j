@@ -521,6 +521,8 @@ public abstract class BaseNDArray implements INDArray {
         ensureNotCleanedUp();
         if(stride.length == 0)
             return 1;
+        if(isRowVector() && stride.length == 2)
+            return stride[1];
         //return ordering == NDArrayFactory.C ? stride[0] : stride[stride.length - 1];r
         return stride[0];
     }
@@ -550,6 +552,8 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public int vectorsAlongDimension(int dimension) {
         ensureNotCleanedUp();
+        if(dimension == 0 && isVector() || isRowVector())
+            return 1;
         if (dimension >= shape.length)
             return length / size(shape.length - 1);
         return length / size(dimension);
@@ -1495,7 +1499,6 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray put(NDArrayIndex[] indices, INDArray element) {
         if (isVector()) {
-            assert indices.length == 1 : "Indices must only be of length 1.";
             assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
             assert indices[0].length() <= element.length() : "Number of specified elements in index does not match length of element.";
             int[] assign = indices[0].indices();
@@ -2938,7 +2941,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public double getDouble(int i, int j) {
-       return getDouble(new int[]{i,j});
+        return getDouble(new int[]{i,j});
     }
 
     @Override
@@ -3128,6 +3131,8 @@ public abstract class BaseNDArray implements INDArray {
         if (isVector()) {
             if (isColumnVector())
                 return 1;
+            else if(isRowVector() && shape.length > 1)
+                return shape[1];
             else
                 return shape[0];
         }
