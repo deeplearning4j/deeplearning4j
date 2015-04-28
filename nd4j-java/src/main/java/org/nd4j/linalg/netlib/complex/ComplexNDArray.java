@@ -371,7 +371,4 @@ public class ComplexNDArray extends BaseComplexNDArray {
         super(data, order);
     }
 
-	@Override
-	public void close() throws Exception {
-	}
 }

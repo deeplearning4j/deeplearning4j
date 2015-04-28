@@ -1,7 +1,12 @@
 package org.nd4j.linalg.jcublas.rng;
 
+import jcuda.CudaException;
+import jcuda.Pointer;
 import jcuda.jcurand.JCurand;
 import jcuda.jcurand.curandGenerator;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaError;
+import jcuda.runtime.cudaMemcpyKind;
 import jcuda.utils.KernelLauncher;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -64,14 +69,9 @@ public class JcudaRandom implements Random {
     public int nextInt() {
        
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
-        curandGenerate(generator, buffer.pointer(), 2);
+        curandGenerate(generator, buffer.getHostPointer(), 2);
         double[] data = buffer.asDouble();
         int ret = (int) data[0];
-        try {
-			buffer.close();
-		} catch (Exception e) {
-			throw new RuntimeException("Could not release resources",e);
-		}
         return ret;
     }
 
@@ -79,14 +79,9 @@ public class JcudaRandom implements Random {
     public int nextInt(int n) {
        
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
-        curandGenerateUniformDouble(generator, buffer.pointer(), 2);
+        curandGenerateUniformDouble(generator, buffer.getHostPointer(), 2);
         double[] data = buffer.asDouble();
         int ret = (int) data[0];
-        try {
-			buffer.close();
-		} catch (Exception e) {
-			throw new RuntimeException("Could not release resources",e);
-		}
         return ret;
     }
 
@@ -94,14 +89,9 @@ public class JcudaRandom implements Random {
     public long nextLong() {
        
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
-        curandGenerate(generator, buffer.pointer(), 2);
+        curandGenerate(generator, buffer.getHostPointer(), 2);
         double[] data = buffer.asDouble();
         long ret = (long) data[0];
-        try {
-			buffer.close();
-		} catch (Exception e) {
-			throw new RuntimeException("Could not release resources",e);
-		}
         return ret;
     }
 
@@ -114,14 +104,9 @@ public class JcudaRandom implements Random {
     public float nextFloat() {
        
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
-        curandGenerate(generator, buffer.pointer(), 2);
+        curandGenerate(generator, buffer.getHostPointer(), 2);
         double[] data = buffer.asDouble();
         float ret = (float) data[0];
-        try {
-			buffer.close();
-		} catch (Exception e) {
-			throw new RuntimeException("Could not release resources",e);
-		}
         return ret;
     }
 
@@ -129,13 +114,8 @@ public class JcudaRandom implements Random {
     public double nextDouble() {
        
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
-        curandGenerate(generator, buffer.pointer(), 2);
+        curandGenerate(generator, buffer.getHostPointer(), 2);
         double[] data = buffer.asDouble();
-        try {
-			buffer.close();
-		} catch (Exception e) {
-			throw new RuntimeException("Could not release resources",e);
-		}
         return data[0];
     }
 
@@ -143,13 +123,8 @@ public class JcudaRandom implements Random {
     public double nextGaussian() {
        
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
-        curandGenerateUniformDouble(generator, buffer.pointer(), 2);
+        curandGenerateUniformDouble(generator, buffer.getHostPointer(), 2);
         double[] data = buffer.asDouble();
-        try {
-			buffer.close();
-		} catch (Exception e) {
-			throw new RuntimeException("Could not release resources",e);
-		}
         return data[0];
     }
 
@@ -159,11 +134,14 @@ public class JcudaRandom implements Random {
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
         if (buffer.dataType() == DataBuffer.FLOAT)
-            curandGenerateUniform(generator, buffer.pointer(), create.length());
+        	checkResult(curandGenerateUniform(generator, buffer.getDevicePointer(), create.length()));
         else if (buffer.dataType() == DataBuffer.DOUBLE)
-            curandGenerateUniformDouble(generator, buffer.pointer(), create.length());
+        	checkResult(curandGenerateUniformDouble(generator, buffer.getHostPointer(), create.length()));
         else
             throw new IllegalStateException("Illegal data type discovered");
+        
+        checkResult(JCuda.cudaMemcpy(buffer.getHostPointer(), buffer.getDevicePointer(), buffer.getLength()*buffer.getElementSize(), cudaMemcpyKind.cudaMemcpyDeviceToHost));
+        buffer.freeDevicePointer();
         return create;
     }
 
@@ -173,9 +151,9 @@ public class JcudaRandom implements Random {
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
         if (buffer.dataType() == DataBuffer.FLOAT)
-            curandGenerateUniform(generator, buffer.pointer(), create.length());
+            curandGenerateUniform(generator, buffer.getHostPointer(), create.length());
         else if (buffer.dataType() == DataBuffer.DOUBLE)
-            curandGenerateUniformDouble(generator, buffer.pointer(), create.length());
+            curandGenerateUniformDouble(generator, buffer.getHostPointer(), create.length());
         else
             throw new IllegalStateException("Illegal data type discovered");
         return create;
@@ -187,9 +165,9 @@ public class JcudaRandom implements Random {
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
         if (buffer.dataType() == DataBuffer.FLOAT)
-            curandGenerateUniform(generator, buffer.pointer(), create.length());
+        	checkResult(curandGenerateUniform(generator, buffer.getHostPointer(), create.length()));
         else if (buffer.dataType() == DataBuffer.DOUBLE)
-            curandGenerateUniformDouble(generator, buffer.pointer(), create.length());
+        	checkResult(curandGenerateUniformDouble(generator, buffer.getHostPointer(), create.length()));
         else
             throw new IllegalStateException("Illegal data type discovered");
         return create;
@@ -201,9 +179,9 @@ public class JcudaRandom implements Random {
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
         if (buffer.dataType() == DataBuffer.FLOAT)
-            curandGenerateUniform(generator, buffer.pointer(), create.length());
+            curandGenerateUniform(generator, buffer.getHostPointer(), create.length());
         else if (buffer.dataType() == DataBuffer.DOUBLE)
-            curandGenerateUniformDouble(generator, buffer.pointer(), create.length());
+            curandGenerateUniformDouble(generator, buffer.getHostPointer(), create.length());
         else
             throw new IllegalStateException("Illegal data type discovered");
 
@@ -218,15 +196,24 @@ public class JcudaRandom implements Random {
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
         if (buffer.dataType() == DataBuffer.FLOAT)
-            curandGenerateUniform(generator, buffer.pointer(), create.length());
+            curandGenerateUniform(generator, buffer.getHostPointer(), create.length());
         else if (buffer.dataType() == DataBuffer.DOUBLE)
-            curandGenerateUniformDouble(generator, buffer.pointer(), create.length());
+            curandGenerateUniformDouble(generator, buffer.getHostPointer(), create.length());
         else
             throw new IllegalStateException("Illegal data type discovered");
 
         Nd4j.getExecutioner().exec(new SetRange(create, 0, n));
 
         return create;
+    }
+    
+    private static int checkResult(int result)
+    {
+        if (result != cudaError.cudaSuccess)
+        {
+            throw new CudaException(cudaError.stringFor(result));
+        }
+        return result;
     }
 
 

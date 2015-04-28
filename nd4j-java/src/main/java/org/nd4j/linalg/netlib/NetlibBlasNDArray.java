@@ -306,7 +306,4 @@ public class NetlibBlasNDArray extends BaseNDArray {
         super(shape, buffer);
     }
 
-	@Override
-	public void close() throws Exception {
-	}
 }

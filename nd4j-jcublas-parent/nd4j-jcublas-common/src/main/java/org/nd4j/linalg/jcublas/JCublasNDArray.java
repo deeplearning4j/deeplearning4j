@@ -35,18 +35,6 @@ import java.util.List;
 
 public class JCublasNDArray extends BaseNDArray {
 	
-	/**
-	 * De-allocate the pinned cuda buffer
-	 * @throws Exception 
-	 */
-	public void close() {
-		try {
-			data.close();
-		} catch (Exception e) {
-			throw new RuntimeException("Could not release resources", e);
-		}
-	}
-
 
     public JCublasNDArray(double[][] data) {
         super(data);

@@ -114,8 +114,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+        if (indices.length > getLength())
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + getLength() + " where the indices are of length " + data.length);
         for (int i = 0; i < indices.length; i++) {
             put(indices[i], data[i]);
         }
@@ -125,8 +125,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void assign(int[] indices, double[] data, boolean contiguous, int inc) {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+        if (indices.length > getLength())
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + getLength() + " where the indices are of length " + data.length);
         for (int i = 0; i < indices.length; i += inc) {
             put(indices[i], data[i]);
         }
@@ -134,20 +134,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void assign(DataBuffer data) {
-        if (data.length() != length())
-            throw new IllegalArgumentException("Unable to assign buffer of length " + data.length() + " to this buffer of length " + length());
+        if (data.getLength() != getLength())
+            throw new IllegalArgumentException("Unable to assign buffer of length " + data.getLength() + " to this buffer of length " + getLength());
 
-        for (int i = 0; i < data.length(); i++) {
+        for (int i = 0; i < data.getLength(); i++) {
             put(i, data.getDouble(i));
         }
-    }
-
-
-    @Override
-    public void close() {
-        if (Nd4j.shouldInstrument)
-            Nd4j.getInstrumentation().log(this, "destroyed");
-
     }
 
     @Override
@@ -161,7 +153,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     @Override
-    public int length() {
+    public int getLength() {
         return length;
     }
 
@@ -178,7 +170,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public float[] getFloatsAt(int offset, int inc, int length) {
-        if (offset + length > length())
+        if (offset + length > getLength())
             length -= offset;
         float[] ret = new float[length];
         for (int i = 0; i < length; i++) {
@@ -189,7 +181,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public double[] getDoublesAt(int offset, int inc, int length) {
-        if (offset + length > length())
+        if (offset + length > getLength())
             length -= offset;
 
         double[] ret = new double[length];
@@ -231,7 +223,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void assign(int[] offsets, int[] strides, DataBuffer... buffers) {
-        assign(offsets, strides, length(), buffers);
+        assign(offsets, strides, getLength(), buffers);
     }
 
     @Override
@@ -240,14 +232,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalArgumentException("Unable to assign buffers, please specify equal lengths strides, offsets, and buffers");
         int length = 0;
         for (int i = 0; i < buffers.length; i++)
-            length += buffers[i].length();
+            length += buffers[i].getLength();
 
         if (length != n)
             throw new IllegalArgumentException("Buffers must fill up specified length " + n);
 
         int count = 0;
         for (int i = 0; i < buffers.length; i++) {
-            for (int j = offsets[i]; j < buffers[i].length(); j += strides[i]) {
+            for (int j = offsets[i]; j < buffers[i].getLength(); j += strides[i]) {
                 put(count++, buffers[i].getDouble(j));
             }
         }

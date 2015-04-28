@@ -88,13 +88,13 @@ public class IntBuffer extends BaseDataBuffer {
 
 
     @Override
-    public int elementSize() {
+    public int getElementSize() {
         return 4;
     }
 
     @Override
     public void assign(Number value, int offset) {
-        for (int i = offset; i < length(); i++) {
+        for (int i = offset; i < getLength(); i++) {
             buffer[i] = value.intValue();
         }
     }
@@ -180,8 +180,7 @@ public class IntBuffer extends BaseDataBuffer {
         buffer = null;
     }
 
-    @Override
-    public void close() {
+    public void destroy() {
         if (buffer != null)
             buffer = null;
         if (memoryMappedBuffer != null) {

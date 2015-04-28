@@ -422,7 +422,7 @@ public class JCuda
      * @throws CudaException If exceptions have been enabled and
      * the given result code is not cudaError.cudaSuccess
      */
-    private static int checkResult(int result)
+    public static int checkResult(int result)
     {
         if (exceptionsEnabled && result != cudaError.cudaSuccess)
         {

@@ -133,7 +133,7 @@ public class DoubleBuffer extends BaseDataBuffer {
 
     @Override
     public void assign(Number value, int offset) {
-        for (int i = offset; i < length(); i++) {
+        for (int i = offset; i < getLength(); i++) {
             buffer[i] = value.doubleValue();
         }
     }
@@ -209,13 +209,11 @@ public class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public int elementSize() {
+    public int getElementSize() {
         return 8;
     }
 
-    @Override
-    public void close() {
-        super.close();
+    public void destroy() {
         if (buffer != null)
             buffer = null;
         if (memoryMappedBuffer != null) {

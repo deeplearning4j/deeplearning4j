@@ -41,7 +41,6 @@ public abstract class DoubleDataBufferTest {
         DataBuffer d = Nd4j.createBuffer(d1);
         double[] d2 = d.asDouble();
         assertArrayEquals(d1, d2, 1e-1f);
-        d.close();
 
     }
 
@@ -52,8 +51,6 @@ public abstract class DoubleDataBufferTest {
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
         assertEquals(d, d2);
-        d.close();
-        d2.close();
     }
 
     @Test
@@ -64,7 +61,6 @@ public abstract class DoubleDataBufferTest {
         double[] result = new double[]{0, 2, 3, 4};
         d1 = d.asDouble();
         assertArrayEquals(d1, result, 1e-1f);
-        d.close();
     }
 
 
@@ -77,9 +73,8 @@ public abstract class DoubleDataBufferTest {
 
 
         double[] get2 = buffer.asDouble();
-        double[] allData = buffer.getDoublesAt(0, buffer.length());
+        double[] allData = buffer.getDoublesAt(0, buffer.getLength());
         assertArrayEquals(get2, allData, 1e-1f);
-        buffer.close();
 
 
     }
@@ -95,10 +90,8 @@ public abstract class DoubleDataBufferTest {
 
         double[] allButLast = new double[]{2, 3, 4, 5};
 
-        double[] allData = buffer.getDoublesAt(1, buffer.length());
+        double[] allData = buffer.getDoublesAt(1, buffer.getLength());
         assertArrayEquals(allButLast, allData, 1e-1f);
-        buffer.close();
-
 
     }
 

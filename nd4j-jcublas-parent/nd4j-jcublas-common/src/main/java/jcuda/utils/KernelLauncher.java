@@ -28,17 +28,28 @@
 
 package jcuda.utils;
 
-import static jcuda.driver.JCudaDriver.*;
+import static jcuda.driver.JCudaDriver.cuDeviceGetCount;
+import static jcuda.driver.JCudaDriver.cuLaunchKernel;
+import static jcuda.driver.JCudaDriver.cuModuleGetFunction;
+import static jcuda.driver.JCudaDriver.cuModuleLoadDataEx;
 
-import java.io.*;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
-import jcuda.*;
-import jcuda.driver.*;
-import jcuda.jcublas.JCublas;
+import jcuda.CudaException;
+import jcuda.Pointer;
+import jcuda.driver.CUcontext;
+import jcuda.driver.CUfunction;
+import jcuda.driver.CUmodule;
+import jcuda.driver.CUresult;
+import jcuda.driver.CUstream;
+import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaDeviceProp;
 import jcuda.runtime.dim3;
 
 import org.nd4j.linalg.jcublas.context.ContextHolder;
@@ -941,6 +952,7 @@ public class KernelLauncher {
 
         for (int i = 0; i < args.length; i++) {
             Object arg = args[i];
+            
             if (arg instanceof Pointer)
             {
                 Pointer argPointer = (Pointer)arg;
@@ -1028,7 +1040,6 @@ public class KernelLauncher {
 
 
         syncContext();
-
         checkResult(cuLaunchKernel(function,
                 gridSize.x, gridSize.y, gridSize.z,
                 blockSize.x, blockSize.y, blockSize.z,
@@ -1037,8 +1048,7 @@ public class KernelLauncher {
         ));
 
         checkResult(JCudaDriver.cuCtxSynchronize());
-
-
+        
     }
 
     /**

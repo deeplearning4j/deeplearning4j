@@ -17,6 +17,21 @@
 package org.nd4j.linalg.api.test;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,13 +46,6 @@ import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
-
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import static org.junit.Assert.*;
 
 /**
  * NDArrayTests
@@ -72,7 +80,6 @@ public abstract class NDArrayTests {
         assertEquals(27, n.sum(Integer.MAX_VALUE).getDouble(0), 1e-1);
         INDArray a = n.slice(2);
         assertEquals(true, Arrays.equals(new int[]{3, 3}, a.shape()));
-        n.data().close();
 
     }
 
@@ -132,8 +139,6 @@ public abstract class NDArrayTests {
         oneThroughFour.subiRowVector(row1);
         INDArray result = Nd4j.create(new float[]{-2, -2, 0, 0}, new int[]{2, 2});
         assertEquals(result, oneThroughFour);
-        result.data().close();
-        oneThroughFour.data().close();
 
     }
 
@@ -172,8 +177,6 @@ public abstract class NDArrayTests {
         INDArray columnSorted = Nd4j.create(new float[]{2, 1, 4, 3}, new int[]{2, 2});
         INDArray sorted = Nd4j.sort(toSort.dup(), 1, false);
         assertEquals(columnSorted, sorted);
-        toSort.data().close();
-        ascending.data().close();
     }
 
     @Test
@@ -189,7 +192,6 @@ public abstract class NDArrayTests {
         row1.addi(1);
         INDArray result = Nd4j.create(new float[]{1, 2, 4, 5}, new int[]{2, 2});
         assertEquals(result, oneThroughFour);
-        oneThroughFour.data().close();
 
 
     }
@@ -203,7 +205,6 @@ public abstract class NDArrayTests {
         linear.putScalar(3, 7);
         assertEquals(6, linear.getFloat(2), 1e-1);
         assertEquals(7, linear.getFloat(3), 1e-1);
-        test.data().close();
     }
 
 
@@ -231,8 +232,6 @@ public abstract class NDArrayTests {
         INDArray row = Nd4j.create(new float[]{7, 11});
         INDArray result = test2.slice(1);
         assertEquals(row, result);
-        row.data().close();
-        result.data().close();
 
     }
 
@@ -275,7 +274,6 @@ public abstract class NDArrayTests {
 
         INDArray firstAndSecondRowTest = twoByTwo.get(NDArrayIndex.interval(1, 3));
         assertEquals(firstAndSecondRow, firstAndSecondRowTest);
-        twoByTwo.data().close();
 
     }
 
@@ -517,11 +515,6 @@ public abstract class NDArrayTests {
         assertEquals(row12.columns(), 1);
         assertEquals(row22.rows(), 1);
         assertEquals(row22.columns(), 2);
-
-
-        d.data().close();
-        vector.data().close();
-
     }
 
     @Test
@@ -535,7 +528,6 @@ public abstract class NDArrayTests {
         assertEquals(column, testColumn);
         assertEquals(column2, testColumn1);
         Nd4j.factory().setOrder('c');
-        n.data().close();
 
 
     }
@@ -1200,8 +1192,6 @@ public abstract class NDArrayTests {
         INDArray test = Nd4j.create(testList, new int[]{testList.size()});
         INDArray expected = Nd4j.create(new float[]{1, 2, 3, 4, 5}, new int[]{5});
         assertEquals(expected, test);
-        test.data().close();
-        expected.data().dataType();
     }
 
 

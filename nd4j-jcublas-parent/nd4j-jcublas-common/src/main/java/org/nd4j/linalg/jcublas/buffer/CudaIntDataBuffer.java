@@ -44,8 +44,8 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+        if (indices.length > getLength())
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + getLength() + " where the indices are of length " + data.length);
 
         if (contiguous) {
             int offset = indices[0];
@@ -59,8 +59,8 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     public void assign(int[] indices, double[] data, boolean contiguous, int inc) {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+        if (indices.length > getLength())
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + getLength() + " where the indices are of length " + data.length);
 
         if (contiguous) {
             int offset = indices[0];
@@ -191,7 +191,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
             throws java.io.IOException {
         stream.defaultWriteObject();
 
-        if (pointer() == null) {
+        if (getHostPointer() == null) {
             stream.writeInt(0);
         } else {
             int[] arr = this.asInt();

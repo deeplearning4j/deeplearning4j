@@ -29,7 +29,7 @@ import java.util.Collection;
  *
  * @author Adam Gibson
  */
-public interface DataBuffer extends Serializable, AutoCloseable {
+public interface DataBuffer extends Serializable {
 
 
     public final static int DOUBLE = 0;
@@ -54,7 +54,7 @@ public interface DataBuffer extends Serializable, AutoCloseable {
      *
      * @return the number of bytes for each individual element
      */
-    public int elementSize();
+    public int getElementSize();
 
     /**
      * Remove the referenced id if it exists
@@ -319,7 +319,7 @@ public interface DataBuffer extends Serializable, AutoCloseable {
      *
      * @return the length of the buffer
      */
-    int length();
+    int getLength();
 
     /**
      * Get the int at the specified index

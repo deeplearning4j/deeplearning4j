@@ -34,13 +34,6 @@ import java.util.List;
  */
 public class JCublasComplexNDArray extends BaseComplexNDArray {
 
-	/**
-	 * De-allocate the pinned cuda buffer
-	 * @throws Exception 
-	 */
-	public void close() throws Exception {
-		data.close();
-	}
 
     public JCublasComplexNDArray(int[] shape, int offset, char ordering) {
 

@@ -120,12 +120,12 @@ public abstract class BaseNDArray implements INDArray {
 
     public BaseNDArray(DataBuffer buffer) {
         this.data = buffer;
-        init(new int[]{1, buffer.length()});
+        init(new int[]{1, buffer.getLength()});
     }
 
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
         this.data = buffer;
-        if (ArrayUtil.prod(shape) > buffer.length())
+        if (ArrayUtil.prod(shape) > buffer.getLength())
             throw new IllegalArgumentException("Shape must be <= buffer length");
         this.stride = stride;
         this.offset = offset;
@@ -335,7 +335,7 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     public BaseNDArray(FloatBuffer floatBuffer, char order) {
-        this(floatBuffer, new int[]{floatBuffer.length()}, Nd4j.getStrides(new int[]{floatBuffer.length()}), 0, order);
+        this(floatBuffer, new int[]{floatBuffer.getLength()}, Nd4j.getStrides(new int[]{floatBuffer.getLength()}), 0, order);
     }
 
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] strides) {
@@ -755,7 +755,7 @@ public abstract class BaseNDArray implements INDArray {
             for (int i = 0; i < shape.length; i++) {
                 ix += indexes[i] * stride[i];
             }
-            if (ix >= data.length())
+            if (ix >= data.getLength())
                 throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
             data.put(ix, value);
         }
@@ -1168,7 +1168,7 @@ public abstract class BaseNDArray implements INDArray {
             int ix = offset;
             for (int i = 1; i < indices.length; i++)
                 ix += indices[i] * stride[i];
-            if (ix >= data.length())
+            if (ix >= data.getLength())
                 throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indices));
             data.put(ix, element.getDouble(0));
         }
@@ -1176,7 +1176,7 @@ public abstract class BaseNDArray implements INDArray {
             int ix = offset;
             for (int i = 0; i < indices.length; i++)
                 ix += indices[i] * stride[i];
-            if (ix >= data.length())
+            if (ix >= data.getLength())
                 throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indices));
             data.put(ix, element.getDouble(0));
         }
@@ -1746,7 +1746,7 @@ public abstract class BaseNDArray implements INDArray {
         if (!isVector() && !isScalar())
             throw new IllegalArgumentException("Unable to do linear indexing with dimensions greater than 1");
         int idx = linearIndex(i);
-        if (idx >= data.length())
+        if (idx >= data.getLength())
             throw new IllegalArgumentException("Illegal indices " + i);
         return Nd4j.scalar(data.getDouble(idx));
     }
@@ -1836,11 +1836,6 @@ public abstract class BaseNDArray implements INDArray {
     public  void cleanup() {
     	if (Nd4j.shouldInstrument)
             Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
-        try {
-			data().close();
-		} catch (Exception e) {
-			log.error("could not clean up resource, memory leak possible");
-		}
     	cleanedUp = true;
     }
 
@@ -1976,7 +1971,7 @@ public abstract class BaseNDArray implements INDArray {
         assert element.isScalar() : "Unable to insert non scalar element";
 
         int idx = linearIndex(i);
-        if (idx >= data.length())
+        if (idx >= data.getLength())
             throw new IllegalArgumentException("Illegal indices " + i);
         data.put(idx, element.getDouble(0));
         return this;
@@ -2672,7 +2667,7 @@ public abstract class BaseNDArray implements INDArray {
         int realStride = secondaryStride();
         int idx = offset + i * realStride;
 
-        if (data != null && idx >= data.length())
+        if (data != null && idx >= data.getLength())
             throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
         return idx;
     }
@@ -2796,7 +2791,7 @@ public abstract class BaseNDArray implements INDArray {
             ix += indexes[i] * stride[i];
         }
 
-        if (ix >= data.length())
+        if (ix >= data.getLength())
             throw new IllegalArgumentException("Illegal index " + Arrays.toString(indexes));
 
         return Nd4j.scalar(data.getDouble(ix));
@@ -2973,7 +2968,7 @@ public abstract class BaseNDArray implements INDArray {
         int idx = linearIndex(i);
         if (idx < 0)
             throw new IllegalStateException("Illegal index " + i);
-        if (idx >= data.length())
+        if (idx >= data.getLength())
             throw new IllegalArgumentException("Invalid index " + i);
         return data.getFloat(idx);
     }
@@ -2981,7 +2976,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public float getFloat(int i, int j) {
         int idx = index(i, j);
-        if (idx >= data.length())
+        if (idx >= data.getLength())
             throw new IllegalArgumentException("Invalid index " + i + " , " + j);
         return data.getFloat(idx);
     }

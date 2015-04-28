@@ -57,8 +57,8 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+        if (indices.length > getLength())
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + getLength() + " where the indices are of length " + data.length);
 
         if (contiguous) {
             int offset = indices[0];
@@ -74,8 +74,8 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+        if (indices.length > getLength())
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + getLength() + " where the indices are of length " + data.length);
 
         if (contiguous) {
             int offset = indices[0];
@@ -94,7 +94,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     @Override
     public float[] getFloatsAt(int offset, int inc, int length) {
         ensureNotFreed();
-        if (offset + length > length())
+        if (offset + length > getLength())
             length -= offset;
         float[] ret = new float[length];
         FloatBuffer buf = getFloatBuffer(offset);
@@ -124,10 +124,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     public void setData(float[] data) {
 
         if (data.length != length)
-            throw new IllegalArgumentException("Unable to set vector, must be of length " + length() + " but found length " + data.length);
-
-        if (pointer() == null)
-            alloc();
+            throw new IllegalArgumentException("Unable to set vector, must be of length " + getLength() + " but found length " + data.length);
 
         getFloatBuffer().put(data);
     }
@@ -159,9 +156,9 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     @Override
     public float[] asFloat() {
         ensureNotFreed();
-        float[] ret = new float[length()];
+        float[] ret = new float[getLength()];
         FloatBuffer buf = getFloatBuffer();
-        for(int i = 0; i < length(); i++) {
+        for(int i = 0; i < getLength(); i++) {
             ret[i] = buf.get(i);
         }
         return ret;
@@ -219,7 +216,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public DataBuffer dup() {
-        CudaFloatDataBuffer buf = new CudaFloatDataBuffer(length());
+        CudaFloatDataBuffer buf = new CudaFloatDataBuffer(getLength());
         copyTo(buf);
         return buf;
     }
@@ -239,7 +236,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
             throws java.io.IOException {
         stream.defaultWriteObject();
 
-        if (pointer() == null) {
+        if (getHostPointer() == null) {
             stream.writeInt(0);
         } else {
             float[] arr = this.asFloat();

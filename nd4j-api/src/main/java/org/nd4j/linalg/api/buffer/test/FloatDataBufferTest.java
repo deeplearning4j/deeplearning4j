@@ -42,7 +42,6 @@ public abstract class FloatDataBufferTest {
         DataBuffer d = Nd4j.createBuffer(d1);
         float[] d2 = d.asFloat();
         assertArrayEquals(d1, d2, 1e-1f);
-        d.close();
 
     }
 
@@ -52,8 +51,6 @@ public abstract class FloatDataBufferTest {
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
         assertEquals(d, d2);
-        d.close();
-        d2.close();
     }
 
     @Test
@@ -64,7 +61,6 @@ public abstract class FloatDataBufferTest {
         float[] result = new float[]{0, 2, 3, 4};
         d1 = d.asFloat();
         assertArrayEquals(d1, result, 1e-1f);
-        d.close();
     }
 
 
@@ -77,9 +73,8 @@ public abstract class FloatDataBufferTest {
 
 
         float[] get2 = buffer.asFloat();
-        float[] allData = buffer.getFloatsAt(0, buffer.length());
+        float[] allData = buffer.getFloatsAt(0, buffer.getLength());
         assertArrayEquals(get2, allData, 1e-1f);
-        buffer.close();
 
 
     }
@@ -95,9 +90,8 @@ public abstract class FloatDataBufferTest {
 
         float[] allButLast = new float[]{2, 3, 4, 5};
 
-        float[] allData = buffer.getFloatsAt(1, buffer.length());
+        float[] allData = buffer.getFloatsAt(1, buffer.getLength());
         assertArrayEquals(allButLast, allData, 1e-1f);
-        buffer.close();
 
 
     }
