@@ -173,17 +173,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         pinnedPointer = new Pointer();
 
         // Check if the device supports mapped host memory
-        cudaDeviceProp deviceProperties = new cudaDeviceProp();
-        JCuda.cudaGetDeviceProperties(deviceProperties, 0);
-        if (deviceProperties.canMapHostMemory == 0) {
-            System.err.println("This device can not map host memory");
-            System.err.println(deviceProperties.toFormattedString());
-            return;
-        }
-
-        // Set the flag indicating that mapped memory will be used
-        JCuda.cudaSetDeviceFlags(JCuda.cudaDeviceMapHost);
-        doCuda(JCuda.cudaHostAlloc(pinnedPointer,elementSize() * length(),JCuda.cudaHostAllocMapped));
+              doCuda(JCuda.cudaHostAlloc(pinnedPointer,elementSize() * length(),JCuda.cudaHostAllocMapped));
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         Nd4j.getResourceManager().incrementCurrentAllocatedMemory(elementSize() * length());
         freed.set(false);

@@ -24,12 +24,15 @@ import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 import jcuda.utils.KernelLauncher;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
@@ -37,6 +40,7 @@ import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
+import org.nd4j.linalg.util.ArrayUtil;
 
 
 /**
@@ -130,8 +134,87 @@ public class JCudaExecutioner implements OpExecutioner {
     }
 
     @Override
-    public INDArray exec(Accumulation accumulation, int dimension) {
-        return null;
+    public INDArray exec(Accumulation op, int dimension) {
+        if(dimension == Integer.MAX_VALUE) {
+            if(op.x() instanceof IComplexNDArray)
+                return Nd4j.scalar(execAndReturn(op).currentResultComplex());
+            else
+                return Nd4j.scalar(execAndReturn(op).currentResult());
+        }
+        else if(op.x().isScalar())
+            return op.x();
+        if(op.x() instanceof IComplexNDArray) {
+            IComplexNDArray ret = Nd4j.createComplex(ArrayUtil.removeIndex(op.x().shape(), dimension));
+            IComplexNDArray linear = ret.linearView();
+            if(op.x().isRowVector()) {
+                //same shape
+                if(dimension == 0) {
+                    //no reduction
+                    return op.x();
+                }
+                else if(dimension == 1) {
+                    return Nd4j.scalar(execAndReturn(op).currentResult());
+                }
+            }
+            else if(op.x().isColumnVector()) {
+                if(dimension == 0) {
+                    return Nd4j.scalar(execAndReturn(op).currentResult());
+
+                }
+                //row vector
+                else if(dimension == 1) {
+                    //make a row vector
+                    return Nd4j.scalar(execAndReturn(op).currentResult());
+
+                }
+            }
+
+            for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+                Op op2 = op.opForDimension(i, dimension);
+                IComplexNumber result = execAndReturn((Accumulation) op2).currentResultComplex();
+                linear.putScalar(i, result);
+
+            }
+
+            return ret;
+        }
+        else {
+            if(op.x().isRowVector()) {
+                //same shape
+                if(dimension == 0) {
+                    //no reduction
+                    return op.x();
+                }
+                else if(dimension == 1) {
+                    return Nd4j.scalar(execAndReturn(op).currentResult());
+                }
+            }
+            else if(op.x().isColumnVector()) {
+                if(dimension == 0) {
+                    return Nd4j.scalar(execAndReturn(op).currentResult());
+
+                }
+                //row vector
+                else if(dimension == 1) {
+                    //make a row vector
+                    return op.z().transpose();
+
+                }
+            }
+
+            INDArray ret = Nd4j.create(ArrayUtil.removeIndex(op.x().shape(), dimension));
+            INDArray linear = ret.linearView();
+
+            for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+                Op op2 = op.opForDimension(i, dimension);
+                Number result = execAndReturn((Accumulation) op2).currentResult();
+                linear.putScalar(i,result.doubleValue());
+
+            }
+
+            return ret;
+
+        }
     }
 
 

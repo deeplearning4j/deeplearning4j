@@ -24,6 +24,7 @@ import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaDeviceProp;
 import jcuda.runtime.cudaMemcpyKind;
 import jcuda.utils.KernelLauncher;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -99,6 +100,20 @@ public class SimpleJCublas {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+
+        cudaDeviceProp deviceProperties = new cudaDeviceProp();
+        JCuda.cudaGetDeviceProperties(deviceProperties, 0);
+        if (deviceProperties.canMapHostMemory == 0) {
+            System.err.println("This device can not map host memory");
+            System.err.println(deviceProperties.toFormattedString());
+            return;
+        }
+
+        // Set the flag indicating that mapped memory will be used
+        JCuda.cudaSetDeviceFlags(JCuda.cudaDeviceMapHost);
+
+
         init = true;
     }
 
