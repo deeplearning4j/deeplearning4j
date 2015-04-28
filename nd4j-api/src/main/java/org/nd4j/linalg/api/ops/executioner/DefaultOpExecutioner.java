@@ -115,9 +115,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
         else {
             INDArray originalX = op.x();
             INDArray originalZ = op.z();
-            for(int i = 0; i < op.x().slices(); i++) {
-                op.setX(originalX.slice(i));
-                op.setZ(originalZ.slice(i));
+            for(int i = 0; i < originalX.slices(); i++) {
+                INDArray slice = originalX.slice(i);
+                INDArray zSlice = originalZ.slice(i);
+                op.setX(slice);
+                op.setZ(zSlice);
                 iterateOverAllRows(op);
             }
 

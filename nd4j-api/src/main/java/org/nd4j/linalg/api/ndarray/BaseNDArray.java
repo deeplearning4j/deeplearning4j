@@ -3154,7 +3154,9 @@ public abstract class BaseNDArray implements INDArray {
                 return Shape.squeeze(shape)[0];
             else if (shape().length == 2)
                 return shape[0];
-        } else if (isVector()) {
+        }
+
+        else if (isVector()) {
             if (isRowVector())
                 return 1;
             else
@@ -3777,9 +3779,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public boolean isVector() {
         ensureNotCleanedUp();
-        return shape.length == 1
-                ||
-                shape.length == 2 && (shape[0] == 1 || shape[1] == 1) && !isScalar();
+        return isRowVector() || isColumnVector();
     }
 
     @Override
@@ -3794,11 +3794,8 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public boolean isRowVector() {
         ensureNotCleanedUp();
-        if (shape().length == 1)
+        if (shape().length == 1 || shape().length == 2 && shape[0] == 1)
             return true;
-
-        if (isVector())
-            return shape()[0] == 1;
 
         return false;
     }
@@ -3812,7 +3809,7 @@ public abstract class BaseNDArray implements INDArray {
         if (shape().length == 1)
             return false;
 
-        if (isVector())
+        if (shape().length == 2 && shape()[1] == 1)
             return shape()[1] == 1;
 
         return false;

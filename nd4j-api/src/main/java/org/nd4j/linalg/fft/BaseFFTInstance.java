@@ -250,69 +250,14 @@ public abstract class BaseFFTInstance implements FFTInstance {
     //underlying ifftn
     @Override
     public IComplexNDArray rawifftn(IComplexNDArray transform, int[] shape, int[] axes) {
-        IComplexNDArray result = transform.dup();
-        if(shape == null)
-            shape = ArrayUtil.copy(result.shape());
+      return doFFt(transform,shape,axes,true);
 
-        boolean noAxes = false;
-        if(axes == null || axes.length < 1) {
-            noAxes = true;
-            axes = ArrayUtil.range(0,shape.length);
-            axes = ArrayUtil.reverseCopy(axes);
-        }
-
-        if(noAxes) {
-            for(int i : axes) {
-                if(i < 0) {
-                    i = shape.length + i;
-                }
-                transform = fixShape(transform,shape,i,shape[i]);
-            }
-        }
-
-
-
-
-        for(int i = 0; i < shape.length; i++) {
-            result = ifft(result, shape[i], i);
-        }
-
-
-        return result;
     }
 
     //underlying fftn
     @Override
     public IComplexNDArray rawfftn(IComplexNDArray transform, int[] shape, int[] axes) {
-        IComplexNDArray result = transform.dup();
-        if(shape == null)
-            shape = ArrayUtil.copy(result.shape());
-
-        boolean noAxes = false;
-        if(axes == null || axes.length < 1) {
-            noAxes = true;
-            axes = ArrayUtil.range(0,shape.length);
-            axes = ArrayUtil.reverseCopy(axes);
-        }
-
-        if(noAxes) {
-            for(int i : axes) {
-                if(i < 0) {
-                    i = shape.length + i;
-                }
-                transform = fixShape(transform,shape,i,shape[i]);
-            }
-        }
-
-
-
-
-        for(int i = 0; i < shape.length; i++) {
-            result = fft(result,shape[i],i);
-        }
-
-
-        return result;
+      return doFFt(transform,shape,axes,false);
     }
 
     private IComplexNDArray fixShape(IComplexNDArray x,int[] shape,int axis, int n) {
@@ -336,6 +281,36 @@ public abstract class BaseFFTInstance implements FFTInstance {
     @Override
     public IComplexNDArray rawifft(IComplexNDArray transform, int dimension) {
         return rawifft(transform, transform.shape()[dimension], dimension);
+    }
+
+    private IComplexNDArray doFFt(IComplexNDArray transform,int[] shape,int[] axes,boolean inverse) {
+        IComplexNDArray result = transform.dup();
+        if(shape == null)
+            shape = ArrayUtil.copy(result.shape());
+
+        boolean noAxes = false;
+        if(axes == null || axes.length < 1) {
+            noAxes = true;
+            axes = ArrayUtil.range(0,shape.length);
+            axes = ArrayUtil.reverseCopy(axes);
+        }
+
+        if(noAxes) {
+            for(int i : axes) {
+                if(i < 0) {
+                    i = shape.length + i;
+                }
+                transform = fixShape(transform,shape,i,shape[i]);
+            }
+        }
+
+
+        for(int i = 0; i < axes.length; i++) {
+            result = inverse ? ifft(result,shape[axes[i]],axes[i]) : fft(result,shape[axes[i]],axes[i]);
+        }
+
+
+        return result;
     }
 
 

@@ -52,7 +52,7 @@ public abstract class ConvolutionTests {
     public void testConv2d() {
         INDArray arr = Nd4j.linspace(1, 8, 8).reshape(2,4);
         INDArray kernel = Nd4j.linspace(1, 6, 6).reshape(2,3);
-        INDArray answer = Nd4j.create(new double[]{10, 16, 22, 28, 34, 40});
+        INDArray answer = Nd4j.create(new double[]{56,98});
         INDArray test = Convolution.convn(arr, kernel, Convolution.Type.VALID);
         assertEquals(answer, test);
     }

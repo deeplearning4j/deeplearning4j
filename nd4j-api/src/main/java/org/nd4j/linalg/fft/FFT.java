@@ -261,7 +261,7 @@ public class FFT {
 
 
     public static IComplexNDArray ifftn(IComplexNDArray transform) {
-        return Nd4j.getFFt().ifftn(transform);
+        return Nd4j.getFFt().rawifftn(transform, null, null);
     }
 
 
