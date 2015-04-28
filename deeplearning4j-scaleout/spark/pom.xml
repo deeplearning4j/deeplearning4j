@@ -98,37 +98,35 @@
 
 
     <dependencies>
-
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-mllib_${scala.binary.version}</artifactId>
             <version>${spark.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
             <version>${scala.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_${scala.binary.version}</artifactId>
             <version>${spark.version}</version>
+            <scope>provided</scope>
             <exclusions>
-
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
                 </exclusion>
             </exclusions>
-
         </dependency>
-
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-scaleout-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-
     </dependencies>
 
 </project>
