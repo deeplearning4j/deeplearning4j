@@ -36,11 +36,25 @@ import org.nd4j.linalg.util.FeatureUtil
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.api.ndarray.INDArray
 
-private[classification] trait NeuralNetworkClassificationParams extends ProbabilisticClassifierParams 
+/*
+ * Parameters for neural network classification.
+ */
+trait NeuralNetworkClassificationParams extends ProbabilisticClassifierParams 
   with HasMultiLayerConfiguration 
   with HasWindowSize {
 }
 
+/**
+ * Neural network-based learning algorithm for supervised classification.
+ * 
+ * This class is an estimator that produces a model.  Accepts a feature vector and 
+ * a multiclass numeric label as input, and produces a probability vector and a predicted label as output.
+ * 
+ * Noteworthy parameters:
+ *  - conf        - the multilayer configuration
+ *  - windowSize  - the number of training iterations to perform independently on each partition,
+ *                  before resynchronizing the parameters across the cluster.
+ */
 @AlphaComponent
 class NeuralNetworkClassification
   extends ProbabilisticClassifier[Vector, NeuralNetworkClassification, NeuralNetworkClassificationModel]
@@ -73,7 +87,7 @@ class NeuralNetworkClassification
     // train
     val networkParams = trainingStrategy.train(
         prepared.rdd, (network:MultiLayerNetwork, rows:Iterator[Row]) => {
-          
+
           // features & labels
           val (features, labels) = rows.map { row =>
             (MLLibUtil.toVector(row.getAs[Vector](1)), FeatureUtil.toOutcomeVector(row.getDouble(0).toInt, numClasses))
@@ -92,7 +106,7 @@ class NeuralNetworkClassification
 }
 
 /**
- * Note: the model is not thread-safe (MultiLayerNetwork is mutated at each prediction).
+ * Neural network-based classification model.
  */
 @AlphaComponent
 class NeuralNetworkClassificationModel private[ml] (
