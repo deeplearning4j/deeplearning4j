@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import jcublas.cublasHandle;
 import jcuda.CudaException;
 import jcuda.LogLevel;
-import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
 import jcuda.driver.JCudaDriver;
@@ -44,6 +43,7 @@ import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
+import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 
 /**
  * Simple abstraction for jcublas operations
@@ -74,13 +74,7 @@ public class SimpleJCublas {
             if (!(b1 instanceof JCudaBuffer))
                 throw new IllegalArgumentException("Unable to allocate pointer for buffer of type " + buffer.getClass().toString());
     }
-
-    public static Pointer getCublasPointer(INDArray array) {
-    	//Pointer p = new Pointer();
-    	//checkResult(JCublas.cublasAlloc(array.length(), array.data().getElementSize(), p));
-        return ((JCudaBuffer)array.data()).getDevicePointer();
-    }
-
+    
     /**
      * The cublas handle
      *
@@ -90,7 +84,7 @@ public class SimpleJCublas {
         return handle;
     }
     
-    private static int checkResult(int result)
+    static int checkResult(int result)
     {
         if (result != cudaError.cudaSuccess)
         {
@@ -159,10 +153,9 @@ public class SimpleJCublas {
         assertCudaBuffer(A.data(), B.data(), C.data());
         sync();
 
-        Pointer cAPointer = getCublasPointer(A);
-        Pointer cBPointer = getCublasPointer(B);
-        Pointer cCPointer = getCublasPointer(C);
-
+        CublasPointer cAPointer = new CublasPointer(A);
+        CublasPointer cBPointer = new CublasPointer(B);
+        CublasPointer cCPointer = new CublasPointer(C);
 
         JCublas.cublasDgemv(
                 'N',
@@ -176,7 +169,10 @@ public class SimpleJCublas {
                 beta,
                 cCPointer,
                 1);
-
+        
+        cCPointer.copyToHost();
+        releaseCublasPointers(cAPointer,cBPointer,cCPointer);
+        
         sync();
         return C;
     }
@@ -196,9 +192,9 @@ public class SimpleJCublas {
         DataTypeValidation.assertFloat(A, B, C);
         sync();
 
-        Pointer cAPointer = getCublasPointer(A);
-        Pointer cBPointer = getCublasPointer(B);
-        Pointer cCPointer = getCublasPointer(C);
+        CublasPointer cAPointer = new CublasPointer(A);
+        CublasPointer cBPointer = new CublasPointer(B);
+        CublasPointer cCPointer = new CublasPointer(C);
 
 
 
@@ -236,9 +232,9 @@ public class SimpleJCublas {
         sync();
 
 
-        Pointer cAPointer = getCublasPointer(A);
-        Pointer cBPointer = getCublasPointer(B);
-        Pointer cCPointer = getCublasPointer(C);
+        CublasPointer cAPointer = new CublasPointer(A);
+        CublasPointer cBPointer = new CublasPointer(B);
+        CublasPointer cCPointer = new CublasPointer(C);
 
 
         cuDoubleComplex alpha = cuDoubleComplex.cuCmplx(a.realComponent().doubleValue(), b.imaginaryComponent().doubleValue());
@@ -279,9 +275,9 @@ public class SimpleJCublas {
         assertCudaBuffer(A, B, C);
         sync();
 
-        Pointer cAPointer = getCublasPointer(A);
-        Pointer cBPointer = getCublasPointer(B);
-        Pointer cCPointer = getCublasPointer(C);
+        CublasPointer cAPointer = new CublasPointer(A);
+        CublasPointer cBPointer = new CublasPointer(B);
+        CublasPointer cCPointer = new CublasPointer(C);
 
 
         cuComplex alpha = cuComplex.cuCmplx(a.realComponent().floatValue(), b.imaginaryComponent().floatValue());
@@ -322,9 +318,9 @@ public class SimpleJCublas {
         DataTypeValidation.assertSameDataType(A, B, C);
         sync();
 
-        Pointer cAPointer = getCublasPointer(A);
-        Pointer cBPointer = getCublasPointer(B);
-        Pointer cCPointer = getCublasPointer(C);
+        CublasPointer cAPointer = new CublasPointer(A);
+        CublasPointer cBPointer = new CublasPointer(B);
+        CublasPointer cCPointer = new CublasPointer(C);
 
 
 
@@ -368,9 +364,9 @@ public class SimpleJCublas {
 
         sync();
 
-        Pointer cAPointer = getCublasPointer(A);
-        Pointer cBPointer = getCublasPointer(B);
-        Pointer cCPointer = getCublasPointer(C);
+        CublasPointer cAPointer = new CublasPointer(A);
+        CublasPointer cBPointer = new CublasPointer(B);
+        CublasPointer cCPointer = new CublasPointer(C);
 
 
         cuComplex alpha = cuComplex.cuCmplx(a.realComponent().floatValue(), b.imaginaryComponent().floatValue());
@@ -418,9 +414,9 @@ public class SimpleJCublas {
         JCublasNDArray cB = (JCublasNDArray) B;
         JCublasNDArray cC = (JCublasNDArray) C;
 
-        Pointer cAPointer = getCublasPointer(cA);
-        Pointer cBPointer = getCublasPointer(cB);
-        Pointer cCPointer = getCublasPointer(cC);
+        CublasPointer cAPointer = new CublasPointer(A);
+        CublasPointer cBPointer = new CublasPointer(B);
+        CublasPointer cCPointer = new CublasPointer(C);
 
 
         JCublas.cublasDgemm(
@@ -460,10 +456,10 @@ public class SimpleJCublas {
         sync();
 
 
-        Pointer cAPointer = getCublasPointer(A);
-        Pointer cBPointer = getCublasPointer(B);
-        Pointer cCPointer = getCublasPointer(C);
-
+        CublasPointer cAPointer = new CublasPointer(A);
+        CublasPointer cBPointer = new CublasPointer(B);
+        CublasPointer cCPointer = new CublasPointer(C);
+        
         JCublas.cublasSgemm(
                 'n', //trans
                 'n',
@@ -498,7 +494,7 @@ public class SimpleJCublas {
 
         sync();
 
-        Pointer cAPointer = getCublasPointer(A);
+        CublasPointer cAPointer = new CublasPointer(A);
         if (A.data().dataType() == DataBuffer.FLOAT) {
             float s = JCublas.cublasSnrm2(A.length(), cAPointer, 2);
             return s;
@@ -520,8 +516,8 @@ public class SimpleJCublas {
 
         sync();
 
-        Pointer xCPointer = getCublasPointer(x);
-        Pointer yCPointer = getCublasPointer(y);
+        CublasPointer xCPointer = new CublasPointer(x);
+        CublasPointer yCPointer = new CublasPointer(y);
 
 
         JCudaBuffer buff = (JCudaBuffer) x.data();
@@ -548,7 +544,7 @@ public class SimpleJCublas {
     public static int iamax(IComplexNDArray x) {
         sync();
 
-        Pointer xCPointer = getCublasPointer(x);
+        CublasPointer xCPointer = new CublasPointer(x);
         if (x.data().dataType() == DataBuffer.FLOAT) {
             int max = JCublas.cublasIsamax(x.length(), xCPointer, 1);
             return max;
@@ -564,7 +560,7 @@ public class SimpleJCublas {
      * @return
      */
     public static float asum(IComplexNDArray x) {
-        Pointer xCPointer = getCublasPointer(x);
+    	CublasPointer xCPointer = new CublasPointer(x);
         float sum = JCublas.cublasScasum(x.length(), xCPointer, 1);
         return sum;
     }
@@ -581,8 +577,8 @@ public class SimpleJCublas {
 
         DataTypeValidation.assertSameDataType(x, y);
 
-        Pointer xCPointer = getCublasPointer(x);
-        Pointer yCPointer = getCublasPointer(y);
+        CublasPointer xCPointer = new CublasPointer(x);
+        CublasPointer yCPointer = new CublasPointer(y);
         sync();
 
         if (x.data().dataType() == DataBuffer.FLOAT) {
@@ -614,7 +610,7 @@ public class SimpleJCublas {
     public static double asum(INDArray x) {
 
 
-        Pointer xCPointer = getCublasPointer(x);
+    	CublasPointer xCPointer = new CublasPointer(x);
         if (x.data().dataType() == DataBuffer.FLOAT) {
             float sum = JCublas.cublasSasum(x.length(), xCPointer, 1);
             return sum;
@@ -635,13 +631,13 @@ public class SimpleJCublas {
 
 
         if (x.data().dataType() == DataBuffer.FLOAT) {
-            Pointer xCPointer = getCublasPointer(x);
+        	CublasPointer xCPointer = new CublasPointer(x);
 
 
             float normal2 = JCublas.cublasSnrm2(x.length(), xCPointer, 1);
             return normal2;
         } else if (x.data().dataType() == DataBuffer.DOUBLE) {
-            Pointer xCPointer = getCublasPointer(x);
+        	CublasPointer xCPointer = new CublasPointer(x);
             double normal2 = JCublas.cublasDnrm2(x.length(), xCPointer, 1);
             return normal2;
         }
@@ -661,7 +657,7 @@ public class SimpleJCublas {
 
 
 
-        Pointer xCPointer = getCublasPointer(x);
+    	CublasPointer xCPointer = new CublasPointer(x);
 
         if (x.data().dataType() == DataBuffer.FLOAT) {
             int max = JCublas.cublasIsamax(
@@ -691,12 +687,9 @@ public class SimpleJCublas {
      * @param B  the matrix to add to
      */
     public static void axpy(float da, INDArray A, INDArray B) {
-
-
         DataTypeValidation.assertFloat(A, B);
-
-        Pointer xAPointer = getCublasPointer(A);
-        Pointer xBPointer = getCublasPointer(B);
+        CublasPointer xAPointer = new CublasPointer(A);
+        CublasPointer xBPointer = new CublasPointer(B);
         sync();
         JCublas.cublasSaxpy(
                 A.length(),
@@ -705,6 +698,8 @@ public class SimpleJCublas {
                 A.majorStride(),
                 xBPointer,
                 B.majorStride());
+        
+        ((JCudaBuffer)A.data()).copyToHost();
         sync();
 
 
@@ -720,8 +715,8 @@ public class SimpleJCublas {
 
 
 
-        Pointer aCPointer = getCublasPointer(A);
-        Pointer bCPointer = getCublasPointer(B);
+        CublasPointer aCPointer = new CublasPointer(A);
+        CublasPointer bCPointer = new CublasPointer(B);
         sync();
 
         JCublas.cublasCaxpy(
@@ -747,8 +742,8 @@ public class SimpleJCublas {
 
 
 
-        Pointer aCPointer = getCublasPointer(A);
-        Pointer bCPointer = getCublasPointer(B);
+        CublasPointer aCPointer = new CublasPointer(A);
+        CublasPointer bCPointer = new CublasPointer(B);
         sync();
 
         JCublas.cublasZaxpy(
@@ -778,7 +773,7 @@ public class SimpleJCublas {
 
         sync();
 
-        Pointer xCPointer = getCublasPointer(x);
+        CublasPointer xCPointer = new CublasPointer(x);
         JCublas.cublasDscal(
                 x.length(),
                 alpha,
@@ -804,7 +799,7 @@ public class SimpleJCublas {
         DataTypeValidation.assertFloat(x);
         sync();
 
-        Pointer xCPointer = getCublasPointer(x);
+        CublasPointer xCPointer = new CublasPointer(x);
         JCublas.cublasSscal(
                 x.length(),
                 alpha,
@@ -857,10 +852,10 @@ public class SimpleJCublas {
         DataTypeValidation.assertSameDataType(x, y);
 
         sync();
+        CublasPointer xCPointer = new CublasPointer(x);
+        CublasPointer yCPointer = new CublasPointer(y);
 
-        Pointer xCPointer = getCublasPointer(x);
-        Pointer yCPointer = getCublasPointer(y);
-
+        
         if (x.data().dataType() == (DataBuffer.FLOAT)) {
             float ret = JCublas.cublasSdot(
                     x.length(),
@@ -869,6 +864,8 @@ public class SimpleJCublas {
                     , yCPointer,
                     y.majorStride());
             sync();
+            
+            releaseCublasPointers(xCPointer,yCPointer);
 
             return ret;
         } else {
@@ -879,11 +876,23 @@ public class SimpleJCublas {
                     , yCPointer,
                     y.majorStride());
             sync();
+            
+            releaseCublasPointers(xCPointer,yCPointer);
 
             return ret;
         }
+        
+    	
+        
+        
 
     }
+
+
+	private static void releaseCublasPointers(CublasPointer... pointers) {
+		for(CublasPointer pointer : pointers)
+			try { pointer.close(); } catch(Exception e) { throw new RuntimeException("Could not run cublas command", e); }
+	}
 
 
     public static IComplexDouble dot(IComplexNDArray x, IComplexNDArray y) {
@@ -891,8 +900,8 @@ public class SimpleJCublas {
 
         sync();
 
-        Pointer aCPointer = getCublasPointer(x);
-        Pointer bCPointer = getCublasPointer(y);
+        CublasPointer aCPointer = new CublasPointer(x);
+        CublasPointer bCPointer = new CublasPointer(y);
 
 
         jcuda.cuDoubleComplex dott = JCublas.cublasZdotc(
@@ -905,7 +914,7 @@ public class SimpleJCublas {
         IComplexDouble ret = Nd4j.createDouble(dott.x, dott.y);
         sync();
 
-
+        releaseCublasPointers(aCPointer, bCPointer);
         return ret;
     }
 
@@ -915,9 +924,9 @@ public class SimpleJCublas {
         sync();
 
         // = alpha * A * transpose(B) + C
-        Pointer aCPointer = getCublasPointer(A);
-        Pointer bCPointer = getCublasPointer(B);
-        Pointer cCPointer = getCublasPointer(C);
+        CublasPointer aCPointer = new CublasPointer(A);
+        CublasPointer bCPointer = new CublasPointer(B);
+        CublasPointer cCPointer = new CublasPointer(C);
 
 
         JCublas.cublasDger(
@@ -931,6 +940,9 @@ public class SimpleJCublas {
                 cCPointer,        // dC or A
                 C.rows()    // lda
         );
+        
+        cCPointer.copyToHost();
+        releaseCublasPointers(aCPointer,bCPointer,cCPointer);
 
         sync();
 
@@ -944,9 +956,9 @@ public class SimpleJCublas {
         sync();
         // = alpha * A * transpose(B) + C
 
-        Pointer aCPointer = getCublasPointer(A);
-        Pointer bCPointer = getCublasPointer(B);
-        Pointer cCPointer = getCublasPointer(C);
+        CublasPointer aCPointer = new CublasPointer(A);
+        CublasPointer bCPointer = new CublasPointer(B);
+        CublasPointer cCPointer = new CublasPointer(C);
 
 
         JCublas.cublasSger(
@@ -962,6 +974,8 @@ public class SimpleJCublas {
         );
         sync();
 
+        cCPointer.copyToHost();
+        releaseCublasPointers(aCPointer,bCPointer,cCPointer);
 
         return C;
     }
@@ -979,7 +993,7 @@ public class SimpleJCublas {
 
         sync();
 
-        Pointer xCPointer = getCublasPointer(x);
+        CublasPointer xCPointer = new CublasPointer(x);
 
         JCublas.cublasCscal(
                 x.length(),
@@ -988,6 +1002,9 @@ public class SimpleJCublas {
                 x.majorStride()
         );
         sync();
+        
+        xCPointer.copyToHost();
+        releaseCublasPointers(xCPointer);
 
 
         return x;
@@ -1005,7 +1022,7 @@ public class SimpleJCublas {
         sync();
 
 
-        Pointer xCPointer = getCublasPointer(x);
+        CublasPointer xCPointer = new CublasPointer(x);
 
         JCublas.cublasZscal(
                 x.length(),
@@ -1015,6 +1032,8 @@ public class SimpleJCublas {
         );
         sync();
 
+        xCPointer.copyToHost();
+        releaseCublasPointers(xCPointer);
 
         return x;
     }
@@ -1031,8 +1050,8 @@ public class SimpleJCublas {
         DataTypeValidation.assertSameDataType(x, y);
         sync();
 
-        Pointer xCPointer = getCublasPointer(x);
-        Pointer yCPointer = getCublasPointer(y);
+        CublasPointer xCPointer = new CublasPointer(x);
+        CublasPointer yCPointer = new CublasPointer(y);
         IComplexDouble ret = null;
         if (x.data().dataType() == DataBuffer.DOUBLE) {
             jcuda.cuDoubleComplex dott = JCublas.cublasZdotu(x.length(), xCPointer, x.majorStride(), yCPointer, y.majorStride());
@@ -1042,6 +1061,8 @@ public class SimpleJCublas {
             ret = Nd4j.createDouble(dott.x, dott.y);
         }
         sync();
+        
+        releaseCublasPointers(xCPointer, yCPointer);
 
         return ret;
     }
@@ -1061,11 +1082,9 @@ public class SimpleJCublas {
         sync();
         DataTypeValidation.assertDouble(A, B, C);
 
-
-
-        Pointer aCPointer = getCublasPointer(A);
-        Pointer bCPointer = getCublasPointer(B);
-        Pointer cCPointer = getCublasPointer(C);
+        CublasPointer aCPointer = new CublasPointer(A);
+        CublasPointer bCPointer = new CublasPointer(B);
+        CublasPointer cCPointer = new CublasPointer(C);
 
         cuDoubleComplex alpha = cuDoubleComplex.cuCmplx(Alpha.realComponent(), Alpha.imaginaryComponent());
 
@@ -1082,6 +1101,8 @@ public class SimpleJCublas {
         );
         sync();
 
+        cCPointer.copyToHost();
+        releaseCublasPointers(aCPointer,bCPointer,cCPointer);
 
         return C;
     }
@@ -1099,9 +1120,9 @@ public class SimpleJCublas {
         // = alpha * A * tranpose(B) + C
 
         sync();
-        Pointer aCPointer = getCublasPointer(A);
-        Pointer bCPointer = getCublasPointer(B);
-        Pointer cCPointer = getCublasPointer(C);
+        CublasPointer aCPointer = new CublasPointer(A);
+        CublasPointer bCPointer = new CublasPointer(B);
+        CublasPointer cCPointer = new CublasPointer(C);
 
 
         cuComplex alpha = cuComplex.cuCmplx(Alpha.realComponent(), Alpha.imaginaryComponent());
@@ -1119,6 +1140,9 @@ public class SimpleJCublas {
                 C.rows()    // lda
         );
         sync();
+        
+        cCPointer.copyToHost();
+        releaseCublasPointers(aCPointer,bCPointer,cCPointer);
 
         return C;
     }
@@ -1138,9 +1162,9 @@ public class SimpleJCublas {
         // = alpha * A * tranpose(B) + C
         sync();
 
-        Pointer aCPointer = getCublasPointer(A);
-        Pointer bCPointer = getCublasPointer(B);
-        Pointer cCPointer = getCublasPointer(C);
+        CublasPointer aCPointer = new CublasPointer(A);
+        CublasPointer bCPointer = new CublasPointer(B);
+        CublasPointer cCPointer = new CublasPointer(C);
 
         cuDoubleComplex alpha = cuDoubleComplex.cuCmplx(Alpha.realComponent(), Alpha.imaginaryComponent());
 
@@ -1157,6 +1181,9 @@ public class SimpleJCublas {
         );
 
         sync();
+        
+        cCPointer.copyToHost();
+        releaseCublasPointers(aCPointer,bCPointer,cCPointer);
 
         return C;
     }
@@ -1176,9 +1203,9 @@ public class SimpleJCublas {
 
         sync();
 
-        Pointer aCPointer = getCublasPointer(A);
-        Pointer bCPointer = getCublasPointer(B);
-        Pointer cCPointer = getCublasPointer(C);
+        CublasPointer aCPointer = new CublasPointer(A);
+        CublasPointer bCPointer = new CublasPointer(B);
+        CublasPointer cCPointer = new CublasPointer(C);
 
 
         cuDoubleComplex alpha = cuDoubleComplex.cuCmplx(Alpha.realComponent(), Alpha.imaginaryComponent());
@@ -1197,6 +1224,9 @@ public class SimpleJCublas {
         );
 
         sync();
+        
+        cCPointer.copyToHost();
+        releaseCublasPointers(aCPointer,bCPointer,cCPointer);
 
         return C;
     }
@@ -1214,12 +1244,15 @@ public class SimpleJCublas {
 
         sync();
 
-        Pointer xCPointer = getCublasPointer(x);
-        Pointer yCPointer = getCublasPointer(y);
+        CublasPointer xCPointer = new CublasPointer(x);
+        CublasPointer yCPointer = new CublasPointer(y);
 
         JCublas.cublasDaxpy(x.length(), alpha, xCPointer, x.majorStride(), yCPointer, y.majorStride());
 
         sync();
+        
+        xCPointer.copyToHost();
+        releaseCublasPointers(xCPointer, yCPointer);
 
     }
 
@@ -1235,11 +1268,14 @@ public class SimpleJCublas {
         DataTypeValidation.assertFloat(x, y);
         sync();
 
-        Pointer xCPointer = getCublasPointer(x);
-        Pointer yCPointer = getCublasPointer(y);
+        CublasPointer xCPointer = new CublasPointer(x);
+        CublasPointer yCPointer = new CublasPointer(y);
 
         JCublas.cublasSaxpy(x.length(), alpha, xCPointer, x.majorStride(), yCPointer, y.majorStride());
         sync();
+        
+        xCPointer.copyToHost();
+        releaseCublasPointers(xCPointer, yCPointer);
 
 
     }
