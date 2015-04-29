@@ -133,7 +133,7 @@ public class SimpleJCublas {
 
 
     public static void sync() {
-    	JCuda.cudaDeviceSynchronize();
+    	checkResult(JCuda.cudaDeviceSynchronize());
         KernelLauncher.setContext();
     }
 
@@ -535,7 +535,11 @@ public class SimpleJCublas {
                     , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
         else
             Nd4j.getExecutioner().exec(new CopyOp(x, y, y, x.length()));
+        
         sync();
+        
+        yCPointer.copyToHost();
+        releaseCublasPointers(yCPointer, xCPointer);
 
 
     }
@@ -829,8 +833,8 @@ public class SimpleJCublas {
      * @param y the destination
      */
     public static void copy(INDArray x, INDArray y) {
+    	DataTypeValidation.assertSameDataType(x, y);
     	sync();
-        DataTypeValidation.assertSameDataType(x, y);
         
         CublasPointer xCPointer = new CublasPointer(x);
         CublasPointer yCPointer = new CublasPointer(y);

@@ -47,25 +47,31 @@ public interface JCudaBuffer extends DataBuffer {
      * @return the pointer for this buffer
      */
     Pointer getHostPointer();
-
+    
     /**
      * Get a device pointer for this buffer
      * @return
      */
     Pointer getDevicePointer();
+
+    /**
+     * Get a device pointer for this with a specific size
+     * @return
+     */
+    Pointer getDevicePointer(long size);
     
     /**
      * Frees the device pointer if it exists
      * @return
      */
     boolean freeDevicePointer();
-
     
     /**
-     * copies the device memory to the host memory
+     * copies all the allocated device memory to the host memory
      */
     void copyToHost();
 
+    
     /**
      * Sets the data for this pointer
      * from the data in this pointer

@@ -23,17 +23,15 @@ public class CublasPointer extends Pointer implements AutoCloseable {
 	public CublasPointer(JCudaBuffer buffer) {
 		super(buffer.getDevicePointer());
 		this.buffer = buffer;
-		copyToDevice();
+		SimpleJCublas.checkResult(JCuda.cudaMemcpy(buffer.getDevicePointer(), buffer.getHostPointer(), buffer.getLength()*buffer.getElementSize(), cudaMemcpyKind.cudaMemcpyHostToDevice));
 	}
 	
 	public CublasPointer(INDArray array) {
-		super( ((JCudaBuffer)array.data()).getDevicePointer().withByteOffset(array.offset()*array.data().getElementSize()));
+		super( ((JCudaBuffer)array.data()).getDevicePointer(((JCudaBuffer)array.data()).getLength()*((JCudaBuffer)array.data()).getElementSize() - array.offset()*array.data().getElementSize()));
 		buffer = (JCudaBuffer)array.data();
-		copyToDevice();
+		
+		long dataCount = buffer.getLength()*buffer.getElementSize() - array.offset()*array.data().getElementSize();
+		SimpleJCublas.checkResult(JCuda.cudaMemcpy(buffer.getDevicePointer(), buffer.getHostPointer().withByteOffset(array.offset()*array.data().getElementSize()), dataCount, cudaMemcpyKind.cudaMemcpyHostToDevice));
 	}
 
-	private void copyToDevice() {
-		// Push the data to the device
-		SimpleJCublas.checkResult(JCuda.cudaMemcpy(buffer.getDevicePointer(), buffer.getHostPointer(), buffer.getLength()*buffer.getElementSize(), cudaMemcpyKind.cudaMemcpyHostToDevice));
-	}
 }
