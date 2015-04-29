@@ -20,7 +20,7 @@ import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.rng.JcudaRandom;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
-import org.nd4j.linalg.jcublas.util.PreparedKernelParams;
+import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 
 /**
  * Base JCuda distribution
@@ -52,7 +52,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
        
         Object[] kernelParams = new Object[]{len, n, probBuffer, randomNumbers, out, random.generator()};
 
-        try(PreparedKernelParams params = new PreparedKernelParams(kernelParams)) {
+        try(KernelParamsWrapper params = new KernelParamsWrapper(kernelParams)) {
 	        //int len,int n,double *ps,double *result, curandState *s
 	        KernelFunctions.invoke(
 	                blocks,
@@ -79,7 +79,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
 
         Object[] kernelParams = new Object[]{len, n, probBuffer, randomNumbers, out, random.generator()};
         
-        try(PreparedKernelParams params = new PreparedKernelParams(kernelParams)) {
+        try(KernelParamsWrapper params = new KernelParamsWrapper(kernelParams)) {
 	        //int len,int n,double *ps,double *result, curandState *s
 	        KernelFunctions.invoke(
 	                blocks,
@@ -105,7 +105,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
 
         Object[] kernelParams = new Object[]{len, n, p, randomNumbers, out, random.generator()};
         
-        try(PreparedKernelParams params = new PreparedKernelParams(kernelParams)) {
+        try(KernelParamsWrapper params = new KernelParamsWrapper(kernelParams)) {
 
         	//int len,int n,double *ps,double *result, curandState *s
             KernelFunctions.invoke(
@@ -137,7 +137,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
        
         Object[] kernelParams = new Object[]{len, n, p, randomNumbers, out, Pointer.to(random.generator())};
         
-        try(PreparedKernelParams params = new PreparedKernelParams(kernelParams)) {
+        try(KernelParamsWrapper params = new KernelParamsWrapper(kernelParams)) {
 
 		    //int len,int n,double *ps,double *result, curandState *s
 		    KernelFunctions.invoke(
@@ -175,7 +175,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
         //Generate the kernel parameters
         Object[] kernelParams = new Object[]{ n, min, max, randomNumbers.getDevicePointer(), out };
         
-        try(PreparedKernelParams params = new PreparedKernelParams(kernelParams)) {
+        try(KernelParamsWrapper params = new KernelParamsWrapper(kernelParams)) {
 
 	        KernelFunctions.invoke(
 	                blocks,
@@ -210,7 +210,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
         //Generate the kernel parameters
         Object[] kernelParams = new Object[]{ n, min, max, randomNumbers.getDevicePointer(), out };
         
-        try(PreparedKernelParams params = new PreparedKernelParams(kernelParams)) {
+        try(KernelParamsWrapper params = new KernelParamsWrapper(kernelParams)) {
         	
 	        KernelFunctions.invoke(
 	                blocks,
