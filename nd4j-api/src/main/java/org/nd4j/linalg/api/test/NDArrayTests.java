@@ -451,15 +451,18 @@ public abstract class NDArrayTests {
 
     @Test
     public void testScal() {
+    	Nd4j.dtype = DataBuffer.DOUBLE;
         double assertion = 2;
         INDArray answer = Nd4j.create(new double[]{2, 4, 6, 8});
-        assertEquals(answer, Nd4j.getBlasWrapper().scal(assertion, answer));
+        INDArray scal = Nd4j.getBlasWrapper().scal(assertion, answer);
+		assertEquals(answer, scal);
 
         INDArray row = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray row1 = row.getRow(1);
         double assertion2 = 5.0;
         INDArray answer2 = Nd4j.create(new double[]{15, 20});
-        assertEquals(answer2, Nd4j.getBlasWrapper().scal(assertion2, row1));
+        INDArray scal2 = Nd4j.getBlasWrapper().scal(assertion2, row1);
+		assertEquals(answer2, scal2);
 
     }
 
@@ -1365,6 +1368,7 @@ public abstract class NDArrayTests {
         INDArray a = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         assertEquals(Nd4j.create(new float[]{1.5f, 3.5f}), a.mean(1));
         assertEquals(Nd4j.create(new float[]{2, 3}), a.mean(0));
+        assertEquals(2.5, Nd4j.linspace(1, 4, 4).mean(Integer.MAX_VALUE).getDouble(0), 1e-1);
         assertEquals(2.5, a.mean(Integer.MAX_VALUE).getDouble(0), 1e-1);
 
     }
