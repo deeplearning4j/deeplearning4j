@@ -28,11 +28,10 @@ private[spark] trait HasMultiLayerConfiguration extends Params {
    * Param for multiLayer configuration.
    * @group param
    */
-  val confParam = new Param[MultiLayerConfiguration](this, "conf", "internal configuration", 
-      Some(new MultiLayerConfiguration()))
+  val conf = new Param[String](this, "conf", "multilayer configuration", null)
 
   /** @group getParam */
-  def getConf: MultiLayerConfiguration = get(confParam)
+  def getConf: String = get(conf)
 }
 
 /**
@@ -59,10 +58,10 @@ private[spark] trait HasBatchSize extends Params {
    * Param for batch size
    * @group param
    */
-  val batchSizeParam: IntParam = new IntParam(this, "batchSize", "batch size", Some(10))
+  val batchSize: IntParam = new IntParam(this, "batchSize", "batch size", Some(10))
   
   /** @group getParam */
-  def getBatchSize: Int = get(batchSizeParam)
+  def getBatchSize: Int = get(batchSize)
 }
 
 @DeveloperApi
@@ -72,10 +71,10 @@ private[spark] trait HasWindowSize extends Params {
    * Param for window size
    * @group param
    */
-  val windowSizeParam: IntParam = new IntParam(this, "windowSize", "window size", Some(1))
+  val windowSize: IntParam = new IntParam(this, "windowSize", "window size", Some(1))
   
   /** @group getParam */
-  def getWindowSize: Int = get(windowSizeParam)
+  def getWindowSize: Int = get(windowSize)
 }
 
 @DeveloperApi
@@ -85,9 +84,9 @@ private[spark] trait HasLayerIndex extends Params {
    * Param for layer index
    * @group param
    */
-  val layerIndexParam: IntParam = new IntParam(this, "layerIndex", "layer index (one-based)", Some(1))
+  val layerIndex: IntParam = new IntParam(this, "layerIndex", "layer index (one-based)", Some(1))
 
   /** @group getParam */
-  def getLayerIndex: Int = get(layerIndexParam)
+  def getLayerIndex: Int = get(layerIndex)
 }
 

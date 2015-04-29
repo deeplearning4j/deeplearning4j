@@ -16,7 +16,9 @@
 
 package org.apache.spark.ml.nn.reconstruction
 
+import org.apache.spark.SparkContext
 import org.apache.spark.annotation.{AlphaComponent, DeveloperApi}
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.param._
 import org.apache.spark.ml.nn._
 import org.apache.spark.ml.{Estimator, Model}
@@ -57,19 +59,34 @@ class NeuralNetworkReconstruction
 extends Pretrainer[Vector, NeuralNetworkReconstruction, NeuralNetworkReconstructionModel]
   with NeuralNetworkReconstructionParams {
   
+  /** @group setParam */
+  def setConf(value: String): NeuralNetworkReconstruction = set(conf, value).asInstanceOf[NeuralNetworkReconstruction]
+  def setConf(value: MultiLayerConfiguration): NeuralNetworkReconstruction = set(conf, value.toJson()).asInstanceOf[NeuralNetworkReconstruction]
+
+  /** @group setParam */
+  def setWindowSize(value: Int): NeuralNetworkReconstruction = set(windowSize, value).asInstanceOf[NeuralNetworkReconstruction]
+
+  /** @group setParam */
+  def setLayerIndex(value: Int): NeuralNetworkReconstruction = set(layerIndex, value).asInstanceOf[NeuralNetworkReconstruction]
+
+  /** @group setParam */
+  def setReconstructionCol(value: String): NeuralNetworkReconstruction = set(reconstructionCol, value).asInstanceOf[NeuralNetworkReconstruction]
+
   override protected def pretrain(dataset: DataFrame, paramMap: ParamMap): NeuralNetworkReconstructionModel = {
-    // parameters
-    val conf = paramMap(confParam)
-    val windowSize = paramMap(windowSizeParam)
+    val sqlContext = dataset.sqlContext
+    val sc = sqlContext.sparkContext
+
+    // params
+    @transient val c = MultiLayerConfiguration.fromJson(paramMap(conf))
     
     // prepare the dataset for reconstruction
     val prepared = dataset.select(paramMap(featuresCol))
    
     // devise a training strategy for the distributed neural network
     val trainingStrategy = new ParameterAveragingTrainingStrategy[Row](
-        conf, 
-        windowSize, 
-        conf.getConf(0).getNumIterations())
+        c,
+        paramMap(windowSize),
+        c.getConf(0).getNumIterations())
 
     // train
     val networkParams = trainingStrategy.train(
@@ -82,7 +99,9 @@ extends Pretrainer[Vector, NeuralNetworkReconstruction, NeuralNetworkReconstruct
           network.pretrain(featureMatrix)
     })
     
-    new NeuralNetworkReconstructionModel(this, paramMap, networkParams)
+    val model = new NeuralNetworkReconstructionModel(this, paramMap, sc.broadcast(networkParams))
+    Params.inheritValues(paramMap, this, model)
+    model
   }
 }
 
@@ -90,21 +109,15 @@ extends Pretrainer[Vector, NeuralNetworkReconstruction, NeuralNetworkReconstruct
 class NeuralNetworkReconstructionModel private[ml] (
     override val parent: NeuralNetworkReconstruction,
     override val fittingParamMap: ParamMap,
-    val networkParams: INDArray)
+    val networkParams: Broadcast[INDArray])
   extends PretrainedModel[Vector, NeuralNetworkReconstructionModel]
   with NeuralNetworkReconstructionParams {
-  
-  val network = new MultiLayerNetwork(paramMap(confParam))
-  network.init()
-  network.setParameters(networkParams)
-  
+
   override def predict(dataset: DataFrame, paramMap: ParamMap): DataFrame = {
 
-    val layerIndex = paramMap(layerIndexParam)
-    
     if (paramMap(reconstructionCol) != "") {
       val pred: Vector => Vector = (features) => {
-        reconstruct(features, layerIndex)
+        reconstruct(features, paramMap(layerIndex))
       }
       dataset.withColumn(paramMap(reconstructionCol), 
         callUDF(pred, new VectorUDT, col(paramMap(featuresCol))))
@@ -117,7 +130,7 @@ class NeuralNetworkReconstructionModel private[ml] (
   
   protected def reconstruct(features: Vector, layerIndex: Int): Vector = {
     val examples: INDArray = MLLibUtil.toVector(features)
-    val reconstruction: INDArray = network.reconstruct(examples, layerIndex)
+    val reconstruction: INDArray = getNetwork().reconstruct(examples, layerIndex)
     MLLibUtil.toVector(reconstruction)
   }
 
@@ -125,5 +138,23 @@ class NeuralNetworkReconstructionModel private[ml] (
     val m = new NeuralNetworkReconstructionModel(parent, fittingParamMap, networkParams)
     Params.inheritValues(this.paramMap, this, m)
     m
+  }
+
+  @transient
+  private var networkHolder: ThreadLocal[MultiLayerNetwork] = null
+
+  private def getNetwork(): MultiLayerNetwork = {
+
+    if(networkHolder == null) {
+      networkHolder = new ThreadLocal[MultiLayerNetwork] {
+        override def initialValue(): MultiLayerNetwork = {
+          val network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(paramMap(conf)))
+          network.init()
+          network.setParameters(networkParams.value)
+          network
+        }
+      }
+    }
+    networkHolder.get()
   }
 }
