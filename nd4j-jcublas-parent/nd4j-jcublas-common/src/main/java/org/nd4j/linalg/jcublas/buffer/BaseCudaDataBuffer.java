@@ -68,14 +68,11 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     static AtomicLong totalAllocated = new AtomicLong();
     
     private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
-
-//    static {
-//        SimpleJCublas.init();
-//    }
     
     @Override
     public void setHostBuffer(ByteBuffer hostBuffer) {
     	this.hostBuffer = hostBuffer;
+    	hostBuffer.order(ByteOrder.nativeOrder());
     }
     
     @Override
@@ -108,6 +105,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         this.length = length;
         this.elementSize = elementSize;
         hostBuffer = ByteBuffer.allocate(length*elementSize);
+        hostBuffer.order(ByteOrder.nativeOrder());
         hostPointer = Pointer.to(hostBuffer);
     }
 
@@ -174,7 +172,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 	    	allocated.addAndGet(elementSize * length);
 	        totalAllocated.addAndGet(elementSize * length);
 	        log.debug("Allocating {} bytes, total: {}, overall: {}", elementSize * length, allocated.get(), totalAllocated);
-	    	checkResult(JCuda.cudaMalloc(devicePointer, length*elementSize));
+	        checkResult(JCuda.cudaMalloc(devicePointer, length*elementSize));
     	}
     	
     	return devicePointer;
@@ -426,10 +424,9 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         {
             return null;
         }
-        ByteBuffer byteBuffer = (ByteBuffer)hostBuffer;
-        byteBuffer.limit((int)(byteOffset + hostBuffer.capacity()));
-        byteBuffer.position((int)byteOffset);
-        return byteBuffer.slice();
+        hostBuffer.limit((int)(byteOffset + hostBuffer.capacity()));
+        hostBuffer.position((int)byteOffset);
+        return hostBuffer;
     }
 
     @Override
