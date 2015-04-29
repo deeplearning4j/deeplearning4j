@@ -211,6 +211,9 @@ public class SimpleJCublas {
                 1);
 
         sync();
+        
+        cCPointer.copyToHost();
+        releaseCublasPointers(cCPointer,cAPointer,cBPointer);
 
         return C;
     }
@@ -435,6 +438,9 @@ public class SimpleJCublas {
                 C.rows()); // incy
 
         sync();
+        
+        cCPointer.copyToHost();
+        releaseCublasPointers(cAPointer, cBPointer, cCPointer);
 
         return C;
 
@@ -780,6 +786,9 @@ public class SimpleJCublas {
                 xCPointer,
                 x.majorStride());
         sync();
+        
+        xCPointer.copyToHost();
+        releaseCublasPointers(xCPointer);
 
         return x;
 
@@ -795,7 +804,6 @@ public class SimpleJCublas {
      */
     public static INDArray scal(float alpha, INDArray x) {
 
-
         DataTypeValidation.assertFloat(x);
         sync();
 
@@ -806,6 +814,9 @@ public class SimpleJCublas {
                 xCPointer,
                 x.majorStride());
         sync();
+        
+        xCPointer.copyToHost();
+        releaseCublasPointers(xCPointer);
 
         return x;
 
@@ -820,8 +831,10 @@ public class SimpleJCublas {
     public static void copy(INDArray x, INDArray y) {
     	sync();
         DataTypeValidation.assertSameDataType(x, y);
+        
         CublasPointer xCPointer = new CublasPointer(x);
         CublasPointer yCPointer = new CublasPointer(y);
+        
         if(x.data().dataType() == DataBuffer.DOUBLE)
             JCublas.cublasDcopy(x.length(),xCPointer,x.majorStride(),yCPointer,y.majorStride());
         if(x.data().dataType() == DataBuffer.FLOAT)
