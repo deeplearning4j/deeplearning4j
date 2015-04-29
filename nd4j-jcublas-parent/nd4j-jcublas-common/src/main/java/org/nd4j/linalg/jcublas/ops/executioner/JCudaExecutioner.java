@@ -16,11 +16,6 @@
 
 package org.nd4j.linalg.jcublas.ops.executioner;
 
-import static jcuda.driver.JCudaDriver.cuMemGetInfo;
-
-import java.util.HashSet;
-import java.util.Set;
-
 import jcuda.CudaException;
 import jcuda.Pointer;
 import jcuda.Sizeof;
@@ -44,6 +39,7 @@ import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
+import org.nd4j.linalg.jcublas.util.PreparedKernelParams;
 import org.nd4j.linalg.util.ArrayUtil;
 
 
@@ -63,47 +59,6 @@ public class JCudaExecutioner implements OpExecutioner {
         dummyDoublePointer =KernelFunctions.alloc(new double[]{1});
     }
     
-    private static class PreparedKernelParams implements AutoCloseable {
-    	final public Object[] kernelParameters;
-    	private Set<JCudaBuffer> toFree;
-    	
-    	private Object[] getKernelParameters() {
-    		return kernelParameters;
-    	}
-    	
-    	public PreparedKernelParams(Object... kernelParams) {
-    		kernelParameters = new Object[kernelParams.length];
-    		toFree = new HashSet<>();
-    		for(int i = 0; i<kernelParams.length; i++) {
-    			Object arg = kernelParams[i];
-	    		if(arg instanceof JCudaBuffer) {
-	            	
-	            	JCudaBuffer bufferToFree = (JCudaBuffer)arg;
-					kernelParameters[i] = bufferToFree.getDevicePointer();
-	            	
-					checkResult(JCuda.cudaMemcpy(bufferToFree.getDevicePointer(), bufferToFree.getHostPointer(), bufferToFree.getLength()*bufferToFree.getElementSize(), cudaMemcpyKind.cudaMemcpyHostToDevice));
-	            	
-	            	toFree.add(bufferToFree);
-	            } else {
-	            	kernelParameters[i] = arg;
-	            }
-    		}
-    	}
-
-		@Override
-		public void close() throws Exception {
-			for(JCudaBuffer buffer : toFree) {
-	        	buffer.freeDevicePointer();
-	        }
-	        
-	        long[] free = new long[1];
-	        long[] total = new long[1];
-	        checkResult(cuMemGetInfo(free, total));
-		}
-
-    	
-    }
-
     @Override
     public Op exec(Op op) {
         if (op instanceof TransformOp) {
@@ -356,10 +311,10 @@ public class JCudaExecutioner implements OpExecutioner {
         } else {
             //int n, int xOffset,double *dx,int incx,double result
             Object[] kernelParams = new Object[] {
-                    op.n(),
-                    op.x().offset(),
+            		new int[]{op.n()},
+                    new int[]{op.x().offset()},
                     xBuffer,
-                    op.x().majorStride(),
+                    new int[]{op.x().majorStride()},
                     toArgs(op.extraArgs(), getType(op)),
                     result
             };
@@ -531,7 +486,7 @@ public class JCudaExecutioner implements OpExecutioner {
 
     }
     
-    private static int checkResult(int result)
+    public static int checkResult(int result)
     {
         if (result != cudaError.cudaSuccess)
         {
