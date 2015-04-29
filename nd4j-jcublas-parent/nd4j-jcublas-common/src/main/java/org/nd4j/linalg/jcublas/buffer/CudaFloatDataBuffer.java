@@ -182,7 +182,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public float getFloat(int i) {
-        ensureNotFreed();
         return getFloatBuffer().get(i);
     }
 

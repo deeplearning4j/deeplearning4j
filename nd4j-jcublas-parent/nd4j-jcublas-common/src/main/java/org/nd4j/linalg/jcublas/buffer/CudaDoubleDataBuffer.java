@@ -16,20 +16,14 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import jcuda.Pointer;
-import jcuda.Sizeof;
-import jcuda.jcublas.JCublas;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaMemcpyKind;
-import jcuda.utils.KernelLauncher;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.util.ArrayUtil;
-
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
+
+import jcuda.Pointer;
+import jcuda.Sizeof;
+
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Cuda double  buffer
@@ -37,8 +31,6 @@ import java.nio.DoubleBuffer;
  * @author Adam Gibson
  */
 public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
-
-    private double[] data;
 
     /**
      * Base constructor
@@ -148,11 +140,11 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void setData(double[] data) {
-        ensureNotFreed();
-        this.data = data;
+    	
         if (data.length != length)
             throw new IllegalArgumentException("Unable to set vector, must be of length " + getLength() + " but found length " + data.length);
 
+        getDoubleBuffer().put(data);
     }
 
     @Override
@@ -169,8 +161,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public double getDouble(int i) {
-        //ensureNotFreed();
-        return data[i];
+        return getDoubleBuffer().get(i);
     }
 
     @Override
@@ -192,7 +183,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     @Override
     public void put(int i, double element) {
         ensureNotFreed();
-        data[i] = element;
+        getDoubleBuffer().put(i,element);
     }
 
     @Override
