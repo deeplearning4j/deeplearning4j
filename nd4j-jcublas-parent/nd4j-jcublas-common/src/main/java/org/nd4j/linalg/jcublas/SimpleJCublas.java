@@ -818,27 +818,18 @@ public class SimpleJCublas {
      * @param y the destination
      */
     public static void copy(INDArray x, INDArray y) {
+    	sync();
         DataTypeValidation.assertSameDataType(x, y);
-         
-        ByteBuffer copyBuffer = ByteBuffer.allocate(y.data().getLength()*y.data().getElementSize());
-
-        ByteBuffer hostBuffer = ((JCudaBuffer)x.data()).getHostBuffer();
-		// Create a read-only copy of the original.
-        // This allows reading from the original without modifying it.
-        final ByteBuffer readOnlyCopy = hostBuffer.asReadOnlyBuffer();
-
-        // Set the position according to the offset in the buffer
-        //readOnlyCopy.flip();
-        
-        if(x.data().dataType() == DataBuffer.FLOAT)
-        	readOnlyCopy.position(x.offset()*4);
+        CublasPointer xCPointer = new CublasPointer(x);
+        CublasPointer yCPointer = new CublasPointer(y);
         if(x.data().dataType() == DataBuffer.DOUBLE)
-        	readOnlyCopy.position(x.offset()*8);
-        copyBuffer.put(readOnlyCopy);
+            JCublas.cublasDcopy(x.length(),xCPointer,x.majorStride(),yCPointer,y.majorStride());
+        if(x.data().dataType() == DataBuffer.FLOAT)
+            JCublas.cublasScopy(x.length(),xCPointer,x.majorStride(),yCPointer,y.majorStride());
+        sync();
         
-        copyBuffer.rewind();
-        
-        ((JCudaBuffer)y.data()).setHostBuffer(copyBuffer);
+        yCPointer.copyToHost();
+        releaseCublasPointers(yCPointer, xCPointer);
     }
 
     /**
