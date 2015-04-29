@@ -42,6 +42,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.slf4j.Logger;
@@ -469,33 +470,44 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
-        ensureNotFreed();
-
+        //ensureNotFreed();
 
         int count = 0;
         for (int i = 0; i < buffers.length; i++) {
             DataBuffer buffer = buffers[i];
             if (buffer instanceof JCudaBuffer) {
                 JCudaBuffer buff = (JCudaBuffer) buffer;
-                if (buff.dataType() == DataBuffer.DOUBLE) {
-                    JCublas.cublasDcopy(
-                            buff.getLength()
-                            , buff.getHostPointer().withByteOffset(buff.getElementSize() * offsets[i])
-                            , strides[i]
-                            , hostPointer.withByteOffset(count * buff.getElementSize())
-                            , 1);
-                    count += (buff.getLength() - 1 - offsets[i]) / strides[i] + 1;
-                } else {
-                    JCublas.cublasScopy(buff.getLength()
-                            , buff.getHostPointer().withByteOffset(buff.getElementSize() * offsets[i])
-                            , strides[i]
-                            , hostPointer.withByteOffset(count * buff.getElementSize())
-                            , 1);
-                    count += (buff.getLength() - 1 - offsets[i]) / strides[i] + 1;
-                }
+                
+                try(CublasPointer buffPointer = new CublasPointer(buff)) {
+                
+	                if (buff.dataType() == DataBuffer.DOUBLE) {
+	                	
+	                    JCublas.cublasDcopy(
+	                            buff.getLength()
+	                            , buffPointer.withByteOffset(buff.getElementSize() * offsets[i])
+	                            , strides[i]
+	                            , getDevicePointer().withByteOffset(count * buff.getElementSize())
+	                            , 1);
+	                    
+	                    
+	                    count += (buff.getLength() - 1 - offsets[i]) / strides[i] + 1;
+	                } else {
+	                    JCublas.cublasScopy(buff.getLength()
+	                            , buffPointer.withByteOffset(buff.getElementSize() * offsets[i])
+	                            , strides[i]
+	                            , getDevicePointer().withByteOffset(count * buff.getElementSize())
+	                            , 1);
+	                    
+	                    count += (buff.getLength() - 1 - offsets[i]) / strides[i] + 1;
+	                }
+                } catch (Exception e) {
+            		throw new RuntimeException("Could not run cublas command", e);
+            	}
             } else
                 throw new IllegalArgumentException("Only jcuda data buffers allowed");
         }
+        copyToHost();
+        freeDevicePointer();
     }
 
     @Override
@@ -511,7 +523,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void assign(int[] offsets, int[] strides, DataBuffer... buffers) {
-        ensureNotFreed();
+        //ensureNotFreed();
         assign(offsets, strides, getLength(), buffers);
     }
 
