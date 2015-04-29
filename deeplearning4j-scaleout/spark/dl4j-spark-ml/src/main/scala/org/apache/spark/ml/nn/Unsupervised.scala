@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.ml.nn.pretraining
+package org.apache.spark.ml.nn
 
 import org.apache.spark.annotation.{AlphaComponent, DeveloperApi}
 import org.apache.spark.ml.param._
@@ -23,9 +23,8 @@ import org.apache.spark.ml.{Estimator, Model}
 import org.apache.spark.mllib.linalg.{VectorUDT, Vector}
 import org.apache.spark.sql.types.{DataType, DoubleType, FloatType, IntegerType, StructField, StructType}
 import org.apache.spark.sql.DataFrame
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 
-trait PretrainerParams extends Params 
+trait UnsupervisedLearnerParams extends Params 
   with HasFeaturesCol {
   
   protected def validateAndTransformSchema(
@@ -40,22 +39,25 @@ trait PretrainerParams extends Params
   }
 }
 
+/**
+ * Abstract unsupervised learning algorithm.
+ */
 @AlphaComponent
-abstract class Pretrainer[
+abstract class UnsupervisedLearner[
     FeaturesType,
-    Learner <: Pretrainer[FeaturesType, Learner, M],
-    M <: PretrainedModel[FeaturesType, M]]
-  extends Estimator[M] with PretrainerParams {
+    Learner <: UnsupervisedLearner[FeaturesType, Learner, M],
+    M <: UnsupervisedModel[FeaturesType, M]]
+  extends Estimator[M] with UnsupervisedLearnerParams {
   
   /** @group setParam */
   def setFeaturesCol(value: String): Learner = set(featuresCol, value).asInstanceOf[Learner]
   
   override def fit(dataset: DataFrame, paramMap: ParamMap): M = {
     // This handles a few items such as schema validation.
-    // Developers only need to implement pretrain().
+    // Developers only need to implement learn().
     transformSchema(dataset.schema, paramMap, logging = true)
     val map = this.paramMap ++ paramMap
-    val model = pretrain(dataset, map)
+    val model = learn(dataset, map)
     Params.inheritValues(map, this, model) // copy params to model
     model
   }
@@ -63,17 +65,17 @@ abstract class Pretrainer[
   /**
    * :: DeveloperApi ::
    *
-   * Pretrain a model using the given dataset and parameters.
+   * Learn a model using the given dataset and parameters.
    * Developers can implement this instead of [[fit()]] to avoid dealing with schema validation
    * and copying parameters into the model.
    *
-   * @param dataset  Pretraining dataset
+   * @param dataset  Learning dataset
    * @param paramMap  Parameter map.  Unlike [[fit()]]'s paramMap, this paramMap has already
    *                  been combined with the embedded ParamMap.
    * @return  Fitted model
    */
   @DeveloperApi
-  protected def pretrain(dataset: DataFrame, paramMap: ParamMap): M
+  protected def learn(dataset: DataFrame, paramMap: ParamMap): M
 
   /**
    * :: DeveloperApi ::
@@ -94,8 +96,8 @@ abstract class Pretrainer[
 }
 
 @AlphaComponent
-abstract class PretrainedModel[FeaturesType, M <: PretrainedModel[FeaturesType, M]]
-  extends Model[M] with PretrainerParams {
+abstract class UnsupervisedModel[FeaturesType, M <: UnsupervisedModel[FeaturesType, M]]
+  extends Model[M] with UnsupervisedLearnerParams {
 
   /** @group setParam */
   def setFeaturesCol(value: String): M = set(featuresCol, value).asInstanceOf[M]

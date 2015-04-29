@@ -22,7 +22,6 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.param._
 import org.apache.spark.ml.nn._
 import org.apache.spark.ml.{Estimator, Model}
-import org.apache.spark.ml.nn.pretraining._
 import org.apache.spark.mllib.linalg.{Vector, VectorUDT}
 import org.apache.spark.sql.types.{DataType, DoubleType, FloatType, IntegerType, StructField, StructType, UserDefinedType}
 import org.apache.spark.sql.{DataFrame, Row}
@@ -36,7 +35,10 @@ import org.nd4j.linalg.util.FeatureUtil
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.api.ndarray.INDArray
 
-trait NeuralNetworkReconstructionParams extends PretrainerParams 
+/**
+ * Parameters for neural network reconstruction.
+ */
+trait NeuralNetworkReconstructionParams extends UnsupervisedLearnerParams 
   with HasMultiLayerConfiguration
   with HasWindowSize
   with HasLayerIndex
@@ -54,9 +56,21 @@ trait NeuralNetworkReconstructionParams extends PretrainerParams
   }
 }
 
+/**
+ * Neural network-based learning algorithm for unsupervised reconstruction.
+ *
+ * This class is an estimator that produces a model.  Accepts a feature vector as input,
+ * and produces a feature vector as output.
+ * 
+ * Noteworthy parameters:
+ *  - conf        - the multilayer configuration
+ *  - layer index - the neural network layer to use for reconstruction (by default, the input layer)
+ *  - windowSize  - the number of training iterations to perform independently on each partition,
+ *                  before resynchronizing the parameters across the cluster.
+ */
 @AlphaComponent
 class NeuralNetworkReconstruction
-extends Pretrainer[Vector, NeuralNetworkReconstruction, NeuralNetworkReconstructionModel]
+extends UnsupervisedLearner[Vector, NeuralNetworkReconstruction, NeuralNetworkReconstructionModel]
   with NeuralNetworkReconstructionParams {
   
   /** @group setParam */
@@ -72,7 +86,7 @@ extends Pretrainer[Vector, NeuralNetworkReconstruction, NeuralNetworkReconstruct
   /** @group setParam */
   def setReconstructionCol(value: String): NeuralNetworkReconstruction = set(reconstructionCol, value).asInstanceOf[NeuralNetworkReconstruction]
 
-  override protected def pretrain(dataset: DataFrame, paramMap: ParamMap): NeuralNetworkReconstructionModel = {
+  override protected def learn(dataset: DataFrame, paramMap: ParamMap): NeuralNetworkReconstructionModel = {
     val sqlContext = dataset.sqlContext
     val sc = sqlContext.sparkContext
 
@@ -105,12 +119,15 @@ extends Pretrainer[Vector, NeuralNetworkReconstruction, NeuralNetworkReconstruct
   }
 }
 
+/**
+ * Neural network-based reconstruction model.
+ */
 @AlphaComponent
 class NeuralNetworkReconstructionModel private[ml] (
     override val parent: NeuralNetworkReconstruction,
     override val fittingParamMap: ParamMap,
     val networkParams: Broadcast[INDArray])
-  extends PretrainedModel[Vector, NeuralNetworkReconstructionModel]
+  extends UnsupervisedModel[Vector, NeuralNetworkReconstructionModel]
   with NeuralNetworkReconstructionParams {
 
   override def predict(dataset: DataFrame, paramMap: ParamMap): DataFrame = {
