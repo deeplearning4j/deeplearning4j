@@ -136,6 +136,7 @@ public class JCudaExecutioner implements OpExecutioner {
     @Override
     public INDArray exec(Accumulation op, int dimension) {
     	if(dimension == Integer.MAX_VALUE) {
+    		op.setX(op.x().linearView());
             if(op.x() instanceof IComplexNDArray)
                 return Nd4j.scalar(execAndReturn(op).currentResultComplex());
             else
@@ -158,12 +159,6 @@ public class JCudaExecutioner implements OpExecutioner {
             }
             else if(op.x().isColumnVector()) {
                 if(dimension == 0) {
-                    return Nd4j.scalar(execAndReturn(op).currentResult());
-
-                }
-                //row vector
-                else if(dimension == 1) {
-                    //make a row vector
                     return Nd4j.scalar(execAndReturn(op).currentResult());
 
                 }
@@ -191,12 +186,6 @@ public class JCudaExecutioner implements OpExecutioner {
             }
             else if(op.x().isColumnVector()) {
                 if(dimension == 0) {
-                    return Nd4j.scalar(execAndReturn(op).currentResult());
-
-                }
-                //row vector
-                else if(dimension == 1) {
-                    //make a row vector
                     return Nd4j.scalar(execAndReturn(op).currentResult());
 
                 }
@@ -353,8 +342,7 @@ public class JCudaExecutioner implements OpExecutioner {
     private void invoke(ScalarOp op) {
 
         if (op.y() != null) {
-            JCudaBuffer yBuffer = (JCudaBuffer) op.y().data();
-            Pointer yPointer = yBuffer.getHostPointer().withByteOffset(yBuffer.getElementSize() * op.y().offset());
+        	
             Object[] kernelParams = new Object[]{
                     op.n(),
                     op.x().offset(),
@@ -392,6 +380,7 @@ public class JCudaExecutioner implements OpExecutioner {
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams)) {
 	            
 	            invokeFunction(op, kParams.getKernelParameters());
+	            ((JCudaBuffer)op.z().data()).copyToHost();
             } catch(Exception e) {
             	throw new RuntimeException("Could not execute kernel", e);
             }
