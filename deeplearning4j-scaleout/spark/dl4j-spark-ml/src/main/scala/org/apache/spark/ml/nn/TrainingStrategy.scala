@@ -46,7 +46,7 @@ private[spark] abstract class TrainingStrategy[RowType]{
  * network parameters are averaged not after each iteration but after some number of iterations (windowSize).
  */
 private[spark] class ParameterAveragingTrainingStrategy[RowType](
-    val conf: MultiLayerConfiguration,
+    @transient val conf: MultiLayerConfiguration,
     windowSize: Int,
     totalIterations: Int)
   extends TrainingStrategy[RowType] {
@@ -55,6 +55,7 @@ private[spark] class ParameterAveragingTrainingStrategy[RowType](
        rdd: RDD[RowType], 
        partitionTrainer: (MultiLayerNetwork, Iterator[RowType]) => Unit): INDArray = {
      val sc = rdd.sparkContext
+     val confJson = conf.toJson()
      
      def initialParams() = {
        val network = new MultiLayerNetwork(conf);
@@ -72,9 +73,10 @@ private[spark] class ParameterAveragingTrainingStrategy[RowType](
        val accumulatedParams = sc.accumulator(Nd4j.zeros(networkParams.shape()))(INDArrayAccumulatorParam)
      
        rdd.foreachPartition { iterator =>
-         
-         for(innerConf <- conf.getConfs()) 
-           innerConf.setNumIterations(iterations)
+         @transient val conf: MultiLayerConfiguration = MultiLayerConfiguration.fromJson(confJson)
+         for(layerConf <- conf.getConfs())
+           layerConf.setNumIterations(iterations)
+
          val network = new MultiLayerNetwork(conf);
          network.init();
          network.setParams(broadcastedParams.value)
