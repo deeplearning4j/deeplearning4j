@@ -53,7 +53,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
-        ensureNotFreed();
 
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
@@ -70,7 +69,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void assign(int[] indices, double[] data, boolean contiguous, int inc) {
-        ensureNotFreed();
 
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
@@ -93,7 +91,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public float[] getFloatsAt(int offset, int inc, int length) {
-        ensureNotFreed();
         if (offset + length > getLength())
             length -= offset;
         float[] ret = new float[length];
@@ -193,7 +190,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void put(int i, float element) {
-        ensureNotFreed();
         getFloatBuffer().put(i,element);
     }
 
@@ -225,11 +221,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     }
 
-    @Override
-    public void put(int i, IComplexNumber result) {
-        ensureNotFreed();
-
-    }
 
     private void writeObject(java.io.ObjectOutputStream stream)
             throws java.io.IOException {

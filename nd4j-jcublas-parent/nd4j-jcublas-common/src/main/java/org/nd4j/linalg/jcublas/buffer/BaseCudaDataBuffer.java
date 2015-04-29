@@ -129,7 +129,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void put(int i, IComplexNumber result) {
-        ensureNotFreed();
+        
 
 
         if (dataType() == DataBuffer.FLOAT) {
@@ -158,7 +158,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public double[] asDouble() {
-        //ensureNotFreed();
+        //
     	double[] ret = new double[getLength()];
         DoubleBuffer buf = getDoubleBuffer();
         for(int i = 0; i < getLength(); i++) {
@@ -169,7 +169,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public int[] asInt() {
-        ensureNotFreed();
+        
         return hostBuffer.asIntBuffer().array();
     }
     
@@ -188,7 +188,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     
     @Override
     public void set(Pointer pointer) {
-        ensureNotFreed();
+        
 
 
         if (dataType() == DOUBLE) {
@@ -219,7 +219,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param to the buffer to copy data to
      */
     protected void copyTo(JCudaBuffer to) {
-        ensureNotFreed();
+        
         for(int i = 0; i < getLength(); i++) {
             to.put(i,getDouble(i));
         }
@@ -246,7 +246,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public IComplexNumber getComplex(int i) {
-        ensureNotFreed();
+        
         return dataType() == DataBuffer.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
     }
 
@@ -257,7 +257,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param from  the element to get data from
      */
     protected void set(int index, int length, Pointer from, int inc) {
-        ensureNotFreed();
+        
 
 
         int offset = getElementSize() * index;
@@ -280,13 +280,13 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param from  the element to get data from
      */
     protected void set(int index, int length, Pointer from) {
-        ensureNotFreed();
+        
         set(index, length, from, 1);
     }
 
     @Override
     public void assign(DataBuffer data) {
-        ensureNotFreed();
+        
         JCudaBuffer buf = (JCudaBuffer) data;
         set(0, buf.getHostPointer());
     }
@@ -323,7 +323,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param from  the element to get data from
      */
     protected void set(int index, Pointer from) {
-        ensureNotFreed();
+        
         set(index, 1, from);
     }
     
@@ -399,7 +399,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public int getInt(int ix) {
-        ensureNotFreed();
+        
 
         return 0;
     }
@@ -470,7 +470,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
-        //ensureNotFreed();
+        //
 
         int count = 0;
         for (int i = 0; i < buffers.length; i++) {
@@ -512,7 +512,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void assign(DataBuffer... buffers) {
-        ensureNotFreed();
+        
 
         int[] offsets = new int[buffers.length];
         int[] strides = new int[buffers.length];
@@ -523,13 +523,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void assign(int[] offsets, int[] strides, DataBuffer... buffers) {
-        //ensureNotFreed();
         assign(offsets, strides, getLength(), buffers);
-    }
-
-    protected void ensureNotFreed() {
-        if (freed.get())
-            throw new IllegalStateException("Unable to do operation, buffer already freed");
     }
 
     private void writeObject(java.io.ObjectOutputStream stream)
