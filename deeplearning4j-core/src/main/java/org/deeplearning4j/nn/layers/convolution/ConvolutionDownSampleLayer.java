@@ -70,7 +70,7 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
             throw new IllegalStateException("Input size at dimension 1 must be same as the filter size");
         final INDArray b = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
 
-        INDArray convolution = Convolution.conv2d(input,W, Convolution.Type.VALID);
+        INDArray convolution = Convolution.conv2d(input,W, Convolution.Type.FULL);
         if(convolution.shape().length < 4) {
             int[] newShape = new int[4];
             for(int i = 0; i < newShape.length; i++)
@@ -84,8 +84,7 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
 
         final INDArray pooled = getPool(convolution);
         final INDArray bias = b.dimShuffle(new Object[]{'x', 0, 'x', 'x'}, new int[4], new boolean[]{true});
-        final INDArray broadCasted = bias.broadcast(pooled.shape());
-        pooled.addi(broadCasted);
+        //final INDArray broadCasted = bias.broadcast(pooled.shape());
 
         return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), pooled));
     }
