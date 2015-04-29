@@ -19,6 +19,7 @@ import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 
 import static jcuda.jcurand.JCurand.*;
 import static jcuda.jcurand.curandRngType.CURAND_RNG_PSEUDO_DEFAULT;
+import static org.nd4j.linalg.jcublas.SimpleJCublas.sync;
 
 /**
  * Jcuda random number generator
@@ -130,7 +131,7 @@ public class JcudaRandom implements Random {
 
     @Override
     public INDArray nextGaussian(int[] shape) {
-       
+    	sync();
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
         if (buffer.dataType() == DataBuffer.FLOAT)
@@ -140,9 +141,12 @@ public class JcudaRandom implements Random {
         else
             throw new IllegalStateException("Illegal data type discovered");
         
+        sync();
+        
         checkResult(JCuda.cudaMemcpy(buffer.getHostPointer(), buffer.getDevicePointer(), buffer.getLength()*buffer.getElementSize(), cudaMemcpyKind.cudaMemcpyDeviceToHost));
         buffer.freeDevicePointer();
         return create;
+        
     }
 
     @Override
