@@ -82,19 +82,19 @@ public class DefaultConvolutionInstance extends BaseConvolution {
     public INDArray convn(INDArray input, INDArray kernel, Convolution.Type type, int[] axes) {
         if (kernel.isScalar() && input.isScalar())
             return kernel.mul(input);
-        INDArray shape = ArrayUtil.toNDArray(Shape.sizeForAxes(axes, input.shape())).add(ArrayUtil.toNDArray(Shape.sizeForAxes(axes, kernel.shape()))).subi(1);
+        INDArray shape = ArrayUtil.toNDArray(input.shape()).add(ArrayUtil.toNDArray(kernel.shape())).subi(1);
 
         int[] intShape = ArrayUtil.toInts(shape);
 
 
-        IComplexNDArray fftedInput = FFT.rawfftn(Nd4j.createComplex(input), intShape, null);
-        IComplexNDArray fftedKernel = FFT.rawfftn(Nd4j.createComplex(kernel), intShape, null);
+        IComplexNDArray fftedInput = FFT.rawfftn(Nd4j.createComplex(input), intShape, axes);
+        IComplexNDArray fftedKernel = FFT.rawfftn(Nd4j.createComplex(kernel), intShape, axes);
         //broadcast to be same shape
         if (!Arrays.equals(fftedInput.shape(), fftedKernel.shape())) {
             if (fftedInput.length() < fftedKernel.length())
-                fftedInput = fftedInput.broadcast(fftedKernel.shape());
+                fftedInput = ComplexNDArrayUtil.padWithZeros(fftedInput,fftedKernel.shape());
             else
-                fftedKernel = fftedKernel.broadcast(fftedInput.shape());
+                fftedKernel = ComplexNDArrayUtil.padWithZeros(fftedKernel, fftedInput.shape());
 
         }
 
@@ -109,6 +109,8 @@ public class DefaultConvolutionInstance extends BaseConvolution {
                 return ComplexNDArrayUtil.center(convolution, input.shape()).getReal();
             case VALID:
                 int[] shape2 = ArrayUtil.toInts(Transforms.abs(ArrayUtil.toNDArray(input.shape()).sub(ArrayUtil.toNDArray(kernel.shape())).addi(1)));
+                for(int i = 0; i < shape2.length; i++)
+                    shape2[i] = Math.max(1,shape2[i]);
                 return ComplexNDArrayUtil.center(convolution, shape2).getReal();
 
         }

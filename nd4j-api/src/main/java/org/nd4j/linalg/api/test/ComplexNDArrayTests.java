@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -308,12 +309,43 @@ public abstract class ComplexNDArrayTests {
 
     }
 
+
+    @Test
+    public void testTensorStrides() {
+        Nd4j.factory().setOrder('c');
+        INDArray arr = Nd4j.createComplex(106, 1, 3, 3);
+        //(144, 144, 48, 16)
+        int[] assertion = ArrayUtil.of(18, 18, 6, 2);
+        int[] arrShape = arr.stride();
+        assertTrue(Arrays.equals(assertion, arrShape));
+        Nd4j.factory().setOrder('f');
+        arr = Nd4j.createComplex(106,1,3,3);
+        //(16, 1696, 1696, 5088)
+        assertion = ArrayUtil.of(2, 212, 212, 636);
+        arrShape = arr.stride();
+        assertTrue(Arrays.equals(assertion, arrShape));
+
+    }
+
+
+
     @Test
     public void testLinearView() {
         IComplexNDArray n = Nd4j.complexLinSpace(1, 4, 4).reshape(2, 2);
         IComplexNDArray row = n.getRow(1);
         IComplexNDArray linear = row.linearView();
         assertEquals(row, linear);
+
+        IComplexNDArray large = Nd4j.complexLinSpace(1,1000,1000).reshape(2,500);
+        IComplexNDArray largeLinear = large.linearView();
+        for(int i = 0; i < largeLinear.length(); i++)
+            assertEquals(i + 1,largeLinear.getReal(i),1e-1);
+
+        IComplexNDArray largeTensor = large.reshape(1000,1,1,1);
+        for(int i = 0; i < largeLinear.length(); i++)
+            assertEquals(i + 1,largeTensor.getReal(i),1e-1);
+
+
     }
 
     @Test
@@ -635,6 +667,7 @@ public abstract class ComplexNDArrayTests {
             assertEquals(i + 1, curr, 1e-1);
         }
     }
+
 
 
 

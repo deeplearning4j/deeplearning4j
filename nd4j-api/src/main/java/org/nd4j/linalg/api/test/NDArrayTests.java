@@ -76,6 +76,26 @@ public abstract class NDArrayTests {
 
     }
 
+
+
+    @Test
+    public void testTensorStrides() {
+        Nd4j.factory().setOrder('c');
+        INDArray arr = Nd4j.create(106,1,3,3);
+        int[] assertion = ArrayUtil.of(9, 9, 3, 1);
+        int[] arrShape = arr.stride();
+        assertTrue(Arrays.equals(assertion, arrShape));
+        Nd4j.factory().setOrder('f');
+        arr = Nd4j.create(106,1,3,3);
+        //(8, 848, 848, 2544)
+        assertion = ArrayUtil.of(1, 106, 106, 318);
+        arrShape = arr.stride();
+        assertTrue(Arrays.equals(assertion, arrShape));
+
+    }
+
+
+
     @Test
     public void testReadWrite() throws Exception {
         Nd4j.dtype = DataBuffer.FLOAT;

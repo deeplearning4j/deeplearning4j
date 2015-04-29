@@ -43,8 +43,14 @@ public class Shape {
     }
 
 
+    /**
+     * Output an int array for a particular dimension
+     * @param axes the axes
+     * @param shape the current shape
+     * @return
+     */
     public static int[] sizeForAxes(int[] axes, int[] shape) {
-        int[] ret = new int[axes.length];
+        int[] ret = new int[shape.length];
         for (int i = 0; i < axes.length; i++) {
             ret[i] = shape[axes[i]];
         }

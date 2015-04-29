@@ -111,6 +111,41 @@ public class ArrayUtil {
     }
 
 
+    /**
+     * Calculate the offset for a given stride array
+     * @param stride the stride to use
+     * @param i the offset to calculate for
+     * @return the offset for the given
+     * stride
+     */
+    public static int offsetFor(int[] stride,int i) {
+        int ret = 0;
+        for(int j = 0; j < stride.length; j++)
+            ret += (i * stride[j]);
+        return ret;
+
+    }
+
+    /**
+     * Sum of an int array
+     * @param add the elements
+     *            to calculate the sum for
+     * @return the sum of this array
+     */
+    public static int sum(int[] add) {
+        if (add.length < 1)
+            return 0;
+        int ret = 1;
+        for (int i = 0; i < add.length; i++)
+            ret *= add[i];
+        return ret;
+    }
+    /**
+     * Product of an int array
+     * @param mult the elements
+     *            to calculate the sum for
+     * @return the product of this array
+     */
     public static int prod(int[] mult) {
         if (mult.length < 1)
             return 0;
