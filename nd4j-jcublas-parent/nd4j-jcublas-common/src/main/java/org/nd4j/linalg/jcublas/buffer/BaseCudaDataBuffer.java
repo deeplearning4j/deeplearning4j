@@ -73,6 +73,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public void setHostBuffer(ByteBuffer hostBuffer) {
     	this.hostBuffer = hostBuffer;
+    	this.hostPointer = Pointer.to(hostBuffer);
     	hostBuffer.order(ByteOrder.nativeOrder());
     }
     
