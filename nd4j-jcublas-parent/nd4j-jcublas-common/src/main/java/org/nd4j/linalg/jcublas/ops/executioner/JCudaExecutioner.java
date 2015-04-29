@@ -300,7 +300,7 @@ public class JCudaExecutioner implements OpExecutioner {
             try(PreparedKernelParams kParams = new PreparedKernelParams(kernelParams)) {
 	            
 	            invokeFunction(op, kParams.getKernelParameters());
-	            setResultForOp(op, Pointer.to(result.getDevicePointer()));
+	            setResultForOp(op, result.getDevicePointer());
             } catch(Exception e) {
             	throw new RuntimeException("Could not execute kernel", e);
             }
@@ -311,10 +311,10 @@ public class JCudaExecutioner implements OpExecutioner {
         } else {
             //int n, int xOffset,double *dx,int incx,double result
             Object[] kernelParams = new Object[] {
-            		new int[]{op.n()},
-                    new int[]{op.x().offset()},
+            		op.n(),
+                    op.x().offset(),
                     xBuffer,
-                    new int[]{op.x().majorStride()},
+                    op.x().majorStride(),
                     toArgs(op.extraArgs(), getType(op)),
                     result
             };
@@ -466,16 +466,17 @@ public class JCudaExecutioner implements OpExecutioner {
         } else {
             //int n,int idx,double *dy,int incy,double *result
             Object[] kernelParams = new Object[]{
-                    new int[]{op.n()},
-                    new int[]{op.x().offset()},
+                    op.n(),
+                    op.x().offset(),
                     xBuffer,
-                    new int[]{op.x().majorStride()},
+                    op.x().majorStride(),
                     toArgs(op.extraArgs(), getType(op)),
                     zBuffer
             };
 
             try(PreparedKernelParams kParams = new PreparedKernelParams(kernelParams)) {
         		invokeFunction(op, kParams.getKernelParameters());
+        		zBuffer.copyToHost();
         	} catch(Exception e) {
             	throw new RuntimeException("Could not execute kernel", e);
             }
