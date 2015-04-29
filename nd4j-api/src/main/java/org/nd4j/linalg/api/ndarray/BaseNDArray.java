@@ -2527,7 +2527,6 @@ public abstract class BaseNDArray implements INDArray {
             return other.addi(getDouble(0), result);
         }
 
-
         if (result == this) {
             if (data.dataType() == DataBuffer.DOUBLE)
                 Nd4j.getBlasWrapper().axpy(1.0, other, result);
@@ -3000,7 +2999,7 @@ public abstract class BaseNDArray implements INDArray {
         else if (isColumnVector())
             return Nd4j.create(data, new int[]{shape[0]}, offset);
 
-        INDArray ret = permute(ArrayUtil.range(shape.length - 1, -1));
+        INDArray ret = permute(ArrayUtil.range(shape.length, 0));
         return ret;
     }
 
