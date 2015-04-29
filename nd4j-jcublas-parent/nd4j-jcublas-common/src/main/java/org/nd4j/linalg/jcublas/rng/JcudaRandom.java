@@ -136,7 +136,7 @@ public class JcudaRandom implements Random {
         if (buffer.dataType() == DataBuffer.FLOAT)
         	checkResult(curandGenerateUniform(generator, buffer.getDevicePointer(), create.length()));
         else if (buffer.dataType() == DataBuffer.DOUBLE)
-        	checkResult(curandGenerateUniformDouble(generator, buffer.getHostPointer(), create.length()));
+        	checkResult(curandGenerateUniformDouble(generator, buffer.getDevicePointer(), create.length()));
         else
             throw new IllegalStateException("Illegal data type discovered");
         
