@@ -110,7 +110,7 @@ extends UnsupervisedLearner[Vector, NeuralNetworkReconstruction, NeuralNetworkRe
           val featureArrays = rows.map(row => MLLibUtil.toVector(row.getAs[Vector](0)))
           val featureMatrix = Nd4j.vstack(featureArrays.toArray: _*)
          
-          network.pretrain(featureMatrix)
+          network.fit(featureMatrix)
     })
     
     val model = new NeuralNetworkReconstructionModel(this, paramMap, sc.broadcast(networkParams))

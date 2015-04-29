@@ -91,7 +91,7 @@ abstract class UnsupervisedLearner[
   protected def featuresDataType: DataType = new VectorUDT
   
   override def transformSchema(schema: StructType, paramMap: ParamMap): StructType = {
-    validateAndTransformSchema(schema, paramMap, fitting = false, featuresDataType)
+    validateAndTransformSchema(schema, paramMap, fitting = true, featuresDataType)
   }
 }
 
