@@ -18,7 +18,9 @@ package org.apache.spark.ml.classification
 
 import scala.collection.JavaConversions._
 
+import org.apache.spark.SparkContext
 import org.apache.spark.annotation.AlphaComponent
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.param._
 import org.apache.spark.ml.nn._
 import org.apache.spark.mllib.linalg.{VectorUDT, BLAS, Vector, Vectors}
@@ -44,42 +46,48 @@ class NeuralNetworkClassification
   extends ProbabilisticClassifier[Vector, NeuralNetworkClassification, NeuralNetworkClassificationModel]
   with NeuralNetworkClassificationParams {
   
+  /** @group setParam */
+  def setConf(value: String): NeuralNetworkClassification = set(conf, value).asInstanceOf[NeuralNetworkClassification]
+  def setConf(value: MultiLayerConfiguration): NeuralNetworkClassification = set(conf, value.toJson()).asInstanceOf[NeuralNetworkClassification]
+
+  /** @group setParam */
+  def setWindowSize(value: Int): NeuralNetworkClassification = set(windowSize, value).asInstanceOf[NeuralNetworkClassification]
+
   override protected def train(dataset: DataFrame, paramMap: ParamMap): NeuralNetworkClassificationModel = {
     val sqlContext = dataset.sqlContext
-    var sc = sqlContext.sparkContext
+    val sc = sqlContext.sparkContext
     
     // parameters
-    val conf = paramMap(confParam)
-    //val batchSize = paramMap(batchSizeParam)
-    val windowSize = paramMap(windowSizeParam)
-    
+    @transient val c = MultiLayerConfiguration.fromJson(paramMap(conf));
+
     // prepare the dataset for classification
     val prepared = dataset.select(paramMap(labelCol), paramMap(featuresCol))
-    val numClasses = conf.getConf(conf.getConfs().size() - 1).getnOut() // TODO - use ML column metadata 'numValues'
+    val numClasses = c.getConf(c.getConfs().size() - 1).getnOut() // TODO - use ML column metadata 'numValues'
     
     // devise a training strategy for the distributed neural network
     val trainingStrategy = new ParameterAveragingTrainingStrategy[Row](
-        conf, 
-        windowSize, 
-        conf.getConf(0).getNumIterations())
+        c,
+        paramMap(windowSize),
+        c.getConf(0).getNumIterations())
 
     // train
     val networkParams = trainingStrategy.train(
         prepared.rdd, (network:MultiLayerNetwork, rows:Iterator[Row]) => {
           
-          // features
-          val featureArrays = rows.map(row => MLLibUtil.toVector(row.getAs[Vector](1)))
-          val featureMatrix = Nd4j.vstack(featureArrays.toArray: _*)
+          // features & labels
+          val (features, labels) = rows.map { row =>
+            (MLLibUtil.toVector(row.getAs[Vector](1)), FeatureUtil.toOutcomeVector(row.getDouble(0).toInt, numClasses))
+          }.toIterable.unzip
           
-          // labels
-          val labelArrays = rows.map(row => FeatureUtil.toOutcomeVector(row.getDouble(0).toInt, numClasses))
-          val labelMatrix = Nd4j.vstack(labelArrays.toArray: _*)
+          val featureMatrix = Nd4j.vstack(features.toArray: _*)
+          val labelMatrix = Nd4j.vstack(labels.toArray: _*)
           
           network.fit(featureMatrix, labelMatrix)
     })
     
-    new NeuralNetworkClassificationModel(this, paramMap, numClasses, networkParams)
-
+    val model = new NeuralNetworkClassificationModel(this, paramMap, numClasses, sc.broadcast(networkParams))
+    Params.inheritValues(paramMap, this, model)
+    model
   }
 }
 
@@ -91,25 +99,21 @@ class NeuralNetworkClassificationModel private[ml] (
     override val parent: NeuralNetworkClassification,
     override val fittingParamMap: ParamMap,
     override val numClasses: Int,
-    val networkParams: INDArray)
+    val networkParams: Broadcast[INDArray])
   extends ProbabilisticClassificationModel[Vector, NeuralNetworkClassificationModel]
   with NeuralNetworkClassificationParams {
-  
-  val network = new MultiLayerNetwork(paramMap(confParam))
-  network.init()
-  network.setParameters(networkParams)
   
   override protected def predict(features: Vector): Double = {
     val examples: INDArray = MLLibUtil.toVector(features)
     
-    val predictions = network.predict(examples)
+    val predictions = getNetwork().predict(examples)
     predictions(0)
   }
   
   override protected def predictRaw(features: Vector): Vector = {
     val examples: INDArray = MLLibUtil.toVector(features)
     
-    val raw = network.feedForward(examples)
+    val raw = getNetwork().feedForward(examples)
     MLLibUtil.toVector(raw.get(0))
   }
   
@@ -117,7 +121,7 @@ class NeuralNetworkClassificationModel private[ml] (
     
     val examples: INDArray = MLLibUtil.toVector(features)
     
-    val probabilities: INDArray = network.labelProbabilities(examples)
+    val probabilities: INDArray = getNetwork().labelProbabilities(examples)
     MLLibUtil.toVector(probabilities)
   }
   
@@ -125,5 +129,23 @@ class NeuralNetworkClassificationModel private[ml] (
     val m = new NeuralNetworkClassificationModel(parent, fittingParamMap, numClasses, networkParams)
     Params.inheritValues(this.paramMap, this, m)
     m
+  }
+
+  @transient
+  private var networkHolder: ThreadLocal[MultiLayerNetwork] = null
+
+  private def getNetwork(): MultiLayerNetwork = {
+
+    if(networkHolder == null) {
+      networkHolder = new ThreadLocal[MultiLayerNetwork] {
+        override def initialValue(): MultiLayerNetwork = {
+          val network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(paramMap(conf)))
+          network.init()
+          network.setParameters(networkParams.value)
+          network
+        }
+      }
+    }
+    networkHolder.get()
   }
 }
