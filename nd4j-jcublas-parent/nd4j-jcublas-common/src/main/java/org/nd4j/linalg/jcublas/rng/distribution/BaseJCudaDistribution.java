@@ -173,7 +173,6 @@ public abstract class BaseJCudaDistribution implements Distribution {
         JCudaBuffer randomNumbers = new CudaFloatDataBuffer(n);
         JCurand.curandGenerateUniform(random.generator(), randomNumbers.getDevicePointer(), n);
         randomNumbers.copyToHost();
-        randomNumbers.freeDevicePointer();
         //Generate the kernel parameters
         Object[] kernelParams = new Object[]{ n, min, max, randomNumbers, out };
         
@@ -183,7 +182,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
 	                blocks,
 	                threads,
 	                functionName,"float"
-	                , kernelParams);
+	                , params.getKernelParameters());
 	        
 	      //copy the result to the house before it gets destroyed
 	      out.copyToHost();
