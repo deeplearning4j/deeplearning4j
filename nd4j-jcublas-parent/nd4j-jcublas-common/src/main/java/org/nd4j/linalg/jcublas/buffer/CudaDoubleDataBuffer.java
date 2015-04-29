@@ -169,7 +169,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public double getDouble(int i) {
-        ensureNotFreed();
+        //ensureNotFreed();
         return data[i];
     }
 

@@ -59,7 +59,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
 	                threads,
 	                functionName,
 	                "float"
-	                , kernelParams);
+	                , params.getKernelParameters());
 	        
             //copy the result to the house before it gets destroyed
 	        out.copyToHost();
@@ -86,7 +86,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
 	                threads,
 	                functionName,
 	                "double"
-	                , kernelParams);
+	                , params.getKernelParameters());
 	        
             //copy the result to the house before it gets destroyed
 	        out.copyToHost();
@@ -113,7 +113,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
                     threads,
                     functionName,
                     "float"
-                    , kernelParams);
+                    , params.getKernelParameters());
             
             //copy the result to the house before it gets destroyed
 	        out.copyToHost();
@@ -145,7 +145,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
 		            threads,
 		            functionName,
 		            "double",
-		            kernelParams);
+		            params.getKernelParameters());
 		    
 		    //copy the result to the house before it gets destroyed
 	        out.copyToHost();
@@ -172,9 +172,8 @@ public abstract class BaseJCudaDistribution implements Distribution {
         //In the future these random numbers could be generated within the kernel
         JCudaBuffer randomNumbers = new CudaFloatDataBuffer(n);
         JCurand.curandGenerateUniform(random.generator(), randomNumbers.getDevicePointer(), n);
-        randomNumbers.copyToHost();
         //Generate the kernel parameters
-        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers, out };
+        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers.getDevicePointer(), out };
         
         try(PreparedKernelParams params = new PreparedKernelParams(kernelParams)) {
 
@@ -184,9 +183,9 @@ public abstract class BaseJCudaDistribution implements Distribution {
 	                functionName,"float"
 	                , params.getKernelParameters());
 	        
-	      //copy the result to the house before it gets destroyed
-	      out.copyToHost();
-	        
+	        //copy the result to the house before it gets destroyed
+	        out.copyToHost();
+	        randomNumbers.freeDevicePointer();
         } catch(Exception e) {
         	throw new RuntimeException("Cannot run kernel", e);
         }
@@ -208,9 +207,8 @@ public abstract class BaseJCudaDistribution implements Distribution {
         //In the future these random numbers could be generated within the kernel
         JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(n);
 	    JCurand.curandGenerateUniformDouble(random.generator(), randomNumbers.getDevicePointer(), n);
-	    
         //Generate the kernel parameters
-        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers, out };
+        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers.getDevicePointer(), out };
         
         try(PreparedKernelParams params = new PreparedKernelParams(kernelParams)) {
         	
@@ -219,11 +217,11 @@ public abstract class BaseJCudaDistribution implements Distribution {
 	                threads,
 	                functionName,
 	                "double", 
-	                kernelParams);
+	                params.getKernelParameters());
 	        
 	        //copy the result to the house before it gets destroyed
 	        out.copyToHost();
-        
+	        randomNumbers.freeDevicePointer();
         } catch(Exception e) {
         	throw new RuntimeException("Cannot run kernel", e);
         }

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.DoubleBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -155,8 +156,13 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public double[] asDouble() {
-        ensureNotFreed();
-        return hostBuffer.asDoubleBuffer().array();
+        //ensureNotFreed();
+    	double[] ret = new double[getLength()];
+        DoubleBuffer buf = getDoubleBuffer();
+        for(int i = 0; i < getLength(); i++) {
+            ret[i] = buf.get(i);
+        }
+        return ret;
     }
 
     @Override

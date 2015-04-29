@@ -120,7 +120,6 @@ public class UniformDistribution extends BaseJCudaDistribution {
             doSampleUniform(buffer, (float) lower, (float) upper,  buffer.getLength());
         else if (buffer.dataType() == DataBuffer.DOUBLE)
             doSampleUniformDouble(buffer, lower, upper, buffer.getLength());
-
         return ret;
     }
 

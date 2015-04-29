@@ -155,7 +155,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public float[] asFloat() {
-        ensureNotFreed();
+        //ensureNotFreed();
         float[] ret = new float[getLength()];
         FloatBuffer buf = getFloatBuffer();
         for(int i = 0; i < getLength(); i++) {
