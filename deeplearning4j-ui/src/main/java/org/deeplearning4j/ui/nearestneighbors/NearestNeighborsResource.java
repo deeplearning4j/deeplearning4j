@@ -48,6 +48,7 @@ import java.util.Map;
 public class NearestNeighborsResource extends FileResource {
     private VPTree tree;
     private List<VocabWord> words;
+    private Map<Integer,VocabWord> theVocab;
     private VocabCache vocab;
     /**
      * The file path for uploads
@@ -82,7 +83,7 @@ public class NearestNeighborsResource extends FileResource {
         tree.search(tree.getItems().get(vocab.indexOf(query.getWord())),query.getNumWords(),results,distances);
         Map<String,Double> map = new HashMap<>();
         for(int i = 0; i < results.size(); i++) {
-            map.put(words.get(results.get(i).getIndex()).getWord(),distances.get(i));
+            map.put(theVocab.get(results.get(i).getIndex()).getWord(),distances.get(i));
         }
 
         return Response.ok(map).build();
@@ -94,8 +95,12 @@ public class NearestNeighborsResource extends FileResource {
         try {
             Pair<WeightLookupTable,VocabCache> vocab = WordVectorSerializer.loadTxt(path);
             InMemoryLookupTable table = (InMemoryLookupTable) vocab.getFirst();
-            tree = new VPTree(table.getSyn0(),"cosinesimilarity");
+            table.getSyn0().divi(table.getSyn0().norm2(Integer.MAX_VALUE));
+            tree = new VPTree(table.getSyn0(),"dot",true);
             words = new ArrayList<>(vocab.getSecond().vocabWords());
+            theVocab = new HashMap<>();
+            for(VocabWord word : words)
+               theVocab.put(word.getIndex(),word);
             this.vocab = vocab.getSecond();
         } catch (Exception e) {
             e.printStackTrace();

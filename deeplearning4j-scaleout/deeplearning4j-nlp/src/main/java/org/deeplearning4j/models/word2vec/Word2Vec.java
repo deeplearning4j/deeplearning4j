@@ -170,32 +170,36 @@ public class Word2Vec extends WordVectorsImpl  {
         },exec);
 
         exec.shutdown();
-
         try {
             exec.awaitTermination(1,TimeUnit.DAYS);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
+
+
+
+        ActorSystem actorSystem = ActorSystem.create();
+
         for(int i = 0; i < numIterations; i++)
-            doIteration(batch2,numWordsSoFar,nextRandom);
+            doIteration(batch2,numWordsSoFar,nextRandom,actorSystem);
+        actorSystem.shutdown();
 
 
     }
 
 
 
-    private void doIteration(Collection<List<VocabWord>> batch2,final AtomicLong numWordsSoFar,final AtomicLong nextRandom) {
-        ActorSystem actorSystem = ActorSystem.create();
+    private void doIteration(Collection<List<VocabWord>> batch2,final AtomicLong numWordsSoFar,final AtomicLong nextRandom,ActorSystem actorSystem) {
         final AtomicLong lastReported = new AtomicLong(System.currentTimeMillis());
-        Parallelization.iterateInParallel(batch2,new Parallelization.RunnableWithParams<List<VocabWord>>() {
+        Parallelization.iterateInParallel(batch2, new Parallelization.RunnableWithParams<List<VocabWord>>() {
             @Override
             public void run(List<VocabWord> sentence, Object[] args) {
                 double alpha = Math.max(minLearningRate, Word2Vec.this.alpha.get() *
-                    (1 - (1.0 * numWordsSoFar.get() / (double) totalWords)));
+                        (1 - (1.0 * numWordsSoFar.get() / (double) totalWords)));
                 long now = System.currentTimeMillis();
                 long diff = Math.abs(now - lastReported.get());
-                if(numWordsSoFar.get() > 0 && diff > 10000) {
+                if (numWordsSoFar.get() > 0 && diff > 10000) {
                     lastReported.set(now);
                     log.info("Words so far " + numWordsSoFar.get() + " with alpha at " + alpha);
                 }
@@ -207,7 +211,6 @@ public class Word2Vec extends WordVectorsImpl  {
 
             }
         },actorSystem);
-        actorSystem.shutdown();
     }
 
 
