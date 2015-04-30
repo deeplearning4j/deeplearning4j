@@ -37,13 +37,14 @@ public abstract class FileResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response uploadFile(
-            @FormDataParam("file") InputStream uploadedInputStream,
-            @FormDataParam("file") FormDataContentDisposition fileDetail) throws  IOException {
+            @FormDataParam("0") InputStream uploadedInputStream,
+            @FormDataParam("0") FormDataContentDisposition fileDetail) throws  IOException {
         String uploadedFileLocation = new File(filePath,fileDetail.getFileName()).getAbsolutePath();
         LOGGER.info(uploadedFileLocation);
         // save it
         writeToFile(uploadedInputStream, uploadedFileLocation);
-        String output = "File uploaded to : " + uploadedFileLocation;
+        String output = "{\"value\": \"File uploaded to : " + uploadedFileLocation + "\"}";
+
         return Response.ok(output).build();
     }
 
