@@ -244,6 +244,7 @@ public class WordVectorSerializer {
             }
             sb.append("\n");
             write.write(sb.toString());
+            words++;
 
         }
 
@@ -312,6 +313,7 @@ public class WordVectorSerializer {
             VocabWord word1 = new VocabWord(1.0,word);
             cache.addToken(word1);
             cache.addWordToIndex(cache.numWords(),word);
+            word1.setIndex(cache.numWords());
             cache.putVocabWord(word);
             INDArray row = Nd4j.create(Nd4j.createBuffer(split.length - 1));
             for(int i = 1; i < split.length; i++)

@@ -25,14 +25,20 @@ public class VPTree {
     private Node root;
     private CounterMap<DataPoint,DataPoint> distances;
     private String similarityFunction;
+    private boolean invert = true;
 
-
-
-    public VPTree(INDArray items,String similarityFunction) {
+    /**
+     *
+     * @param items the items to use
+     * @param similarityFunction the similiarity function to use
+     * @param invert whether to invert the distance (similarity functions have different min/max objectives)
+     */
+    public VPTree(INDArray items,String similarityFunction,boolean invert) {
         List<DataPoint> thisItems = new ArrayList<>();
         this.similarityFunction = similarityFunction;
+        this.invert = invert;
         for(int i = 0; i < items.slices(); i++)
-            thisItems.add(new DataPoint(i,items.slice(i),similarityFunction));
+            thisItems.add(new DataPoint(i,items.slice(i),this.similarityFunction,invert));
         this.items = thisItems;
         distances = CounterMap.runPairWise(thisItems, new CounterMap.CountFunction<DataPoint>() {
             @Override
@@ -45,16 +51,25 @@ public class VPTree {
         root = buildFromPoints(0,this.items.size());
     }
 
-    public VPTree(List<DataPoint> items,CounterMap<DataPoint,DataPoint> distances,String similarityFunction) {
+    /**
+     *
+     * @param items the items to use
+     * @param distances the distances
+     * @param similarityFunction the similarity function to use
+     * @param invert whether to invert the metric (different optimization objective)
+     */
+    public VPTree(List<DataPoint> items,CounterMap<DataPoint,DataPoint> distances,String similarityFunction,boolean invert) {
         this.items = items;
         this.distances = distances;
+        this.invert = invert;
         this.similarityFunction = similarityFunction;
         root = buildFromPoints(0,items.size());
 
     }
 
-    public VPTree(List<DataPoint> items,String similarityFunction) {
+    public VPTree(List<DataPoint> items,String similarityFunction,boolean invert) {
         this.items = items;
+        this.invert = invert;
         this.similarityFunction = similarityFunction;
         distances = CounterMap.runPairWise(items, new CounterMap.CountFunction<DataPoint>() {
             @Override
@@ -63,6 +78,20 @@ public class VPTree {
             }
         });
         root = buildFromPoints(0,items.size());
+    }
+
+
+    public VPTree(INDArray items,String similarityFunction) {
+        this(items,similarityFunction,true);
+    }
+
+    public VPTree(List<DataPoint> items,CounterMap<DataPoint,DataPoint> distances,String similarityFunction) {
+        this(items,distances,similarityFunction,true);
+
+    }
+
+    public VPTree(List<DataPoint> items,String similarityFunction) {
+       this(items,similarityFunction,true);
     }
 
 
@@ -76,7 +105,7 @@ public class VPTree {
     }
 
     public VPTree(List<DataPoint> items) {
-       this(items,"euclidean");
+        this(items,"euclidean");
     }
 
     public static INDArray buildFromData(List<DataPoint> data) {
