@@ -35,7 +35,7 @@ public class UiServer extends Application<UIConfiguration> {
     public void run(UIConfiguration uiConfiguration, Environment environment) throws Exception {
         this.conf = uiConfiguration;
         environment.jersey().register(MultiPartFeature.class);
-        environment.jersey().register(new TsneResource());
+        environment.jersey().register(new TsneResource(conf.getUploadPath()));
         environment.jersey().register(new NearestNeighborsResource(conf.getUploadPath()));
         environment.jersey().register(new WeightResource());
         environment.jersey().register(new RendersResource());

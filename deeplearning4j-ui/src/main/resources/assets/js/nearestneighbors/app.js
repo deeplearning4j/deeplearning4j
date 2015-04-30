@@ -23,6 +23,7 @@
 
 
 $(document).ready(function() {
+    $('#kform').hide();
     // Add events
     $('#form').fileUpload({success : function(data, textStatus, jqXHR){
         document.getElementById('form').reset();
@@ -40,6 +41,7 @@ $(document).ready(function() {
                     // Success so call function to process the form
                     console.log('SUCCESS');
                     $(document).ready(function() {
+                        $('#kform').show();
                         var html = '<ul class="sidebar-nav">';
                         var keys = Object.keys(data);
                         for (var i = 0; i < keys.length; i++) {
@@ -51,7 +53,8 @@ $(document).ready(function() {
                     //on click of any word, render the k nearest neighbors
                     $('.word').on('click', function(evt) {
                         var data = $(this).html();
-                        renderNearestNeighbors(data, 5);
+                        var kval = $('#k').val();
+                        renderNearestNeighbors(data, kval);
                     })
                 }
                 else
@@ -90,7 +93,7 @@ $(document).ready(function() {
                     var keys = Object.keys(data);
                     var k = keys.length;
                     var html = '<h3>Your selected word: <b>' + word + '</b></h3><br><h4>The following are the ' + k +  ' nearest neighbors: </h4> \<' +
-                        'ol style="list-style-position:inside; text-align: center">';
+                        'ol>';
 
                     for (var i = 0; i < k; i++) {
                         html += '<li>' + keys[i] + '</li>';
