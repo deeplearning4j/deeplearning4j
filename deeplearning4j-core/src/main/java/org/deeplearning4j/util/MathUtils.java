@@ -1174,11 +1174,11 @@ public class MathUtils  {
     }//end distanceFinderZValue
 
     /**
-     * This returns the euclidean distance of two vectors
+     * This returns the distance distance of two vectors
      * sum(i=1,n)   (q_i - p_i)^2
      * @param p the first vector
      * @param q the second vector
-     * @return the euclidean distance between two vectors
+     * @return the distance distance between two vectors
      */
     public static double euclideanDistance(double[] p,double[]  q) {
 
@@ -1192,11 +1192,11 @@ public class MathUtils  {
 
     }//end euclideanDistance
     /**
-     * This returns the euclidean distance of two vectors
+     * This returns the distance distance of two vectors
      * sum(i=1,n)   (q_i - p_i)^2
      * @param p the first vector
      * @param q the second vector
-     * @return the euclidean distance between two vectors
+     * @return the distance distance between two vectors
      */
     public static double euclideanDistance(float[] p,float[]  q) {
 

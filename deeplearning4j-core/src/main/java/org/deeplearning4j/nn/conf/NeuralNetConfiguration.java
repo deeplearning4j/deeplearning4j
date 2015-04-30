@@ -112,7 +112,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //minimize or maximize objective
     protected boolean minimize = false;
 
-    protected ConvolutionDownSampleLayer.ConvolutionType convolutionType;
+    protected ConvolutionDownSampleLayer.ConvolutionType convolutionType = ConvolutionDownSampleLayer.ConvolutionType.MAX;
 
     public NeuralNetConfiguration() {}
 
@@ -995,7 +995,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int batchSize = 0;
         private int numLineSearchIterations = 100;
         private boolean minimize = false;
-        private ConvolutionDownSampleLayer.ConvolutionType convolutionType;
+        private ConvolutionDownSampleLayer.ConvolutionType convolutionType = ConvolutionDownSampleLayer.ConvolutionType.MAX;
 
         public Builder convolutionType(ConvolutionDownSampleLayer.ConvolutionType convolutionType) {
             this.convolutionType = convolutionType;

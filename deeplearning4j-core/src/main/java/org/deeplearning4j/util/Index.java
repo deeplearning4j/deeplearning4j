@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * An index is a applyTransformToDestination of objects augmented with a list and a reverse lookup table
+ * An index is a transform of objects augmented with a list and a reverse lookup table
  * for fast lookups.
  * Indices are used for vocabulary in many of the natural language processing
  * @author Adam Gibson
@@ -99,4 +99,22 @@ public class Index implements Serializable {
 
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Index index = (Index) o;
+
+        if (objects != null ? !objects.equals(index.objects) : index.objects != null) return false;
+        return !(indexes != null ? !indexes.equals(index.indexes) : index.indexes != null);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = objects != null ? objects.hashCode() : 0;
+        result = 31 * result + (indexes != null ? indexes.hashCode() : 0);
+        return result;
+    }
 }

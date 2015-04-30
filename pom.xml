@@ -155,6 +155,7 @@
         <module>deeplearning4j-core</module>
         <module>deeplearning4j-scaleout</module>
         <module>deeplearning4j-cli</module>
+        <module>deeplearning4j-ui</module>
     </modules>
 
     <licenses>

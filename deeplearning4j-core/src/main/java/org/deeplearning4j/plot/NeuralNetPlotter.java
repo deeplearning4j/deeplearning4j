@@ -17,8 +17,7 @@
 package org.deeplearning4j.plot;
 
 import java.io.*;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -97,9 +96,14 @@ public class NeuralNetPlotter implements Serializable {
     }
 
     public void hist(Layer network,Gradient gradient) {
+        Set<String> vars = new TreeSet<>(gradient.gradientForVariable().keySet());
+        Set<String> gradients = new LinkedHashSet<>();
+        for(String s : vars) {
+            gradients.add(s + "-gradient");
+        }
+        vars.addAll(gradients);
         histogram(
-                new String[]{"W", "hbias", "vbias", "w-gradient", "hbias-gradient", "vbias-gradient"},
-
+                vars.toArray(new String[vars.size()]),
                 new INDArray[]{
                         network.getParam(DefaultParamInitializer.WEIGHT_KEY),
                         network.getParam(PretrainParamInitializer.BIAS_KEY),
@@ -116,9 +120,14 @@ public class NeuralNetPlotter implements Serializable {
     }
 
     public void plotNetworkGradient(Layer network,Gradient gradient,int patchesPerRow) {
-
+        Set<String> vars = new TreeSet<>(gradient.gradientForVariable().keySet());
+        Set<String> gradients = new LinkedHashSet<>();
+        for(String s : vars) {
+            gradients.add(s + "-gradient");
+        }
+        vars.addAll(gradients);
         histogram(
-                gradient.gradientForVariable().keySet().toArray(new String[]{}),
+                vars.toArray(new String[vars.size()]),
                 new INDArray[]{
                         network.getParam(DefaultParamInitializer.WEIGHT_KEY),
                         network.getParam(PretrainParamInitializer.BIAS_KEY),
@@ -134,7 +143,7 @@ public class NeuralNetPlotter implements Serializable {
         try {
             INDArray w =  network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
             render.renderFilters(w, "currimg.png", (int)Math.sqrt(w.rows()),
-                (int) Math.sqrt( w.rows()),patchesPerRow);
+                    (int) Math.sqrt( w.rows()),patchesPerRow);
         } catch (Exception e) {
             log.error("Unable to plot filter, continuing...",e);
         }

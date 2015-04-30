@@ -336,7 +336,7 @@ public class BarnesHutTsne extends Tsne implements Model {
 
     /**
      * Computes a gaussian kernel
-     * given a vector of squared euclidean distances
+     * given a vector of squared distance distances
      *
      * @param distances
      * @param beta

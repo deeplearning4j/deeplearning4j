@@ -116,7 +116,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             layerWiseConfigurations = new MultiLayerConfiguration.Builder().build();
 
         if (layers == null)
-            layers = new Layer[getnLayers() + 1];
+            layers = new Layer[getnLayers()];
 
         if (defaultConfiguration == null)
             defaultConfiguration = new NeuralNetConfiguration.Builder()
