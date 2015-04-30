@@ -9,6 +9,7 @@ public class HeapItem implements Serializable,Comparable<HeapItem> {
     private int index;
     private double distance;
 
+
     public HeapItem(int index, double distance) {
         this.index = index;
         this.distance = distance;

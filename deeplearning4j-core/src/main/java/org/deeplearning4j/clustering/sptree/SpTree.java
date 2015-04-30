@@ -67,8 +67,6 @@ public class SpTree implements Serializable {
 
     public SpTree(INDArray data,Set<INDArray> indices) {
         this(data,indices,"euclidean");
-
-
     }
 
 
