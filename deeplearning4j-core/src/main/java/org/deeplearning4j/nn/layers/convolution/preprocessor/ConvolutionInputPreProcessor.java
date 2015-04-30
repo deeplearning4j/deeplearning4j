@@ -20,6 +20,8 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.OutputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
+
 /**
  * A convolution input pre processor.
  * When passing things in to a convolutional net, a 4d tensor is expected of shape:
@@ -48,7 +50,7 @@ public class ConvolutionInputPreProcessor implements OutputPreProcessor,InputPre
         if(output.shape().length == 4)
             return output;
         if(output.columns() != rows * cols)
-            throw new IllegalArgumentException("Output columns must be equal to rows " + rows + " x columns " + cols);
+            throw new IllegalArgumentException("Output columns must be equal to rows " + rows + " x columns " + cols + " but was instead " + Arrays.toString(output.shape()));
 
         return output.reshape(output.rows(),1,rows,cols);
     }

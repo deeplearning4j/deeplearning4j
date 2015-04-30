@@ -1,31 +1,46 @@
 package org.deeplearning4j.clustering.sptree;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 
 /**
+ *
+ * A vector with an index and function for distance
  * @author Adam Gibson
  */
 public class DataPoint implements Serializable {
     private int index;
     private INDArray point;
     private int d;
+    private String functionName;
     public DataPoint(int index, INDArray point) {
+       this(index,point,"euclidean");
+    }
+    public DataPoint(int index, INDArray point,String functionName) {
         this.index = index;
         this.point = point;
+        this.functionName = functionName;
         this.d = point.length();
     }
 
     /**
      * Euclidean distance
      * @param point the distance from this point to the given point
-     * @return the euclidean distance between the two points
+     * @return the distance distance between the two points
      */
-    public double euclidean(DataPoint point) {
-        return Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point,point.point)).currentResult().doubleValue();
+    public double distance(DataPoint point) {
+        switch (functionName) {
+            case "euclidean" :     return Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point,point.point)).currentResult().doubleValue();
+            case "cosinesimilarity" :     return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(this.point,point.point)).currentResult().doubleValue();
+            case "manhattan" :     return Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(this.point,point.point)).currentResult().doubleValue();
+            default: return Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point,point.point)).currentResult().doubleValue();
+
+        }
     }
 
     @Override

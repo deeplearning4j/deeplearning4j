@@ -611,4 +611,32 @@ public class Counter<E> implements Serializable {
 		return sb.toString();
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		Counter<?> counter = (Counter<?>) o;
+
+		if (dirty != counter.dirty) return false;
+		if (Double.compare(counter.cacheTotal, cacheTotal) != 0) return false;
+		if (Double.compare(counter.deflt, deflt) != 0) return false;
+		if (entries != null ? !entries.equals(counter.entries) : counter.entries != null) return false;
+		return true;
+
+	}
+
+	@Override
+	public int hashCode() {
+		int result;
+		long temp;
+		result = entries != null ? entries.hashCode() : 0;
+		result = 31 * result + (dirty ? 1 : 0);
+		temp = Double.doubleToLongBits(cacheTotal);
+		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		result = 31 * result + (mf != null ? mf.hashCode() : 0);
+		temp = Double.doubleToLongBits(deflt);
+		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		return result;
+	}
 }

@@ -87,16 +87,16 @@ public class ConvolutionDownSampleLayerTest {
          *
          */
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
+                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
                 .dist(Nd4j.getDistributions().createNormal(0, 1))
                 .iterations(100).iterationListener(new ScoreIterationListener(1))
-                .activationFunction("tanh").filterSize(5, 1, 2, 2).constrainGradientToUnitNorm(true)
+                .activationFunction("tanh").filterSize(5, 1, 2, 2)
                 .nIn(4).nOut(3).batchSize(batchSize)
-                .layerFactory(layerFactory).dropOut(0.5)
+                .layerFactory(layerFactory)
                 .list(3)
                 .preProcessor(0, new ConvolutionPostProcessor()).inputPreProcessor(0, new ConvolutionInputPreProcessor(2, 2))
                 .preProcessor(1, new ConvolutionPostProcessor()).inputPreProcessor(1, new ConvolutionInputPreProcessor(3, 3))
-                .hiddenLayerSizes(new int[]{4, 25})
+                .hiddenLayerSizes(new int[]{4, 16})
                 .override(0, new ConfOverride() {
 
                     @Override
@@ -110,8 +110,6 @@ public class ConvolutionDownSampleLayerTest {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
 
-                        if (i == 1)
-                            builder.filterSize(5, 1, 3, 3);
 
                     }
                 })

@@ -71,6 +71,11 @@
             <artifactId>hazelcast-all</artifactId>
             <version>${hazelcast.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>canova-nd4j-image</artifactId>
+            <version>${canova.version}</version>
+        </dependency>
     </dependencies>
 
 </project>
