@@ -26,6 +26,11 @@
                 <h4>
                     <ol>
                         <li>Upload a <b><i>vectorized</i></b> text file.</li>
+                        <ul>
+                            <li>The text file should be space-delimited.</li>
+                            <li>Each row should be a feature vector separated by spaces.</li>
+                            <li>If an individual feature has multiple words, use underscore to separate the words.</li>
+                        </ul>
                         <li>Enter an integer value for k (number of nearest neighbors).</li>
                         <li>Then select a word on the left panel.</li>
                         <li>A list of k nearest neighbors will appear on this page.</li>
