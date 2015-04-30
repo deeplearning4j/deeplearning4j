@@ -70,6 +70,11 @@ public interface JCudaBuffer extends DataBuffer {
      * copies all the allocated device memory to the host memory
      */
     void copyToHost();
+    
+    /**
+     * copies to the host buffer at the specified offset
+     */
+    void copyToHost(long byteOffset);
 
     
     /**
@@ -79,6 +84,8 @@ public interface JCudaBuffer extends DataBuffer {
      * @param pointer the pointer to set
      */
     void set(Pointer pointer);
+
+	
 
 
 }

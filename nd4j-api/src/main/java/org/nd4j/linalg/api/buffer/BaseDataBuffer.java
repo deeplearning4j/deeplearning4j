@@ -210,7 +210,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public IComplexNumber getComplex(int i) {
-        return dataType() == DataBuffer.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
+        return dataType() == DataBuffer.Type.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
     }
 
 

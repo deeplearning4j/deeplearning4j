@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.test;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataBuffer.Type;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -180,6 +181,9 @@ public abstract class ComplexNDArrayTests {
 
     @Test
     public void testCreateFromNDArray() {
+    	
+    	Nd4j.dtype = Type.DOUBLE;
+    	
         INDArray arr = Nd4j.create(new double[][]{{1, 2}, {3, 4}});
         IComplexNDArray complex = Nd4j.createComplex(arr);
         for (int i = 0; i < arr.rows(); i++) {

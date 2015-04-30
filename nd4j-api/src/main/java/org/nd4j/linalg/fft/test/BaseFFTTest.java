@@ -52,7 +52,7 @@ public abstract class BaseFFTTest {
 
     @Test
     public void testWithOffset() {
-        Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         Nd4j.factory().setOrder('f');
         INDArray n = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[]{3, 5, 2});
         INDArray swapped = n.swapAxes(n.shape().length - 1, 1);

@@ -4,6 +4,8 @@ import static jcuda.driver.JCudaDriver.cuMemGetInfo;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,7 +36,7 @@ public class MemoryLeakTest {
 		for(int x = 0; x<10000; x++) {
 			//INDArray arr2 = Nd4j.rand(4000,4000);
 			INDArray arr2 = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f});
-			
+			Float f = java.nio.ByteBuffer.wrap(new byte[] { 64, -128, 0, 0}).asFloatBuffer().get(0);
 			INDArray norm2 = arr2.norm2(1);
 			assertEquals(5.477f, norm2.getFloat(0), 0.01);
 			//INDArray eps = arr2.eps(arr2);
@@ -42,5 +44,13 @@ public class MemoryLeakTest {
 			
 		}
 					
+	}
+	
+	@Test
+	public void testByteBufferEndian() {
+		ByteBuffer buffer1 = ByteBuffer.wrap(new byte[] { 64, -128, 0, 0});
+		buffer1.order(ByteOrder.BIG_ENDIAN);
+		
+		assertEquals(4.0f, buffer1.asFloatBuffer().get(0), 0.01);
 	}
 }

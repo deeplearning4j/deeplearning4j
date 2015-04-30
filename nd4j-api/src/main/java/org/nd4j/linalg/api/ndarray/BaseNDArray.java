@@ -259,7 +259,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     public BaseNDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
 
-        DataBuffer ret = slices.get(0).data().dataType() == (DataBuffer.FLOAT) ?
+        DataBuffer ret = slices.get(0).data().dataType() == (DataBuffer.Type.FLOAT) ?
                 Nd4j.createBuffer(new float[ArrayUtil.prod(shape)]) :
                 Nd4j.createBuffer(new double[ArrayUtil.prod(shape)]);
 
@@ -2336,12 +2336,12 @@ public abstract class BaseNDArray implements INDArray {
             INDArray temp = Nd4j.create(resultArray.shape(), ArrayUtil.calcStridesFortran(resultArray.shape()));
 
             if (otherArray.columns() == 1) {
-                if (data.dataType() == (DataBuffer.DOUBLE))
+                if (data.dataType() == (DataBuffer.Type.DOUBLE))
                     Nd4j.getBlasWrapper().gemv(1.0, this, otherArray, 0.0, temp);
                 else
                     Nd4j.getBlasWrapper().gemv(1.0f, this, otherArray, 0.0f, temp);
             } else {
-                if (data.dataType() == (DataBuffer.DOUBLE))
+                if (data.dataType() == (DataBuffer.Type.DOUBLE))
                     Nd4j.getBlasWrapper().gemm(1.0, this, otherArray, 0.0, temp);
                 else
                     Nd4j.getBlasWrapper().gemm(1.0f, this, otherArray, 0.0f, temp);
@@ -2352,12 +2352,12 @@ public abstract class BaseNDArray implements INDArray {
 
         } else {
             if (otherArray.columns() == 1)
-                if (data.dataType() == (DataBuffer.DOUBLE))
+                if (data.dataType() == (DataBuffer.Type.DOUBLE))
                     Nd4j.getBlasWrapper().gemv(1.0, this, otherArray, 0.0, resultArray);
                 else
                     Nd4j.getBlasWrapper().gemv(1.0f, this, otherArray, 0.0f, resultArray);
             else {
-                if (data.dataType() == (DataBuffer.DOUBLE))
+                if (data.dataType() == (DataBuffer.Type.DOUBLE))
                     Nd4j.getBlasWrapper().gemm(1.0, this, otherArray, 0.0, resultArray);
                 else
                     Nd4j.getBlasWrapper().gemm(1.0f, this, otherArray, 0.0f, resultArray);
@@ -2470,12 +2470,12 @@ public abstract class BaseNDArray implements INDArray {
 
 
         if (result == this) {
-            if (data.dataType() == DataBuffer.DOUBLE)
+            if (data.dataType() == DataBuffer.Type.DOUBLE)
                 Nd4j.getBlasWrapper().axpy(-1.0, other, result);
             else
                 Nd4j.getBlasWrapper().axpy(-1.0f, other, result);
         } else if (result == other) {
-            if (data.dataType() == DataBuffer.DOUBLE) {
+            if (data.dataType() == DataBuffer.Type.DOUBLE) {
                 Nd4j.getBlasWrapper().scal(-1.0, result);
                 Nd4j.getBlasWrapper().axpy(1.0, this, result);
             } else {
@@ -2483,7 +2483,7 @@ public abstract class BaseNDArray implements INDArray {
                 Nd4j.getBlasWrapper().axpy(1.0f, this, result);
             }
         } else {
-            if (data.dataType() == DataBuffer.FLOAT) {
+            if (data.dataType() == DataBuffer.Type.FLOAT) {
                 Nd4j.getBlasWrapper().copy(this, result);
                 Nd4j.getBlasWrapper().axpy(-1.0f, other, result);
             } else {
@@ -2528,7 +2528,7 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         if (result == this) {
-            if (data.dataType() == DataBuffer.DOUBLE)
+            if (data.dataType() == DataBuffer.Type.DOUBLE)
                 Nd4j.getBlasWrapper().axpy(1.0, other, result);
 
 
@@ -2536,7 +2536,7 @@ public abstract class BaseNDArray implements INDArray {
                 Nd4j.getBlasWrapper().axpy(1.0f, other, result);
 
         } else if (result == other) {
-            if (data.dataType() == (DataBuffer.DOUBLE))
+            if (data.dataType() == (DataBuffer.Type.DOUBLE))
                 Nd4j.getBlasWrapper().axpy(1.0, this, result);
             else
                 Nd4j.getBlasWrapper().axpy(1.0f, this, result);
@@ -3396,7 +3396,7 @@ public abstract class BaseNDArray implements INDArray {
 
         //epsilon equals
         if (isScalar() && n.isScalar()) {
-            if (data.dataType() == DataBuffer.FLOAT) {
+            if (data.dataType() == DataBuffer.Type.FLOAT) {
                 double val = getDouble(0);
                 double val2 = n.getDouble(0);
                 return Math.abs(val - val2) < 1e-6;
@@ -3408,7 +3408,7 @@ public abstract class BaseNDArray implements INDArray {
 
         } else if (isVector() && n.isVector()) {
             for (int i = 0; i < length; i++) {
-                if (data.dataType() == DataBuffer.FLOAT) {
+                if (data.dataType() == DataBuffer.Type.FLOAT) {
                     double curr = getDouble(i);
                     double comp = n.getDouble(i);
                     if (Math.abs(curr - comp) > 1e-3)
@@ -3889,7 +3889,7 @@ public abstract class BaseNDArray implements INDArray {
         ensureNotCleanedUp();
         if (!isScalar())
             throw new IllegalStateException("Unable to retrieve element from non scalar matrix");
-        if (data.dataType() == DataBuffer.FLOAT)
+        if (data.dataType() == DataBuffer.Type.FLOAT)
             return data.getFloat(offset);
         return data.getDouble(offset);
     }

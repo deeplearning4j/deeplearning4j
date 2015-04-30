@@ -136,7 +136,7 @@ public class BinomialDistribution extends BaseJCudaDistribution {
     public INDArray sample(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) ret.data();
-        if (ret.data().dataType() == DataBuffer.DOUBLE) {
+        if (ret.data().dataType() == DataBuffer.Type.DOUBLE) {
             if (pNDArray != null) {
                 doBinomialDouble(pNDArray, buffer, numberOfTrials, buffer.getLength());
             } else {

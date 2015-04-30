@@ -33,7 +33,7 @@ public abstract class FloatDataBufferTest {
 
     @Before
     public void before() {
-        Nd4j.dtype = DataBuffer.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
     }
 
     @Test

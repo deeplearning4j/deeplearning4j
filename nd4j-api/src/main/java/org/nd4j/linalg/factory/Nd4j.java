@@ -78,7 +78,7 @@ public class Nd4j {
     public final static String RESOURCE_MANAGER = "resourcemanager";
     public final static String RESOURCE_MANGER_ON = "resourcemanager_state";
 
-    public static int dtype = DataBuffer.FLOAT;
+    public static DataBuffer.Type dtype = DataBuffer.Type.FLOAT;
     public static char ORDER = 'c';
     public static IComplexNumber UNIT;
     public static IComplexNumber ZERO;
@@ -520,9 +520,9 @@ public class Nd4j {
      * @param type  the type to create
      * @return the created buffer
      */
-    public static DataBuffer createBuffer(int[] shape, int type) {
+    public static DataBuffer createBuffer(int[] shape, DataBuffer.Type type) {
         int length = ArrayUtil.prod(shape);
-        return type == DataBuffer.DOUBLE ? createBuffer(new double[length]) : createBuffer(new float[length]);
+        return type == DataBuffer.Type.DOUBLE ? createBuffer(new double[length]) : createBuffer(new float[length]);
     }
 
     /**
@@ -544,7 +544,7 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(int length) {
     	DataBuffer ret;
-        if (dataType() == DataBuffer.FLOAT)
+        if (dataType() == DataBuffer.Type.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(length);
@@ -560,7 +560,7 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(float[] data) {
         DataBuffer ret;
-        if (dataType() == DataBuffer.FLOAT)
+        if (dataType() == DataBuffer.Type.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(data);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data));
@@ -576,7 +576,7 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(double[] data) {
         DataBuffer ret;
-        if (dataType() == DataBuffer.DOUBLE)
+        if (dataType() == DataBuffer.Type.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data));
@@ -603,7 +603,7 @@ public class Nd4j {
      *
      * @return the datatype used for the runtime
      */
-    public static int dataType() {
+    public static DataBuffer.Type dataType() {
         return dtype;
     }
 
@@ -1091,11 +1091,11 @@ public class Nd4j {
         for (int i = 0; i < arr.stride().length; i++)
             dataOutputStream.writeInt(arr.stride()[i]);
 
-        dataOutputStream.writeUTF(dataType() == DataBuffer.FLOAT ? "float" : "double");
+        dataOutputStream.writeUTF(dataType() == DataBuffer.Type.FLOAT ? "float" : "double");
 
         dataOutputStream.writeUTF("real");
 
-        if (dataType() == DataBuffer.DOUBLE)
+        if (dataType() == DataBuffer.Type.DOUBLE)
             ArrayUtil.write(arr.data().asDouble(), dataOutputStream);
         else
             ArrayUtil.write(arr.data().asFloat(), dataOutputStream);
@@ -1166,11 +1166,11 @@ public class Nd4j {
             dataOutputStream.writeInt(arr.size(i));
         for (int i = 0; i < arr.stride().length; i++)
             dataOutputStream.writeInt(arr.stride()[i]);
-        dataOutputStream.writeUTF(dataType() == DataBuffer.FLOAT ? "float" : "double");
+        dataOutputStream.writeUTF(dataType() == DataBuffer.Type.FLOAT ? "float" : "double");
 
         dataOutputStream.writeUTF("complex");
 
-        if (dataType() == DataBuffer.DOUBLE)
+        if (dataType() == DataBuffer.Type.DOUBLE)
             ArrayUtil.write(arr.data().asDouble(), dataOutputStream);
         else
             ArrayUtil.write(arr.data().asFloat(), dataOutputStream);
@@ -1222,7 +1222,7 @@ public class Nd4j {
      * @return
      */
     public static IComplexNumber createComplexNumber(Number real, Number imag) {
-        if (dataType() == DataBuffer.FLOAT)
+        if (dataType() == DataBuffer.Type.FLOAT)
             return INSTANCE.createFloat(real.floatValue(), imag.floatValue());
         return INSTANCE.createDouble(real.doubleValue(), imag.doubleValue());
 
@@ -2728,7 +2728,7 @@ public class Nd4j {
         return ret;
     }
 
-    public static INDArray create(int[] shape, int dataType) {
+    public static INDArray create(int[] shape, DataBuffer.Type dataType) {
         INDArray ret = INSTANCE.create(shape, dataType);
         logCreationIfNecessary(ret);
         return ret;
@@ -3221,7 +3221,7 @@ public class Nd4j {
             for (String key : props.stringPropertyNames())
                 System.setProperty(key, props.getProperty(key));
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
-            dtype = otherDtype.equals("float") ? DataBuffer.FLOAT : DataBuffer.DOUBLE;
+            dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT : DataBuffer.Type.DOUBLE;
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
             shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
             resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));
@@ -3262,7 +3262,7 @@ public class Nd4j {
             instrumentation = instrumentationClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             FFT_INSTANCE = fftInstanceClazz.newInstance();
-            Constructor c2 = ndArrayFactoryClazz.getConstructor(int.class, char.class);
+            Constructor c2 = ndArrayFactoryClazz.getConstructor(DataBuffer.Type.class, char.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
             CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();

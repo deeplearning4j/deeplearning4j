@@ -28,7 +28,7 @@ public class LogEntry extends DataBufferLogEntry {
         this.ndArrayType = toLog.getClass().getName();
         this.length = toLog.length();
         this.references = toLog.data().references();
-        this.dataType = toLog.data().dataType() == DataBuffer.DOUBLE ? "double" : "float";
+        this.dataType = toLog.data().dataType() == DataBuffer.Type.DOUBLE ? "double" : "float";
         this.timestamp = System.currentTimeMillis();
         this.stackTraceElements = Thread.currentThread().getStackTrace();
         this.status = status;
@@ -42,7 +42,7 @@ public class LogEntry extends DataBufferLogEntry {
         this.ndArrayType = toLog.getClass().getName();
         this.length = toLog.length();
         this.references = toLog.data().references();
-        this.dataType = toLog.data().dataType() == DataBuffer.DOUBLE ? "double" : "float";
+        this.dataType = toLog.data().dataType() == DataBuffer.Type.DOUBLE ? "double" : "float";
         this.timestamp = System.currentTimeMillis();
         this.stackTraceElements = stackTraceElements;
         this.status = status;

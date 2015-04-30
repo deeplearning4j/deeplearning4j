@@ -120,8 +120,8 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    public int dataType() {
-        return DataBuffer.INT;
+    public DataBuffer.Type dataType() {
+        return DataBuffer.Type.INT;
     }
 
     @Override

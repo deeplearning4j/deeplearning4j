@@ -61,7 +61,7 @@ public class ArrayUtil {
     }
 
     public static INDArray toNDArray(int[][] nums) {
-        if (Nd4j.dataType() == DataBuffer.DOUBLE) {
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             double[] doubles = toDoubles(nums);
             INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
             return create;
@@ -74,7 +74,7 @@ public class ArrayUtil {
     }
 
     public static INDArray toNDArray(int[] nums) {
-        if (Nd4j.dataType() == DataBuffer.DOUBLE) {
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             double[] doubles = toDoubles(nums);
             INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
             return create;

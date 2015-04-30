@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.buffer;
 
 import com.google.common.primitives.Bytes;
+
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.IOException;
@@ -88,8 +89,8 @@ public class FloatBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public int dataType() {
-        return DataBuffer.FLOAT;
+    public DataBuffer.Type dataType() {
+        return DataBuffer.Type.FLOAT;
     }
 
     @Override

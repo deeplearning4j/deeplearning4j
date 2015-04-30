@@ -32,7 +32,7 @@ public abstract class DoubleDataBufferTest {
 
     @Before
     public void before() {
-        Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
     }
 
     @Test

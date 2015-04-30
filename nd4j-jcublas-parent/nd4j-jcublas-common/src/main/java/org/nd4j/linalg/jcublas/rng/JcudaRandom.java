@@ -134,9 +134,9 @@ public class JcudaRandom implements Random {
     	sync();
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
-        if (buffer.dataType() == DataBuffer.FLOAT)
+        if (buffer.dataType() == DataBuffer.Type.FLOAT)
         	checkResult(curandGenerateUniform(generator, buffer.getDevicePointer(), create.length()));
-        else if (buffer.dataType() == DataBuffer.DOUBLE)
+        else if (buffer.dataType() == DataBuffer.Type.DOUBLE)
         	checkResult(curandGenerateUniformDouble(generator, buffer.getDevicePointer(), create.length()));
         else
             throw new IllegalStateException("Illegal data type discovered");
@@ -154,9 +154,9 @@ public class JcudaRandom implements Random {
        
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
-        if (buffer.dataType() == DataBuffer.FLOAT)
+        if (buffer.dataType() == DataBuffer.Type.FLOAT)
             curandGenerateUniform(generator, buffer.getHostPointer(), create.length());
-        else if (buffer.dataType() == DataBuffer.DOUBLE)
+        else if (buffer.dataType() == DataBuffer.Type.DOUBLE)
             curandGenerateUniformDouble(generator, buffer.getHostPointer(), create.length());
         else
             throw new IllegalStateException("Illegal data type discovered");
@@ -168,9 +168,9 @@ public class JcudaRandom implements Random {
        
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
-        if (buffer.dataType() == DataBuffer.FLOAT)
+        if (buffer.dataType() == DataBuffer.Type.FLOAT)
         	checkResult(curandGenerateUniform(generator, buffer.getHostPointer(), create.length()));
-        else if (buffer.dataType() == DataBuffer.DOUBLE)
+        else if (buffer.dataType() == DataBuffer.Type.DOUBLE)
         	checkResult(curandGenerateUniformDouble(generator, buffer.getHostPointer(), create.length()));
         else
             throw new IllegalStateException("Illegal data type discovered");
@@ -182,9 +182,9 @@ public class JcudaRandom implements Random {
        
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
-        if (buffer.dataType() == DataBuffer.FLOAT)
+        if (buffer.dataType() == DataBuffer.Type.FLOAT)
             curandGenerateUniform(generator, buffer.getHostPointer(), create.length());
-        else if (buffer.dataType() == DataBuffer.DOUBLE)
+        else if (buffer.dataType() == DataBuffer.Type.DOUBLE)
             curandGenerateUniformDouble(generator, buffer.getHostPointer(), create.length());
         else
             throw new IllegalStateException("Illegal data type discovered");
@@ -199,9 +199,9 @@ public class JcudaRandom implements Random {
        
         INDArray create = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) create.data();
-        if (buffer.dataType() == DataBuffer.FLOAT)
+        if (buffer.dataType() == DataBuffer.Type.FLOAT)
             curandGenerateUniform(generator, buffer.getHostPointer(), create.length());
-        else if (buffer.dataType() == DataBuffer.DOUBLE)
+        else if (buffer.dataType() == DataBuffer.Type.DOUBLE)
             curandGenerateUniformDouble(generator, buffer.getHostPointer(), create.length());
         else
             throw new IllegalStateException("Illegal data type discovered");

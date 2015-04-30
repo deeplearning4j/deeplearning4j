@@ -31,10 +31,11 @@ import java.util.Collection;
  */
 public interface DataBuffer extends Serializable {
 
-
-    public final static int DOUBLE = 0;
-    public final static int FLOAT = 1;
-    public final static int INT = 2;
+	public static enum Type {
+	    DOUBLE,
+	    FLOAT,
+	    INT
+	}
 
     /**
      * Mark this buffer as persistent
@@ -207,7 +208,7 @@ public interface DataBuffer extends Serializable {
      *
      * @return the data type of the buffer
      */
-    public int dataType();
+    public DataBuffer.Type dataType();
 
     /**
      * Return the buffer as a float array

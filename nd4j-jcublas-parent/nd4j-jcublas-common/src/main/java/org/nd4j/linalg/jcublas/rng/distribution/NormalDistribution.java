@@ -249,14 +249,14 @@ public class NormalDistribution extends BaseJCudaDistribution {
         try {
         	
 	        if (means != null) {
-	            if (buffer.dataType() != DataBuffer.DOUBLE)
+	            if (buffer.dataType() != DataBuffer.Type.DOUBLE)
 	                doSampleNormal(buffer.getDevicePointer(), means, (float) standardDeviation);
 	            else
 	                doSampleNormalDouble(buffer.getDevicePointer(), means, standardDeviation);
 	        } else {
-	            if (buffer.dataType() == DataBuffer.FLOAT)
+	            if (buffer.dataType() == DataBuffer.Type.FLOAT)
 	                doSampleNormal((float) mean, (float) standardDeviation, buffer.getDevicePointer(), buffer.getLength());
-	            else if (buffer.dataType() == DataBuffer.DOUBLE)
+	            else if (buffer.dataType() == DataBuffer.Type.DOUBLE)
 	                doSampleNormal(mean, standardDeviation, buffer.getDevicePointer(), buffer.getLength());
 	        }
 	        buffer.copyToHost();

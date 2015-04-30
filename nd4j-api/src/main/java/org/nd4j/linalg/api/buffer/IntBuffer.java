@@ -30,7 +30,6 @@ import java.util.UUID;
  */
 public class IntBuffer extends BaseDataBuffer {
 
-    public final static int DATA_TYPE = 2;
     private int[] buffer;
 
     public IntBuffer(int[] buffer, boolean copy) {
@@ -73,8 +72,8 @@ public class IntBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public int dataType() {
-        return DATA_TYPE;
+    public DataBuffer.Type dataType() {
+        return DataBuffer.Type.INT;
     }
 
     @Override

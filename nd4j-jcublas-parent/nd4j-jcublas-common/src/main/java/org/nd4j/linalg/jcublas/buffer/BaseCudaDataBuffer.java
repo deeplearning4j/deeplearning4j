@@ -132,7 +132,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         
 
 
-        if (dataType() == DataBuffer.FLOAT) {
+        if (dataType() == DataBuffer.Type.FLOAT) {
             JCublas.cublasSetVector(
                     getLength(),
                     new cuComplex[]{CudaComplexConversion.toComplex(result.asFloat())}
@@ -196,7 +196,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         
 
 
-        if (dataType() == DOUBLE) {
+        if (dataType() == DataBuffer.Type.DOUBLE) {
             JCublas.cublasDcopy(
                     getLength(),
                     pointer,
@@ -241,7 +241,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public IComplexFloat getComplexFloat(int i) {
-        return Nd4j.createFloat(getFloat(i), getFloat(i) + 1);
+        return Nd4j.createFloat(getFloat(i), getFloat(i + 1));
     }
 
     @Override
@@ -251,8 +251,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public IComplexNumber getComplex(int i) {
-        
-        return dataType() == DataBuffer.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
+        return dataType() == DataBuffer.Type.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
     }
 
     /**
@@ -354,9 +353,14 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
     
     @Override
-    public void copyToHost() {
+    public void copyToHost(long byteOffset) {
     	if(devicePointer!=null)
-    		checkResult(JCuda.cudaMemcpy(hostPointer, devicePointer, devicePointerLength, cudaMemcpyKind.cudaMemcpyDeviceToHost));
+    		checkResult(JCuda.cudaMemcpy(hostPointer.withByteOffset(byteOffset), devicePointer, devicePointerLength, cudaMemcpyKind.cudaMemcpyDeviceToHost));
+    }
+    
+    @Override
+    public void copyToHost() {
+    	copyToHost(0);
     }
 
 
@@ -483,7 +487,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 
                 try(CublasPointer buffPointer = new CublasPointer(buff)) {
                 
-	                if (buff.dataType() == DataBuffer.DOUBLE) {
+	                if (buff.dataType() == DataBuffer.Type.DOUBLE) {
 	                	
 	                    JCublas.cublasDcopy(
 	                            buff.getLength()
@@ -534,12 +538,12 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         stream.writeInt(length);
         stream.writeInt(elementSize);
         stream.writeBoolean(isPersist);
-        if(dataType() == DataBuffer.DOUBLE) {
+        if(dataType() == DataBuffer.Type.DOUBLE) {
             double[] d = asDouble();
             for(int i = 0; i < d.length; i++)
                 stream.writeDouble(d[i]);
         }
-        else if(dataType() == DataBuffer.FLOAT) {
+        else if(dataType() == DataBuffer.Type.FLOAT) {
             float[] f = asFloat();
             for(int i = 0; i < f.length; i++)
                 stream.writeFloat(f[i]);
@@ -556,14 +560,14 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         isPersist = stream.readBoolean();
         referencing = Collections.synchronizedSet(new HashSet<String>());
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
-        if(dataType() == DataBuffer.DOUBLE) {
+        if(dataType() == DataBuffer.Type.DOUBLE) {
             double[] d = new double[length];
             for(int i = 0; i < d.length; i++)
                 d[i] = stream.readDouble();
             BaseCudaDataBuffer  buf = (BaseCudaDataBuffer) KernelFunctions.alloc(d);
             hostPointer = buf.hostPointer;
         }
-        else if(dataType() == DataBuffer.FLOAT) {
+        else if(dataType() == DataBuffer.Type.FLOAT) {
             float[] f = new float[length];
             for(int i = 0; i < f.length; i++)
                 f[i] = stream.readFloat();

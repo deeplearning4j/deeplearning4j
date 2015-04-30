@@ -252,13 +252,12 @@ public class JCudaExecutioner implements OpExecutioner {
 
 
     private void invoke(Accumulation op)  {
-	    JCudaBuffer result = null;
+	    INDArray result = null;
 	   
-        int resultLength = 32;
-        if (op.x().data().dataType() == DataBuffer.DOUBLE) {
-            result = new CudaDoubleDataBuffer(resultLength);
+        if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            result = Nd4j.create(2);
         } else {
-            result = new CudaFloatDataBuffer(resultLength);
+            result = Nd4j.create(2);
         }
 
         if (op.y() != null) {
@@ -276,10 +275,8 @@ public class JCudaExecutioner implements OpExecutioner {
                     result
             };
             
-            try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams)) {
-	            
+            try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultOp(op, result)) {
 	            invokeFunction(op, kParams.getKernelParameters());
-	            setResultForOp(op, result.getDevicePointer());
             } catch(Exception e) {
             	throw new RuntimeException("Could not execute kernel", e);
             }
@@ -298,10 +295,9 @@ public class JCudaExecutioner implements OpExecutioner {
                     result
             };
 
-            try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams)) {
+            try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultOp(op, result)) {
 	            
 	            invokeFunction(op, kParams.getKernelParameters());
-	            setResultForOp(op, result.getDevicePointer());
             } catch(Exception e) {
             	throw new RuntimeException("Could not execute kernel", e);
             }
@@ -322,21 +318,7 @@ public class JCudaExecutioner implements OpExecutioner {
     
     
 
-    private void setResultForOp(Accumulation acc, Pointer devicePointer) {
-        JCudaBuffer buff = (JCudaBuffer) acc.x().data();
-
-        if (buff.dataType() == DataBuffer.DOUBLE) {
-            double[] data = new double[1];
-            Pointer get = Pointer.to(data);
-            JCuda.cudaMemcpy(get, devicePointer, Sizeof.DOUBLE, cudaMemcpyKind.cudaMemcpyDeviceToHost);
-            acc.setCurrentResult(data[0]);
-        } else {
-            float[] data = new float[1];
-            Pointer get = Pointer.to(data);
-            JCuda.cudaMemcpy(get, devicePointer, Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyDeviceToHost);
-            acc.setCurrentResult(data[0]);
-        }
-    }
+    
 
 
     private void invoke(ScalarOp op) {
@@ -355,7 +337,7 @@ public class JCudaExecutioner implements OpExecutioner {
                     op.z()
             };
 
-            try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams)) {
+            try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
 	            
 	            invokeFunction(op, kParams.getKernelParameters());
             } catch(Exception e) {
@@ -377,10 +359,8 @@ public class JCudaExecutioner implements OpExecutioner {
                     op.z()
             };
 
-            try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams)) {
-	            
+            try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
 	            invokeFunction(op, kParams.getKernelParameters());
-	            ((JCudaBuffer)op.z().data()).copyToHost();
             } catch(Exception e) {
             	throw new RuntimeException("Could not execute kernel", e);
             }
@@ -392,7 +372,7 @@ public class JCudaExecutioner implements OpExecutioner {
 
 
     private String getType(Op op) {
-        return op.x().data().dataType() == DataBuffer.DOUBLE ? "double" : "float";
+        return op.x().data().dataType() == DataBuffer.Type.DOUBLE ? "double" : "float";
     }
 
 
@@ -422,9 +402,8 @@ public class JCudaExecutioner implements OpExecutioner {
         			op.z()
         	};
         	
-        	try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams)) {
+        	try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
         		invokeFunction(op, kParams.getKernelParameters());
-        		((JCudaBuffer)op.z().data()).copyToHost();
         	} catch(Exception e) {
             	throw new RuntimeException("Could not execute kernel", e);
             }
@@ -441,9 +420,8 @@ public class JCudaExecutioner implements OpExecutioner {
                     op.z()
             };
 
-            try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams)) {
+            try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
         		invokeFunction(op, kParams.getKernelParameters());
-        		((JCudaBuffer)op.z().data()).copyToHost();
         	} catch(Exception e) {
             	throw new RuntimeException("Could not execute kernel", e);
             }

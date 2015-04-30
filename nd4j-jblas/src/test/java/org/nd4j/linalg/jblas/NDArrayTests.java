@@ -79,7 +79,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
     @Test
     public void testAxpy() {
         Nd4j.factory().setOrder('f');
-        Nd4j.dtype = DataBuffer.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray row = Nd4j.create(new float[]{1, 2, 3});
         float alpha = 1f;
         INDArray matrix = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6}, new int[]{2, 3});

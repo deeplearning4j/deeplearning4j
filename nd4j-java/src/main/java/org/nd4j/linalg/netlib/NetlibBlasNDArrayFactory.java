@@ -38,15 +38,11 @@ public class NetlibBlasNDArrayFactory extends BaseNDArrayFactory {
     public NetlibBlasNDArrayFactory() {
     }
 
-    public NetlibBlasNDArrayFactory(int dtype, Character order) {
+    public NetlibBlasNDArrayFactory(DataBuffer.Type dtype, Character order) {
         super(dtype, order);
     }
 
-    public NetlibBlasNDArrayFactory(Integer dtype, Character order) {
-        super(dtype, order);
-    }
-
-    public NetlibBlasNDArrayFactory(int dtype, char order) {
+    public NetlibBlasNDArrayFactory(DataBuffer.Type dtype, char order) {
         super(dtype, order);
     }
 

@@ -122,7 +122,7 @@ public class SimpleNetlibBlas {
     public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexNumber a, IComplexNDArray C
             , IComplexNumber b) {
         DataTypeValidation.assertSameDataType(A, B, C);
-        if (A.data().dataType() == DataBuffer.FLOAT)
+        if (A.data().dataType() == DataBuffer.Type.FLOAT)
             NativeBlas.cgemm(
                     'N',
                     'N',
@@ -141,7 +141,7 @@ public class SimpleNetlibBlas {
                     C.data().asFloat(),
                     C.offset() / 2,
                     C.rows());
-        else if (A.data().dataType() == DataBuffer.DOUBLE) {
+        else if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             NativeBlas.zgemm(
                     'N',
                     'N',
@@ -379,10 +379,10 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static double nrm2(IComplexNDArray A) {
-        if (A.data().dataType() == DataBuffer.FLOAT) {
+        if (A.data().dataType() == DataBuffer.Type.FLOAT) {
             float s = BLAS.getInstance().snrm2(A.length(), A.data().asFloat(), 2, 1);
             return s;
-        } else if (A.data().dataType() == DataBuffer.DOUBLE) {
+        } else if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             double s = BLAS.getInstance().dnrm2(A.length(), A.data().asDouble(), 2, 1);
             return s;
         }
@@ -400,7 +400,7 @@ public class SimpleNetlibBlas {
      */
     public static void copy(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
 
             BLAS.getInstance().scopy(
                     x.length(),
@@ -425,7 +425,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static int iamax(IComplexNDArray x) {
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             return NativeBlas.icamax(x.length(), x.data().asFloat(), x.offset(), 1) - 1;
         else
             return NativeBlas.izamax(x.length(), x.data().asDouble(), x.offset(), 1) - 1;
@@ -437,7 +437,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static double asum(IComplexNDArray x) {
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             return NativeBlas.scasum(x.length(), x.data().asFloat(), x.offset(), x.majorStride());
         else
             return NativeBlas.dzasum(x.length(), x.data().asDouble(), x.offset(), x.majorStride());
@@ -453,7 +453,7 @@ public class SimpleNetlibBlas {
      */
     public static void swap(INDArray x, INDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             BLAS.getInstance().sswap(
                     x.length(),
                     x.data().asFloat(),
@@ -479,7 +479,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static double asum(INDArray x) {
-        if (x.data().dataType() == DataBuffer.FLOAT) {
+        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
             float sum = BLAS.getInstance().sasum(x.length(), x.data().asFloat(), x.offset(), x.majorStride());
             return sum;
         } else {
@@ -495,7 +495,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static double nrm2(INDArray x) {
-        if (x.data().dataType() == DataBuffer.FLOAT) {
+        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
             float normal2 = BLAS.getInstance().snrm2(x.length(), x.data().asFloat(), x.offset(), x.majorStride());
             return normal2;
         } else {
@@ -513,7 +513,7 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static int iamax(INDArray x) {
-        if (x.data().dataType() == DataBuffer.FLOAT) {
+        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
             int max = BLAS.getInstance().isamax(
                     x.length(),
                     x.data().asFloat(),
@@ -617,7 +617,7 @@ public class SimpleNetlibBlas {
      */
     public static void axpy(IComplexNumber da, IComplexNDArray A, IComplexNDArray B) {
         DataTypeValidation.assertSameDataType(A, B);
-        if (A.data().dataType() == DataBuffer.FLOAT)
+        if (A.data().dataType() == DataBuffer.Type.FLOAT)
             NativeBlas.caxpy(
                     A.length(),
                     new org.jblas.ComplexFloat(da.realComponent().floatValue(), da.imaginaryComponent().floatValue()),
@@ -693,7 +693,7 @@ public class SimpleNetlibBlas {
      */
     public static void copy(INDArray x, INDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             BLAS.getInstance().scopy(x.length(),
                     x.data().asFloat(),
                     x.offset(),
@@ -723,7 +723,7 @@ public class SimpleNetlibBlas {
      */
     public static double dot(INDArray x, INDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-        if (x.data().dataType() == DataBuffer.FLOAT) {
+        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
             double ret = BLAS.getInstance().sdot(
                     x.length(),
                     x.data().asFloat(),
@@ -760,7 +760,7 @@ public class SimpleNetlibBlas {
      */
     public static IComplexDouble dot(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-        if (x.data().dataType() == DataBuffer.FLOAT) {
+        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
             ComplexFloat f = new ComplexFloat(NativeBlas.cdotc(
                     x.length(),
                     x.data().asFloat(),
@@ -837,7 +837,7 @@ public class SimpleNetlibBlas {
      */
     public static IComplexNumber dotu(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-        if (x.data().dataType() == DataBuffer.FLOAT) {
+        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
             return new ComplexFloat(NativeBlas.cdotu(
                     x.length(),
                     x.data().asFloat(),
@@ -870,7 +870,7 @@ public class SimpleNetlibBlas {
      */
     public static IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
         DataTypeValidation.assertSameDataType(x, y, a);
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             NativeBlas.cgeru(
                     a.rows(),
                     a.columns(),
@@ -911,7 +911,7 @@ public class SimpleNetlibBlas {
     public static IComplexNDArray gerc(IComplexNDArray x, IComplexNDArray y, IComplexNDArray a,
                                        IComplexDouble alpha) {
         DataTypeValidation.assertDouble(x, y, a);
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             NativeBlas.cgerc(
                     a.rows(),
                     a.columns(),

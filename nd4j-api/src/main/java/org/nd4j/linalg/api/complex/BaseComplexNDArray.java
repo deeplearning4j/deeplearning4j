@@ -2949,12 +2949,12 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             IComplexNDArray temp = Nd4j.createComplex(resultArray.shape(), ArrayUtil.calcStridesFortran(resultArray.shape(), 2));
 
             if (otherArray.columns() == 1) {
-                if (data.dataType() == (DataBuffer.DOUBLE))
+                if (data.dataType() == (DataBuffer.Type.DOUBLE))
                     Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), temp);
                 else
                     Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asFloat(), this, otherArray, Nd4j.ZERO.asFloat(), temp);
             } else {
-                if (data.dataType() == (DataBuffer.DOUBLE))
+                if (data.dataType() == (DataBuffer.Type.DOUBLE))
                     Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), temp);
                 else
                     Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asFloat(), this, otherArray, Nd4j.ZERO.asFloat(), temp);
@@ -2966,11 +2966,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
         } else {
             if (otherArray.columns() == 1)
-                if (data.dataType() == (DataBuffer.DOUBLE))
+                if (data.dataType() == (DataBuffer.Type.DOUBLE))
                     Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), resultArray);
                 else
                     Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asFloat(), this, otherArray, Nd4j.ZERO.asFloat(), resultArray);
-            else if (data.dataType() == (DataBuffer.FLOAT))
+            else if (data.dataType() == (DataBuffer.Type.FLOAT))
                 Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asFloat(), this, otherArray, Nd4j.ZERO.asFloat(), resultArray);
             else
                 Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), resultArray);
@@ -3094,7 +3094,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         if (result == this)
             Nd4j.getBlasWrapper().axpy(Nd4j.NEG_UNIT, cOther, cResult);
         else if (result == other) {
-            if (data.dataType() == (DataBuffer.DOUBLE)) {
+            if (data.dataType() == (DataBuffer.Type.DOUBLE)) {
                 Nd4j.getBlasWrapper().scal(Nd4j.NEG_UNIT.asDouble(), cResult);
                 Nd4j.getBlasWrapper().axpy(Nd4j.UNIT, this, cResult);
             } else {

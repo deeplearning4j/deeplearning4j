@@ -149,8 +149,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    public int dataType() {
-        return DataBuffer.DOUBLE;
+    public DataBuffer.Type dataType() {
+        return DataBuffer.Type.DOUBLE;
     }
 
     @Override
