@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.Function2;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -8,6 +9,9 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import scala.Tuple2;
 
 
 import java.util.ArrayList;
@@ -17,24 +21,20 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author Adam Gibson
  */
-public class SentenceBatch implements Function<Pair<List<VocabWord>,AtomicLong>,Word2VecChange> {
+public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> {
 
     private AtomicLong nextRandom = new AtomicLong(5);
-    private Word2VecParam param;
+    private static Logger log = LoggerFactory.getLogger(SentenceBatch.class);
 
-    public SentenceBatch(Word2VecParam param) {
-        this.param = param;
-    }
 
     @Override
-    public Word2VecChange call(Pair<List<VocabWord>, AtomicLong> tripleIterator) throws Exception {
-
+    public Word2VecChange call(Word2VecFuncCall sentence) throws Exception {
+        Word2VecParam param = sentence.getParam().getValue();
         List<Triple<Integer,Integer,Integer>> changed = new ArrayList<>();
-        Pair<List<VocabWord>, AtomicLong> next = tripleIterator;
-        param.getWordsSeen().addAndGet(next.getSecond().get());
         double alpha = Math.max(param.getMinAlpha(), param.getAlpha() *
-                (1 - (1.0 * param.getWordsSeen().get() / (double) param.getTotalWords())));
-        trainSentence(next.getFirst(),alpha,changed);
+                (1 - (1.0 * sentence.getWordsSeen() / (double) param.getTotalWords())));
+
+        trainSentence(param,sentence.getSentence(), alpha, changed);
         return new Word2VecChange(changed,param);
     }
 
@@ -45,12 +45,12 @@ public class SentenceBatch implements Function<Pair<List<VocabWord>,AtomicLong>,
      * Train on a list of vocab words
      * @param sentence the list of vocab words to train on
      */
-    public void trainSentence(final List<VocabWord> sentence,double alpha,List<Triple<Integer,Integer,Integer>> changed) {
+    public void trainSentence(Word2VecParam param,final List<VocabWord> sentence,double alpha,List<Triple<Integer,Integer,Integer>> changed) {
         if (sentence != null && !sentence.isEmpty()) {
             for (int i = 0; i < sentence.size(); i++) {
                 if (!sentence.get(i).getWord().endsWith("STOP")) {
                     nextRandom.set(nextRandom.get() * 25214903917L + 11);
-                    skipGram(i, sentence, (int) nextRandom.get() % param.getWindow(), alpha,changed);
+                    skipGram(param,i, sentence, (int) nextRandom.get() % param.getWindow(), alpha,changed);
                 }
             }
         }
@@ -65,7 +65,7 @@ public class SentenceBatch implements Function<Pair<List<VocabWord>,AtomicLong>,
      * @param b
      * @param alpha the learning rate
      */
-    public void skipGram(int i,List<VocabWord> sentence, int b,double alpha,List<Triple<Integer,Integer,Integer>> changed) {
+    public void skipGram(Word2VecParam param,int i,List<VocabWord> sentence, int b,double alpha,List<Triple<Integer,Integer,Integer>> changed) {
 
         final VocabWord word = sentence.get(i);
         int window = param.getWindow();
@@ -76,7 +76,7 @@ public class SentenceBatch implements Function<Pair<List<VocabWord>,AtomicLong>,
                     int c = i - window + a;
                     if (c >= 0 && c < sentence.size()) {
                         VocabWord lastWord = sentence.get(c);
-                        iterateSample(word, lastWord, alpha,changed);
+                        iterateSample(param,word, lastWord, alpha,changed);
                     }
                 }
             }
@@ -91,8 +91,8 @@ public class SentenceBatch implements Function<Pair<List<VocabWord>,AtomicLong>,
      * @param w1 the first word to iterate on
      * @param w2 the second word to iterate on
      */
-    public  void iterateSample(VocabWord w1, VocabWord w2,double alpha,List<Triple<Integer,Integer,Integer>> changed) {
-        if(w2 == null || w2.getIndex() < 0)
+    public  void iterateSample(Word2VecParam param,VocabWord w1, VocabWord w2,double alpha,List<Triple<Integer,Integer,Integer>> changed) {
+        if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getWord().equals("STOP") || w2.getWord().equals("STOP") || w1.getWord().equals("UNK") || w2.getWord().equals("UNK"))
             return;
         int vectorLength = param.getVectorLength();
         InMemoryLookupTable weights = param.getWeights();
@@ -117,32 +117,32 @@ public class SentenceBatch implements Function<Pair<List<VocabWord>,AtomicLong>,
 
             double dot = Nd4j.getBlasWrapper().dot(l1,syn1);
 
-            if (dot >= -MAX_EXP && dot < MAX_EXP) {
+            if(dot < -MAX_EXP || dot >= MAX_EXP)
+                continue;
 
-                int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
-                if (idx >= expTable.length)
-                    continue;
+            int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
 
-                //score
-                double f = expTable[idx];
-                //gradient
-                double g = (1 - code - f) * (useAdaGrad ? w1.getGradient(i, alpha) : alpha);
+            //score
+            double f = expTable[idx];
+            //gradient
+            double g = (1 - code - f) * (useAdaGrad ? w1.getGradient(i, alpha) : alpha);
 
 
-                if (neu1e.data().dataType() == DataBuffer.DOUBLE) {
-                    Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
-                    Nd4j.getBlasWrapper().axpy(g, l1, syn1);
-                } else {
-                    Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
-                    Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
-                }
+            if (neu1e.data().dataType() == DataBuffer.DOUBLE) {
+                Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
+                Nd4j.getBlasWrapper().axpy(g, l1, syn1);
+            } else {
+                Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
+                Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
             }
 
-            changed.add(new Triple<>(w1.getIndex(), point, -1));
+
+            changed.add(new Triple<>(point,w1.getIndex(), -1));
 
         }
 
 
+        changed.add(new Triple<>(w1.getIndex(),w2.getIndex(),-1));
         //negative sampling
         if(negative > 0) {
             int target = w1.getIndex();

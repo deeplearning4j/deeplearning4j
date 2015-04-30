@@ -23,7 +23,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.SliceOp;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -71,7 +70,7 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
             throw new IllegalStateException("Input size at dimension 1 must be same as the filter size");
         final INDArray b = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
 
-        INDArray convolution = Convolution.conv2d(input,W, Convolution.Type.VALID);
+        INDArray convolution = Convolution.conv2d(input,W, Convolution.Type.FULL);
         if(convolution.shape().length < 4) {
             int[] newShape = new int[4];
             for(int i = 0; i < newShape.length; i++)
@@ -85,20 +84,7 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
 
         final INDArray pooled = getPool(convolution);
         final INDArray bias = b.dimShuffle(new Object[]{'x', 0, 'x', 'x'}, new int[4], new boolean[]{true});
-        final INDArray broadCasted = bias.broadcast(pooled.shape());
-        broadCasted.iterateOverAllRows(new SliceOp() {
-
-            @Override
-            public void operate(final INDArray nd1) {
-                pooled.iterateOverAllRows(new SliceOp() {
-
-                    @Override
-                    public void operate(INDArray nd2) {
-                        nd1.addi(nd2);
-                    }
-                });
-            }
-        });
+        //final INDArray broadCasted = bias.broadcast(pooled.shape());
 
         return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), pooled));
     }

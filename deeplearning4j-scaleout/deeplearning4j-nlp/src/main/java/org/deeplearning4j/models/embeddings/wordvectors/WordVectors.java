@@ -39,7 +39,7 @@ public interface WordVectors extends Serializable {
      * @param word the word to test for
      * @return true if the model has the word in the vocab
      */
-    public boolean hasWord(String word);
+    boolean hasWord(String word);
 
     /**
      * Get the top n words most similar to the given word
@@ -47,7 +47,7 @@ public interface WordVectors extends Serializable {
      * @param n the n to get
      * @return the top n words
      */
-    public Collection<String> wordsNearestSum(String word,int n);
+    Collection<String> wordsNearestSum(String word,int n);
 
 
     /**
@@ -57,7 +57,7 @@ public interface WordVectors extends Serializable {
      * @param top the top n words
      * @return the words nearest the mean of the words
      */
-    public Collection<String> wordsNearestSum(List<String> positive,List<String> negative,int top);
+    Collection<String> wordsNearestSum(List<String> positive,List<String> negative,int top);
 
     /**
      * Accuracy based on questions which are a space separated list of strings
@@ -66,9 +66,9 @@ public interface WordVectors extends Serializable {
      * @param questions the questions to ask
      * @return the accuracy based on these questions
      */
-    public Map<String,Double> accuracy(List<String> questions);
+    Map<String,Double> accuracy(List<String> questions);
 
-    public int indexOf(String word);
+    int indexOf(String word);
 
     /**
      * Find all words with a similar characters
@@ -77,28 +77,28 @@ public interface WordVectors extends Serializable {
      * @param accuracy the accuracy: 0 to 1
      * @return the list of words that are similar in the vocab
      */
-    public List<String> similarWordsInVocabTo(String word,double accuracy);
+    List<String> similarWordsInVocabTo(String word,double accuracy);
 
     /**
      * Get the word vector for a given matrix
      * @param word the word to get the matrix for
      * @return the ndarray for this word
      */
-    public double[] getWordVector(String word);
+    double[] getWordVector(String word);
 
     /**
      * Returns the word vector divided by the norm2 of the array
      * @param word the word to get the matrix for
      * @return the looked up matrix
      */
-    public INDArray getWordVectorMatrixNormalized(String word);
+    INDArray getWordVectorMatrixNormalized(String word);
 
     /**
      * Get the word vector for a given matrix
      * @param word the word to get the matrix for
      * @return the ndarray for this word
      */
-    public INDArray getWordVectorMatrix(String word);
+    INDArray getWordVectorMatrix(String word);
     /**
      * Words nearest based on positive and negative words
      * @param positive the positive words
@@ -106,7 +106,7 @@ public interface WordVectors extends Serializable {
      * @param top the top n words
      * @return the words nearest the mean of the words
      */
-    public Collection<String> wordsNearest(List<String> positive,List<String> negative,int top);
+    Collection<String> wordsNearest(List<String> positive,List<String> negative,int top);
 
 
     /**
@@ -115,7 +115,7 @@ public interface WordVectors extends Serializable {
      * @param n the n to get
      * @return the top n words
      */
-    public Collection<String> wordsNearest(String word,int n);
+    Collection<String> wordsNearest(String word,int n);
 
 
 
@@ -125,11 +125,18 @@ public interface WordVectors extends Serializable {
      * @param word2 the second word
      * @return a normalized similarity (cosine similarity)
      */
-    public double similarity(String word,String word2);
+    double similarity(String word,String word2);
 
-
+    /**
+     * Vocab for the vectors
+     * @return
+     */
     VocabCache vocab();
 
+    /**
+     * Lookup table for the vectors
+     * @return
+     */
     WeightLookupTable lookupTable();
 
 }

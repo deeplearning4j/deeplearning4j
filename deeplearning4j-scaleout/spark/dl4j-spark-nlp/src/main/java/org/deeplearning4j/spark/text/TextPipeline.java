@@ -37,7 +37,7 @@ import java.util.List;
 public class TextPipeline {
     private JavaRDD<String> corpus;
     private List<String> stopWords;
-    private int minWordFrequency = 5;
+    private int minWordFrequency;
     public final static String MIN_WORDS = "org.deeplearning4j.spark.text.minwords";
 
 

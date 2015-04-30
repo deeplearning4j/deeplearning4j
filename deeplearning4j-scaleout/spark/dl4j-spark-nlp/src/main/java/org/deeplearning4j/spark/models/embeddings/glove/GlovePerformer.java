@@ -43,7 +43,6 @@ public class GlovePerformer implements Function<Triple<VocabWord,VocabWord,Doubl
 
     @Override
     public GloveChange call(Triple<VocabWord, VocabWord,Double> pair) throws Exception {
-        table.iterateSample(pair.getFirst(),pair.getSecond(),pair.getThird());
-        return new GloveChange(pair.getFirst(),pair.getSecond(),table);
+        return null;
     }
 }
