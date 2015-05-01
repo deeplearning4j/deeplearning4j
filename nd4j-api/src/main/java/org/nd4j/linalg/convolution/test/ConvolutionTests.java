@@ -36,9 +36,10 @@ public abstract class ConvolutionTests {
 
     @Test
     public void convNTest() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
         INDArray arr = Nd4j.linspace(1, 8, 8);
         INDArray kernel = Nd4j.linspace(1, 3, 3);
-        INDArray answer = Nd4j.create(new double[]{1});
+            INDArray answer = Nd4j.create(new double[]{1.0000012});
         INDArray test = Convolution.convn(arr, kernel, Convolution.Type.VALID);
         assertEquals(answer, test);
     }

@@ -31,11 +31,28 @@ public class NDArrayIndex {
 
     private int[] indices = new int[1];
     private boolean isInterval = false;
+    private static NDArrayIndexAll ALL = new NDArrayIndexAll();
 
-
+    /**
+     * NDArrayIndexing based on the given
+     * indexes
+     * @param indices
+     */
     public NDArrayIndex(int... indices) {
         this.indices = indices;
 
+    }
+
+
+    /**
+     * Represents collecting all elements
+     *
+     * @return an ndarray index
+     * meaning collect
+     * all elements
+     */
+    public static NDArrayIndex all() {
+        return ALL;
     }
 
     /**
@@ -176,6 +193,15 @@ public class NDArrayIndex {
         if (!Arrays.equals(indices, that.indices)) return false;
 
         return true;
+    }
+
+
+
+    //static type checking used for checking if an index should be represented as all
+    public static class NDArrayIndexAll  extends NDArrayIndex {
+        public NDArrayIndexAll(int... indices) {
+            super(indices);
+        }
     }
 
     @Override

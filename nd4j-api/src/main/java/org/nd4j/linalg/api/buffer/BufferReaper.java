@@ -120,7 +120,7 @@ public class BufferReaper extends Thread {
     @Override
     public void run() {
 
-        while (true) {
+        while (Nd4j.resourceManagerOn) {
             Reference<INDArray> queue2 = (Reference<INDArray>) queue.poll();
             while(queue2 != null) {
                 queue2.get().cleanup();

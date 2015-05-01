@@ -77,6 +77,7 @@ public class ComplexNDArrayUtil {
 
         INDArray startIndex = Transforms.floor(currShape.sub(shapeMatrix).divi(Nd4j.scalar(2)));
         INDArray endIndex = startIndex.add(shapeMatrix);
+
         if (shapeMatrix.length() > 1)
             return arr.get(
                     NDArrayIndex.interval((int) startIndex.getDouble(0), (int) endIndex.getDouble(0))

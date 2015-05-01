@@ -50,7 +50,7 @@ public class Mean extends BaseAccumulation {
         else
             currentResult = currentResult.doubleValue() + result.doubleValue();
         if (numProcessed() == n())
-            currentResult = currentResult.doubleValue() / n();
+            currentResult = currentResult.doubleValue() / (double) n();
 
 
     }

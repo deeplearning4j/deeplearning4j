@@ -98,7 +98,7 @@ public class Indices {
         if (indexes.length == originalShape.length)
             return indexes;
         for (int i = 0; i < indexes.length; i++) {
-            if (indexes[i].end() >= originalShape[i])
+            if (indexes[i].end() >= originalShape[i] || indexes[i] instanceof NDArrayIndex.NDArrayIndexAll)
                 indexes[i] = NDArrayIndex.interval(0, originalShape[i] - 1);
         }
 
@@ -223,16 +223,22 @@ public class Indices {
 
         int[] ret = new int[indices.length];
         for (int i = 0; i < ret.length; i++) {
-            int[] currIndices = indices[i].indices();
-            if (currIndices.length < 1)
-                continue;
-            int end = currIndices[currIndices.length - 1];
-            if (end > shape[i])
-                end = shape[i] - 1;
-            int begin = currIndices[0];
+            if(indices[i] instanceof NDArrayIndex.NDArrayIndexAll) {
+                ret[i] = shape[i];
+            }
+            else {
+                int[] currIndices = indices[i].indices();
+                if (currIndices.length < 1)
+                    continue;
+                int end = currIndices[currIndices.length - 1];
+                if (end > shape[i])
+                    end = shape[i] - 1;
+                int begin = currIndices[0];
 
-            ret[i] = indices[i].isInterval() ? Math.abs(end - begin) + 1 :
-                    indices[i].indices().length;
+                ret[i] = indices[i].isInterval() ? Math.abs(end - begin) + 1 :
+                        indices[i].indices().length;
+            }
+
         }
 
         List<Integer> nonZeros = new ArrayList<>();

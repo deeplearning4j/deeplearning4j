@@ -76,6 +76,25 @@ public abstract class NDArrayTests {
 
     }
 
+
+
+    @Test
+    public void testTensorStrides() {
+        Nd4j.factory().setOrder('c');
+        INDArray arr = Nd4j.create(106, 1, 3, 3);
+        int[] assertion = ArrayUtil.of(9, 9, 3, 1);
+        int[] arrShape = arr.stride();
+        assertTrue(Arrays.equals(assertion, arrShape));
+        Nd4j.factory().setOrder('f');
+        arr = Nd4j.create(106,1,3,3);
+        //(8, 848, 848, 2544)
+        assertion = ArrayUtil.of(1, 106, 106, 318);
+        arrShape = arr.stride();
+        assertTrue(Arrays.equals(assertion, arrShape));
+
+    }
+
+
     @Test
     public void testReadWrite() throws Exception {
         Nd4j.dtype = DataBuffer.FLOAT;
@@ -748,6 +767,8 @@ public abstract class NDArrayTests {
         INDArray sum = test.sum(1);
         INDArray assertion = Nd4j.create(new float[]{3, 7});
         assertEquals(assertion, sum);
+        INDArray sum0 = Nd4j.create(new double[]{4,6});
+        assertEquals(sum0,test.sum(0));
     }
 
 
@@ -1522,8 +1543,17 @@ public abstract class NDArrayTests {
         INDArray lastAxis = arr.vectorAlongDimension(0, 2);
         assertEquals(assertion, lastAxis);
 
+        INDArray test2 = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray row  = test2.vectorAlongDimension(0,0);
+        assertEquals(Nd4j.create(new double[]{1,3}),row);
+        assertEquals(Nd4j.create(new double[]{2, 4}),  test2.vectorAlongDimension(1,0));
+
+
 
     }
+
+
+
 
     @Test
     public void testSquareMatrix() {
