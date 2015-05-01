@@ -21,7 +21,7 @@ package org.deeplearning4j.cli;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.cli.api.flags.Model;
 import org.deeplearning4j.cli.subcommands.Train;
-import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;

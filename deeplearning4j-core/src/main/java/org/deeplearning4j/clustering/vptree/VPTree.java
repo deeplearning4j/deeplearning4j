@@ -1,3 +1,21 @@
+/*
+ *
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ */
+
 package org.deeplearning4j.clustering.vptree;
 
 import org.deeplearning4j.berkeley.CounterMap;
@@ -96,7 +114,14 @@ public class VPTree {
     }
 
     private double getDistance(DataPoint d1,DataPoint d2) {
-        return distances.getCount(d1, d2);
+        double count =  distances.getCount(d1, d2);
+        if(count == 0) {
+            double realDistance = d1.distance(d2);
+            distances.setCount(d1,d2,realDistance);
+            distances.setCount(d2,d1,realDistance);
+            return realDistance;
+        }
+        return count;
     }
 
     private Node buildFromPoints(int lower,int upper) {
