@@ -184,6 +184,8 @@ public class DefaultOpFactory implements OpFactory {
     @Override
     public TransformOp createTransform(String name, INDArray x) {
         switch (name) {
+            case "relu":
+                return new RectifedLinear(x,0);
             case "abs":
                 return new Abs(x);
             case "acos":
@@ -238,6 +240,8 @@ public class DefaultOpFactory implements OpFactory {
     @Override
     public TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z) {
         switch (name) {
+            case "relu":
+                return new RectifedLinear(x,z,0);
             case "abs":
                 return new Abs(x, z);
             case "acos":
