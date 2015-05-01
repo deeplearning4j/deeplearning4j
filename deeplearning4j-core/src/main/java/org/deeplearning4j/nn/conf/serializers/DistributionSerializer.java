@@ -23,6 +23,7 @@ import org.deeplearning4j.util.Dl4jReflection;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 
 import java.io.IOException;
+import java.io.StringWriter;
 
 /**
  *
@@ -34,7 +35,10 @@ public class DistributionSerializer extends JsonSerializer<Distribution> {
     @Override
     public void serialize(Distribution value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
         try {
-            jgen.writeString(value.getClass().getName() + "\t" + Dl4jReflection.getFieldsAsProperties(value,null));
+            try(StringWriter sw = new StringWriter()) {
+                Dl4jReflection.getFieldsAsProperties(value,null).store(sw, "");
+                jgen.writeString(value.getClass().getName() + "\t" + sw.toString());
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
