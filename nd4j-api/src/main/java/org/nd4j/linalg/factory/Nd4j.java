@@ -212,6 +212,15 @@ public class Nd4j {
 
 
     /**
+     * Returns the shape of the ndarray
+     * @param arr the array to get the shape of
+     * @return the shape of tihs ndarray
+     */
+    public static int[] shape(INDArray arr) {
+        return arr.shape();
+    }
+
+    /**
      * Create an ndarray based on the given data
      * @param sliceShape the shape of each slice
      * @param arrays the arrays of data to create

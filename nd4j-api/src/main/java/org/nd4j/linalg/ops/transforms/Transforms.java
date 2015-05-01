@@ -41,7 +41,7 @@ public class Transforms {
 
 
     /**
-     * Max pooling
+     * Max poolingi
      *
      * @param input
      * @param ds    the strides with which to sumPooling expectations
@@ -59,11 +59,12 @@ public class Transforms {
         int cols = input.size(3);
 
         INDArray signalNDArray = input.reshape(batchSize, 1, rows, cols);
-        INDArray zz = Nd4j.create(signalNDArray.shape()).assign(Float.MIN_VALUE);
+        INDArray zz = Nd4j.create(signalNDArray.shape());
 
-        int rowIter = ignoreBorder ? rows / (int) Math.pow(ds[0], 2) : rows;
-        int colIter = ignoreBorder ? cols / (int) Math.pow(ds[1], 2) : cols;
-
+        int rowIter = ignoreBorder ? (int) (rows / Math.pow(ds[0], 2)) : rows;
+        int colIter = ignoreBorder ? (int) (cols / Math.pow(ds[1], 2)) : cols;
+        rowIter = Math.max(1,rowIter);
+        colIter = Math.max(1,colIter);
         for (int i = 0; i < signalNDArray.size(0); i++) {
             for (int j = 0; j < signalNDArray.size(1); j++) {
                 for (int k = 0; k < rowIter; k++) {
@@ -106,7 +107,7 @@ public class Transforms {
     public static INDArray avgPooling(INDArray toPool, int[] stride) {
 
         int nDims = toPool.shape().length;
-        assert nDims == 3 : "NDArray must have 3 dimensions";
+        assert nDims >= 3 : "NDArray must have 3 dimensions";
         int nRows = toPool.shape()[nDims - 2];
         int nCols = toPool.shape()[nDims - 1];
         int yStride = stride[0], xStride = stride[1];
@@ -135,7 +136,7 @@ public class Transforms {
     public static INDArray sumPooling(INDArray toPool, int[] stride) {
 
         int nDims = toPool.shape().length;
-        assert nDims == 3 : "NDArray must have 3 dimensions";
+        assert nDims >= 3 : "NDArray must have 3 dimensions";
         int nRows = toPool.shape()[nDims - 2];
         int nCols = toPool.shape()[nDims - 1];
         int yStride = stride[0], xStride = stride[1];
