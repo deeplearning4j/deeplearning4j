@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Properties;
 
 /**
@@ -93,6 +94,7 @@ public class Dl4jReflection {
     public static Properties getFieldsAsProperties(Object obj,Class<?>[] clazzes) throws Exception  {
         Properties props = new Properties();
         for (Field field : obj.getClass().getDeclaredFields()) {
+            if(Modifier.isStatic(field.getModifiers())) continue;
             field.setAccessible(true);
             Class<?> type = field.getType();
             if(clazzes == null || contains(type,clazzes)) {
