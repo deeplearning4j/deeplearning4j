@@ -20,13 +20,10 @@ import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.override.ClassifierOverride;
-import org.deeplearning4j.nn.conf.override.ComposableOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
@@ -36,7 +33,6 @@ import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -86,11 +82,13 @@ public class ConvolutionDownSampleLayerTest {
         /**
          *
          */
+        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
+        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
-                .dist(Nd4j.getDistributions().createNormal(0, 1))
-                .iterations(100).iterationListener(new ScoreIterationListener(1))
-                .activationFunction("tanh").filterSize(5, 1, 2, 2)
+                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT).momentum(0.9)
+                .dist(Nd4j.getDistributions().createUniform(1e-5, 1e-1)).constrainGradientToUnitNorm(true)
+                .iterations(1000).iterationListener(new ScoreIterationListener(1)).convolutionType(ConvolutionDownSampleLayer.ConvolutionType.NONE)
+                .activationFunction("tanh").filterSize(1, 1, 2, 2)
                 .nIn(4).nOut(3).batchSize(batchSize)
                 .layerFactory(layerFactory)
                 .list(3)
@@ -102,7 +100,7 @@ public class ConvolutionDownSampleLayerTest {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 0)
-                            builder.filterSize(5, 1, 2, 2);
+                            builder.filterSize(1, 1, 2, 2);
 
                     }
                 })    .override(1, new ConfOverride() {

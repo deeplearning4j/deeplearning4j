@@ -21,7 +21,7 @@ package org.deeplearning4j.cli.flags;
 
 import org.deeplearning4j.cli.api.flags.Model;
 import org.deeplearning4j.cli.api.flags.test.BaseFlagTest;
-import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
