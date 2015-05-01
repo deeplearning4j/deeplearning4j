@@ -96,7 +96,7 @@ public class NearestNeighborsResource extends FileResource {
         try {
             Pair<WeightLookupTable,VocabCache> vocab = WordVectorSerializer.loadTxt(path);
             InMemoryLookupTable table = (InMemoryLookupTable) vocab.getFirst();
-            tree = new VPTree(table.getSyn0(),"euclidean");
+            tree = new VPTree(table.getSyn0(),"cosinesimilarity");
             words = new ArrayList<>(vocab.getSecond().vocabWords());
             this.vocab = vocab.getSecond();
         } catch (Exception e) {
