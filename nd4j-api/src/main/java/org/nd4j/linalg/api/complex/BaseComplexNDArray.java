@@ -33,11 +33,9 @@ import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.Shape;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.nd4j.linalg.util.ArrayUtil.calcStrides;
 import static org.nd4j.linalg.util.ArrayUtil.calcStridesFortran;
-import static org.nd4j.linalg.util.ArrayUtil.of;
 
 
 /**
@@ -429,17 +427,22 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     protected void copyFromReal(INDArray real) {
         if(!Shape.shapeEquals(shape(),real.shape()))
             throw new IllegalStateException("Unable to copy array. Not the same shape");
-        for(int i = 0; i < slices(); i++) {
-            putSlice(i, real.slice(i));
+        INDArray linear = real.linearView();
+        IComplexNDArray thisLinear = linearView();
+        for (int i = 0; i < linear.length(); i++) {
+            thisLinear.putScalar(i, Nd4j.createComplexNumber(linear.getDouble(i),0.0));
         }
     }
 
     protected void copyRealTo(INDArray arr) {
         INDArray linear = arr.linearView();
         IComplexNDArray thisLinear = linearView();
-        for (int i = 0; i < linear.length(); i++) {
-            arr.putScalar(i, thisLinear.getReal(i));
-        }
+        if(arr.isScalar())
+            arr.putScalar(0,getReal(0));
+        else
+            for (int i = 0; i < linear.length(); i++) {
+                arr.putScalar(i, thisLinear.getReal(i));
+            }
 
     }
 
@@ -1235,6 +1238,13 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return this;
     }
 
+    @Override
+    public IComplexNDArray put(int i, int j, IComplexNumber complex) {
+        return putScalar(new int[]{i, j}, complex);
+    }
+
+
+
 
     /**
      * Assigns the given matrix (put) to the specified slice
@@ -1250,11 +1260,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             putScalar(0, put.getDouble(0));
             return this;
         }
-        else if (isVector()) {
-            putScalar(slice, put.getComplex(0));
-            return this;
-        }
-
 
         assertSlice(put, slice);
 
@@ -1262,14 +1267,14 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         IComplexNDArray view = slice(slice);
 
         if (put.isScalar())
-            putScalar(slice, put.getDouble(0));
+            putScalar(slice, put.getComplex(0));
         else if (put.isVector())
             for (int i = 0; i < put.length(); i++)
                 view.putScalar(i, put.getComplex(i));
         else if (put.shape().length == 2)
             for (int i = 0; i < put.rows(); i++)
                 for (int j = 0; j < put.columns(); j++)
-                    view.put(i, j, put.getDouble(i, j));
+                    view.put(i, j, put.getComplex(i, j));
 
         else {
 
@@ -1517,35 +1522,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray putSlice(int slice, INDArray put) {
-        assertSlice(put, slice);
-
-
-        IComplexNDArray view = slice(slice);
-
-        if (put.isScalar())
-            put(slice, put.getScalar(0));
-        else if (put.isVector())
-            for (int i = 0; i < put.length(); i++)
-                view.putScalar(i, Nd4j.createComplexNumber(put.getDouble(i), 0));
-        else if (put.shape().length == 2) {
-            if (put instanceof IComplexNDArray) {
-                IComplexNDArray complexPut = (IComplexNDArray) put;
-                for (int i = 0; i < put.rows(); i++)
-                    for (int j = 0; j < put.columns(); j++)
-                        view.putScalar(i, j, complexPut.getComplex(i, j));
-            }
-            else
-                for (int i = 0; i < put.rows(); i++)
-                    for (int j = 0; j < put.columns(); j++)
-                        view.putScalar(i, j, Nd4j.createDouble(put.getDouble(i, j), 0.0));
-        }
-        else
-            for (int i = 0; i < put.slices(); i++)
-                view.slice(i).putSlice(i, view.slice(i));
-
-
-
-        return this;
+        return putSlice(slice,Nd4j.createComplex(put));
     }
 
 

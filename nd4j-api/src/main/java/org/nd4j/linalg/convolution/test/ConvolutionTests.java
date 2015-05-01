@@ -23,10 +23,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by agibsonccc on 9/6/14.
@@ -34,14 +32,13 @@ import static org.junit.Assert.assertTrue;
 public abstract class ConvolutionTests {
 
 
-    private static Logger log = LoggerFactory.getLogger(ConvolutionTests.class);
 
 
     @Test
     public void convNTest() {
         INDArray arr = Nd4j.linspace(1, 8, 8);
         INDArray kernel = Nd4j.linspace(1, 3, 3);
-        INDArray answer = Nd4j.create(new double[]{10, 16, 22, 28, 34, 40});
+        INDArray answer = Nd4j.create(new double[]{1});
         INDArray test = Convolution.convn(arr, kernel, Convolution.Type.VALID);
         assertEquals(answer, test);
     }

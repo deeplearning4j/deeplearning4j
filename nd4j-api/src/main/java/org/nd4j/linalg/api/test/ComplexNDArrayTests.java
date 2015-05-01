@@ -507,6 +507,18 @@ public abstract class ComplexNDArrayTests {
 
     }
 
+
+    @Test
+    public void testRealConversion() {
+        IComplexNDArray arr = Nd4j.createComplex(1,5);
+        INDArray arr1 = Nd4j.create(1,5);
+        assertEquals(arr,Nd4j.createComplex(arr1));
+        IComplexNDArray arr3 = Nd4j.complexLinSpace(1,6,6).reshape(2,3);
+        INDArray linspace = Nd4j.linspace(1,6,6).reshape(2,3);
+        assertEquals(arr3,Nd4j.createComplex(linspace));
+    }
+
+
     @Test
     public void testMmul() {
         Nd4j.factory().setOrder('f');
