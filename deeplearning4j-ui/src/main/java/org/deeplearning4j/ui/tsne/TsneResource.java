@@ -19,22 +19,54 @@
 package org.deeplearning4j.ui.tsne;
 
 import io.dropwizard.views.View;
+import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.ui.uploads.FileResource;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by agibsonccc on 10/8/14.
  */
 @Path("/tsne")
 @Produces(MediaType.TEXT_HTML)
-public class TsneResource {
+public class TsneResource extends FileResource {
+    private List<VocabWord> words;
+    private VocabCache vocab;
+    /**
+     * The file path for uploads
+     *
+     * @param filePath the file path for uploads
+     */
+    public TsneResource(String filePath) {
+        super(filePath);
+    }
 
     @GET
     public View get() {
         return new TsneView();
     }
 
+    @POST
+    @Path("/vocab")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getVocab() {
+        List<String> words = new ArrayList<>();
+        for(VocabWord word : this.words)
+            words.add(word.getWord());
+        return Response.ok((new ArrayList<>(words))).build();
+    }
+
+    @Override
+    public void handleUpload(File path) {
+
+    }
 }

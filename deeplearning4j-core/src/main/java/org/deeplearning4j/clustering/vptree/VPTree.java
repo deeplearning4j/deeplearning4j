@@ -114,7 +114,14 @@ public class VPTree {
     }
 
     private double getDistance(DataPoint d1,DataPoint d2) {
-        return distances.getCount(d1, d2);
+        double count =  distances.getCount(d1, d2);
+        if(count == 0) {
+            double realDistance = d1.distance(d2);
+            distances.setCount(d1,d2,realDistance);
+            distances.setCount(d2,d1,realDistance);
+            return realDistance;
+        }
+        return count;
     }
 
     private Node buildFromPoints(int lower,int upper) {
