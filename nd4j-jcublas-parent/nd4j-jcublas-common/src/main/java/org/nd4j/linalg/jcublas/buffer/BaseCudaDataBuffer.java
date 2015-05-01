@@ -53,6 +53,7 @@ import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     protected transient Pointer pinnedPointer;
+    protected AtomicBoolean modified = new AtomicBoolean(false);
     protected int length;
     protected int elementSize;
     protected AtomicBoolean freed = new AtomicBoolean(false);
@@ -105,8 +106,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public void put(int i, IComplexNumber result) {
         ensureNotFreed();
-
-
+        modified.set(true);
         if (dataType() == DataBuffer.FLOAT) {
             JCublas.cublasSetVector(
                     length(),
@@ -150,10 +150,10 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         ByteBuffer buf = pinnedPointer.getByteBuffer(0, length() * elementSize());
         return buf.asIntBuffer().array();
     }
-    
+
     private void doCuda(int result) {
-    	if(result!=0) {
-        	//System.out.printf("getPointer %d\n",result);
+        if(result!=0) {
+            //System.out.printf("getPointer %d\n",result);
         }
     }
 
@@ -165,7 +165,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         doCuda(JCuda.cudaHostGetDevicePointer(pointer, pinnedPointer, 0));
         return pointer;
     }
-    
+
     @Override
     public void alloc() {
 
@@ -173,7 +173,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         pinnedPointer = new Pointer();
 
         // Check if the device supports mapped host memory
-              doCuda(JCuda.cudaHostAlloc(pinnedPointer,elementSize() * length(),JCuda.cudaHostAllocMapped));
+        doCuda(JCuda.cudaHostAlloc(pinnedPointer,elementSize() * length(),JCuda.cudaHostAllocMapped));
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         Nd4j.getResourceManager().incrementCurrentAllocatedMemory(elementSize() * length());
         freed.set(false);
@@ -184,7 +184,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public void set(Pointer pointer) {
         ensureNotFreed();
-
+        modified.set(true);
 
         if (dataType() == DOUBLE) {
             JCublas.cublasDcopy(
@@ -195,7 +195,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                     1
             );
         } else {
-        	JCublas.cublasScopy(
+            JCublas.cublasScopy(
                     length(),
                     pointer,
                     1,
@@ -220,12 +220,12 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         }
     }
 
- /*   @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-        destroy();
-    }
-*/
+    /*   @Override
+       protected void finalize() throws Throwable {
+           super.finalize();
+           destroy();
+       }
+   */
     @Override
     public void assign(Number value) {
         assign(value, 0);
@@ -259,7 +259,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      */
     protected void set(int index, int length, Pointer from, int inc) {
         ensureNotFreed();
-
+        modified.set(true);
 
         int offset = elementSize() * index;
         if (offset >= length() * elementSize())
@@ -348,14 +348,14 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public  void destroy() {
         try {
-        	
+
 
             if(!freed.get()) {
                 if (Nd4j.shouldInstrument)
                     Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
 
-                
-                
+
+
                 JCuda.cudaFreeHost(pinnedPointer);
                 freed.set(true);
                 Nd4j.getResourceManager().decrementCurrentAllocatedMemory(elementSize() * length());

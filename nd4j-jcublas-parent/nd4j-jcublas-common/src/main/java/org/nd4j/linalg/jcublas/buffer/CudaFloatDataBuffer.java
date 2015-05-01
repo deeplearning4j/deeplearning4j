@@ -152,6 +152,11 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
+    public void alloc() {
+        super.alloc();
+    }
+
+    @Override
     public int dataType() {
         return DataBuffer.FLOAT;
     }
