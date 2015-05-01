@@ -1,17 +1,19 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.deeplearning4j.nn.multilayer;
@@ -242,31 +244,34 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
     @Override
     public ConvexOptimizer getOptimizer() {
-        return null;
+       throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray getParam(String param) {
-        return null;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public void initParams() {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Map<String, INDArray> paramTable() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public void setParam(String key, INDArray val) {
+        throw new UnsupportedOperationException();
 
     }
 
@@ -953,7 +958,10 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             throw new IllegalStateException("No labels found");
         output.setLabels(labels);
         INDArray outputActivate = output.activate();
-        INDArray ixInitial = labels.sub(outputActivate).subi(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(getOutputLayer().conf().getActivationFunction(),outputActivate).derivative()));
+        INDArray ixInitial = labels.sub(outputActivate)
+                .subi(Nd4j.getExecutioner()
+                        .execAndReturn(Nd4j.getOpFactory()
+                                .createTransform(getOutputLayer().conf().getActivationFunction(),outputActivate).derivative()));
         Gradient ix = new DefaultGradient();
         ix.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,ixInitial);
         for(int i = 0; i < getLayerWiseConfigurations().getConf(0).getNumIterations(); i++) {
