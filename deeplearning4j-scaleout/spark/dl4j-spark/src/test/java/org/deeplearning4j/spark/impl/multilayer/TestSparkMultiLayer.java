@@ -70,7 +70,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .activationFunction("tanh").list(2).hiddenLayerSizes(3)
-                .override(new ConfOverride() {
+                .override(1, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 1) {
@@ -107,7 +107,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
                 .list(3).hiddenLayerSizes(3,2)
-                .override(new ConfOverride() {
+                .override(2, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
 
@@ -155,7 +155,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
                 .activationFunction("tanh").list(2).hiddenLayerSizes(3)
-                .override(new ConfOverride() {
+                .override(1, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 1) {
