@@ -129,6 +129,8 @@ public class DefaultOpFactory implements OpFactory {
     @Override
     public TransformOp createTransform(String name, INDArray x, INDArray y) {
         switch (name) {
+            case "relu":
+                return new RectifedLinear(x,0);
             case "abs":
                 return new Abs(x, y);
             case "acos":
