@@ -16,21 +16,25 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.serializers;
+package org.deeplearning4j.nn.conf.rng;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import org.nd4j.linalg.api.rng.Random;
+import java.io.Serializable;
 
-import java.io.IOException;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
 /**
- * Created by agibsonccc on 11/27/14.
+ * An abstract random number generator.
+ *
  */
-public class RandomGeneratorSerializer extends JsonSerializer<Random> {
-    @Override
-    public void serialize(Random value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-        jgen.writeString(value.getClass().getName());
-    }
+@JsonTypeInfo(use=Id.NAME, include=As.WRAPPER_OBJECT)
+@JsonSubTypes(value={
+        @JsonSubTypes.Type(value = DefaultRandom.class, name = "default"),
+        })
+public class Random implements Serializable {
+
+    private static final long serialVersionUID = -1301235318305156644L;
+
 }
