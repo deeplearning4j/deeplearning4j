@@ -26,6 +26,7 @@ import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
@@ -144,7 +145,7 @@ public class RBMTests {
         LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(30).constrainGradientToUnitNorm(true).weightInit(WeightInit.DISTRIBUTION).dist(Nd4j.getDistributions().createNormal(1, 1e-5))
+                .iterations(30).constrainGradientToUnitNorm(true).weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1, 1e-5))
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .iterationListener(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10), new ScoreIterationListener(5)))
                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
@@ -153,7 +154,9 @@ public class RBMTests {
 
         fetcher.fetch(10);
         DataSet d2 = fetcher.next();
-        System.out.println(conf.getDist().sample(new int[]{conf.getnIn(), conf.getnOut()}));
+        
+        org.nd4j.linalg.api.rng.distribution.Distribution dist = Nd4j.getDistributions().createNormal(1, 1e-5);
+        System.out.println(dist.sample(new int[]{conf.getnIn(), conf.getnOut()}));
 
         INDArray input = d2.getFeatureMatrix();
 
