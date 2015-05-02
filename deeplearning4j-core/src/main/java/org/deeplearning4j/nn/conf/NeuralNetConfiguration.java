@@ -35,7 +35,8 @@ import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -82,7 +83,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected long seed = 123;
     protected transient org.nd4j.linalg.api.rng.Random rng;
     //weight initialization
-    protected transient Distribution dist;
+    protected Distribution dist;
     protected transient List<IterationListener> listeners;
     protected transient StepFunction stepFunction = new GradientStepFunction();
     protected transient LayerFactory layerFactory;
@@ -276,7 +277,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.convolutionType = neuralNetConfiguration.getConvolutionType();
 
         if(dist == null)
-            this.dist = Nd4j.getDistributions().createNormal(0.01,1);
+            this.dist = new NormalDistribution(0.01,1);
 
         this.hiddenUnit = neuralNetConfiguration.hiddenUnit;
     }
@@ -837,7 +838,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return ret
                     .replaceAll("\"activationFunction\",","")
                     .replaceAll("\"rng\",","")
-                    .replaceAll("\"dist\",","")
                     .replaceAll("\"layerFactory\",","")
                     .replaceAll("\"stepFunction\",","");
 
@@ -910,9 +910,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         module.addDeserializer(org.nd4j.linalg.api.rng.Random.class, new RandomGeneratorDeSerializer());
         module.addSerializer(org.nd4j.linalg.api.rng.Random.class, new RandomGeneratorSerializer());
 
-        module.addSerializer(Distribution.class, new DistributionSerializer());
-        module.addDeserializer(Distribution.class, new DistributionDeSerializer());
-
         module.addSerializer(StepFunction.class, new StepFunctionSerializer());
         module.addDeserializer(StepFunction.class, new StepFunctionDeSerializer());
 
@@ -929,7 +926,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         in.defaultReadObject();
         rng = Nd4j.getRandom();
         rng.setSeed(seed);
-        dist = Nd4j.getDistributions().createUniform(0,1);
     }
 
     public static class Builder {
@@ -952,7 +948,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean constrainGradientToUnitNorm = false;
         private org.nd4j.linalg.api.rng.Random rng = Nd4j.getRandom();
         private long seed = 123;
-        private Distribution dist  = Nd4j.getDistributions().createNormal(1e-3,1);
+        private Distribution dist  = new NormalDistribution(1e-3,1);
         private boolean adagrad = true;
         private LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private int nIn;
