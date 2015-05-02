@@ -20,12 +20,11 @@ package org.deeplearning4j.nn.conf;
 
 import static org.junit.Assert.*;
 
-
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Created by agibsonccc on 11/27/14.
@@ -34,7 +33,7 @@ public class NeuralNetConfigurationTest {
     @Test
     public void testJson() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterationListener(new ScoreIterationListener(10))
-                .dist(Nd4j.getDistributions().createNormal(1,1))
+                .dist(new NormalDistribution(1,1))
                 .layerFactory(LayerFactories.getFactory(RBM.class))
                 .build();
         String json = conf.toJson();

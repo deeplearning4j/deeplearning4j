@@ -22,8 +22,11 @@ import org.canova.api.conf.Configuration;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
+
 import java.util.Map;
 
 /**
@@ -39,14 +42,16 @@ public class LSTMParamInitializer implements ParamInitializer {
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
+        Distribution dist = Distributions.createDistribution(conf.getDist());
+        
         int inputSize = conf.getnIn();
         int hiddenSize = conf.getnIn();
         int outputSize = conf.getnOut();
         conf.addVariable(RECURRENT_WEIGHTS);
         conf.addVariable(DECODER_WEIGHTS);
         conf.addVariable(DECODER_BIAS);
-        params.put(RECURRENT_WEIGHTS,WeightInitUtil.initWeights(inputSize + hiddenSize + 1, 4 * hiddenSize, conf.getWeightInit(), conf.getDist()));
-        params.put(DECODER_WEIGHTS,WeightInitUtil.initWeights(hiddenSize,outputSize,conf.getWeightInit(),conf.getDist()));
+        params.put(RECURRENT_WEIGHTS,WeightInitUtil.initWeights(inputSize + hiddenSize + 1, 4 * hiddenSize, conf.getWeightInit(), dist));
+        params.put(DECODER_WEIGHTS,WeightInitUtil.initWeights(hiddenSize,outputSize,conf.getWeightInit(),dist));
         params.put(DECODER_BIAS, Nd4j.zeros(outputSize));
         params.get(RECURRENT_WEIGHTS).data().persist();
         params.get(DECODER_BIAS).data().persist();

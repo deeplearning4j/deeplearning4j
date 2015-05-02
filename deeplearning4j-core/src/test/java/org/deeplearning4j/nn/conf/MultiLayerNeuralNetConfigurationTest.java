@@ -20,12 +20,11 @@ package org.deeplearning4j.nn.conf;
 
 import static org.junit.Assert.*;
 
-
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.junit.Test;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;
 import java.util.Properties;
@@ -38,7 +37,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     @Test
     public void testJson() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layerFactory(LayerFactories.getFactory(RBM.class)).dist(Nd4j.getDistributions().createNormal(1,1e-1))
+                .layerFactory(LayerFactories.getFactory(RBM.class)).dist(new NormalDistribution(1,1e-1))
                 .list(4).preProcessor(0,new ConvolutionPostProcessor())
                 .hiddenLayerSizes(3, 2, 2).build();
         String json = conf.toJson();
