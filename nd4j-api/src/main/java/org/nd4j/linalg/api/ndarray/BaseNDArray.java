@@ -2449,24 +2449,24 @@ public abstract class BaseNDArray implements INDArray {
 
         if (result == this) {
             if (data.dataType() == DataBuffer.DOUBLE)
-                Nd4j.getBlasWrapper().axpy(-1.0, other, result);
+                Nd4j.getBlasWrapper().axpy(-1.0, other.linearView(), result.linearView());
             else
-                Nd4j.getBlasWrapper().axpy(-1.0f, other, result);
+                Nd4j.getBlasWrapper().axpy(-1.0f, other.linearView(), result.linearView());
         } else if (result == other) {
             if (data.dataType() == DataBuffer.DOUBLE) {
-                Nd4j.getBlasWrapper().scal(-1.0, result);
-                Nd4j.getBlasWrapper().axpy(1.0, this, result);
+                Nd4j.getBlasWrapper().scal(-1.0, result.linearView());
+                Nd4j.getBlasWrapper().axpy(1.0, this.linearView(), result.linearView());
             } else {
                 Nd4j.getBlasWrapper().scal(-1.0f, result);
-                Nd4j.getBlasWrapper().axpy(1.0f, this, result);
+                Nd4j.getBlasWrapper().axpy(1.0f, this.linearView(), result.linearView());
             }
         } else {
             if (data.dataType() == DataBuffer.FLOAT) {
                 Nd4j.getBlasWrapper().copy(this, result);
-                Nd4j.getBlasWrapper().axpy(-1.0f, other, result);
+                Nd4j.getBlasWrapper().axpy(-1.0f, other.linearView(), result.linearView());
             } else {
-                Nd4j.getBlasWrapper().copy(this, result);
-                Nd4j.getBlasWrapper().axpy(-1.0, other, result);
+                Nd4j.getBlasWrapper().copy(this.linearView(), result.linearView());
+                Nd4j.getBlasWrapper().axpy(-1.0, other.linearView(), result.linearView());
             }
 
         }
@@ -2508,17 +2508,17 @@ public abstract class BaseNDArray implements INDArray {
 
         if (result == this) {
             if (data.dataType() == DataBuffer.DOUBLE)
-                Nd4j.getBlasWrapper().axpy(1.0, other, result);
+                Nd4j.getBlasWrapper().axpy(1.0, other.linearView(), result.linearView());
 
 
             else
-                Nd4j.getBlasWrapper().axpy(1.0f, other, result);
+                Nd4j.getBlasWrapper().axpy(1.0f, other.linearView(), result.linearView());
 
         } else if (result == other) {
             if (data.dataType() == (DataBuffer.DOUBLE))
-                Nd4j.getBlasWrapper().axpy(1.0, this, result);
+                Nd4j.getBlasWrapper().axpy(1.0, this.linearView(), result.linearView());
             else
-                Nd4j.getBlasWrapper().axpy(1.0f, this, result);
+                Nd4j.getBlasWrapper().axpy(1.0f, this.linearView(), result.linearView());
         } else {
             Nd4j.getExecutioner().exec(new AddOp(linearView(), other.linearView(), result.linearView()));
         }
