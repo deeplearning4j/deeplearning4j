@@ -164,7 +164,6 @@ public class IRUnitIrisDBNWorkerTests {
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson( json );
         MultiLayerNetwork multiLayerNetwork = new MultiLayerNetwork(conf2);
         assertArrayEquals(new int[]{2,2}, multiLayerNetwork.getLayerWiseConfigurations().getHiddenLayerSizes());
-        assertEquals(2, multiLayerNetwork.getLayerWiseConfigurations().getConf(0).getNumFeatureMaps());
 
     }
 
