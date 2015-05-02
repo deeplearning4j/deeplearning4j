@@ -48,6 +48,31 @@ public class SubsamplingLayer implements Layer {
 
 
     @Override
+    public Gradient error(INDArray input) {
+        return null;
+    }
+
+    @Override
+    public INDArray derivativeActivation(INDArray input) {
+        return null;
+    }
+
+    @Override
+    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
+        return null;
+    }
+
+    @Override
+    public Gradient errorSignal(Gradient error, INDArray input) {
+        return null;
+    }
+
+    @Override
+    public Gradient backwardGradient(INDArray activation, Gradient errorSignal) {
+        return null;
+    }
+
+    @Override
     public void merge(Layer layer, int batchSize) {
 
     }
@@ -98,7 +123,7 @@ public class SubsamplingLayer implements Layer {
         //activation is the forward layers convolution
         for(int i = 0; i < forwardLayerFeatureMaps; i++) {
            for(int j = 0; j < currLayerFeatureMaps; j++) {
-               INDArray featureMapError  = Nd4j.create(filterSize[0],1,filterSize[filterSize.length - 2],filterSize[filterSize.length - 1]);
+               INDArray featureMapError  = Nd4j.create(filterSize[0], 1, filterSize[filterSize.length - 2], filterSize[filterSize.length - 1]);
                //rotated filter for convolution
                INDArray rotatedFilter = Nd4j.rot(convLayer.getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS).get(NDArrayIndex.all(),NDArrayIndex.all()).slice(i).slice(j));
                //forward error for the particular slice

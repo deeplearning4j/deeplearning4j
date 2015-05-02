@@ -36,7 +36,7 @@ public class Parallelization {
 
     private static final Logger log = LoggerFactory.getLogger(Parallelization.class);
 
-    public static interface RunnableWithParams<E> {
+    public interface RunnableWithParams<E> {
         void run(E currentItem,Object[] args);
     }
 

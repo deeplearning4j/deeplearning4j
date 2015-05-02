@@ -29,19 +29,19 @@ import org.canova.api.conf.Configuration;
 public interface WorkerPerformerFactory {
 
 
-    public final static String WORKER_PERFORMER = "org.deeplearning4j.scaleout.perform.workerperformer";
+    String WORKER_PERFORMER = "org.deeplearning4j.scaleout.perform.workerperformer";
 
     /**
      * Create a worker performer
      * @return
      */
-    public WorkerPerformer create();
+    WorkerPerformer create();
 
     /**
      * Create based on the configuration
      * @param conf the configuration
      * @return the performer created based on the configuration
      */
-    public WorkerPerformer create(Configuration conf);
+    WorkerPerformer create(Configuration conf);
 
 }

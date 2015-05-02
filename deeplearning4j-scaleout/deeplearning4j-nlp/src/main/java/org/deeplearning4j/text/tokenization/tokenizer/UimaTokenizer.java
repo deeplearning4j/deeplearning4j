@@ -77,9 +77,7 @@ public class UimaTokenizer implements Tokenizer {
     }
 
     private boolean valid(String check) {
-        if(check.matches("<[A-Z]+>") || check.matches("</[A-Z]+>"))
-            return false;
-        return true;
+        return !(check.matches("<[A-Z]+>") || check.matches("</[A-Z]+>"));
     }
 
 

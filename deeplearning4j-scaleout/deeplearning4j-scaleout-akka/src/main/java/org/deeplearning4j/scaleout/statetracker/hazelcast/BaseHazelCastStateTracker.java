@@ -196,7 +196,7 @@ public abstract class BaseHazelCastStateTracker  implements StateTracker {
             bos.flush();
 
 
-            resource.run(new String[]{"server",tmpConfig.getAbsolutePath()});
+            resource.run("server",tmpConfig.getAbsolutePath());
             tmpConfig.deleteOnExit();
         }
 

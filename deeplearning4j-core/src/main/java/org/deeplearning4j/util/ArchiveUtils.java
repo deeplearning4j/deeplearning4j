@@ -124,7 +124,7 @@ public class ArchiveUtils {
                         destStream.write(data, 0, count);
                     }
 
-                    destStream.flush();;
+                    destStream.flush();
 
                     IOUtils.closeQuietly(destStream);
                 }

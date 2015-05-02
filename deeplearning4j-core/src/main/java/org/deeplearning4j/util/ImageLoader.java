@@ -68,7 +68,7 @@ public class ImageLoader {
     public INDArray asImageMiniBatches(File f,int numMiniBatches,int numRowsPerSlice) {
         try {
             INDArray d = asMatrix(f);
-            INDArray f2 = Nd4j.create(new int[]{numMiniBatches, numRowsPerSlice, d.columns()});
+            INDArray f2 = Nd4j.create(numMiniBatches, numRowsPerSlice, d.columns());
             return f2;
         }catch(Exception e) {
             throw new RuntimeException(e);

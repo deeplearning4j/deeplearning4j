@@ -76,9 +76,8 @@ public class Job implements Serializable {
         Job job = (Job) o;
 
         if (result != null ? !result.equals(job.result) : job.result != null) return false;
-        if (!work.equals(job.work)) return false;
+        return work.equals(job.work);
 
-        return true;
     }
 
     @Override

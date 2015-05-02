@@ -21,7 +21,7 @@ package org.deeplearning4j.berkeley;
 
 public interface Factory<T> {
 	T newInstance(Object...args);
-	public static class DefaultFactory<T> implements Factory<T> {
+	class DefaultFactory<T> implements Factory<T> {
 		private final Class c;
 		public DefaultFactory(Class c) {
       this.c = c;

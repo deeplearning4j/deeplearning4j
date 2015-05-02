@@ -56,9 +56,8 @@ public class SentenceWork implements Serializable {
         SentenceWork that = (SentenceWork) o;
 
         if (id != that.id) return false;
-        if (sentence != null ? !sentence.equals(that.sentence) : that.sentence != null) return false;
+        return !(sentence != null ? !sentence.equals(that.sentence) : that.sentence != null);
 
-        return true;
     }
 
     @Override

@@ -22,5 +22,5 @@ package org.deeplearning4j.berkeley;
  * @author John DeNero
  */
 public interface MyMethod<I, O> {
-	public O call(I obj);
+	O call(I obj);
 }
