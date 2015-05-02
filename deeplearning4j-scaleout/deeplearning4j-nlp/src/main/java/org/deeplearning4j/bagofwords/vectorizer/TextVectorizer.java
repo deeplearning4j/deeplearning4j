@@ -51,7 +51,7 @@ public interface TextVectorizer extends Vectorizer {
      * The vocab sorted in descending order
      * @return the vocab sorted in descending order
      */
-    public VocabCache vocab();
+    VocabCache vocab();
 
 
     /**

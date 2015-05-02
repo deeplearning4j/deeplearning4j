@@ -102,7 +102,7 @@ public class ApplicationMaster<T extends Updateable> extends Configured
 
     private int code;
 
-    private ReturnCode(int code) {
+    ReturnCode(int code) {
       this.code = code;
     }
 

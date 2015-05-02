@@ -133,7 +133,7 @@ public class GloveJobIterator implements JobIterator {
             throw new IllegalStateException("Unable to create work; no table found");
         if(sentence == null)
             throw new IllegalArgumentException("Unable to create work from null sentence");
-        Word2VecWork work = new Word2VecWork((InMemoryLookupTable) table,(InMemoryLookupCache) cache,sentence);
+        Word2VecWork work = new Word2VecWork(table,(InMemoryLookupCache) cache,sentence);
         return work;
     }
 

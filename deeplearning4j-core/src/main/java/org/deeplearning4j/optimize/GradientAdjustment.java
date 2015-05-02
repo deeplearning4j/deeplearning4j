@@ -50,7 +50,7 @@ public class GradientAdjustment {
      * @param model the model to use
      */
     public static void updateGradientAccordingToParams(NeuralNetConfiguration conf,int iteration,Gradient gradient,int batchSize,Map<String,AdaGrad> adaGrad,Model model) {
-         for(String variable : conf.variables()) {
+         for(String variable : gradient.gradientForVariable().keySet()) {
              AdaGrad adaGradForVariable = adaGrad.get(variable);
              if(adaGradForVariable == null) {
                  adaGradForVariable = new AdaGrad(model.getParam(variable).shape());

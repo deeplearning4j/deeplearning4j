@@ -83,9 +83,7 @@ public class UiServer extends Application<UIConfiguration> {
         bos.close();
         is.close();
         tmpConfig.deleteOnExit();
-        new UiServer().run(new String[]{
-                "server", tmpConfig.getAbsolutePath()
-        });
+        new UiServer().run("server", tmpConfig.getAbsolutePath());
     }
 
 

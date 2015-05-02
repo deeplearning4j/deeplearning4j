@@ -357,9 +357,8 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
 
         MultiDimensionalMap that = (MultiDimensionalMap) o;
 
-        if (backedMap != null ? !backedMap.equals(that.backedMap) : that.backedMap != null) return false;
+        return !(backedMap != null ? !backedMap.equals(that.backedMap) : that.backedMap != null);
 
-        return true;
     }
 
     

@@ -611,12 +611,12 @@ public class StringUtils {
 						newFlagArg[j + oldNumArgs] = flagArgs.get(j);
 					}
 				} else
-					result.put(key, (String[]) flagArgs.toArray(new String[] {}));
+					result.put(key, flagArgs.toArray(new String[] {}));
 			} else {
 				remainingArgs.add(args[i]);
 			}
 		}
-		result.put(null, (String[]) remainingArgs.toArray(new String[] {}));
+		result.put(null, remainingArgs.toArray(new String[] {}));
 		return result;
 	}
 
@@ -868,7 +868,7 @@ public class StringUtils {
 		if (b.length() > 0) {
 			result.add(b.toString());
 		}
-		return (String[]) result.toArray(new String[0]);
+		return result.toArray(new String[0]);
 	}
 
 	/**
@@ -1021,8 +1021,8 @@ public class StringUtils {
 	 * @return a capitalized version of the string
 	 */
 	public static String capitalize(String s) {
-		if ((char) s.charAt(0) >= 'a') {
-			return (String) ((char) (s.charAt(0) + ('A' - 'a')) + s.substring(1));
+		if (s.charAt(0) >= 'a') {
+			return (char) (s.charAt(0) + ('A' - 'a')) + s.substring(1);
 		} else {
 			return s;
 		}

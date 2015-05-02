@@ -36,6 +36,66 @@ public interface Layer extends Serializable,Cloneable,Model {
 
 
     /**
+     * Calculate error with respect to the
+     * current layer.
+     *
+     * This gradient will contain the error signal
+     * @param input the gradient for the forward layer
+     *              If this is the final layer, it will start
+     *              with the error from the output.
+     *              This is on the user to initialize.
+     * @return the gradient wrt the parameters
+     * on the current layer
+     */
+    Gradient error(INDArray input);
+
+
+
+    /**
+     * Take the derivative of the given input
+     * based on the activation
+     * @param input the input to take the derivative of
+     * @return the derivative of the action
+     */
+    INDArray derivativeActivation(INDArray input);
+
+
+    /**
+     * Calculate the gradient
+     * @param layerError the layer error
+     * @param indArray
+     * @return the gradient
+     */
+    Gradient calcGradient(Gradient layerError, INDArray indArray);
+
+
+    /**
+     * Error signal for this layer
+     *
+     * Using the amount of error
+     * caused by this layer
+     * calculate the error signal used
+     * as input in to the next layer.
+     * This is used for actually calculating the
+     * gradient of the layer
+     *
+     * @param error
+     * @param input
+     * @return
+     */
+    Gradient errorSignal(Gradient error, INDArray input);
+
+    /**
+     * Calculate the gradient relative to the
+     * error in the next layer
+     * @param activation the activation from the network
+     * @param errorSignal the error signal caused by this network.
+     * @return
+     */
+    Gradient backwardGradient(INDArray activation,Gradient errorSignal);
+
+
+    /**
      * Parameter averaging
      * @param layer the layer to merge
      * @param batchSize the batch size to merge on

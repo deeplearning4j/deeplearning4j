@@ -468,7 +468,7 @@ public class RNTN implements Layer {
 
     private INDArray getINDArrayGradient(INDArray deltaFull, INDArray leftVector, INDArray rightVector) {
         int size = deltaFull.length();
-        INDArray Wt_df = Nd4j.create(new int[]{size,size * 2, size*2});
+        INDArray Wt_df = Nd4j.create(size,size * 2, size*2);
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; slice++) {
             Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getDouble(0),fullVector).mmul(fullVector.transpose()));
@@ -813,7 +813,7 @@ public class RNTN implements Layer {
 
     private INDArray getDoubleTensorGradient(INDArray deltaFull, INDArray leftVector, INDArray rightVector) {
         int size = deltaFull.length();
-        INDArray Wt_df = Nd4j.create(new int[]{size * 2, size * 2, size});
+        INDArray Wt_df = Nd4j.create(size * 2, size * 2, size);
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
             if(Wt_df.data().dataType() == DataBuffer.DOUBLE)
@@ -944,7 +944,7 @@ public class RNTN implements Layer {
                 int numCols = entry.getValue().size(2);
                 int numSlices = entry.getValue().slices();
 
-                binaryINDArrayTD.put(entry.getFirstKey(), entry.getSecondKey(), Nd4j.create(new int[]{numRows, numCols, numSlices}));
+                binaryINDArrayTD.put(entry.getFirstKey(), entry.getSecondKey(), Nd4j.create(numRows, numCols, numSlices));
             }
         }
 
