@@ -65,6 +65,8 @@ If you're using IntelliJ as your IDE, this should work already.
 
 * Alternatively, you can bypass MinGW and jcopy the Blas dll files to the right path. For example, the path to the MinGW bin folder is: /usr/x86_64-w64-mingw32/sys-root/mingw/bin.
 
+* Cygwin is not supported. You must install DL4J from DOS Windows.  
+
 * Once you've completed these steps, you're ready to start solving problems with Deeplearning4j. 
 
 ###<a name="source">Working With Source</a>
