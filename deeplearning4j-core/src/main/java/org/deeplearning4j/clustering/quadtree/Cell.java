@@ -60,9 +60,8 @@ public class Cell implements Serializable {
         if (Double.compare(cell.hh, hh) != 0) return false;
         if (Double.compare(cell.hw, hw) != 0) return false;
         if (Double.compare(cell.x, x) != 0) return false;
-        if (Double.compare(cell.y, y) != 0) return false;
+        return Double.compare(cell.y, y) == 0;
 
-        return true;
     }
 
     @Override

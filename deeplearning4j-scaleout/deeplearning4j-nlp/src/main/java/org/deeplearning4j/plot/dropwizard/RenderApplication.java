@@ -71,8 +71,6 @@ public class RenderApplication extends Application<ApiConfiguration> {
         bos.close();
         is.close();
         tmpConfig.deleteOnExit();
-        new RenderApplication().run(new String[]{
-                "server", tmpConfig.getAbsolutePath()
-        });
+        new RenderApplication().run("server", tmpConfig.getAbsolutePath());
     }
 }

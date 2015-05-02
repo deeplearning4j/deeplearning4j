@@ -43,6 +43,33 @@ public class ConvolutionLayer implements Layer {
    private Map<String,INDArray> params;
 
     @Override
+    public Gradient error(INDArray input) {
+        return null;
+    }
+
+
+
+    @Override
+    public INDArray derivativeActivation(INDArray input) {
+        return null;
+    }
+
+    @Override
+    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
+        return null;
+    }
+
+    @Override
+    public Gradient errorSignal(Gradient error, INDArray input) {
+        return null;
+    }
+
+    @Override
+    public Gradient backwardGradient(INDArray activation, Gradient errorSignal) {
+        return null;
+    }
+
+    @Override
     public void merge(Layer layer, int batchSize) {
 
     }

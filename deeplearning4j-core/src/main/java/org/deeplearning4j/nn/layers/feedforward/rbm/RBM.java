@@ -74,11 +74,11 @@ public  class RBM extends BasePretrainNetwork {
         super(conf, input);
     }
 
-    public static enum VisibleUnit {
+    public enum VisibleUnit {
         BINARY,GAUSSIAN,SOFTMAX,LINEAR
     }
 
-    public static enum HiddenUnit {
+    public enum HiddenUnit {
         RECTIFIED,BINARY,GAUSSIAN,SOFTMAX
     }
 

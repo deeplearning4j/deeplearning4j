@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.optimize.GradientAdjustment;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
@@ -244,7 +245,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
     @Override
     public ConvexOptimizer getOptimizer() {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -957,33 +958,43 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         if(labels == null)
             throw new IllegalStateException("No labels found");
         output.setLabels(labels);
-        INDArray outputActivate = output.activate();
-        INDArray ixInitial = labels.sub(outputActivate)
-                .subi(Nd4j.getExecutioner()
-                        .execAndReturn(Nd4j.getOpFactory()
-                                .createTransform(getOutputLayer().conf().getActivationFunction(),outputActivate).derivative()));
-        Gradient ix = new DefaultGradient();
-        ix.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,ixInitial);
+        //calculate the backward gradient for every layer
+        Gradient[] errors = new Gradient[getnLayers()];
         for(int i = 0; i < getLayerWiseConfigurations().getConf(0).getNumIterations(); i++) {
-            List<Pair<Gradient,Gradient>> backwards = new ArrayList<>();
             List<INDArray> activations = feedForward();
-            //start at the output layer
-            Pair<Gradient,Gradient> ixDelta = new Pair<>(ix,null);
-            for (int layer = layers.length - 1; layer >= 0; layer--) {
-                String activationFunction = layer > 0 ? layerWiseConfigurations.getConf(layer - 1).getActivationFunction() : layerWiseConfigurations.getConf(0).getActivationFunction();
-                ixDelta = layers[layer].backWard(ixDelta.getFirst(), ixDelta.getSecond(), activations.get(layer),activationFunction);
-                //back propagate the layer
-                backwards.add(ixDelta);
+            INDArray outputActivate = activations.get(activations.size() - 1);
+            INDArray ixInitial = labels.sub(outputActivate)
+                    .subi(Nd4j.getExecutioner()
+                            .execAndReturn(Nd4j.getOpFactory()
+                                    .createTransform(getOutputLayer().conf().getActivationFunction(),outputActivate).derivative()));
+            Gradient ix = new DefaultGradient();
+            ix.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,ixInitial);
+            errors[errors.length - 1] = ix;
+            for(int j = getnLayers() - 1; j >= 0; j--) {
+                ix = getLayers()[j].backwardGradient(activations.get(j),ix);
+                errors[j] = ix;
             }
 
-            //error was calculated in reverse
-            Collections.reverse(backwards);
-            //apply each gradient update
-            for (int j = 0; j < layers.length; j++)
-                layers[j].update(backwards.get(j).getSecond());
+
+            //propagate updates
+            for(int k = 0; k < getnLayers(); k++) {
+                Gradient update = getLayers()[k].calcGradient(errors[k],activations.get(k));
+                GradientAdjustment.updateGradientAccordingToParams(
+                        getLayers()[k].conf()
+                        ,i
+                        ,update
+                        ,input.slices()
+                        ,getLayers()[k].getOptimizer().adaGradForVariables()
+                        ,getLayers()[k]);
+                getLayers()[k].update(update);
+            }
+
             for(IterationListener listener : getOutputLayer().conf().getListeners())
                 listener.iterationDone(getOutputLayer(),i);
         }
+
+
+
     }
 
 

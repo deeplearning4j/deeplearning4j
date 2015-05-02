@@ -30,9 +30,9 @@ import org.deeplearning4j.scaleout.job.Job;
  */
 public interface WorkRouter extends DeepLearningConfigurable {
 
-    public final static String NAME_SPACE = "org.deeplearning4j.scaleout.api.workrouter";
-    public final static String WAIT_FOR_WORKERS = NAME_SPACE + ".wait";
-    public final static String WORK_ROUTER = NAME_SPACE + ".workrouter";
+    String NAME_SPACE = "org.deeplearning4j.scaleout.api.workrouter";
+    String WAIT_FOR_WORKERS = NAME_SPACE + ".wait";
+    String WORK_ROUTER = NAME_SPACE + ".workrouter";
 
 
     /**

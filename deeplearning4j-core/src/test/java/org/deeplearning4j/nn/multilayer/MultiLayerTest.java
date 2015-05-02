@@ -22,6 +22,7 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder;
 import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
@@ -138,14 +139,21 @@ public class MultiLayerTest {
 
     @Test
     public void testBackProp() {
-        LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
+        LayerFactory layerFactory = LayerFactories.getFactory(AutoEncoder.class);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
-                .activationFunction("tanh")
+                .iterations(100).weightInit(WeightInit.DISTRIBUTION)
+                .activationFunction("relu").iterationListener(new ScoreIterationListener(1)).dist(Nd4j.getDistributions().createUniform(1e-5,1e-1))
                 .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
-                .list(3).backward(true)
-                .hiddenLayerSizes(new int[]{3, 2}).override(new ClassifierOverride(2)).build();
+                .list(3).backward(true).pretrain(false)
+                .hiddenLayerSizes(new int[]{3, 2}).override(2, new ConfOverride() {
+                    @Override
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+                        builder.activationFunction("softmax");
+                        builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
+                        builder.iterationListener(new ScoreIterationListener(1));
+                    }
+                }).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);

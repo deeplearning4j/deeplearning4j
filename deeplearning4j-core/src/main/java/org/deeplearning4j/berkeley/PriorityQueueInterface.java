@@ -24,38 +24,38 @@ public interface PriorityQueueInterface<E>
 	/**
 	 * Returns true if the priority queue is non-empty
 	 */
-	public abstract boolean hasNext();
+	boolean hasNext();
 
 	/**
 	 * Returns the element in the queue with highest priority, and pops it from
 	 * the queue.
 	 */
-	public abstract E next();
+	E next();
 
 	/**
 	 * Not supported -- next() already removes the head of the queue.
 	 */
-	public abstract void remove();
+	void remove();
 
 	/**
 	 * Returns the highest-priority element in the queue, but does not pop it.
 	 */
-	public abstract E peek();
+	E peek();
 
 	/**
 	 * Gets the priority of the highest-priority element of the queue.
 	 */
-	public abstract double getPriority();
+	double getPriority();
 
 	/**
 	 * Number of elements in the queue.
 	 */
-	public abstract int size();
+	int size();
 
 	/**
 	 * True if the queue is empty (size == 0).
 	 */
-	public abstract boolean isEmpty();
+	boolean isEmpty();
 
 	/**
 	 * Adds a key to the queue with the given priority.  If the key is already in
@@ -64,6 +64,6 @@ public interface PriorityQueueInterface<E>
 	 * @param key
 	 * @param priority
 	 */
-	public abstract void put(E key, double priority);
+	void put(E key, double priority);
 
 }

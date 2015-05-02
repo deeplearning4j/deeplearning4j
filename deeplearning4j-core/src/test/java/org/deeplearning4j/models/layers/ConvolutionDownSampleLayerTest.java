@@ -85,37 +85,20 @@ public class ConvolutionDownSampleLayerTest {
         Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
         Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT).momentum(0.9)
-                .dist(Nd4j.getDistributions().createUniform(1e-5, 1e-1)).constrainGradientToUnitNorm(true)
-                .iterations(1000).iterationListener(new ScoreIterationListener(1)).convolutionType(ConvolutionDownSampleLayer.ConvolutionType.NONE)
-                .activationFunction("tanh").filterSize(1, 1, 2, 2)
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).momentum(0.9)
+                .dist(Nd4j.getDistributions().createNormal(0,1))
+                .iterations(1).iterationListener(new ScoreIterationListener(1)).convolutionType(ConvolutionDownSampleLayer.ConvolutionType.NONE)
+                .activationFunction("relu").filterSize(1, 1, 2, 2)
                 .nIn(4).nOut(3).batchSize(batchSize)
                 .layerFactory(layerFactory)
-                .list(3)
+                .list(2)
                 .preProcessor(0, new ConvolutionPostProcessor()).inputPreProcessor(0, new ConvolutionInputPreProcessor(2, 2))
-                .preProcessor(1, new ConvolutionPostProcessor()).inputPreProcessor(1, new ConvolutionInputPreProcessor(3, 3))
-                .hiddenLayerSizes(new int[]{4, 16})
-                .override(0, new ConfOverride() {
+                .hiddenLayerSizes(new int[]{9})
+                .override(1, new ConfOverride() {
 
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        if (i == 0)
-                            builder.filterSize(1, 1, 2, 2);
-
-                    }
-                })    .override(1, new ConfOverride() {
-
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-
-
-                    }
-                })
-                .override(2, new ConfOverride() {
-
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        if (i == 2) {
+                        if (i == 1) {
                             builder.activationFunction("softmax");
                             builder.weightInit(WeightInit.ZERO);
                             builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));

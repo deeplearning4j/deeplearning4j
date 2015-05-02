@@ -205,9 +205,8 @@ public class MultiLayerConfiguration implements Serializable {
         if (useGaussNewtonVectorProductBackProp != that.useGaussNewtonVectorProductBackProp) return false;
         if (useRBMPropUpAsActivations != that.useRBMPropUpAsActivations) return false;
         if (confs != null ? !confs.equals(that.confs) : that.confs != null) return false;
-        if (!Arrays.equals(hiddenLayerSizes, that.hiddenLayerSizes)) return false;
+        return Arrays.equals(hiddenLayerSizes, that.hiddenLayerSizes);
 
-        return true;
     }
 
     @Override

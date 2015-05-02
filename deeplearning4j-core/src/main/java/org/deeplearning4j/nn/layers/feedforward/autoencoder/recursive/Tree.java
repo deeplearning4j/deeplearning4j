@@ -458,9 +458,8 @@ public class Tree implements Serializable {
         if (tokens != null ? !tokens.equals(tree.tokens) : tree.tokens != null) return false;
         if (type != null ? !type.equals(tree.type) : tree.type != null) return false;
         if (value != null ? !value.equals(tree.value) : tree.value != null) return false;
-        if (vector != null ? !vector.equals(tree.vector) : tree.vector != null) return false;
+        return !(vector != null ? !vector.equals(tree.vector) : tree.vector != null);
 
-        return true;
     }
 
     @Override
