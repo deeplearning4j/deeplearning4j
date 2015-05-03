@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,19 +51,19 @@ public class GradientAdjustment {
      * @param model the model to use
      */
     public static void updateGradientAccordingToParams(NeuralNetConfiguration conf,int iteration,Gradient gradient,int batchSize,Map<String,AdaGrad> adaGrad,Model model) {
-         for(String variable : gradient.gradientForVariable().keySet()) {
-             AdaGrad adaGradForVariable = adaGrad.get(variable);
-             if(adaGradForVariable == null) {
-                 adaGradForVariable = new AdaGrad(model.getParam(variable).shape());
-                 adaGrad.put(variable, adaGradForVariable);
-             }
-             else
-                  adaGradForVariable = adaGrad.get(variable);
+        for(String variable : gradient.gradientForVariable().keySet()) {
+            AdaGrad adaGradForVariable = adaGrad.get(variable);
+            if(adaGradForVariable == null) {
+                adaGradForVariable = new AdaGrad(model.getParam(variable).shape());
+                adaGrad.put(variable, adaGradForVariable);
+            }
+            else
+                adaGradForVariable = adaGrad.get(variable);
 
-             updateGradientAccordingToParams(conf,iteration,adaGradForVariable,gradient.getGradientFor(variable),model.getParam(variable),batchSize);
+            updateGradientAccordingToParams(conf,iteration,adaGradForVariable,gradient.getGradientFor(variable),model.getParam(variable),batchSize);
 
 
-         }
+        }
     }
 
     /**
@@ -106,6 +107,8 @@ public class GradientAdjustment {
         //simulate post gradient application  and apply the difference to the gradient to decrease the change the gradient has
         if(conf.isUseRegularization() && conf.getL2() > 0)
             gradient.subi(params.mul(conf.getL2() * conf.getLr()));
+        else if(conf.isUseRegularization() && conf.getL1() < 0)
+            gradient.muli(Transforms.sign(params)).muli(conf.getL1());
 
 
 
