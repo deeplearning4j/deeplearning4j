@@ -21,12 +21,14 @@ package org.deeplearning4j.nn.layers.feedforward.rbm;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.rng.Randoms;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.util.RBMUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.exp;
@@ -66,12 +68,16 @@ import static org.nd4j.linalg.ops.transforms.Transforms.max;
  */
 public  class RBM extends BasePretrainNetwork {
 
+    private final Random rng;
+    
     public RBM(NeuralNetConfiguration conf) {
         super(conf);
+        this.rng = Randoms.createRandom(conf.getRng());
     }
 
     public RBM(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
+        this.rng = Randoms.createRandom(conf.getRng());
     }
 
     public static enum VisibleUnit {
@@ -238,7 +244,7 @@ public  class RBM extends BasePretrainNetwork {
                 break;
             }
             case GAUSSIAN: {
-                h1Sample = h1Mean.add(Nd4j.randn(h1Mean.rows(), h1Mean.columns(), conf.getRng()));
+                h1Sample = h1Mean.add(Nd4j.randn(h1Mean.rows(), h1Mean.columns(), rng));
 
                 //apply dropout
                 applyDropOutIfNecessary(h1Sample);
@@ -289,7 +295,7 @@ public  class RBM extends BasePretrainNetwork {
 
         switch (conf.getVisibleUnit()) {
             case GAUSSIAN: {
-                v1Sample = v1Mean.add(Nd4j.randn(v1Mean.rows(), v1Mean.columns(), conf.getRng()));
+                v1Sample = v1Mean.add(Nd4j.randn(v1Mean.rows(), v1Mean.columns(), rng));
                 break;
             }
             case LINEAR: {
@@ -333,7 +339,7 @@ public  class RBM extends BasePretrainNetwork {
                 preSig = max(preSig, 0.0);
                 return preSig;
             case GAUSSIAN:
-                INDArray add = preSig.add(Nd4j.randn(preSig.rows(), preSig.columns(), conf.getRng()));
+                INDArray add = preSig.add(Nd4j.randn(preSig.rows(), preSig.columns(), rng));
                 preSig.addi(add);
                 return preSig;
             case BINARY:

@@ -28,6 +28,8 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.OutputLayer;
@@ -37,7 +39,6 @@ import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.factory.PretrainLayerFactory;
 import org.deeplearning4j.nn.weights.WeightInit;
-
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.junit.Test;
@@ -70,7 +71,7 @@ public class MultiLayerTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .constrainGradientToUnitNorm(true)
-                .weightInit(WeightInit.DISTRIBUTION).dist(Nd4j.getDistributions().createNormal(1,1e-5))
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1,1e-5))
                 .iterations(100).learningRate(1e-3).iterationListener(new ScoreIterationListener(10))
                 .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
                 .list(4).hiddenLayerSizes(600,250,100).override(3, new ConfOverride() {
@@ -174,7 +175,7 @@ public class MultiLayerTest {
         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(100).layerFactory(new PretrainLayerFactory(RBM.class))
-                .weightInit(WeightInit.DISTRIBUTION).dist(Nd4j.getDistributions().createUniform(0,1))
+                .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0,1))
                 .activationFunction("tanh").momentum(0.9)
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .constrainGradientToUnitNorm(true).k(1).regularization(true).l2(2e-4)
