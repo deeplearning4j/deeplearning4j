@@ -41,7 +41,7 @@ public class TrainConfigTest {
     public void testInputModelTrain() throws Exception {
         Model testModelFlag = new Model();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterationListener(new ScoreIterationListener(10))
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .dist(new NormalDistribution(1e-1,1))
                 .layerFactory(LayerFactories.getFactory(RBM.class))
                 .build();

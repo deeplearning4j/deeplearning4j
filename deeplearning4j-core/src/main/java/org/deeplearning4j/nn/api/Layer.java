@@ -21,9 +21,11 @@ package org.deeplearning4j.nn.api;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
+import java.util.Collection;
 
 /**
  * Interface for a layer of a neural network.
@@ -100,7 +102,15 @@ public interface Layer extends Serializable,Cloneable,Model {
     Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation,String previousActivation);
 
 
+    /**
+     * Get the iteration listeners for this layer.
+     */
+    Collection<IterationListener> getIterationListeners();
 
+    /**
+     * Set the iteration listeners for this layer.
+     */
+    void setIterationListeners(Collection<IterationListener> listeners);
 
 
 }

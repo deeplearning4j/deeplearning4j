@@ -24,10 +24,12 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 
 import java.lang.reflect.Constructor;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -43,20 +45,25 @@ public class DefaultLayerFactory implements LayerFactory {
         this.layerClazz = layerClazz;
     }
 
-
     @Override
-    public Layer create(NeuralNetConfiguration conf, int index, int numLayers) {
-        return create(conf);
+    public <E extends Layer> E create(NeuralNetConfiguration conf, int index, int numLayers, Collection<IterationListener> iterationListeners) {
+        return create(conf, iterationListeners);
     }
 
     @Override
-    public Layer create(NeuralNetConfiguration conf) {
+    public <E extends Layer> E create(NeuralNetConfiguration conf) {
+        return create(conf, Collections.<IterationListener>emptyList());
+    }
+
+    @Override
+    public <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners) {
         Distribution dist = Distributions.createDistribution(conf.getDist());
         Layer ret = getInstance(conf);
+        ret.setIterationListeners(iterationListeners);
         Map<String,INDArray> params = getParams(conf, dist);
         ret.setParamTable(params);
         ret.setConf(conf);
-        return ret;
+        return (E) ret;
     }
     
     protected Layer getInstance(NeuralNetConfiguration conf) {

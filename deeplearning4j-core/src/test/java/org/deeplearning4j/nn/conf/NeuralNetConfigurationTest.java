@@ -32,7 +32,7 @@ import org.junit.Test;
 public class NeuralNetConfigurationTest {
     @Test
     public void testJson() {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterationListener(new ScoreIterationListener(10))
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .dist(new NormalDistribution(1,1))
                 .layerFactory(LayerFactories.getFactory(RBM.class))
                 .build();
