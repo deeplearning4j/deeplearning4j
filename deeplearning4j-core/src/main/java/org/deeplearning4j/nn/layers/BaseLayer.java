@@ -134,7 +134,7 @@ public abstract class BaseLayer implements Layer {
     public void update(Gradient gradient) {
         for(String s : conf.variables()) {
             if(gradient.gradientForVariable().containsKey(s))
-                getParam(s).subi(gradient.gradientForVariable().get(s));
+                getParam(s).addi(gradient.gradientForVariable().get(s));
         }
     }
 
