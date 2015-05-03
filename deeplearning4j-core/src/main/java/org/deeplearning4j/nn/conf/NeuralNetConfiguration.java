@@ -30,7 +30,6 @@ import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
@@ -83,7 +82,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected Random rng;
     //weight initialization
     protected Distribution dist;
-    protected transient List<IterationListener> listeners;
     protected transient StepFunction stepFunction = new GradientStepFunction();
     protected transient LayerFactory layerFactory;
 
@@ -119,7 +117,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public NeuralNetConfiguration() {}
 
 
-    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, int numLineSearchIterations, double dropOut, boolean applySparsity, WeightInit weightInit, OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, boolean constrainGradientToUnitNorm, Random rng, Distribution dist, List<IterationListener> listeners, StepFunction stepFunction, LayerFactory layerFactory, List<String> variables, int nIn, int nOut, String activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, int k, int[] weightShape, int[] filterSize, int[] stride, int kernel, int batchSize, boolean minimize, ConvolutionDownSampleLayer.ConvolutionType convolutionType) {
+    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, int numLineSearchIterations, double dropOut, boolean applySparsity, WeightInit weightInit, OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, boolean constrainGradientToUnitNorm, Random rng, Distribution dist, StepFunction stepFunction, LayerFactory layerFactory, List<String> variables, int nIn, int nOut, String activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, int k, int[] weightShape, int[] filterSize, int[] stride, int kernel, int batchSize, boolean minimize, ConvolutionDownSampleLayer.ConvolutionType convolutionType) {
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
@@ -139,7 +137,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
         this.rng = rng;
         this.dist = dist;
-        this.listeners = listeners;
         this.stepFunction = stepFunction;
         this.layerFactory = layerFactory;
         this.variables = variables;
@@ -190,7 +187,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   int batchSize,
                                   int numLineSearchIterations,
                                   boolean minimize,
-                                  List<IterationListener> listeners,
                                   LayerFactory layerFactory,ConvolutionDownSampleLayer.ConvolutionType convolutionType) {
         this.minimize = minimize;
         this.convolutionType = convolutionType;
@@ -201,7 +197,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         } else {
             this.layerFactory = layerFactory;
         }
-        this.listeners = listeners;
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
@@ -596,7 +591,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         if (lossFunction != that.lossFunction) return false;
         if (rng != null ? !rng.equals(that.rng) : that.rng != null) return false;
         if (dist != null ? !dist.equals(that.dist) : that.dist != null) return false;
-        if (listeners != null ? !listeners.equals(that.listeners) : that.listeners != null) return false;
         if (stepFunction != null ? !stepFunction.equals(that.stepFunction) : that.stepFunction != null) return false;
         if (layerFactory != null ? !layerFactory.equals(that.layerFactory) : that.layerFactory != null) return false;
         if (variables != null ? !variables.equals(that.variables) : that.variables != null) return false;
@@ -640,7 +634,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         result = 31 * result + (constrainGradientToUnitNorm ? 1 : 0);
         result = 31 * result + (rng != null ? rng.hashCode() : 0);
         result = 31 * result + (dist != null ? dist.hashCode() : 0);
-        result = 31 * result + (listeners != null ? listeners.hashCode() : 0);
         result = 31 * result + (stepFunction != null ? stepFunction.hashCode() : 0);
         result = 31 * result + (layerFactory != null ? layerFactory.hashCode() : 0);
         result = 31 * result + (variables != null ? variables.hashCode() : 0);
@@ -682,7 +675,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 ", constrainGradientToUnitNorm=" + constrainGradientToUnitNorm +
                 ", rng=" + rng +
                 ", dist=" + dist +
-                ", listeners=" + listeners +
                 ", stepFunction=" + stepFunction +
                 ", layerFactory=" + layerFactory +
                 ", variables=" + variables +
@@ -861,16 +853,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.dropOut = dropOut;
     }
 
-    public Collection<IterationListener> getListeners() {
-        if(listeners == null)
-            listeners = new ArrayList<>();
-        return listeners;
-    }
-
-    public void setListeners(List<IterationListener> listeners) {
-        this.listeners = listeners;
-    }
-
     /**
      * Object mapper for serialization of configurations
      * @return
@@ -883,9 +865,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         SimpleModule module = new SimpleModule();
         module.addSerializer(LayerFactory.class,new LayerFactorySerializer());
         module.addDeserializer(LayerFactory.class,new LayerFactoryDeSerializer());
-
-        module.addSerializer(IterationListener.class,new IterationSerializer());
-        module.addDeserializer(IterationListener.class,new IterationListenerDeSerializer());
 
         module.addSerializer(StepFunction.class, new StepFunctionSerializer());
         module.addDeserializer(StepFunction.class, new StepFunctionDeSerializer());
@@ -931,7 +910,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int[] featureMapSize = {2,2};
         //subsampling layers
         private int[] stride = {2,2};
-        private List<IterationListener> listeners;
         private StepFunction stepFunction = new DefaultStepFunction();
         private LayerFactory layerFactory;
         private int batchSize = 0;
@@ -990,29 +968,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     .constrainGradientToUnitNorm(constrainGradientToUnitNorm)
                     .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize).numLineSearchIterations(numLineSearchIterations)
                     .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr).useAdaGrad(adagrad).stepFunction(stepFunction)
-                    .lossFunction(lossFunction).momentumAfter(momentumAfter).momentum(momentum).listeners(listeners)
+                    .lossFunction(lossFunction).momentumAfter(momentumAfter).momentum(momentum)
                     .nIn(nIn).nOut(nOut).optimizationAlgo(optimizationAlgo).batchSize(batchSize)
                     .regularization(useRegularization).render(renderWeightsEveryNumEpochs).resetAdaGradIterations(resetAdaGradIterations)
                     .rng(rng).sparsity(sparsity).stride(stride).useAdaGrad(useAdaGrad).visibleUnit(visibleUnit)
                     .weightInit(weightInit).weightShape(weightShape);
         }
-
-        public Builder iterationListener(IterationListener listener) {
-            if(listeners != null)
-                listeners.add(listener);
-            else {
-                listeners = new ArrayList<>();
-                listeners.add(listener);
-            }
-
-            return this;
-        }
-
-        public Builder  listeners(List<IterationListener> listeners) {
-            this.listeners = listeners;
-            return this;
-        }
-
 
         public Builder featureMapSize(int[] featureMapSize) {
             this.featureMapSize = featureMapSize;
@@ -1121,7 +1082,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  rng,
-                    dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel,batchSize,numLineSearchIterations,minimize,listeners,layerFactory,convolutionType);
+                    dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel,batchSize,numLineSearchIterations,minimize,layerFactory,convolutionType);
             ret.useAdaGrad = this.adagrad;
             ret.stepFunction = stepFunction;
             return ret;

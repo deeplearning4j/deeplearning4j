@@ -18,12 +18,15 @@
 
 package org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive;
 
+import java.util.Arrays;
+
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -43,7 +46,7 @@ public class RecursiveAutoEncoderTest {
                 .momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .corruptionLevel(0.3).weightInit(WeightInit.VI)
-                .iterations(100).iterationListener(new ScoreIterationListener(10))
+                .iterations(100)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .learningRate(1e-1f).nIn(784).nOut(600).layerFactory(layerFactory).build();
 
@@ -52,7 +55,8 @@ public class RecursiveAutoEncoderTest {
 
         INDArray input = d2.getFeatureMatrix();
 
-        RecursiveAutoEncoder da = layerFactory.create(conf);
+        RecursiveAutoEncoder da = layerFactory.create(conf, 
+                Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
         da.setParams(da.params());
         da.fit(input);
     }
