@@ -38,7 +38,7 @@ public class ModelFlagTest extends BaseFlagTest {
     public void test() throws Exception {
         Model testModelFlag = new Model();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterationListener(new ScoreIterationListener(10))
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .dist(new NormalDistribution(1,1e-1))
                 .layerFactory(LayerFactories.getFactory(RBM.class))
                 .build();

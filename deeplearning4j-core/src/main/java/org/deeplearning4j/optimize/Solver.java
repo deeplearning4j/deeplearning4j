@@ -18,7 +18,11 @@
 
 package org.deeplearning4j.optimize;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
@@ -68,16 +72,23 @@ public class Solver {
     public static class Builder {
         private NeuralNetConfiguration conf;
         private Model model;
-
+        private List<IterationListener> listeners = new ArrayList<>();
 
         public Builder configure(NeuralNetConfiguration conf) {
             this.conf = conf;
             return this;
         }
+        
+        public Builder listener(IterationListener... listeners) {
+            this.listeners.addAll(Arrays.asList(listeners));
+            return this;
+        }
 
-
-
-
+        public Builder listeners(Collection<IterationListener> listeners) {
+            this.listeners.addAll(listeners);
+            return this;
+        }
+        
         public Builder model(Model model) {
             this.model = model;
             return this;
@@ -87,7 +98,7 @@ public class Solver {
             Solver solver = new Solver();
             solver.conf = conf;
             solver.model = model;
-            solver.listeners = conf.getListeners();
+            solver.listeners = listeners;
             return solver;
         }
     }
