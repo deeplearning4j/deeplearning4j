@@ -22,8 +22,10 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
 
 import java.lang.reflect.Constructor;
 import java.util.Collections;
@@ -49,14 +51,14 @@ public class DefaultLayerFactory implements LayerFactory {
 
     @Override
     public Layer create(NeuralNetConfiguration conf) {
+        Distribution dist = Distributions.createDistribution(conf.getDist());
         Layer ret = getInstance(conf);
-        Map<String,INDArray> params = getParams(conf);
+        Map<String,INDArray> params = getParams(conf, dist);
         ret.setParamTable(params);
         ret.setConf(conf);
         return ret;
     }
-
-
+    
     protected Layer getInstance(NeuralNetConfiguration conf) {
         try {
             Constructor<?> constructor = layerClazz.getConstructor(NeuralNetConfiguration.class);
@@ -68,7 +70,7 @@ public class DefaultLayerFactory implements LayerFactory {
     }
 
 
-    protected Map<String,INDArray> getParams(NeuralNetConfiguration conf) {
+    protected Map<String,INDArray> getParams(NeuralNetConfiguration conf, Distribution dist) {
         ParamInitializer init = initializer();
         Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String,INDArray>());
         init.init(params,conf);
