@@ -22,7 +22,9 @@ import org.canova.api.conf.Configuration;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Map;
@@ -60,11 +62,12 @@ public class DefaultParamInitializer implements ParamInitializer {
 
 
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf) {
+        Distribution dist = Distributions.createDistribution(conf.getDist());
         INDArray ret =  WeightInitUtil.initWeights(
                 conf.getnIn(),
                 conf.getnOut(),
                 conf.getWeightInit(),
-                conf.getDist());
+                dist);
         ret.data().persist();
         return ret;
     }
