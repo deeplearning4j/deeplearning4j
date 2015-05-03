@@ -319,10 +319,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
         if (!initCalled)
             init();
-
-
-
-
     }
 
     /**
@@ -361,7 +357,9 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                     layerWiseConfigurations.getConf(i).setnIn(inputSize);
                     layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
                     // construct sigmoid_layer
-                    layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(layerWiseConfigurations.getConf(i));
+                    LayerFactory conf2 = layerWiseConfigurations.getConf(i).getLayerFactory();
+                    NeuralNetConfiguration currConf = layerWiseConfigurations.getConf(i);
+                    layers[i] = conf2.create(currConf);
                 }
                 else if (i < getLayers().length - 1) {
                     if (input != null)

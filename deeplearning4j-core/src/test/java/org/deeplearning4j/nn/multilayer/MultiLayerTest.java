@@ -141,17 +141,20 @@ public class MultiLayerTest {
     public void testBackProp() {
         LayerFactory layerFactory = LayerFactories.getFactory(AutoEncoder.class);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .iterations(100).weightInit(WeightInit.DISTRIBUTION)
-                .activationFunction("relu").iterationListener(new ScoreIterationListener(1)).dist(Nd4j.getDistributions().createUniform(1e-5,1e-1))
-                .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
-                .list(3).backward(true).pretrain(false)
-                .hiddenLayerSizes(new int[]{3, 2}).override(2, new ConfOverride() {
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .iterations(100).weightInit(WeightInit.DISTRIBUTION).momentum(0.5)
+                .activationFunction("tanh").iterationListener(new ScoreIterationListener(1))
+                .dist(Nd4j.getDistributions().createNormal(1e-1,1e-1))
+                .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .layerFactory(layerFactory)
+                .list(2).backward(true).pretrain(false)
+                .hiddenLayerSizes(new int[]{3}).override(1, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         builder.activationFunction("softmax");
+                        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+                        builder.weightInit(WeightInit.ZERO);
                         builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
-                        builder.iterationListener(new ScoreIterationListener(1));
                     }
                 }).build();
 
