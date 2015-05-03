@@ -50,7 +50,7 @@ public class IterationGradientDescent extends BaseOptimizer {
         for(int i = 0; i < conf.getNumIterations(); i++) {
             Pair<Gradient,Double> score = gradientAndScore();
             model.update(score.getFirst()); // this line causing very bad optimization results
-            for(IterationListener listener : conf.getListeners())
+            for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model,i);
         }
         return true;

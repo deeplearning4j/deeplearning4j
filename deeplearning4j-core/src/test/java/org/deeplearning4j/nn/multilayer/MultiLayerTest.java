@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.multilayer;
 
+import java.util.Arrays;
+
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
@@ -39,6 +41,7 @@ import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.factory.PretrainLayerFactory;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.junit.Test;
@@ -72,7 +75,7 @@ public class MultiLayerTest {
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .constrainGradientToUnitNorm(true)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1,1e-5))
-                .iterations(100).learningRate(1e-3).iterationListener(new ScoreIterationListener(10))
+                .iterations(100).learningRate(1e-3)
                 .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
                 .list(4).hiddenLayerSizes(600,250,100).override(3, new ConfOverride() {
                     @Override
@@ -87,6 +90,7 @@ public class MultiLayerTest {
                 }).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.setIterationListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
         network.fit(next);
 
     }
@@ -181,7 +185,6 @@ public class MultiLayerTest {
                 .constrainGradientToUnitNorm(true).k(1).regularization(true).l2(2e-4)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .learningRate(1e-1f).iterationListener(new ScoreIterationListener(2))
                 .nIn(4).nOut(3).list(2)
                 .hiddenLayerSizes(new int[]{3})
                 .override(1, new ClassifierOverride(1)).build();
@@ -191,7 +194,8 @@ public class MultiLayerTest {
                     .nIn(784).nOut(600).applySparsity(true).sparsity(0.1)
                     .build();
 
-        Layer l = LayerFactories.getFactory(RBM.class).create(conf2);
+        Layer l = LayerFactories.getFactory(RBM.class).create(conf2,
+                Arrays.<IterationListener>asList(new ScoreIterationListener(2)));
 
 
 

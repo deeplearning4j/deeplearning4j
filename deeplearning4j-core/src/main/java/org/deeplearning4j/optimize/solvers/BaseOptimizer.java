@@ -51,7 +51,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     protected int iteration = 0;
     protected static final Logger log = LoggerFactory.getLogger(BaseOptimizer.class);
     protected StepFunction stepFunction;
-    private Collection<IterationListener> iterationListeners = new ArrayList<>();
+    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected Collection<TerminationCondition> terminationConditions = new ArrayList<>();
     protected Model model;
     protected BackTrackLineSearch lineMaximizer;
@@ -88,7 +88,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public BaseOptimizer(NeuralNetConfiguration conf,StepFunction stepFunction,Collection<IterationListener> iterationListeners,Collection<TerminationCondition> terminationConditions,Model model) {
         this.conf = conf;
         this.stepFunction = stepFunction;
-        this.iterationListeners = iterationListeners;
+        this.iterationListeners = iterationListeners != null ? iterationListeners : new ArrayList<IterationListener>();
         this.terminationConditions = terminationConditions;
         this.model = model;
         lineMaximizer = new BackTrackLineSearch(model,stepFunction,this);

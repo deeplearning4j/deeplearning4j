@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.deeplearning4j.spark.BaseSparkTest;
@@ -48,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -99,7 +101,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-               .momentum(0.9).constrainGradientToUnitNorm(true).iterationListener(new ScoreIterationListener(10))
+               .momentum(0.9).constrainGradientToUnitNorm(true)
                 .activationFunction("tanh").stepFunction(new GradientStepFunction())
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).dropOut(0.3)
                 .iterations(100).visibleUnit(RBM.VisibleUnit.GAUSSIAN).batchSize(10)
@@ -123,6 +125,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.setIterationListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
         network.init();
         System.out.println("Initializing network");
         SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf);
