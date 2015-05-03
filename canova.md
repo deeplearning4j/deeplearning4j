@@ -3,17 +3,17 @@ title:
 layout: default
 ---
 
-# Canova: Vectorization Lib for ML Tools
+# Canova: A Vectorization Lib for ML
 
 ## Key aspects
-- [Canova](https://github.com/deeplearning4j/Canova) uses an input/output format system (think like how Hadoop does with MapReduce).
+- [Canova](https://github.com/deeplearning4j/Canova) uses an input/output format system (similar to how Hadoop uses MapReduce)
 - Designed to support all major types of input data (text, csv, audio, image, and video) with these specific input formats
 - Uses an output format system to specifiy an implementation neutral type of vector format (ARFF, SVMLight, etc)
 - Runs from the command line
 - Can be extended for specialized input formats (such as exotic image formats): You can write your own custom input format and let the rest of the codebase handle the transformation pipeline
 - Makes vectorization a first-class citizen
 
-Right now we're finishing up the CLI system and running tests on basic datasets for converting just stock CSV data that you'd export from a DB or get from UCI. You can transform this data with a small conf file based transform language (label, normalize, copy, etc).
+Right now we're finishing up the CLI system and running tests on basic datasets for converting just stock CSV data that you'd export from a DB or get from UCI. You can transform this data with a small conf file-based transform language (label, normalize, copy, etc).
 
 ## A Few Examples
 
