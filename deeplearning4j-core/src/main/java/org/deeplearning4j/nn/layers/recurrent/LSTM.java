@@ -434,7 +434,7 @@ public class LSTM extends BaseLayer {
     @Override
     public void fit() {
         Solver solver = new Solver.Builder()
-                .model(this).configure(conf())
+                .model(this).configure(conf()).listeners(getIterationListeners())
                 .build();
         solver.optimize();
     }
@@ -501,7 +501,7 @@ public class LSTM extends BaseLayer {
         };
         xs = data.get(everythingElse);
         Solver solver = new Solver.Builder()
-                .configure(conf).model(this)
+                .configure(conf).model(this).listeners(getIterationListeners())
                 .build();
         solver.optimize();
     }

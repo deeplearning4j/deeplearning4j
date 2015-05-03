@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -32,6 +33,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.util.ConvolutionUtils;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -45,8 +48,16 @@ public class SubsamplingLayer implements Layer {
     private int[] subSampledSize;
     private NeuralNetConfiguration conf;
     private Layer convLayer;
+    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
 
+    public Collection<IterationListener> getIterationListeners() {
+        return iterationListeners;
+    }
 
+    public void setIterationListeners(Collection<IterationListener> listeners) {
+        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    }
+    
     @Override
     public void merge(Layer layer, int batchSize) {
 

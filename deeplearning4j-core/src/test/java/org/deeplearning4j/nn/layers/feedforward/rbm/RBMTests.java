@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.layers.feedforward.rbm;
 
+import java.util.Arrays;
+
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
@@ -31,6 +33,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
@@ -64,14 +67,13 @@ public class RBMTests {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED).weightInit(WeightInit.VI)
-                .iterationListener(new ScoreIterationListener(1))
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).layerFactory(layerFactory)
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-3f)
                 .nIn(d.numInputs()).nOut(nOut).layerFactory(layerFactory).build();
 
-        RBM rbm = layerFactory.create(conf);
+        RBM rbm = layerFactory.create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
 
         rbm.fit(d.getFeatureMatrix());
 
@@ -147,7 +149,6 @@ public class RBMTests {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(30).constrainGradientToUnitNorm(true).weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1, 1e-5))
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
-                .iterationListener(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10), new ScoreIterationListener(5)))
                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                         .learningRate(1e-1f).nIn(784).nOut(600)
             .layerFactory(layerFactory).build();
@@ -160,7 +161,8 @@ public class RBMTests {
 
         INDArray input = d2.getFeatureMatrix();
 
-        RBM rbm = layerFactory.create(conf);
+        RBM rbm = layerFactory.create(conf, 
+                Arrays.<IterationListener>asList(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10), new ScoreIterationListener(5))));
 
         rbm.fit(input);
 

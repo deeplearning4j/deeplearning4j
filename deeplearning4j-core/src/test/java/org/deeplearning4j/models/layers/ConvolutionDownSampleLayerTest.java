@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.models.layers;
 
+import java.util.Arrays;
+
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -33,6 +35,7 @@ import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProc
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -88,7 +91,7 @@ public class ConvolutionDownSampleLayerTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT).momentum(0.9)
                 .dist(new UniformDistribution(1e-5, 1e-1)).constrainGradientToUnitNorm(true)
-                .iterations(1000).iterationListener(new ScoreIterationListener(1)).convolutionType(ConvolutionDownSampleLayer.ConvolutionType.NONE)
+                .iterations(1000).convolutionType(ConvolutionDownSampleLayer.ConvolutionType.NONE)
                 .activationFunction("tanh").filterSize(1, 1, 2, 2)
                 .nIn(4).nOut(3).batchSize(batchSize)
                 .layerFactory(layerFactory)
@@ -126,6 +129,7 @@ public class ConvolutionDownSampleLayerTest {
                 }).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.setIterationListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
 
