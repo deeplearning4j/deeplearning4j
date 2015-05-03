@@ -48,7 +48,7 @@ Below is an example of the CSV transform language in action from the command lin
 
 ## Setting Up Canova
 
-You'll need to do a *git clone* from [Canova's Github repo](https://github.com/deeplearning4j/Canova), and then build the dependencies with Maven. 
+You'll need to do a *git clone* from [Canova's Github repo](https://github.com/deeplearning4j/Canova), and then build the dependencies with [Maven](http://nd4j.org/getstarted.html#maven). 
 
       mvn -DskipTests=true -Dmaven.javadoc.skip=true install
 
