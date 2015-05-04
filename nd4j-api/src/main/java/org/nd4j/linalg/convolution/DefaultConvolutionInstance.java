@@ -80,19 +80,25 @@ public class DefaultConvolutionInstance extends BaseConvolution {
      */
     @Override
     public INDArray convn(INDArray input, INDArray kernel, Convolution.Type type, int[] axes) {
-        if(input.shape().length != kernel.shape().length) {
-            int[] newShape = new int[Math.max(input.shape().length,kernel.shape().length)];
-            Arrays.fill(newShape,1);
+        if (input.shape().length != kernel.shape().length) {
+            int[] newShape = new int[Math.max(input.shape().length, kernel.shape().length)];
+            Arrays.fill(newShape, 1);
             int lengthDelta = Math.abs(input.shape().length - kernel.shape().length);
-            if(input.shape().length < kernel.shape().length) {
-                System.arraycopy(input.shape(), 0, newShape, kernel.shape().length - lengthDelta,Math.min(kernel.shape().length,input.shape().length) - lengthDelta);
+            if (input.shape().length < kernel.shape().length) {
+                for (int i = kernel.shape().length - 1; i >= 0; i--)
+                    newShape[i + lengthDelta] = input.shape()[i];
                 input = input.reshape(newShape);
-            }
-            else {
-                System.arraycopy(kernel.shape(), 0, newShape, input.shape().length - lengthDelta, Math.min(kernel.shape().length,input.shape().length) - lengthDelta);
-                kernel = kernel.reshape(newShape);
-            }
 
+
+            } else {
+                if (kernel.shape().length < input.shape().length) {
+                    for (int i = kernel.shape().length - 1; i >= 0; i--)
+                        newShape[i + lengthDelta] = kernel.shape()[i];
+
+                    kernel = kernel.reshape(newShape);
+                }
+
+            }
         }
 
         if (kernel.isScalar() && input.isScalar())
@@ -107,7 +113,7 @@ public class DefaultConvolutionInstance extends BaseConvolution {
         //broadcast to be same shape
         if (!Arrays.equals(fftedInput.shape(), fftedKernel.shape())) {
             if (fftedInput.length() < fftedKernel.length())
-                fftedInput = ComplexNDArrayUtil.padWithZeros(fftedInput,fftedKernel.shape());
+                fftedInput = ComplexNDArrayUtil.padWithZeros(fftedInput, fftedKernel.shape());
             else
                 fftedKernel = ComplexNDArrayUtil.padWithZeros(fftedKernel, fftedInput.shape());
 
@@ -131,6 +137,7 @@ public class DefaultConvolutionInstance extends BaseConvolution {
 
         return convolution.getReal();
     }
+
 
 
 }

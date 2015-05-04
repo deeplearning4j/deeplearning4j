@@ -53,9 +53,9 @@ public class ComplexNDArrayUtilTest {
 
     @Test
     public void testUpSample() {
-        INDArray ones = Nd4j.ones(100,100);
+        INDArray ones = Nd4j.linspace(1,6,6).reshape(2,3);
         INDArray up = Transforms.upSample(ones,Nd4j.create(new double[]{2,2}));
-        INDArray assertion = Nd4j.ones(200,200);
+        INDArray assertion = Nd4j.ones(4,6);
         assertTrue(Arrays.equals(assertion.shape(),up.shape()));
 
     }

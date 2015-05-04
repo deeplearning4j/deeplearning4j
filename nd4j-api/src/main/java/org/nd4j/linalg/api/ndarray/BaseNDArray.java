@@ -2729,10 +2729,13 @@ public abstract class BaseNDArray implements INDArray {
             }
 
 
-        } else {
+        }
+        else if(isRowVector())
+            return Nd4j.scalar(getDouble(slice));
+
+        else {
             int offset = this.offset + (slice * stride[0]);
             if (size(0) == 1) {
-
                 INDArray slice2 = Nd4j.create(data,
                         Arrays.copyOfRange(shape, 1, shape.length),
                         Arrays.copyOfRange(stride, 1, stride.length),
@@ -2918,8 +2921,8 @@ public abstract class BaseNDArray implements INDArray {
             }
         }
 
-        INDArray ret = result;
-        return ret;
+
+        return result;
     }
 
     /**

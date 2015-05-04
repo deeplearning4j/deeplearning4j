@@ -203,14 +203,16 @@ public class Transforms {
             NDArrayIndex index = new NDArrayIndex(indices);
             tmp.put(new NDArrayIndex[]{index}, 1);
             INDArray put = tmp.cumsum(0);
-            idx.add(put.reshape(1,put.length()));
+            idx.add(put);
         }
 
-        INDArray index = Nd4j.create(idx.size(),idx.get(0).columns());
-        for(int i = 0; i < idx.size(); i++)
-            index.putRow(i,idx.get(i));
-        INDArray idx2 = index;
-        return d.get(NDArrayIndex.create(idx2));
+        INDArray ret = Nd4j.create(ArrayUtil.toInts(ArrayUtil.toNDArray(d.shape()).muli(scale)));
+        for(int i = 0; i < ret.slices(); i++) {
+            INDArray slice = d.slice((int) idx.get(0).getDouble(i));
+
+        }
+
+        return ret;
     }
 
 
