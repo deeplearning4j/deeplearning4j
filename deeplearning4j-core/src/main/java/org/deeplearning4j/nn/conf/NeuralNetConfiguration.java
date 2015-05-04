@@ -813,7 +813,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             String ret =  mapper.writeValueAsString(this);
             return ret
                     .replaceAll("\"activationFunction\",","")
-                    .replaceAll("\"layerFactory\",","")
                     .replaceAll("\"stepFunction\",","");
 
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
