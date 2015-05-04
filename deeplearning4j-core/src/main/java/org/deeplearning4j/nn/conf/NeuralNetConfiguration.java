@@ -29,9 +29,9 @@ import org.deeplearning4j.nn.conf.serializers.*;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
-import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
+import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
+import org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction;
+import org.deeplearning4j.nn.conf.stepfunctions.GradientStepFunction;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -82,7 +82,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected Random rng;
     //weight initialization
     protected Distribution dist;
-    protected transient StepFunction stepFunction = new GradientStepFunction();
+    protected StepFunction stepFunction = new GradientStepFunction();
     protected Layer layer;
     
     //gradient keys used for ensuring order when getting and setting the gradient
@@ -812,8 +812,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         try {
             String ret =  mapper.writeValueAsString(this);
             return ret
-                    .replaceAll("\"activationFunction\",","")
-                    .replaceAll("\"stepFunction\",","");
+                    .replaceAll("\"activationFunction\",","");
 
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -862,10 +861,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS,false);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
         SimpleModule module = new SimpleModule();
-
-        module.addSerializer(StepFunction.class, new StepFunctionSerializer());
-        module.addDeserializer(StepFunction.class, new StepFunctionDeSerializer());
-
 
         module.addSerializer(OutputPreProcessor.class,new PreProcessorSerializer());
         module.addDeserializer(OutputPreProcessor.class,new PreProcessorDeSerializer());
