@@ -103,6 +103,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     //convolutional nets: this is the feature map shape
     private int[] filterSize = {2,2};
+    //feature map size
+    private int[] featureMapSize = {9,9};
     //aka pool size for subsampling
     private int[] stride = {2,2};
     //kernel size for a convolutional net
@@ -158,8 +160,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             , int batchSize
             , boolean minimize
             , ConvolutionDownSampleLayer.ConvolutionType convolutionType
-            ,double l1) {
+            ,double l1,int[] featureMapSize) {
         this.l1 = l1;
+        this.featureMapSize = featureMapSize;
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
@@ -197,6 +200,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.batchSize = batchSize;
         this.minimize = minimize;
         this.convolutionType = convolutionType;
+        this.featureMapSize = featureMapSize;
     }
 
     public NeuralNetConfiguration(double sparsity,
@@ -234,8 +238,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   List<IterationListener> listeners,
                                   LayerFactory layerFactory
             ,ConvolutionDownSampleLayer.ConvolutionType convolutionType
-            ,double l1) {
+            ,double l1,int[] featureMapSize) {
         this.l1 = l1;
+        this.featureMapSize = featureMapSize;
         this.minimize = minimize;
         this.convolutionType = convolutionType;
         this.numLineSearchIterations = numLineSearchIterations;
@@ -322,6 +327,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.dist = Nd4j.getDistributions().createNormal(0.01,1);
 
         this.hiddenUnit = neuralNetConfiguration.hiddenUnit;
+    }
+
+    public int[] getFeatureMapSize() {
+        return featureMapSize;
+    }
+
+    public void setFeatureMapSize(int[] featureMapSize) {
+        this.featureMapSize = featureMapSize;
     }
 
     /**
@@ -1031,6 +1044,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private ConvolutionDownSampleLayer.ConvolutionType convolutionType = ConvolutionDownSampleLayer.ConvolutionType.MAX;
         private double l1 = 0.0;
 
+
+        public Builder featureMapSize(int...featureMapSize) {
+            this.featureMapSize = featureMapSize;
+            return this;
+        }
+
         public Builder l1(double l1) {
             this.l1 = l1;
             return this;
@@ -1111,10 +1130,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
 
-        public Builder featureMapSize(int[] featureMapSize) {
-            this.featureMapSize = featureMapSize;
-            return this;
-        }
+
 
 
         public Builder stride(int[] stride) {
@@ -1254,6 +1270,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             ret.numIterations = this.numIterations;
             ret.stepFunction = stepFunction;
             ret.lossFunction = this.lossFunction;
+            ret.featureMapSize = featureMapSize;
             return ret;
         }
 

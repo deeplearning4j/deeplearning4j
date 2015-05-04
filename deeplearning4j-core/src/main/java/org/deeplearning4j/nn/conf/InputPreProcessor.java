@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.conf;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.io.Serializable;
+
 /**
  * Input pre processor used
  * for pre processing input before passing it
@@ -27,7 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public interface InputPreProcessor {
+public interface InputPreProcessor extends Serializable {
 
 
     /**

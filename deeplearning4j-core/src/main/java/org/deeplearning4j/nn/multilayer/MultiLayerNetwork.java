@@ -1046,7 +1046,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         }
 
         log.info("Finetune phase");
-
         OutputLayer o = (OutputLayer) getOutputLayer();
         if (getOutputLayer().conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
             List<INDArray> activations = feedForward();
