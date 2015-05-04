@@ -1126,7 +1126,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNDArray put(NDArrayIndex[] indices, INDArray element) {
         if (isVector()) {
-            assert indices.length == 1 : "Indices must only be of length 1.";
             assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
             assert indices[0].length() == element.length() : "Number of specified elements in index does not match length of element.";
             int[] assign = indices[0].indices();
@@ -1550,8 +1549,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             }
         }
 
-        for(int i = 0; i < offsets.length; i++)
-            offsets[i] /= 2;
 
         int offset = (this.offset + ArrayUtil.dotProduct(offsets, this.stride));
         IComplexNDArray ret =  Nd4j.createComplex(
@@ -1909,7 +1906,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNDArray put(NDArrayIndex[] indices, IComplexNDArray element) {
         if (isVector()) {
-            assert indices.length == 1 : "Indices must only be of length 1.";
             assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
             int[] assign = indices[0].indices();
             for (int i = 0; i < element.length(); i++) {
@@ -2319,11 +2315,21 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         //in the dimensions not filled in
         //also prune indices greater than the shape to be the shape instead
 
-        indexes = Indices.adjustIndices(shape(), indexes);
-
 
         int[] offsets = Indices.offsets(indexes);
+        if(offsets.length != indexes.length)
+            throw new IllegalStateException("Offsets not equal to the number of indexes");
         int[] shape = Indices.shape(shape(), indexes);
+        if(shape.length < offsets.length) {
+            int[] copy = new int[offsets.length];
+            Arrays.fill(copy,1);
+            int delta = Math.abs(shape.length - copy.length);
+            for(int i = copy.length - 1; i > 0; i--) {
+                copy[i] = shape[i - delta];
+            }
+
+            shape = copy;
+        }
         //no stride will help here, need to do manually
         if (!Indices.isContiguous(indexes)) {
             IComplexNDArray ret = Nd4j.createComplex(shape);
@@ -2356,15 +2362,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             return this;
 
 
-        int[] strides;
-
-        strides = ArrayUtil.copy(stride());
-
-        if (offsets.length != shape.length)
-            offsets = Arrays.copyOfRange(offsets, 0, shape.length);
-
-        if (strides.length != shape.length)
-            strides = Arrays.copyOfRange(strides, 0, shape.length);
+        int[] strides = ArrayUtil.copy(stride());
 
         return subArray(offsets, shape, strides);
     }

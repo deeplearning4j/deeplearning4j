@@ -1241,8 +1241,12 @@ public abstract class BaseNDArray implements INDArray {
         else {
 
             assert put.slices() == view.slices() : "Slices must be equivalent.";
-            for (int i = 0; i < put.slices(); i++)
-                view.slice(i).putSlice(i, view.slice(i));
+            INDArray linear = view.linearView();
+            INDArray putLinearView = put.linearView();
+            for(int i = 0; i < linear.length(); i++) {
+                linear.putScalar(i,putLinearView.getDouble(i));
+            }
+
 
         }
 
@@ -1260,10 +1264,14 @@ public abstract class BaseNDArray implements INDArray {
         if (put.isScalar())
             return;
 
+        if(isVector() && put.isVector() && put.length() < length())
+            return;
         //edge case for column vectors
         if (Shape.isColumnVectorShape(sliceShape))
             return;
-        assert Shape.shapeEquals(sliceShape, requiredShape) : String.format("Invalid shape size of %s . Should have been %s ", Arrays.toString(sliceShape), Arrays.toString(requiredShape));
+        if(!Shape.shapeEquals(sliceShape, requiredShape))
+            throw new IllegalStateException(String.format("Invalid shape size of %s . Should have been %s "
+                    , Arrays.toString(sliceShape), Arrays.toString(requiredShape)));
 
     }
 
@@ -1314,7 +1322,7 @@ public abstract class BaseNDArray implements INDArray {
             }
 
             else if (isColumnVector() && Shape.isRowVectorShape(newShape)) {
-                return Nd4j.create(data, newShape, new int[]{stride[1]}, offset);
+                return Nd4j.create(data, newShape, new int[]{stride[0]}, offset);
 
             }
         }
@@ -1500,18 +1508,36 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray put(NDArrayIndex[] indices, INDArray element) {
         if (isVector()) {
             assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
-            assert indices[0].length() <= element.length() : "Number of specified elements in index does not match length of element.";
+            assert element.isScalar() || indices[0].length() <= element.length() : "Number of specified elements in index does not match length of element.";
             int[] assign = indices[0].indices();
-            for (int i = 0; i < element.length(); i++) {
-                putScalar(assign[i], element.getDouble(i));
+            if(indices[0] instanceof NDArrayIndex.NDArrayIndexAll)
+                assign = NDArrayIndex.interval(0,length()).indices();
+            if(element.isScalar()) {
+                for (int i = 0; i < assign.length; i++) {
+                    putScalar(assign[i], element.getDouble(0));
+                }
             }
+            else {
+                for (int i = 0; i < element.length(); i++) {
+                    putScalar(assign[i], element.getDouble(i));
+                }
+            }
+
 
             return this;
 
         }
 
-        if (element.isVector())
-            slice(indices[0].indices()[0]).put(Arrays.copyOfRange(indices, 1, indices.length), element);
+        if (element.isVector()) {
+            if(indices[0] instanceof NDArrayIndex.NDArrayIndexAll) {
+                assign(element);
+            }
+            else {
+                slice(indices[0].indices()[0]).put(Arrays.copyOfRange(indices, 1, indices.length), element);
+
+            }
+
+        }
         else if(isMatrix() && element.isMatrix()) {
             NDArrayIndex[] columns = Arrays.copyOfRange(indices,1,indices.length);
             for(int i = 0; i < element.rows(); i++) {
@@ -3289,12 +3315,20 @@ public abstract class BaseNDArray implements INDArray {
                 return ret;
             }
             if (!ret.isVector()) {
-                //overrides when shouldn't
-                for (int i = 0; i < ret.slices(); i++) {
-                    INDArray putSlice = slice(i).get(Arrays.copyOfRange(indexes, 1, indexes.length));
-                    ret.putSlice(i, putSlice);
-
+                if(slices() == 1) {
+                    INDArray newSlice = slice(0);
+                    NDArrayIndex[] putIndices = Arrays.copyOfRange(indexes, 1, indexes.length);
+                    return newSlice.get(putIndices);
                 }
+                else {
+                    for (int i = 0; i < ret.slices(); i++) {
+                        INDArray slice = slice(i);
+                        INDArray putSlice = slice.get(Arrays.copyOfRange(indexes, 1, indexes.length));
+                        ret.putSlice(i, putSlice);
+
+                    }
+                }
+
             } else {
                 INDArray putSlice = slice(0).get(Arrays.copyOfRange(indexes, 1, indexes.length));
                 ret.putSlice(0, putSlice);
@@ -3309,15 +3343,8 @@ public abstract class BaseNDArray implements INDArray {
             return this;
 
 
-        int[] strides = null;
+        int[] strides = ArrayUtil.copy(stride());
 
-        strides = ArrayUtil.copy(stride());
-
-        if (offsets.length != shape.length)
-            offsets = Arrays.copyOfRange(offsets, 0, shape.length);
-
-        if (strides.length != shape.length)
-            strides = Arrays.copyOfRange(strides, 0, shape.length);
 
         return subArray(offsets, shape, strides);
     }
@@ -3385,11 +3412,11 @@ public abstract class BaseNDArray implements INDArray {
             if (data.dataType() == DataBuffer.FLOAT) {
                 double val = getDouble(0);
                 double val2 = n.getDouble(0);
-                return Math.abs(val - val2) < 1e-6;
+                return Math.abs(val - val2) < Nd4j.EPS_THRESHOLD;
             } else {
                 double val = getDouble(0);
                 double val2 = n.getDouble(0);
-                return Math.abs(val - val2) < 1e-6;
+                return Math.abs(val - val2) < Nd4j.EPS_THRESHOLD;
             }
 
         } else if (isVector() && n.isVector()) {
@@ -3397,12 +3424,12 @@ public abstract class BaseNDArray implements INDArray {
                 if (data.dataType() == DataBuffer.FLOAT) {
                     double curr = getDouble(i);
                     double comp = n.getDouble(i);
-                    if (Math.abs(curr - comp) > 1e-3)
+                    if (Math.abs(curr - comp) > Nd4j.EPS_THRESHOLD)
                         return false;
                 } else {
                     double curr = getDouble(i);
                     double comp = n.getDouble(i);
-                    if (Math.abs(curr - comp) > 1e-3)
+                    if (Math.abs(curr - comp) > Nd4j.EPS_THRESHOLD)
                         return false;
                 }
             }

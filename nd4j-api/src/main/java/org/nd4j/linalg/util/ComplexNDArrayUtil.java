@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -68,20 +69,19 @@ public class ComplexNDArrayUtil {
     public static IComplexNDArray center(IComplexNDArray arr, int[] shape) {
         if (arr.length() < ArrayUtil.prod(shape))
             return arr;
-
-        INDArray shapeMatrix = ArrayUtil.toNDArray(shape);
         for (int i = 0; i < shape.length; i++)
             if (shape[i] < 1)
-                throw new IllegalArgumentException("Illegal shape passed in with value < 0");
+                shape[i] = 1;
+
+        INDArray shapeMatrix = ArrayUtil.toNDArray(shape);
         INDArray currShape = ArrayUtil.toNDArray(arr.shape());
 
-        INDArray startIndex = Transforms.floor(currShape.sub(shapeMatrix).divi(Nd4j.scalar(2)));
+        INDArray startIndex = Transforms.ceiling(currShape.sub(shapeMatrix).divi(Nd4j.scalar(2)));
         INDArray endIndex = startIndex.add(shapeMatrix);
+        NDArrayIndex[] indexes = Indices.createFromStartAndEnd(startIndex,endIndex);
 
         if (shapeMatrix.length() > 1)
-            return arr.get(
-                    NDArrayIndex.interval((int) startIndex.getDouble(0), (int) endIndex.getDouble(0))
-                    , NDArrayIndex.interval((int) startIndex.getDouble(1), (int) endIndex.getDouble(1)));
+            return arr.get(indexes);
 
 
         else {
@@ -151,8 +151,8 @@ public class ComplexNDArrayUtil {
             return nd;
 
         IComplexNDArray ret = Nd4j.createComplex(targetShape);
-        NDArrayIndex[] put = NDArrayIndex.createCoveringShape(targetShape);
-        ret.put(put,nd);
+        NDArrayIndex[] targetShapeIndex = NDArrayIndex.createCoveringShape(nd.shape());
+        ret.put(targetShapeIndex,nd);
         return ret;
 
     }

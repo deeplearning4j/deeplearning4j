@@ -31,6 +31,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 
 /**
  * Functional interface for the different op classes
@@ -64,7 +68,7 @@ public class Transforms {
         int rowIter = ignoreBorder ? (int) (rows / Math.pow(ds[0], 2)) : rows;
         int colIter = ignoreBorder ? (int) (cols / Math.pow(ds[1], 2)) : cols;
         rowIter = Math.max(1,rowIter);
-        colIter = Math.max(1,colIter);
+        colIter = Math.max(1, colIter);
         for (int i = 0; i < signalNDArray.size(0); i++) {
             for (int j = 0; j < signalNDArray.size(1); j++) {
                 for (int k = 0; k < rowIter; k++) {
@@ -83,7 +87,7 @@ public class Transforms {
     }
 
     /**
-     * Down sampling a signal (specifically the first 2 dimensions)
+     * Down sampling a signal for the first stride dimensions
      *
      * @param d1
      * @param stride
@@ -92,8 +96,34 @@ public class Transforms {
     public static INDArray downSample(INDArray d1, int[] stride) {
         INDArray d = Nd4j.ones(stride);
         d.divi(ArrayUtil.prod(stride));
+        if(stride.length != d1.shape().length) {
+            if(stride.length > d1.shape().length) {
+                int[] newShape = new int[stride.length];
+                Arrays.fill(newShape, 1);
+                int delta = Math.abs(d.shape().length - newShape.length);
+                for(int i = newShape.length - 1; i >= delta; i--)
+                    newShape[i] = d.shape()[i - delta];
+                d1 = d1.reshape(newShape);
+            }
+            else {
+                int[] newStride = new int[d1.shape().length];
+                Arrays.fill(newStride, 1);
+                int delta = Math.abs(d.shape().length - newStride.length);
+                for(int i = newStride.length - 1; i >= delta; i--)
+                    newStride[i] = d.shape()[i - delta];
+                d = d.reshape(newStride);
+            }
+        }
+
         INDArray ret = Convolution.convn(d1, d, Convolution.Type.VALID);
-        ret = ret.get(NDArrayIndex.interval(0, stride[0]), NDArrayIndex.interval(0, stride[1]));
+        NDArrayIndex[] indices = new NDArrayIndex[d1.shape().length];
+        for(int i = 0; i < indices.length; i++) {
+            indices[i] = i < stride.length ?
+                    NDArrayIndex.interval(0,stride[i],d1.size(i) + 1,true) :
+                    NDArrayIndex.interval(0,d1.size(i) + 1,true);
+        }
+
+        ret = ret.get(indices);
         return ret;
     }
 
@@ -165,16 +195,22 @@ public class Transforms {
      */
     public static INDArray upSample(INDArray d, INDArray scale) {
 
-        INDArray idx = Nd4j.create(d.shape().length, 1);
-
+        List<INDArray> idx = new ArrayList<>();
 
         for (int i = 0; i < d.shape().length; i++) {
             INDArray tmp = Nd4j.zeros(d.size(i) * (int) scale.getDouble(i), 1);
             int[] indices = ArrayUtil.range(0, (int) scale.getDouble(i) * d.size(i), (int) scale.getDouble(i));
-            tmp.putScalar(indices, 1.0f);
-            idx.put(i, tmp.cumsum(Integer.MAX_VALUE).sum(Integer.MAX_VALUE));
+            NDArrayIndex index = new NDArrayIndex(indices);
+            tmp.put(new NDArrayIndex[]{index}, 1);
+            INDArray put = tmp.cumsum(0);
+            idx.add(put.reshape(1,put.length()));
         }
-        return idx;
+
+        INDArray index = Nd4j.create(idx.size(),idx.get(0).columns());
+        for(int i = 0; i < idx.size(); i++)
+            index.putRow(i,idx.get(i));
+        INDArray idx2 = index;
+        return d.get(NDArrayIndex.create(idx2));
     }
 
 
@@ -250,6 +286,26 @@ public class Transforms {
 
     }
 
+    /**
+     * Binary matrix of whether the number at a given index is greater than
+     *
+     * @param ndArray
+     * @return
+     */
+    public static INDArray ceiling(INDArray ndArray) {
+        return ceiling(ndArray, Nd4j.copyOnOps);
+
+    }
+
+    /**
+     * Ceiling function
+     * @param ndArray
+     * @param copyOnOps
+     * @return
+     */
+    public static INDArray ceiling(INDArray ndArray, boolean copyOnOps) {
+        return exec(copyOnOps ? new Ceil(ndArray, ndArray.dup()) : new Ceil(ndArray, ndArray));
+    }
 
     /**
      * Signum function of this ndarray

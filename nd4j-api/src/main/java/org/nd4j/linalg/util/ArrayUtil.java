@@ -287,7 +287,9 @@ public class ArrayUtil {
      * @return the subset of the data specified
      */
     public static double[] range(double[] data, int to, int stride, int numElementsEachStride) {
-        double[] ret = new double[to];
+        double[] ret = new double[to / stride];
+        if(ret.length < 1)
+            ret = new double[1];
         int count = 0;
         for (int i = 0; i < data.length; i += stride) {
             for (int j = 0; j < numElementsEachStride; j++) {
@@ -330,16 +332,24 @@ public class ArrayUtil {
      */
     public static int[] range(int from, int to, int increment) {
         int diff = Math.abs(from - to);
-        int[] ret = new int[diff];
+        int[] ret = new int[diff / increment];
+        if(ret.length < 1)
+            ret = new int[1];
+
         if (from < to) {
             int count = 0;
             for (int i = from; i < to; i += increment) {
+                if (count >= ret.length)
+                    break;
                 ret[count++] = i;
             }
         } else if (from > to) {
             int count = 0;
-            for (int i = from - 1; i >= to; i -= increment)
+            for (int i = from - 1; i >= to; i -= increment) {
+                if (count >= ret.length)
+                    break;
                 ret[count++] = i;
+            }
         }
 
         return ret;

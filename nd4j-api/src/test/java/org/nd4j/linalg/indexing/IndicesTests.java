@@ -17,6 +17,7 @@
 package org.nd4j.linalg.indexing;
 
 import org.junit.Test;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,12 @@ public class IndicesTests {
         int[] indexing = Indices.shape(NDArrayIndex.interval(2, 4), NDArrayIndex.interval(3, 5));
         int[] shape = {2, 2};
         assertTrue(Arrays.equals(shape, indexing));
+        int[] shape2 = Indices.shape(ArrayUtil.of(100,1,36,36),new NDArrayIndex[]{
+                NDArrayIndex.interval(0,100),NDArrayIndex.interval(0,1)
+        });
+
+
+
     }
 
     @Test

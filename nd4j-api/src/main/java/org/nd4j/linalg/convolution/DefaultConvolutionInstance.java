@@ -80,6 +80,21 @@ public class DefaultConvolutionInstance extends BaseConvolution {
      */
     @Override
     public INDArray convn(INDArray input, INDArray kernel, Convolution.Type type, int[] axes) {
+        if(input.shape().length != kernel.shape().length) {
+            int[] newShape = new int[Math.max(input.shape().length,kernel.shape().length)];
+            Arrays.fill(newShape,1);
+            int lengthDelta = Math.abs(input.shape().length - kernel.shape().length);
+            if(input.shape().length < kernel.shape().length) {
+                System.arraycopy(input.shape(), 0, newShape, kernel.shape().length - lengthDelta,Math.min(kernel.shape().length,input.shape().length) - lengthDelta);
+                input = input.reshape(newShape);
+            }
+            else {
+                System.arraycopy(kernel.shape(), 0, newShape, input.shape().length - lengthDelta, Math.min(kernel.shape().length,input.shape().length) - lengthDelta);
+                kernel = kernel.reshape(newShape);
+            }
+
+        }
+
         if (kernel.isScalar() && input.isScalar())
             return kernel.mul(input);
         INDArray shape = ArrayUtil.toNDArray(input.shape()).add(ArrayUtil.toNDArray(kernel.shape())).subi(1);
@@ -109,8 +124,6 @@ public class DefaultConvolutionInstance extends BaseConvolution {
                 return ComplexNDArrayUtil.center(convolution, input.shape()).getReal();
             case VALID:
                 int[] shape2 = ArrayUtil.toInts(Transforms.abs(ArrayUtil.toNDArray(input.shape()).sub(ArrayUtil.toNDArray(kernel.shape())).addi(1)));
-                for(int i = 0; i < shape2.length; i++)
-                    shape2[i] = Math.max(1,shape2[i]);
                 return ComplexNDArrayUtil.center(convolution, shape2).getReal();
 
         }

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.indexing;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -203,6 +204,111 @@ public class Indices {
         return true;
     }
 
+
+    /**
+     * Create an n dimensional index
+     * based on the given interval indices.
+     * Start and end represent the begin and
+     * end of each interval
+     * @param start the start indexes
+     * @param end the end indexes
+     * @return the interval index relative to the given
+     * start and end indices
+     */
+    public static NDArrayIndex[] createFromStartAndEnd(INDArray start,INDArray end) {
+        if(start.length() != end.length())
+            throw new IllegalArgumentException("Start length must be equal to end length");
+        else {
+            NDArrayIndex[] indexes = new NDArrayIndex[start.length()];
+            for(int i = 0; i < indexes.length; i++) {
+                indexes[i] = NDArrayIndex.interval(start.getInt(i),end.getInt(i));
+            }
+            return indexes;
+        }
+    }
+
+
+    /**
+     * Create indices representing intervals
+     * along each dimension
+     * @param start the start index
+     * @param end the end index
+     * @param inclusive whether the last
+     *                  index should be included
+     * @return the ndarray indexes covering
+     * each dimension
+     */
+    public static NDArrayIndex[] createFromStartAndEnd(INDArray start, INDArray end, boolean inclusive) {
+        if(start.length() != end.length())
+            throw new IllegalArgumentException("Start length must be equal to end length");
+        else {
+            NDArrayIndex[] indexes = new NDArrayIndex[start.length()];
+            for(int i = 0; i < indexes.length; i++) {
+                indexes[i] = NDArrayIndex.interval(start.getInt(i),end.getInt(i),inclusive);
+            }
+            return indexes;
+        }
+    }
+
+
+    /**
+     * Calculate the shape for the given set of indices and offsets.
+     * <p/>
+     * The shape is defined as (for each dimension)
+     * the difference between the end index + 1 and
+     * the begin index
+     * <p/>
+     * If specified, this will check for whether any of the indices are >= to end - 1
+     * and if so, prune it down
+     *
+     * @param shape   the original shape
+     * @param offsets the offsets for the indexing
+     * @param indices the indices to calculate the shape for
+     * @return the shape for the given indices
+     */
+    public static int[] shape(int[] shape, int[] offsets,NDArrayIndex... indices) {
+        if (indices.length > shape.length)
+            return shape;
+
+        int[] ret = new int[indices.length];
+        if(offsets.length < shape.length) {
+            int[] dup = new int[shape.length];
+            System.arraycopy(offsets,0,dup,0,offsets.length);
+            offsets = dup;
+        }
+
+        for (int i = 0; i < ret.length; i++) {
+            if(indices[i] instanceof NDArrayIndex.NDArrayIndexAll) {
+                ret[i] = shape[i];
+            }
+            else {
+                int[] currIndices = indices[i].indices();
+                if (currIndices.length < 1)
+                    continue;
+                int end = currIndices[currIndices.length - 1];
+                if (end > shape[i])
+                    end = shape[i] - 1;
+                int begin = currIndices[0];
+
+                ret[i] = indices[i].isInterval() ? Math.abs(end - begin) + 1 :
+                        indices[i].indices().length - 1;
+                ret[i] -= offsets[i];
+
+            }
+
+        }
+
+        List<Integer> nonZeros = new ArrayList<>();
+        for (int i = 0; i < ret.length; i++) {
+            if (ret[i] > 0)
+                nonZeros.add(ret[i]);
+        }
+
+
+        return ArrayUtil.toArray(nonZeros);
+
+    }
+
     /**
      * Calculate the shape for the given set of indices.
      * <p/>
@@ -218,38 +324,7 @@ public class Indices {
      * @return the shape for the given indices
      */
     public static int[] shape(int[] shape, NDArrayIndex... indices) {
-        if (indices.length > shape.length)
-            return shape;
-
-        int[] ret = new int[indices.length];
-        for (int i = 0; i < ret.length; i++) {
-            if(indices[i] instanceof NDArrayIndex.NDArrayIndexAll) {
-                ret[i] = shape[i];
-            }
-            else {
-                int[] currIndices = indices[i].indices();
-                if (currIndices.length < 1)
-                    continue;
-                int end = currIndices[currIndices.length - 1];
-                if (end > shape[i])
-                    end = shape[i] - 1;
-                int begin = currIndices[0];
-
-                ret[i] = indices[i].isInterval() ? Math.abs(end - begin) + 1 :
-                        indices[i].indices().length;
-            }
-
-        }
-
-        List<Integer> nonZeros = new ArrayList<>();
-        for (int i = 0; i < ret.length; i++) {
-            if (ret[i] > 0)
-                nonZeros.add(ret[i]);
-        }
-
-
-        return ArrayUtil.toArray(nonZeros);
-
+        return shape(shape, new int[shape.length], indices);
     }
 
 

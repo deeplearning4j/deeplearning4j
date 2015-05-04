@@ -119,6 +119,41 @@ public class NDArrayIndex {
         return new NDArrayIndex(Ints.concat(indices));
     }
 
+
+    /**
+     * Generates an interval from begin (inclusive) to end (exclusive)
+     *
+     * @param begin the begin
+     * @param stride  the stride at which to increment
+     * @param end   the end index
+     * @return the interval
+     */
+    public static NDArrayIndex interval(int begin, int stride,int end) {
+        if(Math.abs(begin - end) < 1)
+            end++;
+        if(stride > 1 && Math.abs(begin - end) == 1) {
+            end *= stride;
+        }
+        return interval(begin,stride, end, false);
+    }
+
+    /**
+     * Generates an interval from begin (inclusive) to end (exclusive)
+     *
+     * @param begin     the begin
+     * @param stride the stride at which to increment
+     * @param end       the end index
+     * @param inclusive whether the end should be inclusive or not
+     * @return the interval
+     */
+    public static NDArrayIndex interval(int begin,int stride, int end, boolean inclusive) {
+        assert begin <= end : "Beginning index in range must be less than end";
+        NDArrayIndex ret = new NDArrayIndex(ArrayUtil.range(begin, inclusive ? end + 1 : end,stride));
+        ret.isInterval = stride == 1;
+        return ret;
+    }
+
+
     /**
      * Generates an interval from begin (inclusive) to end (exclusive)
      *
@@ -127,7 +162,7 @@ public class NDArrayIndex {
      * @return the interval
      */
     public static NDArrayIndex interval(int begin, int end) {
-        return interval(begin, end, false);
+        return interval(begin,1, end, false);
     }
 
     /**
@@ -139,10 +174,7 @@ public class NDArrayIndex {
      * @return the interval
      */
     public static NDArrayIndex interval(int begin, int end, boolean inclusive) {
-        assert begin <= end : "Beginning index in range must be less than end";
-        NDArrayIndex ret = new NDArrayIndex(ArrayUtil.range(begin, inclusive ? end + 1 : end));
-        ret.isInterval = true;
-        return ret;
+       return interval(begin,1,end,inclusive);
     }
 
     public int end() {

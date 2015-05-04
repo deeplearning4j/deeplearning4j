@@ -5,9 +5,13 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
+
+import java.util.Arrays;
 
 /**
  * Created by agibsoncccc on 4/25/15.
@@ -25,7 +29,7 @@ public class ComplexNDArrayUtilTest {
     @Test
     public void testPadWithZeros() {
         IComplexNDArray matrix = Nd4j.complexLinSpace(1,8,8).reshape(2,4);
-        IComplexNDArray padded = ComplexNDArrayUtil.padWithZeros(matrix,new int[]{2,5});
+        IComplexNDArray padded = ComplexNDArrayUtil.padWithZeros(matrix, new int[]{2, 5});
         NDArrayIndex[] fill = NDArrayIndex.createCoveringShape(matrix.shape());
         IComplexNDArray assertion = Nd4j.createComplex(2,5);
         assertion.put(fill,matrix);
@@ -45,6 +49,24 @@ public class ComplexNDArrayUtilTest {
 
 
 
+    }
+
+    @Test
+    public void testUpSample() {
+        INDArray ones = Nd4j.ones(100,100);
+        INDArray up = Transforms.upSample(ones,Nd4j.create(new double[]{2,2}));
+        INDArray assertion = Nd4j.ones(200,200);
+        assertTrue(Arrays.equals(assertion.shape(),up.shape()));
+
+    }
+
+    @Test
+    public void testDownSample() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
+        INDArray ones = Nd4j.ones(100,100);
+        INDArray downSampledAssertion = Nd4j.ones(50,50);
+        INDArray downSampled = Transforms.downSample(ones,new int[]{2,2});
+        assertTrue(Arrays.equals(downSampledAssertion.shape(), downSampled.shape()));
     }
 
     @Test
