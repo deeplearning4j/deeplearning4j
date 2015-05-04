@@ -787,9 +787,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         public MultiLayerConfiguration build() {
-            if(layerwise.size() != hiddenLayerSizes.length + 1)
-                throw new IllegalStateException("Number of hidden layers mut be equal to hidden layer sizes + 1");
-
             List<NeuralNetConfiguration> list = new ArrayList<>();
             for(int i = 0; i < layerwise.size(); i++) {
                 if(confOverrides.get(i) != null)
@@ -1138,6 +1135,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     dist,  seed,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel,batchSize,numLineSearchIterations,minimize,listeners,layerFactory,convolutionType,l1);
             ret.useAdaGrad = this.adagrad;
             ret.stepFunction = stepFunction;
+            ret.listeners = listeners;
             return ret;
         }
 

@@ -49,6 +49,11 @@ public class RecursiveAutoEncoder extends BaseLayer {
     }
 
     @Override
+    public Type type() {
+        return Type.RECURSIVE;
+    }
+
+    @Override
     public void update(Gradient gradient) {
 
     }

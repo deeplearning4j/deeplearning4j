@@ -42,7 +42,7 @@ public class Iterators {
 	}
 
 	/**
-	 * Wraps a base iterator with a transformation function.
+	 * WraTps a base iterator with a transformation function.
 	 */
 	public static abstract class Transform<S, T> implements Iterator<T> {
 
