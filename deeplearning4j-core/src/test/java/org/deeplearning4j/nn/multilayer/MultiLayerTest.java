@@ -24,6 +24,10 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.conf.preprocessor.ComposableInputPreProcessor;
+import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
+import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionInputPreProcessor;
+import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder;
 import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.api.Layer;
@@ -96,6 +100,66 @@ public class MultiLayerTest {
     }
 
     @Test
+    public void testConvolutionWithSubSampling() {
+        LayerFactory layerFactory = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
+        int batchSize = 110;
+        /**
+         *
+         */
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
+                .activationFunction("tanh").filterSize(5, 1, 2, 2)
+                .nIn(4).nOut(3).batchSize(batchSize)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+                .hiddenUnit(RBM.HiddenUnit.RECTIFIED).iterationListener(new ScoreIterationListener(10))
+                .layerFactory(layerFactory)
+                .list(3)
+                .inputPreProcessor(0,new ConvolutionInputPreProcessor(2,2))
+                .preProcessor(1, new ConvolutionPostProcessor())
+                .hiddenLayerSizes(new int[]{1})
+                .override(0, new ConfOverride() {
+                    @Override
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+                        builder.layerFactory(LayerFactories.getFactory(ConvolutionLayer.class));
+                        builder.convolutionType(ConvolutionDownSampleLayer.ConvolutionType.MAX);
+                        builder.featureMapSize(2,2);
+                    }
+                }).override(1,new ConfOverride() {
+                    @Override
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+                        builder.layerFactory(LayerFactories.getFactory(SubsamplingLayer.class));
+
+                    }
+                }).override(2, new ClassifierOverride(2))
+                .build();
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+
+
+        org.nd4j.linalg.dataset.DataSet next = iter.next();
+        next.normalizeZeroMeanZeroUnitVariance();
+        SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
+        /**
+         * Likely cause: shape[0] mis match on the filter size and the input batch size.
+         * Likely need to make a little more general.
+         */
+        network.fit(trainTest.getTrain().getFeatureMatrix().reshape(trainTest.getTrain().numExamples(),1,2,2),trainTest.getTrain().getLabels());
+
+
+        //org.nd4j.linalg.dataset.DataSet test = trainTest.getTest();
+        Evaluation eval = new Evaluation();
+        INDArray output = network.output(trainTest.getTrain().getFeatureMatrix().reshape(trainTest.getTrain().numExamples(), 1, 2, 2));
+        eval.eval(trainTest.getTrain().getLabels(),output);
+        log.info("Score " +eval.stats());
+
+
+    }
+
+
+    @Test
     public void testBackPropConvolution() {
 
         LayerFactory layerFactory = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
@@ -113,7 +177,7 @@ public class MultiLayerTest {
                 .layerFactory(layerFactory)
                 .list(2).backward(true)
                 .preProcessor(0,new ConvolutionPostProcessor())
-                .hiddenLayerSizes(new int[]{9})
+                .hiddenLayerSizes(new int[]{4})
                 .override(new ClassifierOverride(1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);

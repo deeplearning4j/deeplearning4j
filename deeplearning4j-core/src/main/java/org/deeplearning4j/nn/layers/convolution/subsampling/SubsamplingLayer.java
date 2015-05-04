@@ -60,6 +60,11 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
+    public Type type() {
+        return Type.CONVOLUTIONAL;
+    }
+
+    @Override
     public Gradient error(INDArray input) {
         return null;
     }
