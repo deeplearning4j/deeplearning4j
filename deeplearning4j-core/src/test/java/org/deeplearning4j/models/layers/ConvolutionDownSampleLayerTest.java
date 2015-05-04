@@ -22,7 +22,6 @@ import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -65,11 +64,10 @@ public class ConvolutionDownSampleLayerTest {
         DataSet d = data.next();
 
         d.setFeatures(d.getFeatureMatrix().reshape(2, 1, 28, 28));
-        LayerFactory layerFactory = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
         NeuralNetConfiguration n = new NeuralNetConfiguration.Builder()
-                .filterSize(2, 1, 2, 2).layerFactory(layerFactory).build();
+                .filterSize(2, 1, 2, 2).layer(new org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer()).build();
 
-        ConvolutionDownSampleLayer c = layerFactory.create(n);
+        ConvolutionDownSampleLayer c = LayerFactories.getFactory(n.getLayer()).create(n);
 
         if(switched) {
             Nd4j.dtype = DataBuffer.FLOAT;
@@ -80,8 +78,6 @@ public class ConvolutionDownSampleLayerTest {
     @Test
     public void testMultiLayer() {
 
-
-        LayerFactory layerFactory = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
         int batchSize = 110;
         /**
          *
@@ -94,7 +90,7 @@ public class ConvolutionDownSampleLayerTest {
                 .iterations(1000).convolutionType(ConvolutionDownSampleLayer.ConvolutionType.NONE)
                 .activationFunction("tanh").filterSize(1, 1, 2, 2)
                 .nIn(4).nOut(3).batchSize(batchSize)
-                .layerFactory(layerFactory)
+                .layer(new org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer())
                 .list(3)
                 .preProcessor(0, new ConvolutionPostProcessor()).inputPreProcessor(0, new ConvolutionInputPreProcessor(2, 2))
                 .preProcessor(1, new ConvolutionPostProcessor()).inputPreProcessor(1, new ConvolutionInputPreProcessor(3, 3))
@@ -122,7 +118,7 @@ public class ConvolutionDownSampleLayerTest {
                         if (i == 2) {
                             builder.activationFunction("softmax");
                             builder.weightInit(WeightInit.ZERO);
-                            builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
+                            builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
                             builder.lossFunction(LossFunctions.LossFunction.MCXENT);
                         }
                     }

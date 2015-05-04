@@ -23,7 +23,6 @@ import java.util.Arrays;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
@@ -50,14 +49,13 @@ public class OutputLayerTest {
 
     @Test
     public void testIris() {
-        LayerFactory layerFactory = LayerFactories.getFactory(OutputLayer.class);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
                 .activationFunction("softmax")
                 .iterations(100).weightInit(WeightInit.ZERO)
-                .learningRate(1e-1).nIn(4).nOut(3).layerFactory(layerFactory).build();
+                .learningRate(1e-1).nIn(4).nOut(3).layer(new org.deeplearning4j.nn.conf.layers.OutputLayer()).build();
 
-        OutputLayer l = layerFactory.create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
+        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
 

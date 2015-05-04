@@ -16,24 +16,34 @@
  *
  */
 
-package org.deeplearning4j.nn.layers.factory;
-
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.params.LSTMParamInitializer;
+package org.deeplearning4j.nn.conf.layers;
 
 /**
- *  LSTM layer initializer
- *  @author Adam Gibson
+ * Convolutional and pooling layer
+ *
  */
-public class LSTMLayerFactory extends DefaultLayerFactory {
+public class ConvolutionDownSampleLayer extends Layer {
 
-    public LSTMLayerFactory(org.deeplearning4j.nn.conf.layers.LSTM layerConfig) {
-        super(layerConfig);
+    private static final long serialVersionUID = 7524152911435120057L;
+
+    @Override
+    public int hashCode() {
+        return 0;
     }
 
     @Override
-    public ParamInitializer initializer() {
-        return new LSTMParamInitializer();
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        return true;
+    }
+
+    public String toString() {
+        return "ConvolutionDownSampleLayer{" +
+                '}';
     }
 }
