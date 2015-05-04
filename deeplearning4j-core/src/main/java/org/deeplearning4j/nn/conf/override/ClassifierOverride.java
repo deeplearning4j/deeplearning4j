@@ -19,8 +19,7 @@
 package org.deeplearning4j.nn.conf.override;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -40,7 +39,7 @@ public class ClassifierOverride implements ConfOverride {
         if(i == finalLayer) {
             builder.activationFunction("softmax");
             builder.weightInit(WeightInit.ZERO);
-            builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
+            builder.layer(new OutputLayer());
             builder.lossFunction(LossFunctions.LossFunction.MCXENT);
         }
     }

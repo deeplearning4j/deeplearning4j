@@ -27,8 +27,8 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
  * @author Adam Gibson
  */
 public class ConvolutionLayerFactory extends DefaultLayerFactory {
-    public ConvolutionLayerFactory(Class<? extends Layer> layerClazz) {
-        super(layerClazz);
+    public ConvolutionLayerFactory(org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer layerConfig) {
+        super(layerConfig);
     }
 
     @Override

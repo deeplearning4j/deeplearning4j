@@ -43,13 +43,14 @@ public class AutoEncoderTest {
         public void testAutoEncoder() throws Exception {
 
                 MnistDataFetcher fetcher = new MnistDataFetcher(true);
-                LayerFactory layerFactory = LayerFactories.getFactory(AutoEncoder.class);
                 NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
                         .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
                         .corruptionLevel(0.6)
                         .iterations(100)
                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                        .learningRate(1e-1f).nIn(784).nOut(600).layerFactory(layerFactory).build();
+                        .learningRate(1e-1f).nIn(784).nOut(600)
+                        .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder())
+                        .build();
 
                 IterationListener listener = new IterationListener() {
                     @Override
@@ -71,7 +72,7 @@ public class AutoEncoderTest {
                 DataSet d2 = fetcher.next();
 
                 INDArray input = d2.getFeatureMatrix();
-                AutoEncoder da = layerFactory.create(conf, Arrays.<IterationListener>asList(listener));
+                AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(listener));
                 assertEquals(da.params(),da.params());
                 assertEquals(471784,da.params().length());
                 da.setParams(da.params());

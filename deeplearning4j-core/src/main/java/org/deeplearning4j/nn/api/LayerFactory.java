@@ -32,12 +32,6 @@ import org.deeplearning4j.optimize.api.IterationListener;
  */
 public interface LayerFactory {
 
-
-    /**
-     * Return the layer class name
-     * @return the layer class name
-     */
-    String layerClazzName();
     /**
      *
      * Create a layer based on the based in configuration

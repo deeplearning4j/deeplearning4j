@@ -25,6 +25,7 @@ import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,7 +129,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
     public void setup(Configuration conf) {
         NeuralNetConfiguration conf2 = NeuralNetConfiguration.fromJson(conf.get(NEURAL_NET_CONF));
 
-        neuralNetwork = conf2.getLayerFactory().create(conf2);
+        neuralNetwork = LayerFactories.getFactory(conf2.getLayer()).create(conf2);
 
 
     }

@@ -41,11 +41,11 @@ public class MultiLayerWorkPerformerTests extends NeuralNetWorkPerformerTest {
 
     @Test
     public void testDbn() {
-        LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(9e-1f).weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1e-1,1))
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).iterations(10)
-                .learningRate(1e-1f).nIn(4).nOut(3).layerFactory(layerFactory)
+                .learningRate(1e-1f).nIn(4).nOut(3)
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .list(2).hiddenLayerSizes(new int[]{3}).override(1, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {

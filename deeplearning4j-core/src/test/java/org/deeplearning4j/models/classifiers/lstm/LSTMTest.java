@@ -44,13 +44,11 @@ public class LSTMTest {
 
     @Test
     public void testTraffic() {
-        LayerFactory factory = LayerFactories.getFactory(LSTM.class);
-
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().activationFunction("tanh")
-                .layerFactory(factory).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .layer(new org.deeplearning4j.nn.conf.layers.LSTM()).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .nIn(4).nOut(4).build();
-        LSTM l = factory.create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
+        LSTM l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
         INDArray predict = FeatureUtil.toOutcomeMatrix(new int[]{0,1,2,3},4);
         l.fit(predict);
         INDArray out = l.activate(predict);

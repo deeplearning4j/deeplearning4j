@@ -21,10 +21,9 @@ package org.deeplearning4j.cli.flags;
 
 import org.deeplearning4j.cli.api.flags.Model;
 import org.deeplearning4j.cli.api.flags.test.BaseFlagTest;
-import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 
@@ -40,7 +39,7 @@ public class ModelFlagTest extends BaseFlagTest {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .dist(new NormalDistribution(1,1e-1))
-                .layerFactory(LayerFactories.getFactory(RBM.class))
+                .layer(new RBM())
                 .build();
         String json = conf.toJson();
         NeuralNetConfiguration testConfig = testModelFlag.value(json);

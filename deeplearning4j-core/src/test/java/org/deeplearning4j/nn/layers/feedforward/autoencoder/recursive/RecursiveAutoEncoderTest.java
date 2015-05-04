@@ -41,21 +41,22 @@ public class RecursiveAutoEncoderTest {
     @Test
     public void testRecursiveAutoEncoder() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        LayerFactory layerFactory = LayerFactories.getFactory(RecursiveAutoEncoder.class);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .corruptionLevel(0.3).weightInit(WeightInit.VI)
                 .iterations(100)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .learningRate(1e-1f).nIn(784).nOut(600).layerFactory(layerFactory).build();
+                .learningRate(1e-1f).nIn(784).nOut(600)
+                .layer(new org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder())
+                .build();
 
         fetcher.fetch(10);
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
 
-        RecursiveAutoEncoder da = layerFactory.create(conf, 
+        RecursiveAutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, 
                 Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
         da.setParams(da.params());
         da.fit(input);
