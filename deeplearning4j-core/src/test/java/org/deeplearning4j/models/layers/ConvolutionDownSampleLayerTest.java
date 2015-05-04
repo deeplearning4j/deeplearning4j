@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
@@ -63,7 +64,7 @@ public class ConvolutionDownSampleLayerTest {
         Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).momentum(0.9)
-                .dist(Nd4j.getDistributions().createNormal(0,1))
+                .dist(new NormalDistribution(0,1))
                 .iterations(1).iterationListener(new ScoreIterationListener(1)).convolutionType(ConvolutionDownSampleLayer.ConvolutionType.NONE)
                 .activationFunction("relu").filterSize(1, 1, 2, 2)
                 .nIn(4).nOut(3).batchSize(batchSize)

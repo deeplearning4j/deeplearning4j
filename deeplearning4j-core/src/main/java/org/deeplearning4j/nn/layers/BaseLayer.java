@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -34,6 +35,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -50,7 +52,8 @@ public abstract class BaseLayer implements Layer {
     protected ParamInitializer paramInitializer;
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
-
+    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
+    
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
     }
@@ -59,7 +62,14 @@ public abstract class BaseLayer implements Layer {
         this.input = input;
         this.conf = conf;
     }
+    
+    public Collection<IterationListener> getIterationListeners() {
+        return iterationListeners;
+    }
 
+    public void setIterationListeners(Collection<IterationListener> listeners) {
+        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    }
 
     @Override
     public Gradient error(INDArray errorSignal) {
@@ -350,7 +360,7 @@ public abstract class BaseLayer implements Layer {
         if(input != null)
             this.input = input;
         Solver solver = new Solver.Builder()
-                .model(this).configure(conf())
+                .model(this).configure(conf()).listeners(getIterationListeners())
                 .build();
         this.optimizer = solver.getOptimizer();
         solver.optimize();

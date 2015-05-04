@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,11 +36,16 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.util.ConvolutionUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Created by agibsoncccc on 4/29/15.
+ * Subsampling layer.
+ *
+ * Used for downsampling a convolution
+ *
+ * @author Adam Gibson
  */
 public class SubsamplingLayer implements Layer {
     //fmSize = floor(self.layers{lL-1}.fmSize./stride);
@@ -60,7 +66,8 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public INDArray derivativeActivation(INDArray input) {
-        return null;
+        INDArray deriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), activate(input)).derivative());
+        return deriv;
     }
 
     @Override
@@ -101,10 +108,11 @@ public class SubsamplingLayer implements Layer {
     @Override
     public INDArray activate(INDArray input) {
         INDArray ret = null;
+        int numFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
         for(int i = 0; i < input.slices(); i++) {
             INDArray downSampled = Transforms.downSample(input.slice(i),conf.getStride());
             if(ret == null) {
-                ret = Nd4j.create(Ints.concat(new int[]{input.slices()},downSampled.shape()));
+                ret = Nd4j.create(Ints.concat(new int[]{input.slices(),numFeatureMaps},downSampled.shape()));
             }
             ret.putSlice(i, downSampled);
         }
@@ -150,6 +158,16 @@ public class SubsamplingLayer implements Layer {
         Gradient ret2 = new DefaultGradient();
         ret2.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS,ret);
         return new Pair<>(ret2,ret2);
+    }
+
+    @Override
+    public Collection<IterationListener> getIterationListeners() {
+        return null;
+    }
+
+    @Override
+    public void setIterationListeners(Collection<IterationListener> listeners) {
+
     }
 
     @Override

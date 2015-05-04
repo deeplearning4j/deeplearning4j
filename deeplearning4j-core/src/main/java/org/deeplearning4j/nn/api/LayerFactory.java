@@ -18,7 +18,10 @@
 
 package org.deeplearning4j.nn.api;
 
+import java.util.Collection;
+
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.optimize.api.IterationListener;
 
 /**
  *
@@ -42,17 +45,27 @@ public interface LayerFactory {
      * @param conf the configuration to create the layer based on
      * @param index the index of the layer
      * @param numLayers the number of total layers in the net work
+     * @param the iteration listeners to use
      * @return the created layer
      */
-    <E extends Layer> E create(NeuralNetConfiguration conf,int index,int numLayers);
+    <E extends Layer> E create(NeuralNetConfiguration conf,int index,int numLayers, Collection<IterationListener> iterationListeners);
+
+    /**
+    *
+    * Create a layer based on the based in configuration
+    * @param conf the configuration to create the layer based on
+    * @return the created layer
+    */
+    <E extends Layer> E create(NeuralNetConfiguration conf);
 
     /**
      *
      * Create a layer based on the based in configuration
      * @param conf the configuration to create the layer based on
+     * @param the iteration listeners to use
      * @return the created layer
      */
-    <E extends Layer> E create(NeuralNetConfiguration conf);
+    <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners);
 
 
     /**
