@@ -19,8 +19,10 @@
 package org.deeplearning4j.nn.params;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
 
 import java.util.Map;
 
@@ -41,13 +43,15 @@ public class RecursiveParamInitializer extends DefaultParamInitializer {
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
+        Distribution dist = Distributions.createDistribution(conf.getDist());
+        
         int vis = conf.getnIn();
         int out = vis * 2;
 
-        params.put(W, WeightInitUtil.initWeights(new int[]{out,vis},conf.getWeightInit(), conf.getDist()));
-        params.put(U, WeightInitUtil.initWeights(new int[]{vis,out},conf.getWeightInit(), conf.getDist()));
-        params.put(BIAS, WeightInitUtil.initWeights(new int[]{out},conf.getWeightInit(), conf.getDist()));
-        params.put(C, WeightInitUtil.initWeights(new int[]{vis},conf.getWeightInit(), conf.getDist()));
+        params.put(W, WeightInitUtil.initWeights(new int[]{out,vis},conf.getWeightInit(), dist));
+        params.put(U, WeightInitUtil.initWeights(new int[]{vis,out},conf.getWeightInit(), dist));
+        params.put(BIAS, WeightInitUtil.initWeights(new int[]{out},conf.getWeightInit(), dist));
+        params.put(C, WeightInitUtil.initWeights(new int[]{vis},conf.getWeightInit(), dist));
 
         conf.addVariable(W);
         conf.addVariable(U);

@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
@@ -34,6 +35,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -48,7 +50,7 @@ public class ConvolutionLayer implements Layer {
     private Map<String,INDArray> params;
     private NeuralNetConfiguration previousConf;
     protected ParamInitializer paramInitializer;
-
+    private List<IterationListener> listeners = new ArrayList<>();
 
     public ConvolutionLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -138,6 +140,16 @@ public class ConvolutionLayer implements Layer {
     @Override
     public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) {
         return null;
+    }
+
+    @Override
+    public Collection<IterationListener> getIterationListeners() {
+        return listeners;
+    }
+
+    @Override
+    public void setIterationListeners(Collection<IterationListener> listeners) {
+         this.listeners = new ArrayList<>(listeners);
     }
 
     @Override

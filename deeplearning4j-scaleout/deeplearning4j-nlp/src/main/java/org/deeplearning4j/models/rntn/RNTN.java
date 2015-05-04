@@ -22,6 +22,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,6 +43,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.util.MultiDimensionalMap;
 import org.deeplearning4j.util.MultiDimensionalSet;
@@ -80,6 +82,7 @@ public class RNTN implements Layer {
 
 
     protected NeuralNetConfiguration conf;
+    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected double value = 0;
     private int numOuts = 3;
     //must be same size as word vectors
@@ -307,8 +310,13 @@ public class RNTN implements Layer {
 
     }
 
+    public Collection<IterationListener> getIterationListeners() {
+        return iterationListeners;
+    }
 
-
+    public void setIterationListeners(Collection<IterationListener> listeners) {
+        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    }
 
     INDArray randomBinaryINDArray() {
         double range = 1.0f / (4.0f * numHidden);

@@ -19,6 +19,10 @@
 package org.deeplearning4j.nn.layers;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Classifier;
@@ -27,6 +31,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -51,7 +56,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     private static final long serialVersionUID = -7065564817460914364L;
     //current input and label matrices
     private INDArray labels;
-
+    
     public OutputLayer(NeuralNetConfiguration conf) {
         super(conf);
     }
@@ -59,7 +64,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public OutputLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
-
 
     /**
      * Objective function:  the specified objective
@@ -237,6 +241,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         this.labels = labels;
         Solver solver = new Solver.Builder()
                 .configure(conf())
+                .listeners(getIterationListeners())
                 .model(this).build();
         solver.optimize();
     }
