@@ -21,10 +21,12 @@ package org.deeplearning4j.nn.conf.serializers;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+
 import org.deeplearning4j.nn.conf.OutputPreProcessor;
 import org.deeplearning4j.util.Dl4jReflection;
 
 import java.io.IOException;
+import java.io.StringWriter;
 
 /**
  * Created by agibsonccc on 2/11/15.
@@ -33,8 +35,10 @@ public class PreProcessorSerializer extends JsonSerializer<OutputPreProcessor> {
     @Override
     public void serialize(OutputPreProcessor value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
         try {
-            jgen.writeString(value.getClass().getName() + "\t" + Dl4jReflection.getFieldsAsProperties(value, null) + ",");
-
+            try(StringWriter sw = new StringWriter()) {
+                Dl4jReflection.getFieldsAsProperties(value, null).store(sw, "");
+                jgen.writeString(value.getClass().getName() + "\t" + sw.toString() + ",");
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

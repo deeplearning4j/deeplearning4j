@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.models.layers;
 
+import java.util.Arrays;
+
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -27,6 +29,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
@@ -51,10 +54,10 @@ public class OutputLayerTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
                 .activationFunction("softmax")
-                .iterations(100).weightInit(WeightInit.ZERO).iterationListener(new ScoreIterationListener(1))
+                .iterations(100).weightInit(WeightInit.ZERO)
                 .learningRate(1e-1).nIn(4).nOut(3).layerFactory(layerFactory).build();
 
-        OutputLayer l = layerFactory.create(conf);
+        OutputLayer l = layerFactory.create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
 

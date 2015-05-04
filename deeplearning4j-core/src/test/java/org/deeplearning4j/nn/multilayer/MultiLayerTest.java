@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.multilayer;
 
+import java.util.Arrays;
+
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
@@ -29,6 +31,8 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.OutputLayer;
@@ -38,7 +42,7 @@ import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.factory.PretrainLayerFactory;
 import org.deeplearning4j.nn.weights.WeightInit;
-
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.junit.Test;
@@ -71,8 +75,8 @@ public class MultiLayerTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .constrainGradientToUnitNorm(true)
-                .weightInit(WeightInit.DISTRIBUTION).dist(Nd4j.getDistributions().createNormal(1,1e-5))
-                .iterations(100).learningRate(1e-3).iterationListener(new ScoreIterationListener(10))
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1,1e-5))
+                .iterations(100).learningRate(1e-3)
                 .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
                 .list(4).hiddenLayerSizes(600,250,100).override(new ConfOverride() {
                     @Override
@@ -144,7 +148,7 @@ public class MultiLayerTest {
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .iterations(100).weightInit(WeightInit.DISTRIBUTION).momentum(0.5)
                 .activationFunction("tanh").iterationListener(new ScoreIterationListener(1))
-                .dist(Nd4j.getDistributions().createNormal(1e-1,1e-1))
+                .dist(new NormalDistribution(1e-1,1e-1))
                 .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .layerFactory(layerFactory)
                 .list(2).backward(true).pretrain(false)
@@ -185,13 +189,12 @@ public class MultiLayerTest {
         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(100).layerFactory(new PretrainLayerFactory(RBM.class))
-                .weightInit(WeightInit.DISTRIBUTION).dist(Nd4j.getDistributions().createUniform(0,1))
+                .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0,1))
                 .activationFunction("tanh").momentum(0.9)
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .constrainGradientToUnitNorm(true).k(1).regularization(true).l2(2e-4)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .learningRate(1e-1f).iterationListener(new ScoreIterationListener(2))
                 .nIn(4).nOut(3).list(2)
                 .hiddenLayerSizes(new int[]{3})
                 .override(new ClassifierOverride(1)).build();
@@ -201,7 +204,8 @@ public class MultiLayerTest {
                     .nIn(784).nOut(600).applySparsity(true).sparsity(0.1)
                     .build();
 
-        Layer l = LayerFactories.getFactory(RBM.class).create(conf2);
+        Layer l = LayerFactories.getFactory(RBM.class).create(conf2,
+                Arrays.<IterationListener>asList(new ScoreIterationListener(2)));
 
 
 
