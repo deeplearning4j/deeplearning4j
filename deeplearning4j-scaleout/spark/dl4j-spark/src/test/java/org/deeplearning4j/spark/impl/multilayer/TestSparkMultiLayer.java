@@ -125,7 +125,6 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
-        network.setIterationListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
         network.init();
         System.out.println("Initializing network");
         SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf);
