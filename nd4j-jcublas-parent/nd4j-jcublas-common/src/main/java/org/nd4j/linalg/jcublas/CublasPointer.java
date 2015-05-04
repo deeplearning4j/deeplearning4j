@@ -63,12 +63,12 @@ public class CublasPointer extends Pointer implements AutoCloseable {
 	 * @param array
 	 */
 	public CublasPointer(INDArray array) {
-		super( ((JCudaBuffer)array.data()).getDevicePointer(array.length()*((JCudaBuffer)array.data()).getElementSize()*array.majorStride()));
+		super( ((JCudaBuffer)array.data()).getDevicePointer(((JCudaBuffer)array.data()).getElementSize()*((JCudaBuffer)array.data()).getLength() - array.offset()*((JCudaBuffer)array.data()).getElementSize()));
 		buffer = (JCudaBuffer)array.data();
-		hostByteOffset = array.offset()*array.data().getElementSize();
+		hostByteOffset = array.offset()*buffer.getElementSize();
 		
-		// Calculate the minimum amount of bytes we need to copy to the device to perform this operation
-		long dataCount = array.length()*buffer.getElementSize()*array.majorStride();
+		// TODO: Calculate the minimum amount of bytes we need to copy to the device to perform this operation
+		long dataCount = buffer.getElementSize()*buffer.getLength() - hostByteOffset;
 		// Copy the data to the device
 		SimpleJCublas.checkResult(JCuda.cudaMemcpy(buffer.getDevicePointer(), buffer.getHostPointer().withByteOffset(hostByteOffset), dataCount, cudaMemcpyKind.cudaMemcpyHostToDevice));
 	}

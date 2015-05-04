@@ -2,6 +2,7 @@ package org.nd4j.linalg.jcublas.rng;
 
 import jcuda.CudaException;
 import jcuda.Pointer;
+import jcuda.Sizeof;
 import jcuda.jcurand.JCurand;
 import jcuda.jcurand.curandGenerator;
 import jcuda.runtime.JCuda;
@@ -14,6 +15,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.SetRange;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 
@@ -152,29 +154,41 @@ public class JcudaRandom implements Random {
     @Override
     public INDArray nextDouble(int[] shape) {
        
-        INDArray create = Nd4j.create(shape);
-        JCudaBuffer buffer = (JCudaBuffer) create.data();
-        if (buffer.dataType() == DataBuffer.Type.FLOAT)
-            curandGenerateUniform(generator, buffer.getHostPointer(), create.length());
-        else if (buffer.dataType() == DataBuffer.Type.DOUBLE)
-            curandGenerateUniformDouble(generator, buffer.getHostPointer(), create.length());
-        else
-            throw new IllegalStateException("Illegal data type discovered");
-        return create;
+    	INDArray create = Nd4j.create(shape);
+        try(CublasPointer p = new CublasPointer(create)) {
+        
+	        if (p.getBuffer().dataType() == DataBuffer.Type.FLOAT)
+	            curandGenerateUniform(generator, p, create.length()*Sizeof.FLOAT);
+	        else if (p.getBuffer().dataType() == DataBuffer.Type.DOUBLE)
+	            curandGenerateUniformDouble(generator, p, create.length()*Sizeof.DOUBLE);
+	        else
+	            throw new IllegalStateException("Illegal data type discovered");
+	        
+	        p.copyToHost();
+	        return create;
+        } catch(Exception e) {
+        	throw new RuntimeException("Could not allocate resources");
+        }
     }
 
     @Override
     public INDArray nextFloat(int[] shape) {
        
-        INDArray create = Nd4j.create(shape);
-        JCudaBuffer buffer = (JCudaBuffer) create.data();
-        if (buffer.dataType() == DataBuffer.Type.FLOAT)
-        	checkResult(curandGenerateUniform(generator, buffer.getHostPointer(), create.length()));
-        else if (buffer.dataType() == DataBuffer.Type.DOUBLE)
-        	checkResult(curandGenerateUniformDouble(generator, buffer.getHostPointer(), create.length()));
-        else
-            throw new IllegalStateException("Illegal data type discovered");
-        return create;
+    	INDArray create = Nd4j.create(shape);
+        try(CublasPointer p = new CublasPointer(create)) {
+        
+	        if (p.getBuffer().dataType() == DataBuffer.Type.FLOAT)
+	            curandGenerateUniform(generator, p, create.length()*Sizeof.FLOAT);
+	        else if (p.getBuffer().dataType() == DataBuffer.Type.DOUBLE)
+	            curandGenerateUniformDouble(generator, p, create.length()*Sizeof.DOUBLE);
+	        else
+	            throw new IllegalStateException("Illegal data type discovered");
+	        
+	        p.copyToHost();
+	        return create;
+        } catch(Exception e) {
+        	throw new RuntimeException("Could not allocate resources");
+        }
     }
 
     @Override
