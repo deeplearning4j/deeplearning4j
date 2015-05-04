@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
+import org.deeplearning4j.optimize.stepfunctions.StepFunctions;
 import org.deeplearning4j.util.MultiLayerUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -1017,7 +1018,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                 }
             } else {
                 StochasticHessianFree hessianFree =
-                        new StochasticHessianFree(getOutputLayer().conf(), getOutputLayer().conf().getStepFunction(),
+                        new StochasticHessianFree(getOutputLayer().conf(), 
+                                StepFunctions.createStepFunction(getOutputLayer().conf().getStepFunction()),
                                 getOutputLayer().getIterationListeners(), this);
                 hessianFree.optimize();
             }
@@ -1054,7 +1056,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             activations.clear();
             o.setLabels(labels);
             StochasticHessianFree hessianFree = new StochasticHessianFree(getOutputLayer().conf(),
-                    getOutputLayer().conf().getStepFunction(), o.getIterationListeners(), this);
+                    StepFunctions.createStepFunction(getOutputLayer().conf().getStepFunction()), 
+                    o.getIterationListeners(), this);
             hessianFree.optimize();
         }
     }
