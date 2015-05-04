@@ -49,29 +49,6 @@ import org.slf4j.LoggerFactory;
 public class ConvolutionDownSampleLayerTest {
     private static final Logger log = LoggerFactory.getLogger(ConvolutionDownSampleLayerTest.class);
 
-    @Test
-    public void testConvolution() throws Exception {
-        boolean switched = false;
-        if(Nd4j.dtype == DataBuffer.FLOAT) {
-            Nd4j.dtype = DataBuffer.DOUBLE;
-            switched = true;
-        }
-        MnistDataFetcher data = new MnistDataFetcher(true);
-        data.fetch(2);
-        DataSet d = data.next();
-
-        d.setFeatures(d.getFeatureMatrix().reshape(2, 1, 28, 28));
-        LayerFactory layerFactory = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
-        NeuralNetConfiguration n = new NeuralNetConfiguration.Builder()
-                .filterSize(2, 1, 2, 2).layerFactory(layerFactory).build();
-
-        ConvolutionDownSampleLayer c = layerFactory.create(n);
-
-        if(switched) {
-            Nd4j.dtype = DataBuffer.FLOAT;
-        }
-
-    }
 
     @Test
     public void testMultiLayer() {

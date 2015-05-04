@@ -18,8 +18,10 @@
 
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
+import com.google.common.primitives.Ints;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -32,20 +34,24 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.util.ConvolutionUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Created by agibsoncccc on 4/29/15.
  */
 public class SubsamplingLayer implements Layer {
-    //the bias for a sub sampling layer. the size is the number of feature maps as a 1d tensor
-    private INDArray b;
     //fmSize = floor(self.layers{lL-1}.fmSize./stride);
     //aka the feature map size relative to a convolution layer
-    private int[] subSampledSize;
     private NeuralNetConfiguration conf;
     private Layer convLayer;
+    protected ParamInitializer paramInitializer;
+    private Map<String,INDArray> params;
 
+    public SubsamplingLayer(NeuralNetConfiguration conf) {
+        this.conf = conf;
+    }
 
     @Override
     public Gradient error(INDArray input) {
@@ -94,9 +100,13 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public INDArray activate(INDArray input) {
-        INDArray ret = Nd4j.create(subSampledSize);
+        INDArray ret = null;
         for(int i = 0; i < input.slices(); i++) {
-            ret.putSlice(i, Transforms.downSample(input.slice(i),conf.getStride()));
+            INDArray downSampled = Transforms.downSample(input.slice(i),conf.getStride());
+            if(ret == null) {
+                ret = Nd4j.create(Ints.concat(new int[]{input.slices()},downSampled.shape()));
+            }
+            ret.putSlice(i, downSampled);
         }
         return ret;
     }
@@ -113,7 +123,7 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) {
-        INDArray ret = Nd4j.create(subSampledSize);
+        INDArray ret = Nd4j.create(conf.getFilterSize());
         int[] filterSize = conf.getFilterSize();
         int currLayerFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
         int forwardLayerFeatureMaps = ConvolutionUtils.numFeatureMap(convLayer.conf());
@@ -122,15 +132,15 @@ public class SubsamplingLayer implements Layer {
 
         //activation is the forward layers convolution
         for(int i = 0; i < forwardLayerFeatureMaps; i++) {
-           for(int j = 0; j < currLayerFeatureMaps; j++) {
-               INDArray featureMapError  = Nd4j.create(filterSize[0], 1, filterSize[filterSize.length - 2], filterSize[filterSize.length - 1]);
-               //rotated filter for convolution
-               INDArray rotatedFilter = Nd4j.rot(convLayer.getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS).get(NDArrayIndex.all(),NDArrayIndex.all()).slice(i).slice(j));
-               //forward error for the particular slice
-               INDArray forwardError = activation.slice(j);
-               featureMapError.addi(Nd4j.getConvolution().convn(forwardError,rotatedFilter, Convolution.Type.FULL));
-               ret.putSlice(i,featureMapError);
-           }
+            for(int j = 0; j < currLayerFeatureMaps; j++) {
+                INDArray featureMapError  = Nd4j.create(filterSize[0], 1, filterSize[filterSize.length - 2], filterSize[filterSize.length - 1]);
+                //rotated filter for convolution
+                INDArray rotatedFilter = Nd4j.rot(convLayer.getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS).get(NDArrayIndex.all(),NDArrayIndex.all()).slice(i).slice(j));
+                //forward error for the particular slice
+                INDArray forwardError = activation.slice(j);
+                featureMapError.addi(Nd4j.getConvolution().convn(forwardError,rotatedFilter, Convolution.Type.FULL));
+                ret.putSlice(i,featureMapError);
+            }
 
 
 
@@ -169,23 +179,57 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public INDArray transform(INDArray data) {
-        return null;
+        return activate(data);
     }
 
+    /**
+     * Returns the parameters of the neural network
+     *
+     * @return the parameters of the neural network
+     */
     @Override
     public INDArray params() {
-        return null;
+        List<INDArray> ret = new ArrayList<>();
+        for(String s : params.keySet())
+            ret.add(params.get(s));
+        return Nd4j.toFlattened(ret);
     }
 
     @Override
     public int numParams() {
-        return 0;
+        int ret = 0;
+        for(INDArray val : params.values())
+            ret += val.length();
+        return ret;
     }
 
     @Override
     public void setParams(INDArray params) {
+        List<String> gradientList = conf.variables();
+        int length = 0;
+        for(String s : gradientList)
+            length += getParam(s).length();
+        if(params.length() != length)
+            throw new IllegalArgumentException("Unable to set parameters: must be of length " + length);
+        int idx = 0;
+        for(int i = 0; i < gradientList.size(); i++) {
+            INDArray param = getParam(gradientList.get(i));
+            INDArray get = params.get(NDArrayIndex.interval(idx,idx + param.length()));
+            if(param.length() != get.length())
+                throw new IllegalStateException("Parameter " + gradientList.get(i) + " should have been of length " + param.length() + " but was " + get.length());
+            param.assign(get.reshape(param.shape()));
+            idx += param.length();
+        }
+
+        setScore();
 
     }
+
+    @Override
+    public void initParams() {
+        paramInitializer.init(paramTable(),conf());
+    }
+
 
     @Override
     public void fit(INDArray data) {
@@ -219,7 +263,7 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public void setConf(NeuralNetConfiguration conf) {
-         this.conf = conf;
+        this.conf = conf;
     }
 
     @Override
@@ -239,27 +283,24 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public INDArray getParam(String param) {
-        return null;
+        return params.get(param);
     }
 
-    @Override
-    public void initParams() {
 
-    }
 
     @Override
     public Map<String, INDArray> paramTable() {
-        return null;
+        return params;
     }
 
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
-
+        this.params = paramTable;
     }
 
     @Override
     public void setParam(String key, INDArray val) {
-
+        this.params.put(key,val);
     }
 
     @Override
