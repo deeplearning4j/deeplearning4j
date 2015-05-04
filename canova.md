@@ -8,12 +8,13 @@ layout: default
 ## Key aspects
 - [Canova](https://github.com/deeplearning4j/Canova) uses an input/output format system (similar to how Hadoop uses MapReduce)
 - Designed to support all major types of input data (text, CSV, audio, image and video) with these specific input formats
-- Uses an output format system to specifiy an implementation-neutral type of vector format (ARFF, SVMLight, etc.)
+- Uses an output format system to specify an implementation-neutral type of vector format (ARFF, SVMLight, etc.)
 - Runs from the command line
-- Can be extended for specialized input formats (such as exotic image formats): You can write your own custom input format and let the rest of the codebase handle the transformation pipeline
+- Can be extended for specialized input formats (such as exotic image formats); i.e. You can write your own custom input format and let the rest of the codebase handle the transformation pipeline
 - Makes vectorization a first-class citizen
 
-We're finishing up the CLI system and running tests on basic datasets for converting just stock CSV data that you'd export from a DB or get from UCI. You can transform this data with a small conf file-based transform language (label, normalize, copy, etc).
+We're finishing up the command-line interface (CLI) system and running tests on basic datasets for converting stock CSV data that you'd export from a database or download from UCI. You can transform this data with a small conf file-based transform language (label, normalize, copy, etc). There's a <a href="#tutorial">brief tutorial below</a>.
+
 
 ## A Few Examples
 
@@ -46,7 +47,7 @@ Below is an example of the CSV transform language in action from the command lin
        @ATTRIBUTE petalwidth   NUMERIC   !NORMALIZE
        @ATTRIBUTE class        STRING   !LABEL
 
-## Setting Up Canova
+## <a name="tutorial">Setting Up Canova</a>
 
 You'll need to do a *git clone* from [Canova's Github repo](https://github.com/deeplearning4j/Canova), and then build the dependencies with [Maven](http://nd4j.org/getstarted.html#maven). 
 
@@ -54,14 +55,14 @@ You'll need to do a *git clone* from [Canova's Github repo](https://github.com/d
 
 (We also recommend that you clone the [ND4J repo](https://github.com/deeplearning4j/nd4j) and build its dependencies now.)
 
-Then you'll want to build the stand-alone Canova jar to run the CLI from the command line:
+Then you'll want to build the stand-alone Canova jar to run the CLI from terminal/command prompt:
 
       cd canova-cli/
       mvn -DskipTests=true -Dmaven.javadoc.skip=true package
 
 ## Create the Configuration File
 
-You'll need a file to tell the vectorization engine what to do. Create a text file containing the following lines in the *canova-cli* directory (you might name the file vec_conf.txt):
+You'll need a file to tell the vectorization engine what to do. Create a text file containing the following lines in the *canova-cli* directory (you might name the file *vec_conf.txt*):
 
     input.header.skip=false
     input.statistics.debug.print=false
@@ -90,7 +91,7 @@ Now we're going to take this [sample](https://github.com/deeplearning4j/Canova/b
     7.1,3.0,5.9,2.1,Iris-virginica
     6.3,2.9,5.6,1.8,Iris-virginica
 
-We transform it into the svmLight format from the command line like this
+Transform it into the svmLight format from the command line like this
 
     ./bin/canova vectorize -conf [my_conf_file]
 
