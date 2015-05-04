@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.OutputPreProcessor;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.OutputLayer;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.GradientAdjustment;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
@@ -330,36 +331,40 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
 
         INDArray layerInput = input();
-        int inputSize;
+        int inputSize = 0;
         if (getnLayers() < 1)
             throw new IllegalStateException("Unable to createComplex network neuralNets; number specified is less than 1");
 
         int[] hiddenLayerSizes = layerWiseConfigurations.getHiddenLayerSizes();
-        int numHiddenLayersSizesUsed = 0;
+        int numHiddenLayersSizesUsed = 1;
         if (this.layers == null || this.layers[0] == null) {
             //
-            this.layers = new Layer[hiddenLayerSizes.length + 1];
+            if(this.layers == null)
+                this.layers = new Layer[getnLayers()];
             // construct multi-layer
             for (int i = 0; i < getnLayers(); i++) {
 
                 if (i == 0) {
                     inputSize = layerWiseConfigurations.getConf(0).getnIn();
-                    numHiddenLayersSizesUsed++;
                     if(input == null) {
                         input = Nd4j.ones(inputSize);
                         layerInput = input;
                     }
                 }
-                else
+
+                else if(LayerFactories.typeForFactory(layerWiseConfigurations.getConf(i).getLayerFactory()) == Layer.Type.FEED_FORWARD)
                     inputSize = hiddenLayerSizes[numHiddenLayersSizesUsed - 1];
 
                 if (i == 0) {
-                    layerWiseConfigurations.getConf(i).setnIn(inputSize);
-                    layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
-                    // construct sigmoid_layer
-                    LayerFactory conf2 = layerWiseConfigurations.getConf(i).getLayerFactory();
+                    LayerFactory layerFactory = layerWiseConfigurations.getConf(i).getLayerFactory();
+                    Layer.Type type = LayerFactories.typeForFactory(layerFactory);
+                    if(type == Layer.Type.FEED_FORWARD) {
+                        layerWiseConfigurations.getConf(i).setnIn(inputSize);
+                        layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
+                    }
+
                     NeuralNetConfiguration currConf = layerWiseConfigurations.getConf(i);
-                    layers[i] = conf2.create(currConf);
+                    layers[i] = layerFactory.create(currConf);
                 }
                 else if (i < getLayers().length - 1) {
                     if (input != null)
@@ -378,12 +383,15 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                      *
                      * This will also allow us to specify the hidden layers in contiguous
                      * order in the array without having to create an override
-                     * for eery layer.
+                     * for every layer.
                      */
-                    if(layerInput.columns() == hiddenLayerSizes[i])
+                    Layer.Type type = LayerFactories.typeForFactory(layerWiseConfigurations.getConf(i).getLayerFactory());
+                    if(type == Layer.Type.FEED_FORWARD) {
                         numHiddenLayersSizesUsed++;
-                    layerWiseConfigurations.getConf(i).setnIn(layerInput.columns());
-                    layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
+                        layerWiseConfigurations.getConf(i).setnIn(layerInput.columns());
+                        layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
+                    }
+
                     layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(layerWiseConfigurations.getConf(i));
 
                 }
@@ -391,11 +399,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
             }
 
-
             NeuralNetConfiguration last = layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 1);
-            NeuralNetConfiguration secondToLast = layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 2);
-            last.setnIn(secondToLast.getnOut());
 
+            Layer.Type type = LayerFactories.typeForFactory(layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 1).getLayerFactory());
+            if(type == Layer.Type.FEED_FORWARD) {
+                last.setnIn(hiddenLayerSizes[hiddenLayerSizes.length - 1]);
+            }
 
             this.layers[layers.length - 1] = last.getLayerFactory().create(last);
 
@@ -1498,9 +1507,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         this.labels = labels;
     }
 
-
+    /**
+     * Get the number of layers in the network
+     * @return the number of layers in the network
+     */
     public int getnLayers() {
-        return layerWiseConfigurations.getHiddenLayerSizes().length + 1;
+        return layerWiseConfigurations.getConfs().size();
     }
 
     public Layer[] getLayers() {

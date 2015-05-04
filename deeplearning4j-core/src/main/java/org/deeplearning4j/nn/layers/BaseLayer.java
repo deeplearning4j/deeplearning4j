@@ -339,8 +339,10 @@ public abstract class BaseLayer implements Layer {
 
     }
 
-
-
+    @Override
+    public Type type() {
+        return Type.FEED_FORWARD;
+    }
 
     /**
      * The number of parameters for the model

@@ -36,6 +36,16 @@ import java.util.Collection;
  */
 public interface Layer extends Serializable,Cloneable,Model {
 
+    enum Type {
+       FEED_FORWARD,RECURRENT,CONVOLUTIONAL,RECURSIVE
+    }
+
+
+    /**
+     * Returns the layer type
+     * @return
+     */
+    Type type();
 
     /**
      * Calculate error with respect to the

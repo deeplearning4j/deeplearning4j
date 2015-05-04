@@ -1097,6 +1097,11 @@ public class RNTN implements Layer {
     }
 
     @Override
+    public Layer.Type type() {
+        return Layer.Type.RECURSIVE;
+    }
+
+    @Override
     public Gradient error(INDArray input) {
         return null;
     }
