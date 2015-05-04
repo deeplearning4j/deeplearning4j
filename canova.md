@@ -5,6 +5,8 @@ layout: default
 
 # Canova: A Vectorization Lib for ML
 
+Canova solves one of the most important obstacles to effective machine or deep learning: getting data into a format that neural nets can understand. Nets understand vectors. Vectorization is the first problem many data scientists will have to solve to start training their algorithms on data. 
+
 ## Key aspects
 - [Canova](https://github.com/deeplearning4j/Canova) uses an input/output format system (similar to how Hadoop uses MapReduce)
 - Designed to support all major types of input data (text, CSV, audio, image and video) with these specific input formats
