@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.OutputPreProcessor;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.OutputLayer;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -363,7 +364,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                     layerWiseConfigurations.getConf(i).setnIn(inputSize);
                     layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
                     // construct sigmoid_layer
-                    layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(
+                    layers[i] = LayerFactories.getFactory(layerWiseConfigurations.getConf(i).getLayer()).create(
                             layerWiseConfigurations.getConf(i), getIterationListeners());
                 }
                 else if (i < getLayers().length - 1) {
@@ -389,7 +390,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                         numHiddenLayersSizesUsed++;
                     layerWiseConfigurations.getConf(i).setnIn(layerInput.columns());
                     layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
-                    layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(
+                    layers[i] = LayerFactories.getFactory(layerWiseConfigurations.getConf(i).getLayer()).create(
                             layerWiseConfigurations.getConf(i), getIterationListeners());
 
                 }
@@ -403,7 +404,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             last.setnIn(secondToLast.getnOut());
 
 
-            this.layers[layers.length - 1] = last.getLayerFactory().create(last, getIterationListeners());
+            this.layers[layers.length - 1] = LayerFactories.getFactory(last.getLayer()).create(last, getIterationListeners());
 
             initCalled = true;
             initMask();

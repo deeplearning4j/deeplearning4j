@@ -16,27 +16,36 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.override;
-
-import org.deeplearning4j.nn.api.LayerFactory;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+package org.deeplearning4j.nn.conf.layers;
 
 /**
- * Layer factory override
- * @author Adam Gibson
- */
-public class LayerFactoryOverride implements ConfOverride {
-    private int layer;
-    private LayerFactory layerFactory;
+*
+* Recursive AutoEncoder.
+* Uses back propagation through structure.
+*
+*/
+public class RecursiveAutoEncoder extends Layer {
 
-    public LayerFactoryOverride(int layer, LayerFactory layerFactory) {
-        this.layer = layer;
-        this.layerFactory = layerFactory;
+    private static final long serialVersionUID = -2963611662325083203L;
+
+    @Override
+    public int hashCode() {
+        return 0;
     }
 
     @Override
-    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-        if(i == layer)
-            builder.layerFactory(layerFactory);
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        return true;
+    }
+
+    public String toString() {
+        return "RecursiveAutoEncoder{" +
+                '}';
     }
 }

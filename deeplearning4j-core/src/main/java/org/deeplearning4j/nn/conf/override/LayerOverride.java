@@ -16,24 +16,27 @@
  *
  */
 
-package org.deeplearning4j.nn.layers.factory;
+package org.deeplearning4j.nn.conf.override;
 
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.params.LSTMParamInitializer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.Layer;
 
 /**
- *  LSTM layer initializer
- *  @author Adam Gibson
+ * Layer override
+ * @author Adam Gibson
  */
-public class LSTMLayerFactory extends DefaultLayerFactory {
+public class LayerOverride implements ConfOverride {
+    private int layerIndex;
+    private Layer layerConfig;
 
-    public LSTMLayerFactory(org.deeplearning4j.nn.conf.layers.LSTM layerConfig) {
-        super(layerConfig);
+    public LayerOverride(int layerIndex, Layer layerConfig) {
+        this.layerIndex = layerIndex;
+        this.layerConfig = layerConfig;
     }
 
     @Override
-    public ParamInitializer initializer() {
-        return new LSTMParamInitializer();
+    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+        if(i == layerIndex)
+            builder.layer(layerConfig);
     }
 }

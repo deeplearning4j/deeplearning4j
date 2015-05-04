@@ -21,6 +21,7 @@ package org.deeplearning4j.iterativereduce.impl.multilayer;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -29,10 +30,9 @@ import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.deeplearning4j.iterativereduce.irunit.IRUnitDriver;
-import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
@@ -127,7 +127,7 @@ public class IRUnitIrisDBNWorkerTests {
 
     @Test
     public void testConfIssues() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().layerFactory(LayerFactories.getFactory(RBM.class))
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().layer(new RBM())
                 .list(3).hiddenLayerSizes(new int[]{3,2}).build();
         String json = conf.toJson();
 

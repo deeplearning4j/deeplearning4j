@@ -28,6 +28,7 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.RecordReader;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.spark.canova.RDDMiniBatches;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.deeplearning4j.spark.util.MLLibUtil;
@@ -96,7 +97,7 @@ public class SparkDl4jLayer implements Serializable {
     public Layer fitDataSet(JavaRDD<DataSet> rdd) {
         int batchSize = conf.getBatchSize();
         JavaRDD<DataSet> miniBatches = new RDDMiniBatches(batchSize,rdd).miniBatchesJava();
-        Layer layer = conf.getLayerFactory().create(conf);
+        Layer layer = LayerFactories.getFactory(conf.getLayer()).create(conf);
         INDArray params = layer.params();
         int paramsLength = layer.numParams();
         if(params.length() != paramsLength)

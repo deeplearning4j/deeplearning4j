@@ -25,7 +25,6 @@ import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.scaleout.job.Job;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
@@ -37,7 +36,8 @@ public class NeuralNetWorkPerformerTest extends BaseWorkPerformerTest {
     @Test
     public void testRbm() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration
-                .Builder().nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
+                .Builder().nIn(4).nOut(3)
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .build();
         String json = conf.toJson();
         NeuralNetConfiguration conf3 = NeuralNetConfiguration.fromJson(json);

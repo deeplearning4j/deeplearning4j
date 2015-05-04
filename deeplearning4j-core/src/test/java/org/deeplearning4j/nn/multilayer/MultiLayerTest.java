@@ -26,7 +26,6 @@ import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -34,12 +33,8 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
-import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
-import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
-import org.deeplearning4j.nn.layers.factory.PretrainLayerFactory;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -64,9 +59,7 @@ public class MultiLayerTest {
     @Test
     public void testDbnFaces() {
         Nd4j.dtype = DataBuffer.DOUBLE;
-        LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
         DataSetIterator iter = new LFWDataSetIterator(28,28);
-
 
         DataSet next = iter.next();
         next.normalizeZeroMeanZeroUnitVariance();
@@ -76,19 +69,20 @@ public class MultiLayerTest {
                 .constrainGradientToUnitNorm(true)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1,1e-5))
                 .iterations(100).learningRate(1e-3)
-                .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
+                .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .list(4).hiddenLayerSizes(600,250,100).override(3, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 3) {
-                            builder.layerFactory(new DefaultLayerFactory(OutputLayer.class));
+                            builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
                             builder.activationFunction("softmax");
                             builder.lossFunction(LossFunctions.LossFunction.MCXENT);
 
                         }
                     }
                 }).build();
-
+        
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.setIterationListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
         network.fit(next);
@@ -98,7 +92,6 @@ public class MultiLayerTest {
     @Test
     public void testBackPropConvolution() {
 
-        LayerFactory layerFactory = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
         int batchSize = 110;
         /**
          *
@@ -110,7 +103,7 @@ public class MultiLayerTest {
                 .nIn(4).nOut(3).batchSize(batchSize)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .layerFactory(layerFactory)
+                .layer(new org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer())
                 .list(2).backward(true)
                 .preProcessor(0,new ConvolutionPostProcessor())
                 .hiddenLayerSizes(new int[]{9})
@@ -143,12 +136,12 @@ public class MultiLayerTest {
 
     @Test
     public void testBackProp() {
-        LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
                 .activationFunction("tanh")
-                .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
+                .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .list(3).backward(true)
                 .hiddenLayerSizes(new int[]{3, 2}).override(2, new ClassifierOverride(2)).build();
 
@@ -178,7 +171,8 @@ public class MultiLayerTest {
         Nd4j.MAX_SLICES_TO_PRINT = -1;
         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(100).layerFactory(new PretrainLayerFactory(RBM.class))
+                .iterations(100)
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0,1))
                 .activationFunction("tanh").momentum(0.9)
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
@@ -190,11 +184,11 @@ public class MultiLayerTest {
                 .override(1, new ClassifierOverride(1)).build();
 
             NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                    .layerFactory(LayerFactories.getFactory(RBM.class))
+                    .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                     .nIn(784).nOut(600).applySparsity(true).sparsity(0.1)
                     .build();
 
-        Layer l = LayerFactories.getFactory(RBM.class).create(conf2,
+        Layer l = LayerFactories.getFactory(conf2.getLayer()).create(conf2,
                 Arrays.<IterationListener>asList(new ScoreIterationListener(2)));
 
 

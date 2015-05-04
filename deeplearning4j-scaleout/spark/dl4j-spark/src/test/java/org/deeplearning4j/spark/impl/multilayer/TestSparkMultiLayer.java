@@ -30,8 +30,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
-import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -68,7 +66,8 @@ public class TestSparkMultiLayer extends BaseSparkTest {
     public void testIris() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
             .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
+                .nIn(4).nOut(3)
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .activationFunction("tanh").list(2).hiddenLayerSizes(3)
@@ -77,7 +76,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 1) {
                             builder.activationFunction("softmax");
-                            builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
+                            builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
                             builder.lossFunction(LossFunctions.LossFunction.MCXENT);
                         }
                     }
@@ -107,7 +106,8 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                 .iterations(100).visibleUnit(RBM.VisibleUnit.GAUSSIAN).batchSize(10)
                 .l2(2e-4).regularization(true).weightInit(WeightInit.VI)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
+                .nIn(4).nOut(3)
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .list(3).hiddenLayerSizes(3,2)
                 .override(2, new ConfOverride() {
                     @Override
@@ -115,7 +115,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
                         if (i == 2) {
                             builder.activationFunction("softmax");
-                            builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
+                            builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
                             builder.lossFunction(LossFunctions.LossFunction.MCXENT);
                         }
                     }
@@ -156,14 +156,15 @@ public class TestSparkMultiLayer extends BaseSparkTest {
     public void testStaticInvocation() throws Exception {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .nIn(4).nOut(3).layerFactory(LayerFactories.getFactory(RBM.class))
+                .nIn(4).nOut(3)
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .activationFunction("tanh").list(2).hiddenLayerSizes(3)
                 .override(1, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 1) {
                             builder.activationFunction("softmax");
-                            builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
+                            builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
                             builder.lossFunction(LossFunctions.LossFunction.MCXENT);
                         }
                     }
