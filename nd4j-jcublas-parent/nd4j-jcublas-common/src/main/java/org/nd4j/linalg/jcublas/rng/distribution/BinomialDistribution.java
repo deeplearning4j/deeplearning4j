@@ -125,29 +125,29 @@ public class BinomialDistribution extends BaseJCudaDistribution {
         if (pNDArray != null) {
 
         } else {
-            doBinomialDouble(probabilityOfSuccess, buffer.pointer(), numberOfTrials, buffer.length());
+            doBinomialDouble(probabilityOfSuccess, buffer, numberOfTrials, buffer.length());
         }
         double[] buffer2 = buffer.asDouble();
-        buffer.destroy();
         return buffer2;
+        
     }
 
     @Override
     public INDArray sample(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) ret.data();
-        if (ret.data().dataType() == DataBuffer.DOUBLE) {
+        if (ret.data().dataType() == DataBuffer.Type.DOUBLE) {
             if (pNDArray != null) {
-                doBinomialDouble(pNDArray, buffer.pointer(), numberOfTrials, buffer.length());
+                doBinomialDouble(pNDArray, buffer, numberOfTrials, buffer.length());
             } else {
-                doBinomialDouble(probabilityOfSuccess, buffer.pointer(), numberOfTrials, buffer.length());
+                doBinomialDouble(probabilityOfSuccess, buffer, numberOfTrials, buffer.length());
             }
         } else {
             if (pNDArray != null) {
-                doBinomial(pNDArray, buffer.pointer(), numberOfTrials, buffer.length());
+                doBinomial(pNDArray, buffer, numberOfTrials, buffer.length());
 
             } else {
-                doBinomial((float) probabilityOfSuccess, buffer.pointer(), numberOfTrials, buffer.length());
+                doBinomial((float) probabilityOfSuccess, buffer, numberOfTrials, buffer.length());
 
             }
         }

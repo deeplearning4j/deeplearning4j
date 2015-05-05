@@ -1,18 +1,27 @@
 package org.nd4j.linalg.jcublas.rng;
 
+import jcuda.CudaException;
+import jcuda.Pointer;
+import jcuda.Sizeof;
 import jcuda.jcurand.JCurand;
 import jcuda.jcurand.curandGenerator;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaError;
+import jcuda.runtime.cudaMemcpyKind;
 import jcuda.utils.KernelLauncher;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.SetRange;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 
 import static jcuda.jcurand.JCurand.*;
 import static jcuda.jcurand.curandRngType.CURAND_RNG_PSEUDO_DEFAULT;
+import static org.nd4j.linalg.jcublas.SimpleJCublas.sync;
 
 /**
  * Jcuda random number generator
@@ -63,10 +72,12 @@ public class JcudaRandom implements Random {
     public int nextInt() {
        
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
-        curandGenerate(generator, buffer.pointer(), 2);
+        curandGenerate(generator, buffer.getDevicePointer(), 2);
+        buffer.copyToHost();
         double[] data = buffer.asDouble();
         int ret = (int) data[0];
-        buffer.destroy();
+        
+        buffer.freeDevicePointer();
         return ret;
     }
 
@@ -74,10 +85,11 @@ public class JcudaRandom implements Random {
     public int nextInt(int n) {
        
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
-        curandGenerateUniformDouble(generator, buffer.pointer(), 2);
+        curandGenerateUniformDouble(generator, buffer.getDevicePointer(), 2);
+        buffer.copyToHost();
         double[] data = buffer.asDouble();
         int ret = (int) data[0];
-        buffer.destroy();
+        buffer.freeDevicePointer();
         return ret;
     }
 
@@ -85,10 +97,11 @@ public class JcudaRandom implements Random {
     public long nextLong() {
        
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
-        curandGenerate(generator, buffer.pointer(), 2);
+        curandGenerate(generator, buffer.getDevicePointer(), 2);
+        buffer.copyToHost();
         double[] data = buffer.asDouble();
         long ret = (long) data[0];
-        buffer.destroy();
+        buffer.freeDevicePointer();
         return ret;
     }
 
@@ -101,10 +114,11 @@ public class JcudaRandom implements Random {
     public float nextFloat() {
        
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
-        curandGenerate(generator, buffer.pointer(), 2);
+        curandGenerate(generator, buffer.getDevicePointer(), 2);
+        buffer.copyToHost();
         double[] data = buffer.asDouble();
         float ret = (float) data[0];
-        buffer.destroy();
+        buffer.freeDevicePointer();
         return ret;
     }
 
@@ -112,9 +126,10 @@ public class JcudaRandom implements Random {
     public double nextDouble() {
        
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
-        curandGenerate(generator, buffer.pointer(), 2);
+        curandGenerate(generator, buffer.getDevicePointer(), 2);
+        buffer.copyToHost();
         double[] data = buffer.asDouble();
-        buffer.destroy();
+        buffer.freeDevicePointer();
         return data[0];
     }
 
@@ -122,86 +137,123 @@ public class JcudaRandom implements Random {
     public double nextGaussian() {
        
         JCudaBuffer buffer = new CudaDoubleDataBuffer(2);
-        curandGenerateUniformDouble(generator, buffer.pointer(), 2);
+        curandGenerateUniformDouble(generator, buffer.getDevicePointer(), 2);
+        buffer.copyToHost();
         double[] data = buffer.asDouble();
-        buffer.destroy();
+        buffer.freeDevicePointer();
         return data[0];
     }
 
     @Override
     public INDArray nextGaussian(int[] shape) {
-       
+    	sync();
         INDArray create = Nd4j.create(shape);
-        JCudaBuffer buffer = (JCudaBuffer) create.data();
-        if (buffer.dataType() == DataBuffer.FLOAT)
-            curandGenerateUniform(generator, buffer.pointer(), create.length());
-        else if (buffer.dataType() == DataBuffer.DOUBLE)
-            curandGenerateUniformDouble(generator, buffer.pointer(), create.length());
-        else
-            throw new IllegalStateException("Illegal data type discovered");
-        return create;
+        try(CublasPointer p = new CublasPointer(create)) {
+            
+	        if (p.getBuffer().dataType() == DataBuffer.Type.FLOAT)
+	            checkResult(curandGenerateUniform(generator, p, create.length()));
+	        else if (p.getBuffer().dataType() == DataBuffer.Type.DOUBLE)
+	        	checkResult(curandGenerateUniformDouble(generator, p, create.length()));
+	        else
+	            throw new IllegalStateException("Illegal data type discovered");
+	        
+	        p.copyToHost();
+	        return create;
+        } catch(Exception e) {
+        	throw new RuntimeException("Could not allocate resources", e);
+        }
+        
     }
 
     @Override
     public INDArray nextDouble(int[] shape) {
        
-        INDArray create = Nd4j.create(shape);
-        JCudaBuffer buffer = (JCudaBuffer) create.data();
-        if (buffer.dataType() == DataBuffer.FLOAT)
-            curandGenerateUniform(generator, buffer.pointer(), create.length());
-        else if (buffer.dataType() == DataBuffer.DOUBLE)
-            curandGenerateUniformDouble(generator, buffer.pointer(), create.length());
-        else
-            throw new IllegalStateException("Illegal data type discovered");
-        return create;
+    	INDArray create = Nd4j.create(shape);
+        try(CublasPointer p = new CublasPointer(create)) {
+        
+	        if (p.getBuffer().dataType() == DataBuffer.Type.FLOAT)
+	            checkResult(curandGenerateUniform(generator, p, create.length()));
+	        else if (p.getBuffer().dataType() == DataBuffer.Type.DOUBLE)
+	        	checkResult(curandGenerateUniformDouble(generator, p, create.length()));
+	        else
+	            throw new IllegalStateException("Illegal data type discovered");
+	        
+	        p.copyToHost();
+	        return create;
+        } catch(Exception e) {
+        	throw new RuntimeException("Could not allocate resources", e);
+        }
     }
 
     @Override
     public INDArray nextFloat(int[] shape) {
        
-        INDArray create = Nd4j.create(shape);
-        JCudaBuffer buffer = (JCudaBuffer) create.data();
-        if (buffer.dataType() == DataBuffer.FLOAT)
-            curandGenerateUniform(generator, buffer.pointer(), create.length());
-        else if (buffer.dataType() == DataBuffer.DOUBLE)
-            curandGenerateUniformDouble(generator, buffer.pointer(), create.length());
-        else
-            throw new IllegalStateException("Illegal data type discovered");
-        return create;
+    	INDArray create = Nd4j.create(shape);
+        try(CublasPointer p = new CublasPointer(create)) {
+        
+	        if (p.getBuffer().dataType() == DataBuffer.Type.FLOAT)
+	            checkResult(curandGenerateUniform(generator, p, create.length()));
+	        else if (p.getBuffer().dataType() == DataBuffer.Type.DOUBLE)
+	        	checkResult(curandGenerateUniformDouble(generator, p, create.length()));
+	        else
+	            throw new IllegalStateException("Illegal data type discovered");
+	        
+	        p.copyToHost();
+	        return create;
+        } catch(Exception e) {
+        	throw new RuntimeException("Could not allocate resources", e);
+        }
     }
 
     @Override
     public INDArray nextInt(int[] shape) {
        
         INDArray create = Nd4j.create(shape);
-        JCudaBuffer buffer = (JCudaBuffer) create.data();
-        if (buffer.dataType() == DataBuffer.FLOAT)
-            curandGenerateUniform(generator, buffer.pointer(), create.length());
-        else if (buffer.dataType() == DataBuffer.DOUBLE)
-            curandGenerateUniformDouble(generator, buffer.pointer(), create.length());
-        else
-            throw new IllegalStateException("Illegal data type discovered");
-
-        Nd4j.getExecutioner().exec(new SetRange(create, 0, 1));
-
-        return create;
+        try(CublasPointer p = new CublasPointer(create)) {
+	        if (p.getBuffer().dataType() == DataBuffer.Type.FLOAT)
+	            curandGenerateUniform(generator, p, create.length());
+	        else if (p.getBuffer().dataType() == DataBuffer.Type.DOUBLE)
+	            curandGenerateUniformDouble(generator, p, create.length());
+	        else
+	            throw new IllegalStateException("Illegal data type discovered");
+	
+	        Nd4j.getExecutioner().exec(new SetRange(create, 0, 1));
+	        
+	        p.copyToHost();
+	        return create;
+        } catch(Exception e) {
+        	throw new RuntimeException("Could not allocate resources", e);
+        }
     }
 
     @Override
     public INDArray nextInt(int n, int[] shape) {
        
-        INDArray create = Nd4j.create(shape);
-        JCudaBuffer buffer = (JCudaBuffer) create.data();
-        if (buffer.dataType() == DataBuffer.FLOAT)
-            curandGenerateUniform(generator, buffer.pointer(), create.length());
-        else if (buffer.dataType() == DataBuffer.DOUBLE)
-            curandGenerateUniformDouble(generator, buffer.pointer(), create.length());
-        else
-            throw new IllegalStateException("Illegal data type discovered");
-
-        Nd4j.getExecutioner().exec(new SetRange(create, 0, n));
-
-        return create;
+    	INDArray create = Nd4j.create(shape);
+        try(CublasPointer p = new CublasPointer(create)) {
+	        if (p.getBuffer().dataType() == DataBuffer.Type.FLOAT)
+	            curandGenerateUniform(generator, p, create.length());
+	        else if (p.getBuffer().dataType() == DataBuffer.Type.DOUBLE)
+	            curandGenerateUniformDouble(generator, p, create.length());
+	        else
+	            throw new IllegalStateException("Illegal data type discovered");
+	
+	        Nd4j.getExecutioner().exec(new SetRange(create, 0, 1));
+	        
+	        p.copyToHost();
+	        return create;
+        } catch(Exception e) {
+        	throw new RuntimeException("Could not allocate resources", e);
+        }
+    }
+    
+    private static int checkResult(int result)
+    {
+        if (result != cudaError.cudaSuccess)
+        {
+            throw new CudaException(cudaError.stringFor(result));
+        }
+        return result;
     }
 
 

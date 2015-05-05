@@ -9,6 +9,7 @@ import jcuda.jcurand.JCurand;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 import jcuda.utils.KernelLauncher;
+
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -19,6 +20,7 @@ import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.rng.JcudaRandom;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
+import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 
 /**
  * Base JCuda distribution
@@ -30,8 +32,7 @@ public abstract class BaseJCudaDistribution implements Distribution {
 
 
     protected JcudaRandom random;
-
-
+    
     public BaseJCudaDistribution(JcudaRandom random) {
         this.random = random;
     }
@@ -42,91 +43,85 @@ public abstract class BaseJCudaDistribution implements Distribution {
     }
 
 
-    protected void doBinomial(INDArray p, Pointer out, int n, int len) {
+    protected void doBinomial(INDArray p, JCudaBuffer out, int n, int len) {
         String functionName = "binomial";
         int blocks = PointerUtil.getNumBlocks(len, 128, 64);
         int threads = PointerUtil.getNumThreads(len, 64);
         JCudaBuffer randomNumbers = new CudaFloatDataBuffer(len * n);
         JCudaBuffer probBuffer = (JCudaBuffer) p.data();
        
+        Object[] kernelParams = new Object[]{len, n, probBuffer, randomNumbers, out, random.generator()};
 
-        Object[] kernelParams = new Object[]{
-                Pointer.to(new int[]{len})
-                , Pointer.to(new int[]{n})
-                , Pointer.to(probBuffer.pointer())
-                , Pointer.to(randomNumbers.pointer())
-                , Pointer.to(out)
-                , random.generator()
-
-        };
-
-        //int len,int n,double *ps,double *result, curandState *s
-        KernelFunctions.invoke(
-                blocks,
-                threads,
-                functionName,
-                "float"
-                , kernelParams);
-        //we don't need this buffer anymore this was purely for storing the output
-        randomNumbers.destroy();
+        try(KernelParamsWrapper params = new KernelParamsWrapper(kernelParams)) {
+	        //int len,int n,double *ps,double *result, curandState *s
+	        KernelFunctions.invoke(
+	                blocks,
+	                threads,
+	                functionName,
+	                "float"
+	                , params.getKernelParameters());
+	        
+            //copy the result to the house before it gets destroyed
+	        out.copyToHost();
+        } catch(Exception e) {
+        	throw new RuntimeException("Cannot run kernel", e);
+        }
+        
     }
 
 
-    protected void doBinomialDouble(INDArray p, Pointer out, int n, int len) {
+    protected void doBinomialDouble(INDArray p, JCudaBuffer out, int n, int len) {
         String functionName = "binomial";
         int blocks = PointerUtil.getNumBlocks(len, 128, 64);
         int threads = PointerUtil.getNumThreads(len, 64);
         JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(len);
         JCudaBuffer probBuffer = (JCudaBuffer) p.data();
-       
 
-        Object[] kernelParams = new Object[]{
-                Pointer.to(new int[]{len})
-                , Pointer.to(new int[]{n})
-                , Pointer.to(probBuffer.pointer()),
-                Pointer.to(randomNumbers.pointer())
-                , Pointer.to(out)
-                , random.generator()
-
-        };
-
-
-        //int len,int n,double *ps,double *result, curandState *s
-        KernelFunctions.invoke(
-                blocks,
-                threads,
-                functionName,"double"
-                , kernelParams);
-        //we don't need this buffer anymore this was purely for storing the output
-        randomNumbers.destroy();
+        Object[] kernelParams = new Object[]{len, n, probBuffer, randomNumbers, out, random.generator()};
+        
+        try(KernelParamsWrapper params = new KernelParamsWrapper(kernelParams)) {
+	        //int len,int n,double *ps,double *result, curandState *s
+	        KernelFunctions.invoke(
+	                blocks,
+	                threads,
+	                functionName,
+	                "double"
+	                , params.getKernelParameters());
+	        
+            //copy the result to the house before it gets destroyed
+	        out.copyToHost();
+	        
+        } catch(Exception e) {
+        	throw new RuntimeException("Cannot run kernel", e);
+        }
 
     }
 
-    protected void doBinomial(float p, Pointer out, int n, int len) {
+    protected void doBinomial(float p, JCudaBuffer out, int n, int len) {
         String functionName = "binomial_scalar";
         int blocks = PointerUtil.getNumBlocks(len, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(len, KernelFunctions.THREADS);
         JCudaBuffer randomNumbers = new CudaFloatDataBuffer(len * n);
-       
 
-        Object[] kernelParams = new Object[]{
-                Pointer.to(new int[]{len})
-                , Pointer.to(new int[]{n})
-                , Pointer.to(new float[]{p}),
-                Pointer.to(randomNumbers.pointer())
-                , Pointer.to(out)
-                , random.generator()
+        Object[] kernelParams = new Object[]{len, n, p, randomNumbers, out, random.generator()};
+        
+        try(KernelParamsWrapper params = new KernelParamsWrapper(kernelParams)) {
 
-        };
-
-        //int len,int n,double *ps,double *result, curandState *s
-        KernelFunctions.invoke(
-                blocks,
-                threads,
-                functionName,"float"
-                , kernelParams);
-        //we don't need this buffer anymore this was purely for storing the output
-        randomNumbers.destroy();
+        	//int len,int n,double *ps,double *result, curandState *s
+            KernelFunctions.invoke(
+                    blocks,
+                    threads,
+                    functionName,
+                    "float"
+                    , params.getKernelParameters());
+            
+            //copy the result to the house before it gets destroyed
+	        out.copyToHost();
+	        
+        } catch(Exception e) {
+        	throw new RuntimeException("Cannot run kernel", e);
+        }
+        
     }
 
     @Override
@@ -134,31 +129,30 @@ public abstract class BaseJCudaDistribution implements Distribution {
     	return inverseCumulativeProbability(random.nextDouble());
     }
 
-    protected void doBinomialDouble(double p, Pointer out, int n, int len) {
+    protected void doBinomialDouble(double p, JCudaBuffer out, int n, int len) {
         String functionName = "binomial_scalar";
         int blocks = PointerUtil.getNumBlocks(len, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(len, KernelFunctions.THREADS);
         JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(len);
        
+        Object[] kernelParams = new Object[]{len, n, p, randomNumbers, out, Pointer.to(random.generator())};
+        
+        try(KernelParamsWrapper params = new KernelParamsWrapper(kernelParams)) {
 
-        Object[] kernelParams = new Object[]{
-                Pointer.to(new int[]{len})
-                , Pointer.to(new int[]{n})
-                , Pointer.to(new double[]{p}),
-                Pointer.to(randomNumbers.pointer())
-                , Pointer.to(out)
-                , Pointer.to(random.generator())
-
-        };
-
-        //int len,int n,double *ps,double *result, curandState *s
-        KernelFunctions.invoke(
-                blocks,
-                threads,
-                functionName,"double"
-                , kernelParams);
-        //we don't need this buffer anymore this was purely for storing the output
-        randomNumbers.destroy();
+		    //int len,int n,double *ps,double *result, curandState *s
+		    KernelFunctions.invoke(
+		            blocks,
+		            threads,
+		            functionName,
+		            "double",
+		            params.getKernelParameters());
+		    
+		    //copy the result to the house before it gets destroyed
+	        out.copyToHost();
+        
+        } catch(Exception e) {
+        	throw new RuntimeException("Cannot run kernel", e);
+        }
 
     }
 
@@ -170,26 +164,32 @@ public abstract class BaseJCudaDistribution implements Distribution {
      * @param max
      * @param n
      */
-    protected void doSampleUniform(Pointer out, float min, float max, int n) {
+    protected void doSampleUniform(JCudaBuffer out, float min, float max, int n) {
         String functionName = "uniform";
         int blocks = PointerUtil.getNumBlocks(n, KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(n, KernelFunctions.THREADS);
         
         //In the future these random numbers could be generated within the kernel
         JCudaBuffer randomNumbers = new CudaFloatDataBuffer(n);
-        JCurand.curandGenerateUniform(random.generator(), randomNumbers.pointer(), n);
-        
+        JCurand.curandGenerateUniform(random.generator(), randomNumbers.getDevicePointer(), n);
         //Generate the kernel parameters
-        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers.pointer(), out };
+        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers.getDevicePointer(), out };
+        
+        try(KernelParamsWrapper params = new KernelParamsWrapper(kernelParams)) {
 
-        KernelFunctions.invoke(
-                blocks,
-                threads,
-                functionName,"float"
-                , kernelParams);
+	        KernelFunctions.invoke(
+	                blocks,
+	                threads,
+	                functionName,"float"
+	                , params.getKernelParameters());
+	        
+	        //copy the result to the house before it gets destroyed
+	        out.copyToHost();
+	        randomNumbers.freeDevicePointer();
+        } catch(Exception e) {
+        	throw new RuntimeException("Cannot run kernel", e);
+        }
 
-        // No longer need this bit of memory as it was temporary
-        randomNumbers.destroy();
     }
 
     /**
@@ -199,47 +199,48 @@ public abstract class BaseJCudaDistribution implements Distribution {
      * @param max
      * @param n
      */
-    protected void doSampleUniformDouble(Pointer out, double min, double max, int n) {
+    protected void doSampleUniformDouble(JCudaBuffer out, double min, double max, int n) {
         String functionName = "uniform";
         int blocks = PointerUtil.getNumBlocks(n, 128, 64);
         int threads = PointerUtil.getNumThreads(n, 64);
         
         //In the future these random numbers could be generated within the kernel
         JCudaBuffer randomNumbers = new CudaDoubleDataBuffer(n);
-        JCurand.curandGenerateUniformDouble(random.generator(), randomNumbers.pointer(), n);
-
+	    JCurand.curandGenerateUniformDouble(random.generator(), randomNumbers.getDevicePointer(), n);
         //Generate the kernel parameters
-        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers.pointer(), out };
-       
-        KernelFunctions.invoke(
-                blocks,
-                threads,
-                functionName,"double"
-                , kernelParams);
+        Object[] kernelParams = new Object[]{ n, min, max, randomNumbers.getDevicePointer(), out };
         
-        // No longer need this bit of memory as it was temporary
-        randomNumbers.destroy();
+        try(KernelParamsWrapper params = new KernelParamsWrapper(kernelParams)) {
+        	
+	        KernelFunctions.invoke(
+	                blocks,
+	                threads,
+	                functionName,
+	                "double", 
+	                params.getKernelParameters());
+	        
+	        //copy the result to the house before it gets destroyed
+	        out.copyToHost();
+	        randomNumbers.freeDevicePointer();
+        } catch(Exception e) {
+        	throw new RuntimeException("Cannot run kernel", e);
+        }
     }
 
     protected void doSampleNormal(Pointer out, INDArray means, float std) {
         float[] means2 = means.data().asFloat();
         for (int i = 0; i < means.length(); i++) {
-            JCudaBuffer dummy = KernelFunctions.alloc(new float[2]);
+            JCudaBuffer dummy = new CudaFloatDataBuffer(2);
 
-            JCurand.curandGenerateNormal(
-                    random.generator()
-                    , dummy.pointer()
-                    , 2
-                    , means2[i]
-                    , std);
+            JCurand.curandGenerateNormal(random.generator(), dummy.getDevicePointer(), 2, means2[i], std);
             JCuda.cudaMemcpy(
                     out.withByteOffset(Sizeof.FLOAT * i)
-                    , dummy.pointer()
+                    , dummy.getDevicePointer()
                     , Sizeof.FLOAT
                     , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
-            dummy.destroy();
-
-        }
+            
+            dummy.freeDevicePointer();
+        } 
 
 
     }
@@ -247,19 +248,16 @@ public abstract class BaseJCudaDistribution implements Distribution {
     protected void doSampleNormalDouble(Pointer out, INDArray means, double std) {
         double[] means2 = means.data().asDouble();
         for (int i = 0; i < means.length(); i++) {
-            JCudaBuffer dummy = KernelFunctions.alloc(new double[2]);
+            JCudaBuffer dummy = new CudaDoubleDataBuffer(2);
 
-            JCurand.curandGenerateNormalDouble(
-                    random.generator()
-                    , dummy.pointer()
-                    , 2
-                    , means2[i]
-                    , std);
+            JCurand.curandGenerateNormalDouble(random.generator(), dummy.getDevicePointer(), 2, means2[i], std);
             JCuda.cudaMemcpy(
-                    out.withByteOffset(Sizeof.DOUBLE * i)
-                    , dummy.pointer(), Sizeof.DOUBLE
-                    , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
-            dummy.destroy();
+                    out.withByteOffset(Sizeof.DOUBLE * i), 
+                    dummy.getDevicePointer(),
+                    Sizeof.DOUBLE, 
+                    cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+            
+            dummy.freeDevicePointer();
         }
 
     }

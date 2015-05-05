@@ -80,8 +80,8 @@ public class KernelFunctionLoader {
         return INSTANCE;
     }
 
-    private static String dataFolder(int type) {
-        return "/kernels/" + (type == DataBuffer.FLOAT ? "float" : "double");
+    private static String dataFolder(DataBuffer.Type type) {
+        return "/kernels/" + (type == DataBuffer.Type.FLOAT ? "float" : "double");
     }
 
 
@@ -226,7 +226,7 @@ public class KernelFunctionLoader {
             log.info("Loading " + dataType + " cuda functions");
             if (f != null) {
                 for (String s : split) {
-                    String loaded = extract("/kernels/" + dataType + "/" + s + ".cu", dataType.equals("float") ? DataBuffer.FLOAT : DataBuffer.DOUBLE);
+                    String loaded = extract("/kernels/" + dataType + "/" + s + ".cu", dataType.equals("float") ? DataBuffer.Type.FLOAT : DataBuffer.Type.DOUBLE);
                     sb.append(" " + loaded);
                 }
 
@@ -306,7 +306,7 @@ public class KernelFunctionLoader {
      * @return
      * @throws IOException
      */
-    public String extract(String file, int dataType) throws IOException {
+    public String extract(String file, DataBuffer.Type dataType) throws IOException {
 
         String path = dataFolder(dataType);
         String tmpDir = System.getProperty("java.io.tmpdir");

@@ -30,7 +30,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public interface INDArray extends Serializable {
+public interface INDArray extends Serializable  {
 
 
     /**
@@ -43,13 +43,6 @@ public interface INDArray extends Serializable {
      * Cleanup resources
      */
     void cleanup();
-
-    /**
-     * Reference to the ndarray
-     *
-     * @return the id for this ndarray
-     */
-    String id();
 
     /**
      * Resets the linear view

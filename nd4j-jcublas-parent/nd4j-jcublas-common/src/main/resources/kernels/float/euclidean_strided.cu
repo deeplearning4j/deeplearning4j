@@ -15,13 +15,13 @@ __device__ float update(float old,float opOutput,float *extraParams) {
  @param d2 the second operator
 */
 __device__ float op(float d1,float d2,float *extraParams) {
-      return d1 - d2;
+      return powf(d1 - d2,2.0f);
 }
 
 
 //post process result (for things like means etc)
 __device__ float postProcess(float reduction,int n,int xOffset,float *dx,int incx,float *extraParams,float *result) {
-            return reduction / extraParams[0] / extraParams[1];
+            return sqrt(reduction);
 }
 
 extern "C"

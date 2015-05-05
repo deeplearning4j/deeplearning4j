@@ -40,6 +40,9 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class ComplexNDArray extends BaseComplexNDArray {
+	
+	public void close() {
+	}
 
 
     /**

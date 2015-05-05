@@ -305,4 +305,5 @@ public class NetlibBlasNDArray extends BaseNDArray {
     public NetlibBlasNDArray(int[] shape, DataBuffer buffer) {
         super(shape, buffer);
     }
+
 }

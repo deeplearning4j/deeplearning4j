@@ -31,7 +31,7 @@ public class KernelFunctionLoaderTests {
 
     @Test
     public void testLoader() throws Exception {
-        Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
 
         KernelFunctionLoader loader = KernelFunctionLoader.getInstance();
         loader.load();

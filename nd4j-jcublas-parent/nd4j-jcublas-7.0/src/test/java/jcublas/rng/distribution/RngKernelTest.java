@@ -16,29 +16,29 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class RngKernelTest {
 	
-	double max = 0.4;
-	double min = -max;
+	Number max = 0.4;
+	Number min = -0.4;
 
 	@Test
 	public void testUniformSample() {
-		Nd4j.dtype = DataBuffer.FLOAT;
+		Nd4j.dtype = DataBuffer.Type.FLOAT;
 		for(int x = 0; x<100; x++) {
-			INDArray arr = Nd4j.rand(200,200,min,max,Nd4j.getRandom());
+			INDArray arr = Nd4j.rand(200,200,min.floatValue(),max.floatValue(),Nd4j.getRandom());
 			
 			// Assert the values are within range
-			assertMaxMin(arr);
+			assertMaxMinF(arr);
 		}
 	}
 	
 	@Test
 	public void testUniformSampleDouble() {
-		Nd4j.dtype = DataBuffer.DOUBLE;
+		Nd4j.dtype = DataBuffer.Type.DOUBLE;
 		for(int x = 0; x<100; x++) {
 			
-			INDArray arr = Nd4j.rand(200,200,min,max,Nd4j.getRandom());
+			INDArray arr = Nd4j.rand(200,200,min.doubleValue(),max.doubleValue(),Nd4j.getRandom());
 			
 			// Assert the values are within range
-			assertMaxMin(arr);
+			assertMaxMinD(arr);
 		}
 	}
 	
@@ -47,19 +47,35 @@ public class RngKernelTest {
 		Nd4j.rand(200,200,2,1,Nd4j.getRandom());
 	}
 	
-	private void assertMaxMin(INDArray arr) {
+	private void assertMaxMinF(INDArray arr) {
 		
 		boolean nonZero = false;
-		for(Double d: arr.data().asDouble()) {
-			assertTrue("Returned value is above the maximum", max > d);
-			assertTrue("Returned value is below the minimum", min < d);
+
+		for(Float d: arr.data().asFloat()) {
+			assertTrue("Returned value is above the maximum", max.floatValue() >= d);
+			assertTrue("Returned value is below the minimum", min.floatValue() <= d);
 			
 			if(d != 0.0) {
 				nonZero = true;
 			}
 		}
-		
 		assertTrue("The entire array is zeros", nonZero);
+
+	}
+	
+	private void assertMaxMinD(INDArray arr) {
 		
+		boolean nonZero = false;
+
+		for(Double d: arr.data().asDouble()) {
+			assertTrue("Returned value is above the maximum", max.doubleValue() >= d);
+			assertTrue("Returned value is below the minimum", min.doubleValue() <= d);
+			
+			if(d != 0.0) {
+				nonZero = true;
+			}
+		}
+		assertTrue("The entire array is zeros", nonZero);
+
 	}
 }

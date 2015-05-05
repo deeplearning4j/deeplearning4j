@@ -33,43 +33,39 @@ public abstract class FloatDataBufferTest {
 
     @Before
     public void before() {
-        Nd4j.dtype = DataBuffer.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
     }
 
     @Test
-    public void testGetSet() {
+    public void testGetSet() throws Exception {
         float[] d1 = new float[]{1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         float[] d2 = d.asFloat();
         assertArrayEquals(d1, d2, 1e-1f);
-        d.destroy();
 
     }
 
     @Test
-    public void testDup() {
+    public void testDup() throws Exception {
         float[] d1 = new float[]{1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
         assertEquals(d, d2);
-        d.destroy();
-        d2.destroy();
     }
 
     @Test
-    public void testPut() {
+    public void testPut() throws Exception {
         float[] d1 = new float[]{1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         d.put(0, 0.0);
         float[] result = new float[]{0, 2, 3, 4};
         d1 = d.asFloat();
         assertArrayEquals(d1, result, 1e-1f);
-        d.destroy();
     }
 
 
     @Test
-    public void testGetRange() {
+    public void testGetRange() throws Exception {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(0, 3);
         float[] data = new float[]{1, 2, 3};
@@ -79,14 +75,13 @@ public abstract class FloatDataBufferTest {
         float[] get2 = buffer.asFloat();
         float[] allData = buffer.getFloatsAt(0, buffer.length());
         assertArrayEquals(get2, allData, 1e-1f);
-        buffer.destroy();
 
 
     }
 
 
     @Test
-    public void testGetOffsetRange() {
+    public void testGetOffsetRange() throws Exception {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(1, 3);
         float[] data = new float[]{2, 3, 4};
@@ -97,7 +92,6 @@ public abstract class FloatDataBufferTest {
 
         float[] allData = buffer.getFloatsAt(1, buffer.length());
         assertArrayEquals(allButLast, allData, 1e-1f);
-        buffer.destroy();
 
 
     }

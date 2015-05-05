@@ -16,7 +16,11 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import java.nio.ByteBuffer;
+
 import jcuda.Pointer;
+import jcuda.driver.CUdeviceptr;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 /**
@@ -26,21 +30,41 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
  */
 public interface JCudaBuffer extends DataBuffer {
 
+	/**
+	 * Set the underlying host buffer, very fast method of copying on RAM side and not using cublas (SLOW)
+	 */
+	void setHostBuffer(ByteBuffer hostBuffer);
+	
+	/**
+	 * Get the underlying host bytebuffer
+	 * @return
+	 */
+	ByteBuffer getHostBuffer();
+	
     /**
      * THe pointer for the buffer
      *
      * @return the pointer for this buffer
      */
-    Pointer pointer();
+    Pointer getHostPointer();
+    
+    /**
+     * Get a device pointer for this buffer
+     * @return
+     */
+    Pointer getDevicePointer();
 
     /**
-     * Allocate the buffer
+     * Frees the device pointer if it exists
+     * @return
      */
-    void alloc();
-
-
-
-
+    boolean freeDevicePointer();
+    
+    /**
+     * copies all the allocated device memory to the host memory
+     */
+    void copyToHost();
+    
     /**
      * Sets the data for this pointer
      * from the data in this pointer
@@ -48,6 +72,8 @@ public interface JCudaBuffer extends DataBuffer {
      * @param pointer the pointer to set
      */
     void set(Pointer pointer);
+
+	
 
 
 }

@@ -34,7 +34,7 @@ import java.util.List;
  */
 
 public class JCublasNDArray extends BaseNDArray {
-
+	
 
     public JCublasNDArray(double[][] data) {
         super(data);
@@ -330,8 +330,5 @@ public class JCublasNDArray extends BaseNDArray {
     public JCublasNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
         super(data, shape, stride, offset, ordering);
     }
-
-
-
 
 }

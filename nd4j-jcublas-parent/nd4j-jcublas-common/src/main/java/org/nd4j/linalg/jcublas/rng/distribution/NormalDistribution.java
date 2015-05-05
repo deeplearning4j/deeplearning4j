@@ -1,5 +1,7 @@
 package org.nd4j.linalg.jcublas.rng.distribution;
 
+import java.nio.Buffer;
+
 import org.apache.commons.math3.exception.NotStrictlyPositiveException;
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
 import org.apache.commons.math3.exception.OutOfRangeException;
@@ -229,33 +231,38 @@ public class NormalDistribution extends BaseJCudaDistribution {
 
     @Override
     public double[] sample(int sampleSize) {
-        CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(sampleSize);
-        doSampleNormal(mean, standardDeviation, buffer.pointer(), sampleSize);
-        double[] buffer2 = buffer.asDouble();
-        buffer.destroy();
-        return buffer2;
+    	CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(sampleSize);
+    	try {
+		    doSampleNormal(mean, standardDeviation, buffer.getDevicePointer(), sampleSize);
+		    buffer.copyToHost();
+		    double[] buffer2 = buffer.asDouble();
+		    return buffer2;
+    	} finally {
+    		buffer.freeDevicePointer();
+    	}
     }
 
     @Override
     public INDArray sample(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) ret.data();
-        if (means != null) {
-            if (buffer.dataType() != DataBuffer.DOUBLE)
-                doSampleNormal(buffer.pointer(), means, (float) standardDeviation);
-
-            else
-                doSampleNormalDouble(buffer.pointer(), means, standardDeviation);
-
-
-        } else {
-            if (buffer.dataType() == DataBuffer.FLOAT)
-                doSampleNormal((float) mean, (float) standardDeviation, buffer.pointer(), buffer.length());
-            else if (buffer.dataType() == DataBuffer.DOUBLE)
-                doSampleNormal(mean, standardDeviation, buffer.pointer(), buffer.length());
-
-        }
-
-        return ret;
+        try {
+        	
+	        if (means != null) {
+	            if (buffer.dataType() != DataBuffer.Type.DOUBLE)
+	                doSampleNormal(buffer.getDevicePointer(), means, (float) standardDeviation);
+	            else
+	                doSampleNormalDouble(buffer.getDevicePointer(), means, standardDeviation);
+	        } else {
+	            if (buffer.dataType() == DataBuffer.Type.FLOAT)
+	                doSampleNormal((float) mean, (float) standardDeviation, buffer.getDevicePointer(), buffer.length());
+	            else if (buffer.dataType() == DataBuffer.Type.DOUBLE)
+	                doSampleNormal(mean, standardDeviation, buffer.getDevicePointer(), buffer.length());
+	        }
+	        buffer.copyToHost();
+	        return ret;
+        } finally {
+    		buffer.freeDevicePointer();
+    	}
     }
 }

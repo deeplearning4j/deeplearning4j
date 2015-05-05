@@ -16,19 +16,18 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import jcuda.Pointer;
-import jcuda.Sizeof;
-import jcuda.jcublas.JCublas;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaMemcpyKind;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.util.ArrayUtil;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+
+import jcuda.Pointer;
+import jcuda.Sizeof;
+
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Cuda float buffer
@@ -53,7 +52,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
-        ensureNotFreed();
 
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
@@ -70,7 +68,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void assign(int[] indices, double[] data, boolean contiguous, int inc) {
-        ensureNotFreed();
 
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
@@ -93,7 +90,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public float[] getFloatsAt(int offset, int inc, int length) {
-        ensureNotFreed();
         if (offset + length > length())
             length -= offset;
         float[] ret = new float[length];
@@ -126,9 +122,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         if (data.length != length)
             throw new IllegalArgumentException("Unable to set vector, must be of length " + length() + " but found length " + data.length);
 
-        if (pointer() == null)
-            alloc();
-
         getFloatBuffer().put(data);
     }
 
@@ -152,18 +145,13 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    public void alloc() {
-        super.alloc();
-    }
-
-    @Override
-    public int dataType() {
-        return DataBuffer.FLOAT;
+    public DataBuffer.Type dataType() {
+        return DataBuffer.Type.FLOAT;
     }
 
     @Override
     public float[] asFloat() {
-        ensureNotFreed();
+        //ensureNotFreed();
         float[] ret = new float[length()];
         FloatBuffer buf = getFloatBuffer();
         for(int i = 0; i < length(); i++) {
@@ -190,7 +178,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public float getFloat(int i) {
-        ensureNotFreed();
         return getFloatBuffer().get(i);
     }
 
@@ -202,7 +189,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void put(int i, float element) {
-        ensureNotFreed();
         getFloatBuffer().put(i,element);
     }
 
@@ -234,17 +220,12 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     }
 
-    @Override
-    public void put(int i, IComplexNumber result) {
-        ensureNotFreed();
-
-    }
 
     private void writeObject(java.io.ObjectOutputStream stream)
             throws java.io.IOException {
         stream.defaultWriteObject();
 
-        if (pointer() == null) {
+        if (getHostPointer() == null) {
             stream.writeInt(0);
         } else {
             float[] arr = this.asFloat();
@@ -266,6 +247,13 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         for (int i = 0; i < n; i++) {
             arr[i] = stream.readFloat();
         }
+        
+        this.length = n;
+        this.elementSize = Sizeof.FLOAT;
+        hostBuffer = ByteBuffer.allocate(length*elementSize);
+        hostBuffer.order(ByteOrder.nativeOrder());
+        hostPointer = Pointer.to(hostBuffer);
+        
         setData(arr);
     }
 }

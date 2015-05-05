@@ -370,4 +370,5 @@ public class ComplexNDArray extends BaseComplexNDArray {
     public ComplexNDArray(float[] data, Character order) {
         super(data, order);
     }
+
 }

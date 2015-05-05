@@ -263,7 +263,7 @@ public class Transforms {
         double length = toScale.norm2(Integer.MAX_VALUE).getDouble(0);
 
         if (length > 0) {
-            if (toScale.data().dataType() == (DataBuffer.FLOAT))
+            if (toScale.data().dataType() == (DataBuffer.Type.FLOAT))
                 return Nd4j.getBlasWrapper().scal(1.0f / (float) length, toScale);
             else
                 return Nd4j.getBlasWrapper().scal(1.0 / length, toScale);

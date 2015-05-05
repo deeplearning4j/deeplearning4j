@@ -21,7 +21,7 @@ public class RngKernelTest {
 
 	@Test
 	public void testUniformSample() {
-		Nd4j.dtype = DataBuffer.FLOAT;
+		Nd4j.dtype = DataBuffer.Type.FLOAT;
 		for(int x = 0; x<100; x++) {
 			INDArray arr = Nd4j.rand(200,200,min,max,Nd4j.getRandom());
 			
@@ -32,7 +32,7 @@ public class RngKernelTest {
 	
 	@Test
 	public void testUniformSampleDouble() {
-		Nd4j.dtype = DataBuffer.DOUBLE;
+		Nd4j.dtype = DataBuffer.Type.DOUBLE;
 		for(int x = 0; x<100; x++) {
 			
 			INDArray arr = Nd4j.rand(200,200,min,max,Nd4j.getRandom());

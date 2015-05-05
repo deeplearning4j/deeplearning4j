@@ -89,23 +89,23 @@ public class PointerUtil {
      * @param dType  the data type to choose
      * @return the new pointer
      */
-    public static CUdeviceptr constructAndAlloc(int length, int dType) {
+    public static CUdeviceptr constructAndAlloc(int length, DataBuffer.Type dType) {
         // Allocate device output memory
         CUdeviceptr deviceOutput = new CUdeviceptr();
-        cuMemAlloc(deviceOutput, length * dType == DataBuffer.FLOAT ? Sizeof.FLOAT : Sizeof.DOUBLE);
+        cuMemAlloc(deviceOutput, length * (dType == DataBuffer.Type.FLOAT ? Sizeof.FLOAT : Sizeof.DOUBLE));
         return deviceOutput;
     }
 
-    public static int sizeFor(int dataType) {
-        return dataType == DataBuffer.DOUBLE ? Sizeof.DOUBLE : Sizeof.FLOAT;
+    public static int sizeFor(DataBuffer.Type dataType) {
+        return dataType == DataBuffer.Type.DOUBLE ? Sizeof.DOUBLE : Sizeof.FLOAT;
     }
 
 
     public static Object getPointer(ScalarOp scalarOp) {
         if (scalarOp.scalar() != null) {
-            if (scalarOp.x().data().dataType() == DataBuffer.FLOAT)
+            if (scalarOp.x().data().dataType() == DataBuffer.Type.FLOAT)
                 return new float[]{scalarOp.scalar().floatValue()};
-            else if (scalarOp.x().data().dataType() == DataBuffer.DOUBLE)
+            else if (scalarOp.x().data().dataType() == DataBuffer.Type.DOUBLE)
                 return new double[]{scalarOp.scalar().doubleValue()};
         }
 

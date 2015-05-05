@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.buffer;
 
 import com.google.common.primitives.Bytes;
+
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.IOException;
@@ -50,7 +51,7 @@ public class FloatBuffer extends BaseDataBuffer {
 
 
     @Override
-    public int elementSize() {
+    public int getElementSize() {
         return 4;
     }
 
@@ -88,8 +89,8 @@ public class FloatBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public int dataType() {
-        return DataBuffer.FLOAT;
+    public DataBuffer.Type dataType() {
+        return DataBuffer.Type.FLOAT;
     }
 
     @Override
@@ -210,9 +211,7 @@ public class FloatBuffer extends BaseDataBuffer {
         buffer = null;
     }
 
-    @Override
     public void destroy() {
-        super.destroy();
         if (buffer != null)
             buffer = null;
         if (memoryMappedBuffer != null) {

@@ -27,14 +27,14 @@ public class InMemoryInstrumentation implements Instrumentation {
             public void run() {
                 LogEntry entry = new LogEntry(toLog, status);
                 entries.add(entry);
-                Collection<LogEntry> logEntries = InMemoryInstrumentation.this.logEntries.get(toLog.id());
+//                Collection<LogEntry> logEntries = InMemoryInstrumentation.this.logEntries.get(toLog.id());
+//
+//                if (logEntries == null) {
+//                    logEntries = new CopyOnWriteArrayList<>();
+//                    InMemoryInstrumentation.this.logEntries.put(toLog.id(), logEntries);
+//                }
 
-                if (logEntries == null) {
-                    logEntries = new CopyOnWriteArrayList<>();
-                    InMemoryInstrumentation.this.logEntries.put(toLog.id(), logEntries);
-                }
-
-                logEntries.add(entry);
+//                logEntries.add(entry);
             }
         });
 

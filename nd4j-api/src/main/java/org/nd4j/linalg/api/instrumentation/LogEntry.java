@@ -22,13 +22,13 @@ public class LogEntry extends DataBufferLogEntry {
     }
 
     public LogEntry(INDArray toLog, String status) {
-        this.id = toLog.id();
+        //this.id = toLog.id();
         this.shape = toLog.shape();
         this.stride = toLog.stride();
         this.ndArrayType = toLog.getClass().getName();
         this.length = toLog.length();
         this.references = toLog.data().references();
-        this.dataType = toLog.data().dataType() == DataBuffer.DOUBLE ? "double" : "float";
+        this.dataType = toLog.data().dataType() == DataBuffer.Type.DOUBLE ? "double" : "float";
         this.timestamp = System.currentTimeMillis();
         this.stackTraceElements = Thread.currentThread().getStackTrace();
         this.status = status;
@@ -36,13 +36,13 @@ public class LogEntry extends DataBufferLogEntry {
 
 
     public LogEntry(INDArray toLog, StackTraceElement[] stackTraceElements, String status) {
-        this.id = toLog.id();
+        //this.id = toLog.id();
         this.shape = toLog.shape();
         this.stride = toLog.stride();
         this.ndArrayType = toLog.getClass().getName();
         this.length = toLog.length();
         this.references = toLog.data().references();
-        this.dataType = toLog.data().dataType() == DataBuffer.DOUBLE ? "double" : "float";
+        this.dataType = toLog.data().dataType() == DataBuffer.Type.DOUBLE ? "double" : "float";
         this.timestamp = System.currentTimeMillis();
         this.stackTraceElements = stackTraceElements;
         this.status = status;
@@ -129,7 +129,7 @@ public class LogEntry extends DataBufferLogEntry {
         this.stride = stride;
     }
 
-    public long getLength() {
+    public long length() {
         return length;
     }
 

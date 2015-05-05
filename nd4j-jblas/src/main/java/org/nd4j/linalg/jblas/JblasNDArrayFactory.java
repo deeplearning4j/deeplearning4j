@@ -42,11 +42,11 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
     public JblasNDArrayFactory() {
     }
 
-    public JblasNDArrayFactory(Integer dtype, Character order) {
+    public JblasNDArrayFactory(DataBuffer.Type dtype, Character order) {
         super(dtype, order);
     }
 
-    public JblasNDArrayFactory(int dtype, char order) {
+    public JblasNDArrayFactory(DataBuffer.Type dtype, char order) {
         super(dtype, order);
     }
 

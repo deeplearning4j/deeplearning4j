@@ -50,7 +50,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public INDArray swap(INDArray x, INDArray y) {
         //NativeBlas.dswap(x.length(), x.data(), 0, 1, y.data(), 0, 1);
         DataTypeValidation.assertSameDataType(x, y);
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             JavaBlas.rswap(
                     x.length(),
                     x.data().asFloat(),
@@ -116,7 +116,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray copy(INDArray x, INDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-        if (x.data().dataType() == DataBuffer.DOUBLE)
+        if (x.data().dataType() == DataBuffer.Type.DOUBLE)
             JavaBlas.rcopy(
                     x.length(),
                     x.data().asDouble(),
@@ -232,7 +232,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public double dot(INDArray x, INDArray y) {
         //return NativeBlas.ddot(x.length(), x.data(), 0, 1, y.data(), 0, 1);
         DataTypeValidation.assertSameDataType(x, y);
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             return JavaBlas.rdot(
                     x.length(),
                     x.data().asFloat(),
@@ -241,7 +241,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     y.data().asFloat(),
                     y.offset(),
                     y.majorStride());
-        else if (x.data().dataType() == DataBuffer.DOUBLE) {
+        else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
             return JavaBlas.rdot(
                     x.length(),
                     x.data().asDouble(),
@@ -262,7 +262,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public IComplexNumber dotc(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             return new ComplexFloat(NativeBlas.cdotc(
                     x.length(),
                     x.data().asFloat(),
@@ -271,7 +271,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     y.data().asFloat(),
                     y.blasOffset(),
                     y.majorStride()));
-        else if (x.data().dataType() == DataBuffer.DOUBLE)
+        else if (x.data().dataType() == DataBuffer.Type.DOUBLE)
             return new ComplexDouble(
                     NativeBlas.zdotc(
                             x.length(),
@@ -290,7 +290,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public IComplexNumber dotu(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             return new ComplexFloat(NativeBlas.cdotu(
                     x.length(),
                     x.data().asFloat(),
@@ -299,7 +299,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     y.data().asFloat(),
                     y.offset(),
                     y.majorStride()));
-        if (x.data().dataType() == DataBuffer.DOUBLE)
+        if (x.data().dataType() == DataBuffer.Type.DOUBLE)
             return new ComplexDouble(NativeBlas.zdotu(
                     x.length(),
                     x.data().asDouble(),
@@ -316,14 +316,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public double nrm2(INDArray x) {
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             return NativeBlas.snrm2(
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
                     x.majorStride());
 
-        if (x.data().dataType() == DataBuffer.DOUBLE)
+        if (x.data().dataType() == DataBuffer.Type.DOUBLE)
             return NativeBlas.dnrm2(
                     x.length(),
                     x.data().asDouble(),
@@ -337,13 +337,13 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public double nrm2(IComplexNDArray x) {
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             return NativeBlas.scnrm2(
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
                     x.majorStride());
-        else if (x.data().dataType() == DataBuffer.DOUBLE)
+        else if (x.data().dataType() == DataBuffer.Type.DOUBLE)
             return NativeBlas.dznrm2(
                     x.length(),
                     x.data().asDouble(),
@@ -360,13 +360,13 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public double asum(INDArray x) {
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             return NativeBlas.sasum(
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
                     x.majorStride());
-        if (x.data().dataType() == DataBuffer.DOUBLE)
+        if (x.data().dataType() == DataBuffer.Type.DOUBLE)
             return NativeBlas.dasum(
                     x.length(),
                     x.data().asDouble(),
@@ -378,14 +378,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public double asum(IComplexNDArray x) {
-        if (x.data().dataType() == DataBuffer.FLOAT) {
+        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
             return NativeBlas.scasum(
                     x.length(),
                     x.data().asFloat(),
                     x.offset() / 2,
                     x.majorStride());
 
-        } else if (x.data().dataType() == DataBuffer.DOUBLE) {
+        } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
             return NativeBlas.dzasum(
                     x.length(),
                     x.data().asDouble(),
@@ -404,13 +404,13 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public int iamax(INDArray x) {
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             return NativeBlas.isamax(
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
                     x.majorStride()) - 1;
-        else if (x.data().dataType() == DataBuffer.DOUBLE) {
+        else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
             return NativeBlas.idamax(
                     x.length(),
                     x.data().asDouble(),
@@ -430,7 +430,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
      */
     @Override
     public int iamax(IComplexNDArray x) {
-        if (x.data().dataType() == DataBuffer.FLOAT)
+        if (x.data().dataType() == DataBuffer.Type.FLOAT)
             return NativeBlas.icamax(
                     x.length(),
                     x.data().asFloat(),
@@ -786,7 +786,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta, IComplexNDArray c) {
         DataTypeValidation.assertSameDataType(a, b, c);
-        if (a.data().dataType() == DataBuffer.FLOAT)
+        if (a.data().dataType() == DataBuffer.Type.FLOAT)
             NativeBlas.cgemm(
                     'N',
                     'N',
@@ -837,7 +837,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                          INDArray b) {
         DataTypeValidation.assertSameDataType(a, b);
         int info = -1;
-        if (a.data().dataType() == DataBuffer.FLOAT) {
+        if (a.data().dataType() == DataBuffer.Type.FLOAT) {
             info = NativeBlas.sgesv(
                     a.rows(),
                     b.columns(),
@@ -849,7 +849,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     b.data().asFloat(),
                     b.offset(),
                     b.rows());
-        } else if (a.data().dataType() == DataBuffer.DOUBLE) {
+        } else if (a.data().dataType() == DataBuffer.Type.DOUBLE) {
             info = NativeBlas.dgesv(
                     a.rows(),
                     b.columns(),
@@ -884,7 +884,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                          INDArray b) {
         DataTypeValidation.assertSameDataType(a, b);
         int info = -1;
-        if (a.data().dataType() == DataBuffer.FLOAT) {
+        if (a.data().dataType() == DataBuffer.Type.FLOAT) {
             info = NativeBlas.ssysv(
                     uplo,
                     a.rows(),
@@ -897,7 +897,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     b.data().asFloat(),
                     b.offset(),
                     b.rows());
-        } else if (a.data().dataType() == DataBuffer.DOUBLE) {
+        } else if (a.data().dataType() == DataBuffer.Type.DOUBLE) {
             info = NativeBlas.dsysv(
                     uplo,
                     a.rows(),
@@ -926,7 +926,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public int syev(char jobz, char uplo, INDArray a, INDArray w) {
         int info = -1;
         DataTypeValidation.assertSameDataType(a, w);
-        if (a.data().dataType() == DataBuffer.FLOAT) {
+        if (a.data().dataType() == DataBuffer.Type.FLOAT) {
             info = NativeBlas.ssyev(
                     jobz,
                     uplo,
@@ -1026,7 +1026,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int n = A.rows();
         DataTypeValidation.assertSameDataType(A, w);
         int info = -1;
-        if (A.data().dataType() == DataBuffer.FLOAT) {
+        if (A.data().dataType() == DataBuffer.Type.FLOAT) {
             info = NativeBlas.ssyevd(
                     jobz,
                     uplo,
@@ -1037,7 +1037,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     w.data().asFloat(),
                     w.offset());
 
-        } else if (A.data().dataType() == DataBuffer.DOUBLE) {
+        } else if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             info = NativeBlas.dsyevd(
                     jobz,
                     uplo,
@@ -1069,7 +1069,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int[] m = new int[1];
         DataTypeValidation.assertFloat(a, w, z);
         int info = -1;
-        if (w.data().dataType() == DataBuffer.FLOAT) {
+        if (w.data().dataType() == DataBuffer.Type.FLOAT) {
             info = NativeBlas.ssyevr(
                     jobz,
                     range,
@@ -1093,7 +1093,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     isuppz,
                     0);
 
-        } else if (w.data().dataType() == DataBuffer.DOUBLE) {
+        } else if (w.data().dataType() == DataBuffer.Type.DOUBLE) {
             info = NativeBlas.dsyevr(
                     jobz,
                     range,
@@ -1131,7 +1131,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int nrhs = B.columns();
         int info = -1;
         DataTypeValidation.assertSameDataType(A, B);
-        if (A.data().dataType() == DataBuffer.FLOAT)
+        if (A.data().dataType() == DataBuffer.Type.FLOAT)
             info = NativeBlas.sposv(
                     uplo,
                     n,
@@ -1142,7 +1142,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     B.data().asFloat(),
                     B.offset(),
                     B.rows());
-        else if (A.data().dataType() == DataBuffer.DOUBLE) {
+        else if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             info = NativeBlas.dposv(
                     uplo,
                     n,
@@ -1177,7 +1177,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         if (Character.toLowerCase(jobvr) == 'r')
             assert ldvr >= n;
         int info = -1;
-        if (A.data().dataType() == DataBuffer.FLOAT)
+        if (A.data().dataType() == DataBuffer.Type.FLOAT)
             info = NativeBlas.sgeev(
                     jobvl,
                     jobvr,
@@ -1195,7 +1195,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     VR.data().asFloat(),
                     VR.offset(),
                     ldvr);
-        else if (A.data().dataType() == DataBuffer.DOUBLE)
+        else if (A.data().dataType() == DataBuffer.Type.DOUBLE)
             info = NativeBlas.dgeev(
                     jobvl,
                     jobvr,
@@ -1222,7 +1222,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public int sygvd(int itype, char jobz, char uplo, INDArray A, INDArray B, INDArray W) {
         int info = -1;
         DataTypeValidation.assertSameDataType(A, B, W);
-        if (A.data().dataType() == DataBuffer.DOUBLE) {
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             info = NativeBlas.dsygvd(
                     itype,
                     jobz,
@@ -1299,7 +1299,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int[] iwork = new int[3 * minmn * nlvl + 11 * minmn];
         int[] rank = new int[1];
 
-        if (A.data().dataType() == DataBuffer.FLOAT) {
+        if (A.data().dataType() == DataBuffer.Type.FLOAT) {
             float[] s = new float[minmn];
             int info = NativeBlas.sgelsd(
                     m,
@@ -1358,7 +1358,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public void geqrf(INDArray A, INDArray tau) {
         DataTypeValidation.assertSameDataType(A, tau);
-        if (A.data().dataType() == DataBuffer.FLOAT) {
+        if (A.data().dataType() == DataBuffer.Type.FLOAT) {
             int info = NativeBlas.sgeqrf(
                     A.rows(),
                     A.columns(),
@@ -1386,7 +1386,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public void ormqr(char side, char trans, INDArray A, INDArray tau, INDArray C) {
         int k = tau.length();
         DataTypeValidation.assertSameDataType(A, tau, C);
-        if (A.data().dataType() == DataBuffer.FLOAT) {
+        if (A.data().dataType() == DataBuffer.Type.FLOAT) {
             int info = NativeBlas.sormqr(
                     side,
                     trans,

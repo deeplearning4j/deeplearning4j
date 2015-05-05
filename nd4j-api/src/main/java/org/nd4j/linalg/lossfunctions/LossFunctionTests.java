@@ -17,6 +17,7 @@
 package org.nd4j.linalg.lossfunctions;
 
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer.Type;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -51,6 +52,8 @@ public abstract class LossFunctionTests {
 
     @Test
     public void testNegativeLogLikelihood() {
+    	Nd4j.dtype = Type.DOUBLE;
+    	Nd4j.factory().setOrder('f');
         INDArray softmax = Nd4j.create(new double[][]{{0.6, 0.4}, {0.7, 0.3}});
         INDArray trueLabels = Nd4j.create(new double[][]{{1, 0}, {0, 1}});
         double score = LossFunctions.score(trueLabels, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, softmax, 0, false);

@@ -107,8 +107,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void addReferencing(String id) {
-        if(!Nd4j.getResourceManager().isEnabled())
-            return;
         referencing.add(id);
     }
 
@@ -142,15 +140,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
         for (int i = 0; i < data.length(); i++) {
             put(i, data.getDouble(i));
         }
-    }
-
-
-    @Override
-    public void destroy() {
-        if (Nd4j.shouldInstrument)
-            Nd4j.getInstrumentation().log(this, "destroyed");
-        Nd4j.getResourceManager().decrementCurrentAllocatedMemory(elementSize() * length);
-
     }
 
     @Override
@@ -221,7 +210,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public IComplexNumber getComplex(int i) {
-        return dataType() == DataBuffer.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
+        return dataType() == DataBuffer.Type.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
     }
 
 

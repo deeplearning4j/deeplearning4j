@@ -16,20 +16,15 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.DoubleBuffer;
+
 import jcuda.Pointer;
 import jcuda.Sizeof;
-import jcuda.jcublas.JCublas;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaMemcpyKind;
-import jcuda.utils.KernelLauncher;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
-
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.DoubleBuffer;
 
 /**
  * Cuda double  buffer
@@ -38,8 +33,6 @@ import java.nio.DoubleBuffer;
  */
 public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
-    private double[] data;
-
     /**
      * Base constructor
      *
@@ -47,8 +40,6 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
      */
     public CudaDoubleDataBuffer(int length) {
         super(length, Sizeof.DOUBLE);
-        if (pointer() == null)
-            alloc();
     }
 
     /**
@@ -61,15 +52,9 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         setData(data);
     }
 
-    @Override
-    public void alloc() {
-        super.alloc();
-        data = new double[length];
-    }
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
-        ensureNotFreed();
         modified.set(true);
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
@@ -114,14 +99,12 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public double[] getDoublesAt(int offset, int inc, int length) {
-        ensureNotFreed();
 
         if (offset + length > length())
             length -= offset;
 
         double[] ret = new double[length];
-        ByteBuffer buf = getBuffer(offset);
-        DoubleBuffer buf2 = buf.asDoubleBuffer();
+        DoubleBuffer buf2 = getDoubleBuffer(offset);
         for(int i = 0; i < length; i++) {
             ret[i] = buf2.get(i * inc);
         }
@@ -130,13 +113,11 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public float[] getFloatsAt(int offset, int inc, int length) {
-        ensureNotFreed();
         return ArrayUtil.toFloats(getDoublesAt(offset, 1, length));
     }
 
     @Override
     public void assign(Number value, int offset) {
-        ensureNotFreed();
         modified.set(true);
         ByteBuffer buf = getBuffer(offset);
         DoubleBuffer buf2 = buf.asDoubleBuffer();
@@ -156,30 +137,26 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void setData(double[] data) {
-        ensureNotFreed();
-        this.data = data;
+    	
         if (data.length != length)
             throw new IllegalArgumentException("Unable to set vector, must be of length " + length() + " but found length " + data.length);
 
+        getDoubleBuffer().put(data);
     }
 
     @Override
     public byte[] asBytes() {
-        ByteBuffer buf = pinnedPointer.getByteBuffer(0, length() * elementSize());
-        return buf.array();
+        return hostBuffer.array();
     }
 
     @Override
-    public int dataType() {
-        return DataBuffer.DOUBLE;
+    public DataBuffer.Type dataType() {
+        return DataBuffer.Type.DOUBLE;
     }
-
-
 
     @Override
     public double getDouble(int i) {
-        ensureNotFreed();
-        return data[i];
+        return getDoubleBuffer().get(i);
     }
 
     @Override
@@ -202,8 +179,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     @Override
     public void put(int i, double element) {
         modified.set(true);
-        ensureNotFreed();
-        data[i] = element;
+        getDoubleBuffer().put(i,element);
     }
 
     @Override
@@ -219,7 +195,6 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public DataBuffer dup() {
-        ensureNotFreed();
 
         CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(length());
         copyTo(buffer);
@@ -231,7 +206,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
             throws java.io.IOException {
         stream.defaultWriteObject();
 
-        if (pointer() == null) {
+        if (getHostPointer() == null) {
             stream.writeInt(0);
         } else {
             double[] arr = this.asDouble();
@@ -253,6 +228,13 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         for (int i = 0; i < n; i++) {
             arr[i] = stream.readDouble();
         }
+        
+        this.length = n;
+        this.elementSize = Sizeof.DOUBLE;
+        hostBuffer = ByteBuffer.allocate(length*elementSize);
+        hostBuffer.order(ByteOrder.nativeOrder());
+        hostPointer = Pointer.to(hostBuffer);
+        
         setData(arr);
     }
 

@@ -551,7 +551,7 @@ public abstract class BaseComplexDouble implements IComplexDouble {
 
         BaseComplexDouble that = (BaseComplexDouble) o;
 
-        if (Double.compare(that.real, real) != 0)
+        if (Math.abs(that.real - real) > Nd4j.EPS_THRESHOLD)
             return false;
         if(Math.abs(that.imag - imag) > Nd4j.EPS_THRESHOLD)
             return false;

@@ -110,7 +110,7 @@ public class BooleanIndexing {
     public static void applyWhere(INDArray to, Condition condition, Function<Number, Number> function) {
         INDArray linear = to.linearView();
         for (int i = 0; i < linear.linearView().length(); i++) {
-            if (linear.data().dataType() == (DataBuffer.FLOAT)) {
+            if (linear.data().dataType() == (DataBuffer.Type.FLOAT)) {
                 if (condition.apply(linear.getFloat(i))) {
                     linear.putScalar(i, function.apply(linear.getFloat(i)).floatValue());
                 }

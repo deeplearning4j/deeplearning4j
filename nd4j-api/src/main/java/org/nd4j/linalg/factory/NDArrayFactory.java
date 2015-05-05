@@ -93,7 +93,7 @@ public interface NDArrayFactory {
      *
      * @param dtype
      */
-    void setDType(int dtype);
+    void setDType(DataBuffer.Type dtype);
 
     INDArray create(int[] shape, DataBuffer buffer);
 
@@ -109,7 +109,7 @@ public interface NDArrayFactory {
      *
      * @return the data type for this ndarray
      */
-    public int dtype();
+    public DataBuffer.Type dtype();
 
     /**
      * Creates a complex ndarray with the specified shape
@@ -1258,7 +1258,7 @@ public interface NDArrayFactory {
 
     INDArray create(int rows, int columns, char ordering);
 
-    INDArray create(int[] shape, int dataType);
+    INDArray create(int[] shape, DataBuffer.Type dataType);
 
     INDArray create(float[] data, char order);
 

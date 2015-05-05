@@ -17,18 +17,39 @@
 package org.nd4j.linalg.api.ndarray;
 
 
-import com.google.common.base.Function;
+import static org.nd4j.linalg.util.ArrayUtil.calcStrides;
+import static org.nd4j.linalg.util.ArrayUtil.calcStridesFortran;
+
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
+import org.nd4j.linalg.api.ops.impl.accum.Mean;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
-import org.nd4j.linalg.api.ops.impl.scalar.*;
+import org.nd4j.linalg.api.ops.impl.accum.Norm1;
+import org.nd4j.linalg.api.ops.impl.accum.Norm2;
+import org.nd4j.linalg.api.ops.impl.accum.NormMax;
+import org.nd4j.linalg.api.ops.impl.accum.Prod;
+import org.nd4j.linalg.api.ops.impl.accum.StandardDeviation;
+import org.nd4j.linalg.api.ops.impl.accum.Sum;
+import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseDivision;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarSubtraction;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
@@ -37,7 +58,11 @@ import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.EqualTo;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThan;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThan;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.NotEqualTo;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.Indices;
@@ -46,13 +71,9 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.Shape;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.lang.ref.WeakReference;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.nd4j.linalg.util.ArrayUtil.calcStrides;
-import static org.nd4j.linalg.util.ArrayUtil.calcStridesFortran;
 
 
 /**
@@ -75,6 +96,11 @@ import static org.nd4j.linalg.util.ArrayUtil.calcStridesFortran;
 public abstract class BaseNDArray implements INDArray {
 
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3285982317165542614L;
+
     protected int[] shape;
     protected int[] stride;
     protected int offset = 0;
@@ -84,9 +110,10 @@ public abstract class BaseNDArray implements INDArray {
     protected int length;
     protected INDArray linearView,secondaryLinearView;
 
-    protected String id = Nd4j.getResourceManager().isEnabled() ? UUID.randomUUID().toString() : "";
     protected boolean cleanedUp = false;
     protected transient WeakReference<INDArray> ref;
+    
+    protected static final Logger log = LoggerFactory.getLogger(BaseNDArray.class);
 
     public BaseNDArray() {
     }
@@ -233,7 +260,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     public BaseNDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
 
-        DataBuffer ret = slices.get(0).data().dataType() == (DataBuffer.FLOAT) ?
+        DataBuffer ret = slices.get(0).data().dataType() == (DataBuffer.Type.FLOAT) ?
                 Nd4j.createBuffer(new float[ArrayUtil.prod(shape)]) :
                 Nd4j.createBuffer(new double[ArrayUtil.prod(shape)]);
 
@@ -468,11 +495,6 @@ public abstract class BaseNDArray implements INDArray {
             ix += indexes[i] * stride[i];
         }
         return ix;
-    }
-
-    @Override
-    public String id() {
-        return id;
     }
 
     @Override
@@ -1732,11 +1754,6 @@ public abstract class BaseNDArray implements INDArray {
                 this.stride = ArrayUtil.calcStrides(this.shape);
         }
 
-        //add the reference for clean up later (clean up the buffer when this becomes a weak reference)
-        data().addReferencing(id());
-        ref = new WeakReference<>((INDArray) this, Nd4j.refQueue());
-
-
     }
 
 
@@ -1834,13 +1851,9 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public  void cleanup() {
-        cleanedUp = true;
-        if (Nd4j.shouldInstrument)
+    	if (Nd4j.shouldInstrument)
             Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
-        Nd4j.getResourceManager().remove(id());
-        data().removeReferencing(id());
-
-
+    	cleanedUp = true;
     }
 
     protected void assertRowVector(INDArray rowVector) {
@@ -2340,12 +2353,12 @@ public abstract class BaseNDArray implements INDArray {
             INDArray temp = Nd4j.create(resultArray.shape(), ArrayUtil.calcStridesFortran(resultArray.shape()));
 
             if (otherArray.columns() == 1) {
-                if (data.dataType() == (DataBuffer.DOUBLE))
+                if (data.dataType() == (DataBuffer.Type.DOUBLE))
                     Nd4j.getBlasWrapper().gemv(1.0, this, otherArray, 0.0, temp);
                 else
                     Nd4j.getBlasWrapper().gemv(1.0f, this, otherArray, 0.0f, temp);
             } else {
-                if (data.dataType() == (DataBuffer.DOUBLE))
+                if (data.dataType() == (DataBuffer.Type.DOUBLE))
                     Nd4j.getBlasWrapper().gemm(1.0, this, otherArray, 0.0, temp);
                 else
                     Nd4j.getBlasWrapper().gemm(1.0f, this, otherArray, 0.0f, temp);
@@ -2356,12 +2369,12 @@ public abstract class BaseNDArray implements INDArray {
 
         } else {
             if (otherArray.columns() == 1)
-                if (data.dataType() == (DataBuffer.DOUBLE))
+                if (data.dataType() == (DataBuffer.Type.DOUBLE))
                     Nd4j.getBlasWrapper().gemv(1.0, this, otherArray, 0.0, resultArray);
                 else
                     Nd4j.getBlasWrapper().gemv(1.0f, this, otherArray, 0.0f, resultArray);
             else {
-                if (data.dataType() == (DataBuffer.DOUBLE))
+                if (data.dataType() == (DataBuffer.Type.DOUBLE))
                     Nd4j.getBlasWrapper().gemm(1.0, this, otherArray, 0.0, resultArray);
                 else
                     Nd4j.getBlasWrapper().gemm(1.0f, this, otherArray, 0.0f, resultArray);
@@ -2474,12 +2487,12 @@ public abstract class BaseNDArray implements INDArray {
 
 
         if (result == this) {
-            if (data.dataType() == DataBuffer.DOUBLE)
+            if (data.dataType() == DataBuffer.Type.DOUBLE)
                 Nd4j.getBlasWrapper().axpy(-1.0, other.linearView(), result.linearView());
             else
                 Nd4j.getBlasWrapper().axpy(-1.0f, other.linearView(), result.linearView());
         } else if (result == other) {
-            if (data.dataType() == DataBuffer.DOUBLE) {
+            if (data.dataType() == DataBuffer.Type.DOUBLE) {
                 Nd4j.getBlasWrapper().scal(-1.0, result.linearView());
                 Nd4j.getBlasWrapper().axpy(1.0, this.linearView(), result.linearView());
             } else {
@@ -2487,7 +2500,7 @@ public abstract class BaseNDArray implements INDArray {
                 Nd4j.getBlasWrapper().axpy(1.0f, this.linearView(), result.linearView());
             }
         } else {
-            if (data.dataType() == DataBuffer.FLOAT) {
+            if (data.dataType() == DataBuffer.Type.FLOAT) {
                 Nd4j.getBlasWrapper().copy(this, result);
                 Nd4j.getBlasWrapper().axpy(-1.0f, other.linearView(), result.linearView());
             } else {
@@ -2531,9 +2544,8 @@ public abstract class BaseNDArray implements INDArray {
             return other.addi(getDouble(0), result);
         }
 
-
         if (result == this) {
-            if (data.dataType() == DataBuffer.DOUBLE)
+            if (data.dataType() == DataBuffer.Type.DOUBLE)
                 Nd4j.getBlasWrapper().axpy(1.0, other.linearView(), result.linearView());
 
 
@@ -2541,7 +2553,7 @@ public abstract class BaseNDArray implements INDArray {
                 Nd4j.getBlasWrapper().axpy(1.0f, other.linearView(), result.linearView());
 
         } else if (result == other) {
-            if (data.dataType() == (DataBuffer.DOUBLE))
+            if (data.dataType() == (DataBuffer.Type.DOUBLE))
                 Nd4j.getBlasWrapper().axpy(1.0, this.linearView(), result.linearView());
             else
                 Nd4j.getBlasWrapper().axpy(1.0f, this.linearView(), result.linearView());
@@ -3015,7 +3027,7 @@ public abstract class BaseNDArray implements INDArray {
         else if (isColumnVector())
             return Nd4j.create(data, new int[]{shape[0]}, offset);
 
-        INDArray ret = permute(ArrayUtil.reverseCopy(ArrayUtil.range(0, shape.length)));
+        INDArray ret = permute(ArrayUtil.range(shape.length, 0));
         return ret;
     }
 
@@ -3449,7 +3461,7 @@ public abstract class BaseNDArray implements INDArray {
 
         //epsilon equals
         if (isScalar() && n.isScalar()) {
-            if (data.dataType() == DataBuffer.FLOAT) {
+            if (data.dataType() == DataBuffer.Type.FLOAT) {
                 double val = getDouble(0);
                 double val2 = n.getDouble(0);
                 return Math.abs(val - val2) < Nd4j.EPS_THRESHOLD;
@@ -3461,7 +3473,7 @@ public abstract class BaseNDArray implements INDArray {
 
         } else if (isVector() && n.isVector()) {
             for (int i = 0; i < length; i++) {
-                if (data.dataType() == DataBuffer.FLOAT) {
+                if (data.dataType() == DataBuffer.Type.FLOAT) {
                     double curr = getDouble(i);
                     double comp = n.getDouble(i);
                     if (Math.abs(curr - comp) > Nd4j.EPS_THRESHOLD)
@@ -3959,7 +3971,7 @@ public abstract class BaseNDArray implements INDArray {
         ensureNotCleanedUp();
         if (!isScalar())
             throw new IllegalStateException("Unable to retrieve element from non scalar matrix");
-        if (data.dataType() == DataBuffer.FLOAT)
+        if (data.dataType() == DataBuffer.Type.FLOAT)
             return data.getFloat(offset);
         return data.getDouble(offset);
     }

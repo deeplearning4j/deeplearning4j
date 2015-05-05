@@ -18,6 +18,7 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import jcuda.Pointer;
 import jcuda.Sizeof;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 /**
@@ -120,8 +121,8 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    public int dataType() {
-        return DataBuffer.INT;
+    public DataBuffer.Type dataType() {
+        return DataBuffer.Type.INT;
     }
 
     @Override
@@ -191,7 +192,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
             throws java.io.IOException {
         stream.defaultWriteObject();
 
-        if (pointer() == null) {
+        if (getHostPointer() == null) {
             stream.writeInt(0);
         } else {
             int[] arr = this.asInt();

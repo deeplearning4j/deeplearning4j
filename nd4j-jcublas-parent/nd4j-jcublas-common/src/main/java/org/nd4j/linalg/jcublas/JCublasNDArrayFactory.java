@@ -43,15 +43,11 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     public JCublasNDArrayFactory() {
     }
 
-    public JCublasNDArrayFactory(Integer dtype, Character order) {
+    public JCublasNDArrayFactory(DataBuffer.Type dtype, Character order) {
         super(dtype, order);
     }
 
-    public JCublasNDArrayFactory(int dtype, char order) {
-        super(dtype, order);
-    }
-
-    public JCublasNDArrayFactory(int dtype, Character order) {
+    public JCublasNDArrayFactory(DataBuffer.Type dtype, char order) {
         super(dtype, order);
     }
 

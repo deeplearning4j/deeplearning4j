@@ -107,21 +107,19 @@ public class UniformDistribution extends BaseJCudaDistribution {
     @Override
     public double[] sample(int sampleSize) {
         CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(sampleSize);
-        doSampleUniformDouble(buffer.pointer(), lower, upper, buffer.length());
-        double[] buffer2 = buffer.asDouble();
-        buffer.destroy();
-        return buffer2;
+	    doSampleUniformDouble(buffer, lower, upper, buffer.length());
+	    double[] buffer2 = buffer.asDouble();
+	    return buffer2;
     }
 
     @Override
     public INDArray sample(int[] shape) {
         INDArray ret = Nd4j.create(shape);
         JCudaBuffer buffer = (JCudaBuffer) ret.data();
-        if (buffer.dataType() == DataBuffer.FLOAT)
-            doSampleUniform(buffer.pointer(), (float) lower, (float) upper,  buffer.length());
-        else if (buffer.dataType() == DataBuffer.DOUBLE)
-            doSampleUniformDouble(buffer.pointer(), lower, upper, buffer.length());
-
+        if (buffer.dataType() == DataBuffer.Type.FLOAT)
+            doSampleUniform(buffer, (float) lower, (float) upper,  buffer.length());
+        else if (buffer.dataType() == DataBuffer.Type.DOUBLE)
+            doSampleUniformDouble(buffer, lower, upper, buffer.length());
         return ret;
     }
 

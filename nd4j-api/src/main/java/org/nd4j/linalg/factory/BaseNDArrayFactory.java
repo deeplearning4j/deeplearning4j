@@ -17,6 +17,11 @@
 package org.nd4j.linalg.factory;
 
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -26,11 +31,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 
 /**
  * Base NDArrayFactory class.
@@ -42,7 +42,7 @@ import java.util.List;
 public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
-    protected int dtype;
+    protected DataBuffer.Type dtype;
     protected char order;
 
     public BaseNDArrayFactory() {
@@ -52,7 +52,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @param dtype the data type
      * @param order the ordering
      */
-    protected BaseNDArrayFactory(int dtype, Character order) {
+    protected BaseNDArrayFactory(DataBuffer.Type dtype, Character order) {
         this.dtype = dtype;
         if (Character.toLowerCase(order) != 'c' && Character.toLowerCase(order) != 'f')
             throw new IllegalArgumentException("Order must either be c or f");
@@ -64,19 +64,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @param dtype the data type
      * @param order the ordering
      */
-    protected BaseNDArrayFactory(Integer dtype, Character order) {
-        this.dtype = dtype;
-        if (Character.toLowerCase(order) != 'c' && Character.toLowerCase(order) != 'f')
-            throw new IllegalArgumentException("Order must either be c or f");
-
-        this.order = order;
-    }
-
-    /**
-     * @param dtype the data type
-     * @param order the ordering
-     */
-    protected BaseNDArrayFactory(int dtype, char order) {
+    protected BaseNDArrayFactory(DataBuffer.Type dtype, char order) {
         this.dtype = dtype;
         if (Character.toLowerCase(order) != 'c' && Character.toLowerCase(order) != 'f')
             throw new IllegalArgumentException("Order must either be c or f");
@@ -131,13 +119,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @param dtype
      */
     @Override
-    public void setDType(int dtype) {
-        assert dtype == DataBuffer.DOUBLE || dtype == DataBuffer.FLOAT || dtype == DataBuffer.INT : "Invalid type passed, must be float or double";
+    public void setDType(DataBuffer.Type dtype) {
+        assert dtype == DataBuffer.Type.DOUBLE || dtype == DataBuffer.Type.FLOAT || dtype == DataBuffer.Type.INT : "Invalid type passed, must be float or double";
         this.dtype = dtype;
     }
 
     @Override
-    public INDArray create(int[] shape, int dataType) {
+    public INDArray create(int[] shape, DataBuffer.Type dataType) {
         return create(shape, Nd4j.createBuffer(shape, dataType));
     }
 
@@ -157,7 +145,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return the data type for this ndarray
      */
     @Override
-    public int dtype() {
+    public DataBuffer.Type dtype() {
         return dtype;
     }
 
@@ -1381,11 +1369,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(int rows, int columns, int[] stride, int offset) {
-        if (dtype == DataBuffer.DOUBLE)
+        if (dtype == DataBuffer.Type.DOUBLE)
             return createComplex(new double[rows * columns * 2], new int[]{rows, columns}, stride, offset);
-        if (dtype == DataBuffer.FLOAT)
+        if (dtype == DataBuffer.Type.FLOAT)
             return createComplex(new float[rows * columns * 2], new int[]{rows, columns}, stride, offset);
-        if (dtype == DataBuffer.INT)
+        if (dtype == DataBuffer.Type.INT)
             return createComplex(new int[rows * columns * 2], new int[]{rows, columns}, stride, offset);
 
         throw new IllegalStateException("Illegal data type " + dtype);
@@ -1403,11 +1391,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(int rows, int columns, int[] stride, int offset) {
-        if (dtype == DataBuffer.DOUBLE)
+        if (dtype == DataBuffer.Type.DOUBLE)
             return create(new double[rows * columns], new int[]{rows, columns}, stride, offset);
-        if (dtype == DataBuffer.FLOAT)
+        if (dtype == DataBuffer.Type.FLOAT)
             return create(new float[rows * columns], new int[]{rows, columns}, stride, offset);
-        if (dtype == DataBuffer.INT)
+        if (dtype == DataBuffer.Type.INT)
             return create(new int[rows * columns], new int[]{rows, columns}, stride, offset);
         throw new IllegalStateException("Illegal data type " + dtype);
     }
@@ -1422,9 +1410,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return the instance
      */
     public IComplexNDArray createComplex(int[] shape, int[] stride, int offset) {
-        if (dtype == DataBuffer.DOUBLE)
+        if (dtype == DataBuffer.Type.DOUBLE)
             return createComplex(new double[ArrayUtil.prod(shape) * 2], shape, stride, offset);
-        if (dtype == DataBuffer.FLOAT)
+        if (dtype == DataBuffer.Type.FLOAT)
             return createComplex(new float[ArrayUtil.prod(shape) * 2], shape, stride, offset);
         throw new IllegalStateException("Illegal data type " + dtype);
 
@@ -1559,11 +1547,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(Number value, int offset) {
-        if (dtype == DataBuffer.DOUBLE)
+        if (dtype == DataBuffer.Type.DOUBLE)
             return scalar(value.doubleValue(), offset);
-        if (dtype == DataBuffer.FLOAT)
+        if (dtype == DataBuffer.Type.FLOAT)
             return scalar(value.floatValue(), offset);
-        if (dtype == DataBuffer.INT)
+        if (dtype == DataBuffer.Type.INT)
             return scalar(value.intValue(), offset);
         throw new IllegalStateException("Illegal data type " + dtype);
     }
@@ -1578,9 +1566,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray complexScalar(Number value, int offset) {
-        if (dtype == DataBuffer.DOUBLE)
+        if (dtype == DataBuffer.Type.DOUBLE)
             return scalar(createDouble(value.doubleValue(), 0), offset);
-        if (dtype == DataBuffer.FLOAT || dtype == DataBuffer.INT)
+        if (dtype == DataBuffer.Type.FLOAT || dtype == DataBuffer.Type.INT)
             return scalar(createFloat(value.floatValue(), 0), offset);
 
         throw new IllegalStateException("Illegal data type " + dtype);
@@ -1644,11 +1632,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(Number value) {
-        if (dtype == DataBuffer.DOUBLE)
+        if (dtype == DataBuffer.Type.DOUBLE)
             return scalar(value.doubleValue(), 0);
-        if (dtype == DataBuffer.FLOAT)
+        if (dtype == DataBuffer.Type.FLOAT)
             return scalar(value.floatValue(), 0);
-        if (dtype == DataBuffer.INT)
+        if (dtype == DataBuffer.Type.INT)
             return scalar(value.intValue(), 0);
         throw new IllegalStateException("Illegal data type " + dtype);
     }
@@ -1661,9 +1649,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(float value) {
-        if (dtype == DataBuffer.FLOAT)
+        if (dtype == DataBuffer.Type.FLOAT)
             return create(new float[]{value}, new int[]{1}, new int[]{1}, 0);
-        else if (dtype == DataBuffer.DOUBLE)
+        else if (dtype == DataBuffer.Type.DOUBLE)
             return scalar((double) value);
         else
             return scalar((int) value);
@@ -1677,7 +1665,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(double value) {
-        if (dtype == DataBuffer.DOUBLE)
+        if (dtype == DataBuffer.Type.DOUBLE)
             return create(new double[]{value}, new int[]{1}, new int[]{1}, 0);
         else
             return scalar((float) value);
@@ -1693,9 +1681,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray scalar(IComplexNumber value, int offset) {
-        if (dtype == DataBuffer.DOUBLE)
+        if (dtype == DataBuffer.Type.DOUBLE)
             return scalar(value.asDouble(), offset);
-        if (dtype == DataBuffer.FLOAT)
+        if (dtype == DataBuffer.Type.FLOAT)
             return scalar(value.asFloat(), offset);
         throw new IllegalStateException("Illegal data type " + dtype);
     }
@@ -1732,9 +1720,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray scalar(IComplexNumber value) {
-        if (dtype == DataBuffer.DOUBLE)
+        if (dtype == DataBuffer.Type.DOUBLE)
             return scalar(value.asDouble(), 0);
-        if (dtype == DataBuffer.FLOAT)
+        if (dtype == DataBuffer.Type.FLOAT)
             return scalar(value.asFloat(), 0);
         throw new IllegalStateException("Illegal data type " + dtype);
     }
