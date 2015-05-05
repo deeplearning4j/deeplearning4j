@@ -37,7 +37,7 @@ public class SaxpyMap extends  BaseWord2VecFunction implements IFunction<InMemor
 
     @Override
     public InMemoryLookupTable apply(InMemoryLookupTable inMemoryLookupTable) {
-        if(inMemoryLookupTable.getSyn0().data().dataType() == DataBuffer.DOUBLE)
+        if(inMemoryLookupTable.getSyn0().data().dataType() == DataBuffer.Type.DOUBLE)
             Nd4j.getBlasWrapper().axpy(alpha.doubleValue(),getFrom(inMemoryLookupTable),getTo(inMemoryLookupTable));
         else
             Nd4j.getBlasWrapper().axpy(alpha.floatValue(),getFrom(inMemoryLookupTable),getTo(inMemoryLookupTable));
