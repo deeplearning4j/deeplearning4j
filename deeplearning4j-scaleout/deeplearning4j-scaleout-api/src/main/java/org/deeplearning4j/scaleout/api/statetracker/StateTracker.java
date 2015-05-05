@@ -1,17 +1,19 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.deeplearning4j.scaleout.api.statetracker;
@@ -98,33 +100,33 @@ public interface StateTracker extends Serializable {
      * Removes the worker data
      * @param worker the worker to remove
      */
-    public void removeWorkerData(String worker);
+    void removeWorkerData(String worker);
 
     /**
      * The collection of data
      * @return the collection of workers who have data
      */
-    public Collection<String> workerData();
+    Collection<String> workerData();
 
     /**
      * Sets the work retriever to use for storing data sets for workers
      * @param workRetriever the work retreiver to use with this state tracker
      */
-    public void setWorkRetriever(WorkRetriever workRetriever);
+    void setWorkRetriever(WorkRetriever workRetriever);
 
     /**
      * Loads the data for a given worker
      * @param workerId the worker id to load data for
      * @return the data applyTransformToDestination for a given worker
      */
-    public Job loadForWorker(String workerId);
+    Job loadForWorker(String workerId);
 
     /**
      * Saves the data for the given worker to work on
      * @param workerId the worker to save
      * @param d the data for the worker
      */
-    public void saveWorker(String workerId, Job d);
+    void saveWorker(String workerId, Job d);
 
 
     /**
@@ -133,30 +135,30 @@ public interface StateTracker extends Serializable {
      * which workers have actually contributed an update for a given mini batch
      * @return the worker updates
      */
-    public Collection<String> workerUpdates();
+    Collection<String> workerUpdates();
     /**
      * The update saver to use
      * @param updateSaver the update saver to use
      */
-    public void setUpdateSaver(UpdateSaver updateSaver);
+    void setUpdateSaver(UpdateSaver updateSaver);
 
     /**
      * The update saver used with this state tracker
      * @return the update saver used with this state tracker
      */
-    public UpdateSaver updateSaver();
+    UpdateSaver updateSaver();
 
     /**
      * Assuming a job already exists, updates the job
      * @param j the job to update
      */
-    public void updateJob(Job j);
+    void updateJob(Job j);
 
     /**
      * Sets the input split
      * @param inputSplit the input split to use
      */
-    public void setMiniBatchSize(int inputSplit);
+    void setMiniBatchSize(int inputSplit);
 
     /**
      * The input split to use.
@@ -165,28 +167,28 @@ public interface StateTracker extends Serializable {
      * per worker
      * @return the input split to use
      */
-    public int inputSplit();
+    int inputSplit();
 
     /**
      * Returns the partition (optimal batch size)
      * given the available workers and the specified input split
      * @return the optimal batch size
      */
-    public int partition();
+    int partition();
 
     /**
      * Returns the status of whether the worker is enabled or not
      * @param id the id of the worker to test
      * @return true if the worker is enabled, false otherwise
      */
-    public boolean workerEnabled(String id);
+    boolean workerEnabled(String id);
 
     /**
      * Enables the worker with the given id,
      * allowing it to take jobs again
      * @param id the id of the worker to enable
      */
-    public void enableWorker(String id);
+    void enableWorker(String id);
 
     /**
      * Disables the worker with the given id,
@@ -194,57 +196,57 @@ public interface StateTracker extends Serializable {
      * or take any new jobs until re enabled
      * @param id the id of the worker to disable
      */
-    public void disableWorker(String id);
+    void disableWorker(String id);
 
     /**
      * Updates the status of the worker to not needing replication
      * @param workerId the worker id to update
      */
-    public void doneReplicating(String workerId);
+    void doneReplicating(String workerId);
 
     /**
      * Adds a worker to the list to be replicate d
      * @param workerId the worker id to add
      */
-    public void addReplicate(String workerId);
+    void addReplicate(String workerId);
 
     /**
      * Tracks worker ids that need state replication
      * @param workerId the worker id to replicate
      * @return the list of worker ids that need state replication
      */
-    public boolean needsReplicate(String workerId);
+    boolean needsReplicate(String workerId);
 
     /**
      * Adds an update to the current mini batch
      * @param id the id of the worker who did the update
      * @param update the update to add
      */
-    public void addUpdate(String id, Job update);
+    void addUpdate(String id, Job update);
 
     /**
      * Updates  for mini batches
      * @return the current list of updates for mini batches
      */
-    public IterateAndUpdate updates();
+    IterateAndUpdate updates();
 
     /**
      * Sets the connection string for connecting to the server
      * @param connectionString the connection string to use
      */
-    public void setConnectionString(String connectionString);
+    void setConnectionString(String connectionString);
 
     /**
      * Connection string for connecting to the server
      * @return the connection string for connecting to the server
      */
-    public String connectionString();
+    String connectionString();
 
     /**
      * Setter for the server port
      * @param port
      */
-    public void setServerPort(int port);
+    void setServerPort(int port);
 
 
     /**
@@ -256,7 +258,7 @@ public interface StateTracker extends Serializable {
      * Gets the server port the state tracker is listening on (where applicable)
      * @return
      */
-    public int getServerPort();
+    int getServerPort();
     /**
      * Sets done to true
      */
@@ -354,7 +356,7 @@ public interface StateTracker extends Serializable {
      * for a job on
      * @return the job for the worker or null
      */
-    public Job jobFor(String id);
+    Job jobFor(String id);
 
     /**
      * Flags the given worker is available for work

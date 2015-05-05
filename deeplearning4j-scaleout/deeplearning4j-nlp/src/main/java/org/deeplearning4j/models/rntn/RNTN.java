@@ -1,17 +1,19 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.deeplearning4j.models.rntn;
@@ -20,6 +22,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -33,13 +36,14 @@ import java.util.concurrent.CountDownLatch;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
-import org.deeplearning4j.models.featuredetectors.autoencoder.recursive.Tree;
+import org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.Tree;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.util.MultiDimensionalMap;
 import org.deeplearning4j.util.MultiDimensionalSet;
@@ -78,6 +82,7 @@ public class RNTN implements Layer {
 
 
     protected NeuralNetConfiguration conf;
+    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected double value = 0;
     private int numOuts = 3;
     //must be same size as word vectors
@@ -305,8 +310,13 @@ public class RNTN implements Layer {
 
     }
 
+    public Collection<IterationListener> getIterationListeners() {
+        return iterationListeners;
+    }
 
-
+    public void setIterationListeners(Collection<IterationListener> listeners) {
+        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    }
 
     INDArray randomBinaryINDArray() {
         double range = 1.0f / (4.0f * numHidden);
@@ -466,7 +476,7 @@ public class RNTN implements Layer {
 
     private INDArray getINDArrayGradient(INDArray deltaFull, INDArray leftVector, INDArray rightVector) {
         int size = deltaFull.length();
-        INDArray Wt_df = Nd4j.create(new int[]{size,size * 2, size*2});
+        INDArray Wt_df = Nd4j.create(size,size * 2, size*2);
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; slice++) {
             Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getDouble(0),fullVector).mmul(fullVector.transpose()));
@@ -811,7 +821,7 @@ public class RNTN implements Layer {
 
     private INDArray getDoubleTensorGradient(INDArray deltaFull, INDArray leftVector, INDArray rightVector) {
         int size = deltaFull.length();
-        INDArray Wt_df = Nd4j.create(new int[]{size * 2, size * 2, size});
+        INDArray Wt_df = Nd4j.create(size * 2, size * 2, size);
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
             if(Wt_df.data().dataType() == DataBuffer.DOUBLE)
@@ -942,7 +952,7 @@ public class RNTN implements Layer {
                 int numCols = entry.getValue().size(2);
                 int numSlices = entry.getValue().slices();
 
-                binaryINDArrayTD.put(entry.getFirstKey(), entry.getSecondKey(), Nd4j.create(new int[]{numRows, numCols, numSlices}));
+                binaryINDArrayTD.put(entry.getFirstKey(), entry.getSecondKey(), Nd4j.create(numRows, numCols, numSlices));
             }
         }
 
@@ -1084,6 +1094,36 @@ public class RNTN implements Layer {
     @Override
     public int batchSize() {
         return 0;
+    }
+
+    @Override
+    public Layer.Type type() {
+        return Layer.Type.RECURSIVE;
+    }
+
+    @Override
+    public Gradient error(INDArray input) {
+        return null;
+    }
+
+    @Override
+    public INDArray derivativeActivation(INDArray input) {
+        return null;
+    }
+
+    @Override
+    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
+        return null;
+    }
+
+    @Override
+    public Gradient errorSignal(Gradient error, INDArray input) {
+        return null;
+    }
+
+    @Override
+    public Gradient backwardGradient(INDArray activation, Gradient errorSignal) {
+        return null;
     }
 
     @Override
