@@ -47,6 +47,15 @@ public class RBM extends BasePretrainNetwork {
     
     private static final long serialVersionUID = 485040309806445606L;
 
+    public enum VisibleUnit {
+        BINARY,GAUSSIAN,SOFTMAX,LINEAR
+    }
+
+    public enum HiddenUnit {
+        RECTIFIED,BINARY,GAUSSIAN,SOFTMAX
+    }
+
+
     @Override
     public int hashCode() {
         return 0;
