@@ -66,7 +66,7 @@ public class WordVectorSerializerTest {
 
     @Test
     public void testCurrentFile() throws Exception {
-        Nd4j.dtype = DataBuffer.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
         String url = "https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz";
         String path = "GoogleNews-vectors-negative300.bin.gz";
         File toDl = new File(path);

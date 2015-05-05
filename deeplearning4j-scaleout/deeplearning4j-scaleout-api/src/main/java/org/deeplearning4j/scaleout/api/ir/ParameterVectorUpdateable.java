@@ -79,7 +79,7 @@ public class ParameterVectorUpdateable implements Updateable<INDArray> {
     public void fromString(String s) {
         String[] split = s.split(" ");
         paramMessage = Nd4j.create(split.length);
-        if(Nd4j.dataType() == DataBuffer.DOUBLE) {
+        if(Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             for(int i = 0 ;i < split.length; i++) {
                 paramMessage.putScalar(i,Double.valueOf(split[i]));
             }
