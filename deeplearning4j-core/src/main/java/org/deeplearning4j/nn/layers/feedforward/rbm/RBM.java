@@ -77,13 +77,6 @@ public  class RBM extends BasePretrainNetwork {
         this.rng = Nd4j.getRandom();
     }
 
-    public enum VisibleUnit {
-        BINARY,GAUSSIAN,SOFTMAX,LINEAR
-    }
-
-    public enum HiddenUnit {
-        RECTIFIED,BINARY,GAUSSIAN,SOFTMAX
-    }
 
 
     /**

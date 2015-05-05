@@ -52,7 +52,7 @@ public class TrainMultiLayerConfigTest {
         assertEquals(conf,from);
 
         String[] cmd = {
-                "--input", "iris.txt", "--model", "model_multi.json", "--output", "model_results.txt"
+                "-input", "iris.txt", "-model", "model_multi.json", "-output", "model_results.txt"
         };
 
         Train train = new Train(cmd);

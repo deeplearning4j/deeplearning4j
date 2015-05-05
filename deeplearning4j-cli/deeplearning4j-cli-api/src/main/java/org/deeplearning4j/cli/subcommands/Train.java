@@ -43,105 +43,107 @@ import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Subcommand for training model
  *
  * Options:
  *      Required:
- *          --input: input data file for model
- *          --model: json configuration for model
+ *          -input: input data file for model
+ *          -model: json configuration for model
  *
  * @author sonali
  */
 public class Train extends BaseSubCommand {
 
-	
+
 	public static final String EXECUTION_RUNTIME_MODE_KEY = "execution.runtime";
 	public static final String EXECUTION_RUNTIME_MODE_DEFAULT = "local";
-	
+
 	public static final String OUTPUT_FILENAME_KEY = "output.directory";
 	public static final String INPUT_DATA_FILENAME_KEY = "input.directory";
-	
-	  public static final String INPUT_FORMAT_KEY = "input.format";
-	  public static final String DEFAULT_INPUT_FORMAT_CLASSNAME = "org.canova.api.formats.input.impl.SVMLightInputFormat";
-	  
-	  @Option(name = "-conf", usage = "configuration file for training", required = true )
-	  public String configurationFile = "";
-	  
+
+	public static final String INPUT_FORMAT_KEY = "input.format";
+	public static final String DEFAULT_INPUT_FORMAT_CLASSNAME = "org.canova.api.formats.input.impl.SVMLightInputFormat";
+
+	@Option(name = "-conf", usage = "configuration file for training", required = true )
+	public String configurationFile = "";
+
 	public Properties configProps = null;
 	public String outputVectorFilename = "";
-	  
 	
+	private static Logger log = LoggerFactory.getLogger(Train.class);
+
+
 	// NOTE: disabled this setup for now for development purposes
-	
-//    @Option(name = "--input", usage = "input data",aliases = "-i", required = true)
-    private String input = "input.txt";
 
-//    @Option(name = "--model", usage = "model for prediction", aliases = "-m", required = true)
-    private String model = "model.json";
+	@Option(name = "-input", usage = "input data",aliases = "-i", required = true)
+	private String input = "input.txt";
 
-//    @Option(name = "--output", usage = "location for saving model", aliases = "-o", required = true)
-    private String outputDirectory = "output.txt";
 
-//    @Option(name = "--runtime", usage = "runtime- local, Hadoop, Spark, etc.", aliases = "-r", required = false)
-    private String runtime = "local";
+	@Option(name = "-output", usage = "location for saving model", aliases = "-o", required = true)
+	private String outputDirectory = "output.txt";
 
-//    @Option(name = "--properties", usage = "configuration for distributed systems", aliases = "-p", required = false)
-//    private String properties;
+	@Option(name = "-runtime", usage = "runtime- local, Hadoop, Spark, etc.", aliases = "-r", required = false)
+	private String runtime = "local";
 
-    public Train(String[] args) {
-        super(args);
-        
-	    CmdLineParser parser = new CmdLineParser(this);
-	    try {
-	      parser.parseArgument(args);
-	    } catch (CmdLineException e) {
-	    	//this.validCommandLineParameters = false;
-	      parser.printUsage(System.err);
-	      //log.error("Unable to parse args", e);
-	    }
-        
-        
-    }
+	@Option(name = "-properties", usage = "configuration for distributed systems", aliases = "-p", required = false)
+	private String properties;
 
-    /**
-     * TODO:
-     * 		-	lots of things to do here
-     * 		-	runtime: if we're running on a cluster, then we have a different workflow / tracking setup
-     * 
-     * 
-     */
-    @Override
-    public void exec() {
+	public Train(String[] args) {
+		super(args);
 
-    	if ("hadoop".equals(this.runtime.trim().toLowerCase())) {
-    		
-    		this.execOnHadoop();
-    		
-    	} else if ("spark".equals(this.runtime.trim().toLowerCase())) {
-    		
-    		this.execOnSpark();
-    		
-    	} else {
-    		
-    		this.execLocal();
-    		
-    	}
-    	
-    }
-    
-    public void execLocal() {
-    	
-    	System.out.println( "[dl4j] - executing local ... " );
-    	System.out.println( "using training input: " + this.input );
-    	
+		CmdLineParser parser = new CmdLineParser(this);
+		try {
+			parser.parseArgument(args);
+		} catch (CmdLineException e) {
+			//this.validCommandLineParameters = false;
+			parser.printUsage(System.err);
+			//log.error("Unable to parse args", e);
+		}
+
+
+	}
+
+	/**
+	 * TODO:
+	 * 		-	lots of things to do here
+	 * 		-	runtime: if we're running on a cluster, then we have a different workflow / tracking setup
+	 *
+	 *
+	 */
+	@Override
+	public void exec() {
+
+		if ("hadoop".equals(this.runtime.trim().toLowerCase())) {
+
+			this.execOnHadoop();
+
+		} else if ("spark".equals(this.runtime.trim().toLowerCase())) {
+
+			this.execOnSpark();
+
+		} else {
+
+			this.execLocal();
+
+		}
+
+	}
+
+	public void execLocal() {
+
+		log.warn( "[dl4j] - executing local ... " );
+		log.warn( "using training input: " + this.input );
+
 		File inputFile = new File( this.input );
 		InputSplit split = new FileSplit( inputFile );
 		InputFormat inputFormat = this.createInputFormat();
-		
+
 		RecordReader reader = null;
-		
+
 		try {
 			reader = inputFormat.createReader(split);
 		} catch (IOException e) {
@@ -151,14 +153,14 @@ public class Train extends BaseSubCommand {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		//FileSplit csv = new FileSplit(new ClassPathResource("csv-example.csv").getFile());
-        //recordReader.initialize(csv);
-        DataSetIterator iter = new RecordReaderDataSetIterator( reader , 20 );
-        DataSet next = iter.next();
-        //assertEquals(34,next.numExamples());
 
-        System.out.println( "[dl4j:exec] examples in dataset: " + next.numExamples() );
+		//FileSplit csv = new FileSplit(new ClassPathResource("csv-example.csv").getFile());
+		//recordReader.initialize(csv);
+		DataSetIterator iter = new RecordReaderDataSetIterator( reader , 20 );
+		DataSet next = iter.next();
+		//assertEquals(34,next.numExamples());
+
+		log.warn( "[dl4j:exec] examples in dataset: " + next.numExamples() );
     	/*
         LayerFactory layerFactory = LayerFactories.getFactory(OutputLayer.class);
     	
@@ -172,46 +174,46 @@ public class Train extends BaseSubCommand {
         
         l.fit( trainTest.getTrain() );        
         */
-    }
-    
-    public void execOnSpark() {
-    	
-    	System.out.println( "DL4J: Execution on spark from CLI not yet supported" ); 
-    	
-    }
-    
-    public void execOnHadoop() {
-    	
-    	System.out.println( "DL4J: Execution on hadoop from CLI not yet supported" );
-    	
-    }
-    
-    public InputFormat createInputFormat() {
-    	
-    	//System.out.println( "> Loading Input Format: " + (String) this.configProps.get( INPUT_FORMAT ) );
-    	
-        String clazz = (String) this.configProps.get( INPUT_FORMAT_KEY );
-        
-        if ( null == clazz ) {
-        	clazz = DEFAULT_INPUT_FORMAT_CLASSNAME;
-        }
-        
-        try {
-            Class<? extends InputFormat> inputFormatClazz = (Class<? extends InputFormat>) Class.forName(clazz);
-            return inputFormatClazz.newInstance();
-        } catch (Exception e) {
-           throw new RuntimeException(e);
-        }
-        
-    }
-    
-    
+	}
+
+	public void execOnSpark() {
+
+		log.warn( "DL4J: Execution on spark from CLI not yet supported" );
+
+	}
+
+	public void execOnHadoop() {
+
+		log.warn( "DL4J: Execution on hadoop from CLI not yet supported" );
+
+	}
+
+	public InputFormat createInputFormat() {
+
+		//log.warn( "> Loading Input Format: " + (String) this.configProps.get( INPUT_FORMAT ) );
+
+		String clazz = (String) this.configProps.get( INPUT_FORMAT_KEY );
+
+		if ( null == clazz ) {
+			clazz = DEFAULT_INPUT_FORMAT_CLASSNAME;
+		}
+
+		try {
+			Class<? extends InputFormat> inputFormatClazz = (Class<? extends InputFormat>) Class.forName(clazz);
+			return inputFormatClazz.newInstance();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
+
 	public void loadConfigFile() throws Exception, IOException {
 
 		this.configProps = new Properties();
-		
-		//System.out.println( "Loading Conf file: " + this.configurationFile );
-		
+
+		//log.warn( "Loading Conf file: " + this.configurationFile );
+
 		//Properties prop = new Properties();
 		InputStream in = null;
 		try {
@@ -222,54 +224,54 @@ public class Train extends BaseSubCommand {
 		}
 		try {
 			this.configProps.load(in);
-			in.close();	
+			in.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		//this.debugLoadedConfProperties();
-		
+
 		// get runtime - EXECUTION_RUNTIME_MODE_KEY
-		
+
 		if (null != this.configProps.get( EXECUTION_RUNTIME_MODE_KEY )) {
 
 			this.runtime = (String) this.configProps.get(EXECUTION_RUNTIME_MODE_KEY);
-						
+
 		} else {
-			
+
 			this.runtime = EXECUTION_RUNTIME_MODE_DEFAULT;
-			
+
 		}
-		
-		
+
+
 		// get output directory
-		
+
 		if (null != this.configProps.get( OUTPUT_FILENAME_KEY )) {
 
 			this.outputDirectory = (String) this.configProps.get(OUTPUT_FILENAME_KEY);
-						
+
 		} else {
-			
+
 			// default
 			this.outputDirectory = "/tmp/dl4_model_default.txt";
 			//throw new Exception("no output location!");
-			
+
 		}
-		
+
 		// get input data
-		
+
 		if ( null != this.configProps.get( INPUT_DATA_FILENAME_KEY )) {
 
-			//System.out.println( "\nLOADED INPUT SRC\n\n" );
+			//log.warn( "\nLOADED INPUT SRC\n\n" );
 			this.input = (String) this.configProps.get(INPUT_DATA_FILENAME_KEY);
-						
+
 		} else {
-			
+
 			// default
 			//this.input = "/tmp/dl4_model_default.txt";
 			throw new Exception("no input file to train on!");
-			
+
 		}		
 			
 	/*
@@ -314,7 +316,7 @@ public class Train extends BaseSubCommand {
 					
 					(new File( this.outputVectorFilename )).delete();
 					
-					System.out.println( "File path already exists, deleting the old file before proceeding..." );
+					log.warn( "File path already exists, deleting the old file before proceeding..." );
 					
 					
 				}
@@ -322,29 +324,29 @@ public class Train extends BaseSubCommand {
 				
 			}
 			*/
-			//System.out.println( "Writing vectorized output to: " + this.outputVectorFilename + "\n\n" );
-			
+		//log.warn( "Writing vectorized output to: " + this.outputVectorFilename + "\n\n" );
+
 		//}
-		
 
-	} 
-	
-	
-	public void debugLoadedConfProperties() {
-		
-		Properties props = this.configProps; //System.getProperties();
-	    Enumeration e = props.propertyNames();
 
-	    System.out.println("\n--- DL4J Configuration ---");
-	    
-	    while (e.hasMoreElements()) {
-	      String key = (String) e.nextElement();
-	      System.out.println(key + " -- " + props.getProperty(key));
-	    }		
-		
-	    System.out.println("--- DL4J Configuration ---\n");
 	}
-	
-    
-    
+
+
+	public void debugLoadedConfProperties() {
+
+		Properties props = this.configProps; //System.getProperties();
+		Enumeration e = props.propertyNames();
+
+		log.warn("\n-- DL4J Configuration --");
+
+		while (e.hasMoreElements()) {
+			String key = (String) e.nextElement();
+			log.warn(key + " - " + props.getProperty(key));
+		}
+
+		log.warn("-- DL4J Configuration --\n");
+	}
+
+
+
 }

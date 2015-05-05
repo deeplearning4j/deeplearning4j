@@ -1,11 +1,9 @@
 package org.deeplearning4j.cli.driver;
 
-import java.io.IOException;
 import java.util.Arrays;
 
 import org.deeplearning4j.cli.subcommands.Train;
 
-//import org.canova.api.exceptions.CanovaException;
 
 
 public class CommandLineInterfaceDriver {
