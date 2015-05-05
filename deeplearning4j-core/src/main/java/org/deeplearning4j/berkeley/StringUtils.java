@@ -1,17 +1,19 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.deeplearning4j.berkeley;
@@ -609,12 +611,12 @@ public class StringUtils {
 						newFlagArg[j + oldNumArgs] = flagArgs.get(j);
 					}
 				} else
-					result.put(key, (String[]) flagArgs.toArray(new String[] {}));
+					result.put(key, flagArgs.toArray(new String[] {}));
 			} else {
 				remainingArgs.add(args[i]);
 			}
 		}
-		result.put(null, (String[]) remainingArgs.toArray(new String[] {}));
+		result.put(null, remainingArgs.toArray(new String[] {}));
 		return result;
 	}
 
@@ -866,7 +868,7 @@ public class StringUtils {
 		if (b.length() > 0) {
 			result.add(b.toString());
 		}
-		return (String[]) result.toArray(new String[0]);
+		return result.toArray(new String[0]);
 	}
 
 	/**
@@ -1019,8 +1021,8 @@ public class StringUtils {
 	 * @return a capitalized version of the string
 	 */
 	public static String capitalize(String s) {
-		if ((char) s.charAt(0) >= 'a') {
-			return (String) ((char) (s.charAt(0) + ('A' - 'a')) + s.substring(1));
+		if (s.charAt(0) >= 'a') {
+			return (char) (s.charAt(0) + ('A' - 'a')) + s.substring(1);
 		} else {
 			return s;
 		}
