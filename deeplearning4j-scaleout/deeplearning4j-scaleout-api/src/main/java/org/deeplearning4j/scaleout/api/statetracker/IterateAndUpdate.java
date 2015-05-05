@@ -36,7 +36,7 @@ public interface IterateAndUpdate  {
      * The accumulated result
      * @return the accumulated result
      */
-    public Job accumulated();
+    Job accumulated();
     /**
      * Accumulates the updates in to a result
      * by iterating over each possible worker

@@ -29,7 +29,9 @@ import org.deeplearning4j.nn.conf.OutputPreProcessor;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.OutputLayer;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.optimize.GradientAdjustment;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
@@ -74,8 +76,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     protected NeuralNetConfiguration defaultConfiguration;
     protected MultiLayerConfiguration layerWiseConfigurations;
 
-    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
-    
+
     /*
       Binary drop connect mask
      */
@@ -93,7 +94,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      * @param conf   the configuration json
      * @param params the parameters
      */
-    @Deprecated
     public MultiLayerNetwork(String conf, INDArray params) {
         this(MultiLayerConfiguration.fromJson(conf));
         init();
@@ -107,7 +107,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      * @param conf   the configuration
      * @param params the parameters
      */
-    @Deprecated
     public MultiLayerNetwork(MultiLayerConfiguration conf, INDArray params) {
         this(conf);
         init();
@@ -247,7 +246,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
     @Override
     public ConvexOptimizer getOptimizer() {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -321,10 +320,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
         if (!initCalled)
             init();
-
-
-
-
     }
 
     /**
@@ -336,35 +331,40 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
 
         INDArray layerInput = input();
-        int inputSize;
+        int inputSize = 0;
         if (getnLayers() < 1)
             throw new IllegalStateException("Unable to createComplex network neuralNets; number specified is less than 1");
 
         int[] hiddenLayerSizes = layerWiseConfigurations.getHiddenLayerSizes();
-        int numHiddenLayersSizesUsed = 0;
+        int numHiddenLayersSizesUsed = 1;
         if (this.layers == null || this.layers[0] == null) {
             //
-            this.layers = new Layer[hiddenLayerSizes.length + 1];
+            if(this.layers == null)
+                this.layers = new Layer[getnLayers()];
             // construct multi-layer
             for (int i = 0; i < getnLayers(); i++) {
 
                 if (i == 0) {
                     inputSize = layerWiseConfigurations.getConf(0).getnIn();
-                    numHiddenLayersSizesUsed++;
                     if(input == null) {
                         input = Nd4j.ones(inputSize);
                         layerInput = input;
                     }
                 }
-                else
+
+                else if(LayerFactories.typeForFactory(layerWiseConfigurations.getConf(i).getLayerFactory()) == Layer.Type.FEED_FORWARD)
                     inputSize = hiddenLayerSizes[numHiddenLayersSizesUsed - 1];
 
                 if (i == 0) {
-                    layerWiseConfigurations.getConf(i).setnIn(inputSize);
-                    layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
-                    // construct sigmoid_layer
-                    layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(
-                            layerWiseConfigurations.getConf(i), getIterationListeners());
+                    LayerFactory layerFactory = layerWiseConfigurations.getConf(i).getLayerFactory();
+                    Layer.Type type = LayerFactories.typeForFactory(layerFactory);
+                    if(type == Layer.Type.FEED_FORWARD) {
+                        layerWiseConfigurations.getConf(i).setnIn(inputSize);
+                        layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
+                    }
+
+                    NeuralNetConfiguration currConf = layerWiseConfigurations.getConf(i);
+                    layers[i] = layerFactory.create(currConf);
                 }
                 else if (i < getLayers().length - 1) {
                     if (input != null)
@@ -383,27 +383,30 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                      *
                      * This will also allow us to specify the hidden layers in contiguous
                      * order in the array without having to create an override
-                     * for eery layer.
+                     * for every layer.
                      */
-                    if(layerInput.columns() == hiddenLayerSizes[i])
+                    Layer.Type type = LayerFactories.typeForFactory(layerWiseConfigurations.getConf(i).getLayerFactory());
+                    if(type == Layer.Type.FEED_FORWARD) {
                         numHiddenLayersSizesUsed++;
-                    layerWiseConfigurations.getConf(i).setnIn(layerInput.columns());
-                    layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
-                    layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(
-                            layerWiseConfigurations.getConf(i), getIterationListeners());
+                        layerWiseConfigurations.getConf(i).setnIn(layerInput.columns());
+                        layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
+                    }
+
+                    layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(layerWiseConfigurations.getConf(i));
 
                 }
 
 
             }
 
-
             NeuralNetConfiguration last = layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 1);
-            NeuralNetConfiguration secondToLast = layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 2);
-            last.setnIn(secondToLast.getnOut());
 
+            Layer.Type type = LayerFactories.typeForFactory(layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 1).getLayerFactory());
+            if(type == Layer.Type.FEED_FORWARD) {
+                last.setnIn(hiddenLayerSizes[hiddenLayerSizes.length - 1]);
+            }
 
-            this.layers[layers.length - 1] = last.getLayerFactory().create(last, getIterationListeners());
+            this.layers[layers.length - 1] = last.getLayerFactory().create(last);
 
             initCalled = true;
             initMask();
@@ -962,33 +965,43 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         if(labels == null)
             throw new IllegalStateException("No labels found");
         output.setLabels(labels);
-        INDArray outputActivate = output.activate();
-        INDArray ixInitial = labels.sub(outputActivate)
-                .subi(Nd4j.getExecutioner()
-                        .execAndReturn(Nd4j.getOpFactory()
-                                .createTransform(getOutputLayer().conf().getActivationFunction(),outputActivate).derivative()));
-        Gradient ix = new DefaultGradient();
-        ix.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,ixInitial);
+        //calculate the backward gradient for every layer
+        Gradient[] errors = new Gradient[getnLayers()];
         for(int i = 0; i < getLayerWiseConfigurations().getConf(0).getNumIterations(); i++) {
-            List<Pair<Gradient,Gradient>> backwards = new ArrayList<>();
             List<INDArray> activations = feedForward();
-            //start at the output layer
-            Pair<Gradient,Gradient> ixDelta = new Pair<>(ix,null);
-            for (int layer = layers.length - 1; layer >= 0; layer--) {
-                String activationFunction = layer > 0 ? layerWiseConfigurations.getConf(layer - 1).getActivationFunction() : layerWiseConfigurations.getConf(0).getActivationFunction();
-                ixDelta = layers[layer].backWard(ixDelta.getFirst(), ixDelta.getSecond(), activations.get(layer),activationFunction);
-                //back propagate the layer
-                backwards.add(ixDelta);
+            INDArray outputActivate = activations.get(activations.size() - 1);
+            INDArray ixInitial = labels.sub(outputActivate)
+                    .subi(Nd4j.getExecutioner()
+                            .execAndReturn(Nd4j.getOpFactory()
+                                    .createTransform(getOutputLayer().conf().getActivationFunction(),outputActivate).derivative()));
+            Gradient ix = new DefaultGradient();
+            ix.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,ixInitial);
+            errors[errors.length - 1] = ix;
+            for(int j = getnLayers() - 1; j >= 0; j--) {
+                ix = getLayers()[j].backwardGradient(activations.get(j),ix);
+                errors[j] = ix;
             }
 
-            //error was calculated in reverse
-            Collections.reverse(backwards);
-            //apply each gradient update
-            for (int j = 0; j < layers.length; j++)
-                layers[j].update(backwards.get(j).getSecond());
-            for(IterationListener listener : output.getIterationListeners())
+
+            //propagate updates
+            for(int k = 0; k < getnLayers(); k++) {
+                Gradient update = getLayers()[k].calcGradient(errors[k],activations.get(k));
+                GradientAdjustment.updateGradientAccordingToParams(
+                        getLayers()[k].conf()
+                        ,i
+                        ,update
+                        ,input.slices()
+                        ,getLayers()[k].getOptimizer().adaGradForVariables()
+                        ,getLayers()[k]);
+                getLayers()[k].update(update);
+            }
+
+            for(IterationListener listener : getOutputLayer().conf().getListeners())
                 listener.iterationDone(getOutputLayer(),i);
         }
+
+
+
     }
 
 
@@ -1013,11 +1026,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                 if (getOutputLayer() instanceof OutputLayer) {
                     OutputLayer o = (OutputLayer) getOutputLayer();
                     o.fit(o.input(),getLabels());
+
                 }
             } else {
                 StochasticHessianFree hessianFree =
                         new StochasticHessianFree(getOutputLayer().conf(), getOutputLayer().conf().getStepFunction(),
-                                getOutputLayer().getIterationListeners(), this);
+                                getOutputLayer().conf().getListeners(), this);
                 hessianFree.optimize();
             }
 
@@ -1041,7 +1055,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         }
 
         log.info("Finetune phase");
-
         OutputLayer o = (OutputLayer) getOutputLayer();
         if (getOutputLayer().conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
             List<INDArray> activations = feedForward();
@@ -1053,7 +1066,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             activations.clear();
             o.setLabels(labels);
             StochasticHessianFree hessianFree = new StochasticHessianFree(getOutputLayer().conf(),
-                    getOutputLayer().conf().getStepFunction(), o.getIterationListeners(), this);
+                    getOutputLayer().conf().getStepFunction(), getOutputLayer().conf().getListeners(), this);
             hessianFree.optimize();
         }
     }
@@ -1494,9 +1507,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         this.labels = labels;
     }
 
-
+    /**
+     * Get the number of layers in the network
+     * @return the number of layers in the network
+     */
     public int getnLayers() {
-        return layerWiseConfigurations.getHiddenLayerSizes().length + 1;
+        return layerWiseConfigurations.getConfs().size();
     }
 
     public Layer[] getLayers() {
@@ -1516,13 +1532,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     }
 
 
-    public Collection<IterationListener> getIterationListeners() {
-        return iterationListeners;
-    }
 
-    public void setIterationListeners(Collection<IterationListener> listeners) {
-        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
-    }
 
 }
 

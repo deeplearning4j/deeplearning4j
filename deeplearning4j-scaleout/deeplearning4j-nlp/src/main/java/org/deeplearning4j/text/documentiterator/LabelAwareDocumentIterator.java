@@ -28,6 +28,6 @@ public interface LabelAwareDocumentIterator extends DocumentIterator {
      * Returns the current label
      * @return
      */
-    public String currentLabel();
+    String currentLabel();
 
 }

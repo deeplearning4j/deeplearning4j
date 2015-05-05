@@ -32,7 +32,7 @@ import java.io.Serializable;
 public interface JobAggregator extends Serializable {
 
 
-    public final static String AGGREGATOR = "org.deeplearning4j.scaleout.aggregator";
+    String AGGREGATOR = "org.deeplearning4j.scaleout.aggregator";
 
     /**
      * Accumulate results of a job

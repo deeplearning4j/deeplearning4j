@@ -18,8 +18,10 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import com.google.common.primitives.Ints;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
@@ -29,10 +31,12 @@ import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,18 +46,49 @@ import java.util.Map;
  */
 public class ConvolutionLayer implements Layer {
 
-   private NeuralNetConfiguration conf;
-   private Map<String,INDArray> params;
-   protected Collection<IterationListener> iterationListeners = new ArrayList<>();
-   
-    public Collection<IterationListener> getIterationListeners() {
-        return iterationListeners;
+    private NeuralNetConfiguration conf;
+    private Map<String,INDArray> params;
+    private NeuralNetConfiguration previousConf;
+    protected ParamInitializer paramInitializer;
+    private List<IterationListener> listeners = new ArrayList<>();
+
+    public ConvolutionLayer(NeuralNetConfiguration conf) {
+        this.conf = conf;
     }
 
-    public void setIterationListeners(Collection<IterationListener> listeners) {
-        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    @Override
+    public Type type() {
+        return Type.CONVOLUTIONAL;
     }
-   
+
+    @Override
+    public Gradient error(INDArray input) {
+        return null;
+    }
+
+
+
+    @Override
+    public INDArray derivativeActivation(INDArray input) {
+        INDArray deriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), activate(input)).derivative());
+        return deriv;
+    }
+
+    @Override
+    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
+        return null;
+    }
+
+    @Override
+    public Gradient errorSignal(Gradient error, INDArray input) {
+        return null;
+    }
+
+    @Override
+    public Gradient backwardGradient(INDArray activation, Gradient errorSignal) {
+        return null;
+    }
+
     @Override
     public void merge(Layer layer, int batchSize) {
 
@@ -77,17 +112,22 @@ public class ConvolutionLayer implements Layer {
     @Override
     public INDArray activate(INDArray input) {
         int featureMaps = ConvolutionUtils.numFeatureMap(conf);
-        INDArray ret = Nd4j.create(conf.getFilterSize());
+        int inputFeatureMaps = ConvolutionUtils.numFeatureMap(input.shape());
+        INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),featureMaps},conf.getFeatureMapSize()));
         INDArray bias = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
         INDArray filters = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
 
         for(int i = 0; i < featureMaps; i++) {
-            INDArray featureMap = Nd4j.create(ArrayUtil.replace(conf.getFilterSize(),1,1));
-            for(int j = 0; j < featureMap.slices(); j++) {
-                featureMap.addi(Nd4j.getConvolution().convn(input.slice(j),filters.slice(i).slice(j), Convolution.Type.VALID));
+
+            INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), 1}, conf.getFeatureMapSize()));
+            for(int j = 0; j <  inputFeatureMaps; j++) {
+                INDArray convolved = Nd4j.getConvolution().convn(input, filters.slice(i).slice(j), Convolution.Type.VALID);
+                featureMap.addi(convolved.broadcast(featureMap.shape()));
             }
-            featureMap.addi(bias.slice(i));
-            ret.putSlice(i,Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(),featureMap)));
+
+            featureMap.addi(bias.getDouble(i));
+            INDArray activationForSlice = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), featureMap));
+            ret.put(new NDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.all(),new NDArrayIndex(new int[]{i}),NDArrayIndex.all()},activationForSlice);
         }
         return ret;
     }
@@ -105,6 +145,16 @@ public class ConvolutionLayer implements Layer {
     @Override
     public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) {
         return null;
+    }
+
+    @Override
+    public Collection<IterationListener> getIterationListeners() {
+        return listeners;
+    }
+
+    @Override
+    public void setIterationListeners(Collection<IterationListener> listeners) {
+         this.listeners = new ArrayList<>(listeners);
     }
 
     @Override
@@ -134,23 +184,54 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public INDArray transform(INDArray data) {
-        return null;
+        return activate(data);
     }
 
+    /**
+     * Returns the parameters of the neural network
+     *
+     * @return the parameters of the neural network
+     */
     @Override
     public INDArray params() {
-        return null;
+        List<INDArray> ret = new ArrayList<>();
+        for(String s : params.keySet())
+            ret.add(params.get(s));
+        return Nd4j.toFlattened(ret);
     }
 
     @Override
     public int numParams() {
-        return 0;
+        int ret = 0;
+        for(INDArray val : params.values())
+            ret += val.length();
+        return ret;
     }
 
     @Override
     public void setParams(INDArray params) {
+        List<String> gradientList = conf.variables();
+        int length = 0;
+        for(String s : gradientList)
+            length += getParam(s).length();
+        if(params.length() != length)
+            throw new IllegalArgumentException("Unable to set parameters: must be of length " + length);
+        int idx = 0;
+        for(int i = 0; i < gradientList.size(); i++) {
+            INDArray param = getParam(gradientList.get(i));
+            INDArray get = params.get(NDArrayIndex.interval(idx, idx + param.length()));
+            if(param.length() != get.length())
+                throw new IllegalStateException("Parameter " + gradientList.get(i) + " should have been of length " + param.length() + " but was " + get.length());
+            param.assign(get.reshape(param.shape()));
+            idx += param.length();
+        }
+
+        setScore();
 
     }
+
+
+
 
     @Override
     public void fit(INDArray data) {
@@ -184,7 +265,7 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public void setConf(NeuralNetConfiguration conf) {
-       this.conf = conf;
+        this.conf = conf;
     }
 
     @Override
@@ -209,7 +290,7 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public void initParams() {
-
+        paramInitializer.init(paramTable(),conf());
     }
 
     @Override
@@ -219,12 +300,12 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
-          this.params = paramTable;
+        this.params = paramTable;
     }
 
     @Override
     public void setParam(String key, INDArray val) {
-         this.params.put(key,val);
+        this.params.put(key,val);
     }
 
     @Override

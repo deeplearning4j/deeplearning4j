@@ -100,9 +100,8 @@ public class VocabWork implements Serializable {
         if (stem != vocabWork.stem) return false;
         if (count != null ? !count.equals(vocabWork.count) : vocabWork.count != null) return false;
         if (label != null ? !label.equals(vocabWork.label) : vocabWork.label != null) return false;
-        if (work != null ? !work.equals(vocabWork.work) : vocabWork.work != null) return false;
+        return !(work != null ? !work.equals(vocabWork.work) : vocabWork.work != null);
 
-        return true;
     }
 
     @Override

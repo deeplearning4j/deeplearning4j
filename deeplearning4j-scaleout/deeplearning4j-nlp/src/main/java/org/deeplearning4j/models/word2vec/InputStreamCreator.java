@@ -31,5 +31,5 @@ public interface InputStreamCreator extends Serializable {
      * Create an input stream
      * @return
      */
-    public InputStream create();
+    InputStream create();
 }

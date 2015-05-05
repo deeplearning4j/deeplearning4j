@@ -317,10 +317,8 @@ public class ApplicationWorkerService<T extends Updateable> {
       return false;
     }
 
-    if (!getConfiguration())
-      return false;
+    return getConfiguration();
 
-    return true;
   }
 
   private boolean getConfiguration() {

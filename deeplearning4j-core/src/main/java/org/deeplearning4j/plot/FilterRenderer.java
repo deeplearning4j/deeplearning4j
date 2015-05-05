@@ -167,7 +167,7 @@ public class FilterRenderer {
 
             for (int col = 0; col < data.columns(); col++ ) {
 
-                double matrix_value = (double) data.getScalar( row, col ).getDouble(0);
+                double matrix_value = data.getScalar( row, col ).getDouble(0);
 
                 // at this point we need round values into bins
 
