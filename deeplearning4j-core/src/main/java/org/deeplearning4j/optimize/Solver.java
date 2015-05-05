@@ -27,11 +27,13 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.solvers.ConjugateGradient;
 import org.deeplearning4j.optimize.solvers.GradientAscent;
 import org.deeplearning4j.optimize.solvers.IterationGradientDescent;
 import org.deeplearning4j.optimize.solvers.LBFGS;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
+import org.deeplearning4j.optimize.stepfunctions.StepFunctions;
 
 /**
  * Generic purpose solver
@@ -42,7 +44,7 @@ public class Solver {
     private Collection<IterationListener> listeners;
     private Model model;
     private ConvexOptimizer optimizer;
-
+    private StepFunction stepFunction;
 
     public void optimize() {
         if(optimizer == null)
@@ -54,15 +56,15 @@ public class Solver {
     public ConvexOptimizer getOptimizer() {
         switch(conf.getOptimizationAlgo()) {
             case LBFGS:
-                return new LBFGS(conf,conf.getStepFunction(),listeners,model);
+                return new LBFGS(conf,stepFunction,listeners,model);
             case GRADIENT_DESCENT:
-                return new GradientAscent(conf,conf.getStepFunction(),listeners,model);
+                return new GradientAscent(conf,stepFunction,listeners,model);
             case HESSIAN_FREE:
-                return new StochasticHessianFree(conf,conf.getStepFunction(),listeners,model);
+                return new StochasticHessianFree(conf,stepFunction,listeners,model);
             case CONJUGATE_GRADIENT:
-                return new ConjugateGradient(conf,conf.getStepFunction(),listeners,model);
+                return new ConjugateGradient(conf,stepFunction,listeners,model);
             case ITERATION_GRADIENT_DESCENT:
-                return new IterationGradientDescent(conf,conf.getStepFunction(),listeners,model);
+                return new IterationGradientDescent(conf,stepFunction,listeners,model);
             default:
                 throw new IllegalStateException("No optimizer found");
         }
@@ -97,6 +99,7 @@ public class Solver {
         public Solver build() {
             Solver solver = new Solver();
             solver.conf = conf;
+            solver.stepFunction = StepFunctions.createStepFunction(conf.getStepFunction());
             solver.model = model;
             solver.listeners = listeners;
             return solver;

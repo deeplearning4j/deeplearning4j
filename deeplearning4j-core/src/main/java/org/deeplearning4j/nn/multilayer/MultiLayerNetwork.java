@@ -35,6 +35,7 @@ import org.deeplearning4j.optimize.GradientAdjustment;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
+import org.deeplearning4j.optimize.stepfunctions.StepFunctions;
 import org.deeplearning4j.util.MultiLayerUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -71,7 +72,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     protected INDArray input, labels;
     //sometimes we may need to transform weights; this allows a
     protected boolean initCalled = false;
-
+    private List<IterationListener> listeners = new ArrayList<>();
 
     protected NeuralNetConfiguration defaultConfiguration;
     protected MultiLayerConfiguration layerWiseConfigurations;
@@ -352,19 +353,22 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                     }
                 }
 
-                else if(LayerFactories.typeForFactory(layerWiseConfigurations.getConf(i).getLayerFactory()) == Layer.Type.FEED_FORWARD)
+                else if(LayerFactories.typeForFactory(layerWiseConfigurations.getConf(i)) == Layer.Type.FEED_FORWARD)
                     inputSize = hiddenLayerSizes[numHiddenLayersSizesUsed - 1];
 
                 if (i == 0) {
-                    LayerFactory layerFactory = layerWiseConfigurations.getConf(i).getLayerFactory();
-                    Layer.Type type = LayerFactories.typeForFactory(layerFactory);
+                    Layer.Type type = LayerFactories.typeForFactory(layerWiseConfigurations.getConf(i));
                     if(type == Layer.Type.FEED_FORWARD) {
                         layerWiseConfigurations.getConf(i).setnIn(inputSize);
                         layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
                     }
 
-                    NeuralNetConfiguration currConf = layerWiseConfigurations.getConf(i);
-                    layers[i] = layerFactory.create(currConf);
+
+                    layerWiseConfigurations.getConf(i).setnIn(inputSize);
+                    layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
+                    // construct sigmoid_layer
+                    layers[i] = LayerFactories.getFactory(layerWiseConfigurations.getConf(i)).create(
+                            layerWiseConfigurations.getConf(i));
                 }
                 else if (i < getLayers().length - 1) {
                     if (input != null)
@@ -385,14 +389,16 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                      * order in the array without having to create an override
                      * for every layer.
                      */
-                    Layer.Type type = LayerFactories.typeForFactory(layerWiseConfigurations.getConf(i).getLayerFactory());
+                    Layer.Type type = LayerFactories.typeForFactory(layerWiseConfigurations.getConf(i));
                     if(type == Layer.Type.FEED_FORWARD) {
                         numHiddenLayersSizesUsed++;
                         layerWiseConfigurations.getConf(i).setnIn(layerInput.columns());
                         layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
                     }
 
-                    layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(layerWiseConfigurations.getConf(i));
+
+                    layers[i] = LayerFactories.getFactory(layerWiseConfigurations.getConf(i)).create(
+                            layerWiseConfigurations.getConf(i), listeners);
 
                 }
 
@@ -401,14 +407,11 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
             NeuralNetConfiguration last = layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 1);
 
-            Layer.Type type = LayerFactories.typeForFactory(layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 1).getLayerFactory());
+            Layer.Type type = LayerFactories.typeForFactory(layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 1));
             if(type == Layer.Type.FEED_FORWARD) {
                 last.setnIn(hiddenLayerSizes[hiddenLayerSizes.length - 1]);
             }
-
-            this.layers[layers.length - 1] = last.getLayerFactory().create(last);
-
-            initCalled = true;
+            this.layers[layers.length - 1] = LayerFactories.getFactory(last).create(last);initCalled = true;
             initMask();
 
 
@@ -996,7 +999,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                 getLayers()[k].update(update);
             }
 
-            for(IterationListener listener : getOutputLayer().conf().getListeners())
+            for(IterationListener listener :  listeners)
                 listener.iterationDone(getOutputLayer(),i);
         }
 
@@ -1004,6 +1007,14 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
     }
 
+
+    public List<IterationListener> getListeners() {
+        return listeners;
+    }
+
+    public void setListeners(List<IterationListener> listeners) {
+        this.listeners = listeners;
+    }
 
     /**
      * Run SGD based on the given labels
@@ -1029,10 +1040,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
                 }
             } else {
-                StochasticHessianFree hessianFree =
-                        new StochasticHessianFree(getOutputLayer().conf(), getOutputLayer().conf().getStepFunction(),
-                                getOutputLayer().conf().getListeners(), this);
-                hessianFree.optimize();
+                throw new UnsupportedOperationException();
             }
 
         }
@@ -1062,12 +1070,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         }
 
         else {
-            List<INDArray> activations = feedForward();
-            activations.clear();
-            o.setLabels(labels);
-            StochasticHessianFree hessianFree = new StochasticHessianFree(getOutputLayer().conf(),
-                    getOutputLayer().conf().getStepFunction(), getOutputLayer().conf().getListeners(), this);
-            hessianFree.optimize();
+            throw new UnsupportedOperationException();
         }
     }
 

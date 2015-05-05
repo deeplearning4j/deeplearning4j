@@ -18,14 +18,16 @@
 
 package org.deeplearning4j.nn.layers.factory;
 
+
+import org.deeplearning4j.nn.api.LayerFactory;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer;
+import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder;
+import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
-import org.deeplearning4j.nn.layers.recurrent.LSTM;
-import org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.RecursiveAutoEncoder;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.LayerFactory;
-import org.deeplearning4j.nn.layers.BasePretrainNetwork;
-import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
 
 /**
  * Static method for finding which layer factory to use
@@ -34,10 +36,20 @@ import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
 public class LayerFactories {
     /**
      * Get the factory based on the passed in class
-     * @param clazz the clazz to get the layer factory for
+     * @param conf the clazz to get the layer factory for
      * @return the layer factory for the particular layer
      */
-    public static LayerFactory getFactory(Class<? extends Layer> clazz) {
+    public static LayerFactory getFactory(NeuralNetConfiguration conf) {
+        return getFactory(conf.getLayer());
+    }
+
+    /**
+     * Get the factory based on the passed in class
+     * @param layer the clazz to get the layer factory for
+     * @return the layer factory for the particular layer
+     */
+    public static LayerFactory getFactory(Layer layer) {
+        Class<? extends Layer> clazz = layer.getClass();
         if(clazz.equals(ConvolutionDownSampleLayer.class))
             return new ConvolutionLayerFactory(clazz);
         else if(clazz.equals(LSTM.class))
@@ -56,17 +68,18 @@ public class LayerFactories {
 
     /**
      * Get the type for the layer factory
-     * @param layerFactory the layer factory
+     * @param conf the layer factory
      * @return the type
      */
-    public static Layer.Type typeForFactory(LayerFactory layerFactory) {
+    public static org.deeplearning4j.nn.api.Layer.Type typeForFactory(NeuralNetConfiguration conf) {
+        LayerFactory layerFactory = getFactory(conf);
         if(layerFactory instanceof ConvolutionLayerFactory || layerFactory instanceof SubsampleLayerFactory)
-            return Layer.Type.CONVOLUTIONAL;
+            return org.deeplearning4j.nn.api.Layer.Type.CONVOLUTIONAL;
         else if(layerFactory instanceof LSTMLayerFactory)
-            return Layer.Type.RECURRENT;
+            return org.deeplearning4j.nn.api.Layer.Type.RECURRENT;
         else if(layerFactory instanceof RecursiveAutoEncoderLayerFactory)
-            return Layer.Type.RECURSIVE;
-        return Layer.Type.FEED_FORWARD;
+            return org.deeplearning4j.nn.api.Layer.Type.RECURSIVE;
+        return org.deeplearning4j.nn.api.Layer.Type.FEED_FORWARD;
     }
 
 }

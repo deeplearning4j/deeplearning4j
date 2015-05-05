@@ -21,10 +21,9 @@ package org.deeplearning4j.cli;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.cli.api.flags.Model;
 import org.deeplearning4j.cli.subcommands.Train;
-import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
@@ -43,7 +42,7 @@ public class TrainConfigTest {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .dist(new NormalDistribution(1e-1,1))
-                .layerFactory(LayerFactories.getFactory(RBM.class))
+                .layer(new RBM())
                 .build();
         String json = conf.toJson();
         NeuralNetConfiguration testConfig = testModelFlag.value(json);

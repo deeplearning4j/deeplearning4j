@@ -16,24 +16,36 @@
  *
  */
 
-package org.deeplearning4j.nn.layers.factory;
-
-import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.params.LSTMParamInitializer;
+package org.deeplearning4j.nn.conf.layers;
 
 /**
- *  LSTM layer initializer
- *  @author Adam Gibson
+ * LSTM recurrent net.
+ *
+ * Based on karpathy et. al's work on generation of image descriptions.
+ *
  */
-public class LSTMLayerFactory extends DefaultLayerFactory {
+public class LSTM extends Layer {
+    
+    private static final long serialVersionUID = 8056539856799747130L;
 
-    public LSTMLayerFactory(Class<? extends Layer> layerConfig) {
-        super(layerConfig);
+    @Override
+    public int hashCode() {
+        return 0;
     }
 
     @Override
-    public ParamInitializer initializer() {
-        return new LSTMParamInitializer();
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        return true;
+    }
+
+    public String toString() {
+        return "LSTM{" +
+                '}';
     }
 }

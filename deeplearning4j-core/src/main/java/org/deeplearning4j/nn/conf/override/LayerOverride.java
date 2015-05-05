@@ -19,28 +19,24 @@
 package org.deeplearning4j.nn.conf.override;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.deeplearning4j.nn.conf.layers.Layer;
 
 /**
- * Classifier over ride
+ * Layer override
  * @author Adam Gibson
  */
-public class ClassifierOverride implements ConfOverride {
-    private int finalLayer = -1;
+public class LayerOverride implements ConfOverride {
+    private int layerIndex;
+    private Layer layerConfig;
 
-    public ClassifierOverride(int finalLayer) {
-        this.finalLayer = finalLayer;
+    public LayerOverride(int layerIndex, Layer layerConfig) {
+        this.layerIndex = layerIndex;
+        this.layerConfig = layerConfig;
     }
 
     @Override
     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-        if(i == finalLayer) {
-            builder.activationFunction("softmax");
-            builder.weightInit(WeightInit.ZERO);
-            builder.layer(new OutputLayer());
-            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-        }
+        if(i == layerIndex)
+            builder.layer(layerConfig);
     }
 }

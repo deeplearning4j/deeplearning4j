@@ -28,21 +28,22 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 
-import java.lang.reflect.Constructor;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Default layer factory: create a bias and a weight matrix
  * @author Adam Gibson
  */
 public class DefaultLayerFactory implements LayerFactory {
-    protected Class<? extends Layer> layerClazz;
+   
+    protected org.deeplearning4j.nn.conf.layers.Layer layerConfig;
 
-    public DefaultLayerFactory(Class<? extends Layer> layerClazz) {
-        this.layerClazz = layerClazz;
+    public DefaultLayerFactory(Class<? extends org.deeplearning4j.nn.conf.layers.Layer> layerConfig) {
+        try {
+            this.layerConfig = layerConfig.newInstance();
+        } catch (Exception e) {
+           throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -52,7 +53,7 @@ public class DefaultLayerFactory implements LayerFactory {
 
     @Override
     public <E extends Layer> E create(NeuralNetConfiguration conf) {
-        return create(conf, conf.getListeners());
+        return create(conf,new ArrayList<IterationListener>());
     }
 
     @Override
@@ -67,13 +68,20 @@ public class DefaultLayerFactory implements LayerFactory {
     }
     
     protected Layer getInstance(NeuralNetConfiguration conf) {
-        try {
-            Constructor<?> constructor = layerClazz.getConstructor(NeuralNetConfiguration.class);
-            return (Layer) constructor.newInstance(conf);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.AutoEncoder)
+            return new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(conf);
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.RBM)
+            return new org.deeplearning4j.nn.layers.feedforward.rbm.RBM(conf);
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer)
+            return new org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer(conf);
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.LSTM)
+            return new org.deeplearning4j.nn.layers.recurrent.LSTM(conf);
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.OutputLayer)
+            return new org.deeplearning4j.nn.layers.OutputLayer(conf);
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder)
+            return new org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.RecursiveAutoEncoder(conf);   
+        
+        throw new RuntimeException("unknown layer type: " + layerConfig);
     }
 
 
@@ -82,11 +90,6 @@ public class DefaultLayerFactory implements LayerFactory {
         Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String,INDArray>());
         init.init(params,conf);
         return params;
-    }
-
-    @Override
-    public String layerClazzName() {
-        return layerClazz.getName();
     }
 
     @Override
@@ -101,11 +104,11 @@ public class DefaultLayerFactory implements LayerFactory {
 
         DefaultLayerFactory that = (DefaultLayerFactory) o;
 
-        return !(layerClazz != null ? !layerClazz.equals(that.layerClazz) : that.layerClazz != null);
+        return !(layerConfig != null ? !layerConfig.equals(that.layerConfig) : that.layerConfig != null);
     }
 
     @Override
     public int hashCode() {
-        return layerClazz != null ? layerClazz.hashCode() : 0;
+        return layerConfig != null ? layerConfig.hashCode() : 0;
     }
 }

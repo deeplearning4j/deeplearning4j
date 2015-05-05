@@ -6,7 +6,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -24,11 +24,11 @@ public class SubsampleTests {
     @Test
     public void testSubSampleLayer() throws Exception  {
         DataSetIterator mnist = new MnistDataSetIterator(100,100);
-        LayerFactory layerFactory = LayerFactories.getFactory(SubsamplingLayer.class);
+        LayerFactory layerFactory = LayerFactories.getFactory(new SubsamplingLayer());
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .activationFunction("relu").constrainGradientToUnitNorm(true)
                 .convolutionType(ConvolutionDownSampleLayer.ConvolutionType.MAX).filterSize(5,1,28,28)
-                .layerFactory(LayerFactories.getFactory(SubsamplingLayer.class))
+                .layer(new SubsamplingLayer())
                 .nIn(784).nOut(1).build();
         Layer convolutionLayer =  layerFactory.create(conf);
         DataSet next = mnist.next();

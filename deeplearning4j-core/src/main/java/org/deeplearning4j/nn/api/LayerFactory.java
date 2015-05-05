@@ -32,12 +32,6 @@ import org.deeplearning4j.optimize.api.IterationListener;
  */
 public interface LayerFactory {
 
-
-    /**
-     * Return the layer class name
-     * @return the layer class name
-     */
-    String layerClazzName();
     /**
      *
      * Create a layer based on the based in configuration
@@ -45,7 +39,6 @@ public interface LayerFactory {
      * @param conf the configuration to create the layer based on
      * @param index the index of the layer
      * @param numLayers the number of total layers in the net work
-     * @param the iteration listeners to use
      * @return the created layer
      */
     <E extends Layer> E create(NeuralNetConfiguration conf,int index,int numLayers, Collection<IterationListener> iterationListeners);
@@ -62,7 +55,6 @@ public interface LayerFactory {
      *
      * Create a layer based on the based in configuration
      * @param conf the configuration to create the layer based on
-     * @param the iteration listeners to use
      * @return the created layer
      */
     <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners);
