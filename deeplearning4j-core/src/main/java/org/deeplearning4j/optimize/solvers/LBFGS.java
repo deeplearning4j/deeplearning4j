@@ -118,7 +118,7 @@ public class LBFGS extends BaseOptimizer {
             if(i > rho.size())
                 throw new IllegalStateException("I > rho size");
             alpha.putScalar(i, rho.get(i) * Nd4j.getBlasWrapper().dot(gradient, s.get(i)));
-            if(alpha.data().dataType() == DataBuffer.DOUBLE)
+            if(alpha.data().dataType() == DataBuffer.Type.DOUBLE)
                 Nd4j.getBlasWrapper().axpy(-1.0 * alpha.getDouble(i), gradient, y.get(i));
             else
                 Nd4j.getBlasWrapper().axpy(-1.0f * alpha.getFloat(i), gradient, y.get(i));
@@ -133,7 +133,7 @@ public class LBFGS extends BaseOptimizer {
             if(i >= alpha.length())
                 break;
             double beta = rho.get(i) * Nd4j.getBlasWrapper().dot(y.get(i),gradient);
-            if(alpha.data().dataType() == DataBuffer.DOUBLE)
+            if(alpha.data().dataType() == DataBuffer.Type.DOUBLE)
                 Nd4j.getBlasWrapper().axpy(alpha.getDouble(i) * beta, gradient, s.get(i));
             else
                 Nd4j.getBlasWrapper().axpy(alpha.getFloat(i) * (float) beta, gradient, s.get(i));

@@ -332,7 +332,7 @@ public class RNTN implements Layer {
         binary.put(indices,block);
         NDArrayIndex[] indices2 = new NDArrayIndex[]{interval(0,block.rows()),interval(numHidden,numHidden + block.columns())};
         binary.put(indices2,randomTransformBlock());
-        if(binary.data().dataType() == DataBuffer.DOUBLE)
+        if(binary.data().dataType() == DataBuffer.Type.DOUBLE)
             return Nd4j.getBlasWrapper().scal(scalingForInit,binary);
         return Nd4j.getBlasWrapper().scal((float) scalingForInit,binary);
     }
@@ -352,7 +352,7 @@ public class RNTN implements Layer {
         INDArray ret = Nd4j.zeros(numOuts,numHidden + 1);
         INDArray insert = Nd4j.rand(numOuts,numHidden,-range,range,rng);
         ret.put(new NDArrayIndex[] {interval(0,numOuts),interval(0,numHidden)},insert);
-        if(ret.data().dataType() == (DataBuffer.DOUBLE))
+        if(ret.data().dataType() == (DataBuffer.Type.DOUBLE))
             return Nd4j.getBlasWrapper().scal(scalingForInit,ret);
         return Nd4j.getBlasWrapper().scal((float) scalingForInit, ret);
 
@@ -546,7 +546,7 @@ public class RNTN implements Layer {
         double cost = 0.0f; // the regularization cost
         for (MultiDimensionalMap.Entry<String, String, INDArray> entry : currentMatrices.entrySet()) {
             INDArray D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
-            if(D.data().dataType() == DataBuffer.DOUBLE)
+            if(D.data().dataType() == DataBuffer.Type.DOUBLE)
                 D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost, entry.getValue()));
             else
                 D = Nd4j.getBlasWrapper().scal((float) scale,D).addi(Nd4j.getBlasWrapper().scal((float) regCost, entry.getValue()));
@@ -566,7 +566,7 @@ public class RNTN implements Layer {
         for (String s  : currentMatrices.keySet()) {
             INDArray D = derivatives.get(s);
             INDArray vector = currentMatrices.get(s);
-            if(D.data().dataType() == DataBuffer.DOUBLE)
+            if(D.data().dataType() == DataBuffer.Type.DOUBLE)
                 D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost,vector));
             else
                 D = Nd4j.getBlasWrapper().scal((float) scale,D).addi(Nd4j.getBlasWrapper().scal((float) regCost,vector));
@@ -587,7 +587,7 @@ public class RNTN implements Layer {
         for (String s  : vocabCache.words()) {
             INDArray D = derivatives.get(s);
             INDArray vector = currentMatrices.vector(s);
-            if(D.data().dataType() == DataBuffer.DOUBLE)
+            if(D.data().dataType() == DataBuffer.Type.DOUBLE)
                 D = Nd4j.getBlasWrapper().scal(scale,D).addi(Nd4j.getBlasWrapper().scal(regCost,vector));
             else
                 D = Nd4j.getBlasWrapper().scal((float) scale,D).addi(Nd4j.getBlasWrapper().scal((float) regCost,vector));
@@ -732,7 +732,7 @@ public class RNTN implements Layer {
         INDArray deltaINDArray = Nd4j.create(size * 2, 1);
         INDArray fullVector = Nd4j.concat(0, leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
-            if(deltaFull.data().dataType() == DataBuffer.DOUBLE) {
+            if(deltaFull.data().dataType() == DataBuffer.Type.DOUBLE) {
                 INDArray scaledFullVector = Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getDouble(0),fullVector);
                 deltaINDArray = deltaINDArray.add(Wt.slice(slice).add(Wt.slice(slice).transpose()).mmul(scaledFullVector));
             }
@@ -824,7 +824,7 @@ public class RNTN implements Layer {
         INDArray Wt_df = Nd4j.create(size * 2, size * 2, size);
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
-            if(Wt_df.data().dataType() == DataBuffer.DOUBLE)
+            if(Wt_df.data().dataType() == DataBuffer.Type.DOUBLE)
                 Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.getDouble(slice),fullVector).mmul(fullVector.transpose()));
             else
                 Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal((float) deltaFull.getDouble(slice),fullVector).mmul(fullVector.transpose()));
