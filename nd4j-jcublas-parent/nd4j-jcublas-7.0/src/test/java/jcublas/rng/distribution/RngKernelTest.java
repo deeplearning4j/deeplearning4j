@@ -51,8 +51,8 @@ public class RngKernelTest {
 		
 		boolean nonZero = false;
 		for(Double d: arr.data().asDouble()) {
-			assertTrue("Returned value is above the maximum", max > d);
-			assertTrue("Returned value is below the minimum", min < d);
+			assertTrue("Returned value is above the maximum", max >= d);
+			assertTrue("Returned value is below the minimum", min <= d);
 			
 			if(d != 0.0) {
 				nonZero = true;
