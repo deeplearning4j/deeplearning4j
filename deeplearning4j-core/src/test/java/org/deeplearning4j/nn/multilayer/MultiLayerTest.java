@@ -82,7 +82,7 @@ public class MultiLayerTest {
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1,1e-5))
                 .iterations(100).learningRate(1e-3)
                 .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
-                .list(4).hiddenLayerSizes(600,250,100).override(new ConfOverride() {
+                .list(4).hiddenLayerSizes(600,250,100).override(3, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 3) {
@@ -95,6 +95,7 @@ public class MultiLayerTest {
                 }).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.setIterationListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
         network.fit(next);
 
     }
