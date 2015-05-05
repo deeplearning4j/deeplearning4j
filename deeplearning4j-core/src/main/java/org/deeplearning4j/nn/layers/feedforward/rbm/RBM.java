@@ -195,8 +195,8 @@ public  class RBM extends BasePretrainNetwork {
     @Override
     public Layer transpose() {
         RBM r = (RBM) super.transpose();
-        HiddenUnit h = RBMUtil.inverse(conf.getVisibleUnit());
-        VisibleUnit v = RBMUtil.inverse(conf.getHiddenUnit());
+        org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit h = RBMUtil.inverse(conf.getVisibleUnit());
+        org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit v = RBMUtil.inverse(conf.getHiddenUnit());
         if(h == null)
             h = conf.getHiddenUnit();
         if(v == null)
@@ -319,7 +319,7 @@ public  class RBM extends BasePretrainNetwork {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
 
-        if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN)
+        if(conf.getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
             this.sigma = v.var(0).divi(input.rows());
 
         INDArray preSig = v.mmul(W).addiRowVector(hBias);
@@ -389,7 +389,7 @@ public  class RBM extends BasePretrainNetwork {
      */
     @Override
     public void fit(INDArray input) {
-        if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN) {
+        if(conf.getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN) {
             this.sigma = input.var(0);
             this.sigma.divi(input.rows());
         }
@@ -412,7 +412,7 @@ public  class RBM extends BasePretrainNetwork {
 
     @Override
     public void iterate(INDArray input) {
-        if(conf.getVisibleUnit() == VisibleUnit.GAUSSIAN)
+        if(conf.getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
             this.sigma = input.var(0).divi(input.rows());
 
         this.input = input;

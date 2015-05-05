@@ -69,7 +69,7 @@ public class MultiLayerTest {
                 .constrainGradientToUnitNorm(true)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1,1e-5))
                 .iterations(100).learningRate(1e-3)
-                .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .list(4).hiddenLayerSizes(600,250,100).override(3, new ConfOverride() {
                     @Override
@@ -101,8 +101,8 @@ public class MultiLayerTest {
                 .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
                 .activationFunction("tanh").filterSize(5,1,2,2)
                 .nIn(4).nOut(3).batchSize(batchSize)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
+                .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
                 .layer(new org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer())
                 .list(2).backward(true)
                 .preProcessor(0,new ConvolutionPostProcessor())
@@ -140,7 +140,7 @@ public class MultiLayerTest {
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
                 .activationFunction("tanh")
-                .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .nIn(4).nOut(3).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .list(3).backward(true)
                 .hiddenLayerSizes(new int[]{3, 2}).override(2, new ClassifierOverride(2)).build();
@@ -177,7 +177,7 @@ public class MultiLayerTest {
                 .activationFunction("tanh").momentum(0.9)
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .constrainGradientToUnitNorm(true).k(1).regularization(true).l2(2e-4)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .nIn(4).nOut(3).list(2)
                 .hiddenLayerSizes(new int[]{3})
