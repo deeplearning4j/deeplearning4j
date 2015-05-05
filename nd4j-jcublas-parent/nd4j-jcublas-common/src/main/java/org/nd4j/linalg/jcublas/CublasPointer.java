@@ -4,6 +4,7 @@ import jcuda.Pointer;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 
+import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 
@@ -18,11 +19,6 @@ public class CublasPointer extends Pointer implements AutoCloseable {
 	 * The underlying cuda buffer that contains the host and device memory
 	 */
 	final JCudaBuffer buffer;
-	
-	/**
-	 * the byte offset of the result in the host
-	 */
-	final long hostByteOffset;
 	
 	/**
 	 * frees the underlying device memory allocated for this pointer
@@ -40,7 +36,7 @@ public class CublasPointer extends Pointer implements AutoCloseable {
 	 * copies the result to the host buffer
 	 */
 	public void copyToHost() {
-		buffer.copyToHost(hostByteOffset);
+		buffer.copyToHost();
 	}
 	
 	/**
@@ -50,7 +46,6 @@ public class CublasPointer extends Pointer implements AutoCloseable {
 	public CublasPointer(JCudaBuffer buffer) {
 		super(buffer.getDevicePointer());
 		this.buffer = buffer;
-		hostByteOffset = 0;
 		SimpleJCublas.checkResult(JCuda.cudaMemcpy(buffer.getDevicePointer(), buffer.getHostPointer(), buffer.getLength()*buffer.getElementSize(), cudaMemcpyKind.cudaMemcpyHostToDevice));
 	}
 	
@@ -63,14 +58,11 @@ public class CublasPointer extends Pointer implements AutoCloseable {
 	 * @param array
 	 */
 	public CublasPointer(INDArray array) {
-		super( ((JCudaBuffer)array.data()).getDevicePointer(((JCudaBuffer)array.data()).getElementSize()*((JCudaBuffer)array.data()).getLength() - array.offset()*((JCudaBuffer)array.data()).getElementSize()));
+		super( ((JCudaBuffer)array.data()).getDevicePointer().withByteOffset(array.offset()*((JCudaBuffer)array.data()).getElementSize()));
 		buffer = (JCudaBuffer)array.data();
-		hostByteOffset = array.offset()*buffer.getElementSize();
 		
-		// TODO: Calculate the minimum amount of bytes we need to copy to the device to perform this operation
-		long dataCount = buffer.getElementSize()*buffer.getLength() - hostByteOffset;
 		// Copy the data to the device
-		SimpleJCublas.checkResult(JCuda.cudaMemcpy(buffer.getDevicePointer(), buffer.getHostPointer().withByteOffset(hostByteOffset), dataCount, cudaMemcpyKind.cudaMemcpyHostToDevice));
+		SimpleJCublas.checkResult(JCuda.cudaMemcpy(buffer.getDevicePointer(), buffer.getHostPointer(), buffer.getElementSize()*buffer.getLength(), cudaMemcpyKind.cudaMemcpyHostToDevice));
 	}
 
 }
