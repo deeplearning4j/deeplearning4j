@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 
@@ -48,10 +49,10 @@ public class TrainConfigTest {
         NeuralNetConfiguration testConfig = testModelFlag.value(json);
         assertEquals(conf, testConfig);
 
-        FileUtils.writeStringToFile(new File("model.json"), json);
+        FileUtils.writeStringToFile(new ClassPathResource("model.json").getFile(), json);
 
         String[] cmd = {
-                "--input", "iris.txt", "--model", "model.json", "--output", "test_output.txt"
+                "-input",new ClassPathResource("iris.txt").getFile().getAbsolutePath(), "-conf", new ClassPathResource("model.json").getFile().getAbsolutePath(), "-output", "test_output.txt"
         };
 
         Train train = new Train(cmd);
