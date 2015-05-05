@@ -18,10 +18,8 @@
 
 package org.deeplearning4j.util;
 
-import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 
-import static  org.deeplearning4j.nn.layers.feedforward.rbm.RBM.HiddenUnit;
-import static  org.deeplearning4j.nn.layers.feedforward.rbm.RBM.VisibleUnit;
+import org.deeplearning4j.nn.conf.layers.RBM;
 
 /**
  * Handles various cooccurrences for RBM specific cooccurrences
@@ -31,28 +29,28 @@ public class RBMUtil {
 
     private RBMUtil() {}
 
-    public static RBM.VisibleUnit inverse(HiddenUnit visible) {
+    public static RBM.VisibleUnit inverse(RBM.HiddenUnit visible) {
         switch(visible) {
             case BINARY:
-                return  VisibleUnit.BINARY;
+                return  RBM.VisibleUnit.BINARY;
             case GAUSSIAN:
-                return  VisibleUnit.GAUSSIAN;
+                return  RBM.VisibleUnit.GAUSSIAN;
             case SOFTMAX:
-                return  VisibleUnit.SOFTMAX;
+                return  RBM.VisibleUnit.SOFTMAX;
             default:
                 return null;
 
         }
     }
 
-    public static RBM.HiddenUnit inverse( VisibleUnit hidden) {
+    public static RBM.HiddenUnit inverse( RBM.VisibleUnit hidden) {
         switch(hidden) {
             case BINARY:
-                return   HiddenUnit.BINARY;
+                return   RBM.HiddenUnit.BINARY;
             case GAUSSIAN:
-                return  HiddenUnit.GAUSSIAN;
+                return  RBM.HiddenUnit.GAUSSIAN;
             case SOFTMAX:
-                return  HiddenUnit.SOFTMAX;
+                return  RBM.HiddenUnit.SOFTMAX;
         }
 
         return null;
