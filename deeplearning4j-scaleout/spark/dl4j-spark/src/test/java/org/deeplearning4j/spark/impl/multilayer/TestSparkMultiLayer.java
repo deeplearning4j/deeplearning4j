@@ -68,8 +68,8 @@ public class TestSparkMultiLayer extends BaseSparkTest {
             .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
+                .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
                 .activationFunction("tanh").list(2).hiddenLayerSizes(3)
                 .override(1, new ConfOverride() {
                     @Override
@@ -103,9 +103,9 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                .momentum(0.9).constrainGradientToUnitNorm(true)
                 .activationFunction("tanh").stepFunction(new GradientStepFunction())
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).dropOut(0.3)
-                .iterations(100).visibleUnit(RBM.VisibleUnit.GAUSSIAN).batchSize(10)
+                .iterations(100).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).batchSize(10)
                 .l2(2e-4).regularization(true).weightInit(WeightInit.VI)
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .list(3).hiddenLayerSizes(3,2)

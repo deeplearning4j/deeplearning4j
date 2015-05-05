@@ -25,12 +25,10 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
-import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -65,8 +63,8 @@ public class RBMTests {
         int nOut = 600;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED).weightInit(WeightInit.VI)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+                .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED).weightInit(WeightInit.VI)
+                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
@@ -88,7 +86,7 @@ public class RBMTests {
         d.normalizeZeroMeanZeroUnitVariance();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.GAUSSIAN).learningRate(1e-1f)
+                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.GAUSSIAN).learningRate(1e-1f)
                 .nIn(d.numInputs()).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .build();
@@ -107,7 +105,7 @@ public class RBMTests {
         d.normalizeZeroMeanZeroUnitVariance();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).learningRate(1e-1f)
+                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED).learningRate(1e-1f)
                 .nIn(d.numInputs()).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .build();
