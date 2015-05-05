@@ -57,6 +57,7 @@ public class UiServer extends Application<UIConfiguration> {
         environment.jersey().register(new NearestNeighborsResource(conf.getUploadPath()));
         environment.jersey().register(new WeightResource());
         environment.jersey().register(new RendersResource());
+        environment.jersey().register(new org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsResource(conf.getUploadPath()));
         configureCors(environment);
     }
 

@@ -58,7 +58,7 @@ public class MultiLayerTest {
 
     @Test
     public void testDbnFaces() {
-        Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         DataSetIterator iter = new LFWDataSetIterator(28,28);
 
         DataSet next = iter.next();

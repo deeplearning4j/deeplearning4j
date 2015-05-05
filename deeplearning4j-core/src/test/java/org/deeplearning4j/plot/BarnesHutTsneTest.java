@@ -38,7 +38,7 @@ public class BarnesHutTsneTest {
     @Test
     public void testTsne() throws Exception {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
-        Nd4j.factory().setDType(DataBuffer.DOUBLE);
+        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
         Nd4j.getRandom().setSeed(123);
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250)
                 .theta(0.5).learningRate(500).useAdaGrad(false)

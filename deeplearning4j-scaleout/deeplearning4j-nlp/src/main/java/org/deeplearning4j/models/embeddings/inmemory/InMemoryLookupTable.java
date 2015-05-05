@@ -225,7 +225,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
             //gradient
             double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f)) : (1 - code - f) * alpha;
 
-            if(neu1e.data().dataType() == DataBuffer.FLOAT) {
+            if(neu1e.data().dataType() == DataBuffer.Type.FLOAT) {
                 Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
                 Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
 
@@ -275,18 +275,18 @@ public class InMemoryLookupTable implements WeightLookupTable {
                     g = label * (useAdaGrad ?  w1.getGradient(target, alpha) : alpha);
                 else
                     g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
-                if(syn0.data().dataType() == DataBuffer.DOUBLE)
+                if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g,neu1e,l1);
                 else
                     Nd4j.getBlasWrapper().axpy((float) g,neu1e,l1);
 
-                if(syn0.data().dataType() == DataBuffer.DOUBLE)
+                if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g,syn1Neg.slice(target),l1);
                 else
                     Nd4j.getBlasWrapper().axpy((float) g,syn1Neg.slice(target),l1);
             }
 
-        if(syn0.data().dataType() == DataBuffer.DOUBLE)
+        if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
             Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
 
         else
@@ -360,7 +360,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
             //gradient
             double g = (1 - code - f) * (useAdaGrad ?  w1.getGradient(i, alpha) : alpha);
 
-            if(syn0.data().dataType() == DataBuffer.DOUBLE) {
+            if(syn0.data().dataType() == DataBuffer.Type.DOUBLE) {
                 Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
                 Nd4j.getBlasWrapper().axpy(g, l1, syn1);
             }
@@ -374,7 +374,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
 
 
-        if(syn0.data().dataType() == DataBuffer.DOUBLE)
+        if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
             Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
 
         else
