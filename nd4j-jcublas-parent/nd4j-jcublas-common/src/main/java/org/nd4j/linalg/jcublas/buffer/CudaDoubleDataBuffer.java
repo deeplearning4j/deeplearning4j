@@ -17,6 +17,7 @@
 package org.nd4j.linalg.jcublas.buffer;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.DoubleBuffer;
 
 import jcuda.Pointer;
@@ -227,6 +228,13 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         for (int i = 0; i < n; i++) {
             arr[i] = stream.readDouble();
         }
+        
+        this.length = n;
+        this.elementSize = Sizeof.DOUBLE;
+        hostBuffer = ByteBuffer.allocate(length*elementSize);
+        hostBuffer.order(ByteOrder.nativeOrder());
+        hostPointer = Pointer.to(hostBuffer);
+        
         setData(arr);
     }
 

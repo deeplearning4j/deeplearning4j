@@ -19,6 +19,8 @@ package org.nd4j.linalg.jcublas.buffer;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
 import jcuda.Pointer;
@@ -245,6 +247,13 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         for (int i = 0; i < n; i++) {
             arr[i] = stream.readFloat();
         }
+        
+        this.length = n;
+        this.elementSize = Sizeof.FLOAT;
+        hostBuffer = ByteBuffer.allocate(length*elementSize);
+        hostBuffer.order(ByteOrder.nativeOrder());
+        hostPointer = Pointer.to(hostBuffer);
+        
         setData(arr);
     }
 }
