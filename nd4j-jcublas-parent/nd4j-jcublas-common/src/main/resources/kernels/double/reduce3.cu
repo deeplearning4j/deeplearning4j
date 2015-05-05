@@ -38,7 +38,7 @@ __device__ void transform_pair(int n, int xOffset,int yOffset,double *dx,double 
         int totalThreads = gridDim.x * blockDim.x;
         int start = blockDim.x * blockIdx.x + tid;
 
-        double sum = result[0];
+        double sum = 0;
         for ( size_t i = start; i < n; i += totalThreads) {
              sum = update(sum,op(dx[i * incx],dy[i * incy],extraParams),extraParams);
         }
@@ -93,7 +93,7 @@ __device__ void transform(int n, int xOffset,double *dx,int incx,double *extraPa
         int totalThreads = gridDim.x * blockDim.x;
         int start = blockDim.x * blockIdx.x + tid;
 
-        double sum = result[0];
+        double sum = 0;
         for ( size_t i = start; i < n; i += totalThreads) {
              sum = update(sum,op(dx[i * incx],sum,extraParams),extraParams);
         }

@@ -15,13 +15,13 @@ __device__ double update(double old,double opOutput,double *extraParams) {
  @param d2 the second operator
 */
 __device__ double op(double d1,double d2,double *extraParams) {
-      return d1 - d2;
+      return pow(d1 - d2,2);
 }
 
 
 //post process result (for things like means etc)
 __device__ double postProcess(double reduction,int n,int xOffset,double *dx,int incx,double *extraParams,double *result) {
-            return reduction / extraParams[0] / extraParams[1];
+            return sqrt(reduction);
 }
 
 extern "C"
