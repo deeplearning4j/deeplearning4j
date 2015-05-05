@@ -36,10 +36,7 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -75,9 +72,6 @@ public class InMemoryLookupTable implements WeightLookupTable {
         this.rng = gen;
         this.negative = negative;
         initExpTable();
-
-
-
     }
 
     public double[] getExpTable() {
@@ -626,4 +620,22 @@ public class InMemoryLookupTable implements WeightLookupTable {
         }
     }
 
+    @Override
+    public String toString() {
+        return "InMemoryLookupTable{" +
+                "syn0=" + syn0 +
+                ", syn1=" + syn1 +
+                ", vectorLength=" + vectorLength +
+                ", rng=" + rng +
+                ", lr=" + lr +
+                ", expTable=" + Arrays.toString(expTable) +
+                ", seed=" + seed +
+                ", table=" + table +
+                ", syn1Neg=" + syn1Neg +
+                ", useAdaGrad=" + useAdaGrad +
+                ", negative=" + negative +
+                ", vocab=" + vocab +
+                ", codes=" + codes +
+                '}';
+    }
 }
