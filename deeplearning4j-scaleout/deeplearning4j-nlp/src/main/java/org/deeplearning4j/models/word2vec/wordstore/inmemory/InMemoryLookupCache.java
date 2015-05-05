@@ -81,7 +81,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      */
     @Override
     public  void incrementWordCount(String word) {
-        incrementWordCount(word,1);
+        incrementWordCount(word, 1);
     }
 
     /**
@@ -366,5 +366,18 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         result = 31 * result + (totalWordOccurrences != null ? totalWordOccurrences.hashCode() : 0);
         result = 31 * result + numDocs;
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "InMemoryLookupCache{" +
+                "wordIndex=" + wordIndex +
+                ", wordFrequencies=" + wordFrequencies +
+                ", docFrequencies=" + docFrequencies +
+                ", vocabs=" + vocabs +
+                ", tokens=" + tokens +
+                ", totalWordOccurrences=" + totalWordOccurrences +
+                ", numDocs=" + numDocs +
+                '}';
     }
 }
