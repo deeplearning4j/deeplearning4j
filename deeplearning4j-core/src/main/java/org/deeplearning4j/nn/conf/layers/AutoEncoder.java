@@ -16,26 +16,36 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.serializers;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import org.deeplearning4j.nn.api.LayerFactory;
-
-import java.io.IOException;
+package org.deeplearning4j.nn.conf.layers;
 
 /**
- * Writes a field of:
- * layerFactory: layer factory class name, value.layerClazzName()
+ *  Autoencoder.
+ * Add Gaussian noise to input and learn
+ * a reconstruction function.
  *
- * @author Adam Gibson
  */
-public class LayerFactorySerializer extends JsonSerializer<LayerFactory> {
-    @Override
-    public void serialize(LayerFactory value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-        String write = value.getClass().getName() + "," + value.layerClazzName();
-        jgen.writeString(write);
+public class AutoEncoder extends BasePretrainNetwork {
 
+    private static final long serialVersionUID = -7624965662728637504L;
+
+    @Override
+    public int hashCode() {
+        return 0;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        return true;
+    }
+
+    public String toString() {
+        return "AutoEncoder{" +
+                '}';
     }
 }

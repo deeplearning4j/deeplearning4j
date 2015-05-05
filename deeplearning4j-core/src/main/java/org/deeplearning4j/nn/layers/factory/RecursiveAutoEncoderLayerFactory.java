@@ -18,8 +18,8 @@
 
 package org.deeplearning4j.nn.layers.factory;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.params.RecursiveParamInitializer;
 
 /**
@@ -28,8 +28,8 @@ import org.deeplearning4j.nn.params.RecursiveParamInitializer;
  */
 public class RecursiveAutoEncoderLayerFactory extends DefaultLayerFactory {
 
-    public RecursiveAutoEncoderLayerFactory(Class<? extends Layer> layerClazz) {
-        super(layerClazz);
+    public RecursiveAutoEncoderLayerFactory(Class<? extends Layer> layerConfig) {
+        super(layerConfig);
     }
 
     @Override

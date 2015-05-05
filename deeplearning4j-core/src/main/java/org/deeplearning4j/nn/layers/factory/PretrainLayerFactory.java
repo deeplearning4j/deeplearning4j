@@ -29,8 +29,8 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 public class PretrainLayerFactory extends DefaultLayerFactory {
 
 
-    public PretrainLayerFactory(Class<? extends Layer> layerClazz) {
-        super(layerClazz);
+    public PretrainLayerFactory(Class<? extends org.deeplearning4j.nn.conf.layers.Layer> layerConfig) {
+        super(layerConfig);
     }
 
 

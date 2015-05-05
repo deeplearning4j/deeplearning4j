@@ -16,27 +16,33 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.override;
-
-import org.deeplearning4j.nn.api.LayerFactory;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+package org.deeplearning4j.nn.conf.stepfunctions;
 
 /**
- * Layer factory override
- * @author Adam Gibson
+ * Default step function
  */
-public class LayerFactoryOverride implements ConfOverride {
-    private int layer;
-    private LayerFactory layerFactory;
+public class DefaultStepFunction extends StepFunction {
 
-    public LayerFactoryOverride(int layer, LayerFactory layerFactory) {
-        this.layer = layer;
-        this.layerFactory = layerFactory;
+    private static final long serialVersionUID = 890156465738412597L;
+
+    @Override
+    public int hashCode() {
+        return 0;
     }
 
     @Override
-    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-        if(i == layer)
-            builder.layerFactory(layerFactory);
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        return true;
+    }
+
+    public String toString() {
+        return "DefaultStepFunction{" +
+                '}';
     }
 }

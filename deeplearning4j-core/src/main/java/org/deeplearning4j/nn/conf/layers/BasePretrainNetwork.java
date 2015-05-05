@@ -16,24 +16,10 @@
  *
  */
 
-package org.deeplearning4j.nn.layers.factory;
+package org.deeplearning4j.nn.conf.layers;
 
-import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.params.LSTMParamInitializer;
+public abstract class BasePretrainNetwork extends Layer {
 
-/**
- *  LSTM layer initializer
- *  @author Adam Gibson
- */
-public class LSTMLayerFactory extends DefaultLayerFactory {
+    private static final long serialVersionUID = -6945800646970810896L;
 
-    public LSTMLayerFactory(Class<? extends Layer> layerConfig) {
-        super(layerConfig);
-    }
-
-    @Override
-    public ParamInitializer initializer() {
-        return new LSTMParamInitializer();
-    }
 }

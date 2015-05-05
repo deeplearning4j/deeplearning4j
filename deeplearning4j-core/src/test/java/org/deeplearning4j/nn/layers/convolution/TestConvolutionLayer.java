@@ -6,6 +6,8 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
@@ -30,13 +32,12 @@ public class TestConvolutionLayer {
     @Test
     public void testFeedForward() throws Exception  {
         DataSetIterator mnist = new MnistDataSetIterator(100,100);
-        LayerFactory layerFactory = LayerFactories.getFactory(ConvolutionLayer.class);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().featureMapSize(20,20)
                 .activationFunction("relu").constrainGradientToUnitNorm(true)
                 .convolutionType(ConvolutionDownSampleLayer.ConvolutionType.MAX).filterSize(6,1,9,9)
-                .layerFactory(LayerFactories.getFactory(ConvolutionLayer.class))
+                .layer(new ConvolutionLayer())
                 .nIn(784).nOut(1).build();
-        Layer convolutionLayer =  layerFactory.create(conf);
+        Layer convolutionLayer =  LayerFactories.getFactory(new ConvolutionLayer()).create(conf);
         DataSet next = mnist.next();
         INDArray input = next.getFeatureMatrix().reshape(next.numExamples(),1,28,28);
         INDArray conv = convolutionLayer.activate(input);
