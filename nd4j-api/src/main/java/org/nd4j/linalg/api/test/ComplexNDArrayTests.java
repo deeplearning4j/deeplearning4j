@@ -469,6 +469,7 @@ public abstract class ComplexNDArrayTests {
 
     @Test
     public void testMmul() {
+    	Nd4j.dtype = Type.FLOAT;
         Nd4j.factory().setOrder('f');
         DataBuffer data = Nd4j.linspace(1, 10, 10).data();
         IComplexNDArray n = Nd4j.createComplex((Nd4j.create(data, new int[]{10})));
