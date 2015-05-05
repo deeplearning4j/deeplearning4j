@@ -133,6 +133,9 @@ public class Shape {
             }
         }
 
+        shape1 = squeeze(shape1);
+        shape2 = squeeze(shape2);
+
         return scalarEquals(shape1, shape2) || Arrays.equals(shape1, shape2);
     }
 

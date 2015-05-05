@@ -3384,7 +3384,13 @@ public abstract class BaseNDArray implements INDArray {
             }
 
 
-        } else if (isRowVector() && r == 0)
+        }
+
+        else if(size(0) == 1 && shape.length == 3) {
+            return slice(0).vectorAlongDimension(r,1);
+        }
+
+        else if (isRowVector() && r == 0)
             return this;
 
 
