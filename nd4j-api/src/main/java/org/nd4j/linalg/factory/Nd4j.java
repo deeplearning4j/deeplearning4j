@@ -199,6 +199,15 @@ public class Nd4j {
 
 
     /**
+     * Returns the shape of the ndarray
+     * @param arr the array to get the shape of
+     * @return the shape of tihs ndarray
+     */
+    public static int[] shape(INDArray arr) {
+        return arr.shape();
+    }
+
+    /**
      * Create an ndarray based on the given data
      * @param sliceShape the shape of each slice
      * @param arrays the arrays of data to create
@@ -3122,6 +3131,13 @@ public class Nd4j {
         return INSTANCE.create(doubles);
     }
 
+    /**
+     * Linspace with complex numbers
+     * @param i
+     * @param i1
+     * @param i2
+     * @return
+     */
     public static IComplexNDArray complexLinSpace(int i, int i1, int i2) {
         return Nd4j.createComplex(Nd4j.linspace(i, i1, i2));
 

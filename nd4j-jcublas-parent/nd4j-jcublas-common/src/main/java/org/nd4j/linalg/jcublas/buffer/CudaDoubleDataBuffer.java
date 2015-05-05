@@ -51,10 +51,15 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         setData(data);
     }
 
+    @Override
+    public void alloc() {
+        super.alloc();
+        data = new double[length];
+    }
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
-
+        modified.set(true);
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > getLength())
@@ -117,6 +122,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void assign(Number value, int offset) {
+        modified.set(true);
         ByteBuffer buf = getBuffer(offset);
         DoubleBuffer buf2 = buf.asDoubleBuffer();
         for (int i = offset; i < getLength(); i++)
@@ -170,11 +176,13 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void put(int i, float element) {
+        modified.set(true);
         put(i, (double) element);
     }
 
     @Override
     public void put(int i, double element) {
+        modified.set(true);
         getDoubleBuffer().put(i,element);
     }
 

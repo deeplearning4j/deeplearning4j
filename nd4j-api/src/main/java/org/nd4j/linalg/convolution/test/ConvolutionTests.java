@@ -23,10 +23,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by agibsonccc on 9/6/14.
@@ -34,45 +32,27 @@ import static org.junit.Assert.assertTrue;
 public abstract class ConvolutionTests {
 
 
-    private static Logger log = LoggerFactory.getLogger(ConvolutionTests.class);
 
 
     @Test
     public void convNTest() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
         INDArray arr = Nd4j.linspace(1, 8, 8);
         INDArray kernel = Nd4j.linspace(1, 3, 3);
-        INDArray answer = Nd4j.create(new double[]{10, 16, 22, 28, 34, 40});
+            INDArray answer = Nd4j.create(new double[]{1.0000012});
         INDArray test = Convolution.convn(arr, kernel, Convolution.Type.VALID);
         assertEquals(answer, test);
     }
 
 
+
     @Test
     public void testConv2d() {
-        INDArray nd = Nd4j.ones(5, 5);
-        INDArray kernel2  = Nd4j.ones(3, 3);
-        INDArray conv = Nd4j.getConvolution().conv2d(nd, kernel2, Convolution.Type.VALID);
-        INDArray assertion = Nd4j.valueArrayOf(new int[]{3,3},9);
-        assertEquals(assertion,conv);
-    }
-
-
-    @Test
-    public void testConvolution() {
-        INDArray image = Nd4j.create(new double[][]{
-                {3, 2, 5, 6, 7, 8},
-                {5, 4, 2, 10, 8, 1}
-        });
-
-        INDArray kernel = Nd4j.create(new double[][]{
-                {4, 5},
-                {1, 2}
-        });
-
-
-        log.info(Convolution.convn(image, kernel, Convolution.Type.FULL).toString());
-
-        log.info(Convolution.convn(image, kernel, Convolution.Type.VALID).toString());
+        INDArray arr = Nd4j.linspace(1, 8, 8).reshape(2,4);
+        INDArray kernel = Nd4j.linspace(1, 6, 6).reshape(2,3);
+        INDArray answer = Nd4j.create(new double[]{56,98});
+        INDArray test = Convolution.convn(arr, kernel, Convolution.Type.VALID);
+        assertEquals(answer, test);
     }
 
 

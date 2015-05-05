@@ -80,23 +80,43 @@ public class DefaultConvolutionInstance extends BaseConvolution {
      */
     @Override
     public INDArray convn(INDArray input, INDArray kernel, Convolution.Type type, int[] axes) {
+        if (input.shape().length != kernel.shape().length) {
+            int[] newShape = new int[Math.max(input.shape().length, kernel.shape().length)];
+            Arrays.fill(newShape, 1);
+            int lengthDelta = Math.abs(input.shape().length - kernel.shape().length);
+            if (input.shape().length < kernel.shape().length) {
+                for (int i = kernel.shape().length - 1; i >= 0; i--)
+                    newShape[i + lengthDelta] = input.shape()[i];
+                input = input.reshape(newShape);
+
+
+            } else {
+                if (kernel.shape().length < input.shape().length) {
+                    for (int i = kernel.shape().length - 1; i >= 0; i--)
+                        newShape[i + lengthDelta] = kernel.shape()[i];
+
+                    kernel = kernel.reshape(newShape);
+                }
+
+            }
+        }
+
         if (kernel.isScalar() && input.isScalar())
             return kernel.mul(input);
-        INDArray shape = ArrayUtil.toNDArray(Shape.sizeForAxes(axes, input.shape())).add(ArrayUtil.toNDArray(Shape.sizeForAxes(axes, kernel.shape()))).subi(1);
+        INDArray shape = ArrayUtil.toNDArray(input.shape()).add(ArrayUtil.toNDArray(kernel.shape())).subi(1);
 
         int[] intShape = ArrayUtil.toInts(shape);
-        for(int i = 0; i < intShape.length; i++) {
-            intShape[i] = (int) MathUtils.nextPowOf2(intShape[i]);
-        }
+
+
         IComplexNDArray fftedInput = FFT.rawfftn(Nd4j.createComplex(input), intShape, axes);
         IComplexNDArray fftedKernel = FFT.rawfftn(Nd4j.createComplex(kernel), intShape, axes);
         //broadcast to be same shape
         if (!Arrays.equals(fftedInput.shape(), fftedKernel.shape())) {
-            if (fftedInput.length() < fftedKernel.length()) {
-                fftedInput = fftedInput.broadcast(fftedKernel.shape());
-            } else {
-                fftedKernel = fftedKernel.broadcast(fftedInput.shape());
-            }
+            if (fftedInput.length() < fftedKernel.length())
+                fftedInput = ComplexNDArrayUtil.padWithZeros(fftedInput, fftedKernel.shape());
+            else
+                fftedKernel = ComplexNDArrayUtil.padWithZeros(fftedKernel, fftedInput.shape());
+
         }
 
         IComplexNDArray inputTimesKernel = fftedInput.muli(fftedKernel);
@@ -117,6 +137,7 @@ public class DefaultConvolutionInstance extends BaseConvolution {
 
         return convolution.getReal();
     }
+
 
 
 }

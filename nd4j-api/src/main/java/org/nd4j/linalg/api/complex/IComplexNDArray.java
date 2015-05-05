@@ -1361,4 +1361,6 @@ public interface IComplexNDArray extends INDArray {
 
 
     void assign(IComplexNumber aDouble);
+
+    IComplexNDArray put(int i, int j, IComplexNumber complex);
 }

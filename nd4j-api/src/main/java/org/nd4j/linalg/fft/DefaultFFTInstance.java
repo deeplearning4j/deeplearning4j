@@ -75,10 +75,9 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     public IComplexNDArray fft(IComplexNDArray inputC, int numElements, int dimension) {
         if (inputC.isVector())
             return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,numElements));
-        else {
-
+        else
             return rawfft(inputC, numElements, dimension);
-        }
+
     }
 
 
@@ -95,9 +94,9 @@ public class DefaultFFTInstance extends BaseFFTInstance {
         IComplexNDArray inputC = Nd4j.createComplex(transform);
         if (inputC.isVector())
             return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorIFFT(inputC,numElements));
-        else {
+        else
             return rawifft(inputC, numElements, dimension);
-        }
+
     }
 
     /**
@@ -169,9 +168,10 @@ public class DefaultFFTInstance extends BaseFFTInstance {
         if (transform.size(dimension) != n) {
             int[] shape = ArrayUtil.copy(result.shape());
             shape[dimension] = n;
-            if (transform.size(dimension) > n) {
+            if (transform.size(dimension) > n)
                 result = ComplexNDArrayUtil.truncate(result, n, dimension);
-            } else
+
+            else
                 result = ComplexNDArrayUtil.padWithZeros(result, shape);
 
         }
@@ -181,7 +181,9 @@ public class DefaultFFTInstance extends BaseFFTInstance {
             result = result.swapAxes(result.shape().length - 1, dimension);
 
 
+
         Nd4j.getExecutioner().iterateOverAllRows(new VectorFFT(result, n));
+
 
         if (dimension != result.shape().length - 1)
             result = result.swapAxes(result.shape().length - 1, dimension);
@@ -209,7 +211,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
         if (dimension != result.shape().length - 1)
             result = result.swapAxes(result.shape().length - 1, dimension);
 
-        Nd4j.getExecutioner().iterateOverAllRows(new VectorIFFT(result, result.size(result.shape().length - 1)));
+        Nd4j.getExecutioner().iterateOverAllRows(new VectorIFFT(result, n));
 
 
         if (dimension != result.shape().length - 1)

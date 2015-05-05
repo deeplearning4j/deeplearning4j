@@ -65,7 +65,9 @@ public class VectorFFT extends BaseTransformOp {
         exec();
     }
 
-
+    public VectorFFT(INDArray x) {
+        this(x,x.length());
+    }
 
 
 
@@ -149,7 +151,7 @@ public class VectorFFT extends BaseTransformOp {
         INDArray n2 = Nd4j.arange(0, this.fftLength).reshape(1, this.fftLength);
 
         //column vector
-        INDArray k = n2.reshape(new int[]{n2.length(), 1});
+        INDArray k = n2.reshape(n2.length(),1);
         INDArray kTimesN = k.mmul(n2);
         //here
         IComplexNDArray c1 = kTimesN.muli(c2);
@@ -157,7 +159,7 @@ public class VectorFFT extends BaseTransformOp {
         IComplexNDArray M = (IComplexNDArray) exp(c1);
 
 
-        IComplexNDArray reshaped = ret.reshape(new int[]{ret.length()});
+        IComplexNDArray reshaped = ret.reshape(new int[]{1,ret.length()});
         IComplexNDArray matrix = reshaped.mmul(M);
         if (originalN > 0) {
             matrix = ComplexNDArrayUtil.truncate(matrix, originalN, 0);
@@ -176,12 +178,15 @@ public class VectorFFT extends BaseTransformOp {
     @Override
     public void setX(INDArray x) {
         this.x = x;
+        this.fftLength = x.length();
         executed = false;
+
     }
 
     @Override
     public void setZ(INDArray z) {
         this.z = z;
+        this.fftLength = z.length();
         executed = false;
 
     }

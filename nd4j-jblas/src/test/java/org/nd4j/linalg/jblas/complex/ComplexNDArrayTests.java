@@ -37,7 +37,6 @@ import static org.junit.Assert.assertEquals;
  */
 public class ComplexNDArrayTests extends org.nd4j.linalg.api.test.ComplexNDArrayTests {
 
-    private static Logger log = LoggerFactory.getLogger(ComplexNDArrayTests.class);
 
 
     @Test
@@ -50,6 +49,21 @@ public class ComplexNDArrayTests extends org.nd4j.linalg.api.test.ComplexNDArray
         c.put(1, 1, new ComplexDouble(4, 6));
         c2.putScalar(1, 1, Nd4j.createDouble(4, 6));
         verifyElements(c, c2);
+
+
+    }
+
+    @Test
+    public void testVectorAlongDimensionOffset() {
+        IComplexNDArray arr = Nd4j.complexLinSpace(1,6,6).reshape(2, 3);
+        IComplexNDArray slice = arr.slice(0);
+        assertEquals(Nd4j.scalar(Nd4j.createComplexNumber(1, 0)), slice.vectorAlongDimension(0, 0));
+        assertEquals(Nd4j.scalar(Nd4j.createComplexNumber(3, 0)), slice.vectorAlongDimension(2, 0));
+
+        IComplexNDArray arr1 = arr.slice(1);
+        assertEquals(Nd4j.scalar(Nd4j.createComplexNumber(4, 0)), arr1.vectorAlongDimension(0,0));
+        assertEquals(Nd4j.scalar(Nd4j.createComplexNumber(6, 0)), arr1.vectorAlongDimension(2, 0));
+
 
 
     }
@@ -99,6 +113,17 @@ public class ComplexNDArrayTests extends org.nd4j.linalg.api.test.ComplexNDArray
 
     }
 
+
+    @Test
+    public void testRavel() {
+        IComplexNDArray arr = Nd4j.complexLinSpace(1,6,6);
+        IComplexNDArray reshape = arr.reshape(2,3);
+        assertEquals(arr,reshape.ravel());
+        assertEquals(arr,arr.ravel());
+
+        IComplexNDArray row1 = reshape.slice(1);
+        assertEquals(row1,row1.ravel());
+    }
 
     @Test
     public void testReshapeCompatibility() {

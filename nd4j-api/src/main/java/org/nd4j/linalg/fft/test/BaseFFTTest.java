@@ -41,6 +41,7 @@ public abstract class BaseFFTTest {
 
     @Test
     public void testColumnVector() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
         IComplexNDArray n = (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(Nd4j.complexLinSpace(1,8,8),8));
         IComplexNDArray assertion = Nd4j.createComplex(new double[]
                 {36., 0., -4., 9.65685425, -4., 4, -4., 1.65685425, -4., 0., -4., -1.65685425, -4., -4., -4., -9.65685425
@@ -98,7 +99,40 @@ public abstract class BaseFFTTest {
 
         IComplexNDArray ffted = FFT.fftn(a);
         assertEquals(fftedAnswer,ffted);
+
+
+
+
+
+
         Nd4j.EPS_THRESHOLD = 1e-12;
+
+    }
+
+    @Test
+    public void testNoSwap() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
+
+        IComplexNDArray linspaced = Nd4j.complexLinSpace(1,6,6).reshape(2,3);
+        IComplexNDArray assertion = Nd4j.createComplex(2,3);
+        assertion.putSlice(0, Nd4j.createComplex(new IComplexNumber[] {
+                Nd4j.createComplexNumber(21,0),Nd4j.createComplexNumber(-6,3.46),Nd4j.createComplexNumber(-6,-3.46)
+        }));
+        assertion.putSlice(1,Nd4j.createComplex(new IComplexNumber[] {
+                Nd4j.createComplexNumber(-3,0),Nd4j.createComplexNumber(0,0),Nd4j.createComplexNumber(0,0)
+        }));
+
+        IComplexNDArray fftLinspaced = Nd4j.getFFt().fftn(linspaced);
+
+        assertEquals(assertion,fftLinspaced);
+
+        fftLinspaced = Nd4j.getFFt().rawfftn(linspaced,new int[]{2,2},null);
+        assertion = Nd4j.createComplex(new IComplexNumber[][]{
+                {Nd4j.createComplexNumber(10,0),Nd4j.createComplexNumber(-4,0)}
+                ,{Nd4j.createComplexNumber(-2,0),Nd4j.createComplexNumber(0,0)}
+        });
+        assertEquals(assertion,fftLinspaced);
+
 
 
     }
@@ -108,16 +142,25 @@ public abstract class BaseFFTTest {
         Nd4j.EPS_THRESHOLD = 1e-1;
         IComplexNDArray ones = Nd4j.complexOnes(5, 5);
         IComplexNDArray ffted = FFT.fftn(ones);
-        IComplexNDArray zeros = Nd4j.createComplex(5,5);
+        IComplexNDArray zeros = Nd4j.createComplex(5, 5);
         zeros.putScalar(0, 0, Nd4j.createComplexNumber(25, 0));
         assertEquals(zeros, ffted);
 
-        IComplexNDArray threeOnes = Nd4j.complexOnes(3,3);
+        IComplexNDArray threeOnes = Nd4j.complexOnes(3, 3);
         IComplexNDArray threeComp = Nd4j.createComplex(3, 3);
         threeComp.putScalar(0, 0, Nd4j.createComplexNumber(9, 0));
-        assertEquals(FFT.fftn(threeOnes),threeComp);
+        assertEquals(FFT.fftn(threeOnes), threeComp);
 
 
+
+    }
+
+    @Test
+    public void testOnesDifferentShapes() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
+        IComplexNDArray ones = Nd4j.complexOnes(5, 5);
+        IComplexNDArray ffted = Nd4j.getFFt().rawfftn(ones,new int[]{3,3},new int[]{0,1});
+        System.out.println(ffted);
 
     }
 
@@ -125,11 +168,21 @@ public abstract class BaseFFTTest {
 
 
     @Test
-    public void testRawFft() {
-        IComplexNDArray a = Nd4j.complexOnes(5,5);
-        IComplexNDArray fftedA = FFT.rawfftn(a,new int[]{7,7}, ArrayUtil.reverseCopy(ArrayUtil.range(2,0)));
-        System.out.println(fftedA);
+    public void testRawfft() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
+
+        IComplexNDArray test = Nd4j.complexOnes(5,5);
+        IComplexNDArray result = Nd4j.getFFt().rawfft(test, 3, 1);
+        IComplexNDArray assertion = Nd4j.createComplex(5,3);
+        for(int i = 0; i < assertion.rows(); i++)
+            assertion.slice(i).putScalar(0, Nd4j.createComplexNumber(3, 0));
+        for(int i = 0; i < result.slices(); i++) {
+            IComplexNDArray assertionSlice = assertion.slice(i);
+            IComplexNDArray resultSlice = result.slice(i);
+            assertEquals("Failed on iteration " + i, assertionSlice, resultSlice);
+        }
     }
+
 
 
 

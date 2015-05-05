@@ -67,6 +67,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public void iterateOverAllRows(Op op) {
         if(op.x().isRowVector()) {
+            //reset the op in case
+            op.setX(op.x());
+            op.setY(op.y());
+            op.setZ(op.z());
             exec(op);
         }
         //execute row wise
@@ -79,12 +83,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 for(int i = 0; i < original.rows(); i++) {
                     IComplexNDArray row = original.slice(i);
                     IComplexNDArray zRow = originalZ.slice(i);
-                    op.setX(row.ravel());
-                    op.setZ(zRow.ravel());
+                    IComplexNDArray rowRaveled = row.ravel();
+                    IComplexNDArray zRowRaveled = zRow.ravel();
+                    op.setX(rowRaveled);
+                    op.setZ(zRowRaveled);
                     if(y != null)
-                        op.setY(y.getRow(i));
+                        op.setY(y.slice(i));
                     exec(op);
-                    originalZ.slice(i).assign(op.z());
+                    zRow.assign(op.z());
 
                 }
             }
@@ -96,12 +102,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 for(int i = 0; i < op.x().rows(); i++) {
                     INDArray row = original.getRow(i);
                     INDArray zRow = originalZ.getRow(i);
-                    op.setX(row.ravel());
-                    op.setZ(zRow.ravel());
+                    op.setX(row);
+                    op.setZ(zRow);
                     if(y != null)
                         op.setY(y.getRow(i));
                     exec(op);
-                    originalZ.slice(i).assign(op.z());
+                    zRow.assign(op.z());
                 }
             }
 
@@ -109,9 +115,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
         else {
             INDArray originalX = op.x();
             INDArray originalZ = op.z();
-            for(int i = 0; i < op.x().slices(); i++) {
-                op.setX(originalX.slice(i));
-                op.setZ(originalZ.slice(i));
+            for(int i = 0; i < originalX.slices(); i++) {
+                INDArray slice = originalX.slice(i);
+                INDArray zSlice = originalZ.slice(i);
+                op.setX(slice);
+                op.setZ(zSlice);
                 iterateOverAllRows(op);
             }
 

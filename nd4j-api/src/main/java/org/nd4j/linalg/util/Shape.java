@@ -43,8 +43,14 @@ public class Shape {
     }
 
 
+    /**
+     * Output an int array for a particular dimension
+     * @param axes the axes
+     * @param shape the current shape
+     * @return
+     */
     public static int[] sizeForAxes(int[] axes, int[] shape) {
-        int[] ret = new int[axes.length];
+        int[] ret = new int[shape.length];
         for (int i = 0; i < axes.length; i++) {
             ret[i] = shape[axes[i]];
         }
@@ -126,6 +132,9 @@ public class Shape {
                 return Arrays.equals(shape1Comp, shape2Comp);
             }
         }
+
+        shape1 = squeeze(shape1);
+        shape2 = squeeze(shape2);
 
         return scalarEquals(shape1, shape2) || Arrays.equals(shape1, shape2);
     }

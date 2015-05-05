@@ -25,6 +25,9 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +50,8 @@ public abstract class ComplexNDArrayTests {
     public void before() {
         Nd4j.factory().setOrder('c');
     }
+
+
 
     @Test
     public void testConstruction() {
@@ -148,6 +153,8 @@ public abstract class ComplexNDArrayTests {
 
     }
 
+
+
     @Test
     public void testPutComplex() {
         INDArray fourTwoTwo = Nd4j.linspace(1, 16, 16).reshape(4, 2, 2);
@@ -240,6 +247,26 @@ public abstract class ComplexNDArrayTests {
     }
 
 
+
+    @Test
+    public void testVectorOffsetRavel() {
+        IComplexNDArray arr = Nd4j.complexLinSpace(1,20,20).reshape(4,5);
+        for(int i = 0; i < arr.slices(); i++) {
+            assertEquals(arr.slice(i),arr.slice(i).ravel());
+        }
+    }
+
+
+    @Test
+    public void testSliceVsVectorAlongDimension() {
+        IComplexNDArray arr = Nd4j.complexLinSpace(1,20,20).reshape(4,5);
+        assertEquals(arr.slices(),arr.vectorsAlongDimension(1));
+        for(int i = 0; i < arr.slices(); i++) {
+            assertEquals(arr.vectorAlongDimension(i,1),arr.slice(i));
+            assertEquals(arr.vectorAlongDimension(i,1).ravel(),arr.slice(i).ravel());
+        }
+    }
+
     @Test
     public void testVectorAlongDimension() {
         INDArray n = Nd4j.linspace(1, 8, 8).reshape(2, 4);
@@ -285,12 +312,43 @@ public abstract class ComplexNDArrayTests {
 
     }
 
+
+    @Test
+    public void testTensorStrides() {
+        Nd4j.factory().setOrder('c');
+        INDArray arr = Nd4j.createComplex(106, 1, 3, 3);
+        //(144, 144, 48, 16)
+        int[] assertion = ArrayUtil.of(18, 18, 6, 2);
+        int[] arrShape = arr.stride();
+        assertTrue(Arrays.equals(assertion, arrShape));
+        Nd4j.factory().setOrder('f');
+        arr = Nd4j.createComplex(106,1,3,3);
+        //(16, 1696, 1696, 5088)
+        assertion = ArrayUtil.of(2, 212, 212, 636);
+        arrShape = arr.stride();
+        assertTrue(Arrays.equals(assertion, arrShape));
+
+    }
+
+
+
     @Test
     public void testLinearView() {
         IComplexNDArray n = Nd4j.complexLinSpace(1, 4, 4).reshape(2, 2);
         IComplexNDArray row = n.getRow(1);
         IComplexNDArray linear = row.linearView();
         assertEquals(row, linear);
+
+        IComplexNDArray large = Nd4j.complexLinSpace(1,1000,1000).reshape(2,500);
+        IComplexNDArray largeLinear = large.linearView();
+        for(int i = 0; i < largeLinear.length(); i++)
+            assertEquals(i + 1,largeLinear.getReal(i),1e-1);
+
+        IComplexNDArray largeTensor = large.reshape(1000,1,1,1);
+        for(int i = 0; i < largeLinear.length(); i++)
+            assertEquals(i + 1,largeTensor.getReal(i),1e-1);
+
+
     }
 
     @Test
@@ -339,6 +397,23 @@ public abstract class ComplexNDArrayTests {
         IComplexNumber n3 = (IComplexNumber) row.getScalar(1).element();
 
         assertEquals(9, n3.realComponent().doubleValue(), 1e-1);
+
+
+    }
+
+
+    @Test
+    public void testSliceOffset() {
+        IComplexNDArray test = Nd4j.complexLinSpace(1, 10, 10).reshape(2,5);
+        IComplexNDArray testSlice0 = Nd4j.complexLinSpace(1, 5, 5);
+        IComplexNDArray testSlice1 = Nd4j.complexLinSpace(6, 10, 5);
+        assertEquals(testSlice0,test.slice(0));
+        assertEquals(testSlice1,test.slice(1));
+
+        IComplexNDArray sliceOfSlice0 = test.slice(0).slice(0);
+        assertEquals(sliceOfSlice0.getComplex(0),Nd4j.createComplexNumber(1,0));
+        assertEquals( test.slice(1).slice(0).getComplex(0),Nd4j.createComplexNumber(6,0));
+        assertEquals(test.slice(1).getComplex(1),Nd4j.createComplexNumber(7,0));
 
 
     }
@@ -467,6 +542,18 @@ public abstract class ComplexNDArrayTests {
 
     }
 
+
+    @Test
+    public void testRealConversion() {
+        IComplexNDArray arr = Nd4j.createComplex(1,5);
+        INDArray arr1 = Nd4j.create(1,5);
+        assertEquals(arr,Nd4j.createComplex(arr1));
+        IComplexNDArray arr3 = Nd4j.complexLinSpace(1,6,6).reshape(2,3);
+        INDArray linspace = Nd4j.linspace(1,6,6).reshape(2,3);
+        assertEquals(arr3,Nd4j.createComplex(linspace));
+    }
+
+
     @Test
     public void testMmul() {
     	Nd4j.dtype = Type.FLOAT;
@@ -586,6 +673,26 @@ public abstract class ComplexNDArrayTests {
     }
 
 
+
+
+    @Test
+    public void testGetComplex() {
+        IComplexNDArray arr = Nd4j.createComplex(Nd4j.create(new DoubleBuffer(new double[]{
+                1,2,3,4,5
+        })));
+
+        IComplexNumber num = arr.getComplex(4);
+        assertEquals(Nd4j.createDouble(5, 0),num);
+
+        IComplexNDArray matrix = Nd4j.complexLinSpace(1,10,10).reshape(2,5);
+        IComplexNDArray slice = matrix.slice(0);
+        IComplexNDArray assertion = Nd4j.complexLinSpace(1,5,5);
+        assertEquals(assertion,slice);
+        IComplexNDArray assert2 = Nd4j.complexLinSpace(6,10,5);
+        assertEquals(assert2,matrix.slice(1));
+
+    }
+
     @Test
     public void testNdArrayConstructor() {
         IComplexNDArray result = Nd4j.createComplex(Nd4j.create(new double[]{2, 6}, new int[]{1, 2}));
@@ -631,6 +738,18 @@ public abstract class ComplexNDArrayTests {
     }
 
 
+
+
+    @Test
+    public void testGetIndexing() {
+        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
+        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
+        IComplexNDArray tenByTen = Nd4j.complexLinSpace(1,100,100).reshape(10,10);
+        IComplexNDArray thirtyToSixty = (IComplexNDArray) Transforms.round(Nd4j.complexLinSpace(31,60,30)).reshape(3,10);
+        IComplexNDArray test = tenByTen.get(NDArrayIndex.interval(3, 6), NDArrayIndex.interval(0, tenByTen.columns()));
+        assertEquals(thirtyToSixty,test);
+    }
+
     @Test
     public void testPutAndGet() {
         IComplexNDArray multiRow = Nd4j.createComplex(2,2);
@@ -675,6 +794,17 @@ public abstract class ComplexNDArrayTests {
 
     }
 
+
+    @Test
+    public void testBroadcast() {
+        IComplexNDArray arr = Nd4j.complexLinSpace(1,5,5);
+        IComplexNDArray arrs = arr.broadcast(new int[]{5,5});
+        IComplexNDArray arrs3 = Nd4j.createComplex(5,5);
+        assertTrue(Arrays.equals(arrs.shape(),arrs3.shape()));
+        for(int i = 0; i < arrs.slices(); i++)
+            arrs3.putSlice(i,arr);
+        assertEquals(arrs3,arrs);
+    }
 
     @Test
     public void testBasicOperations() {

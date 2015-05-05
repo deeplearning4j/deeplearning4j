@@ -60,6 +60,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 	protected transient Pointer hostPointer;
 	protected transient ByteBuffer hostBuffer;
 	
+    protected AtomicBoolean modified = new AtomicBoolean(false);
     protected int length;
     protected int elementSize;
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
@@ -130,8 +131,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public void put(int i, IComplexNumber result) {
         
-
-
+        modified.set(true);
         if (dataType() == DataBuffer.Type.FLOAT) {
             JCublas.cublasSetVector(
                     getLength(),
@@ -172,7 +172,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         
         return hostBuffer.asIntBuffer().array();
     }
-    
+
     @Override
 	public CUdeviceptr getDevicePointer() {
     	if(devicePointer == null) {
@@ -186,11 +186,12 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     	
     	return devicePointer;
     }
-    
+
+
     @Override
     public void set(Pointer pointer) {
         
-
+        modified.set(true);
 
         if (dataType() == DataBuffer.Type.DOUBLE) {
             JCublas.cublasDcopy(
@@ -201,7 +202,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                     1
             );
         } else {
-        	JCublas.cublasScopy(
+            JCublas.cublasScopy(
                     getLength(),
                     pointer,
                     1,
@@ -258,7 +259,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      */
     protected void set(int index, int length, Pointer from, int inc) {
         
-
+        modified.set(true);
 
         int offset = getElementSize() * index;
         if (offset >= getLength() * getElementSize())

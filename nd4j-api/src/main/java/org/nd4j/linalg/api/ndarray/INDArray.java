@@ -72,6 +72,8 @@ public interface INDArray extends Serializable  {
      */
     INDArray linearView();
 
+
+
     /**
      * Returns a linear view reference of shape
      * 1,length(ndarray)

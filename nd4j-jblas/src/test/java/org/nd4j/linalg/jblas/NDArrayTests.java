@@ -90,23 +90,6 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
     }
 
 
-    @Test
-    public void testFortranRavel() {
-        double[][] data = new double[][]{
-                {1, 2, 3, 4},
-                {5, 6, 7, 8}
-        };
-
-        INDArray toRavel = Nd4j.create(data);
-        Nd4j.factory().setOrder('f');
-        INDArray toRavelF = Nd4j.create(data);
-        INDArray ravel = toRavel.ravel();
-        INDArray ravelF = toRavelF.ravel();
-        assertEquals(ravel, ravelF);
-        Nd4j.factory().setOrder('c');
-
-    }
-
 
     @Test
     public void testNorm1() {

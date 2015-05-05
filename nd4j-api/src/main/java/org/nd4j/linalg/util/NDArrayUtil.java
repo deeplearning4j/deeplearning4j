@@ -16,9 +16,12 @@
 
 package org.nd4j.linalg.util;
 
+import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,15 +59,34 @@ public class NDArrayUtil {
      * specified shape
      */
     public static INDArray center(INDArray arr, int[] shape) {
+        if (arr.length() < ArrayUtil.prod(shape))
+            return arr;
+        for (int i = 0; i < shape.length; i++)
+            if (shape[i] < 1)
+               shape[i] = 1;
+
         INDArray shapeMatrix = ArrayUtil.toNDArray(shape);
         INDArray currShape = ArrayUtil.toNDArray(arr.shape());
-        INDArray centered = arr;
-        INDArray startIndex = currShape.sub(shapeMatrix).div(2);
+
+        INDArray startIndex = Transforms.floor(currShape.sub(shapeMatrix).divi(Nd4j.scalar(2)));
         INDArray endIndex = startIndex.add(shapeMatrix);
-        arr = centered.get(NDArrayIndex.interval((int) startIndex.getFloat(0), (int) startIndex.getFloat(0)), NDArrayIndex.interval((int) startIndex.getFloat(1), (int) endIndex.getFloat(1)));
+        NDArrayIndex[] indexes = Indices.createFromStartAndEnd(startIndex,endIndex);
+
+        if (shapeMatrix.length() > 1)
+            return arr.get(indexes);
 
 
-        return arr;
+        else {
+            INDArray ret = Nd4j.create(new int[]{(int) shapeMatrix.getDouble(0)});
+            int start = (int) startIndex.getDouble(0);
+            int end = (int) endIndex.getDouble(0);
+            int count = 0;
+            for (int i = start; i < end; i++) {
+                ret.putScalar(count++, arr.getDouble(i));
+            }
+
+            return ret;
+        }
     }
 
     /**

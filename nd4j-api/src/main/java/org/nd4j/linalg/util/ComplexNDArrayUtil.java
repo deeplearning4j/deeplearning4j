@@ -22,7 +22,9 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,18 +69,22 @@ public class ComplexNDArrayUtil {
     public static IComplexNDArray center(IComplexNDArray arr, int[] shape) {
         if (arr.length() < ArrayUtil.prod(shape))
             return arr;
+        for (int i = 0; i < shape.length; i++)
+            if (shape[i] < 1)
+                shape[i] = 1;
 
         INDArray shapeMatrix = ArrayUtil.toNDArray(shape);
-        for (int i = 0; i < shape.length; i++)
-            if (shape.length < 1)
-                throw new IllegalArgumentException("Illegal shape passed in with value < 0");
         INDArray currShape = ArrayUtil.toNDArray(arr.shape());
 
-        INDArray startIndex = currShape.sub(shapeMatrix).divi(Nd4j.scalar(2));
+        INDArray startIndex = Transforms.ceiling(currShape.sub(shapeMatrix).divi(Nd4j.scalar(2)));
         INDArray endIndex = startIndex.add(shapeMatrix);
-        if (shapeMatrix.length() > 1) {
-            arr = Nd4j.createComplex(arr.get(NDArrayIndex.interval((int) startIndex.getDouble(0), (int) endIndex.getDouble(0)), NDArrayIndex.interval((int) startIndex.getDouble(1), (int) endIndex.getDouble(1))));
-        } else {
+        NDArrayIndex[] indexes = Indices.createFromStartAndEnd(startIndex,endIndex);
+
+        if (shapeMatrix.length() > 1)
+            return arr.get(indexes);
+
+
+        else {
             IComplexNDArray ret = Nd4j.createComplex(new int[]{(int) shapeMatrix.getDouble(0)});
             int start = (int) startIndex.getDouble(0);
             int end = (int) endIndex.getDouble(0);
@@ -91,7 +97,6 @@ public class ComplexNDArrayUtil {
         }
 
 
-        return arr;
     }
 
     /**
@@ -107,81 +112,23 @@ public class ComplexNDArrayUtil {
 
 
         if (nd.isVector()) {
-            IComplexNDArray truncated = Nd4j.createComplex(new int[]{n});
+            IComplexNDArray truncated = Nd4j.createComplex(new int[]{1,n});
             for (int i = 0; i < n; i++)
-                truncated.put(i, nd.getScalar(i));
+                truncated.putScalar(i, nd.getComplex(i));
+
             return truncated;
         }
 
 
         if (nd.size(dimension) > n) {
-            int[] targetShape = ArrayUtil.copy(nd.shape());
-            targetShape[dimension] = n;
-            int numRequired = ArrayUtil.prod(targetShape);
-            if (nd.isVector()) {
-                IComplexNDArray ret = Nd4j.createComplex(targetShape);
-                int count = 0;
-                for (int i = 0; i < nd.length(); i += nd.stride()[dimension]) {
-                    ret.put(count++, nd.getScalar(i));
-
-                }
-                return ret;
-            } else if (nd.isMatrix()) {
-                List<IComplexDouble> list = new ArrayList<>();
-                //row
-                if (dimension == 0) {
-                    for (int i = 0; i < nd.rows(); i++) {
-                        IComplexNDArray row = nd.getRow(i);
-                        for (int j = 0; j < row.length(); j++) {
-                            if (list.size() == numRequired)
-                                return Nd4j.createComplex(list.toArray(new IComplexDouble[0]), targetShape);
-
-                            list.add(row.getComplex(j).asDouble());
-                        }
-                    }
-                } else if (dimension == 1) {
-                    for (int i = 0; i < nd.columns(); i++) {
-                        IComplexNDArray row = nd.getColumn(i);
-                        for (int j = 0; j < row.length(); j++) {
-                            if (list.size() == numRequired)
-                                return Nd4j.createComplex(list.toArray(new IComplexDouble[0]), targetShape);
-
-                            list.add(row.getComplex(j).asDouble());
-                        }
-                    }
-                } else
-                    throw new IllegalArgumentException("Illegal dimension for matrix " + dimension);
-
-
-                return Nd4j.createComplex(list.toArray(new IComplexDouble[0]), targetShape);
-
-            }
-
-
-            if (dimension == 0) {
-                List<IComplexNDArray> slices = new ArrayList<>();
-                for (int i = 0; i < n; i++) {
-                    IComplexNDArray slice = nd.slice(i);
-                    slices.add(slice);
-                }
-
-                return Nd4j.createComplex(slices, targetShape);
-
-            } else {
-                List<IComplexDouble> list = new ArrayList<>();
-                int numElementsPerSlice = ArrayUtil.prod(ArrayUtil.removeIndex(targetShape, 0));
-                for (int i = 0; i < nd.slices(); i++) {
-                    IComplexNDArray slice = nd.slice(i).ravel();
-                    for (int j = 0; j < numElementsPerSlice; j++)
-                        list.add((IComplexDouble) slice.getScalar(j).element());
-                }
-
-                assert list.size() == ArrayUtil.prod(targetShape) : "Illegal shape for length " + list.size();
-
-                return Nd4j.createComplex(list.toArray(new IComplexDouble[0]), targetShape);
-
-            }
-
+            int[] shape = ArrayUtil.copy(nd.shape());
+            shape[dimension] = n;
+            IComplexNDArray ret = Nd4j.createComplex(shape);
+            IComplexNDArray ndLinear = nd.linearView();
+            IComplexNDArray retLinear = ret.linearView();
+            for(int i = 0; i < ret.length(); i++)
+                retLinear.putScalar(i,ndLinear.getComplex(i));
+            return ret;
 
         }
 
@@ -204,7 +151,8 @@ public class ComplexNDArrayUtil {
             return nd;
 
         IComplexNDArray ret = Nd4j.createComplex(targetShape);
-        Nd4j.getBlasWrapper().copy(nd,ret);
+        NDArrayIndex[] targetShapeIndex = NDArrayIndex.createCoveringShape(nd.shape());
+        ret.put(targetShapeIndex,nd);
         return ret;
 
     }

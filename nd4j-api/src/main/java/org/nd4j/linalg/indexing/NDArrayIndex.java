@@ -31,11 +31,42 @@ public class NDArrayIndex {
 
     private int[] indices = new int[1];
     private boolean isInterval = false;
+    private static NDArrayIndexAll ALL = new NDArrayIndexAll();
 
-
+    /**
+     * NDArrayIndexing based on the given
+     * indexes
+     * @param indices
+     */
     public NDArrayIndex(int... indices) {
         this.indices = indices;
 
+    }
+
+
+    /**
+     * Represents collecting all elements
+     *
+     * @return an ndarray index
+     * meaning collect
+     * all elements
+     */
+    public static NDArrayIndex all() {
+        return ALL;
+    }
+
+    /**
+     * Creates an index covering the given shape
+     * (for each dimension 0,shape[i])
+     * @param shape the shape to cover
+     * @return the ndarray indexes to cover
+     */
+    public static NDArrayIndex[] createCoveringShape(int[] shape) {
+        NDArrayIndex[] ret = new NDArrayIndex[shape.length];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = NDArrayIndex.interval(0,shape[i]);
+        }
+        return ret;
     }
 
     /**
@@ -88,6 +119,41 @@ public class NDArrayIndex {
         return new NDArrayIndex(Ints.concat(indices));
     }
 
+
+    /**
+     * Generates an interval from begin (inclusive) to end (exclusive)
+     *
+     * @param begin the begin
+     * @param stride  the stride at which to increment
+     * @param end   the end index
+     * @return the interval
+     */
+    public static NDArrayIndex interval(int begin, int stride,int end) {
+        if(Math.abs(begin - end) < 1)
+            end++;
+        if(stride > 1 && Math.abs(begin - end) == 1) {
+            end *= stride;
+        }
+        return interval(begin,stride, end, false);
+    }
+
+    /**
+     * Generates an interval from begin (inclusive) to end (exclusive)
+     *
+     * @param begin     the begin
+     * @param stride the stride at which to increment
+     * @param end       the end index
+     * @param inclusive whether the end should be inclusive or not
+     * @return the interval
+     */
+    public static NDArrayIndex interval(int begin,int stride, int end, boolean inclusive) {
+        assert begin <= end : "Beginning index in range must be less than end";
+        NDArrayIndex ret = new NDArrayIndex(ArrayUtil.range(begin, inclusive ? end + 1 : end,stride));
+        ret.isInterval = stride == 1;
+        return ret;
+    }
+
+
     /**
      * Generates an interval from begin (inclusive) to end (exclusive)
      *
@@ -96,7 +162,7 @@ public class NDArrayIndex {
      * @return the interval
      */
     public static NDArrayIndex interval(int begin, int end) {
-        return interval(begin, end, false);
+        return interval(begin,1, end, false);
     }
 
     /**
@@ -108,10 +174,7 @@ public class NDArrayIndex {
      * @return the interval
      */
     public static NDArrayIndex interval(int begin, int end, boolean inclusive) {
-        assert begin <= end : "Beginning index in range must be less than end";
-        NDArrayIndex ret = new NDArrayIndex(ArrayUtil.range(begin, inclusive ? end + 1 : end));
-        ret.isInterval = true;
-        return ret;
+       return interval(begin,1,end,inclusive);
     }
 
     public int end() {
@@ -162,6 +225,15 @@ public class NDArrayIndex {
         if (!Arrays.equals(indices, that.indices)) return false;
 
         return true;
+    }
+
+
+
+    //static type checking used for checking if an index should be represented as all
+    public static class NDArrayIndexAll  extends NDArrayIndex {
+        public NDArrayIndexAll(int... indices) {
+            super(indices);
+        }
     }
 
     @Override

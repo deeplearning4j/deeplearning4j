@@ -111,6 +111,41 @@ public class ArrayUtil {
     }
 
 
+    /**
+     * Calculate the offset for a given stride array
+     * @param stride the stride to use
+     * @param i the offset to calculate for
+     * @return the offset for the given
+     * stride
+     */
+    public static int offsetFor(int[] stride,int i) {
+        int ret = 0;
+        for(int j = 0; j < stride.length; j++)
+            ret += (i * stride[j]);
+        return ret;
+
+    }
+
+    /**
+     * Sum of an int array
+     * @param add the elements
+     *            to calculate the sum for
+     * @return the sum of this array
+     */
+    public static int sum(int[] add) {
+        if (add.length < 1)
+            return 0;
+        int ret = 1;
+        for (int i = 0; i < add.length; i++)
+            ret *= add[i];
+        return ret;
+    }
+    /**
+     * Product of an int array
+     * @param mult the elements
+     *            to calculate the sum for
+     * @return the product of this array
+     */
     public static int prod(int[] mult) {
         if (mult.length < 1)
             return 0;
@@ -252,7 +287,9 @@ public class ArrayUtil {
      * @return the subset of the data specified
      */
     public static double[] range(double[] data, int to, int stride, int numElementsEachStride) {
-        double[] ret = new double[to];
+        double[] ret = new double[to / stride];
+        if(ret.length < 1)
+            ret = new double[1];
         int count = 0;
         for (int i = 0; i < data.length; i += stride) {
             for (int j = 0; j < numElementsEachStride; j++) {
@@ -295,16 +332,24 @@ public class ArrayUtil {
      */
     public static int[] range(int from, int to, int increment) {
         int diff = Math.abs(from - to);
-        int[] ret = new int[diff];
+        int[] ret = new int[diff / increment];
+        if(ret.length < 1)
+            ret = new int[1];
+
         if (from < to) {
             int count = 0;
             for (int i = from; i < to; i += increment) {
+                if (count >= ret.length)
+                    break;
                 ret[count++] = i;
             }
         } else if (from > to) {
             int count = 0;
-            for (int i = from - 1; i >= to; i -= increment)
+            for (int i = from - 1; i >= to; i -= increment) {
+                if (count >= ret.length)
+                    break;
                 ret[count++] = i;
+            }
         }
 
         return ret;

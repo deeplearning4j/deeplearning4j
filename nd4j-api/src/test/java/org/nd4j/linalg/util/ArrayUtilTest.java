@@ -17,7 +17,7 @@
 package org.nd4j.linalg.util;
 
 import org.junit.Test;
-
+import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 9/6/14.
  */
@@ -28,5 +28,13 @@ public class ArrayUtilTest {
         int[] strides = ArrayUtil.calcStridesFortran(new int[]{1, 2, 2});
     }
 
+    @Test
+    public void testStride() {
+        int[] strides = new int[] {
+                4,4,4,4
+        };
+
+        assertEquals(16,ArrayUtil.offsetFor(strides,1));
+    }
 
 }

@@ -177,11 +177,21 @@ public class FFT {
         return Nd4j.getFFt().irfftn(arr);
     }
 
-
+    /**
+     *
+     * @param arr
+     * @param dimension
+     * @return
+     */
     public static IComplexNDArray irfft(IComplexNDArray arr, int dimension) {
         return Nd4j.getFFt().irfft(arr, dimension);
     }
 
+    /**
+     *
+     * @param arr
+     * @return
+     */
     public static IComplexNDArray irfft(IComplexNDArray arr) {
         return Nd4j.getFFt().irfft(arr);
     }
@@ -234,7 +244,7 @@ public class FFT {
      * @return the ffted array
      */
     public static IComplexNDArray fftn(INDArray transform) {
-        return Nd4j.getFFt().fftn(transform, transform.shape().length - 1, transform.shape()[transform.shape().length - 1]);
+        return Nd4j.getFFt().rawfftn(Nd4j.createComplex(transform),null,null);
     }
 
 
@@ -245,23 +255,16 @@ public class FFT {
      * @return the ffted array
      */
     public static IComplexNDArray fftn(IComplexNDArray transform) {
-        return Nd4j.getFFt().fftn(transform, transform.shape().length - 1, transform.shape()[transform.shape().length - 1]);
+        return Nd4j.getFFt().rawfftn(Nd4j.createComplex(transform), null, null);
     }
 
-
-    public static IComplexNDArray ifftn(IComplexNDArray transform, int dimension) {
-        return Nd4j.getFFt().ifftn(transform, dimension, transform.shape()[dimension]);
-    }
 
 
     public static IComplexNDArray ifftn(IComplexNDArray transform) {
-        return Nd4j.getFFt().ifftn(transform);
+        return Nd4j.getFFt().rawifftn(transform, null, null);
     }
 
 
-    public static IComplexNDArray ifftn(INDArray transform) {
-        return Nd4j.getFFt().ifftn(transform);
-    }
 
     //underlying ifftn
     public static IComplexNDArray rawifftn(IComplexNDArray transform, int[] shape, int[] axes) {
