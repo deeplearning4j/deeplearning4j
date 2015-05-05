@@ -180,9 +180,8 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
             return false;
         if (!points.equals(vocabWord.points)) return false;
         if (!word.equals(vocabWord.word)) return false;
-        if (wordFrequency.get() != vocabWord.wordFrequency.get()) return false;
+        return wordFrequency.get() == vocabWord.wordFrequency.get();
 
-        return true;
     }
 
     @Override

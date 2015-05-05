@@ -56,8 +56,6 @@ public abstract class BaseLayer implements Layer {
     
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
-
-
     }
 
     public BaseLayer(NeuralNetConfiguration conf, INDArray input) {
@@ -71,6 +69,50 @@ public abstract class BaseLayer implements Layer {
 
     public void setIterationListeners(Collection<IterationListener> listeners) {
         this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    }
+
+    @Override
+    public Gradient error(INDArray errorSignal) {
+        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
+        Gradient nextLayerGradient = new DefaultGradient();
+        INDArray wErrorSignal = errorSignal.mmul(W);
+        nextLayerGradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wErrorSignal);
+        return nextLayerGradient;
+    }
+
+    @Override
+    public INDArray derivativeActivation(INDArray input) {
+        INDArray deriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), activate(input)).derivative());
+        return deriv;
+    }
+
+    @Override
+    public Gradient errorSignal(Gradient error, INDArray input) {
+        INDArray derivative = derivativeActivation(input);
+        Gradient ret = new DefaultGradient();
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,derivative.mul(error.getGradientFor(DefaultParamInitializer.WEIGHT_KEY)));
+        return ret;
+    }
+
+    @Override
+    public Gradient calcGradient(Gradient layerError, INDArray activation) {
+        Gradient ret = new DefaultGradient();
+        INDArray weightErrorSignal = layerError.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
+        INDArray weightError = weightErrorSignal.transpose().mmul(activation).divi(weightErrorSignal.rows()).transpose();
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,weightError);
+        INDArray biasGradient = weightError.sum(0).divi(weightErrorSignal.rows());
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,biasGradient);
+
+        return ret;
+    }
+
+    @Override
+    public Gradient backwardGradient(INDArray activation, Gradient errorSignal) {
+        Gradient propError = error(activation);
+        INDArray deriv = derivativeActivation(activation);
+        Gradient ret = new DefaultGradient();
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,propError.getGradientFor(DefaultParamInitializer.WEIGHT_KEY).mul(deriv));
+        return ret;
     }
 
     @Override
@@ -109,6 +151,12 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public ConvexOptimizer getOptimizer() {
+        if(optimizer == null) {
+            Solver solver = new Solver.Builder()
+                    .model(this).configure(conf())
+                    .build();
+            this.optimizer = solver.getOptimizer();
+        }
         return optimizer;
     }
 
@@ -291,8 +339,10 @@ public abstract class BaseLayer implements Layer {
 
     }
 
-
-
+    @Override
+    public Type type() {
+        return Type.FEED_FORWARD;
+    }
 
     /**
      * The number of parameters for the model

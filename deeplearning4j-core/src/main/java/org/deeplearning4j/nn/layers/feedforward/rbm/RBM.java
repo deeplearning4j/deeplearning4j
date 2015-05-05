@@ -21,7 +21,6 @@ package org.deeplearning4j.nn.layers.feedforward.rbm;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.rng.Randoms;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
@@ -31,8 +30,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.nd4j.linalg.ops.transforms.Transforms.exp;
-import static org.nd4j.linalg.ops.transforms.Transforms.log;
 import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 import static org.nd4j.linalg.ops.transforms.Transforms.max;
@@ -72,19 +69,19 @@ public  class RBM extends BasePretrainNetwork {
     
     public RBM(NeuralNetConfiguration conf) {
         super(conf);
-        this.rng = Randoms.createRandom(conf.getRng());
+        this.rng = Nd4j.getRandom();
     }
 
     public RBM(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
-        this.rng = Randoms.createRandom(conf.getRng());
+        this.rng = Nd4j.getRandom();
     }
 
-    public static enum VisibleUnit {
+    public enum VisibleUnit {
         BINARY,GAUSSIAN,SOFTMAX,LINEAR
     }
 
-    public static enum HiddenUnit {
+    public enum HiddenUnit {
         RECTIFIED,BINARY,GAUSSIAN,SOFTMAX
     }
 

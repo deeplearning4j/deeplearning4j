@@ -58,9 +58,8 @@ public class CanovaWritableDelegate implements Writable {
 
         CanovaWritableDelegate that = (CanovaWritableDelegate) o;
 
-        if (writable != null ? !writable.equals(that.writable) : that.writable != null) return false;
+        return !(writable != null ? !writable.equals(that.writable) : that.writable != null);
 
-        return true;
     }
 
     @Override

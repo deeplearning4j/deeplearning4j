@@ -623,8 +623,7 @@ public class Counter<E> implements Serializable {
 		if (dirty != counter.dirty) return false;
 		if (Double.compare(counter.cacheTotal, cacheTotal) != 0) return false;
 		if (Double.compare(counter.deflt, deflt) != 0) return false;
-		if (entries != null ? !entries.equals(counter.entries) : counter.entries != null) return false;
-		return true;
+		return !(entries != null ? !entries.equals(counter.entries) : counter.entries != null);
 
 	}
 

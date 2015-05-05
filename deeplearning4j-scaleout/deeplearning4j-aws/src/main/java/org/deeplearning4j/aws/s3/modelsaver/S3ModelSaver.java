@@ -57,7 +57,7 @@ public class S3ModelSaver extends BaseS3 implements ModelSaver {
 	public void save(Serializable ser) {
 		String modelId = UUID.randomUUID().toString();
 		S3Uploader uploader = new S3Uploader();
-		String tmpDir = System.getProperty("java.io.tmpdir");;
+		String tmpDir = System.getProperty("java.io.tmpdir");
 		try {
 			File tmpFile = new File(new File(tmpDir),modelId);
 			ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(tmpFile));

@@ -50,7 +50,7 @@ public interface Model {
      * The score for the model
      * @return the score for the model
      */
-    public double score();
+    double score();
 
 
     /**
@@ -108,7 +108,7 @@ public interface Model {
      * Run one iteration
      * @param input the input to iterate on
      */
-    public void iterate(INDArray input);
+    void iterate(INDArray input);
 
 
     /**
@@ -127,7 +127,7 @@ public interface Model {
      * The current inputs batch size
      * @return the current inputs batch size
      */
-    public int batchSize();
+    int batchSize();
 
 
     /**
