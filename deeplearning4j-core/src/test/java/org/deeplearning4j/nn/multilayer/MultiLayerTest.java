@@ -107,10 +107,10 @@ public class MultiLayerTest {
          *
          */
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
+                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
+                .iterations(100).weightInit(WeightInit.VI)
                 .activationFunction("tanh").filterSize(5, 1, 2, 2)
-                .nIn(4).nOut(3).batchSize(batchSize)
+                .nIn(4).nOut(3).batchSize(batchSize).dropOut(0.5)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED).iterationListener(new ScoreIterationListener(10))
                 .layerFactory(layerFactory)
@@ -142,10 +142,7 @@ public class MultiLayerTest {
         org.nd4j.linalg.dataset.DataSet next = iter.next();
         next.normalizeZeroMeanZeroUnitVariance();
         SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
-        /**
-         * Likely cause: shape[0] mis match on the filter size and the input batch size.
-         * Likely need to make a little more general.
-         */
+
         network.fit(trainTest.getTrain().getFeatureMatrix().reshape(trainTest.getTrain().numExamples(),1,2,2),trainTest.getTrain().getLabels());
 
 
