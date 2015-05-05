@@ -2358,8 +2358,37 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             return ret;
         }
 
-        if (ArrayUtil.prod(shape) >= length())
-            return this;
+        //This means upsampling.
+        if (ArrayUtil.prod(shape) > length()) {
+            IComplexNDArray ret = Nd4j.createComplex(shape);
+            NDArrayIndex slices = indexes[0];
+            int[] indices = slices.indices();
+            if(indexes.length == 1) {
+                NDArrayIndex subRange = indexes[0];
+                int count = 0;
+                for(int i = 0; i < indices.length; i++) {
+                    if(count >= ret.length())
+                        count = 0;
+                    int get = subRange.indices()[count];
+                    ret.putScalar(count,getComplex(get));
+                    count++;
+
+                }
+            }
+            else {
+                NDArrayIndex[] subRange = Arrays.copyOfRange(indexes,1,indexes.length);
+                NDArrayIndex[] putRange = NDArrayIndex.rangeOfLength(subRange);
+                for(int i = 0; i < indices.length; i++) {
+                    INDArray sliceI = ret.slice(i);
+                    INDArray thisSlice = slice(indices[i]);
+                    sliceI.put(putRange,thisSlice.get(subRange));
+
+                }
+            }
+
+
+            return ret;
+        }
 
 
         int[] strides = ArrayUtil.copy(stride());

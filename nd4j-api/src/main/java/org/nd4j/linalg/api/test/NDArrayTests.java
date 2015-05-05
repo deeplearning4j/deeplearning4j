@@ -228,6 +228,8 @@ public abstract class NDArrayTests {
 
     @Test
     public void testGetIndices() {
+        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
+        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
         /*[[[1.0 ,13.0],[5.0 ,17.0],[9.0 ,21.0]],[[2.0 ,14.0],[6.0 ,18.0],[10.0 ,22.0]],[[3.0 ,15.0],[7.0 ,19.0],[11.0 ,23.0]],[[4.0 ,16.0],[8.0 ,20.0],[12.0 ,24.0]]]*/
         Nd4j.factory().setOrder('f');
         INDArray test = Nd4j.linspace(1, 24, 24).reshape(4, 3, 2);
@@ -250,9 +252,29 @@ public abstract class NDArrayTests {
         INDArray row = Nd4j.create(new float[]{7, 11});
         INDArray result = test2.slice(1);
         assertEquals(row, result);
-        row.data().destroy();
-        result.data().destroy();
 
+
+        INDArray upSample = Nd4j.linspace(1, 6, 6).reshape(2,3);
+        INDArray upSampledAssertion = Nd4j.create(new double[][]
+                {{1.0, 1.0, 3.0, 3.0, 5.0, 5.0},
+                        {1.0, 1.0, 3.0, 3.0, 5.0, 5.0},
+                        {2.0, 2.0, 4.0, 4.0, 6.0, 6.0}
+                        ,{2.0, 2.0, 4.0, 4.0, 6.0, 6.0}
+                });
+        int[] indices = new int[]{
+                0,0,1,1
+        };
+        int[] dimension1Indices = new int[] {
+                0,0,1,1,2,2
+        };
+
+
+        NDArrayIndex[] upSampledIndex = new NDArrayIndex[] {
+                new NDArrayIndex(indices),new NDArrayIndex(dimension1Indices)
+        };
+
+        INDArray upsampleTest = upSample.get(upSampledIndex);
+        assertEquals(upSampledAssertion,upsampleTest);
     }
 
 

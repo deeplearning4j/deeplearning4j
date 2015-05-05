@@ -291,7 +291,7 @@ public class Indices {
                 int begin = currIndices[0];
 
                 ret[i] = indices[i].isInterval() ? Math.abs(end - begin) + 1 :
-                        indices[i].indices().length - 1;
+                        indices[i].indices().length;
                 ret[i] -= offsets[i];
 
             }

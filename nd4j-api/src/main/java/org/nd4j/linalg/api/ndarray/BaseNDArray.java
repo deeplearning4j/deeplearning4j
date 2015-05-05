@@ -2692,8 +2692,13 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray slice(int slice) {
 
-        if (shape.length == 0)
-            throw new IllegalArgumentException("Can't slice a 0-d NDArray");
+        if (shape.length == 0) {
+            if(slice == 0)
+                return Nd4j.scalar(getDouble(0));
+            else
+                throw new IllegalArgumentException("Can't slice a 0-d NDArray");
+
+        }
         else if(slice == -1) {
             return slice(shape().length - 1);
         }
@@ -3342,14 +3347,40 @@ public abstract class BaseNDArray implements INDArray {
             return ret;
         }
 
-        if (ArrayUtil.prod(shape) > length())
-            return this;
+        //This means upsampling.
+        if (ArrayUtil.prod(shape) > length()) {
+            INDArray ret = Nd4j.create(shape);
+            NDArrayIndex slices = indexes[0];
+            int[] indices = slices.indices();
+            if(indexes.length == 1) {
+                NDArrayIndex subRange = indexes[0];
+                NDArrayIndex putRange = NDArrayIndex.rangeOfLength(subRange)[0];
+                int count = 0;
+                for(int i = 0; i < indices.length; i++) {
+                    if(count >= ret.length())
+                        count = 0;
+                    int get = subRange.indices()[count];
+                    ret.putScalar(count,getDouble(get));
+                    count++;
+
+                }
+            }
+            else {
+                NDArrayIndex[] subRange = Arrays.copyOfRange(indexes,1,indexes.length);
+                NDArrayIndex[] putRange = NDArrayIndex.rangeOfLength(subRange);
+                for(int i = 0; i < indices.length; i++) {
+                    INDArray sliceI = ret.slice(i);
+                    INDArray thisSlice = slice(indices[i]);
+                    sliceI.put(putRange,thisSlice.get(subRange));
+
+                }
+            }
 
 
-        int[] strides = ArrayUtil.copy(stride());
+            return ret;
+        }
 
-
-        return subArray(offsets, shape, strides);
+        return subArray(offsets, shape, ArrayUtil.copy(stride()));
     }
 
 

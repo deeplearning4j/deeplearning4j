@@ -187,11 +187,11 @@ public class Transforms {
     }
 
     /**
-     * Upsampling a signal (specifically the first 2 dimensions
+     * Upsampling a signal (specifically the first 2 dimensions)
      *
-     * @param d
-     * @param scale
-     * @return
+     * @param d the data to upsample
+     * @param scale the amount to scale by
+     * @return the upsampled ndarray
      */
     public static INDArray upSample(INDArray d, INDArray scale) {
 
@@ -203,13 +203,19 @@ public class Transforms {
             NDArrayIndex index = new NDArrayIndex(indices);
             tmp.put(new NDArrayIndex[]{index}, 1);
             INDArray put = tmp.cumsum(0);
-            idx.add(put);
+            idx.add(put.sub(1));
         }
 
         INDArray ret = Nd4j.create(ArrayUtil.toInts(ArrayUtil.toNDArray(d.shape()).muli(scale)));
-        for(int i = 0; i < ret.slices(); i++) {
-            INDArray slice = d.slice((int) idx.get(0).getDouble(i));
+        INDArray retLinear = ret.linearView();
+        for(int i = 0; i < retLinear.length(); i++) {
+            for(int j = 0; j < idx.get(0).length(); j++) {
+                int slice = idx.get(0).getInt(j);
+                for(int k = 1; k < idx.size(); k++) {
 
+                }
+
+            }
         }
 
         return ret;
@@ -219,9 +225,10 @@ public class Transforms {
     /**
      * Cosine similarity
      *
-     * @param d1
-     * @param d2
-     * @return
+     * @param d1 the first vector
+     * @param d2 the second vector
+     * @return the cosine similarities between the 2 arrays
+     *
      */
     public static double cosineSim(INDArray d1, INDArray d2) {
         return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(d1, d2, d1.length())).currentResult().doubleValue();

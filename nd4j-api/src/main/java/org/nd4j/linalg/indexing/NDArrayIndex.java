@@ -69,6 +69,25 @@ public class NDArrayIndex {
         return ret;
     }
 
+
+    /**
+     * Create a range based on the given indexes.
+     * This is similar to create covering shape in that it approximates
+     * the length of each dimension (ignoring elements) and
+     * reproduces an index of the same dimension and length.
+     *
+     * @param indexes the indexes to create the range for
+     * @return the index ranges.
+     */
+    public static NDArrayIndex[] rangeOfLength(NDArrayIndex...indexes) {
+        NDArrayIndex[] indexesRet = new NDArrayIndex[indexes.length];
+        for(int i = 0; i < indexes.length; i++)
+            indexesRet[i] = NDArrayIndex.interval(0,indexes[i].indices.length);
+        return indexesRet;
+    }
+
+
+
     /**
      * Create from a matrix. The rows are the indices
      * The columns are the individual element in each ndarrayindex
@@ -226,6 +245,7 @@ public class NDArrayIndex {
 
         return true;
     }
+
 
 
 
