@@ -153,7 +153,9 @@ public abstract class BaseLayer implements Layer {
     public ConvexOptimizer getOptimizer() {
         if(optimizer == null) {
             Solver solver = new Solver.Builder()
-                    .model(this).configure(conf())
+                    .model(this)
+                    .configure(conf())
+                    .listeners(getIterationListeners())
                     .build();
             this.optimizer = solver.getOptimizer();
         }

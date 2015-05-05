@@ -76,12 +76,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     protected NeuralNetConfiguration defaultConfiguration;
     protected MultiLayerConfiguration layerWiseConfigurations;
 
+    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
 
     /*
       Binary drop connect mask
      */
     protected INDArray mask;
-
 
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
         this.layerWiseConfigurations = conf;
@@ -94,6 +94,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      * @param conf   the configuration json
      * @param params the parameters
      */
+    @Deprecated
     public MultiLayerNetwork(String conf, INDArray params) {
         this(MultiLayerConfiguration.fromJson(conf));
         init();
@@ -107,6 +108,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      * @param conf   the configuration
      * @param params the parameters
      */
+    @Deprecated
     public MultiLayerNetwork(MultiLayerConfiguration conf, INDArray params) {
         this(conf);
         init();
@@ -364,7 +366,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                     }
 
                     NeuralNetConfiguration currConf = layerWiseConfigurations.getConf(i);
-                    layers[i] = layerFactory.create(currConf);
+                    layers[i] = layerFactory.create(currConf, getIterationListeners());
                 }
                 else if (i < getLayers().length - 1) {
                     if (input != null)
@@ -392,7 +394,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                         layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
                     }
 
-                    layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(layerWiseConfigurations.getConf(i));
+                    layers[i] = layerWiseConfigurations.getConf(i).getLayerFactory().create(
+                            layerWiseConfigurations.getConf(i), getIterationListeners());
 
                 }
 
@@ -406,7 +409,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                 last.setnIn(hiddenLayerSizes[hiddenLayerSizes.length - 1]);
             }
 
-            this.layers[layers.length - 1] = last.getLayerFactory().create(last);
+            this.layers[layers.length - 1] = last.getLayerFactory().create(last, getIterationListeners());
 
             initCalled = true;
             initMask();
@@ -996,7 +999,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                 getLayers()[k].update(update);
             }
 
-            for(IterationListener listener : getOutputLayer().conf().getListeners())
+            for(IterationListener listener : getOutputLayer().getIterationListeners())
                 listener.iterationDone(getOutputLayer(),i);
         }
 
@@ -1031,7 +1034,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             } else {
                 StochasticHessianFree hessianFree =
                         new StochasticHessianFree(getOutputLayer().conf(), getOutputLayer().conf().getStepFunction(),
-                                getOutputLayer().conf().getListeners(), this);
+                                getOutputLayer().getIterationListeners(), this);
                 hessianFree.optimize();
             }
 
@@ -1066,7 +1069,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             activations.clear();
             o.setLabels(labels);
             StochasticHessianFree hessianFree = new StochasticHessianFree(getOutputLayer().conf(),
-                    getOutputLayer().conf().getStepFunction(), getOutputLayer().conf().getListeners(), this);
+                    getOutputLayer().conf().getStepFunction(), getOutputLayer().getIterationListeners(), this);
             hessianFree.optimize();
         }
     }
@@ -1531,8 +1534,13 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         this.mask = mask;
     }
 
-
-
+    public Collection<IterationListener> getIterationListeners() {
+        return iterationListeners;
+    }
+ 
+    public void setIterationListeners(Collection<IterationListener> listeners) {
+        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    }
 
 }
 

@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.layers.feedforward.rbm;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.rng.Randoms;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
@@ -69,12 +70,12 @@ public  class RBM extends BasePretrainNetwork {
     
     public RBM(NeuralNetConfiguration conf) {
         super(conf);
-        this.rng = Nd4j.getRandom();
+        this.rng = Randoms.createRandom(conf.getRng());
     }
 
     public RBM(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
-        this.rng = Nd4j.getRandom();
+        this.rng = Randoms.createRandom(conf.getRng());
     }
 
     public enum VisibleUnit {

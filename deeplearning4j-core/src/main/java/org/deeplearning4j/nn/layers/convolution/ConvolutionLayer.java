@@ -50,12 +50,22 @@ public class ConvolutionLayer implements Layer {
     private Map<String,INDArray> params;
     private NeuralNetConfiguration previousConf;
     protected ParamInitializer paramInitializer;
-    private List<IterationListener> listeners = new ArrayList<>();
+    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
 
     public ConvolutionLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
     }
 
+    @Override
+    public Collection<IterationListener> getIterationListeners() {
+        return iterationListeners;
+    }
+    
+    @Override
+    public void setIterationListeners(Collection<IterationListener> listeners) {
+        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    }
+    
     @Override
     public Type type() {
         return Type.CONVOLUTIONAL;
@@ -145,16 +155,6 @@ public class ConvolutionLayer implements Layer {
     @Override
     public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) {
         return null;
-    }
-
-    @Override
-    public Collection<IterationListener> getIterationListeners() {
-        return listeners;
-    }
-
-    @Override
-    public void setIterationListeners(Collection<IterationListener> listeners) {
-         this.listeners = new ArrayList<>(listeners);
     }
 
     @Override

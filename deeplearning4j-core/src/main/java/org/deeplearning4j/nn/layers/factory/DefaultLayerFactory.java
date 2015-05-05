@@ -52,7 +52,7 @@ public class DefaultLayerFactory implements LayerFactory {
 
     @Override
     public <E extends Layer> E create(NeuralNetConfiguration conf) {
-        return create(conf, conf.getListeners());
+        return create(conf, Collections.<IterationListener>emptyList());
     }
 
     @Override

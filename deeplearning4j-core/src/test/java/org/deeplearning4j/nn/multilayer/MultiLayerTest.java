@@ -112,7 +112,7 @@ public class MultiLayerTest {
                 .activationFunction("tanh").filterSize(5, 1, 2, 2)
                 .nIn(4).nOut(3).batchSize(batchSize)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED).iterationListener(new ScoreIterationListener(10))
+                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .layerFactory(layerFactory)
                 .list(3)
                 .inputPreProcessor(0,new ConvolutionInputPreProcessor(2,2))
@@ -135,6 +135,7 @@ public class MultiLayerTest {
                 .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.setIterationListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
         network.init();
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
@@ -178,7 +179,7 @@ public class MultiLayerTest {
                 .list(2).backward(true)
                 .preProcessor(0,new ConvolutionPostProcessor())
                 .hiddenLayerSizes(new int[]{4})
-                .override(new ClassifierOverride(1)).build();
+                .override(1, new ClassifierOverride(1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -211,7 +212,7 @@ public class MultiLayerTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .iterations(100).weightInit(WeightInit.DISTRIBUTION).momentum(0.5)
-                .activationFunction("tanh").iterationListener(new ScoreIterationListener(1))
+                .activationFunction("tanh")
                 .dist(new NormalDistribution(1e-1,1e-1))
                 .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .layerFactory(layerFactory)
@@ -227,6 +228,7 @@ public class MultiLayerTest {
                 }).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.setIterationListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
 
@@ -261,7 +263,7 @@ public class MultiLayerTest {
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .nIn(4).nOut(3).list(2)
                 .hiddenLayerSizes(new int[]{3})
-                .override(new ClassifierOverride(1)).build();
+                .override(1, new ClassifierOverride(1)).build();
 
             NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder()
                     .layerFactory(LayerFactories.getFactory(RBM.class))

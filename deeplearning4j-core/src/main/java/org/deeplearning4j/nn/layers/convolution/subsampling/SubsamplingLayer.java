@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
 import com.google.common.primitives.Ints;
+
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -54,11 +55,22 @@ public class SubsamplingLayer implements Layer {
     private Layer convLayer;
     protected ParamInitializer paramInitializer;
     private Map<String,INDArray> params;
-
+    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
+    
     public SubsamplingLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
     }
 
+    @Override
+    public Collection<IterationListener> getIterationListeners() {
+        return iterationListeners;
+    }
+    
+    @Override
+    public void setIterationListeners(Collection<IterationListener> listeners) {
+        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    }
+    
     @Override
     public Type type() {
         return Type.CONVOLUTIONAL;
@@ -163,16 +175,6 @@ public class SubsamplingLayer implements Layer {
         Gradient ret2 = new DefaultGradient();
         ret2.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS,ret);
         return new Pair<>(ret2,ret2);
-    }
-
-    @Override
-    public Collection<IterationListener> getIterationListeners() {
-        return null;
-    }
-
-    @Override
-    public void setIterationListeners(Collection<IterationListener> listeners) {
-
     }
 
     @Override
