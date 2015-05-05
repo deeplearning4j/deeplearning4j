@@ -24,7 +24,6 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.conf.preprocessor.ComposableInputPreProcessor;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionInputPreProcessor;
 import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
