@@ -119,7 +119,7 @@ public class SubsamplingLayer implements Layer {
             if(ret == null) {
                 ret = Nd4j.create(Ints.concat(new int[]{input.slices(),numFeatureMaps},downSampled.shape()));
             }
-            ret.putSlice(i, downSampled);
+           ret.putSlice(i, downSampled);
         }
         return ret;
     }
