@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Created by agibsonccc on 11/27/14.

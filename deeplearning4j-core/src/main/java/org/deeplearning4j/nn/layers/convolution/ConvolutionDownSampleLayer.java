@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -43,6 +44,10 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
         MAX,AVG,SUM,NONE
     }
 
+    @Override
+    public Type type() {
+        return Type.CONVOLUTIONAL;
+    }
 
     /**
      * Create a layer from a configuration

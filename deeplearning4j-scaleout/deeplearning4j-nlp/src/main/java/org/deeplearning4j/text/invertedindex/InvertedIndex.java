@@ -90,7 +90,7 @@ public interface InvertedIndex extends Serializable {
      * @param index
      * @return
      */
-    public Pair<List<VocabWord>, Collection<String>> documentWithLabels(int index);
+    Pair<List<VocabWord>, Collection<String>> documentWithLabels(int index);
 
     /**
      * Returns the list of documents a vocab word is in

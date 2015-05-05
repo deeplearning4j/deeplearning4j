@@ -37,7 +37,7 @@ public interface LineOptimizer extends Serializable {
      * @return the last step size used
      * @throws InvalidStepException
      */
-	public double optimize (double initialStep,INDArray x,INDArray g) throws InvalidStepException;
+    double optimize(double initialStep, INDArray x, INDArray g) throws InvalidStepException;
 
 
 

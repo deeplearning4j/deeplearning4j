@@ -44,7 +44,7 @@ public class CounterMap<K, V> implements java.io.Serializable {
     double defltVal = 0.0;
     private static Logger log = LoggerFactory.getLogger(CounterMap.class);
 
-    public static interface CountFunction<V> {
+    public interface CountFunction<V> {
         double count(V v1,V v2);
     }
 
@@ -479,7 +479,7 @@ public class CounterMap<K, V> implements java.io.Serializable {
 
             }
 
-        };
+        }
         return new PairIterator();
     }
 

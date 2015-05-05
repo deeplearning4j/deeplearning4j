@@ -23,6 +23,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * A binomial distribution.
+ * This is based on the interface from apache commons math.
+ *
+ * @author Adam Gibson
  *
  */
 public class BinomialDistribution extends Distribution {

@@ -16,8 +16,6 @@
 
 package org.deeplearning4j.models.layers;
 
-import java.util.Arrays;
-
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -26,7 +24,7 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
@@ -35,7 +33,6 @@ import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProc
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -53,29 +50,6 @@ import org.slf4j.LoggerFactory;
 public class ConvolutionDownSampleLayerTest {
     private static final Logger log = LoggerFactory.getLogger(ConvolutionDownSampleLayerTest.class);
 
-    @Test
-    public void testConvolution() throws Exception {
-        boolean switched = false;
-        if(Nd4j.dtype == DataBuffer.FLOAT) {
-            Nd4j.dtype = DataBuffer.DOUBLE;
-            switched = true;
-        }
-        MnistDataFetcher data = new MnistDataFetcher(true);
-        data.fetch(2);
-        DataSet d = data.next();
-
-        d.setFeatures(d.getFeatureMatrix().reshape(2, 1, 28, 28));
-        LayerFactory layerFactory = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
-        NeuralNetConfiguration n = new NeuralNetConfiguration.Builder()
-                .filterSize(2, 1, 2, 2).layerFactory(layerFactory).build();
-
-        ConvolutionDownSampleLayer c = layerFactory.create(n);
-
-        if(switched) {
-            Nd4j.dtype = DataBuffer.FLOAT;
-        }
-
-    }
 
     @Test
     public void testMultiLayer() {
@@ -89,37 +63,20 @@ public class ConvolutionDownSampleLayerTest {
         Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
         Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT).momentum(0.9)
-                .dist(new UniformDistribution(1e-5, 1e-1)).constrainGradientToUnitNorm(true)
-                .iterations(1000).convolutionType(ConvolutionDownSampleLayer.ConvolutionType.NONE)
-                .activationFunction("tanh").filterSize(1, 1, 2, 2)
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).momentum(0.9)
+                .dist(new NormalDistribution(0,1))
+                .iterations(1).iterationListener(new ScoreIterationListener(1)).convolutionType(ConvolutionDownSampleLayer.ConvolutionType.NONE)
+                .activationFunction("relu").filterSize(1, 1, 2, 2)
                 .nIn(4).nOut(3).batchSize(batchSize)
                 .layerFactory(layerFactory)
-                .list(3)
+                .list(2)
                 .preProcessor(0, new ConvolutionPostProcessor()).inputPreProcessor(0, new ConvolutionInputPreProcessor(2, 2))
-                .preProcessor(1, new ConvolutionPostProcessor()).inputPreProcessor(1, new ConvolutionInputPreProcessor(3, 3))
-                .hiddenLayerSizes(new int[]{4, 16})
-                .override(0, new ConfOverride() {
+                .hiddenLayerSizes(new int[]{9})
+                .override(1, new ConfOverride() {
 
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        if (i == 0)
-                            builder.filterSize(1, 1, 2, 2);
-
-                    }
-                })    .override(1, new ConfOverride() {
-
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-
-
-                    }
-                })
-                .override(2, new ConfOverride() {
-
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        if (i == 2) {
+                        if (i == 1) {
                             builder.activationFunction("softmax");
                             builder.weightInit(WeightInit.ZERO);
                             builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
@@ -129,7 +86,6 @@ public class ConvolutionDownSampleLayerTest {
                 }).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
-        network.setIterationListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
 
