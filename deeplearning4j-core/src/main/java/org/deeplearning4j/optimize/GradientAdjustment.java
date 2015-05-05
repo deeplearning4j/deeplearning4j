@@ -1,17 +1,19 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.deeplearning4j.optimize;
@@ -21,6 +23,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,19 +51,19 @@ public class GradientAdjustment {
      * @param model the model to use
      */
     public static void updateGradientAccordingToParams(NeuralNetConfiguration conf,int iteration,Gradient gradient,int batchSize,Map<String,AdaGrad> adaGrad,Model model) {
-         for(String variable : conf.variables()) {
-             AdaGrad adaGradForVariable = adaGrad.get(variable);
-             if(adaGradForVariable == null) {
-                 adaGradForVariable = new AdaGrad(model.getParam(variable).shape());
-                 adaGrad.put(variable, adaGradForVariable);
-             }
-             else
-                  adaGradForVariable = adaGrad.get(variable);
+        for(String variable : gradient.gradientForVariable().keySet()) {
+            AdaGrad adaGradForVariable = adaGrad.get(variable);
+            if(adaGradForVariable == null) {
+                adaGradForVariable = new AdaGrad(model.getParam(variable).shape());
+                adaGrad.put(variable, adaGradForVariable);
+            }
+            else
+                adaGradForVariable = adaGrad.get(variable);
 
-             updateGradientAccordingToParams(conf,iteration,adaGradForVariable,gradient.getGradientFor(variable),model.getParam(variable),batchSize);
+            updateGradientAccordingToParams(conf,iteration,adaGradForVariable,gradient.getGradientFor(variable),model.getParam(variable),batchSize);
 
 
-         }
+        }
     }
 
     /**
@@ -104,6 +107,8 @@ public class GradientAdjustment {
         //simulate post gradient application  and apply the difference to the gradient to decrease the change the gradient has
         if(conf.isUseRegularization() && conf.getL2() > 0)
             gradient.subi(params.mul(conf.getL2() * conf.getLr()));
+        else if(conf.isUseRegularization() && conf.getL1() < 0)
+            gradient.muli(Transforms.sign(params)).muli(conf.getL1());
 
 
 

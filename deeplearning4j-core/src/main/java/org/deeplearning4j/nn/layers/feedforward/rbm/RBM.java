@@ -1,20 +1,22 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
-package org.deeplearning4j.models.featuredetectors.rbm;
+package org.deeplearning4j.nn.layers.feedforward.rbm;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
@@ -25,11 +27,9 @@ import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.util.RBMUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
-import static org.nd4j.linalg.ops.transforms.Transforms.exp;
-import static org.nd4j.linalg.ops.transforms.Transforms.log;
 import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 import static org.nd4j.linalg.ops.transforms.Transforms.max;
@@ -65,19 +65,23 @@ import static org.nd4j.linalg.ops.transforms.Transforms.max;
  */
 public  class RBM extends BasePretrainNetwork {
 
+    private final Random rng;
+    
     public RBM(NeuralNetConfiguration conf) {
         super(conf);
+        this.rng = Nd4j.getRandom();
     }
 
     public RBM(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
+        this.rng = Nd4j.getRandom();
     }
 
-    public static enum VisibleUnit {
+    public enum VisibleUnit {
         BINARY,GAUSSIAN,SOFTMAX,LINEAR
     }
 
-    public static enum HiddenUnit {
+    public enum HiddenUnit {
         RECTIFIED,BINARY,GAUSSIAN,SOFTMAX
     }
 
@@ -237,7 +241,7 @@ public  class RBM extends BasePretrainNetwork {
                 break;
             }
             case GAUSSIAN: {
-                h1Sample = h1Mean.add(Nd4j.randn(h1Mean.rows(), h1Mean.columns(), conf.getRng()));
+                h1Sample = h1Mean.add(Nd4j.randn(h1Mean.rows(), h1Mean.columns(), rng));
 
                 //apply dropout
                 applyDropOutIfNecessary(h1Sample);
@@ -288,7 +292,7 @@ public  class RBM extends BasePretrainNetwork {
 
         switch (conf.getVisibleUnit()) {
             case GAUSSIAN: {
-                v1Sample = v1Mean.add(Nd4j.randn(v1Mean.rows(), v1Mean.columns(), conf.getRng()));
+                v1Sample = v1Mean.add(Nd4j.randn(v1Mean.rows(), v1Mean.columns(), rng));
                 break;
             }
             case LINEAR: {
@@ -332,7 +336,7 @@ public  class RBM extends BasePretrainNetwork {
                 preSig = max(preSig, 0.0);
                 return preSig;
             case GAUSSIAN:
-                INDArray add = preSig.add(Nd4j.randn(preSig.rows(), preSig.columns(), conf.getRng()));
+                INDArray add = preSig.add(Nd4j.randn(preSig.rows(), preSig.columns(), rng));
                 preSig.addi(add);
                 return preSig;
             case BINARY:

@@ -21,8 +21,9 @@ package org.deeplearning4j.cli;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.cli.api.flags.Model;
 import org.deeplearning4j.cli.subcommands.Train;
-import org.deeplearning4j.models.featuredetectors.rbm.RBM;
+import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
@@ -40,8 +41,8 @@ public class TrainConfigTest {
     public void testInputModelTrain() throws Exception {
         Model testModelFlag = new Model();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterationListener(new ScoreIterationListener(10))
-                .dist(Nd4j.getDistributions().createNormal(1e-1,1))
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dist(new NormalDistribution(1e-1,1))
                 .layerFactory(LayerFactories.getFactory(RBM.class))
                 .build();
         String json = conf.toJson();
