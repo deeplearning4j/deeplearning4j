@@ -21,11 +21,7 @@ package org.deeplearning4j.nn.layers.factory;
 
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer;
-import org.deeplearning4j.nn.conf.layers.LSTM;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder;
-import org.deeplearning4j.nn.layers.BasePretrainNetwork;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 

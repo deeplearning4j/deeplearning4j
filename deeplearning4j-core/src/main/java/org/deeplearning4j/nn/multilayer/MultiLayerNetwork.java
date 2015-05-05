@@ -1014,6 +1014,11 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
     public void setListeners(List<IterationListener> listeners) {
         this.listeners = listeners;
+        if(layers != null) {
+            for(Layer layer : layers) {
+                layer.setIterationListeners(listeners);
+            }
+        }
     }
 
     /**
