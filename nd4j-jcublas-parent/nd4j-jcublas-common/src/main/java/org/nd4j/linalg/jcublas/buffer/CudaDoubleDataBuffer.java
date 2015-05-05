@@ -103,8 +103,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
             length -= offset;
 
         double[] ret = new double[length];
-        ByteBuffer buf = getBuffer(offset);
-        DoubleBuffer buf2 = buf.asDoubleBuffer();
+        DoubleBuffer buf2 = getDoubleBuffer(offset);
         for(int i = 0; i < length; i++) {
             ret[i] = buf2.get(i * inc);
         }

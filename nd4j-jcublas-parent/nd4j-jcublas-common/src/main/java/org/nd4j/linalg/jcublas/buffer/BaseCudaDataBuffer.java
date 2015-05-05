@@ -24,11 +24,11 @@ import java.nio.DoubleBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jcuda.CudaException;
 import jcuda.Pointer;
+import jcuda.Sizeof;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
 import jcuda.driver.CUdeviceptr;
@@ -59,7 +59,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 	protected transient long devicePointerLength;
 	protected transient Pointer hostPointer;
 	protected transient ByteBuffer hostBuffer;
-    //protected transient Pointer pinnedPointer;
+	
     protected int length;
     protected int elementSize;
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
@@ -173,22 +173,18 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         return hostBuffer.asIntBuffer().array();
     }
     
-	public CUdeviceptr getDevicePointer(long size) {
+    @Override
+	public CUdeviceptr getDevicePointer() {
     	if(devicePointer == null) {
-	    	devicePointer = new CUdeviceptr();
-	    	devicePointerLength = size;
-	    	allocated.addAndGet(devicePointerLength);
-	        totalAllocated.addAndGet(devicePointerLength);
-	        log.debug("Allocating {} bytes, total: {}, overall: {}", size, allocated.get(), totalAllocated);
-	        checkResult(JCuda.cudaMalloc(devicePointer, size));
+    		devicePointer = new CUdeviceptr();
+    		devicePointerLength = elementSize * length;
+    		allocated.addAndGet(devicePointerLength);
+    		totalAllocated.addAndGet(devicePointerLength);
+    		log.debug("Allocating {} bytes, total: {}, overall: {}", devicePointerLength, allocated.get(), totalAllocated);
+    		checkResult(JCuda.cudaMalloc(devicePointer, devicePointerLength));
     	}
     	
     	return devicePointer;
-    }
-    
-    @Override
-	public CUdeviceptr getDevicePointer() {
-    	return getDevicePointer(elementSize * length);
     }
     
     @Override
@@ -299,7 +295,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
 
     protected java.nio.FloatBuffer getFloatBuffer(long offset) {
-        return getHostBuffer(offset).asFloatBuffer();
+        return getHostBuffer(offset*Sizeof.FLOAT).asFloatBuffer();
     }
 
     protected java.nio.FloatBuffer getFloatBuffer() {
@@ -307,7 +303,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
 
     protected java.nio.DoubleBuffer getDoubleBuffer(long offset) {
-        return getHostBuffer(offset).asDoubleBuffer();
+        return getHostBuffer(offset*Sizeof.DOUBLE).asDoubleBuffer();
     }
 
     protected java.nio.DoubleBuffer getDoubleBuffer() {
@@ -353,14 +349,9 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
     
     @Override
-    public void copyToHost(long byteOffset) {
-    	if(devicePointer!=null)
-    		checkResult(JCuda.cudaMemcpy(hostPointer.withByteOffset(byteOffset), devicePointer, devicePointerLength, cudaMemcpyKind.cudaMemcpyDeviceToHost));
-    }
-    
-    @Override
     public void copyToHost() {
-    	copyToHost(0);
+    	if(devicePointer!=null)
+    		checkResult(JCuda.cudaMemcpy(hostPointer, devicePointer, devicePointerLength, cudaMemcpyKind.cudaMemcpyDeviceToHost));
     }
 
 
@@ -440,7 +431,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         {
             return null;
         }
-        hostBuffer.limit((int)(byteOffset + hostBuffer.capacity()));
+        //hostBuffer.limit((int)(byteOffset + hostBuffer.capacity()));
         hostBuffer.position((int)byteOffset);
         return hostBuffer;
     }
