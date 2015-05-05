@@ -110,8 +110,8 @@ public class BufferReaper extends Thread {
      * @param arrs the arrays to free
      */
     public static  void destroy(INDArray...arrs) {
-        for(INDArray arr : arrs)
-            arr.data().destroy();
+//        for(INDArray arr : arrs)
+//            arr.data().destroy();
     }
 
 
@@ -129,11 +129,11 @@ public class BufferReaper extends Thread {
 
             Reference<DataBuffer> bufferQueue = (Reference<DataBuffer>) buffer.poll();
             while(bufferQueue != null) {
-                bufferQueue.get().destroy();
+                //bufferQueue.get().destroy();
                 bufferQueue = (Reference<DataBuffer>) buffer.poll();
             }
 
-            Nd4j.getResourceManager().purge();
+            //Nd4j.getResourceManager().purge();
             
             try {
 				Thread.sleep(1000);

@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer.Type;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -68,7 +69,7 @@ public abstract class ComplexNDArrayTests {
         //only each complex double: one element
         assertEquals(1, arr.length());
         //both real and imaginary components
-        assertEquals(2, arr.data().getLength());
+        assertEquals(2, arr.data().length());
         IComplexNumber n1 = (IComplexNumber) arr.getScalar(0).element();
         assertEquals(0, n1.realComponent().doubleValue(), 1e-1);
 
@@ -764,7 +765,7 @@ public abstract class ComplexNDArrayTests {
 
         IComplexNDArray arr = Nd4j.createComplex(Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2}));
         assertEquals(4, arr.length());
-        assertEquals(8, arr.data().getLength());
+        assertEquals(8, arr.data().length());
         arr.put(1, 1, Nd4j.scalar(5.0));
 
         IComplexNumber n1 = arr.getComplex(1, 1);

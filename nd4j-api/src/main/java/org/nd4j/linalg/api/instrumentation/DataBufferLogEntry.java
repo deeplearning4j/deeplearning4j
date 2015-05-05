@@ -23,7 +23,7 @@ public class DataBufferLogEntry implements Serializable {
     }
 
     public DataBufferLogEntry(DataBuffer buffer, String status) {
-        this.length = buffer.getLength();
+        this.length = buffer.length();
         this.dataType = buffer.dataType() == DataBuffer.Type.DOUBLE ? "double" : "float";
         this.stackTraceElements = Thread.currentThread().getStackTrace();
         this.references = buffer.references();
@@ -90,7 +90,7 @@ public class DataBufferLogEntry implements Serializable {
         this.timestamp = timestamp;
     }
 
-    public long getLength() {
+    public long length() {
         return length;
     }
 

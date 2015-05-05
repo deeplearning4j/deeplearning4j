@@ -125,7 +125,7 @@ public class BinomialDistribution extends BaseJCudaDistribution {
         if (pNDArray != null) {
 
         } else {
-            doBinomialDouble(probabilityOfSuccess, buffer, numberOfTrials, buffer.getLength());
+            doBinomialDouble(probabilityOfSuccess, buffer, numberOfTrials, buffer.length());
         }
         double[] buffer2 = buffer.asDouble();
         return buffer2;
@@ -138,16 +138,16 @@ public class BinomialDistribution extends BaseJCudaDistribution {
         JCudaBuffer buffer = (JCudaBuffer) ret.data();
         if (ret.data().dataType() == DataBuffer.Type.DOUBLE) {
             if (pNDArray != null) {
-                doBinomialDouble(pNDArray, buffer, numberOfTrials, buffer.getLength());
+                doBinomialDouble(pNDArray, buffer, numberOfTrials, buffer.length());
             } else {
-                doBinomialDouble(probabilityOfSuccess, buffer, numberOfTrials, buffer.getLength());
+                doBinomialDouble(probabilityOfSuccess, buffer, numberOfTrials, buffer.length());
             }
         } else {
             if (pNDArray != null) {
-                doBinomial(pNDArray, buffer, numberOfTrials, buffer.getLength());
+                doBinomial(pNDArray, buffer, numberOfTrials, buffer.length());
 
             } else {
-                doBinomial((float) probabilityOfSuccess, buffer, numberOfTrials, buffer.getLength());
+                doBinomial((float) probabilityOfSuccess, buffer, numberOfTrials, buffer.length());
 
             }
         }

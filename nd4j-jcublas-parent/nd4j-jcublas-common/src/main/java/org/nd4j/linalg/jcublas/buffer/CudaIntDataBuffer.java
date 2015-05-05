@@ -18,6 +18,7 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import jcuda.Pointer;
 import jcuda.Sizeof;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 /**
@@ -44,8 +45,8 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > getLength())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + getLength() + " where the indices are of length " + data.length);
+        if (indices.length > length())
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
             int offset = indices[0];
@@ -59,8 +60,8 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     public void assign(int[] indices, double[] data, boolean contiguous, int inc) {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > getLength())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + getLength() + " where the indices are of length " + data.length);
+        if (indices.length > length())
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
             int offset = indices[0];

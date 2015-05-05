@@ -184,7 +184,7 @@ public abstract class OpExecutionerTests {
 
     @Test
     public void testDescriptiveStatsDouble() {
-        Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray x = Nd4j.linspace(1, 5, 5);
 

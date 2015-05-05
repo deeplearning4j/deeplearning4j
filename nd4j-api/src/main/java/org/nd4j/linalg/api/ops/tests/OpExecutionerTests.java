@@ -273,6 +273,7 @@ public abstract class OpExecutionerTests {
 
     @Test
     public void testStridedLog() {
+    	Nd4j.dtype = DataBuffer.Type.FLOAT;
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray slice = arr.slice(0);
@@ -283,6 +284,7 @@ public abstract class OpExecutionerTests {
 
     @Test
     public void testStridedExp() {
+    	Nd4j.dtype = DataBuffer.Type.FLOAT;
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray slice = arr.slice(0);

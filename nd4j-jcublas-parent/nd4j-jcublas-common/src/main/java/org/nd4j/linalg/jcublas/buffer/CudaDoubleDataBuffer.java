@@ -51,19 +51,14 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         setData(data);
     }
 
-    @Override
-    public void alloc() {
-        super.alloc();
-        data = new double[length];
-    }
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
         modified.set(true);
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > getLength())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + getLength() + " where the indices are of length " + data.length);
+        if (indices.length > length())
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
             int offset = indices[0];
@@ -79,8 +74,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     public void assign(int[] indices, double[] data, boolean contiguous, int inc) {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > getLength())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + getLength() + " where the indices are of length " + data.length);
+        if (indices.length > length())
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
             int offset = indices[0];
@@ -104,7 +99,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     @Override
     public double[] getDoublesAt(int offset, int inc, int length) {
 
-        if (offset + length > getLength())
+        if (offset + length > length())
             length -= offset;
 
         double[] ret = new double[length];
@@ -125,7 +120,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         modified.set(true);
         ByteBuffer buf = getBuffer(offset);
         DoubleBuffer buf2 = buf.asDoubleBuffer();
-        for (int i = offset; i < getLength(); i++)
+        for (int i = offset; i < length(); i++)
             buf2.put(i,value.doubleValue());
     }
 
@@ -143,7 +138,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     public void setData(double[] data) {
     	
         if (data.length != length)
-            throw new IllegalArgumentException("Unable to set vector, must be of length " + getLength() + " but found length " + data.length);
+            throw new IllegalArgumentException("Unable to set vector, must be of length " + length() + " but found length " + data.length);
 
         getDoubleBuffer().put(data);
     }
@@ -200,7 +195,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     @Override
     public DataBuffer dup() {
 
-        CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(getLength());
+        CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(length());
         copyTo(buffer);
         return buffer;
     }
@@ -234,6 +229,5 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         }
         setData(arr);
     }
-
 
 }

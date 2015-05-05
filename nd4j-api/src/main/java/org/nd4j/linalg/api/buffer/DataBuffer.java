@@ -320,7 +320,7 @@ public interface DataBuffer extends Serializable {
      *
      * @return the length of the buffer
      */
-    int getLength();
+    int length();
 
     /**
      * Get the int at the specified index
@@ -386,5 +386,10 @@ public interface DataBuffer extends Serializable {
      */
     void assign(int[] offsets, int[] strides, DataBuffer... buffers);
 
+    
+    /**
+     * release all resources for this buffer
+     */
+    void destroy();
 
 }

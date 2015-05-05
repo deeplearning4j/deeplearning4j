@@ -73,7 +73,7 @@ public abstract class DoubleDataBufferTest {
 
 
         double[] get2 = buffer.asDouble();
-        double[] allData = buffer.getDoublesAt(0, buffer.getLength());
+        double[] allData = buffer.getDoublesAt(0, buffer.length());
         assertArrayEquals(get2, allData, 1e-1f);
 
 
@@ -90,7 +90,7 @@ public abstract class DoubleDataBufferTest {
 
         double[] allButLast = new double[]{2, 3, 4, 5};
 
-        double[] allData = buffer.getDoublesAt(1, buffer.getLength());
+        double[] allData = buffer.getDoublesAt(1, buffer.length());
         assertArrayEquals(allButLast, allData, 1e-1f);
 
     }

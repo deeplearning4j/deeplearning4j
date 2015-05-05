@@ -367,6 +367,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testDivide() {
+    	Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray two = Nd4j.create(new float[]{2, 2, 2, 2});
         INDArray div = two.div(two);
         assertEquals(Nd4j.ones(4), div);
@@ -381,6 +382,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testSigmoid() {
+    	Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         INDArray assertion = Nd4j.create(new float[]{0.73105858f, 0.88079708f, 0.95257413f, 0.98201379f});
         INDArray sigmoid = Transforms.sigmoid(n, false);
@@ -1033,7 +1035,7 @@ public abstract class NDArrayTests {
         Nd4j.dtype = DataBuffer.Type.DOUBLE;
         INDArray linspace = Nd4j.linspace(1, 6, 6);
         INDArray log = Transforms.log(linspace);
-        INDArray assertion = Nd4j.create(new double[]{0, 0.69314718, 1.09861229, 1.38629436, 1.60943791, 1.79175947});
+        INDArray assertion = Nd4j.create(new double[]{0, 0.6931471805599453, 1.0986122886681098, 1.3862943611198906, 1.6094379124341005, 1.791759469228055});
         assertEquals(assertion, log);
     }
 
@@ -1067,7 +1069,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testIrisStats() throws IOException {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         ClassPathResource res = new ClassPathResource("/iris.txt");
         File file = res.getFile();
         INDArray data = Nd4j.readTxt(file.getAbsolutePath(), "\t");
@@ -1126,6 +1128,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testRowStd() {
+    	Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray rowStd = twoByThree.std(1);
         INDArray assertion = Nd4j.create(new float[]{0.7071067811865476f, 0.7071067811865476f});

@@ -24,6 +24,7 @@ import java.nio.DoubleBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jcuda.CudaException;
@@ -134,7 +135,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         modified.set(true);
         if (dataType() == DataBuffer.Type.FLOAT) {
             JCublas.cublasSetVector(
-                    getLength(),
+                    length(),
                     new cuComplex[]{CudaComplexConversion.toComplex(result.asFloat())}
                     , i
                     , 1
@@ -142,7 +143,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                     , 1);
         } else {
             JCublas.cublasSetVector(
-                    getLength(),
+                    length(),
                     new cuDoubleComplex[]{CudaComplexConversion.toComplexDouble(result.asDouble())}
                     , i
                     , 1
@@ -159,9 +160,9 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public double[] asDouble() {
         //
-    	double[] ret = new double[getLength()];
+    	double[] ret = new double[length()];
         DoubleBuffer buf = getDoubleBuffer();
-        for(int i = 0; i < getLength(); i++) {
+        for(int i = 0; i < length(); i++) {
             ret[i] = buf.get(i);
         }
         return ret;
@@ -195,7 +196,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
         if (dataType() == DataBuffer.Type.DOUBLE) {
             JCublas.cublasDcopy(
-                    getLength(),
+                    length(),
                     pointer,
                     1,
                     hostPointer,
@@ -203,7 +204,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             );
         } else {
             JCublas.cublasScopy(
-                    getLength(),
+                    length(),
                     pointer,
                     1,
                     hostPointer,
@@ -222,7 +223,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      */
     protected void copyTo(JCudaBuffer to) {
         
-        for(int i = 0; i < getLength(); i++) {
+        for(int i = 0; i < length(); i++) {
             to.put(i,getDouble(i));
         }
     }
@@ -262,8 +263,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         modified.set(true);
 
         int offset = getElementSize() * index;
-        if (offset >= getLength() * getElementSize())
-            throw new IllegalArgumentException("Illegal offset " + offset + " with index of " + index + " and length " + getLength());
+        if (offset >= length() * getElementSize())
+            throw new IllegalArgumentException("Illegal offset " + offset + " with index of " + index + " and length " + length());
         JCublas.cublasSetVector(
                 length
                 , getElementSize()
@@ -372,7 +373,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
 
     @Override
-    public int getLength() {
+    public int length() {
         return length;
     }
 
@@ -447,7 +448,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         if (length != that.length) return false;
         if (elementSize != that.elementSize) return false;
         if (isPersist != that.isPersist) return false;
-        for(int i = 0; i < getLength(); i++) {
+        for(int i = 0; i < length(); i++) {
             if(getDouble(i) != that.getDouble(i))
                 return false;
         }
@@ -482,22 +483,22 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 	                if (buff.dataType() == DataBuffer.Type.DOUBLE) {
 	                	
 	                    JCublas.cublasDcopy(
-	                            buff.getLength()
+	                            buff.length()
 	                            , buffPointer.withByteOffset(buff.getElementSize() * offsets[i])
 	                            , strides[i]
 	                            , getDevicePointer().withByteOffset(count * buff.getElementSize())
 	                            , 1);
 	                    
 	                    
-	                    count += (buff.getLength() - 1 - offsets[i]) / strides[i] + 1;
+	                    count += (buff.length() - 1 - offsets[i]) / strides[i] + 1;
 	                } else {
-	                    JCublas.cublasScopy(buff.getLength()
+	                    JCublas.cublasScopy(buff.length()
 	                            , buffPointer.withByteOffset(buff.getElementSize() * offsets[i])
 	                            , strides[i]
 	                            , getDevicePointer().withByteOffset(count * buff.getElementSize())
 	                            , 1);
 	                    
-	                    count += (buff.getLength() - 1 - offsets[i]) / strides[i] + 1;
+	                    count += (buff.length() - 1 - offsets[i]) / strides[i] + 1;
 	                }
                 } catch (Exception e) {
             		throw new RuntimeException("Could not run cublas command", e);
@@ -522,8 +523,16 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void assign(int[] offsets, int[] strides, DataBuffer... buffers) {
-        assign(offsets, strides, getLength(), buffers);
+        assign(offsets, strides, length(), buffers);
     }
+    
+    @Override
+	public void destroy() {
+		freeDevicePointer();
+		hostBuffer = null;
+		hostPointer = null;
+		
+	}
 
     private void writeObject(java.io.ObjectOutputStream stream)
             throws IOException {

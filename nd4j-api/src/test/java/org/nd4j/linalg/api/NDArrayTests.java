@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.nd4j.linalg.api.test;
+package org.nd4j.linalg.api;
 
 
 import org.junit.After;
@@ -78,7 +78,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testReadWrite() throws Exception {
-        Nd4j.dtype = DataBuffer.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray write = Nd4j.linspace(1,4,4);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
@@ -105,7 +105,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testReadWriteDouble() throws Exception {
-        Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         INDArray write = Nd4j.linspace(1,4,4);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
@@ -260,7 +260,7 @@ public abstract class NDArrayTests {
     @Test
     public void testGetIndices2d() {
         Nd4j.factory().setOrder('f');
-        Nd4j.dtype = DataBuffer.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray twoByTwo = Nd4j.linspace(1, 6, 6).reshape(3, 2);
         INDArray firstRow = twoByTwo.getRow(0);
         INDArray secondRow = twoByTwo.getRow(1);
@@ -387,7 +387,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testNorm2Double() {
-        Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         INDArray n = Nd4j.create(new double[]{1, 2, 3, 4});
         double assertion = 5.47722557505;
         INDArray norm3 = n.norm2(Integer.MAX_VALUE);
@@ -404,7 +404,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testNorm2() {
-        Nd4j.dtype = DataBuffer.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         float assertion = 5.47722557505f;
         INDArray norm3 = n.norm2(Integer.MAX_VALUE);
@@ -437,7 +437,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testCosineSim() {
-        Nd4j.dtype = DataBuffer.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
 
         INDArray vec1 = Nd4j.create(new double[]{1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new double[]{1, 2, 3, 4});
@@ -668,7 +668,7 @@ public abstract class NDArrayTests {
     public void testOrdering() {
         //c ordering first
         Nd4j.factory().setOrder('c');
-        Nd4j.factory().setDType(DataBuffer.FLOAT);
+        Nd4j.factory().setDType(DataBuffer.Type.FLOAT);
 
         INDArray data = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         assertEquals(2.0, data.getDouble(0, 1), 1e-1);
@@ -755,7 +755,7 @@ public abstract class NDArrayTests {
     public void testMmul() {
 
         Nd4j.factory().setOrder('c');
-        Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         DataBuffer data = Nd4j.linspace(1, 10, 10).data();
         INDArray n = Nd4j.create(data, new int[]{10});
         INDArray transposed = n.transpose();
@@ -892,7 +892,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testAddMatrix() {
-        Nd4j.dtype = DataBuffer.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray five = Nd4j.ones(5);
         five.addi(five);
         INDArray twos = Nd4j.valueArrayOf(5, 2);
@@ -936,7 +936,7 @@ public abstract class NDArrayTests {
     public void testCreationWithOrder() {
         INDArray ret = Nd4j.create(new float[]{1, 1, 1, 1}, new int[]{1, 4}, 'f');
         INDArray ret2 = Nd4j.create(new double[]{1, 1, 1, 1}, new int[]{1, 4}, 'f');
-        Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         ret = Nd4j.create(new float[]{1,1,1,1},new int[]{1,4},'f');
         ret2 = Nd4j.create(new double[]{1,1,1,1},new int[]{1,4},'f');
         INDArray  b0 = Nd4j.arange(0, 12).reshape(3, 4);
@@ -945,7 +945,7 @@ public abstract class NDArrayTests {
                 new int[]{3, 4},
                 'f');
         b4.toString();
-        Nd4j.dtype = DataBuffer.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
 
 
     }
@@ -1020,7 +1020,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testLogDouble() {
-        Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         INDArray linspace = Nd4j.linspace(1, 6, 6);
         INDArray log = Transforms.log(linspace);
         INDArray assertion = Nd4j.create(new double[]{0, 0.69314718, 1.09861229, 1.38629436, 1.60943791, 1.79175947});
@@ -1029,7 +1029,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testIrisStatsDouble() throws IOException {
-        Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         ClassPathResource res = new ClassPathResource("/iris.txt");
         File file = res.getFile();
         INDArray data = Nd4j.readTxt(file.getAbsolutePath(), "\t");
@@ -1057,7 +1057,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testIrisStats() throws IOException {
-        Nd4j.dtype = DataBuffer.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
         ClassPathResource res = new ClassPathResource("/iris.txt");
         File file = res.getFile();
         INDArray data = Nd4j.readTxt(file.getAbsolutePath(), "\t");
@@ -1086,7 +1086,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testColumnSumDouble() {
-        Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
         INDArray columnVar = twoByThree.sum(0);
         INDArray assertion = Nd4j.create(new float[]{44850.0f, 45000.0f, 45150.0f, 45300.0f});
@@ -1606,7 +1606,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testPutRowGetRowOrdering() {
-        Nd4j.dtype = DataBuffer.DOUBLE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         Nd4j.factory().setOrder('f');
 
         INDArray row1 = Nd4j.linspace(1, 4, 4).reshape(2, 2);

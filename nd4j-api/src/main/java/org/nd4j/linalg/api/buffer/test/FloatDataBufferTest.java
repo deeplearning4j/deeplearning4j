@@ -73,7 +73,7 @@ public abstract class FloatDataBufferTest {
 
 
         float[] get2 = buffer.asFloat();
-        float[] allData = buffer.getFloatsAt(0, buffer.getLength());
+        float[] allData = buffer.getFloatsAt(0, buffer.length());
         assertArrayEquals(get2, allData, 1e-1f);
 
 
@@ -90,7 +90,7 @@ public abstract class FloatDataBufferTest {
 
         float[] allButLast = new float[]{2, 3, 4, 5};
 
-        float[] allData = buffer.getFloatsAt(1, buffer.getLength());
+        float[] allData = buffer.getFloatsAt(1, buffer.length());
         assertArrayEquals(allButLast, allData, 1e-1f);
 
 

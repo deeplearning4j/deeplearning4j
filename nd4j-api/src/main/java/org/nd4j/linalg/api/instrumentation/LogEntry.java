@@ -129,7 +129,7 @@ public class LogEntry extends DataBufferLogEntry {
         this.stride = stride;
     }
 
-    public long getLength() {
+    public long length() {
         return length;
     }
 
