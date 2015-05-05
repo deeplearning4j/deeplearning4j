@@ -16,22 +16,33 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.serializers;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import org.deeplearning4j.optimize.api.StepFunction;
-
-import java.io.IOException;
+package org.deeplearning4j.nn.conf.stepfunctions;
 
 /**
- * Created by agibsonccc on 12/25/14.
+ * Inverse step function
  */
-public class StepFunctionSerializer extends JsonSerializer<StepFunction> {
-    @Override
-    public void serialize(StepFunction value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-        jgen.writeString(value.getClass().getName());
+public class NegativeDefaultStepFunction extends StepFunction {
 
+    private static final long serialVersionUID = -7172373342318047825L;
+
+    @Override
+    public int hashCode() {
+        return 0;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        return true;
+    }
+
+    public String toString() {
+        return "NegativeDefaultStepFunction{" +
+                '}';
     }
 }

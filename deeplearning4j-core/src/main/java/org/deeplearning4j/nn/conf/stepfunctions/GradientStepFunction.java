@@ -16,24 +16,33 @@
  *
  */
 
-package org.deeplearning4j.nn.layers.factory;
-
-import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.params.LSTMParamInitializer;
+package org.deeplearning4j.nn.conf.stepfunctions;
 
 /**
- *  LSTM layer initializer
- *  @author Adam Gibson
+ * Normal gradient step function
  */
-public class LSTMLayerFactory extends DefaultLayerFactory {
+public class GradientStepFunction extends StepFunction {
 
-    public LSTMLayerFactory(Class<? extends Layer> layerConfig) {
-        super(layerConfig);
+    private static final long serialVersionUID = -2078308971477295356L;
+
+    @Override
+    public int hashCode() {
+        return 0;
     }
 
     @Override
-    public ParamInitializer initializer() {
-        return new LSTMParamInitializer();
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        return true;
+    }
+
+    public String toString() {
+        return "GradientStepFunction{" +
+                '}';
     }
 }

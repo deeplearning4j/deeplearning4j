@@ -29,7 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public class ClusterSet {
 
 	private Class<? extends Accumulation>	distanceFunction;
-	private List<Cluster>						clusters	= new ArrayList<>();
+	private List<Cluster> clusters	= new ArrayList<>();
 
 	public ClusterSet() {
 

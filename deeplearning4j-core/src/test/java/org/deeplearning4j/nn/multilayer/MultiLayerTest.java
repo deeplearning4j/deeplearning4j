@@ -24,13 +24,8 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
-import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionInputPreProcessor;
-import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
-import org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder;
 import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -38,16 +33,12 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
-import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer;
+import org.deeplearning4j.nn.conf.stepfunctions.GradientStepFunction;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
-import org.deeplearning4j.nn.layers.factory.DefaultLayerFactory;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
-import org.deeplearning4j.nn.layers.factory.PretrainLayerFactory;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -68,9 +59,7 @@ public class MultiLayerTest {
     @Test
     public void testDbnFaces() {
         Nd4j.dtype = DataBuffer.DOUBLE;
-        LayerFactory layerFactory = LayerFactories.getFactory(RBM.class);
         DataSetIterator iter = new LFWDataSetIterator(28,28);
-
 
         DataSet next = iter.next();
         next.normalizeZeroMeanZeroUnitVariance();
@@ -80,85 +69,29 @@ public class MultiLayerTest {
                 .constrainGradientToUnitNorm(true)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1,1e-5))
                 .iterations(100).learningRate(1e-3)
-                .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED).layerFactory(layerFactory)
-                .list(4).hiddenLayerSizes(600,250,100).override(new ConfOverride() {
+                .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
+                .list(4).hiddenLayerSizes(600,250,100).override(3, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         if (i == 3) {
-                            builder.layerFactory(new DefaultLayerFactory(OutputLayer.class));
+                            builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
                             builder.activationFunction("softmax");
                             builder.lossFunction(LossFunctions.LossFunction.MCXENT);
 
                         }
                     }
                 }).build();
-
+        
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
         network.fit(next);
 
     }
 
     @Test
-    public void testConvolutionWithSubSampling() {
-        LayerFactory layerFactory = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
-        int batchSize = 110;
-        /**
-         *
-         */
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
-                .iterations(100).weightInit(WeightInit.VI)
-                .activationFunction("tanh").filterSize(5, 1, 2, 2)
-                .nIn(4).nOut(3).batchSize(batchSize).dropOut(0.5)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED).iterationListener(new ScoreIterationListener(10))
-                .layerFactory(layerFactory)
-                .list(3)
-                .inputPreProcessor(0,new ConvolutionInputPreProcessor(2,2))
-                .preProcessor(1, new ConvolutionPostProcessor())
-                .hiddenLayerSizes(new int[]{1})
-                .override(0, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.layerFactory(LayerFactories.getFactory(ConvolutionLayer.class));
-                        builder.convolutionType(ConvolutionDownSampleLayer.ConvolutionType.MAX);
-                        builder.featureMapSize(2,2);
-                    }
-                }).override(1,new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.layerFactory(LayerFactories.getFactory(SubsamplingLayer.class));
-
-                    }
-                }).override(2, new ClassifierOverride(2))
-                .build();
-
-        MultiLayerNetwork network = new MultiLayerNetwork(conf);
-        network.init();
-        DataSetIterator iter = new IrisDataSetIterator(150, 150);
-
-
-        org.nd4j.linalg.dataset.DataSet next = iter.next();
-        next.normalizeZeroMeanZeroUnitVariance();
-        SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
-
-        network.fit(trainTest.getTrain().getFeatureMatrix().reshape(trainTest.getTrain().numExamples(),1,2,2),trainTest.getTrain().getLabels());
-
-
-        //org.nd4j.linalg.dataset.DataSet test = trainTest.getTest();
-        Evaluation eval = new Evaluation();
-        INDArray output = network.output(trainTest.getTrain().getFeatureMatrix().reshape(trainTest.getTrain().numExamples(), 1, 2, 2));
-        eval.eval(trainTest.getTrain().getLabels(),output);
-        log.info("Score " +eval.stats());
-
-
-    }
-
-
-    @Test
     public void testBackPropConvolution() {
 
-        LayerFactory layerFactory = LayerFactories.getFactory(ConvolutionDownSampleLayer.class);
         int batchSize = 110;
         /**
          *
@@ -170,11 +103,11 @@ public class MultiLayerTest {
                 .nIn(4).nOut(3).batchSize(batchSize)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .layerFactory(layerFactory)
+                .layer(new org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer())
                 .list(2).backward(true)
                 .preProcessor(0,new ConvolutionPostProcessor())
-                .hiddenLayerSizes(new int[]{4})
-                .override(new ClassifierOverride(1)).build();
+                .hiddenLayerSizes(new int[]{9})
+                .override(1, new ClassifierOverride(1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -203,24 +136,14 @@ public class MultiLayerTest {
 
     @Test
     public void testBackProp() {
-        LayerFactory layerFactory = LayerFactories.getFactory(AutoEncoder.class);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .iterations(100).weightInit(WeightInit.DISTRIBUTION).momentum(0.5)
-                .activationFunction("tanh").iterationListener(new ScoreIterationListener(1))
-                .dist(new NormalDistribution(1e-1,1e-1))
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
+                .activationFunction("tanh")
                 .nIn(4).nOut(3).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .layerFactory(layerFactory)
-                .list(2).backward(true).pretrain(false)
-                .hiddenLayerSizes(new int[]{3}).override(1, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.activationFunction("softmax");
-                        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-                        builder.weightInit(WeightInit.ZERO);
-                        builder.layerFactory(LayerFactories.getFactory(OutputLayer.class));
-                    }
-                }).build();
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
+                .list(3).backward(true)
+                .hiddenLayerSizes(new int[]{3, 2}).override(2, new ClassifierOverride(2)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -248,7 +171,8 @@ public class MultiLayerTest {
         Nd4j.MAX_SLICES_TO_PRINT = -1;
         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(100).layerFactory(new PretrainLayerFactory(RBM.class))
+                .iterations(100)
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0,1))
                 .activationFunction("tanh").momentum(0.9)
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
@@ -257,14 +181,14 @@ public class MultiLayerTest {
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .nIn(4).nOut(3).list(2)
                 .hiddenLayerSizes(new int[]{3})
-                .override(new ClassifierOverride(1)).build();
+                .override(1, new ClassifierOverride(1)).build();
 
             NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                    .layerFactory(LayerFactories.getFactory(RBM.class))
+                    .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                     .nIn(784).nOut(600).applySparsity(true).sparsity(0.1)
                     .build();
 
-        Layer l = LayerFactories.getFactory(RBM.class).create(conf2,
+        Layer l = LayerFactories.getFactory(conf2).create(conf2,
                 Arrays.<IterationListener>asList(new ScoreIterationListener(2)));
 
 
