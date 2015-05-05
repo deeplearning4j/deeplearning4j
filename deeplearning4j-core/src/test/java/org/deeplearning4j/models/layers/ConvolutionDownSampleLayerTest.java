@@ -55,8 +55,8 @@ public class ConvolutionDownSampleLayerTest {
     @Test
     public void testConvolution() throws Exception {
         boolean switched = false;
-        if(Nd4j.dtype == DataBuffer.FLOAT) {
-            Nd4j.dtype = DataBuffer.DOUBLE;
+        if(Nd4j.dtype == DataBuffer.Type.FLOAT) {
+            Nd4j.dtype = DataBuffer.Type.DOUBLE;
             switched = true;
         }
         MnistDataFetcher data = new MnistDataFetcher(true);
@@ -70,7 +70,7 @@ public class ConvolutionDownSampleLayerTest {
         ConvolutionDownSampleLayer c = LayerFactories.getFactory(n.getLayer()).create(n);
 
         if(switched) {
-            Nd4j.dtype = DataBuffer.FLOAT;
+            Nd4j.dtype = DataBuffer.Type.FLOAT;
         }
 
     }
