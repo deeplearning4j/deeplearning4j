@@ -1,22 +1,25 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -38,9 +41,13 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
      * Convolution type: max avg or sum
      */
     public  enum ConvolutionType {
-        MAX,AVG,SUM
+        MAX,AVG,SUM,NONE
     }
 
+    @Override
+    public Type type() {
+        return Type.CONVOLUTIONAL;
+    }
 
     /**
      * Create a layer from a configuration
@@ -84,8 +91,7 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
 
         final INDArray pooled = getPool(convolution);
         final INDArray bias = b.dimShuffle(new Object[]{'x', 0, 'x', 'x'}, new int[4], new boolean[]{true});
-        //final INDArray broadCasted = bias.broadcast(pooled.shape());
-
+        final INDArray broadCasted = bias.broadcast(pooled.shape());
         return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), pooled));
     }
 
@@ -94,7 +100,7 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
         INDArray pooled = null;
         switch (conf.getConvolutionType()) {
             case MAX:
-                pooled = Transforms.maxPool(convolution, conf.getStride(),true);
+                pooled = Transforms.maxPool(convolution, conf.getStride(),false);
                 break;
             case SUM:
                 pooled = Transforms.sumPooling(convolution,conf.getStride());
@@ -102,6 +108,8 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
             case AVG:
                 pooled = Transforms.avgPooling(convolution,conf.getStride());
                 break;
+            case NONE:
+                return convolution;
 
 
         }

@@ -1,17 +1,19 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.deeplearning4j.aws.s3.modelsaver;
@@ -55,7 +57,7 @@ public class S3ModelSaver extends BaseS3 implements ModelSaver {
 	public void save(Serializable ser) {
 		String modelId = UUID.randomUUID().toString();
 		S3Uploader uploader = new S3Uploader();
-		String tmpDir = System.getProperty("java.io.tmpdir");;
+		String tmpDir = System.getProperty("java.io.tmpdir");
 		try {
 			File tmpFile = new File(new File(tmpDir),modelId);
 			ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(tmpFile));

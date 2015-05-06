@@ -1,17 +1,19 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.deeplearning4j.models.word2vec;
@@ -170,32 +172,36 @@ public class Word2Vec extends WordVectorsImpl  {
         },exec);
 
         exec.shutdown();
-
         try {
             exec.awaitTermination(1,TimeUnit.DAYS);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
+
+
+
+        ActorSystem actorSystem = ActorSystem.create();
+
         for(int i = 0; i < numIterations; i++)
-            doIteration(batch2,numWordsSoFar,nextRandom);
+            doIteration(batch2,numWordsSoFar,nextRandom,actorSystem);
+        actorSystem.shutdown();
 
 
     }
 
 
 
-    private void doIteration(Collection<List<VocabWord>> batch2,final AtomicLong numWordsSoFar,final AtomicLong nextRandom) {
-        ActorSystem actorSystem = ActorSystem.create();
+    private void doIteration(Collection<List<VocabWord>> batch2,final AtomicLong numWordsSoFar,final AtomicLong nextRandom,ActorSystem actorSystem) {
         final AtomicLong lastReported = new AtomicLong(System.currentTimeMillis());
-        Parallelization.iterateInParallel(batch2,new Parallelization.RunnableWithParams<List<VocabWord>>() {
+        Parallelization.iterateInParallel(batch2, new Parallelization.RunnableWithParams<List<VocabWord>>() {
             @Override
             public void run(List<VocabWord> sentence, Object[] args) {
                 double alpha = Math.max(minLearningRate, Word2Vec.this.alpha.get() *
-                    (1 - (1.0 * numWordsSoFar.get() / (double) totalWords)));
+                        (1 - (1.0 * numWordsSoFar.get() / (double) totalWords)));
                 long now = System.currentTimeMillis();
                 long diff = Math.abs(now - lastReported.get());
-                if(numWordsSoFar.get() > 0 && diff > 10000) {
+                if (numWordsSoFar.get() > 0 && diff > 10000) {
                     lastReported.set(now);
                     log.info("Words so far " + numWordsSoFar.get() + " with alpha at " + alpha);
                 }
@@ -207,7 +213,6 @@ public class Word2Vec extends WordVectorsImpl  {
 
             }
         },actorSystem);
-        actorSystem.shutdown();
     }
 
 

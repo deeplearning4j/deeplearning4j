@@ -1,17 +1,19 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.deeplearning4j.berkeley;
@@ -22,38 +24,38 @@ public interface PriorityQueueInterface<E>
 	/**
 	 * Returns true if the priority queue is non-empty
 	 */
-	public abstract boolean hasNext();
+	boolean hasNext();
 
 	/**
 	 * Returns the element in the queue with highest priority, and pops it from
 	 * the queue.
 	 */
-	public abstract E next();
+	E next();
 
 	/**
 	 * Not supported -- next() already removes the head of the queue.
 	 */
-	public abstract void remove();
+	void remove();
 
 	/**
 	 * Returns the highest-priority element in the queue, but does not pop it.
 	 */
-	public abstract E peek();
+	E peek();
 
 	/**
 	 * Gets the priority of the highest-priority element of the queue.
 	 */
-	public abstract double getPriority();
+	double getPriority();
 
 	/**
 	 * Number of elements in the queue.
 	 */
-	public abstract int size();
+	int size();
 
 	/**
 	 * True if the queue is empty (size == 0).
 	 */
-	public abstract boolean isEmpty();
+	boolean isEmpty();
 
 	/**
 	 * Adds a key to the queue with the given priority.  If the key is already in
@@ -62,6 +64,6 @@ public interface PriorityQueueInterface<E>
 	 * @param key
 	 * @param priority
 	 */
-	public abstract void put(E key, double priority);
+	void put(E key, double priority);
 
 }

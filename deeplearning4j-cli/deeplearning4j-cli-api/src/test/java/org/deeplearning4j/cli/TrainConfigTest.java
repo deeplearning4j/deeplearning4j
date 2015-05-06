@@ -21,12 +21,13 @@ package org.deeplearning4j.cli;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.cli.api.flags.Model;
 import org.deeplearning4j.cli.subcommands.Train;
-import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 
@@ -40,18 +41,18 @@ public class TrainConfigTest {
     public void testInputModelTrain() throws Exception {
         Model testModelFlag = new Model();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterationListener(new ScoreIterationListener(10))
-                .dist(Nd4j.getDistributions().createNormal(1e-1,1))
-                .layerFactory(LayerFactories.getFactory(RBM.class))
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dist(new NormalDistribution(1e-1,1))
+                .layer(new RBM())
                 .build();
         String json = conf.toJson();
         NeuralNetConfiguration testConfig = testModelFlag.value(json);
         assertEquals(conf, testConfig);
 
-        FileUtils.writeStringToFile(new File("model.json"), json);
+        FileUtils.writeStringToFile(new ClassPathResource("model.json").getFile(), json);
 
         String[] cmd = {
-                "--input", "iris.txt", "--model", "model.json", "--output", "test_output.txt"
+                "-input",new ClassPathResource("iris.txt").getFile().getAbsolutePath(), "-conf", new ClassPathResource("model.json").getFile().getAbsolutePath(), "-output", "test_output.txt"
         };
 
         Train train = new Train(cmd);
