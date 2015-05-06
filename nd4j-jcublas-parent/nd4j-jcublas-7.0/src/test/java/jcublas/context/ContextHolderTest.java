@@ -19,7 +19,7 @@ public class ContextHolderTest {
         ContextHolder holder = ContextHolder.getInstance();
         CUcontext ctx = holder.getContext();
         assumeNotNull(ctx);
-        assumeTrue(holder.getDeviceToThreadAndContext().size() == 1);
+        assumeTrue(holder.getDeviceIDContexts().size() == 1);
 
     }
 

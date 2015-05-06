@@ -181,8 +181,9 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     		devicePointerLength = elementSize * length;
     		allocated.addAndGet(devicePointerLength);
     		totalAllocated.addAndGet(devicePointerLength);
-    		log.debug("Allocating {} bytes, total: {}, overall: {}", devicePointerLength, allocated.get(), totalAllocated);
+    		log.trace("Allocating {} bytes, total: {}, overall: {}", devicePointerLength, allocated.get(), totalAllocated);
     		checkResult(JCuda.cudaMalloc(devicePointer, devicePointerLength));
+    		freed.set(false);
     	}
     	
     	return devicePointer;
@@ -341,7 +342,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public boolean freeDevicePointer() {
     	if(devicePointer != null && !freed.get()) {
 			allocated.addAndGet(-devicePointerLength);
-	        log.debug("freeing {} bytes, total: {}", devicePointerLength, allocated.get());
+	        log.trace("freeing {} bytes, total: {}", devicePointerLength, allocated.get());
 	        checkResult(JCuda.cudaFree(devicePointer));
 			devicePointer = null;
             freed.set(true);
