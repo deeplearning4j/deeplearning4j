@@ -10,7 +10,7 @@
     <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
     <script src="/assets/jquery-fileupload.js"></script>
     <script src="/assets/bootstrap-3.3.4-dist/js/bootstrap.min.js"></script>
-    <script src="/assets/js/nearestneighbors/app.js"></script>
+    <script src="/assets/js/nearestneighbors/word2vec/app.js"></script>
 </head>
 
 <body>
@@ -37,7 +37,7 @@
                         <li>Optional: Select a new word to update nearest neighbors.</li></h4>
                 <br>
                 <div class="row" id="upload">
-                        <form encType="multipart/form-data" action="/nearestneighbors/upload" method="POST" id="form">
+                        <form encType="multipart/form-data" action="/word2vec/upload" method="POST" id="form">
                             <input name="file" type="file">
                             <br>
                             <input type="submit">
