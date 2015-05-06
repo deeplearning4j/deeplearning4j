@@ -24,6 +24,8 @@ import java.nio.DoubleBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -56,11 +58,10 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
-	protected transient CUdeviceptr devicePointer;
 	protected transient long devicePointerLength;
 	protected transient Pointer hostPointer;
 	protected transient ByteBuffer hostBuffer;
-	
+	protected transient Map<String,CUdeviceptr> pointersToContexts = new ConcurrentHashMap<>();
     protected AtomicBoolean modified = new AtomicBoolean(false);
     protected int length;
     protected int elementSize;
@@ -170,19 +171,21 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public int[] asInt() {
-        
         return hostBuffer.asIntBuffer().array();
     }
 
     @Override
 	public CUdeviceptr getDevicePointer() {
+        CUdeviceptr devicePointer = pointersToContexts.get(Thread.currentThread().getName());
+
     	if(devicePointer == null) {
     		devicePointer = new CUdeviceptr();
-    		devicePointerLength = elementSize * length;
+    		devicePointerLength = getElementSize() * length();
     		allocated.addAndGet(devicePointerLength);
     		totalAllocated.addAndGet(devicePointerLength);
     		log.trace("Allocating {} bytes, total: {}, overall: {}", devicePointerLength, allocated.get(), totalAllocated);
     		checkResult(JCuda.cudaMalloc(devicePointer, devicePointerLength));
+            pointersToContexts.put(Thread.currentThread().getName(),devicePointer);
     		freed.set(false);
     	}
     	
@@ -340,6 +343,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     
     @Override
     public boolean freeDevicePointer() {
+        CUdeviceptr devicePointer = pointersToContexts.get(Thread.currentThread().getName());
     	if(devicePointer != null && !freed.get()) {
 			allocated.addAndGet(-devicePointerLength);
 	        log.trace("freeing {} bytes, total: {}", devicePointerLength, allocated.get());
@@ -347,6 +351,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 			devicePointer = null;
             freed.set(true);
             devicePointerLength = -1;
+            pointersToContexts.remove(Thread.currentThread().getName());
 			return true;	
     	} 
     	return false;
@@ -354,7 +359,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     
     @Override
     public void copyToHost() {
-    	if(devicePointer != null)
+        CUdeviceptr devicePointer = pointersToContexts.get(Thread.currentThread().getName());
+        if(devicePointer != null)
     		checkResult(JCuda.cudaMemcpy(hostPointer, devicePointer, devicePointerLength, cudaMemcpyKind.cudaMemcpyDeviceToHost));
     }
 
@@ -447,26 +453,34 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
         BaseCudaDataBuffer that = (BaseCudaDataBuffer) o;
 
+        if (devicePointerLength != that.devicePointerLength) return false;
         if (length != that.length) return false;
         if (elementSize != that.elementSize) return false;
         if (isPersist != that.isPersist) return false;
-        for(int i = 0; i < length(); i++) {
-            if(getDouble(i) != that.getDouble(i))
-                return false;
-        }
-
-        return true;
+        if (hostPointer != null ? !hostPointer.equals(that.hostPointer) : that.hostPointer != null) return false;
+        if (hostBuffer != null ? !hostBuffer.equals(that.hostBuffer) : that.hostBuffer != null) return false;
+        if (pointersToContexts != null ? !pointersToContexts.equals(that.pointersToContexts) : that.pointersToContexts != null)
+            return false;
+        if (modified != null ? !modified.equals(that.modified) : that.modified != null) return false;
+        if (referencing != null ? !referencing.equals(that.referencing) : that.referencing != null) return false;
+        if (ref != null ? !ref.equals(that.ref) : that.ref != null) return false;
+        return !(freed != null ? !freed.equals(that.freed) : that.freed != null);
 
     }
 
     @Override
     public int hashCode() {
-        int result = devicePointer != null ? devicePointer.hashCode() : 0;
+        int result = (int) (devicePointerLength ^ (devicePointerLength >>> 32));
+        result = 31 * result + (hostPointer != null ? hostPointer.hashCode() : 0);
+        result = 31 * result + (hostBuffer != null ? hostBuffer.hashCode() : 0);
+        result = 31 * result + (pointersToContexts != null ? pointersToContexts.hashCode() : 0);
+        result = 31 * result + (modified != null ? modified.hashCode() : 0);
         result = 31 * result + length;
         result = 31 * result + elementSize;
         result = 31 * result + (referencing != null ? referencing.hashCode() : 0);
         result = 31 * result + (ref != null ? ref.hashCode() : 0);
         result = 31 * result + (isPersist ? 1 : 0);
+        result = 31 * result + (freed != null ? freed.hashCode() : 0);
         return result;
     }
 
@@ -561,6 +575,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         length = stream.readInt();
         elementSize = stream.readInt();
         isPersist = stream.readBoolean();
+        pointersToContexts = new ConcurrentHashMap<>();
         referencing = Collections.synchronizedSet(new HashSet<String>());
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         freed = new AtomicBoolean(false);
