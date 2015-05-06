@@ -106,6 +106,7 @@ public class KernelFunctions {
      * @param dataType         the data type ot use
      */
     public static  void invoke(int blocks, int threadsPerBlock, String functionName,String dataType,Object...kernelParameters) {
+
         // Call the kernel function.
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
         int sharedMemSize = threadsPerBlock * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);

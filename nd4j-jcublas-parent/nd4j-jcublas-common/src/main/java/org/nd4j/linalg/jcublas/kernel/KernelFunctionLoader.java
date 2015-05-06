@@ -19,6 +19,7 @@ package org.nd4j.linalg.jcublas.kernel;
 
 
 import jcuda.utils.KernelLauncher;
+
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.slf4j.Logger;
@@ -88,14 +89,16 @@ public class KernelFunctionLoader {
     public  static KernelLauncher launcher(String functionName,String dataType) {
         return KernelFunctionLoader.getInstance().get(functionName,dataType);
     }
-
+    
 
     public KernelLauncher get(String functionName,String dataType) {
-        String path = paths.get(functionName + "_" + dataType);
-        if(path == null) {
-            throw new IllegalArgumentException("Unable to find " + functionName + "_" + dataType);
+        String name = functionName + "_" + dataType;
+        
+        KernelLauncher launcher = launchers.get(name);
+        if(launcher == null) {
+            throw new IllegalArgumentException("Unable to find " + name);
         }
-        return KernelLauncher.load(path, functionName + "_" + dataType);
+        return launcher;
     }
 
 
@@ -266,7 +269,7 @@ public class KernelFunctionLoader {
             log.info("Modules appear to already be compiled..attempting to use cache");
 
             for (String module : split) {
-                log.info("Loading " + module);
+                log.info("Is cached: " + module);
                 String path = kernelPath + module + ".ptx";
                 String name = module + "_" + dataType;
                 paths.put(name,path);
