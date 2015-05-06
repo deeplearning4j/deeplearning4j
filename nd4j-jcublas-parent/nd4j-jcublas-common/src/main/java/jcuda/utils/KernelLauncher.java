@@ -1039,16 +1039,16 @@ public class KernelLauncher {
 
 
 
-        syncContext();
         checkResult(cuLaunchKernel(function,
                 gridSize.x, gridSize.y, gridSize.z,
                 blockSize.x, blockSize.y, blockSize.z,
-                sharedMemSize, ContextHolder.getInstance().getStream(),
+                sharedMemSize, stream,
                 Pointer.to(kernelParameters), null
         ));
 
-        checkResult(JCudaDriver.cuCtxSynchronize());
-        
+        syncContext();
+
+
     }
 
     /**

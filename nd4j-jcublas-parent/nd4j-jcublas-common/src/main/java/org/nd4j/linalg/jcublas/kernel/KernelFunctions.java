@@ -20,12 +20,14 @@ package org.nd4j.linalg.jcublas.kernel;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.driver.CUfunction;
+import jcuda.driver.CUstream;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 import jcuda.utils.KernelLauncher;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
@@ -105,13 +107,15 @@ public class KernelFunctions {
      * @param kernelParameters the parameters
      * @param dataType         the data type ot use
      */
-    public static void invoke(int blocks, int threadsPerBlock, String functionName,String dataType,Object...kernelParameters) {
+    public static  void invoke(int blocks, int threadsPerBlock, String functionName,String dataType,Object...kernelParameters) {
+
         // Call the kernel function.
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
+        CUstream stream = ContextHolder.getInstance().getStream();
         int sharedMemSize = threadsPerBlock * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
         KernelFunctionLoader.launcher(functionName,dataType).forFunction(functionName + "_" + dataType)
                 .setBlockSize(threadsPerBlock,1,1)
-                .setGridSize(blocks,1,1)
+                .setGridSize(blocks,1,1).setStream(stream)
                 .setSharedMemSize(sharedMemSize)
                 .call(kernelParameters);
 
