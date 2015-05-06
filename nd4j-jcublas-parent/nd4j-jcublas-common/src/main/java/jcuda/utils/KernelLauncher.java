@@ -1039,7 +1039,6 @@ public class KernelLauncher {
 
 
 
-        syncContext();
         checkResult(cuLaunchKernel(function,
                 gridSize.x, gridSize.y, gridSize.z,
                 blockSize.x, blockSize.y, blockSize.z,
@@ -1047,8 +1046,9 @@ public class KernelLauncher {
                 Pointer.to(kernelParameters), null
         ));
 
-        checkResult(JCudaDriver.cuCtxSynchronize());
-        
+        syncContext();
+
+
     }
 
     /**
