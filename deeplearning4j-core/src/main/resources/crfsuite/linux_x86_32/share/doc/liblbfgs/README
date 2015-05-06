@@ -13,7 +13,7 @@ The original FORTRAN source code is available at:
 http://www.ece.northwestern.edu/~nocedal/lbfgs.html
 
 The L-BFGS method solves the unconstrainted minimization problem:
-    minimize F(x), x = (x1, x2, ..., xN),
+    invert F(x), x = (x1, x2, ..., xN),
 only if the objective function F(x) and its gradient G(x) are computable.
 
 Refer to the libLBFGS web site for more information.

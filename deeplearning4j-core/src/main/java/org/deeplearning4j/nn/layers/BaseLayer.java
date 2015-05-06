@@ -1,17 +1,19 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.deeplearning4j.nn.layers;
@@ -25,6 +27,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -32,6 +35,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -48,18 +52,68 @@ public abstract class BaseLayer implements Layer {
     protected ParamInitializer paramInitializer;
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
-
+    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
+    
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
-
-
     }
 
     public BaseLayer(NeuralNetConfiguration conf, INDArray input) {
         this.input = input;
         this.conf = conf;
     }
+    
+    public Collection<IterationListener> getIterationListeners() {
+        return iterationListeners;
+    }
 
+    public void setIterationListeners(Collection<IterationListener> listeners) {
+        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    }
+
+    @Override
+    public Gradient error(INDArray errorSignal) {
+        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
+        Gradient nextLayerGradient = new DefaultGradient();
+        INDArray wErrorSignal = errorSignal.mmul(W);
+        nextLayerGradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wErrorSignal);
+        return nextLayerGradient;
+    }
+
+    @Override
+    public INDArray derivativeActivation(INDArray input) {
+        INDArray deriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), activate(input)).derivative());
+        return deriv;
+    }
+
+    @Override
+    public Gradient errorSignal(Gradient error, INDArray input) {
+        INDArray derivative = derivativeActivation(input);
+        Gradient ret = new DefaultGradient();
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,derivative.mul(error.getGradientFor(DefaultParamInitializer.WEIGHT_KEY)));
+        return ret;
+    }
+
+    @Override
+    public Gradient calcGradient(Gradient layerError, INDArray activation) {
+        Gradient ret = new DefaultGradient();
+        INDArray weightErrorSignal = layerError.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
+        INDArray weightError = weightErrorSignal.transpose().mmul(activation).divi(weightErrorSignal.rows()).transpose();
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,weightError);
+        INDArray biasGradient = weightError.sum(0).divi(weightErrorSignal.rows());
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,biasGradient);
+
+        return ret;
+    }
+
+    @Override
+    public Gradient backwardGradient(INDArray activation, Gradient errorSignal) {
+        Gradient propError = error(activation);
+        INDArray deriv = derivativeActivation(activation);
+        Gradient ret = new DefaultGradient();
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,propError.getGradientFor(DefaultParamInitializer.WEIGHT_KEY).mul(deriv));
+        return ret;
+    }
 
     @Override
     public void fit() {
@@ -97,6 +151,12 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public ConvexOptimizer getOptimizer() {
+        if(optimizer == null) {
+            Solver solver = new Solver.Builder()
+                    .model(this).configure(conf())
+                    .build();
+            this.optimizer = solver.getOptimizer();
+        }
         return optimizer;
     }
 
@@ -279,8 +339,10 @@ public abstract class BaseLayer implements Layer {
 
     }
 
-
-
+    @Override
+    public Type type() {
+        return Type.FEED_FORWARD;
+    }
 
     /**
      * The number of parameters for the model
@@ -300,7 +362,7 @@ public abstract class BaseLayer implements Layer {
         if(input != null)
             this.input = input;
         Solver solver = new Solver.Builder()
-                .model(this).configure(conf())
+                .model(this).configure(conf()).listeners(getIterationListeners())
                 .build();
         this.optimizer = solver.getOptimizer();
         solver.optimize();

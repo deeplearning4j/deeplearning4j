@@ -1,17 +1,19 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.deeplearning4j.optimize.solvers;
@@ -116,7 +118,7 @@ public class LBFGS extends BaseOptimizer {
             if(i > rho.size())
                 throw new IllegalStateException("I > rho size");
             alpha.putScalar(i, rho.get(i) * Nd4j.getBlasWrapper().dot(gradient, s.get(i)));
-            if(alpha.data().dataType() == DataBuffer.DOUBLE)
+            if(alpha.data().dataType() == DataBuffer.Type.DOUBLE)
                 Nd4j.getBlasWrapper().axpy(-1.0 * alpha.getDouble(i), gradient, y.get(i));
             else
                 Nd4j.getBlasWrapper().axpy(-1.0f * alpha.getFloat(i), gradient, y.get(i));
@@ -131,7 +133,7 @@ public class LBFGS extends BaseOptimizer {
             if(i >= alpha.length())
                 break;
             double beta = rho.get(i) * Nd4j.getBlasWrapper().dot(y.get(i),gradient);
-            if(alpha.data().dataType() == DataBuffer.DOUBLE)
+            if(alpha.data().dataType() == DataBuffer.Type.DOUBLE)
                 Nd4j.getBlasWrapper().axpy(alpha.getDouble(i) * beta, gradient, s.get(i));
             else
                 Nd4j.getBlasWrapper().axpy(alpha.getFloat(i) * (float) beta, gradient, s.get(i));

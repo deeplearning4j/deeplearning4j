@@ -1,17 +1,19 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.deeplearning4j.models.embeddings.inmemory;
@@ -34,10 +36,7 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -73,9 +72,6 @@ public class InMemoryLookupTable implements WeightLookupTable {
         this.rng = gen;
         this.negative = negative;
         initExpTable();
-
-
-
     }
 
     public double[] getExpTable() {
@@ -229,7 +225,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
             //gradient
             double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f)) : (1 - code - f) * alpha;
 
-            if(neu1e.data().dataType() == DataBuffer.FLOAT) {
+            if(neu1e.data().dataType() == DataBuffer.Type.FLOAT) {
                 Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
                 Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
 
@@ -279,18 +275,18 @@ public class InMemoryLookupTable implements WeightLookupTable {
                     g = label * (useAdaGrad ?  w1.getGradient(target, alpha) : alpha);
                 else
                     g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
-                if(syn0.data().dataType() == DataBuffer.DOUBLE)
+                if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g,neu1e,l1);
                 else
                     Nd4j.getBlasWrapper().axpy((float) g,neu1e,l1);
 
-                if(syn0.data().dataType() == DataBuffer.DOUBLE)
+                if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g,syn1Neg.slice(target),l1);
                 else
                     Nd4j.getBlasWrapper().axpy((float) g,syn1Neg.slice(target),l1);
             }
 
-        if(syn0.data().dataType() == DataBuffer.DOUBLE)
+        if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
             Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
 
         else
@@ -364,7 +360,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
             //gradient
             double g = (1 - code - f) * (useAdaGrad ?  w1.getGradient(i, alpha) : alpha);
 
-            if(syn0.data().dataType() == DataBuffer.DOUBLE) {
+            if(syn0.data().dataType() == DataBuffer.Type.DOUBLE) {
                 Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
                 Nd4j.getBlasWrapper().axpy(g, l1, syn1);
             }
@@ -378,7 +374,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
 
 
-        if(syn0.data().dataType() == DataBuffer.DOUBLE)
+        if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
             Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
 
         else
@@ -624,4 +620,22 @@ public class InMemoryLookupTable implements WeightLookupTable {
         }
     }
 
+    @Override
+    public String toString() {
+        return "InMemoryLookupTable{" +
+                "syn0=" + syn0 +
+                ", syn1=" + syn1 +
+                ", vectorLength=" + vectorLength +
+                ", rng=" + rng +
+                ", lr=" + lr +
+                ", expTable=" + Arrays.toString(expTable) +
+                ", seed=" + seed +
+                ", table=" + table +
+                ", syn1Neg=" + syn1Neg +
+                ", useAdaGrad=" + useAdaGrad +
+                ", negative=" + negative +
+                ", vocab=" + vocab +
+                ", codes=" + codes +
+                '}';
+    }
 }

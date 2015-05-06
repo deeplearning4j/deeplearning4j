@@ -1,17 +1,19 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.deeplearning4j.nn.layers.factory;
@@ -20,62 +22,79 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.Distributions;
+import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
 
-import java.lang.reflect.Constructor;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Default layer factory: create a bias and a weight matrix
  * @author Adam Gibson
  */
 public class DefaultLayerFactory implements LayerFactory {
-    protected Class<? extends Layer> layerClazz;
+   
+    protected org.deeplearning4j.nn.conf.layers.Layer layerConfig;
 
-    public DefaultLayerFactory(Class<? extends Layer> layerClazz) {
-        this.layerClazz = layerClazz;
+    public DefaultLayerFactory(Class<? extends org.deeplearning4j.nn.conf.layers.Layer> layerConfig) {
+        try {
+            this.layerConfig = layerConfig.newInstance();
+        } catch (Exception e) {
+           throw new RuntimeException(e);
+        }
     }
 
-
     @Override
-    public Layer create(NeuralNetConfiguration conf, int index, int numLayers) {
-        return create(conf);
+    public <E extends Layer> E create(NeuralNetConfiguration conf, int index, int numLayers, Collection<IterationListener> iterationListeners) {
+        return create(conf, iterationListeners);
     }
 
     @Override
-    public Layer create(NeuralNetConfiguration conf) {
+    public <E extends Layer> E create(NeuralNetConfiguration conf) {
+        return create(conf,new ArrayList<IterationListener>());
+    }
+
+    @Override
+    public <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners) {
+        Distribution dist = Distributions.createDistribution(conf.getDist());
         Layer ret = getInstance(conf);
-        Map<String,INDArray> params = getParams(conf);
+        ret.setIterationListeners(iterationListeners);
+        Map<String,INDArray> params = getParams(conf, dist);
         ret.setParamTable(params);
         ret.setConf(conf);
-        return ret;
+        return (E) ret;
     }
-
-
+    
     protected Layer getInstance(NeuralNetConfiguration conf) {
-        try {
-            Constructor<?> constructor = layerClazz.getConstructor(NeuralNetConfiguration.class);
-            return (Layer) constructor.newInstance(conf);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.AutoEncoder)
+            return new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(conf);
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.RBM)
+            return new org.deeplearning4j.nn.layers.feedforward.rbm.RBM(conf);
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer)
+            return new org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer(conf);
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.LSTM)
+            return new org.deeplearning4j.nn.layers.recurrent.LSTM(conf);
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.OutputLayer)
+            return new org.deeplearning4j.nn.layers.OutputLayer(conf);
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder)
+            return new org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.RecursiveAutoEncoder(conf);   
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.ConvolutionLayer)
+            return new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);   
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.SubsamplingLayer)
+            return new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);   
+        
+        throw new RuntimeException("unknown layer type: " + layerConfig);
     }
 
 
-    protected Map<String,INDArray> getParams(NeuralNetConfiguration conf) {
+    protected Map<String,INDArray> getParams(NeuralNetConfiguration conf, Distribution dist) {
         ParamInitializer init = initializer();
         Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String,INDArray>());
         init.init(params,conf);
         return params;
-    }
-
-    @Override
-    public String layerClazzName() {
-        return layerClazz.getName();
     }
 
     @Override
@@ -90,11 +109,11 @@ public class DefaultLayerFactory implements LayerFactory {
 
         DefaultLayerFactory that = (DefaultLayerFactory) o;
 
-        return !(layerClazz != null ? !layerClazz.equals(that.layerClazz) : that.layerClazz != null);
+        return !(layerConfig != null ? !layerConfig.equals(that.layerConfig) : that.layerConfig != null);
     }
 
     @Override
     public int hashCode() {
-        return layerClazz != null ? layerClazz.hashCode() : 0;
+        return layerConfig != null ? layerConfig.hashCode() : 0;
     }
 }

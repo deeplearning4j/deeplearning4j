@@ -1,3 +1,21 @@
+/*
+ *
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ */
+
 package org.deeplearning4j.ui;
 
 import com.google.common.collect.ImmutableMap;
@@ -35,10 +53,11 @@ public class UiServer extends Application<UIConfiguration> {
     public void run(UIConfiguration uiConfiguration, Environment environment) throws Exception {
         this.conf = uiConfiguration;
         environment.jersey().register(MultiPartFeature.class);
-        environment.jersey().register(new TsneResource());
+        environment.jersey().register(new TsneResource(conf.getUploadPath()));
         environment.jersey().register(new NearestNeighborsResource(conf.getUploadPath()));
         environment.jersey().register(new WeightResource());
         environment.jersey().register(new RendersResource());
+        environment.jersey().register(new org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsResource(conf.getUploadPath()));
         configureCors(environment);
     }
 
@@ -65,9 +84,7 @@ public class UiServer extends Application<UIConfiguration> {
         bos.close();
         is.close();
         tmpConfig.deleteOnExit();
-        new UiServer().run(new String[]{
-                "server", tmpConfig.getAbsolutePath()
-        });
+        new UiServer().run("server", tmpConfig.getAbsolutePath());
     }
 
 
