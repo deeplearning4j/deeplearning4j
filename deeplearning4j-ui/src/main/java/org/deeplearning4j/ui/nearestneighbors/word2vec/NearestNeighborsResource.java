@@ -30,6 +30,7 @@ import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.ui.uploads.FileResource;
+import org.deeplearning4j.util.SerializationUtils;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -48,10 +49,7 @@ import java.util.*;
 @Path("/word2vec")
 public class NearestNeighborsResource extends FileResource {
     private WordVectors vectors;
-    private List<VocabWord> words;
-    private Map<Integer,VocabWord> theVocab;
-    private VocabCache vocab;
-    /**
+     /**
      * The file path for uploads
      *y
      * @param filePath the file path for uploads
@@ -70,7 +68,7 @@ public class NearestNeighborsResource extends FileResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getVocab() {
         List<String> words = new ArrayList<>();
-        for(VocabWord word : this.words)
+        for(VocabWord word : vectors.vocab().vocabWords())
             words.add(word.getWord());
         return Response.ok((new ArrayList<>(words))).build();
     }
@@ -90,13 +88,12 @@ public class NearestNeighborsResource extends FileResource {
     @Override
     public void handleUpload(File path) {
         try {
-            Pair<WeightLookupTable,VocabCache> vocab = WordVectorSerializer.loadTxt(path);
-            vectors = WordVectorSerializer.fromPair(vocab);
-            words = new ArrayList<>(vocab.getSecond().vocabWords());
-            theVocab = new HashMap<>();
-            for(VocabWord word : words)
-                theVocab.put(word.getIndex(),word);
-            this.vocab = vocab.getSecond();
+            if(path.getAbsolutePath().endsWith(".ser"))
+                vectors = SerializationUtils.readObject(path);
+            else {
+                vectors = WordVectorSerializer.fromPair(WordVectorSerializer.loadTxt(path));
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }

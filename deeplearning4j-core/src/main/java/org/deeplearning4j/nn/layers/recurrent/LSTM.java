@@ -193,10 +193,10 @@ public class LSTM extends BaseLayer {
 
             //non linearity
             iFogF.slice(t).put(new NDArrayIndex[]{interval(0,3 * d)}, sigmoid(iFog.slice(t).get(interval(0, 3 * d))));
-            iFogF.slice(t).put(new NDArrayIndex[]{interval(3 * d,iFogF.columns())}, tanh(iFog.slice(t).get(interval(3 * d, iFog.columns()))));
+            iFogF.slice(t).put(new NDArrayIndex[]{interval(3 * d,iFogF.columns() - 1)}, tanh(iFog.slice(t).get(interval(3 * d, iFog.columns() - 1))));
 
             //cell activations
-            c.slice(t).put(new NDArrayIndex[]{interval(3 * d, iFogF.columns())},iFogF.slice(t).get(interval(0, d)).mul(iFogF.slice(t).get(interval(3 * d,iFogF.columns()))));
+            c.put(new NDArrayIndex[]{new NDArrayIndex(t),interval(3 * d, iFogF.columns())},iFogF.slice(t).get(interval(0, d)).mul(iFogF.slice(t).get(interval(3 * d,iFogF.columns()))));
 
 
             if(t > 0)
