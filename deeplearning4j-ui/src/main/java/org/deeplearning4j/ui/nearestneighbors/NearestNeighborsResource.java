@@ -1,17 +1,19 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.deeplearning4j.ui.nearestneighbors;
@@ -23,9 +25,11 @@ import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.ui.uploads.FileResource;
+import org.deeplearning4j.util.SerializationUtils;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -48,7 +52,9 @@ import java.util.Map;
 public class NearestNeighborsResource extends FileResource {
     private VPTree tree;
     private List<VocabWord> words;
+    private Map<Integer,VocabWord> theVocab;
     private VocabCache vocab;
+
     /**
      * The file path for uploads
      *y
@@ -82,7 +88,7 @@ public class NearestNeighborsResource extends FileResource {
         tree.search(tree.getItems().get(vocab.indexOf(query.getWord())),query.getNumWords(),results,distances);
         Map<String,Double> map = new HashMap<>();
         for(int i = 0; i < results.size(); i++) {
-            map.put(words.get(results.get(i).getIndex()).getWord(),distances.get(i));
+            map.put(theVocab.get(results.get(i).getIndex()).getWord(),distances.get(i));
         }
 
         return Response.ok(map).build();
@@ -92,11 +98,33 @@ public class NearestNeighborsResource extends FileResource {
     @Override
     public void handleUpload(File path) {
         try {
-            Pair<WeightLookupTable,VocabCache> vocab = WordVectorSerializer.loadTxt(path);
-            InMemoryLookupTable table = (InMemoryLookupTable) vocab.getFirst();
-            tree = new VPTree(table.getSyn0(),"euclidean");
-            words = new ArrayList<>(vocab.getSecond().vocabWords());
-            this.vocab = vocab.getSecond();
+            if(path.getAbsolutePath().endsWith(".ser")) {
+                WordVectors vectors = SerializationUtils.readObject(path);
+                InMemoryLookupTable table = (InMemoryLookupTable) vectors.lookupTable();
+                tree = new VPTree(table.getSyn0(),"dot",true);
+                words = new ArrayList<>(vectors.vocab().vocabWords());
+                theVocab = new HashMap<>();
+
+                for(VocabWord word : words)
+                    theVocab.put(word.getIndex(),word);
+                this.vocab = vectors.vocab();
+
+
+            }
+            else {
+                Pair<WeightLookupTable,VocabCache> vocab = WordVectorSerializer.loadTxt(path);
+                InMemoryLookupTable table = (InMemoryLookupTable) vocab.getFirst();
+                table.getSyn0().divi(table.getSyn0().norm2(Integer.MAX_VALUE));
+                tree = new VPTree(table.getSyn0(),"dot",true);
+                words = new ArrayList<>(vocab.getSecond().vocabWords());
+                theVocab = new HashMap<>();
+                for(VocabWord word : words)
+                    theVocab.put(word.getIndex(),word);
+                this.vocab = vocab.getSecond();
+
+            }
+
+
         } catch (Exception e) {
             e.printStackTrace();
         }

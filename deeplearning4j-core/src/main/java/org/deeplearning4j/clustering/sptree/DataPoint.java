@@ -1,3 +1,21 @@
+/*
+ *
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ */
+
 package org.deeplearning4j.clustering.sptree;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -18,14 +36,28 @@ public class DataPoint implements Serializable {
     private INDArray point;
     private int d;
     private String functionName;
-    public DataPoint(int index, INDArray point) {
-       this(index,point,"euclidean");
+    private boolean invert = false;
+
+
+    public DataPoint(int index, INDArray point,boolean invert) {
+        this(index,point,"euclidean");
+        this.invert = invert;
     }
-    public DataPoint(int index, INDArray point,String functionName) {
+    public DataPoint(int index, INDArray point,String functionName,boolean invert) {
         this.index = index;
         this.point = point;
         this.functionName = functionName;
         this.d = point.length();
+        this.invert = invert;
+    }
+
+
+    public DataPoint(int index, INDArray point) {
+        this(index,point,false);
+    }
+
+    public DataPoint(int index, INDArray point,String functionName) {
+       this(index,point,functionName,false);
     }
 
     /**
@@ -35,10 +67,19 @@ public class DataPoint implements Serializable {
      */
     public double distance(DataPoint point) {
         switch (functionName) {
-            case "euclidean" :     return Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point,point.point)).currentResult().doubleValue();
-            case "cosinesimilarity" :     return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(this.point,point.point)).currentResult().doubleValue();
-            case "manhattan" :     return Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(this.point,point.point)).currentResult().doubleValue();
-            default: return Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point,point.point)).currentResult().doubleValue();
+            case "euclidean" :
+                double ret =  Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point,point.point)).currentResult().doubleValue();
+                return invert ? -ret : ret;
+
+            case "cosinesimilarity" :
+                double ret2 =  Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(this.point,point.point)).currentResult().doubleValue();
+                return invert ? -ret2 : ret2;
+
+            case "manhattan" :
+                double ret3 =  Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(this.point,point.point)).currentResult().doubleValue();
+              return invert ? -ret3 : ret3;
+            default: double ret4 =  Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point,point.point)).currentResult().doubleValue();
+                return invert ? -ret4 : ret4;
 
         }
     }
