@@ -25,9 +25,11 @@ import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.ui.uploads.FileResource;
+import org.deeplearning4j.util.SerializationUtils;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -52,6 +54,7 @@ public class NearestNeighborsResource extends FileResource {
     private List<VocabWord> words;
     private Map<Integer,VocabWord> theVocab;
     private VocabCache vocab;
+
     /**
      * The file path for uploads
      *y
@@ -95,15 +98,33 @@ public class NearestNeighborsResource extends FileResource {
     @Override
     public void handleUpload(File path) {
         try {
-            Pair<WeightLookupTable,VocabCache> vocab = WordVectorSerializer.loadTxt(path);
-            InMemoryLookupTable table = (InMemoryLookupTable) vocab.getFirst();
-            table.getSyn0().divi(table.getSyn0().norm2(Integer.MAX_VALUE));
-            tree = new VPTree(table.getSyn0(),"dot",true);
-            words = new ArrayList<>(vocab.getSecond().vocabWords());
-            theVocab = new HashMap<>();
-            for(VocabWord word : words)
-               theVocab.put(word.getIndex(),word);
-            this.vocab = vocab.getSecond();
+            if(path.getAbsolutePath().endsWith(".ser")) {
+                WordVectors vectors = SerializationUtils.readObject(path);
+                InMemoryLookupTable table = (InMemoryLookupTable) vectors.lookupTable();
+                tree = new VPTree(table.getSyn0(),"dot",true);
+                words = new ArrayList<>(vectors.vocab().vocabWords());
+                theVocab = new HashMap<>();
+
+                for(VocabWord word : words)
+                    theVocab.put(word.getIndex(),word);
+                this.vocab = vectors.vocab();
+
+
+            }
+            else {
+                Pair<WeightLookupTable,VocabCache> vocab = WordVectorSerializer.loadTxt(path);
+                InMemoryLookupTable table = (InMemoryLookupTable) vocab.getFirst();
+                table.getSyn0().divi(table.getSyn0().norm2(Integer.MAX_VALUE));
+                tree = new VPTree(table.getSyn0(),"dot",true);
+                words = new ArrayList<>(vocab.getSecond().vocabWords());
+                theVocab = new HashMap<>();
+                for(VocabWord word : words)
+                    theVocab.put(word.getIndex(),word);
+                this.vocab = vocab.getSecond();
+
+            }
+
+
         } catch (Exception e) {
             e.printStackTrace();
         }
