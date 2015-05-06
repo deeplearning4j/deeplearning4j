@@ -10,6 +10,7 @@ import jcuda.driver.CUcontext;
 import jcuda.driver.CUdevice;
 import jcuda.driver.CUresult;
 import jcuda.driver.CUstream;
+import jcuda.driver.CUstream_flags;
 import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
 
@@ -30,7 +31,7 @@ import static jcuda.driver.JCudaDriver.*;
 public class ContextHolder {
     private Map<Integer,CUdevice> devices = new HashMap<>();
     private Map<Integer, CUcontext> deviceIDContexts = new HashMap<>();
-    private Table<Integer,String,CUstream> deviceToThreadAndStream = HashBasedTable.create();
+    private Table<CUcontext,String,CUstream> contextStreams = HashBasedTable.create();
     private int numDevices = 0;
     private static ContextHolder INSTANCE;
     
@@ -69,6 +70,23 @@ public class ContextHolder {
     public  synchronized CUcontext getContext() {
         return getContext(0);
     }
+    
+    public synchronized CUstream getStream() {
+    	Thread currentThread = Thread.currentThread();
+    	CUcontext ctx = getContext(0);
+    	CUstream stream = contextStreams.get(ctx, currentThread.getName());
+    	
+    	if(stream == null) {
+    		stream = new CUstream();
+    		int result = JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_DEFAULT);
+    		if (result != CUresult.CUDA_SUCCESS) {
+                throw new CudaException("Failed to create a stream: "+ CUresult.stringFor(result));
+            }
+    		contextStreams.put(ctx, currentThread.getName(), stream);
+    	}
+    	
+    	return stream;
+    }
 
     /**
      * Retrieve a context for use with the current thread
@@ -77,7 +95,7 @@ public class ContextHolder {
      * @return the t
      */
     public  synchronized CUcontext getContext(int deviceToUse) {
-        //Thread currentThread = Thread.currentThread();
+        
         CUcontext ctx = deviceIDContexts.get(0);
         if(ctx == null) {
             ctx = new CUcontext();
