@@ -73,7 +73,8 @@ public interface JCudaBuffer extends DataBuffer {
      */
     void set(Pointer pointer);
 
-	
+
+
 
 
 }
