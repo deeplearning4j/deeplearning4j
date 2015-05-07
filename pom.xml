@@ -148,7 +148,6 @@
         <module>nd4j-jcublas-parent</module>
         <module>nd4j-scala-api</module>
         <module>nd4j-instrumentation</module>
-        <module>nd4j-scala-notebook</module>
         <module>nd4j-java</module>
         <module>nd4j-jocl-parent</module>
     </modules>
