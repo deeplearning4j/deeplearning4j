@@ -41,7 +41,7 @@ import org.nd4j.linalg.api.ndarray.INDArray
  */
 trait NeuralNetworkClassificationParams extends ProbabilisticClassifierParams 
   with HasMultiLayerConfiguration 
-  with HasWindowSize {
+  with HasEpochs {
 }
 
 /**
@@ -52,8 +52,7 @@ trait NeuralNetworkClassificationParams extends ProbabilisticClassifierParams
  * 
  * Noteworthy parameters:
  *  - conf        - the multilayer configuration
- *  - windowSize  - the number of training iterations to perform independently on each partition,
- *                  before resynchronizing the parameters across the cluster.
+ *  - epochs      - the number of full passes over the dataset, with convergence on each pass.
  */
 @AlphaComponent
 class NeuralNetworkClassification
@@ -65,7 +64,7 @@ class NeuralNetworkClassification
   def setConf(value: MultiLayerConfiguration): NeuralNetworkClassification = set(conf, value.toJson()).asInstanceOf[NeuralNetworkClassification]
 
   /** @group setParam */
-  def setWindowSize(value: Int): NeuralNetworkClassification = set(windowSize, value).asInstanceOf[NeuralNetworkClassification]
+  def setEpochs(value: Int): NeuralNetworkClassification = set(epochs, value).asInstanceOf[NeuralNetworkClassification]
 
   override protected def train(dataset: DataFrame, paramMap: ParamMap): NeuralNetworkClassificationModel = {
     val sqlContext = dataset.sqlContext
@@ -81,8 +80,7 @@ class NeuralNetworkClassification
     // devise a training strategy for the distributed neural network
     val trainingStrategy = new ParameterAveragingTrainingStrategy[Row](
         c,
-        paramMap(windowSize),
-        c.getConf(0).getNumIterations())
+        paramMap(epochs))
 
     // train
     val networkParams = trainingStrategy.train(

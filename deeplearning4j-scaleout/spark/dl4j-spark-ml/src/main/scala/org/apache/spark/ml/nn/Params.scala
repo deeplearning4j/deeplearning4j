@@ -65,16 +65,16 @@ private[spark] trait HasBatchSize extends Params {
 }
 
 @DeveloperApi
-private[spark] trait HasWindowSize extends Params {
+private[spark] trait HasEpochs extends Params {
 
   /**
-   * Param for window size
+   * Param for epochs
    * @group param
    */
-  val windowSize: IntParam = new IntParam(this, "windowSize", "window size", Some(1))
+  val epochs: IntParam = new IntParam(this, "epochs", "number of epochs", Some(1))
   
   /** @group getParam */
-  def getWindowSize: Int = get(windowSize)
+  def getEpochs: Int = get(epochs)
 }
 
 @DeveloperApi
