@@ -87,11 +87,12 @@ public class Transforms {
     }
 
     /**
-     * Down sampling a signal for the first stride dimensions
+     * Down sampling a signal
+     * for the first stride dimensions
      *
-     * @param d1
-     * @param stride
-     * @return
+     * @param d1 the data to down sample
+     * @param stride the stride at which to downsample
+     * @return the  down sampled ndarray
      */
     public static INDArray downSample(INDArray d1, int[] stride) {
         INDArray d = Nd4j.ones(stride);
@@ -119,8 +120,8 @@ public class Transforms {
         NDArrayIndex[] indices = new NDArrayIndex[d1.shape().length];
         for(int i = 0; i < indices.length; i++) {
             indices[i] = i < stride.length ?
-                    NDArrayIndex.interval(0,stride[i],d1.size(i) + 1,true) :
-                    NDArrayIndex.interval(0,d1.size(i) + 1,true);
+                    NDArrayIndex.interval(0,stride[i],d1.size(i) ,true) :
+                    NDArrayIndex.interval(0,d1.size(i) ,true);
         }
 
         ret = ret.get(indices);
@@ -206,10 +207,19 @@ public class Transforms {
             idx.add(put.sub(1));
         }
 
-        NDArrayIndex[] ret = new NDArrayIndex[idx.size()];
-        for(int i = 0; i < ret.length; i++)
-            ret[i] = NDArrayIndex.create(idx.get(i))[0];
-        return d.get(ret);
+        INDArray ret = Nd4j.create(ArrayUtil.toInts(ArrayUtil.toNDArray(d.shape()).muli(scale)));
+        INDArray retLinear = ret.linearView();
+        for(int i = 0; i < retLinear.length(); i++) {
+            for(int j = 0; j < idx.get(0).length(); j++) {
+                int slice = idx.get(0).getInt(j);
+                for(int k = 1; k < idx.size(); k++) {
+
+                }
+
+            }
+        }
+
+        return ret;
     }
 
 

@@ -17,7 +17,6 @@
 package org.nd4j.linalg.util;
 
 
-import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -26,9 +25,7 @@ import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * IComplexNDArray operations
@@ -76,7 +73,7 @@ public class ComplexNDArrayUtil {
         INDArray shapeMatrix = ArrayUtil.toNDArray(shape);
         INDArray currShape = ArrayUtil.toNDArray(arr.shape());
 
-        INDArray startIndex = Transforms.ceiling(currShape.sub(shapeMatrix).divi(Nd4j.scalar(2)));
+        INDArray startIndex = Transforms.floor(currShape.sub(shapeMatrix).divi(Nd4j.scalar(2)));
         INDArray endIndex = startIndex.add(shapeMatrix);
         NDArrayIndex[] indexes = Indices.createFromStartAndEnd(startIndex,endIndex);
 
