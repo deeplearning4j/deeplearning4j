@@ -37,13 +37,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  * @author Adam Gibson
  */
 public class ConvolutionDownSampleLayer extends BaseLayer {
-    /**
-     * Convolution type: max avg or sum
-     */
-    public  enum ConvolutionType {
-        MAX,AVG,SUM,NONE
-    }
-
     @Override
     public Type type() {
         return Type.CONVOLUTIONAL;
