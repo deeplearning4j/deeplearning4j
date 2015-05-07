@@ -177,7 +177,13 @@ public abstract class NDArrayTests {
     }
 
 
-
+    @Test
+    public void testGetColumns() {
+        INDArray matrix = Nd4j.linspace(1,6,6).reshape(2,3);
+        INDArray matrixGet = matrix.getColumns(new int[]{1,2});
+        INDArray matrixAssertion = Nd4j.create(new double[][]{{2,3},{5,6}});
+        assertEquals(matrixAssertion,matrixGet);
+    }
 
     @Test
     public void testSort() throws Exception {
@@ -292,25 +298,25 @@ public abstract class NDArrayTests {
 
     @Test
     public void testDup() {
-    	
-    	for(int x = 0; x<100; x++) {
-	        INDArray orig = Nd4j.linspace(1, 4, 4);
-	        INDArray dup = orig.dup();
-	        assertEquals(orig, dup);
-	
-	        INDArray matrix = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
-	        INDArray dup2 = matrix.dup();
-	        assertEquals(matrix, dup2);
-	
-	        INDArray row1 = matrix.getRow(1);
-	        INDArray dupRow = row1.dup();
-	        assertEquals(row1, dupRow);
-	
-	
-	        INDArray columnSorted = Nd4j.create(new float[]{2, 1, 4, 3}, new int[]{2, 2});
-	        INDArray dup3 = columnSorted.dup();
-	        assertEquals(columnSorted, dup3);
-    	}
+
+        for(int x = 0; x<100; x++) {
+            INDArray orig = Nd4j.linspace(1, 4, 4);
+            INDArray dup = orig.dup();
+            assertEquals(orig, dup);
+
+            INDArray matrix = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
+            INDArray dup2 = matrix.dup();
+            assertEquals(matrix, dup2);
+
+            INDArray row1 = matrix.getRow(1);
+            INDArray dupRow = row1.dup();
+            assertEquals(row1, dupRow);
+
+
+            INDArray columnSorted = Nd4j.create(new float[]{2, 1, 4, 3}, new int[]{2, 2});
+            INDArray dup3 = columnSorted.dup();
+            assertEquals(columnSorted, dup3);
+        }
     }
 
     @Test
@@ -367,7 +373,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testDivide() {
-    	Nd4j.dtype = DataBuffer.Type.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray two = Nd4j.create(new float[]{2, 2, 2, 2});
         INDArray div = two.div(two);
         assertEquals(Nd4j.ones(4), div);
@@ -382,7 +388,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testSigmoid() {
-    	Nd4j.dtype = DataBuffer.Type.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         INDArray assertion = Nd4j.create(new float[]{0.73105858f, 0.88079708f, 0.95257413f, 0.98201379f});
         INDArray sigmoid = Transforms.sigmoid(n, false);
@@ -466,18 +472,18 @@ public abstract class NDArrayTests {
 
     @Test
     public void testScal() {
-    	Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         double assertion = 2;
         INDArray answer = Nd4j.create(new double[]{2, 4, 6, 8});
         INDArray scal = Nd4j.getBlasWrapper().scal(assertion, answer);
-		assertEquals(answer, scal);
+        assertEquals(answer, scal);
 
         INDArray row = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray row1 = row.getRow(1);
         double assertion2 = 5.0;
         INDArray answer2 = Nd4j.create(new double[]{15, 20});
         INDArray scal2 = Nd4j.getBlasWrapper().scal(assertion2, row1);
-		assertEquals(answer2, scal2);
+        assertEquals(answer2, scal2);
 
     }
 
@@ -1128,7 +1134,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testRowStd() {
-    	Nd4j.dtype = DataBuffer.Type.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray rowStd = twoByThree.std(1);
         INDArray assertion = Nd4j.create(new float[]{0.7071067811865476f, 0.7071067811865476f});

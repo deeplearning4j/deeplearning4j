@@ -206,19 +206,10 @@ public class Transforms {
             idx.add(put.sub(1));
         }
 
-        INDArray ret = Nd4j.create(ArrayUtil.toInts(ArrayUtil.toNDArray(d.shape()).muli(scale)));
-        INDArray retLinear = ret.linearView();
-        for(int i = 0; i < retLinear.length(); i++) {
-            for(int j = 0; j < idx.get(0).length(); j++) {
-                int slice = idx.get(0).getInt(j);
-                for(int k = 1; k < idx.size(); k++) {
-
-                }
-
-            }
-        }
-
-        return ret;
+        NDArrayIndex[] ret = new NDArrayIndex[idx.size()];
+        for(int i = 0; i < ret.length; i++)
+            ret[i] = NDArrayIndex.create(idx.get(i))[0];
+        return d.get(ret);
     }
 
 
