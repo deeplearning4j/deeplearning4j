@@ -14,13 +14,12 @@
   ~    limitations under the License.
   -->
 
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nd4j</groupId>
     <artifactId>nd4j</artifactId>
-    <version>0.0.3.5.5.3-SNAPSHOT</version>
+    <version>0.0.3.5.5.3</version>
 
     <parent>
         <groupId>org.sonatype.oss</groupId>
@@ -110,7 +109,7 @@
         <connection>scm:git@github.com:SkymindIO/nd4j.git</connection>
         <developerConnection>scm:git:git@github.com:SkymindIO/nd4j.git</developerConnection>
         <url>git@github.com:SkymindIO/nd4j.git</url>
-        <tag>HEAD</tag>
+        <tag>nd4j-0.0.3.5.5.3</tag>
     </scm>
 
 
