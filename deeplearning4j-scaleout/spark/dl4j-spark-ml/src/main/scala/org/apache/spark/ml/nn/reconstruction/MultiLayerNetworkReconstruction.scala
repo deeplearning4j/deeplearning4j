@@ -40,7 +40,7 @@ import org.nd4j.linalg.api.ndarray.INDArray
  */
 trait NeuralNetworkReconstructionParams extends UnsupervisedLearnerParams 
   with HasMultiLayerConfiguration
-  with HasWindowSize
+  with HasEpochs
   with HasLayerIndex
   with HasReconstructionCol {
   
@@ -65,8 +65,7 @@ trait NeuralNetworkReconstructionParams extends UnsupervisedLearnerParams
  * Noteworthy parameters:
  *  - conf        - the multilayer configuration
  *  - layer index - the neural network layer to use for reconstruction (by default, the input layer)
- *  - windowSize  - the number of training iterations to perform independently on each partition,
- *                  before resynchronizing the parameters across the cluster.
+ *  - epochs      - the number of full passes over the dataset, with convergence on each pass.
  */
 @AlphaComponent
 class NeuralNetworkReconstruction
@@ -78,7 +77,7 @@ extends UnsupervisedLearner[Vector, NeuralNetworkReconstruction, NeuralNetworkRe
   def setConf(value: MultiLayerConfiguration): NeuralNetworkReconstruction = set(conf, value.toJson()).asInstanceOf[NeuralNetworkReconstruction]
 
   /** @group setParam */
-  def setWindowSize(value: Int): NeuralNetworkReconstruction = set(windowSize, value).asInstanceOf[NeuralNetworkReconstruction]
+  def setEpochs(value: Int): NeuralNetworkReconstruction = set(epochs, value).asInstanceOf[NeuralNetworkReconstruction]
 
   /** @group setParam */
   def setLayerIndex(value: Int): NeuralNetworkReconstruction = set(layerIndex, value).asInstanceOf[NeuralNetworkReconstruction]
@@ -99,8 +98,7 @@ extends UnsupervisedLearner[Vector, NeuralNetworkReconstruction, NeuralNetworkRe
     // devise a training strategy for the distributed neural network
     val trainingStrategy = new ParameterAveragingTrainingStrategy[Row](
         c,
-        paramMap(windowSize),
-        c.getConf(0).getNumIterations())
+        paramMap(epochs))
 
     // train
     val networkParams = trainingStrategy.train(

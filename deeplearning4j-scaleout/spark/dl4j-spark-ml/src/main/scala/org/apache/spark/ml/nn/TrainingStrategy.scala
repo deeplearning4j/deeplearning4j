@@ -42,13 +42,14 @@ private[spark] abstract class TrainingStrategy[RowType]{
 /**
  * Train a distributed neural network using parameter averaging.   
  * 
- * Training occurs over some number of iterations (totalIterations).  For performance,
- * network parameters are averaged not after each iteration but after some number of iterations (windowSize).
+ * Training occurs over some number of epochs.  In each epoch:
+ * 1. broadcast the parameters to all workers.
+ * 2. train a local network on each partition until the network converges (i.e. after some iterations).
+ * 3. accumulate the final parameters from each partition and compute an average.
  */
 private[spark] class ParameterAveragingTrainingStrategy[RowType](
     @transient val conf: MultiLayerConfiguration,
-    windowSize: Int,
-    totalIterations: Int)
+    epochs: Int)
   extends TrainingStrategy[RowType] {
  
    override def train(
@@ -65,17 +66,12 @@ private[spark] class ParameterAveragingTrainingStrategy[RowType](
    
      var networkParams = initialParams()
      
-     for(iterations <- (1 to totalIterations by windowSize).map(_=>windowSize)) {
-       // slide a window over the range corresponding to the total iterations
-       // within each window, train the network for some number of iterations
-       
+     for(epoch <- (1 to epochs)) {
        val broadcastedParams = sc.broadcast(networkParams)
        val accumulatedParams = sc.accumulator(Nd4j.zeros(networkParams.shape()))(INDArrayAccumulatorParam)
      
        rdd.foreachPartition { iterator =>
          @transient val conf: MultiLayerConfiguration = MultiLayerConfiguration.fromJson(confJson)
-         for(layerConf <- conf.getConfs())
-           layerConf.setNumIterations(iterations)
 
          val network = new MultiLayerNetwork(conf);
          network.init();
