@@ -34,7 +34,7 @@ public class TestConvolutionLayer {
         DataSetIterator mnist = new MnistDataSetIterator(100,100);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().featureMapSize(20,20)
                 .activationFunction("relu").constrainGradientToUnitNorm(true)
-                .convolutionType(ConvolutionDownSampleLayer.ConvolutionType.MAX).filterSize(6,1,9,9)
+                .convolutionType(org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer.ConvolutionType.MAX).filterSize(6,1,9,9)
                 .layer(new ConvolutionLayer())
                 .nIn(784).nOut(1).build();
         Layer convolutionLayer =  LayerFactories.getFactory(new ConvolutionLayer()).create(conf);
