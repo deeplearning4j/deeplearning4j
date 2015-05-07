@@ -27,7 +27,7 @@ public class SubsampleTests {
         LayerFactory layerFactory = LayerFactories.getFactory(new SubsamplingLayer());
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .activationFunction("relu").constrainGradientToUnitNorm(true)
-                .convolutionType(ConvolutionDownSampleLayer.ConvolutionType.MAX).filterSize(5,1,28,28)
+                .convolutionType(org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer.ConvolutionType.MAX).filterSize(5,1,28,28)
                 .layer(new SubsamplingLayer())
                 .nIn(784).nOut(1).build();
         Layer convolutionLayer =  layerFactory.create(conf);
