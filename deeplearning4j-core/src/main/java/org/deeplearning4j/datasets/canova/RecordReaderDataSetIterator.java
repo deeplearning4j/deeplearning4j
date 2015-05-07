@@ -98,6 +98,10 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             else
                 currList = new ArrayList<>(record);
 
+            //allow people to specify label index as -1 and infer the last possible label
+            if(numPossibleLabels >= 1 && labelIndex < 0) {
+                labelIndex = record.size() - 1;
+            }
             INDArray label = null;
             INDArray featureVector = Nd4j.create(labelIndex >= 0 ? currList.size() -1 : currList.size());
             int count = 0;
