@@ -224,7 +224,7 @@
                     <version>2.5</version>
                     <configuration>
                         <mavenExecutorId>forked-path</mavenExecutorId>
-                        <arguments>-Psonatype-oss-release</arguments>
+                        <arguments>-Psonatype-oss-release -DskipTests</arguments>
                     </configuration>
                 </plugin>
                 <plugin>
