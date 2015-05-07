@@ -41,7 +41,7 @@ public class Test extends BaseSubCommand {
     @Option(name = "--runtime", usage = "runtime- local, Hadoop, Spark, etc.", aliases = "-r", required = false)
     private String runtime = "local";
 
-    @Option(name = "--properties", usage = "configuration for distributed systems", aliases = "-p", required = false)
+    @Option(name = "--pcdroperties", usage = "configuration for distributed systems", aliases = "-p", required = false)
     private String properties;
 
     public Test(String[] args) {
