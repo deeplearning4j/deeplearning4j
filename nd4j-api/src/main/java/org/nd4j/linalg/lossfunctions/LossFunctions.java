@@ -26,6 +26,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 /**
  * Central class for loss functions
+ * @author Adam Gibson
  */
 public class LossFunctions {
 
@@ -66,7 +67,7 @@ public class LossFunctions {
                 INDArray rmseXentDiff = labels.sub(z);
                 INDArray squaredrmseXentDiff = pow(rmseXentDiff, 2.0);
                 INDArray sqrt = sqrt(squaredrmseXentDiff);
-                ret = sqrt.sum(1).mean(Integer.MAX_VALUE).getDouble(0);
+                ret = sqrt.sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case MSE:
                 INDArray mseDelta = labels.sub(z);
