@@ -22,7 +22,6 @@ package org.deeplearning4j.nn.layers.factory;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 
 /**
