@@ -67,7 +67,7 @@ public class MultiLayerTest {
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .constrainGradientToUnitNorm(true)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1e-5))
-                .iterations(100).learningRate(1e-3).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .iterations(10).learningRate(1e-3).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .layer(new RBM())
                 .list(4).hiddenLayerSizes(600,250,100).override(3,new ClassifierOverride()).build();
