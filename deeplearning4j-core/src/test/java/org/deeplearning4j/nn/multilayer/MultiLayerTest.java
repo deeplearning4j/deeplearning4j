@@ -24,13 +24,13 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.conf.stepfunctions.GradientStepFunction;
@@ -58,7 +58,6 @@ public class MultiLayerTest {
 
     @Test
     public void testDbnFaces() {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         DataSetIterator iter = new LFWDataSetIterator(28,28);
 
         DataSet next = iter.next();
@@ -67,23 +66,14 @@ public class MultiLayerTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .constrainGradientToUnitNorm(true)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1,1e-5))
-                .iterations(100).learningRate(1e-3)
-                .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .list(4).hiddenLayerSizes(600,250,100).override(3, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        if (i == 3) {
-                            builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
-                            builder.activationFunction("softmax");
-                            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-
-                        }
-                    }
-                }).build();
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1e-5))
+                .iterations(100).learningRate(1e-3).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .layer(new RBM())
+                .list(4).hiddenLayerSizes(600,250,100).override(3,new ClassifierOverride()).build();
         
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
         network.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
         network.fit(next);
 
