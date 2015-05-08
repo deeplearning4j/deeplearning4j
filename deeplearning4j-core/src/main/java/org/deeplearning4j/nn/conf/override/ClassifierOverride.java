@@ -34,13 +34,14 @@ public class ClassifierOverride implements ConfOverride {
         this.finalLayer = finalLayer;
     }
 
+    public ClassifierOverride() {
+    }
     @Override
     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-        if(i == finalLayer) {
-            builder.activationFunction("softmax");
-            builder.weightInit(WeightInit.ZERO);
-            builder.layer(new OutputLayer());
-            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-        }
+        builder.activationFunction("softmax");
+        builder.weightInit(WeightInit.ZERO);
+        builder.layer(new OutputLayer());
+        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+
     }
 }
