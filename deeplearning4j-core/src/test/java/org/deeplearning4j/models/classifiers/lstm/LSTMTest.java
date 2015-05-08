@@ -23,6 +23,7 @@ import java.util.Arrays;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.LSTM;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -45,7 +46,7 @@ public class LSTMTest {
     @Test
     public void testTraffic() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().activationFunction("tanh")
-                .layer(new org.deeplearning4j.nn.conf.layers.LSTM()).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .layer(new org.deeplearning4j.nn.conf.layers.LSTM()).optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .nIn(4).nOut(4).build();
         LSTM l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(10)));

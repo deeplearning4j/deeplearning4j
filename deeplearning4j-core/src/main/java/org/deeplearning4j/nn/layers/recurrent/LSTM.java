@@ -46,27 +46,31 @@ import static org.nd4j.linalg.ops.transforms.Transforms.tanh;
 /**
  * LSTM recurrent net.
  *
- * Based on karpathy et. al's work on generation of image descriptions.
+ * Based on karpathy et. al's
+ * work on generation of image descriptions.
  *
  * @author Adam Gibson
  */
 public class LSTM extends BaseLayer {
     //recurrent weights
     private INDArray iFog,iFogF,c,x,hIn,hOut,u,u2;
+    //current input
     private INDArray xi;
+    //predicted time series
     private INDArray xs;
 
     public LSTM(NeuralNetConfiguration conf) {
         super(conf);
     }
 
-    public LSTM(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
 
 
-
-
+    /**
+     * Forward propagation
+     * @param xi the current example
+     * @param xs the tim series to predict based on
+     * @return
+     */
     public INDArray forward(INDArray xi,INDArray xs) {
         this.xs = xs;
         this.xi = xi;
@@ -196,7 +200,8 @@ public class LSTM extends BaseLayer {
             iFogF.slice(t).put(new NDArrayIndex[]{interval(3 * d,iFogF.columns() - 1)}, tanh(iFog.slice(t).get(interval(3 * d, iFog.columns() - 1))));
 
             //cell activations
-            c.put(new NDArrayIndex[]{new NDArrayIndex(t),interval(3 * d, iFogF.columns())},iFogF.slice(t).get(interval(0, d)).mul(iFogF.slice(t).get(interval(3 * d,iFogF.columns()))));
+            INDArray cPut = iFogF.slice(t).get(interval(0, d)).mul(iFogF.slice(t).get(interval(3 * d, iFogF.columns())));
+            c.putRow(t,cPut);
 
 
             if(t > 0)
@@ -450,7 +455,6 @@ public class LSTM extends BaseLayer {
     public double score() {
         INDArray forward =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", forward(xi,xs)).derivative(), 1);
         return LossFunctions.score(xs,conf.getLossFunction(),forward,conf.getL2(),conf.isUseRegularization());
-        //return -log(forward.sum(Integer.MAX_VALUE)).getDouble(0);
     }
 
     @Override
@@ -497,7 +501,7 @@ public class LSTM extends BaseLayer {
     public void fit(INDArray data) {
         xi = data.slice(0);
         NDArrayIndex[] everythingElse = {
-            NDArrayIndex.interval(1,data.rows()),NDArrayIndex.interval(0,data.columns())
+                NDArrayIndex.interval(1,data.rows()),NDArrayIndex.interval(0,data.columns())
         };
         xs = data.get(everythingElse);
         Solver solver = new Solver.Builder()

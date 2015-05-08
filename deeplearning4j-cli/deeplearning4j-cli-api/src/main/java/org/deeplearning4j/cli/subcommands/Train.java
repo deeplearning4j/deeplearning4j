@@ -83,7 +83,7 @@ public class Train extends BaseSubCommand {
 	private String input = "input.txt";
 
 
-	@Option(name = "-output", usage = "location for saving model", aliases = "-o", required = true)
+	@Option(name = "-output", usage = "location for saving model", aliases = "-o")
 	private String outputDirectory = "output.txt";
 
 	@Option(name = "-runtime", usage = "runtime- local, Hadoop, Spark, etc.", aliases = "-r", required = false)

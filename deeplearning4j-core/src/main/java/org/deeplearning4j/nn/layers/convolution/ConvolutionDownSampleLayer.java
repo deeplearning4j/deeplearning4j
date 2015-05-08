@@ -36,14 +36,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class ConvolutionDownSampleLayer extends BaseLayer {
-    /**
-     * Convolution type: max avg or sum
-     */
-    public  enum ConvolutionType {
-        MAX,AVG,SUM,NONE
-    }
-
     @Override
     public Type type() {
         return Type.CONVOLUTIONAL;
@@ -64,10 +58,7 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
 
     @Override
     public Pair<Gradient, Gradient> backWard(Gradient ixes, Gradient deltas, INDArray activation, String previousActivation) {
-        int[] stride = conf().getStride();
-        INDArray errors = Nd4j.zerosLike(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS));
-
-        return super.backWard(ixes, deltas, activation, previousActivation);
+        throw new UnsupportedOperationException();
     }
 
     @Override

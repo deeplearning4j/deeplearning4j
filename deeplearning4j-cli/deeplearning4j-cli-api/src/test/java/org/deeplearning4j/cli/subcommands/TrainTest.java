@@ -19,7 +19,7 @@ public class TrainTest {
 		
 		String conf_file = "src/test/resources/confs/cli_train_unit_test_conf.txt";
 		
-		String[] args = { "-conf", conf_file };		
+		String[] args = { "-conf", conf_file ,"-input",conf_file};
 		
 		Train train = new Train( args );
 		try {
