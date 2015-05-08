@@ -48,7 +48,6 @@ public class ConvolutionLayer implements Layer {
 
     private NeuralNetConfiguration conf;
     private Map<String,INDArray> params;
-    private NeuralNetConfiguration previousConf;
     protected ParamInitializer paramInitializer;
     private List<IterationListener> listeners = new ArrayList<>();
 
