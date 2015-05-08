@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-parent</artifactId>
-    <version>0.0.3.3.3.alpha1-SNAPSHOT</version>
+    <version>0.0.3.3.4.alpha1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>DeepLearning4j</name>
 
@@ -55,8 +55,8 @@
         <junit.version>4.12</junit.version>
         <logback.version>1.1.2</logback.version>
         <jackson.version>2.5.1</jackson.version>
-        <canova.version>0.0.0.2-SNAPSHOT</canova.version>
-        <nd4j.version>0.0.3.5.5.3-SNAPSHOT</nd4j.version>
+        <canova.version>0.0.0.2</canova.version>
+        <nd4j.version>0.0.3.5.5.3</nd4j.version>
         <spring.version>3.2.5.RELEASE</spring.version>
     </properties>
 
@@ -192,7 +192,7 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
+                <artifactId>source-plugin</artifactId>
                 <version>2.4</version>
             </plugin>
         </plugins>
@@ -244,7 +244,7 @@
                     <version>2.5</version>
                     <configuration>
                         <mavenExecutorId>forked-path</mavenExecutorId>
-                        <arguments> -Psonatype-oss-release</arguments>
+                        <arguments> -Psonatype-oss-release -DskipTests</arguments>
                     </configuration>
                 </plugin>
                 <plugin>

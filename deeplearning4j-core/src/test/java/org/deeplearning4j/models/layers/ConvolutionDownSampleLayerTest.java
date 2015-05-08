@@ -87,7 +87,7 @@ public class ConvolutionDownSampleLayerTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT).momentum(0.9)
                 .dist(new UniformDistribution(1e-5, 1e-1)).constrainGradientToUnitNorm(true)
-                .iterations(1000).convolutionType(ConvolutionDownSampleLayer.ConvolutionType.NONE)
+                .iterations(1000).convolutionType(org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer.ConvolutionType.NONE)
                 .activationFunction("tanh").filterSize(1, 1, 2, 2)
                 .nIn(4).nOut(3).batchSize(batchSize)
                 .layer(new org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer())
