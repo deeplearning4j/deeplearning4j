@@ -40,6 +40,17 @@ public class NDArrayIndexTests {
         int[] interval2 = NDArrayIndex.interval(1, 3).indices();
         assertEquals(2, interval2.length);
 
+        int[] nextInterval = NDArrayIndex.interval(0,5).indices();
+        assertEquals(5,nextInterval.length);
+        nextInterval = NDArrayIndex.interval(0,5,true).indices();
+        assertEquals(6,nextInterval.length);
+
+
+
+
+
     }
+
+
 
 }
