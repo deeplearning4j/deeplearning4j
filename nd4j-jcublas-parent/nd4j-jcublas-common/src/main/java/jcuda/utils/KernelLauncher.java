@@ -1037,7 +1037,7 @@ public class KernelLauncher {
             }
         }
 
-
+        setContext();
 
         checkResult(cuLaunchKernel(function,
                 gridSize.x, gridSize.y, gridSize.z,
