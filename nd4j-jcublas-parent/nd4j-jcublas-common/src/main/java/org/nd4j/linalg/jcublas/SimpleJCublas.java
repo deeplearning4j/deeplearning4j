@@ -237,7 +237,7 @@ public class SimpleJCublas {
                 cBPointer, // x
                 B.secondaryStride(), // ldb
                 PointerUtil.getPointer(beta),  // beta
-                cCPointer, // y
+                cCPointer, // ydoin
                 C.secondaryStride()); // ldc
 
         sync();
