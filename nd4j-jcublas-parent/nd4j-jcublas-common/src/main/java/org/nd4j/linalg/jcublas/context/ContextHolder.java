@@ -5,6 +5,8 @@ import java.util.Map;
 
 import com.google.common.collect.*;
 
+import jcublas.JCublas2;
+import jcublas.cublasHandle;
 import jcuda.CudaException;
 import jcuda.driver.CUcontext;
 import jcuda.driver.CUdevice;
@@ -14,12 +16,14 @@ import jcuda.driver.CUstream_flags;
 import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
 
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 
 import static jcuda.driver.JCudaDriver.*;
 
 /**
- * A multithreaded version derived from the cuda launcher util
+ * A multithreaded version derived
+ * from the cuda launcher util
  * by the authors of jcuda.
  *
  * This class handles managing cuda contexts
@@ -29,24 +33,23 @@ import static jcuda.driver.JCudaDriver.*;
  * @author Adam Gibson
  */
 public class ContextHolder {
+
     private Map<Integer,CUdevice> devices = new HashMap<>();
     private Map<Integer, CUcontext> deviceIDContexts = new HashMap<>();
+    private Map<String,Integer> threadNameToDeviceNumber = new HashMap<>();
     private Table<CUcontext,String,CUstream> contextStreams = HashBasedTable.create();
+    private Map<String, cublasHandle> handleMap = new HashMap<>();
     private int numDevices = 0;
     private static ContextHolder INSTANCE;
     
     private ContextHolder(){
         getNumDevices();
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-//               for(Table.Cell<Integer,String,CUcontext> cell : deviceToThreadAndContext.cellSet()) {
-//                   JCudaDriver.cuCtxDestroy(cell.getValue());
-//               }
-            }
-        }));
     }
 
+    /**
+     * Singleton pattern
+     * @return the instance for the context holder.
+     */
     public static ContextHolder getInstance() {
         if(INSTANCE == null)
             INSTANCE = new ContextHolder();
@@ -63,17 +66,57 @@ public class ContextHolder {
     }
 
     /**
+     * Get the device number for a particular host thread
+     * @return the device for the given host thread
+     *
+     */
+    public int getDeviceForThread() {
+        if(numDevices > 1) {
+            Integer device =  threadNameToDeviceNumber.get(Thread.currentThread().getName());
+            if(device == null) {
+                device = Nd4j.getRandom().nextInt(numDevices);
+                threadNameToDeviceNumber.put(Thread.currentThread().getName(),device);
+                return device;
+            }
+        }
+
+        return 0;
+    }
+
+
+    /**
+     * Get the handle for the current thread
+     * @return the handle for the current thread
+     */
+    public  cublasHandle getHandle() {
+        cublasHandle handle =  handleMap.get(Thread.currentThread().getName());
+        if(handle != null)
+            return handle;
+        handle = new cublasHandle();
+        JCublas2.cublasCreate(handle);
+        handleMap.put(Thread.currentThread().getName(),handle);
+        return handle;
+    }
+
+    /**
      * Retrieve a context for use with the current thread
      * and the given device
-     * @return the t
+     * @return the context for the given device and thread
      */
     public  synchronized CUcontext getContext() {
-        return getContext(0);
+        return getContext(getDeviceForThread());
     }
-    
+
+
+    /**
+     * Get the stream for the current thread
+     * based on the device for the thread
+     * @return the stream for the device and
+     * thread
+     */
     public synchronized CUstream getStream() {
     	Thread currentThread = Thread.currentThread();
-    	CUcontext ctx = getContext(0);
+    	CUcontext ctx = getContext(getDeviceForThread());
     	CUstream stream = contextStreams.get(ctx, currentThread.getName());
     	
     	if(stream == null) {
@@ -96,7 +139,7 @@ public class ContextHolder {
      */
     public  synchronized CUcontext getContext(int deviceToUse) {
         
-        CUcontext ctx = deviceIDContexts.get(0);
+        CUcontext ctx = deviceIDContexts.get(deviceToUse);
         if(ctx == null) {
             ctx = new CUcontext();
             for(int device = 0; device < numDevices; device++) {
@@ -104,9 +147,6 @@ public class ContextHolder {
                 CUdevice currDevice = createDevice(ctx, device);
                 devices.put(device,currDevice);
                 deviceIDContexts.put(device,ctx);
-                //deviceToThreadAndContext.put(device,currentThread.getName(),ctx);
-
-
             }
 
         }
@@ -128,9 +168,8 @@ public class ContextHolder {
      * context.
      */
     private void initialize(CUcontext context,int deviceNumber) {
-        int result = cuInit(0);
-        if (result != CUresult.CUDA_SUCCESS)
-        {
+        int result = cuInit(deviceNumber);
+        if (result != CUresult.CUDA_SUCCESS) {
             throw new CudaException(
                     "Failed to initialize the driver: "+
                             CUresult.stringFor(result));
@@ -149,9 +188,8 @@ public class ContextHolder {
         // has to be created.
         CUcontext nullContext = new CUcontext();
         if (context.equals(nullContext))
-        {
             createContext(context,deviceNumber);
-        }
+
     }
 
     /**
@@ -178,7 +216,12 @@ public class ContextHolder {
 
     }
 
-
+    /**
+     * Create a context for the given device
+     * @param context the context to create
+     * @param deviceNumber the device number to create the context for
+     * @return the created device
+     */
     public static CUdevice createDevice(CUcontext context,int deviceNumber) {
         CUdevice device = new CUdevice();
         int result = cuDeviceGet(device, deviceNumber);
