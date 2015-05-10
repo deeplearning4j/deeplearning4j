@@ -5,7 +5,7 @@ layout: default
 
 # Restricted Boltzmann Machines
 
-To quote Geoff Hinton, a Google researcher and university professor, a Boltzmann machine is "a network of symmetrically connected, neuron-like units that make [stochastic](../glossary.html#stochasticgradientdescent) decisions about whether to be on or off." (Stochastic means "randomly determined.")
+To quote Geoff Hinton, one of the top scholars associated with deep learning, a Boltzmann machine is "a network of symmetrically connected, neuron-like units that make [stochastic](../glossary.html#stochasticgradientdescent) decisions about whether to be on or off." (Stochastic means "randomly determined.")
 
 A restricted Boltzmann machine "consists of a layer of visible units and a layer of hidden units with no visible-visible or hidden-hidden connections." The "restricted" comes from limits imposed on how its nodes connect: intra-layer connections are not allowed, but each node of one layer connects to every node of the next, and that is called "symmetry." 
 
