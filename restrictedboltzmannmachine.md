@@ -41,7 +41,7 @@ In the above example, you can see how RBMs can be created as layers with a more 
 
 **lossFunction** is the way you measure error, or the difference between your net's guesses and the correct labels contained in the test set. Here we use RMSE_XENT, or Root-Mean-Squared-Error-Cross-Entropy.
 
-**learning rate**, like **momentum**, affects how much the neural net adjusts the coefficients on each iteration as it corrects for error. These two parameters help determine the size of the steps the net takes down the gradient towards a local optimum. A large learning rate will make the net learn fast, and maybe overshoot the optimum. A small learning rate will slow down the learning, which can be inefficient. 
+**learningRate**, like **momentum**, affects how much the neural net adjusts the coefficients on each iteration as it corrects for error. These two parameters help determine the size of the steps the net takes down the gradient towards a local optimum. A large learning rate will make the net learn fast, and maybe overshoot the optimum. A small learning rate will slow down the learning, which can be inefficient. 
 
 ### Continuous RBMs
 
