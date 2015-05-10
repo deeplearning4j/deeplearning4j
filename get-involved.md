@@ -2,40 +2,32 @@
 layout: default
 ---
 
-# Get involved
+# Get Involved
 
 Here's where you can ask questions and contribute your knowledge:
 
 * [Google Group](https://groups.google.com/forum/#!forum/deeplearning4j)
 
-### license
+### License
 
-Deeplearning4j is distributed under an Apache 2.0 license, the most permissive license we're aware of. 
-
-###roadmap
-
-We're looking for contributors to help on a number of fronts. 
-
-We're planning to add recurrent neural nets, although they're well implemented elsewhere. A Python SDK is planned, as is Spark integration. 
-
-For those of you who'd like to bring deep-learning applications to a much wider set of users, we can use help with documentation and tutorials. This site is open source and we accept pull requests (just look on the gh-pages branch).
-
-Adam is prototyping up-to-date tutorials in the [Deeplearning4j examples subproject](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples).
+Deeplearning4j is distributed under an Apache 2.0 license.
 
 ###contribute
 
-Contribute code, report a bug, help us make DL4J more useful.
+We're looking for contributors to help us find bugs, add features and create better documentation and tutorials. 
 
-*  [Github Project](https://github.com/agibsonccc/java-deeplearning)
-*  [Issue Tracker](https://github.com/agibsonccc/java-deeplearning/issues)
-*  [Our Contributors](https://github.com/agibsonccc/java-deeplearning/graphs/contributors)
+Like Deeplearining4j itself, this website is open source and we accept pull requests (just switch to the gh-pages branch on Github).
 
-###learn
+*  [Deeplearning4j on Github](https://github.com/deeplearning4j)
+*  [Issues](https://github.com/deeplearning4j/deeplearning4j/issues)
+*  [Contributors](https://github.com/orgs/deeplearning4j/people)
+
+###Learn
 
 DL4J workshops are offered through [GalvanizeU](http://www.galvanizeu.com/) in San Francisco.
 
-###call
+###Contact Us
 
-Get professional support from the core DL4J team.
+Get professional support from the Skymind team behind Deeplearning4j.
 
-Learn more at [www.skymind.io](www.skymind.io).
+Learn more at [www.skymind.io](http://www.skymind.io/contact/).
