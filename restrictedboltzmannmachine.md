@@ -25,7 +25,9 @@ The variable k is the number of times you run [contrastive divergence](../glossa
 
 ### Initiating an RBM on Iris
 
- <script src="http://gist-it.appspot.com/https://github.com/SkymindIO/deeplearning4j/blob/4530b123f40645a2c34e650cbfcd6b5139638c9a/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/rbm/RBMTests.java?slice=58:74"></script>
+ <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/iris/IrisExample.java?slice=37:52"></script>
+
+
 
 ### Continuous RBMs
 
