@@ -17,9 +17,7 @@ A trained restricted Boltzmann machine will learn the structure of the data fed 
 
 [RBMs](../glossary.html#restrictedboltzmannmachine) are useful for [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [classification](https://en.wikipedia.org/wiki/Statistical_classification), [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering), [feature learning](https://en.wikipedia.org/wiki/Feature_learning) and [topic modeling](https://en.wikipedia.org/wiki/Topic_model). Given their relative simplicity, restricted Boltzmann machines are the first neural network we'll tackle.
 
-### Parameters & k
-
-See [the parameters common to all single-layer networks](../singlelayernetwork.html).
+## Parameters & k
 
 The variable k is the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain composing the restricted Boltzmann machine. A typical value is 1.
 
@@ -61,4 +59,4 @@ You can intrepret RBMs' output numbers as percentages. Every time the number in 
 
 To explore the mechanisms that make restricted Boltzmann machines tick, click [here](../understandingRBMs.html).
 
-Next, we'll show you how to implement a [deep-belief network](../deepbeliefnetwork.html), which is simply many restricted Boltzmann machines strung together.
+Next, we'll show you how to implement a [deep-belief network](../deepbeliefnetwork.html), which is simply many restricted Boltzmann machines stacked on top of one another.
