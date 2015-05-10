@@ -25,9 +25,23 @@ The variable k is the number of times you run [contrastive divergence](../glossa
 
 ### Initiating an RBM on Iris
 
- <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/iris/IrisExample.java?slice=37:52"></script>
+ <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/iris/IrisExample.java?slice=36:53"></script>
 
+In the above example, you can see how RBMs can be created as layers with a more general MultiLayerConfiguration. After each dot you'll find an additional parameter that affects the structure and performance of a deep neural net. Most of those parameters are defined on this site. 
 
+**weightInit**, or weightInitialization, represents the starting value of the coefficients that amplify or mute the input signal coming into each node. Proper weight initialization can save you a lot of training time, because training a net is nothing more than adjusting the coefficients to transmit the best signals, which allow the net to classify accurately.
+
+**activationFunction** refers to one of a set of functions that determine the threshhold(s) at each node above which a signal is passed through the node, and below which it is blocked. If a node passes the signal through, it is "activated."
+
+**optimizationAlgo** refers to the manner by which a neural net minimizes error, or finds a locus of least error, as it adjusts its coefficients step by step. LBFGS, an acronym whose letters each refer to the last names of its multiple inventors, is an optimization algorithm that makes us of second-order derivatives to calculate the slope of gradient along which coefficients are adjust.
+
+**regularization** such as **l2** helps fight overfitting in neural nets. Regularization essentially punishes large coefficients, since large coefficients by definition mean the net has learned to pin its results to a few heavily weighted inputs. Such a strong weight can make it difficult to generalize the net's model over new data. 
+
+**visibleUnit/hiddenUnit** refers to the layers of a neural net. The visible unit, or layer, is the layer of nodes where input goes in, and the hiddenUnit is the layer where those inputs are recombined in more complex features. Both units have their own so-called transforms, in this case Gaussian for the visible and Rectified Linear for the hidden, which map the signal coming out of their respective layers onto a new space. 
+
+**lossFunction** is the way you measure error, or the difference between your net's guesses and the correct labels contained in the test set. Here we use RMSE_XENT, or Root-Mean-Squared-Error-Cross-Entropy.
+
+**learning rate**, like **momentum**, both affect how much the neural net adjusts the coefficients each time it corrects for error. They help determine the size of the steps the net takes down the gradient towards a local optimum. 
 
 ### Continuous RBMs
 
