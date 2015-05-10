@@ -5,9 +5,9 @@ layout: default
 
 # Restricted Boltzmann Machines
 
-To quote Geoff Hinton, one of the top scholars associated with deep learning, a Boltzmann machine is "a network of symmetrically connected, neuron-like units that make [stochastic](../glossary.html#stochasticgradientdescent) decisions about whether to be on or off." (Stochastic means "randomly determined.")
+A restricted Boltzmann machine consists of neuron-like units, or nodes, arranged in two layers, the visible layer and the hidden. These nodes can be imagined as places on a graph that communicate with each other. Arranged in two rows, each node of the visible layer communicates with each node of the hidden layer; i.e. they are symmetrically connected. But the nodes of the visible layer are not connected to each other, and the same goes for the nodes of the hidden layer. 
 
-A restricted Boltzmann machine "consists of a layer of visible units and a layer of hidden units with no visible-visible or hidden-hidden connections." The "restricted" comes from limits imposed on how its nodes connect: intra-layer connections are not allowed, but each node of one layer connects to every node of the next, and that is called "symmetry." 
+There is no intra layer communication -- this is the restriction in a restricted Boltzmann machine. Each node is a locus of computation that process input, and makes [stochastic](../glossary.html#stochasticgradientdescent) decisions about whether to transmit that input or not. (Stochastic means "randomly determined.")
 
 So, RBMs' nodes must form a symmetrical bipartite graph where data passes through the visible layer (v0-v3) at the bottom to the hidden layer (h0-h2) at the top, like so: 
 
