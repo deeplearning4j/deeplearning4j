@@ -118,6 +118,12 @@ If you *cd* into */tmp* and open *iris_svmlight.txt*, you'll see something like 
     2.0 1:1.0 2:0.5833333333333334 3:0.9787234042553192 4:0.8260869565217392
     2.0 1:0.6666666666666666 2:0.5 3:0.9148936170212765 4:0.6956521739130436
 
+## Feeding Vectors Into Deeplearning4j
+
+Deeplearning4j also works with a command-line interface. A net can be trained with the following script, drawing on the vectorized input you just created with Canova:
+
+      ./bin/deeplearning4j train -input input/file/path/tmp/iris_svmlight.txt -output output/file/path/output.txt -runtime hadoop -model modelConfig.java
+
 ## Execution
 
 Runs as both a local serial process and a MapReduce (MR engine on the roadmap) scale-out process with no code changes.
