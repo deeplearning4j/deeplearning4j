@@ -11,7 +11,7 @@ Given an input record, the DBN will choose a label from a set of labels. This go
 
 The network outputs a vector containing one number per output node. The number of output nodes equals the number of labels. Each of those outputs are going to be a 0 or 1, and taken together, those 0s and 1s form the vector. 
 
-*(To run the example, [use this file](https://github.com/SkymindIO/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/iris/IrisExample.java).)*
+*(To run the example, [use this file](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/iris/IrisExample.java).)*
 
 ### The IRIS Dataset
 
@@ -38,8 +38,6 @@ Label: 0,1,0
 
 Given three output nodes making binary decisions, we can label the three iris species as 1,0,0, or 0,1,0, or 0,0,1. 
 
-
-
 ### Loading the data
 
 DL4J uses an object called a DataSet to load data into a neural network. A DataSet is an easy way to store data (and its associated labels) which we want to make predictions about. The columns First and Second, below, are both NDArrays. One of the NDArrays will hold the data’s attributes; the other holds the label. 
@@ -48,7 +46,7 @@ DL4J uses an object called a DataSet to load data into a neural network. A DataS
 
 (Contained within a DataSet object are two NDArrays, a fundamental object that DL4J uses for numeric computation. N-dimensional arrays are scalable, multi-dimensional arrays suitable for sophisticated mathematical operations and frequently used in scientific computing.) 
 
-Most programmers are familiar with datasets contained in file like CSVs (comma-separated value), and the IRIS dataset is no exception. Here's how you parse an Iris CSV and put it in the objects DL4J can understand. 
+The IRIS dataset, like many others, comes as a CSV (comma-separated value) file. Here's how you parse an Iris CSV and put it in the objects DL4J can understand. 
 
     File f = new File(“Iris.dat”);
     InputStream fis = new FileInputStream(f);
@@ -68,7 +66,7 @@ The variable *outcomes* will be a two-dimensional array of doubles that has as m
 
 Take a look at this code segment
 
-    for(int i = from; i < to; i++) {
+      for(int i = from; i < to; i++) {
         String line = lines.get(i);
         String[] split = line.split(",");
 
@@ -88,9 +86,9 @@ Take a look at this code segment
         outcomes[i] = rowOutcome;
     }
 
-    DataSet completedData = new DataSet(data, Nd4j.create(outcomes));
+          DataSet completedData = new DataSet(data, Nd4j.create(outcomes));
 
-O.K., time to look at  what we wrote.
+OK, time to look at what we wrote.
 
 Line 3: Since we’re dealing with CSV data, we can just use *split* to tokenize on each comma and store the data in the String array *split*.
 
