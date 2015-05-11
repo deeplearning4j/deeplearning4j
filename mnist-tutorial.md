@@ -37,6 +37,7 @@ Notice there is no DBN class, just a stack of [restricted Boltzmann machines (RB
 In the above example, we have defined the momentum, learning rate, made conjugate gradient the optimization algorithm and reconstruction cross entropy the loss function. Weights are initialized in a normal distribution.  
 
 **nIn** is the size of the input data. The sample of grayscale pixels that the net interprets to classify each image. 
+
 **nOut** is the number of classifications -- 10 -- because we are dealing with the numerals 0-9.
 
 After your net has trained, you'll see a a number between zero and one called an [f1 score](https://en.wikipedia.org/wiki/F1_score). In machine learning, that's a metric used to determine how well a classifier performs. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy, and you can interpret it as the probability that your net's guesses are correct.
