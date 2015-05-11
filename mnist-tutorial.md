@@ -17,15 +17,16 @@ Typically, a DataSetIterator handles inputs and dataset-specific concerns like b
          DataSetIterator iter = new MnistDataSetIterator(100,60000);
 
 Note to Windows users, in place of the line below, please do the following:
+
 1. Download the preserialized Mnist dataset [here](https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing).
 2. Use the following dataset iterator, this one is equivalent to the one below:    
 
-               DataSet d = new DataSet();
-               BufferedInputStream bis = new BufferedInputStream(new FileInputStream(new File("path/to/your/file")));
-               d.load(bis);
-               bis.close();
-
-          DataSetIterator iter = new ListDataSetIterator(d.asList(),10);
+       DataSet d = new DataSet();
+       BufferedInputStream bis = new BufferedInputStream(new FileInputStream(new File("path/to/your/file")));
+       d.load(bis);
+       bis.close();
+        
+       DataSetIterator iter = new ListDataSetIterator(d.asList(),10);
 
 Next, we want to train a deep-belief network to reconstruct the MNIST dataset. This is done with following snippet:
 
