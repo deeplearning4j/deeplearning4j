@@ -9,25 +9,20 @@ MNIST is a good place to begin exploring image recognition. The first step is to
 
 The [MnistDataSetIterator](../doc/org/datasets/iterator/impl/MnistDataSetIterator.html) does this for you.
 
-A DataSetIterator can be used like this:
+It can be used like this:
 
-         DataSetIterator iter = ....;
-
-         while(iter.hasNext()) {
-         	DataSet next = iter.next();
-         	//do stuff with the data set
-         }
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/mnist/full/DBNExample.java?slice=50:59"></script>
 
 Typically, a DataSetIterator handles inputs and data-set-specific concerns like binarizing or normalization. For MNIST, the following does the trick:
          
-         //Train on batches of 10 out of 60000
-         DataSetIterator mnistData = new MnistDataSetIterator(10,60000);
+         //Train on batches of 100 out of 60000
+         DataSetIterator iter = new MnistDataSetIterator(100,60000);
 
 The reason we specify the batch size as well as the number of examples is so the user can choose how many examples they want to look at.
 
-Note to Windows uers, in place of the line below, please do the following:
+Note to Windows users, in place of the line below, please do the following:
 
-         1. Download the preserialized mnist dataset [https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing](here):
+         1. Download the preserialized Mnist dataset [https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing](here):
 
          2. Use the following dataset iterator, this one is equivalent to the one below:    
 
