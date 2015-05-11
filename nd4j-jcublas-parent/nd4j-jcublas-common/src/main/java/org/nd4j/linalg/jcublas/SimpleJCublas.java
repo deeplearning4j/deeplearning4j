@@ -55,14 +55,22 @@ public class SimpleJCublas {
         init();
     }
 
-
+    /**
+     * Assert that the data buffer for each ndarray
+     * is a cuda buffer
+     * @param buffer the arrays to tests
+     */
     public static void assertCudaBuffer(INDArray... buffer) {
         for (INDArray b1 : buffer)
             if (!(b1.data() instanceof JCudaBuffer))
                 throw new IllegalArgumentException("Unable to allocate pointer for buffer of type " + buffer.getClass().toString());
     }
 
-
+    /**
+     * Assert that the data buffer for each ndarray
+     * is a cuda buffer
+     * @param buffer the arrays to tests
+     */
     public static void assertCudaBuffer(DataBuffer... buffer) {
         for (DataBuffer b1 : buffer)
             if (!(b1 instanceof JCudaBuffer))
@@ -85,10 +93,10 @@ public class SimpleJCublas {
     public static void init() {
         if (init)
             return;
-        JCublas2.initialize();
-
         JCublas2.setLogLevel(LogLevel.LOG_DEBUG);
         JCublas2.setExceptionsEnabled(true);
+
+
 
         try {
             KernelFunctionLoader.getInstance().load();
