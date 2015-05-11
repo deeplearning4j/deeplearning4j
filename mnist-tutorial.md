@@ -13,18 +13,14 @@ It can be used like this:
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/mnist/full/DBNExample.java?slice=50:59"></script>
 
-Typically, a DataSetIterator handles inputs and data-set-specific concerns like binarizing or normalization. For MNIST, the following does the trick:
+Typically, a DataSetIterator handles inputs and dataset-specific concerns like binarization or normalization. For MNIST, the following line specifies the batch size and number of examples, two parameters which allow the user to specify the sample size they want to train on (more examples tend to increase both model accuracy and training time):
          
-         //Train on batches of 100 out of 60000
+         //Train on batches of 100 out of 60000 examples
          DataSetIterator iter = new MnistDataSetIterator(100,60000);
 
-The reason we specify the batch size as well as the number of examples is so the user can choose how many examples they want to look at.
-
 Note to Windows users, in place of the line below, please do the following:
-
-         1. Download the preserialized Mnist dataset [https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing](here):
-
-         2. Use the following dataset iterator, this one is equivalent to the one below:    
+1. Download the preserialized Mnist dataset [https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing](here):
+2. Use the following dataset iterator, this one is equivalent to the one below:    
 
                DataSet d = new DataSet();
                BufferedInputStream bis = new BufferedInputStream(new FileInputStream(new File("path/to/your/file")));
