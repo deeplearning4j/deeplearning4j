@@ -17,4 +17,4 @@
 #
 #
 
-org.nd4j.linalg.jcuda.jcublas.JCublasBackend
+org.nd4j.linalg.jcublas.JCublasBackend

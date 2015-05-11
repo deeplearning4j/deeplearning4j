@@ -23,6 +23,8 @@ package org.nd4j.linalg.jcublas;
 
 import jcuda.*;
 import jcuda.driver.JCudaDriver;
+import jcuda.jcublas.JCublas2;
+import jcuda.jcublas.cublasOperation;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaDeviceProp;
 import jcuda.runtime.cudaError;
@@ -148,7 +150,7 @@ public class SimpleJCublas {
 
         JCublas2.cublasDgemv(
                 ContextHolder.getInstance().getHandle(),
-                'N',
+                cublasOperation.CUBLAS_OP_N,
                 A.rows(),
                 A.columns(),
                 Pointer.to(new double[]{alpha}),
@@ -187,10 +189,10 @@ public class SimpleJCublas {
         CublasPointer cCPointer = new CublasPointer(C);
 
 
-
+        
         JCublas2.cublasSgemv(
                 ContextHolder.getInstance().getHandle(),
-                'N',
+                cublasOperation.CUBLAS_OP_N,
                 A.rows(),
                 A.columns(),
                 Pointer.to(new double[]{alpha}),
@@ -237,7 +239,7 @@ public class SimpleJCublas {
 
         JCublas2.cublasZgemv(
                 ContextHolder.getInstance().getHandle(),
-                'n', //trans
+                cublasOperation.CUBLAS_OP_N, //trans
                 A.rows(),  // m
                 A.rows(), // n
                 PointerUtil.getPointer(alpha),
@@ -284,7 +286,7 @@ public class SimpleJCublas {
 
         JCublas2.cublasCgemv(
                 ContextHolder.getInstance().getHandle(),
-                'n', //trans
+                cublasOperation.CUBLAS_OP_N, //trans
                 A.rows(),  // m
                 A.columns(), // n
                 PointerUtil.getPointer(alpha),
@@ -332,8 +334,8 @@ public class SimpleJCublas {
 
         JCublas2.cublasZgemm(
                 ContextHolder.getInstance().getHandle(),
-                'n', //trans
-                'n',
+                cublasOperation.CUBLAS_OP_N, //trans
+                cublasOperation.CUBLAS_OP_N,
                 C.rows(),  // m
                 C.columns(), // n
                 A.columns(), //k,
@@ -381,8 +383,8 @@ public class SimpleJCublas {
 
         JCublas2.cublasCgemm(
                 ContextHolder.getInstance().getHandle(),
-                'n', //trans
-                'n',
+                cublasOperation.CUBLAS_OP_N, //trans
+                cublasOperation.CUBLAS_OP_N,
                 C.rows(),  // m
                 C.columns(), // n
                 A.columns(), //k,
@@ -432,8 +434,8 @@ public class SimpleJCublas {
 
         JCublas2.cublasDgemm(
                 ContextHolder.getInstance().getHandle(),
-                'n', //trans
-                'n',
+                cublasOperation.CUBLAS_OP_N, //trans
+                cublasOperation.CUBLAS_OP_N,
                 C.rows(),  // m
                 C.columns(), // n
                 A.columns(), //k,
@@ -477,8 +479,8 @@ public class SimpleJCublas {
 
         JCublas2.cublasSgemm(
                 ContextHolder.getInstance().getHandle(),
-                'n', //trans
-                'n',
+                cublasOperation.CUBLAS_OP_N, //trans
+                cublasOperation.CUBLAS_OP_N,
                 C.rows(),  // m
                 C.columns(), // n
                 A.columns(), //k,

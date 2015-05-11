@@ -25,10 +25,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-jcuda.jcublas-parent</artifactId>
+    <artifactId>nd4j-jcublas-parent</artifactId>
     <packaging>pom</packaging>
 
-    <name>nd4j-jcuda.jcublas-parent</name>
+    <name>nd4j-jcublas-parent</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

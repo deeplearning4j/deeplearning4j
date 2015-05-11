@@ -20,12 +20,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-jcuda.jcublas-6.5</artifactId>
+    <artifactId>nd4j-jcublas-6.5</artifactId>
     <packaging>jar</packaging>
 
 
     <parent>
-        <artifactId>nd4j-jcuda.jcublas-parent</artifactId>
+        <artifactId>nd4j-jcublas-parent</artifactId>
         <groupId>org.nd4j</groupId>
         <version>0.0.3.5.5.4-SNAPSHOT</version>
     </parent>
@@ -84,7 +84,7 @@
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jcuda.jcublas-common</artifactId>
+            <artifactId>nd4j-jcublas-common</artifactId>
             <version>${project.version}</version>
         </dependency>
 
