@@ -1,17 +1,20 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.nd4j.linalg.lossfunctions;
@@ -35,6 +38,13 @@ import static org.junit.Assert.assertEquals;
 public  class LossFunctionTests extends BaseNd4jTest {
 
     private static Logger log = LoggerFactory.getLogger(LossFunctionTests.class);
+
+    public LossFunctionTests() {
+    }
+
+    public LossFunctionTests(String name) {
+        super(name);
+    }
 
     public LossFunctionTests(Nd4jBackend backend) {
         super(backend);
@@ -62,8 +72,8 @@ public  class LossFunctionTests extends BaseNd4jTest {
 
     @Test
     public void testNegativeLogLikelihood() {
-    	Nd4j.dtype = Type.DOUBLE;
-    	Nd4j.factory().setOrder('f');
+        Nd4j.dtype = Type.DOUBLE;
+        Nd4j.factory().setOrder('f');
         INDArray softmax = Nd4j.create(new double[][]{{0.6, 0.4}, {0.7, 0.3}});
         INDArray trueLabels = Nd4j.create(new double[][]{{1, 0}, {0, 1}});
         double score = LossFunctions.score(trueLabels, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, softmax, 0, false);

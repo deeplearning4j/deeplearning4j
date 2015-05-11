@@ -1,17 +1,20 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.nd4j.linalg;
@@ -49,6 +52,13 @@ import static org.junit.Assert.*;
 public  class ComplexNDArrayTestsC extends BaseNd4jTest  {
 
     private static Logger log = LoggerFactory.getLogger(ComplexNDArrayTestsC.class);
+
+    public ComplexNDArrayTestsC() {
+    }
+
+    public ComplexNDArrayTestsC(String name) {
+        super(name);
+    }
 
     public ComplexNDArrayTestsC(Nd4jBackend backend) {
         super(backend);
@@ -205,9 +215,9 @@ public  class ComplexNDArrayTestsC extends BaseNd4jTest  {
 
     @Test
     public void testCreateFromNDArray() {
-    	
-    	Nd4j.dtype = Type.DOUBLE;
-    	
+
+        Nd4j.dtype = Type.DOUBLE;
+
         INDArray arr = Nd4j.create(new double[][]{{1, 2}, {3, 4}});
         IComplexNDArray complex = Nd4j.createComplex(arr);
         for (int i = 0; i < arr.rows(); i++) {
@@ -573,7 +583,7 @@ public  class ComplexNDArrayTestsC extends BaseNd4jTest  {
 
     @Test
     public void testMmul() {
-    	Nd4j.dtype = Type.FLOAT;
+        Nd4j.dtype = Type.FLOAT;
         Nd4j.factory().setOrder('f');
         DataBuffer data = Nd4j.linspace(1, 10, 10).data();
         IComplexNDArray n = Nd4j.createComplex((Nd4j.create(data, new int[]{10})));

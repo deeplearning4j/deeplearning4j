@@ -1,18 +1,22 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
+
 
 package org.nd4j.linalg.ops;
 
@@ -45,6 +49,8 @@ import static org.junit.Assert.assertTrue;
  * Created by agibsonccc on 2/22/15.
  */
 public  class OpExecutionerTests extends BaseNd4jTest {
+    public OpExecutionerTests() {
+    }
 
     public OpExecutionerTests(Nd4jBackend backend) {
         super(backend);
@@ -54,11 +60,15 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         super(name, backend);
     }
 
+    public OpExecutionerTests(String name) {
+        super(name);
+    }
+
     @After
     public void after() {
         Nd4j.factory().setOrder('f');
     }
-	
+
     @Test
     public void testCosineSimilarity() {
         INDArray vec1 = Nd4j.create(new float[]{1, 2, 3, 4});
@@ -283,7 +293,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testStridedLog() {
-    	Nd4j.dtype = DataBuffer.Type.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray slice = arr.slice(0);
@@ -294,7 +304,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testStridedExp() {
-    	Nd4j.dtype = DataBuffer.Type.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray slice = arr.slice(0);
@@ -315,7 +325,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testDimensionSoftMax() {
-    	Nd4j.factory().setOrder('c');
+        Nd4j.factory().setOrder('c');
         INDArray linspace = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         SoftMax max = new SoftMax(linspace);
         Nd4j.getExecutioner().exec(max, 1);
