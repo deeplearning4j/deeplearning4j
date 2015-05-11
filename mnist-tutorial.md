@@ -5,9 +5,7 @@ layout: default
 
 # MNIST for Deep-Belief Networks
 
-MNIST is a good place to begin exploring image recognition. 
-
-The first step is to take an image from the dataset and binarize it, which means converting its pixels from continuous gray scale to ones and zeros. A useful rule of thumb is that every gray-scale pixel with a value higher than 35 becomes a 1, while the rest are set to 0. The MNIST dataset iterator class does that.
+MNIST is a good place to begin exploring image recognition. The first step is to take an image from the dataset and binarize it; i.e. convert its pixels from continuous gray scale to ones and zeros. Typically, every gray-scale pixel with a value higher than 35 becomes a 1, while the rest are set to 0. The MNIST dataset iterator class does that.
 
 The [MnistDataSetIterator](../doc/org/datasets/iterator/impl/MnistDataSetIterator.html) does this for you.
 
@@ -42,7 +40,7 @@ Note to Windows uers, in place of the line below, please do the following:
 
 Next, we want to train a deep-belief network to reconstruct the MNIST dataset. This is done with following snippet:
 
-<script src="http://gist-it.appspot.com/https://github.com/SkymindIO/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/DBNExample.java?slice=28:58"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/mnist/full/DBNExample.java?slice=37:59"></script>
 
 After your net has trained, you'll see an F1 score. In machine learning, that's the name for one metric used to determine how well a classifier performs. The [f1 score](https://en.wikipedia.org/wiki/F1_score) is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It's basically the probability that your net's guesses are correct.
 
