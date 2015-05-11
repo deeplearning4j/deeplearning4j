@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -45,9 +46,17 @@ import static org.junit.Assert.*;
  *
  * @author Adam Gibson
  */
-public  class NDArrayTestsC {
+public  class NDArrayTestsC extends BaseNd4jTest{
     private static Logger log = LoggerFactory.getLogger(NDArrayTestsC.class);
     private INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
+
+    public NDArrayTestsC(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public NDArrayTestsC(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
 
     @Before
     public void before() {

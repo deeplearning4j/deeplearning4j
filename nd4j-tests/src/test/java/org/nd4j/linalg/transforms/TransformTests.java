@@ -30,10 +30,12 @@ import static org.junit.Assert.assertEquals;
  * Created by agibsonccc on 9/6/14.
  */
 public  class TransformTests extends BaseNd4jTest {
-
-
     public TransformTests(Nd4jBackend backend) {
         super(backend);
+    }
+
+    public TransformTests(String name, Nd4jBackend backend) {
+        super(name, backend);
     }
 
     @Test

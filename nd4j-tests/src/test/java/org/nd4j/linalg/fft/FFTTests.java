@@ -42,6 +42,10 @@ public  class FFTTests extends BaseNd4jTest {
         super(backend);
     }
 
+    public FFTTests(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
 
     @Test
     public void testColumnVector() {

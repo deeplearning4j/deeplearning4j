@@ -32,7 +32,9 @@ import static org.junit.Assert.assertEquals;
  * Created by agibsonccc on 9/6/14.
  */
 public  class ConvolutionTests extends BaseNd4jTest {
-
+    public ConvolutionTests(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
 
     public ConvolutionTests(Nd4jBackend backend) {
         super(backend);

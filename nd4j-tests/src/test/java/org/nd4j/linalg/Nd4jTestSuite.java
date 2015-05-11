@@ -1,6 +1,5 @@
 package org.nd4j.linalg;
 
-import junit.framework.Test;
 import junit.framework.TestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
@@ -8,6 +7,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -33,9 +33,13 @@ public class Nd4jTestSuite {
 
         for(Class<? extends BaseNd4jTest> clazz : testClasses) {
             for(Nd4jBackend backend : nd4jBackends) {
-                Constructor<BaseNd4jTest> constructor = (Constructor<BaseNd4jTest>) clazz.getConstructor(Nd4jBackend.class);
-                Test test = constructor.newInstance(backend);
-                testSuite.addTest(constructor.newInstance(backend));
+                if(backend.canRun()) {
+                    Constructor<BaseNd4jTest> constructor = (Constructor<BaseNd4jTest>) clazz.getConstructor(String.class,Nd4jBackend.class);
+                    Method[]  methods = clazz.getMethods();
+                    for(Method method : methods)
+                        testSuite.addTest(constructor.newInstance(method.getName(),backend));
+
+                }
 
 
             }

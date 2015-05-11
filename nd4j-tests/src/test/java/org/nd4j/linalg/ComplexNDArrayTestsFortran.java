@@ -52,6 +52,10 @@ public  class ComplexNDArrayTestsFortran extends BaseNd4jTest  {
         super(backend);
     }
 
+    public ComplexNDArrayTestsFortran(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
     @Before
     public void before() {
         Nd4j.factory().setOrder('f');

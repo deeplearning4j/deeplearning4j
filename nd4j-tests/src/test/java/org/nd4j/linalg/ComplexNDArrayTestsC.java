@@ -54,6 +54,10 @@ public  class ComplexNDArrayTestsC extends BaseNd4jTest  {
         super(backend);
     }
 
+    public ComplexNDArrayTestsC(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
     @Before
     public void before() {
         Nd4j.factory().setOrder('c');

@@ -40,6 +40,10 @@ public  class LossFunctionTests extends BaseNd4jTest {
         super(backend);
     }
 
+    public LossFunctionTests(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
 
     @Test
     public void testRMseXent() {

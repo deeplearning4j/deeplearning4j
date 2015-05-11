@@ -50,6 +50,10 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         super(backend);
     }
 
+    public OpExecutionerTests(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
     @After
     public void after() {
         Nd4j.factory().setOrder('f');

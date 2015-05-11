@@ -39,6 +39,10 @@ public  class IFFTTests extends BaseNd4jTest {
         super(backend);
     }
 
+    public IFFTTests(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
     @Test
     public void testIfft() {
         Nd4j.EPS_THRESHOLD = 1e-1;

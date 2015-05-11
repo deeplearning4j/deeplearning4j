@@ -31,9 +31,12 @@ import static org.junit.Assert.assertEquals;
  * @author Adam Gibson
  */
 public  class ComplexNumberTests  extends BaseNd4jTest {
-
     public ComplexNumberTests(Nd4jBackend backend) {
         super(backend);
+    }
+
+    public ComplexNumberTests(String name, Nd4jBackend backend) {
+        super(name, backend);
     }
 
     @Test

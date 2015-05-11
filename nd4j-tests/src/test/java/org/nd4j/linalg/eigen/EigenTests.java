@@ -38,6 +38,9 @@ public  class EigenTests extends BaseNd4jTest {
         super(backend);
     }
 
+    public EigenTests(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
 
     @Test
     public void testEigen() {

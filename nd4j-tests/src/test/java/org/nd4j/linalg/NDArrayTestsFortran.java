@@ -58,6 +58,10 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     private static Logger log = LoggerFactory.getLogger(NDArrayTestsFortran.class);
     private INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
 
+    public NDArrayTestsFortran(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
     public NDArrayTestsFortran(Nd4jBackend backend) {
         super(backend);
     }
