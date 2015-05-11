@@ -121,19 +121,19 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.majorStride(),
+                    1,
                     y.data().asDouble(),
                     y.offset(),
-                    y.majorStride());
+                    1);
         else
             JavaBlas.rcopy(
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.majorStride(),
+                    1,
                     y.data().asFloat(),
                     y.offset(),
-                    y.majorStride());
+                   1);
 
         return y;
     }

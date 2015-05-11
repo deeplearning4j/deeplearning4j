@@ -18,7 +18,6 @@ package org.nd4j.linalg.dataset;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import org.apache.commons.math3.random.MersenneTwister;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -769,6 +768,12 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         if (columnNames.size() != numInputs())
             throw new IllegalArgumentException("Column names don't match input");
         this.columnNames = columnNames;
+    }
+
+    @Override
+    public SplitTestAndTrain splitTestAndTrain(double percentTrain) {
+        int numPercent = (int) (percentTrain * numExamples());
+        return splitTestAndTrain(numPercent);
     }
 
 

@@ -1490,8 +1490,22 @@ public class Nd4j {
      * @param r       the random generator to use
      * @return the random ndarray with the specified shape
      */
+    @Deprecated
     public static INDArray rand(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
         INDArray ret = INSTANCE.rand(rows, columns, r);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create a random ndarray with the given shape using the given rng
+     *
+     * @param seed the seed
+     * @param shape  the shape
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(long seed,int...shape) {
+        INDArray ret = INSTANCE.rand(shape,seed);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2051,7 +2065,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return an ndarray with ones filled in
      */
-    public static IComplexNDArray complexZeros(int[] shape) {
+    public static IComplexNDArray complexZeros(int...shape) {
         IComplexNDArray ret = INSTANCE.complexZeros(shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -2064,7 +2078,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return an ndarray with ones filled in
      */
-    public static INDArray ones(int[] shape) {
+    public static INDArray ones(int...shape) {
         INDArray ret = INSTANCE.ones(shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -2650,8 +2664,6 @@ public class Nd4j {
      * @return the strides for the given shape and order
      */
     public static int[] getStrides(int[] shape, char order) {
-        if (Shape.isRowVectorShape(shape) && shape.length > 1)
-            shape = new int[]{shape[1]};
         if (order == NDArrayFactory.FORTRAN)
             return ArrayUtil.calcStridesFortran(shape);
         return ArrayUtil.calcStrides(shape);

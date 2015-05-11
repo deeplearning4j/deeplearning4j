@@ -41,7 +41,7 @@ public abstract class Nd4jBackend {
 
     /**
      * Gets a priority number for the backend.
-     * 
+     *
      * Backends are loaded in priority order (highest first).
      * @return a priority number.
      */
@@ -66,9 +66,8 @@ public abstract class Nd4jBackend {
         ServiceLoader<Nd4jBackend> loader = ServiceLoader.load(Nd4jBackend.class);
         try {
             Iterator<Nd4jBackend> backendIterator = loader.iterator();
-            while (backendIterator.hasNext()) {
-                backends.add(backendIterator.next());
-            }
+            backends.add(backendIterator.next());
+
         } catch (ServiceConfigurationError serviceError) {
             // a fatal error due to a syntax or provider construction error.
             // backends mustn't throw an exception during construction.

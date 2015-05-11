@@ -67,7 +67,7 @@ public class Sum extends BaseAccumulation {
         if (y() != null)
             return new Sum(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Sum(x.vectorAlongDimension(index, dimension));
+            return new Sum(xAlongDimension);
 
     }
 }

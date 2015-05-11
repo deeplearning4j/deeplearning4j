@@ -46,7 +46,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types");
             for (int c = 0; c < op.n(); c++) {
                 apply(t, c);
-
             }
         } else if (op instanceof Accumulation) {
             Accumulation accumulation = (Accumulation) op;
@@ -99,7 +98,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 INDArray originalZ = op.z();
                 INDArray y = op.y();
 
-                for(int i = 0; i < op.x().rows(); i++) {
+                for(int i = 0; i < original.rows(); i++) {
                     INDArray row = original.getRow(i);
                     INDArray zRow = originalZ.getRow(i);
                     op.setX(row);
@@ -350,7 +349,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
             else
                 op.z().linearView().putScalar(c, op.op(op.x().linearView().getDouble(c), op.y().linearView().getDouble(c)));
 
-        } else {
+        }
+
+        else {
 
             //x is complex, y could be complex or real
             if (op.x() instanceof IComplexNDArray) {

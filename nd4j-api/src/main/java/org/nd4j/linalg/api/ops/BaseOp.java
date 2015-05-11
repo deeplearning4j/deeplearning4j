@@ -40,16 +40,22 @@ public abstract class BaseOp implements Op {
     @Override
     public void setX(INDArray x) {
         this.x = x;
+        numProcessed = 0;
+        this.n = x.length();
     }
 
     @Override
     public void setZ(INDArray z) {
         this.z = z;
+        numProcessed = 0;
+        this.n = z.length();
     }
 
     @Override
     public void setY(INDArray y) {
         this.y = y;
+        numProcessed = 0;
+        this.n = y.length();
     }
 
     /**

@@ -136,6 +136,9 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
 
     void setColumnNames(List<String> columnNames);
 
+
+    SplitTestAndTrain splitTestAndTrain(double percentTrain);
+
     @Override
     Iterator<org.nd4j.linalg.dataset.DataSet> iterator();
 }

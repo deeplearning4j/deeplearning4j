@@ -71,7 +71,6 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         verifyElements(mmulResultD, mmulResultD2);
 
 
-        Nd4j.factory().setOrder('c');
 
 
     }
@@ -118,7 +117,6 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         DoubleMatrix reshapedD = d.reshape(4, 2);
         INDArray reshapedD2 = d2.reshape(4, 2);
         verifyElements(reshapedD, reshapedD2);
-        Nd4j.factory().setOrder('c');
 
 
     }
@@ -130,7 +128,7 @@ public class NDArrayTests extends org.nd4j.linalg.api.test.NDArrayTests {
         INDArray row1 = linspace.getRow(0);
         INDArray row2 = linspace.getRow(1);
         double dot = Nd4j.getBlasWrapper().dot(row1, row2);
-        assertEquals(11, dot, 1e-1);
+        assertEquals(14, dot, 1e-1);
 
 
     }

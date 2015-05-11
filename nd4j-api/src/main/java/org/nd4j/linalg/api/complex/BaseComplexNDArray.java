@@ -1962,75 +1962,58 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray vectorAlongDimension(int index, int dimension) {
+        ensureNotCleanedUp();
         assert dimension <= shape.length : "Invalid dimension " + dimension;
-        if(isScalar()) {
-            if(dimension > 1 && index > 0)
+        if (isScalar()) {
+            if (dimension > 1 && index > 0)
                 throw new IllegalArgumentException("Illegal dimension for scalar " + dimension);
             return this;
         }
 
         if (dimension > shape().length - 1)
             dimension = shape.length - 1;
-
-
         if (ordering == NDArrayFactory.C) {
 
-            if (dimension == shape.length - 1 && dimension != 0) {
-                if (size(dimension) == 1)
-                    return Nd4j.createComplex(data,
-                            new int[]{1, shape[dimension]}
-                            , ArrayUtil.removeIndex(stride, 0),
-                            offset + index * 2);
-                else
-                    return Nd4j.createComplex(data,
-                            new int[]{1, shape[dimension]}
-                            , ArrayUtil.removeIndex(stride, 0),
-                            offset + index * majorStride());
-            } else if (dimension == 0)
+            if (dimension == shape.length - 1 && dimension != 0)
+                return Nd4j.createComplex(data,
+                        new int[]{shape[dimension]}
+                        , new int[]{stride[shape.length - 1]},
+                        offset + index * stride[dimension - 1]);
+
+            else if (dimension == 0)
                 return Nd4j.createComplex(data,
                         new int[]{shape[dimension], 1}
                         , new int[]{stride[dimension], 1},
-                        offset + index * 2);
+                        offset + index);
 
+            if (size(dimension) == 1) {
 
-            if (size(dimension) == 0)
                 return Nd4j.createComplex(data,
                         new int[]{shape[dimension], 1}
                         , new int[]{stride[dimension], 1},
-                        offset + index * 2);
+                        offset + index);
+            } else
+                return Nd4j.createComplex(data,
+                        new int[]{shape[dimension], 1}
+                        , new int[]{stride[dimension], 1},
+                        offset + index * stride[0]);
+        }
+
+        else if (ordering == NDArrayFactory.FORTRAN) {
+            if (size(dimension) == 1)
+                return Nd4j.createComplex(data,
+                        new int[]{shape[dimension], 1}
+                        , new int[]{stride[dimension], 1},
+                        offset + index);
 
             return Nd4j.createComplex(data,
                     new int[]{shape[dimension], 1}
                     , new int[]{stride[dimension], 1},
-                    offset + index *  majorStride());
-        } else if (ordering == NDArrayFactory.FORTRAN) {
+                    offset + index * majorStride());
 
-            if (dimension == shape.length - 1 && dimension != 0) {
-                if (size(dimension) == 1) {
-                    return Nd4j.createComplex(data,
-                            new int[]{1, shape[dimension]}
-                            , ArrayUtil.removeIndex(stride, 0),
-                            offset + index * 2);
-                } else
-                    return Nd4j.createComplex(data,
-                            new int[]{1, shape[dimension]}
-                            , Ints.concat(new int[]{1},ArrayUtil.removeIndex(stride, 0)),
-                            offset + index *  majorStride());
-            }
-
-            if (size(dimension) == 1) {
-                return Nd4j.createComplex(data,
-                        new int[]{1, shape[dimension]}
-                        , Ints.concat(new int[]{1}, ArrayUtil.removeIndex(stride, 0)),
-                        offset + index * 2);
-            } else
-                return Nd4j.createComplex(data,
-                        new int[]{shape[dimension], 1}
-                        , Ints.concat(new int[]{1},ArrayUtil.removeIndex(stride, 0)),
-                        offset + index * 2 * majorStride());
         }
 
-        throw new IllegalStateException("Illegal ordering..none declared");
+        throw new IllegalStateException("Illegal vector along dimension");
     }
 
     /**
@@ -3370,23 +3353,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNDArray transposei() {
         if (isRowVector())
-            return Nd4j.createComplex(data, new int[]{shape[0], 1}, offset);
+            return Nd4j.createComplex(data, shape.length == 1 ? new int[]{shape[0], 1} : ArrayUtil.reverseCopy(shape()), offset);
         else if (isColumnVector())
-            return Nd4j.createComplex(data, new int[]{shape[0]}, offset);
-        if (ordering() == NDArrayFactory.FORTRAN && isMatrix()) {
-            IComplexNDArray reverse = Nd4j.createComplex(ArrayUtil.reverseCopy(shape));
+            return Nd4j.createComplex(data, new int[]{1, shape[0]}, offset);
 
-            for (int i = 0; i < rows; i++) {
-                for (int j = 0; j < columns; j++) {
-                    reverse.putScalar(new int[]{j, i}, getComplex(i, j));
-                }
-            }
-
-            return reverse;
-        }
-
-
-        IComplexNDArray ret = permute(ArrayUtil.range(shape.length - 1, -1));
+        IComplexNDArray ret = permute(ArrayUtil.range(shape.length, 0));
         return ret;
 
     }

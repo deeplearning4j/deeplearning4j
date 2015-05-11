@@ -285,15 +285,8 @@ public class Indices {
                 int[] currIndices = indices[i].indices();
                 if (currIndices.length < 1)
                     continue;
-                int end = currIndices[currIndices.length - 1];
-                if (end > shape[i])
-                    end = shape[i] - 1;
-                int begin = currIndices[0];
-
-                ret[i] = indices[i].isInterval() ? Math.abs(end - begin) + 1 :
-                        indices[i].indices().length;
+                ret[i] = indices[i].indices().length;
                 ret[i] -= offsets[i];
-
             }
 
         }
