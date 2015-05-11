@@ -4,7 +4,7 @@ layout: default
 
 # Getting Started
 
-To make neural nets run with Deeplearning4j, you need to install a few things. Those installs are documented on the [ND4J.org "Getting Started" page](http://nd4j.org/getstarted.html):
+To make neural nets run with Deeplearning4j, there are configuration prerequisites documented on the [ND4J.org "Getting Started" page](http://nd4j.org/getstarted.html):
 
 1. [Java](http://nd4j.org/getstarted.html#java) 
 2. [Integrated Development Environment](http://nd4j.org/getstarted.html#ide-for-java) 
