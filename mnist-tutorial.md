@@ -28,10 +28,10 @@ Note to Windows users, in place of the line below, please do the following:
         
        DataSetIterator iter = new ListDataSetIterator(d.asList(),10);
 
-Next, we want to train a deep-belief network to reconstruct the MNIST dataset. This is done with following snippet:
+Next, we want to train a deep-belief network to reconstruct the MNIST dataset. Here's how you configure your DBN (by giving it three **hiddenLayerSizes**, we have effectively created three hidden layers):
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/mnist/full/DBNExample.java?slice=37:50"></script>
 
-After your net has trained, you'll see an F1 score. In machine learning, that's the name for one metric used to determine how well a classifier performs. The [f1 score](https://en.wikipedia.org/wiki/F1_score) is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It's basically the probability that your net's guesses are correct.
+After your net has trained, you'll see a a number between zero and one called an [f1 score](https://en.wikipedia.org/wiki/F1_score). In machine learning, that's a metric used to determine how well a classifier performs. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy, and you can interpret it as the probability that your net's guesses are correct.
 
 Now that you've seen a neural network train on MNIST images, learn how to train on continuous data with the [Iris flower dataset](../iris-flower-dataset-tutorial.html).
