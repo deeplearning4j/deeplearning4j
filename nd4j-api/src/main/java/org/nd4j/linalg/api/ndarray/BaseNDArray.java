@@ -678,7 +678,10 @@ public abstract class BaseNDArray implements INDArray {
             LinAlgExceptions.assertSameShape(this, arr);
         else if (isVector() && arr.isVector() && length() != arr.length())
             throw new IllegalArgumentException("Illegal assignment, must be of same length");
-        Nd4j.getBlasWrapper().copy(arr, this);
+        INDArray linear = arr.linearView();
+        INDArray thisLinear = linearView();
+        for(int i = 0; i < linear.length(); i++)
+            thisLinear.putScalar(i,linear.getDouble(i));
         return this;
     }
 
@@ -2390,6 +2393,7 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         Nd4j.getExecutioner().exec(new MulOp(this, other, result, length()));
+
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
 

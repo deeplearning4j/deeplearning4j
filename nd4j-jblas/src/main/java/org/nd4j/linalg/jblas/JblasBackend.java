@@ -41,6 +41,12 @@ public class JblasBackend extends Nd4jBackend {
     }
 
     @Override
+    public boolean canRun() {
+        //no reliable way (yet!) to determine if running
+        return true;
+    }
+
+    @Override
     public int getPriority() {
         return BACKEND_PRIORITY_CPU;
     }

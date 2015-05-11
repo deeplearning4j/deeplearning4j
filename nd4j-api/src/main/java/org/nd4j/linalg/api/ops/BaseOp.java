@@ -39,6 +39,8 @@ public abstract class BaseOp implements Op {
 
     @Override
     public void setX(INDArray x) {
+        if(x == null)
+            throw new IllegalArgumentException("X must not be null");
         this.x = x;
         numProcessed = 0;
         this.n = x.length();
@@ -46,6 +48,8 @@ public abstract class BaseOp implements Op {
 
     @Override
     public void setZ(INDArray z) {
+        if(z == null)
+            throw new IllegalArgumentException("Z must not be null");
         this.z = z;
         numProcessed = 0;
         this.n = z.length();
@@ -53,6 +57,8 @@ public abstract class BaseOp implements Op {
 
     @Override
     public void setY(INDArray y) {
+        if(y == null)
+            throw new IllegalArgumentException("Y must not be null");
         this.y = y;
         numProcessed = 0;
         this.n = y.length();

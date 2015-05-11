@@ -31,6 +31,11 @@ public class NetlibBlasBackend extends Nd4jBackend {
     }
 
     @Override
+    public boolean canRun() {
+        return true;
+    }
+
+    @Override
     public int getPriority() {
         return BACKEND_PRIORITY_CPU;
     }

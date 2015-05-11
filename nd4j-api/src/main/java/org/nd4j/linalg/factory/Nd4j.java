@@ -246,6 +246,7 @@ public class Nd4j {
      * @return the operation executioner instance
      */
     public static OpExecutioner getExecutioner() {
+
         return OP_EXECUTIONER_INSTANCE;
     }
 
@@ -3241,7 +3242,11 @@ public class Nd4j {
         }
     }
 
-    private void initWithBackend(Nd4jBackend backend) {
+    /**
+     * Initialize with the specific backend
+     * @param backend the backend to initialize with
+     */
+    public void initWithBackend(Nd4jBackend backend) {
         try {
             Resource c = backend.getConfigurationResource();
             props = new Properties();
@@ -3302,8 +3307,7 @@ public class Nd4j {
             NEG_UNIT = Nd4j.createFloat(-1, 0);
             ENFORCE_NUMERICAL_STABILITY = Boolean.parseBoolean(System.getProperty(NUMERICAL_STABILITY, String.valueOf(false)));
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
-            //start the buffer reaper
-            // NO BAD BAD BAD BAD NO new BufferReaper(refQueue(),bufferRefQueue()).start();
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -150,6 +150,7 @@
         <module>nd4j-instrumentation</module>
         <module>nd4j-java</module>
         <module>nd4j-jocl-parent</module>
+        <module>nd4j-tests</module>
     </modules>
 
     <properties>

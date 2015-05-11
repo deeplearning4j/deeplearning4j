@@ -68,7 +68,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if(op.x().isRowVector()) {
             //reset the op in case
             op.setX(op.x());
-            op.setY(op.y());
+            if(op.y() != null)
+                op.setY(op.y());
             op.setZ(op.z());
             exec(op);
         }

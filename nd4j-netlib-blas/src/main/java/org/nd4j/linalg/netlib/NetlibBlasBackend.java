@@ -22,11 +22,16 @@ import org.springframework.core.io.Resource;
 
 public class NetlibBlasBackend extends Nd4jBackend {
 
-    private final static String LINALG_PROPS = "/nd4j-netlib.properties";
+    private final static String LINALG_PROPS = "/nd4j-java.properties";
 
     @Override
     public boolean isAvailable() {
         // netlib has built-in fallback behavior
+        return true;
+    }
+
+    @Override
+    public boolean canRun() {
         return true;
     }
 

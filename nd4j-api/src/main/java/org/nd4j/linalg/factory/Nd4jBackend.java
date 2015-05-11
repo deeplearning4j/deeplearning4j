@@ -53,7 +53,17 @@ public abstract class Nd4jBackend {
      */
     public abstract boolean isAvailable();
 
+    /**
+     * Returns true if the backend can
+     * run on the os or not
+     * @return
+     */
+    public abstract boolean canRun();
 
+    /**
+     * Get the configuration resource
+     * @return
+     */
     public abstract Resource getConfigurationResource();
 
     /**
@@ -65,8 +75,10 @@ public abstract class Nd4jBackend {
         List<Nd4jBackend> backends = new ArrayList<>(1);
         ServiceLoader<Nd4jBackend> loader = ServiceLoader.load(Nd4jBackend.class);
         try {
+
             Iterator<Nd4jBackend> backendIterator = loader.iterator();
-            backends.add(backendIterator.next());
+            while(backendIterator.hasNext())
+                backends.add(backendIterator.next());
 
         } catch (ServiceConfigurationError serviceError) {
             // a fatal error due to a syntax or provider construction error.
