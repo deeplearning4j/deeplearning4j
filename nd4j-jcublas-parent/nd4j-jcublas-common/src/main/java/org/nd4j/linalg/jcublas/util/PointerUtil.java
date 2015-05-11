@@ -1,9 +1,17 @@
 package org.nd4j.linalg.jcublas.util;
 
+import jcuda.Pointer;
 import jcuda.Sizeof;
+import jcuda.cuComplex;
+import jcuda.cuDoubleComplex;
 import jcuda.driver.CUdeviceptr;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.ops.ScalarOp;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 
 import static jcuda.driver.JCudaDriver.cuMemAlloc;
 
@@ -23,6 +31,33 @@ public class PointerUtil {
         }
 
         return ret;
+    }
+
+    /**
+     * Get the pointer for a single complex float
+     * @param x the number ot get the pointer for
+     * @return the pointer for the given complex number
+     */
+    public static Pointer getPointer(cuDoubleComplex x) {
+        ByteBuffer byteBufferx = ByteBuffer.allocateDirect(8 * 2);
+        byteBufferx.order(ByteOrder.nativeOrder());
+        java.nio.DoubleBuffer floatBufferx = byteBufferx.asDoubleBuffer();
+        floatBufferx.put(0,x.x);
+        floatBufferx.put(1,x.y);
+        return Pointer.to(floatBufferx);
+    }
+    /**
+     * Get the pointer for a single complex float
+     * @param x the number ot get the pointer for
+     * @return the pointer for the given complex number
+     */
+    public static Pointer getPointer(cuComplex x) {
+        ByteBuffer byteBufferx = ByteBuffer.allocateDirect(4 * 2);
+        byteBufferx.order(ByteOrder.nativeOrder());
+        FloatBuffer floatBufferx = byteBufferx.asFloatBuffer();
+        floatBufferx.put(0,x.x);
+        floatBufferx.put(1,x.y);
+        return Pointer.to(floatBufferx);
     }
 
 
