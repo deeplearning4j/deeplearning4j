@@ -15,7 +15,6 @@ import java.util.*;
  */
 
 @RunWith(AllTests.class)
-
 public class Nd4jTestSuite {
 
 

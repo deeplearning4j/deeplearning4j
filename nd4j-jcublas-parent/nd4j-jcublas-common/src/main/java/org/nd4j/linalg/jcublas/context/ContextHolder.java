@@ -121,15 +121,19 @@ public class ContextHolder {
     	
     	if(stream == null) {
     		stream = new CUstream();
-    		int result = JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_DEFAULT);
-    		if (result != CUresult.CUDA_SUCCESS) {
-                throw new CudaException("Failed to create a stream: "+ CUresult.stringFor(result));
-            }
+    		checkResult(JCudaDriver.cuCtxSetCurrent(ctx));
+    		checkResult(JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_DEFAULT));
     		contextStreams.put(ctx, currentThread.getName(), stream);
     	}
     	
     	return stream;
     }
+
+	private void checkResult(int result) {
+		if (result != CUresult.CUDA_SUCCESS) {
+		    throw new CudaException("Failed to create a stream: "+ CUresult.stringFor(result));
+		}
+	}
 
     /**
      * Retrieve a context for use with the current thread
