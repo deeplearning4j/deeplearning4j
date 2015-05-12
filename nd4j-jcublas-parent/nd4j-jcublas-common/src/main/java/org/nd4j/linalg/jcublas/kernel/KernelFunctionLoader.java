@@ -89,17 +89,35 @@ public class KernelFunctionLoader {
     }
 
 
+    /**
+     * Get the launcher for a function
+     * @param functionName the function to get the launcher for
+     * @param dataType the data type to launch with
+     * @return the launcher for the given
+     * function and data type
+     */
     public  static KernelLauncher launcher(String functionName,String dataType) {
         return KernelFunctionLoader.getInstance().get(functionName,dataType);
     }
-    
+
+
+    /**
+     * Returns whether the function has a kernel or not
+     * @param functionName the name of the function
+     * @return true if the function has a kernel
+     * false othr wise
+     */
+    public boolean exists(String functionName) {
+        return get(functionName,"double") != null || get(functionName,"float") != null;
+    }
+
 
     public KernelLauncher get(String functionName,String dataType) {
         String name = functionName + "_" + dataType;
         
         KernelLauncher launcher = launchers.get(name);
         if(launcher == null) {
-            throw new IllegalArgumentException("Unable to find " + name);
+            return null;
         }
         return launcher;
     }

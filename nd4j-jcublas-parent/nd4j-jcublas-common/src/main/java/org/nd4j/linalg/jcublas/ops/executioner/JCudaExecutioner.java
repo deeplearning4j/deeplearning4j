@@ -34,12 +34,14 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
@@ -53,7 +55,7 @@ import org.nd4j.linalg.util.ArrayUtil;
  *
  * @author Adam Gibson
  */
-public class JCudaExecutioner implements OpExecutioner {
+public class JCudaExecutioner extends DefaultOpExecutioner {
     private JCudaBuffer dummyFloatPointer, dummyDoublePointer;
 
     public JCudaExecutioner() {
@@ -76,18 +78,107 @@ public class JCudaExecutioner implements OpExecutioner {
         }
         return op;
     }
-
     @Override
     public void iterateOverAllRows(Op op) {
-        throw new UnsupportedOperationException();
+        if(op.x().isRowVector()) {
+            //reset the op in case
+            op.setX(op.x());
+            if(op.y() != null)
+                op.setY(op.y());
+            op.setZ(op.z());
+            exec(op);
+        }
+        //execute row wise
+        else if(op.x().isMatrix() || op.x().isColumnVector()) {
+            if(op.x() instanceof IComplexNDArray) {
+                IComplexNDArray original = (IComplexNDArray) op.x();
+                IComplexNDArray originalZ = (IComplexNDArray) op.z();
+                IComplexNDArray y = (IComplexNDArray) op.y();
+
+                for(int i = 0; i < original.rows(); i++) {
+                    IComplexNDArray row = original.slice(i);
+                    IComplexNDArray zRow = originalZ.slice(i);
+                    IComplexNDArray rowRaveled = row.ravel();
+                    IComplexNDArray zRowRaveled = zRow.ravel();
+                    op.setX(rowRaveled);
+                    op.setZ(zRowRaveled);
+                    if(y != null)
+                        op.setY(y.slice(i));
+                    exec(op);
+                    zRow.assign(op.z());
+
+                }
+            }
+            else {
+                INDArray original = op.x();
+                INDArray originalZ = op.z();
+                INDArray y = op.y();
+
+                for(int i = 0; i < original.rows(); i++) {
+                    INDArray row = original.getRow(i);
+                    INDArray zRow = originalZ.getRow(i);
+                    op.setX(row);
+                    op.setZ(zRow);
+                    if(y != null)
+                        op.setY(y.getRow(i));
+                    exec(op);
+                    zRow.assign(op.z());
+                }
+            }
+
+        }
+        else {
+            INDArray originalX = op.x();
+            INDArray originalZ = op.z();
+            for(int i = 0; i < originalX.slices(); i++) {
+                INDArray slice = originalX.slice(i);
+                INDArray zSlice = originalZ.slice(i);
+                op.setX(slice);
+                op.setZ(zSlice);
+                iterateOverAllRows(op);
+            }
+
+
+        }
     }
 
     @Override
     public void iterateOverAllColumns(Op op) {
-        throw new UnsupportedOperationException();
+        if(op.x().isRowVector()) {
+            exec(op);
+        }
+        //execute row wise
+        else if(op.x().isMatrix() || op.x().isColumnVector()) {
+            exec(op,1);
+        }
+        else {
+            if(op.x() instanceof IComplexNDArray) {
+                IComplexNDArray originalX = (IComplexNDArray) op.x();
+                IComplexNDArray originalZ = (IComplexNDArray) op.z();
+                IComplexNDArray y = (IComplexNDArray) op.y();
+                for(int i = 0; i < op.x().slices(); i++) {
+                    op.setX(originalX.getColumn(i));
+                    op.setZ(originalZ.getColumn(i));
+                    if(y != null)
+                        op.setY(y.getColumn(i));
+                    iterateOverAllColumns(op);
+                }
+            }
+            else {
+                INDArray originalX = op.x();
+                INDArray originalZ = op.z();
+                INDArray y = op.y();
+                for(int i = 0; i < op.x().slices(); i++) {
+                    op.setX(originalX.getColumn(i));
+                    op.setZ(originalZ.getColumn(i));
+                    if(y != null)
+                        op.setY(y.getColumn(i));
+                    iterateOverAllColumns(op);
+                }
+            }
 
+        }
     }
-
 
     private JCudaBuffer dummyDouble() {
         return dummyDoublePointer;
@@ -255,6 +346,10 @@ public class JCudaExecutioner implements OpExecutioner {
 
 
     private void invoke(Accumulation op)  {
+        if(!KernelFunctionLoader.getInstance().exists(op.name()))
+            super.exec(op);
+
+
 	    INDArray result = null;
 	   
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
@@ -325,6 +420,8 @@ public class JCudaExecutioner implements OpExecutioner {
 
 
     private void invoke(ScalarOp op) {
+        if(!KernelFunctionLoader.getInstance().exists(op.name()))
+            super.exec(op);
 
         if (op.y() != null) {
         	
@@ -380,7 +477,10 @@ public class JCudaExecutioner implements OpExecutioner {
 
 
     private void invoke(TransformOp op) {
-        
+        if(!KernelFunctionLoader.getInstance().exists(op.name())) {
+            super.exec(op);
+            return;
+        }
         if (op.y() != null) {
             
 	            /**

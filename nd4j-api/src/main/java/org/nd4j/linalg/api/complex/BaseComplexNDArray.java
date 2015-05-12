@@ -1378,16 +1378,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
 
-    @Override
-    public int linearIndex(int i) {
-        if(isScalar() && i > 0)
-            throw new IllegalArgumentException("Illegal index for scalar " + i);
-        int realStride = majorStride();
-        int idx = offset + (i * realStride);
-        if (idx >= data.length())
-            throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
-        return idx;
-    }
+
 
 
     @Override

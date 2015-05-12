@@ -78,35 +78,6 @@ public  class ComplexNDArrayTestsFortran extends BaseNd4jTest  {
 
 
 
-    @Test
-    public void testConstruction() {
-
-        IComplexNDArray arr2 = Nd4j.createComplex(new int[]{3, 2});
-        assertEquals(3, arr2.rows());
-        assertEquals(arr2.rows(), arr2.rows());
-        assertEquals(2, arr2.columns());
-        assertEquals(arr2.columns(), arr2.columns());
-        assertTrue(arr2.isMatrix());
-
-
-        IComplexNDArray arr = Nd4j.createComplex(new double[]{0, 1}, new int[]{1});
-        //only each complex double: one element
-        assertEquals(1, arr.length());
-        //both real and imaginary components
-        assertEquals(2, arr.data().length());
-        IComplexNumber n1 = (IComplexNumber) arr.getScalar(0).element();
-        assertEquals(0, n1.realComponent().doubleValue(), 1e-1);
-
-
-        IComplexDouble[] two = new IComplexDouble[2];
-        two[0] = Nd4j.createDouble(1, 0);
-        two[1] = Nd4j.createDouble(2, 0);
-        double[] testArr = {1, 0, 2, 0};
-        IComplexNDArray assertComplexDouble = Nd4j.createComplex(testArr, new int[]{2});
-        IComplexNDArray testComplexDouble = Nd4j.createComplex(two, new int[]{2});
-        assertEquals(assertComplexDouble, testComplexDouble);
-
-    }
 
 
 
@@ -268,36 +239,8 @@ public  class ComplexNDArrayTestsFortran extends BaseNd4jTest  {
     }
 
 
-    @Test
-    public void testSliceVsVectorAlongDimension() {
-        IComplexNDArray arr = Nd4j.complexLinSpace(1,20,20).reshape(4,5);
-        assertEquals(arr.slices(),arr.vectorsAlongDimension(1));
-        for(int i = 0; i < arr.slices(); i++) {
-            assertEquals(arr.vectorAlongDimension(i,1),arr.slice(i));
-            assertEquals(arr.vectorAlongDimension(i,1).ravel(),arr.slice(i).ravel());
-        }
-    }
-
-    @Test
-    public void testVectorAlongDimension() {
-        INDArray n = Nd4j.linspace(1, 8, 8).reshape(2, 4);
-        IComplexNDArray nComplex = Nd4j.createComplex(Nd4j.linspace(1, 8, 8)).reshape(2, 4);
-        assertEquals(n.vectorsAlongDimension(0), nComplex.vectorsAlongDimension(0));
-
-        for (int i = 0; i < n.vectorsAlongDimension(0); i++) {
-            INDArray vec = n.vectorAlongDimension(i, 0);
-            IComplexNDArray vecComplex = nComplex.vectorAlongDimension(i, 0);
-            assertEquals(vec.length(), vecComplex.length());
-            for (int j = 0; j < vec.length(); j++) {
-                IComplexNumber currComplex = vecComplex.getComplex(j);
-                double curr = vec.getFloat(j);
-                assertEquals(curr, currComplex.realComponent().doubleValue(), 1e-1);
-            }
-            assertEquals(vec, vecComplex.getReal());
-        }
 
 
-    }
 
     @Test
     public void testVectorGet() {
@@ -751,15 +694,6 @@ public  class ComplexNDArrayTestsFortran extends BaseNd4jTest  {
 
 
 
-    @Test
-    public void testGetIndexing() {
-        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
-        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
-        IComplexNDArray tenByTen = Nd4j.complexLinSpace(1,100,100).reshape(10,10);
-        IComplexNDArray thirtyToSixty = (IComplexNDArray) Transforms.round(Nd4j.complexLinSpace(31,60,30)).reshape(3,10);
-        IComplexNDArray test = tenByTen.get(NDArrayIndex.interval(3, 6), NDArrayIndex.interval(0, tenByTen.columns()));
-        assertEquals(thirtyToSixty,test);
-    }
 
     @Test
     public void testPutAndGet() {
@@ -892,8 +826,8 @@ public  class ComplexNDArrayTestsFortran extends BaseNd4jTest  {
         IComplexNumber n4 = arr.getComplex(1, 1);
 
         assertEquals(1, n1.realComponent().doubleValue(), 1e-1);
-        assertEquals(2, n2.realComponent().doubleValue(), 1e-1);
-        assertEquals(3, n3.realComponent().doubleValue(), 1e-1);
+        assertEquals(3, n2.realComponent().doubleValue(), 1e-1);
+        assertEquals(4, n3.realComponent().doubleValue(), 1e-1);
         assertEquals(4, n4.realComponent().doubleValue(), 1e-1);
     }
 

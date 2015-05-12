@@ -175,7 +175,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
                 {2,2,2,2}
         });
         assertEquals(testRet, ret);
-        INDArray r = Nd4j.arange(0,4).reshape(1, 4);
+        INDArray r = Nd4j.arange(0, 4).reshape(1, 4);
         INDArray r2 = r.broadcast(4, 4);
         INDArray testR2 = Nd4j.create(new double[][]{
                 {0, 1, 2, 3},
@@ -191,8 +191,8 @@ public  class NDArrayTestsC extends BaseNd4jTest {
     @Test
     public void testGetColumns() {
         INDArray matrix = Nd4j.linspace(1,6,6).reshape(2,3);
-        INDArray matrixGet = matrix.getColumns(new int[]{1,2});
-        INDArray matrixAssertion = Nd4j.create(new double[][]{{2,3},{5,6}});
+        INDArray matrixGet = matrix.getColumns(new int[]{1, 2});
+        INDArray matrixAssertion = Nd4j.create(new double[][]{{2, 3}, {5, 6}});
         assertEquals(matrixAssertion,matrixGet);
     }
 
@@ -263,15 +263,6 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
     }
 
-
-    @Test
-    public void testSwapAxesFortranOrder() {
-        INDArray n = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[]{3, 5, 2});
-        INDArray slice = n.swapAxes(2, 1);
-        INDArray assertion = Nd4j.create(new double[]{1, 4, 7, 10, 13});
-        INDArray test = slice.slice(0).slice(0);
-        assertEquals(assertion, test);
-    }
 
 
     @Test
@@ -438,7 +429,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray row = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray row1 = row.getRow(1);
         float norm2 = row1.norm2(Integer.MAX_VALUE).getFloat(0);
-        float assertion2 = 5.0f;
+        float assertion2 = 4.4721360206604f;
         assertEquals(assertion2, norm2, 1e-1);
 
     }
@@ -691,7 +682,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
     @Test
     public void testSum() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
-        INDArray test = Nd4j.create(new float[]{6,8,10,12}, new int[]{2, 2});
+        INDArray test = Nd4j.create(new float[]{6, 8, 10, 12}, new int[]{2, 2});
         INDArray sum = n.sum(n.shape().length - 1);
         assertEquals(test, sum);
 
@@ -970,7 +961,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
     @Test
     public void testDim1() {
-        INDArray sum = Nd4j.linspace(1,2,2).reshape(2,1);
+        INDArray sum = Nd4j.linspace(1,2, 2).reshape(2,1);
         INDArray same = sum.dup();
         assertEquals(same.sum(1),sum);
     }
@@ -1286,16 +1277,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testColumnVectorOpsFortran() {
-        INDArray twoByTwo = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
-        INDArray toAdd = Nd4j.create(new float[]{1, 2}, new int[]{2, 1});
-        twoByTwo.addiColumnVector(toAdd);
-        INDArray assertion = Nd4j.create(new float[]{2, 4, 4, 6}, new int[]{2, 2});
-        assertEquals(assertion, twoByTwo);
 
-
-    }
 
     @Test
     public void testGetNonContiguous() {
@@ -1326,8 +1308,8 @@ public  class NDArrayTestsC extends BaseNd4jTest {
     @Test
     public void testMeans() {
         INDArray a = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        assertEquals(Nd4j.create(new float[]{1.5f, 3.5f}), a.mean(1));
-        assertEquals(Nd4j.create(new float[]{2, 3}), a.mean(0));
+        assertEquals(Nd4j.create(new float[]{2,3}), a.mean(1));
+        assertEquals(Nd4j.create(new float[]{1.5f, 3.5f}), a.mean(0));
         assertEquals(2.5, Nd4j.linspace(1, 4, 4).mean(Integer.MAX_VALUE).getDouble(0), 1e-1);
         assertEquals(2.5, a.mean(Integer.MAX_VALUE).getDouble(0), 1e-1);
 
@@ -1628,21 +1610,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testPutRowFortran() {
-        INDArray row1 = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        INDArray put = Nd4j.create(new double[]{5, 6});
-        row1.putRow(1, put);
 
-
-        INDArray row1Fortran = Nd4j.create(new double[][]{{1, 2}, {3, 4}});
-        INDArray putFortran = Nd4j.create(new double[]{5, 6});
-        row1Fortran.putRow(1, putFortran);
-        assertEquals(row1, row1Fortran);
-
-
-
-    }
 
 
     @Test
