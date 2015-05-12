@@ -88,7 +88,7 @@ public class DefaultConvolutionInstance extends BaseConvolution {
             Arrays.fill(newShape, 1);
             int lengthDelta = Math.abs(input.shape().length - kernel.shape().length);
             if (input.shape().length < kernel.shape().length) {
-                for (int i = kernel.shape().length - 1; i >= 0; i--)
+                for (int i = input.shape().length - 1; i >= 0; i--)
                     newShape[i + lengthDelta] = input.shape()[i];
                 input = input.reshape(newShape);
 

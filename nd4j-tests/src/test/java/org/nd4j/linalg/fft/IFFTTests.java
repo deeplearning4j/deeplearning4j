@@ -83,6 +83,7 @@ public  class IFFTTests extends BaseNd4jTest {
                 Nd4j.createComplexNumber(-4, -9.65685425),
 
         });
+
         IComplexNDArray ffted2 = FFT.fft(linspace);
         Nd4j.EPS_THRESHOLD = 1e-1;
         assertEquals(ffted.eps(ffted2).sum(Integer.MAX_VALUE).getDouble(0),8,1e-1);
