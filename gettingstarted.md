@@ -108,6 +108,8 @@ which will import the source and set everything up.
 
 Take a look at the [MNIST tutorial](../mnist-tutorial.html). 
 
-When you're building a new project with Deeplearning4j
+When you're building a new project with Deeplearning4j, you'll create a new project, following the instructions on the ND4J ["Getting Started"](http://nd4j.org/getstarted.html) page and including the dependencies you need in your POM file as shown [here](http://nd4j.org/dependencies.html). 
+
+Once you do that, you can open up the App.java file that is created with every new project, and start writing DL4J code between the brackets. For example, try pasting a Multilayer model like the one in the Mnist tutorial cited above. Many of the classes will appear in red, since you haven't imported the right packages, but IntelliJ will add those packages automatically to the top of your file if you press Alt+Return while your mouse hovers over the missing class in the code. 
 
 If you have a clear idea of how deep learning works and what you want to build, go straight to our section on [custom datasets](../customdatasets.html). 
