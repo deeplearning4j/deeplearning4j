@@ -20,12 +20,10 @@
 package org.nd4j.linalg.api.complex;
 
 
-import com.google.common.primitives.Ints;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.Indices;
@@ -1636,8 +1634,14 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray slice(int slice) {
-        if (shape.length == 0)
-            throw new IllegalArgumentException("Can't slice a 0-d NDArray");
+
+        if (shape.length == 0) {
+            if(slice == 0)
+                return Nd4j.scalar(getComplex(0));
+            else
+                throw new IllegalArgumentException("Can't slice a 0-d NDArray");
+
+        }
         else if(slice == -1) {
             return slice(shape().length - 1);
         }
@@ -1657,26 +1661,29 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             if (size(0) == 1) {
                 IComplexNDArray slice2 = Nd4j.createComplex(
                         data,
-                        ArrayUtil.of(1,shape[1]),
-                        ArrayUtil.copy(stride()),
+                        ArrayUtil.of(shape[1]),
+                        Arrays.copyOfRange(stride, 1, stride.length),
                         offset + slice, ordering
                 );
                 return slice2;
             } else {
                 IComplexNDArray slice2 = Nd4j.createComplex(
                         data,
-                        ArrayUtil.of(1,shape[1]),
-                        ArrayUtil.copy(stride()),
+                        ArrayUtil.of(shape[1]),
+                        Arrays.copyOfRange(stride, 1, stride.length),
                         offset + slice * stride[0], ordering
                 );
                 return slice2;
             }
 
 
-        } else {
+        }
+        else if(isRowVector())
+            return Nd4j.scalar(getComplex(slice));
+
+        else {
             int offset = this.offset + (slice * stride[0]);
             if (size(0) == 1) {
-
                 IComplexNDArray slice2 = Nd4j.createComplex(data,
                         Arrays.copyOfRange(shape, 1, shape.length),
                         Arrays.copyOfRange(stride, 1, stride.length),

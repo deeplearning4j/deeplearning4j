@@ -25,6 +25,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
+/**
+ * Jblas backend
+ *
+ */
 public class JblasBackend extends Nd4jBackend {
 
     private static final Logger log = LoggerFactory.getLogger(JblasBackend.class);

@@ -114,7 +114,7 @@ public class LinearIndex extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin) {
         addToIndex();
-        return Nd4j.createComplexNumber(getLinearIndex(),0);
+        return origin;
     }
 
 

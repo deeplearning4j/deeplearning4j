@@ -38,6 +38,8 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * Base class for FFTs
+ *
+ * @author Adam Gibson
  */
 public  class FFTTests extends BaseNd4jTest {
 
@@ -116,10 +118,6 @@ public  class FFTTests extends BaseNd4jTest {
 
         IComplexNDArray ffted = FFT.fftn(a);
         assertEquals(fftedAnswer,ffted);
-
-
-
-
 
 
         Nd4j.EPS_THRESHOLD = 1e-12;

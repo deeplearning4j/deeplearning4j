@@ -33,6 +33,12 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
     private INDArray wrapped;
     private int[] indices;
 
+    /**
+     * Create the view based on
+     * the given ndarray
+     * @param wrapped the ndarray to
+     *                base the linear view on
+     */
     public LinearViewComplexNDArray(IComplexNDArray wrapped) {
         this.wrapped = wrapped;
         this.shape = new int[] {1,wrapped.length()};
@@ -94,6 +100,12 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
         throw new IllegalArgumentException("Index must be 0 and dimension must be 0 or 1");
     }
 
+    @Override
+    public IComplexNumber getComplex(int i) {
+        return data.getComplex(indices[i]);
+    }
+
+
 
     @Override
     public IComplexNDArray putScalar(int i, double value) {
@@ -101,6 +113,11 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
         return this;
     }
 
+    @Override
+    public IComplexNDArray putScalar(int i, IComplexNumber value) {
+        data.put(indices[i],value);
+        return this;
+    }
 
     @Override
     public int length() {
