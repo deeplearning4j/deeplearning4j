@@ -106,4 +106,8 @@ which will import the source and set everything up.
 
 ### <a name="next">Next Steps: MNIST and Running Examples</a>
 
-Take a look at the [MNIST tutorial](../mnist-tutorial.html). If you have a clear idea of how deep learning works and what you want to build, go straight to our section on [custom datasets](../customdatasets.html). 
+Take a look at the [MNIST tutorial](../mnist-tutorial.html). 
+
+When you're building a new project with Deeplearning4j
+
+If you have a clear idea of how deep learning works and what you want to build, go straight to our section on [custom datasets](../customdatasets.html). 
